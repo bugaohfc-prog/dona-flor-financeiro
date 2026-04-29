@@ -47,6 +47,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px;bord
 .alert-list .item{border-bottom:1px solid #FEE2E2}
 @media(min-width:760px){.alert-grid{grid-template-columns:repeat(3,1fr)}}
 
+
+.notify-box{background:#EFF6FF;border:1px solid #BFDBFE;border-left:6px solid #2563EB;border-radius:18px;padding:14px;margin-bottom:16px}
+.notify-box strong{color:#1E40AF}
+.notify-status{font-size:13px;color:#475569;margin-top:6px}
+
 </style>
 </head>
 <body>
@@ -94,6 +99,15 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px;bord
           <div id="listaAlertasVencimento" class="alert-list"></div>
         </div>
 
+
+        <div class="notify-box no-print">
+          <strong>🔔 Notificações</strong>
+          <p class="sub" style="margin:6px 0">Ative para receber aviso de contas vencidas, vencendo hoje e amanhã quando abrir o sistema.</p>
+          <button class="btn-blue btn-small" onclick="ativarNotificacoes()">Ativar notificações</button>
+          <button class="btn-light btn-small" onclick="testarNotificacao()">Testar</button>
+          <div id="notifyStatus" class="notify-status"></div>
+        </div>
+
         <div class="grid">
           <div class="card resumo"><div class="metric-title">Total aberto</div><strong id="totalAberto">R$ 0,00</strong></div>
           <div class="card resumo"><div class="metric-title">Pago no mês</div><strong id="pagoMes">R$ 0,00</strong></div>
@@ -135,6 +149,76 @@ const HEAD={apikey:KEY,Authorization:"Bearer "+KEY,"Content-Type":"application/j
 let usuarioLogado=null, contasDados=[], notasDados=[], usuariosDados=[];
 const centros=["Dona Flor Andradina","Dona Flor Paranaíba","Dona Flor Três Lagoas","Brilho Dourado","Pessoal"];
 
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/service-worker.js").catch(()=>{});
+}
+
+let notificacaoJaEnviada = false;
+
+function atualizarStatusNotificacao(){
+  if(!("Notification" in window)){
+    if(typeof notifyStatus !== "undefined") notifyStatus.textContent = "Este navegador não suporta notificações.";
+    return;
+  }
+  if(Notification.permission === "granted"){
+    notifyStatus.textContent = "Notificações ativadas neste dispositivo.";
+  } else if(Notification.permission === "denied"){
+    notifyStatus.textContent = "Notificações bloqueadas. Ative nas configurações do navegador.";
+  } else {
+    notifyStatus.textContent = "Notificações ainda não ativadas.";
+  }
+}
+
+async function ativarNotificacoes(){
+  if(!("Notification" in window)){
+    alert("Este navegador não suporta notificações.");
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  atualizarStatusNotificacao();
+  if(perm === "granted"){
+    testarNotificacao();
+    enviarNotificacaoAlertas(true);
+  }
+}
+
+function testarNotificacao(){
+  if(!("Notification" in window)){
+    alert("Este navegador não suporta notificações.");
+    return;
+  }
+  if(Notification.permission !== "granted"){
+    alert("Clique primeiro em Ativar notificações.");
+    return;
+  }
+  new Notification("Dona Flor Gestão Financeira", {
+    body: "Notificações ativadas com sucesso.",
+    icon: "/icon-192.png"
+  });
+}
+
+function enviarNotificacaoAlertas(forcar=false){
+  if(!("Notification" in window) || Notification.permission !== "granted") return;
+  if(notificacaoJaEnviada && !forcar) return;
+
+  let base=visContas().filter(c=>c.status==="Aberto"), h=hoje(), am=adicionarDias(h,1);
+  let vencidas=base.filter(c=>c.vencimento<h);
+  let hojeLista=base.filter(c=>c.vencimento===h);
+  let amanhaLista=base.filter(c=>c.vencimento===am);
+
+  let totalQtd = vencidas.length + hojeLista.length + amanhaLista.length;
+  if(totalQtd === 0) return;
+
+  let msg = `${vencidas.length} vencidas • ${hojeLista.length} hoje • ${amanhaLista.length} amanhã`;
+  new Notification("Atenção financeira - Dona Flor", {
+    body: msg,
+    icon: "/icon-192.png",
+    badge: "/icon-192.png"
+  });
+  notificacaoJaEnviada = true;
+}
+
 async function api(path,opts={}){const r=await fetch(URL+"/rest/v1/"+path,{...opts,headers:{...HEAD,...(opts.headers||{})}});const t=await r.text();const data=t?JSON.parse(t):null;if(!r.ok)throw new Error(data?.message||t||r.status);return data;}
 async function rpc(fn, body){return api("rpc/"+fn,{method:"POST",body:JSON.stringify(body)})}
 function moeda(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}function hoje(){return new Date().toISOString().slice(0,10)}function mesAno(d){return d?d.slice(0,7):""}function parseValor(v){return Number(String(v||"").replace(/[R$\s]/g,"").replace(/\./g,"").replace(",","."))}
@@ -175,7 +259,7 @@ function renderAlertas(){
 }
 
 function filtroContas(){let base=visContas(),fc=fCentro.value,fs=fStatus.value;return base.filter(c=>(!fc||c.centro===fc)&&(!fs||c.status===fs))}
-function render(){let base=visContas(),h=hoje(),m=mesAno(h),filtrada=filtroContas();totalAberto.textContent=moeda(base.filter(c=>c.status==="Aberto").reduce((s,c)=>s+Number(c.valor),0));pagoMes.textContent=moeda(base.filter(c=>c.status==="Pago"&&mesAno(c.vencimento)===m).reduce((s,c)=>s+Number(c.valor),0));vencidas.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento<h).reduce((s,c)=>s+Number(c.valor),0));venceHoje.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento===h).reduce((s,c)=>s+Number(c.valor),0));lembretesHoje.textContent=visNotas().filter(n=>n.data_lembrete===h).length;quantidade.textContent=base.length;tbody.innerHTML=filtrada.map(c=>`<tr><td>${c.descricao}</td><td>${moeda(c.valor)}</td><td>${c.vencimento}</td><td>${c.centro}</td><td><span class="badge ${c.status==="Pago"?"badge-pago":"badge-aberto"}">${c.status}</span></td><td>${c.observacao||""}</td><td class="no-print"><button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">Pago/Aberto</button><button class="btn-red btn-small" onclick="excluir('${c.id}')">Excluir</button></td></tr>`).join("")||'<tr><td colspan="7">Nenhuma conta cadastrada.</td></tr>';renderAlertas();renderHoje();renderNotas();renderGrafico(base);}
+function render(){let base=visContas(),h=hoje(),m=mesAno(h),filtrada=filtroContas();totalAberto.textContent=moeda(base.filter(c=>c.status==="Aberto").reduce((s,c)=>s+Number(c.valor),0));pagoMes.textContent=moeda(base.filter(c=>c.status==="Pago"&&mesAno(c.vencimento)===m).reduce((s,c)=>s+Number(c.valor),0));vencidas.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento<h).reduce((s,c)=>s+Number(c.valor),0));venceHoje.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento===h).reduce((s,c)=>s+Number(c.valor),0));lembretesHoje.textContent=visNotas().filter(n=>n.data_lembrete===h).length;quantidade.textContent=base.length;tbody.innerHTML=filtrada.map(c=>`<tr><td>${c.descricao}</td><td>${moeda(c.valor)}</td><td>${c.vencimento}</td><td>${c.centro}</td><td><span class="badge ${c.status==="Pago"?"badge-pago":"badge-aberto"}">${c.status}</span></td><td>${c.observacao||""}</td><td class="no-print"><button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">Pago/Aberto</button><button class="btn-red btn-small" onclick="excluir('${c.id}')">Excluir</button></td></tr>`).join("")||'<tr><td colspan="7">Nenhuma conta cadastrada.</td></tr>';renderAlertas();enviarNotificacaoAlertas();atualizarStatusNotificacao();renderHoje();renderNotas();renderGrafico(base);}
 function renderHoje(){let h=hoje(),items=visContas().filter(c=>c.status==="Aberto"&&c.vencimento===h);contasHoje.innerHTML=items.length?items.map(c=>'<div class="item"><div><b>'+c.descricao+'</b><br><span class="sub">'+c.centro+'</span></div><b>'+moeda(c.valor)+'</b></div>').join(""):'<p class="empty">Nenhuma conta em aberto vence hoje.</p>';}
 function renderNotas(){notasLista.innerHTML=visNotas().slice(0,8).map(n=>'<div class="item"><div><b>'+n.titulo+'</b><br>'+(n.texto||'')+'<br><span class="sub">'+(n.data_lembrete||"Sem data")+(n.loja?" • "+n.loja:"")+'</span></div><span class="badge '+(n.prioridade==="Urgente"?"badge-red":"")+'">'+n.prioridade+'</span></div>').join("")||"<p class='empty'>Nenhum lembrete.</p>"}
 function renderGrafico(base){let dados=centros.map(centro=>base.filter(c=>c.centro===centro).reduce((s,c)=>s+Number(c.valor),0));let max=Math.max(...dados,1);grafico.innerHTML=centros.map((c,i)=>`<div class="barwrap"><div class="bar" style="height:${Math.max(6,(dados[i]/max)*220)}px"></div>${c}<br><b>${moeda(dados[i])}</b></div>`).join("");}
@@ -185,6 +269,9 @@ async function alternarUsuario(id,ativoAtual){if(!confirm(ativoAtual?"Revogar es
 function renderUsuarios(){if(!isAdmin())return;try{diagUsuarios.style.display="none";usuariosLista.innerHTML=usuariosDados.map(u=>'<div class="item"><div><b>'+u.nome+'</b><br><span class="sub">'+u.usuario+' • '+(u.email||"sem e-mail")+' • '+u.tipo+' • '+(u.loja||"Todas")+' • '+(u.pode_pagar?"Pode pagar":"Só visualiza")+'</span></div><div><span class="badge '+(u.ativo?'':'badge-red')+'">'+(u.ativo?"Ativo":"Revogado")+'</span><br><button class="btn-small '+(u.ativo?'btn-red':'btn-green')+'" onclick="alternarUsuario(\''+u.id+'\','+u.ativo+')">'+(u.ativo?'Revogar':'Reativar')+'</button></div></div>').join("")||"<p class='empty'>Nenhum usuário encontrado.</p>";}catch(e){diagUsuarios.style.display="block";diagUsuarios.textContent="Erro ao montar gestão de usuários: "+e.message;}}
 function executarRelatorio(){let acao=acaoRelatorio.value;if(acao==="csv")exportarCSV();if(acao==="pdf")window.print();acaoRelatorio.value="";}
 function exportarCSV(){let linhas=[["Descrição","Valor","Vencimento","Centro","Status","Observação"],...filtroContas().map(c=>[c.descricao,c.valor,c.vencimento,c.centro,c.status,c.observacao||""])];let csv=linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");let blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="contas-dona-flor.csv";a.click();URL.revokeObjectURL(url);}
+
+setInterval(()=>{ try { notificacaoJaEnviada=false; enviarNotificacaoAlertas(); } catch(e){} }, 30*60*1000);
+
 </script>
 </body>
 </html>

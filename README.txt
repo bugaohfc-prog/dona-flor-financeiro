@@ -1,14 +1,16 @@
-Dona Flor V16 Alertas.
+Dona Flor V17 - Notificações
 
-O que mudou:
-- Alertas no painel para contas vencidas, vencendo hoje e vencendo amanhã.
-- Mantém V15 segura com senhas criptografadas.
-- Mantém gestão de usuários, filtros, PDF/CSV e permissões por loja.
+Inclui:
+- Tudo da V16.
+- Botão para ativar notificações no navegador/celular.
+- Notificação ao abrir o sistema quando houver contas vencidas, vencendo hoje ou amanhã.
+- Service worker básico para PWA.
 
-Passos:
-1. Substitua os arquivos no GitHub.
-2. Rode supabase-sql-v16-alertas.sql no Supabase se ainda não rodou a versão segura.
-3. Se aparecer aviso, clique em Executar sem RLS.
+Importante:
+- Não precisa novo SQL se você já rodou o SQL da V15.
+- Se ainda não rodou, rode o SQL da V15/V16 antes.
+- No navegador/celular, clique em "Ativar notificações".
+- Em iPhone, instale na Tela de Início para melhor suporte.
 
 Logins:
 admin / admin123

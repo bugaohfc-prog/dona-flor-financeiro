@@ -1,11 +1,11 @@
 {
-  "name": "Dona Flor Gestão Financeira PRO",
+  "name": "Dona Flor Gestão Financeira",
   "short_name": "Dona Flor",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f3f5f7",
-  "theme_color": "#0FB9B1",
+  "background_color": "#f6faf9",
+  "theme_color": "#055451",
   "icons": [
     {
       "src": "/icon-192.png",

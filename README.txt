@@ -1,16 +1,17 @@
-Dona Flor V17 - Notificações
+Dona Flor V17.1 - Notificações corrigidas
 
-Inclui:
-- Tudo da V16.
-- Botão para ativar notificações no navegador/celular.
-- Notificação ao abrir o sistema quando houver contas vencidas, vencendo hoje ou amanhã.
-- Service worker básico para PWA.
+Correção:
+- Agora as notificações no Android usam ServiceWorkerRegistration.showNotification().
+- Corrige erro: Illegal constructor / Use ServiceWorkerRegistration.showNotification().
 
-Importante:
-- Não precisa novo SQL se você já rodou o SQL da V15.
-- Se ainda não rodou, rode o SQL da V15/V16 antes.
-- No navegador/celular, clique em "Ativar notificações".
-- Em iPhone, instale na Tela de Início para melhor suporte.
+Não precisa novo SQL se você já rodou o SQL da V15.
+
+Passos:
+1. Substitua os arquivos no GitHub.
+2. Faça redeploy na Vercel.
+3. No celular, remova o app antigo da tela inicial.
+4. Abra o site, adicione novamente à tela inicial.
+5. Abra pelo ícone e clique em Ativar notificações.
 
 Logins:
 admin / admin123

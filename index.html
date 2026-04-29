@@ -178,27 +178,52 @@ async function ativarNotificacoes(){
   const perm = await Notification.requestPermission();
   atualizarStatusNotificacao();
   if(perm === "granted"){
-    testarNotificacao();
-    enviarNotificacaoAlertas(true);
+    if("serviceWorker" in navigator){
+      await navigator.serviceWorker.ready.catch(()=>{});
+    }
+    await testarNotificacao();
+    await enviarNotificacaoAlertas(true);
   }
 }
 
-function testarNotificacao(){
+
+async function mostrarNotificacao(titulo, opcoes){
   if(!("Notification" in window)){
     alert("Este navegador não suporta notificações.");
     return;
   }
+
   if(Notification.permission !== "granted"){
     alert("Clique primeiro em Ativar notificações.");
     return;
   }
-  new Notification("Dona Flor Gestão Financeira", {
+
+  try{
+    if("serviceWorker" in navigator){
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(titulo, opcoes);
+      return;
+    }
+  }catch(e){
+    console.warn("Falha no Service Worker:", e);
+  }
+
+  try{
+    new Notification(titulo, opcoes);
+  }catch(e){
+    alert("Não foi possível exibir a notificação neste navegador.");
+  }
+}
+
+async function testarNotificacao(){
+  await mostrarNotificacao("Dona Flor Gestão Financeira", {
     body: "Notificações ativadas com sucesso.",
-    icon: "/icon-192.png"
+    icon: "/icon-192.png",
+    badge: "/icon-192.png"
   });
 }
 
-function enviarNotificacaoAlertas(forcar=false){
+async function enviarNotificacaoAlertas(forcar=false){
   if(!("Notification" in window) || Notification.permission !== "granted") return;
   if(notificacaoJaEnviada && !forcar) return;
 
@@ -208,16 +233,21 @@ function enviarNotificacaoAlertas(forcar=false){
   let amanhaLista=base.filter(c=>c.vencimento===am);
 
   let totalQtd = vencidas.length + hojeLista.length + amanhaLista.length;
-  if(totalQtd === 0) return;
+  if(totalQtd === 0 && !forcar) return;
 
-  let msg = `${vencidas.length} vencidas • ${hojeLista.length} hoje • ${amanhaLista.length} amanhã`;
-  new Notification("Atenção financeira - Dona Flor", {
+  let msg = totalQtd === 0
+    ? "Tudo certo. Nenhuma conta vencida, para hoje ou amanhã."
+    : `${vencidas.length} vencidas • ${hojeLista.length} hoje • ${amanhaLista.length} amanhã`;
+
+  await mostrarNotificacao("Atenção financeira - Dona Flor", {
     body: msg,
     icon: "/icon-192.png",
     badge: "/icon-192.png"
   });
+
   notificacaoJaEnviada = true;
 }
+
 
 async function api(path,opts={}){const r=await fetch(URL+"/rest/v1/"+path,{...opts,headers:{...HEAD,...(opts.headers||{})}});const t=await r.text();const data=t?JSON.parse(t):null;if(!r.ok)throw new Error(data?.message||t||r.status);return data;}
 async function rpc(fn, body){return api("rpc/"+fn,{method:"POST",body:JSON.stringify(body)})}

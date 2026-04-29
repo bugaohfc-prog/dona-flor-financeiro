@@ -1,45 +1,97 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dona Flor Gestão Financeira</title>
-<link rel="manifest" href="/manifest.json"><link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dona Flor Gestão Financeira PRO</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <meta name="theme-color" content="#0FB9B1">
 <style>
-:root{--t:#0FB9B1;--d:#087A76;--bg:#f3f5f7;--red:#b91c1c;--green:#16a34a;--blue:#2563eb}
+:root{--t:#0FB9B1;--d:#087A76;--bg:#f3f5f7;--red:#b91c1c;--green:#16a34a;--blue:#2563eb;--orange:#f59e0b}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(180deg,#f7fafb,#eef3f5);color:#17202A}
-.container{max-width:1100px;margin:auto;padding:16px}.card{background:white;border-radius:22px;padding:20px;margin-bottom:16px;box-shadow:0 10px 30px rgba(15,23,42,.08)}
+.container{max-width:1120px;margin:auto;padding:16px}.card{background:#fff;border-radius:22px;padding:20px;margin-bottom:16px;box-shadow:0 10px 30px rgba(15,23,42,.08)}
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(circle at 50% 10%,rgba(15,185,177,.24),transparent 40%),linear-gradient(180deg,#f7fafb,#eaf0f3)}
-.login{width:100%;max-width:450px;text-align:center}.logo{width:105px;height:105px;border-radius:30px;margin:0 auto 14px;box-shadow:0 12px 26px rgba(10,143,138,.25)}
-h1{margin:0;color:var(--d);font-size:34px}.sub{color:#687385;margin-top:6px}input,select{width:100%;padding:14px;margin:7px 0;border-radius:14px;border:1px solid #D7DEE8;font-size:15px}
-button{padding:12px 15px;border:0;border-radius:14px;background:var(--d);color:white;font-weight:800;margin:4px;cursor:pointer}.btn-full{width:100%;margin-top:10px}.btn-light{background:#eef2f7;color:#111827}.btn-blue{background:var(--blue)}.btn-green{background:var(--green)}.btn-red{background:var(--red)}.btn-dark{background:#334155}
+.login{width:100%;max-width:460px;text-align:center}.logo{width:105px;height:105px;border-radius:30px;margin:0 auto 14px;box-shadow:0 12px 26px rgba(10,143,138,.25)}
+h1{margin:0;color:var(--d);font-size:32px}h2{margin-top:0}.sub{color:#687385;margin-top:6px}
+input,select,textarea{width:100%;padding:14px;margin:7px 0;border-radius:14px;border:1px solid #D7DEE8;font-size:15px;outline:none}textarea{min-height:85px}
+button{padding:12px 15px;border:0;border-radius:14px;background:var(--d);color:#fff;font-weight:800;margin:4px;cursor:pointer}.btn-full{width:100%;margin-top:10px}.btn-light{background:#eef2f7;color:#111827}.btn-blue{background:var(--blue)}.btn-green{background:var(--green)}.btn-red{background:var(--red)}.btn-dark{background:#334155}
 .erro{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px;border-radius:14px;margin-top:10px;display:none}.ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:10px;border-radius:14px;margin-top:10px}
-.grid{display:grid;grid-template-columns:1fr;gap:12px}.two{display:grid;grid-template-columns:1fr;gap:16px}.resumo{background:#E7FFFC;border-left:5px solid var(--t)}.alerta{background:#fff7ed;border-left:5px solid #F59E0B}.resumo strong,.alerta strong{font-size:22px}
-table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left}th{background:#f9fafb}.badge{display:inline-block;padding:4px 9px;border-radius:99px;background:#E7FFFC;color:var(--d);font-size:12px;font-weight:700}.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}#app{display:none}
-@media(min-width:760px){.grid{grid-template-columns:repeat(5,1fr)}.two{grid-template-columns:1fr 1fr}}@media print{.no-print{display:none!important}body{background:white}.card{box-shadow:none;border:1px solid #ddd}}
+.grid{display:grid;grid-template-columns:1fr;gap:12px}.two{display:grid;grid-template-columns:1fr;gap:16px}.resumo{background:#E7FFFC;border-left:5px solid var(--t)}.alerta{background:#fff7ed;border-left:5px solid var(--orange)}.resumo strong,.alerta strong{font-size:22px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:middle}th{background:#f9fafb}.badge{display:inline-block;padding:4px 9px;border-radius:99px;background:#E7FFFC;color:var(--d);font-size:12px;font-weight:700}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}#app{display:none}.chart{display:flex;gap:12px;align-items:end;height:260px;overflow:auto;border:1px solid #e5e7eb;border-radius:16px;padding:12px}.barwrap{min-width:125px;text-align:center;font-size:12px;color:#687385}.bar{width:46px;margin:auto;background:linear-gradient(180deg,var(--t),var(--d));border-radius:12px 12px 0 0}
+@media(min-width:760px){.grid{grid-template-columns:repeat(5,1fr)}.two{grid-template-columns:1fr 1fr}}@media print{.no-print{display:none!important}body{background:#fff}.card{box-shadow:none;border:1px solid #ddd}}
 </style>
 </head>
 <body>
-<div id="login" class="login-wrap"><div class="card login">
-<img src="/icon-512.png" class="logo"><h1>Dona Flor</h1><p class="sub">Gestão Financeira</p>
-<input id="user" placeholder="Usuário"><input id="pass" type="password" placeholder="Senha">
-<button class="btn-full" onclick="entrar()">Acessar sistema</button><button class="btn-light" onclick="alert('Login inicial: admin / admin123')">Esqueci minha senha</button>
-<div id="loginErro" class="erro"></div></div></div>
-<div id="app"><div class="container">
-<div class="card"><div class="row"><img src="/icon-512.png" style="width:70px;height:70px;border-radius:22px"><div><h1>Dona Flor Gestão Financeira</h1><p class="sub">Controle de contas a pagar</p></div></div><div class="ok no-print">Acesso ativo: <b id="userInfo"></b> <button class="btn-dark" onclick="sair()">Sair</button></div></div>
-<div class="grid"><div class="card resumo"><div>Total aberto</div><strong id="totalAberto">R$ 0,00</strong></div><div class="card resumo"><div>Pago no mês</div><strong id="pagoMes">R$ 0,00</strong></div><div class="card alerta"><div>Vencidas</div><strong id="vencidas">R$ 0,00</strong></div><div class="card alerta"><div>Vence hoje</div><strong id="venceHoje">R$ 0,00</strong></div><div class="card resumo"><div>Quantidade</div><strong id="quantidade">0</strong></div></div>
-<div class="two no-print"><div class="card"><h2>Lançamento de contas</h2><input id="desc" placeholder="Descrição"><input id="valor" inputmode="decimal" placeholder="Valor - Ex: 150,90"><input id="venc" type="date"><select id="centro"><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="status"><option>Aberto</option><option>Pago</option></select><button class="btn-full" onclick="salvarConta()">Salvar conta</button></div>
-<div class="card"><h2>Ações</h2><button class="btn-green" onclick="whatsapp()">WhatsApp rápido</button><button class="btn-blue" onclick="window.print()">Gerar PDF</button><button class="btn-dark" onclick="exportarCSV()">Exportar CSV</button><button class="btn-red" onclick="limparTudo()">Limpar dados</button><p class="sub">Login inicial: admin / admin123</p></div></div>
-<div class="card"><h2>Contas cadastradas</h2><div style="overflow:auto"><table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Centro</th><th>Status</th><th class="no-print">Ações</th></tr></thead><tbody id="tbody"></tbody></table></div></div>
-</div></div>
+<div id="login" class="login-wrap">
+  <div class="card login">
+    <img src="/icon-512.png" class="logo" alt="Dona Flor">
+    <h1>Dona Flor</h1><p class="sub">Gestão Financeira PRO</p>
+    <input id="user" placeholder="Usuário" autocomplete="username">
+    <input id="pass" type="password" placeholder="Senha" autocomplete="current-password">
+    <button class="btn-full" onclick="entrar()">Acessar sistema</button>
+    <button class="btn-light" onclick="recuperarSenha()">Esqueci minha senha</button>
+    <div id="loginErro" class="erro"></div>
+  </div>
+</div>
+<div id="app">
+  <div class="container">
+    <div class="card">
+      <div class="row"><img src="/icon-512.png" style="width:70px;height:70px;border-radius:22px"><div><h1>Dona Flor Gestão Financeira PRO</h1><p class="sub">Controle de contas a pagar na nuvem</p></div></div>
+      <div class="ok no-print">Usuário: <b id="userInfo"></b> <button class="btn-dark" onclick="sair()">Sair</button></div>
+    </div>
+    <div class="grid">
+      <div class="card resumo"><div>Total aberto</div><strong id="totalAberto">R$ 0,00</strong></div>
+      <div class="card resumo"><div>Pago no mês</div><strong id="pagoMes">R$ 0,00</strong></div>
+      <div class="card alerta"><div>Vencidas</div><strong id="vencidas">R$ 0,00</strong></div>
+      <div class="card alerta"><div>Vence hoje</div><strong id="venceHoje">R$ 0,00</strong></div>
+      <div class="card resumo"><div>Quantidade</div><strong id="quantidade">0</strong></div>
+    </div>
+    <div class="two no-print">
+      <div class="card">
+        <h2>Lançamento de contas</h2>
+        <input id="desc" placeholder="Descrição">
+        <input id="valor" inputmode="decimal" placeholder="Valor - Ex: 150,90">
+        <input id="venc" type="date">
+        <select id="centro"><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select>
+        <select id="status"><option>Aberto</option><option>Pago</option></select>
+        <textarea id="obs" placeholder="Observação"></textarea>
+        <button class="btn-full" onclick="salvarConta()">Salvar conta</button>
+      </div>
+      <div class="card">
+        <h2>Ações e relatórios</h2>
+        <button class="btn-green" onclick="whatsapp()">WhatsApp rápido</button>
+        <button class="btn-blue" onclick="window.print()">Gerar PDF</button>
+        <button class="btn-dark" onclick="exportarCSV()">Exportar CSV</button>
+        <button onclick="carregar()">Atualizar nuvem</button>
+        <p class="sub">Login inicial: admin / admin123</p>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Contas cadastradas</h2>
+      <div style="overflow:auto"><table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Centro</th><th>Status</th><th class="no-print">Ações</th></tr></thead><tbody id="tbody"></tbody></table></div>
+    </div>
+    <div class="card"><h2>Gráfico por centro de custo</h2><div id="grafico" class="chart"></div></div>
+  </div>
+</div>
 <script>
-const KC="df_contas_v8",KU="df_user_v8";let usuario=null;
-function moeda(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}function hoje(){return new Date().toISOString().slice(0,10)}function mesAno(d){return d?d.slice(0,7):""}function parseValor(v){return Number(String(v||"").replace(/[R$\s]/g,"").replace(/\./g,"").replace(",","."))}function contas(){return JSON.parse(localStorage.getItem(KC)||"[]")}function setContas(v){localStorage.setItem(KC,JSON.stringify(v))}
-function entrar(){const u=user.value.trim().toLowerCase(),s=pass.value.trim();if(u==="admin"&&s==="admin123"){usuario={nome:"Administrador"};localStorage.setItem(KU,JSON.stringify(usuario));abrir()}else{loginErro.style.display="block";loginErro.textContent="Credenciais inválidas. Use admin / admin123."}}
-function abrir(){login.style.display="none";app.style.display="block";userInfo.textContent=usuario.nome;render()}function sair(){localStorage.removeItem(KU);location.reload()}window.onload=()=>{const u=localStorage.getItem(KU);if(u){usuario=JSON.parse(u);abrir()}}
-function salvarConta(){const item={id:Date.now(),descricao:desc.value.trim(),valor:parseValor(valor.value),vencimento:venc.value||hoje(),centro:centro.value,status:status.value};if(!item.descricao||!item.valor){alert("Preencha descrição e valor.");return}const lista=contas();lista.push(item);setContas(lista);desc.value=valor.value=venc.value="";render()}
-function excluir(id){setContas(contas().filter(c=>c.id!==id));render()}function marcarPago(id){setContas(contas().map(c=>c.id===id?{...c,status:c.status==="Pago"?"Aberto":"Pago"}:c));render()}
-function render(){const lista=contas(),h=hoje(),m=mesAno(h);totalAberto.textContent=moeda(lista.filter(c=>c.status==="Aberto").reduce((s,c)=>s+c.valor,0));pagoMes.textContent=moeda(lista.filter(c=>c.status==="Pago"&&mesAno(c.vencimento)===m).reduce((s,c)=>s+c.valor,0));vencidas.textContent=moeda(lista.filter(c=>c.status==="Aberto"&&c.vencimento<h).reduce((s,c)=>s+c.valor,0));venceHoje.textContent=moeda(lista.filter(c=>c.status==="Aberto"&&c.vencimento===h).reduce((s,c)=>s+c.valor,0));quantidade.textContent=lista.length;tbody.innerHTML=lista.map(c=>`<tr><td>${c.descricao}</td><td>${moeda(c.valor)}</td><td>${c.vencimento}</td><td>${c.centro}</td><td><span class="badge">${c.status}</span></td><td class="no-print"><button class="btn-green" onclick="marcarPago(${c.id})">Pago/Aberto</button><button class="btn-red" onclick="excluir(${c.id})">Excluir</button></td></tr>`).join("")||'<tr><td colspan="6">Nenhuma conta cadastrada.</td></tr>'}
-function exportarCSV(){const linhas=[["Descrição","Valor","Vencimento","Centro","Status"],...contas().map(c=>[c.descricao,c.valor,c.vencimento,c.centro,c.status])];const csv=linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\\n");const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="contas-dona-flor.csv";a.click();URL.revokeObjectURL(url)}
-function whatsapp(){const lista=contas();const total=lista.filter(c=>c.status==="Aberto").reduce((s,c)=>s+c.valor,0);window.open("https://wa.me/?text="+encodeURIComponent(`Dona Flor Gestão Financeira\\nTotal em aberto: ${moeda(total)}\\nQuantidade: ${lista.length}`),"_blank")}function limparTudo(){if(confirm("Limpar todos os dados?")){localStorage.removeItem(KC);render()}}
+const URL="https://vyhjjtzdvofoqoericak.supabase.co";
+const KEY="sb_publishable_lC1mtt21iCdk-e6Kdf-3nw_5pdCPIcw";
+const HEAD={apikey:KEY,Authorization:"Bearer "+KEY,"Content-Type":"application/json"};
+let usuario=null, contas=[];
+const centros=["Dona Flor Andradina","Dona Flor Paranaíba","Dona Flor Três Lagoas","Brilho Dourado","Pessoal"];
+async function api(path,opts={}){const r=await fetch(URL+"/rest/v1/"+path,{...opts,headers:{...HEAD,...(opts.headers||{})}});const t=await r.text();const data=t?JSON.parse(t):null;if(!r.ok)throw new Error(data?.message||t||r.status);return data;}
+function moeda(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}function hoje(){return new Date().toISOString().slice(0,10)}function mesAno(d){return d?d.slice(0,7):""}function parseValor(v){return Number(String(v||"").replace(/[R$\s]/g,"").replace(/\./g,"").replace(",","."))}
+async function entrar(){const u=user.value.trim().toLowerCase(),s=pass.value.trim();loginErro.style.display="none";try{const dados=await api("df_usuarios?select=*");const achado=dados.find(x=>String(x.usuario).toLowerCase()===u&&String(x.senha)===s&&x.ativo===true);if(!achado){loginErro.style.display="block";loginErro.textContent="Credenciais inválidas.";return}usuario=achado;localStorage.setItem("df_user_pro",JSON.stringify(usuario));abrir();}catch(e){loginErro.style.display="block";loginErro.innerHTML="Erro ao conectar no Supabase:<br>"+e.message;}}
+function abrir(){login.style.display="none";app.style.display="block";userInfo.textContent=usuario.nome||usuario.usuario;carregar();}function sair(){localStorage.removeItem("df_user_pro");location.reload();}window.onload=()=>{const u=localStorage.getItem("df_user_pro");if(u){usuario=JSON.parse(u);abrir();}}
+async function carregar(){try{contas=await api("df_contas?select=*&order=vencimento.asc");render();}catch(e){alert("Erro ao carregar contas: "+e.message);}}
+async function salvarConta(){const item={descricao:desc.value.trim(),valor:parseValor(valor.value),vencimento:venc.value||hoje(),centro:centro.value,status:status.value,observacao:obs.value.trim(),criado_por:usuario.usuario};if(!item.descricao||!item.valor){alert("Preencha descrição e valor.");return}try{await api("df_contas",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(item)});desc.value=valor.value=venc.value=obs.value="";carregar();}catch(e){alert("Erro ao salvar: "+e.message);}}
+async function excluir(id){if(confirm("Excluir conta?")){await api("df_contas?id=eq."+id,{method:"DELETE"});carregar();}}async function marcarPago(id,statusAtual){await api("df_contas?id=eq."+id,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({status:statusAtual==="Pago"?"Aberto":"Pago"})});carregar();}
+function render(){const h=hoje(),m=mesAno(h);totalAberto.textContent=moeda(contas.filter(c=>c.status==="Aberto").reduce((s,c)=>s+Number(c.valor),0));pagoMes.textContent=moeda(contas.filter(c=>c.status==="Pago"&&mesAno(c.vencimento)===m).reduce((s,c)=>s+Number(c.valor),0));vencidas.textContent=moeda(contas.filter(c=>c.status==="Aberto"&&c.vencimento<h).reduce((s,c)=>s+Number(c.valor),0));venceHoje.textContent=moeda(contas.filter(c=>c.status==="Aberto"&&c.vencimento===h).reduce((s,c)=>s+Number(c.valor),0));quantidade.textContent=contas.length;tbody.innerHTML=contas.map(c=>`<tr><td>${c.descricao}</td><td>${moeda(c.valor)}</td><td>${c.vencimento}</td><td>${c.centro}</td><td><span class="badge">${c.status}</span></td><td class="no-print"><button class="btn-green" onclick="marcarPago('${c.id}','${c.status}')">Pago/Aberto</button><button class="btn-red" onclick="excluir('${c.id}')">Excluir</button></td></tr>`).join("")||'<tr><td colspan="6">Nenhuma conta cadastrada.</td></tr>';renderGrafico();}
+function renderGrafico(){const dados=centros.map(centro=>contas.filter(c=>c.centro===centro).reduce((s,c)=>s+Number(c.valor),0));const max=Math.max(...dados,1);grafico.innerHTML=centros.map((c,i)=>`<div class="barwrap"><div class="bar" style="height:${Math.max(6,(dados[i]/max)*220)}px"></div>${c}<br><b>${moeda(dados[i])}</b></div>`).join("");}
+function exportarCSV(){const linhas=[["Descrição","Valor","Vencimento","Centro","Status"],...contas.map(c=>[c.descricao,c.valor,c.vencimento,c.centro,c.status])];const csv=linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="contas-dona-flor.csv";a.click();URL.revokeObjectURL(url);}
+function whatsapp(){const total=contas.filter(c=>c.status==="Aberto").reduce((s,c)=>s+Number(c.valor),0);window.open("https://wa.me/?text="+encodeURIComponent(`Dona Flor Gestão Financeira PRO\nTotal em aberto: ${moeda(total)}\nQuantidade: ${contas.length}`),"_blank");}
+function recuperarSenha(){alert("Por enquanto, peça ao administrador para alterar a senha no Supabase.")}
 </script></body></html>

@@ -2,26 +2,29 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dona Flor Gestão Financeira PRO</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <meta name="theme-color" content="#0FB9B1">
 <style>
-:root{--t:#0FB9B1;--d:#087A76;--bg:#f3f5f7;--red:#b91c1c;--green:#16a34a;--blue:#2563eb;--orange:#f59e0b}
+:root{--t:#0FB9B1;--d:#087A76;--bg:#f3f5f7;--red:#b91c1c;--green:#16a34a;--blue:#2563eb;--orange:#f59e0b;--muted:#64748b}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:linear-gradient(180deg,#f7fafb,#eef3f5);color:#17202A}
-.container{max-width:1120px;margin:auto;padding:16px}.card{background:#fff;border-radius:22px;padding:20px;margin-bottom:16px;box-shadow:0 10px 30px rgba(15,23,42,.08)}
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(circle at 50% 10%,rgba(15,185,177,.24),transparent 40%),linear-gradient(180deg,#f7fafb,#eaf0f3)}
-.login{width:100%;max-width:460px;text-align:center}.logo{width:105px;height:105px;border-radius:30px;margin:0 auto 14px;box-shadow:0 12px 26px rgba(10,143,138,.25)}
-h1{margin:0;color:var(--d);font-size:32px}h2{margin-top:0}.sub{color:#687385;margin-top:6px}
+.container{max-width:1180px;margin:auto;padding:16px}.card{background:#fff;border-radius:22px;padding:20px;margin-bottom:16px;box-shadow:0 10px 30px rgba(15,23,42,.08);border:1px solid rgba(15,185,177,.10)}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(circle at 50% 10%,rgba(15,185,177,.25),transparent 40%),linear-gradient(180deg,#f7fafb,#eaf0f3)}
+.login{width:100%;max-width:470px;text-align:center}.logo{width:105px;height:105px;border-radius:30px;margin:0 auto 14px;box-shadow:0 12px 26px rgba(10,143,138,.25)}
+h1{margin:0;color:var(--d);font-size:32px}h2{margin-top:0}.sub{color:var(--muted);margin-top:6px}
 input,select,textarea{width:100%;padding:14px;margin:7px 0;border-radius:14px;border:1px solid #D7DEE8;font-size:15px;outline:none}textarea{min-height:85px}
-button{padding:12px 15px;border:0;border-radius:14px;background:var(--d);color:#fff;font-weight:800;margin:4px;cursor:pointer}.btn-full{width:100%;margin-top:10px}.btn-light{background:#eef2f7;color:#111827}.btn-blue{background:var(--blue)}.btn-green{background:var(--green)}.btn-red{background:var(--red)}.btn-dark{background:#334155}
+button{padding:12px 15px;border:0;border-radius:14px;background:var(--d);color:#fff;font-weight:800;margin:4px;cursor:pointer}.btn-full{width:100%;margin-top:10px}.btn-light{background:#eef2f7;color:#111827}.btn-blue{background:var(--blue)}.btn-green{background:var(--green)}.btn-red{background:var(--red)}.btn-dark{background:#334155}.btn-orange{background:var(--orange);color:#111827}.btn-small{font-size:12px;padding:8px 10px}
 .erro{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px;border-radius:14px;margin-top:10px;display:none}.ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:10px;border-radius:14px;margin-top:10px}
-.grid{display:grid;grid-template-columns:1fr;gap:12px}.two{display:grid;grid-template-columns:1fr;gap:16px}.resumo{background:#E7FFFC;border-left:5px solid var(--t)}.alerta{background:#fff7ed;border-left:5px solid var(--orange)}.resumo strong,.alerta strong{font-size:22px}
+.grid{display:grid;grid-template-columns:1fr;gap:12px}.two{display:grid;grid-template-columns:1fr;gap:16px}.three{display:grid;grid-template-columns:1fr;gap:12px}
+.resumo{background:#E7FFFC;border-left:5px solid var(--t)}.alerta{background:#fff7ed;border-left:5px solid var(--orange)}.recado{background:#fef2f2;border-left:5px solid #ef4444}.resumo strong,.alerta strong,.recado strong{font-size:22px}
 table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:middle}th{background:#f9fafb}.badge{display:inline-block;padding:4px 9px;border-radius:99px;background:#E7FFFC;color:var(--d);font-size:12px;font-weight:700}
-.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}#app{display:none}.chart{display:flex;gap:12px;align-items:end;height:260px;overflow:auto;border:1px solid #e5e7eb;border-radius:16px;padding:12px}.barwrap{min-width:125px;text-align:center;font-size:12px;color:#687385}.bar{width:46px;margin:auto;background:linear-gradient(180deg,var(--t),var(--d));border-radius:12px 12px 0 0}
-@media(min-width:760px){.grid{grid-template-columns:repeat(5,1fr)}.two{grid-template-columns:1fr 1fr}}@media print{.no-print{display:none!important}body{background:#fff}.card{box-shadow:none;border:1px solid #ddd}}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.item{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #e5e7eb;padding:11px 0}.item:last-child{border-bottom:0}
+#app,#usuarios{display:none}.chart{display:flex;gap:12px;align-items:end;height:260px;overflow:auto;border:1px solid #e5e7eb;border-radius:16px;padding:12px}.barwrap{min-width:125px;text-align:center;font-size:12px;color:#687385}.bar{width:46px;margin:auto;background:linear-gradient(180deg,var(--t),var(--d));border-radius:12px 12px 0 0}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:99;align-items:center;justify-content:center;padding:18px}.modal{background:#fff;border-radius:22px;padding:22px;max-width:540px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+@media(min-width:760px){.grid{grid-template-columns:repeat(6,1fr)}.two{grid-template-columns:1fr 1fr}.three{grid-template-columns:repeat(3,1fr)}}@media print{.no-print,.modal-bg{display:none!important}body{background:#fff}.card{box-shadow:none;border:1px solid #ddd}}
 </style>
 </head>
 <body>
@@ -32,66 +35,71 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px;bord
     <input id="user" placeholder="Usuário" autocomplete="username">
     <input id="pass" type="password" placeholder="Senha" autocomplete="current-password">
     <button class="btn-full" onclick="entrar()">Acessar sistema</button>
-    <button class="btn-light" onclick="recuperarSenha()">Esqueci minha senha</button>
+    <button class="btn-light" onclick="alert('Login inicial: admin / admin123')">Esqueci minha senha</button>
     <div id="loginErro" class="erro"></div>
   </div>
 </div>
+
 <div id="app">
-  <div class="container">
-    <div class="card">
-      <div class="row"><img src="/icon-512.png" style="width:70px;height:70px;border-radius:22px"><div><h1>Dona Flor Gestão Financeira PRO</h1><p class="sub">Controle de contas a pagar na nuvem</p></div></div>
-      <div class="ok no-print">Usuário: <b id="userInfo"></b> <button class="btn-dark" onclick="sair()">Sair</button></div>
-    </div>
+<div class="modal-bg no-print" id="modal"><div class="modal"><h2>Vencimentos de hoje</h2><p id="modalTexto"></p><div id="modalLista"></div><button onclick="fecharModal()">Fechar</button></div></div>
+<div class="container">
+  <div class="card">
+    <div class="row"><img src="/icon-512.png" style="width:70px;height:70px;border-radius:22px"><div><h1>Dona Flor Gestão Financeira PRO</h1><p class="sub">Controle de contas a pagar na nuvem</p></div></div>
+    <div class="ok no-print">Usuário: <b id="userInfo"></b> <button class="btn-dark" onclick="sair()">Sair</button></div>
+    <div class="row no-print" style="margin-top:8px"><button onclick="mostrarPainel()">Painel</button><button class="btn-blue" onclick="window.print()">PDF</button><button class="btn-dark" onclick="exportarCSV()">CSV</button><button class="btn-green" onclick="whatsapp()">WhatsApp</button><button id="btnUsers" class="btn-orange" onclick="mostrarUsuarios()">Gestão de usuários</button></div>
+  </div>
+
+  <div id="painel">
     <div class="grid">
       <div class="card resumo"><div>Total aberto</div><strong id="totalAberto">R$ 0,00</strong></div>
       <div class="card resumo"><div>Pago no mês</div><strong id="pagoMes">R$ 0,00</strong></div>
       <div class="card alerta"><div>Vencidas</div><strong id="vencidas">R$ 0,00</strong></div>
       <div class="card alerta"><div>Vence hoje</div><strong id="venceHoje">R$ 0,00</strong></div>
+      <div class="card recado"><div>Lembretes hoje</div><strong id="lembretesHoje">0</strong></div>
       <div class="card resumo"><div>Quantidade</div><strong id="quantidade">0</strong></div>
     </div>
+
     <div class="two no-print">
-      <div class="card">
-        <h2>Lançamento de contas</h2>
-        <input id="desc" placeholder="Descrição">
-        <input id="valor" inputmode="decimal" placeholder="Valor - Ex: 150,90">
-        <input id="venc" type="date">
-        <select id="centro"><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select>
-        <select id="status"><option>Aberto</option><option>Pago</option></select>
-        <textarea id="obs" placeholder="Observação"></textarea>
-        <button class="btn-full" onclick="salvarConta()">Salvar conta</button>
-      </div>
-      <div class="card">
-        <h2>Ações e relatórios</h2>
-        <button class="btn-green" onclick="whatsapp()">WhatsApp rápido</button>
-        <button class="btn-blue" onclick="window.print()">Gerar PDF</button>
-        <button class="btn-dark" onclick="exportarCSV()">Exportar CSV</button>
-        <button onclick="carregar()">Atualizar nuvem</button>
-        <p class="sub">Login inicial: admin / admin123</p>
-      </div>
+      <div class="card"><h2>Lançamento de contas</h2><input id="desc" placeholder="Descrição"><input id="valor" inputmode="decimal" placeholder="Valor - Ex: 150,90"><input id="venc" type="date"><select id="centro"><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="status"><option>Aberto</option><option>Pago</option></select><textarea id="obs" placeholder="Observação"></textarea><button class="btn-full" onclick="salvarConta()">Salvar conta</button></div>
+      <div class="card"><h2>Bloco de notas / lembretes</h2><input id="ntitulo" placeholder="Título"><textarea id="ntexto" placeholder="Recado"></textarea><input id="ndata" type="date"><select id="nprio"><option>Normal</option><option>Urgente</option></select><select id="nloja"><option value="">Todas as lojas</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><button class="btn-full" onclick="salvarNota()">Salvar lembrete</button></div>
     </div>
-    <div class="card">
-      <h2>Contas cadastradas</h2>
-      <div style="overflow:auto"><table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Centro</th><th>Status</th><th class="no-print">Ações</th></tr></thead><tbody id="tbody"></tbody></table></div>
-    </div>
+
+    <div class="card"><h2>Contas cadastradas</h2><div class="row no-print"><select id="fCentro" onchange="render()"><option value="">Todos os centros</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="fStatus" onchange="render()"><option value="">Todos os status</option><option>Aberto</option><option>Pago</option></select></div><div style="overflow:auto"><table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Centro</th><th>Status</th><th class="no-print">Ações</th></tr></thead><tbody id="tbody"></tbody></table></div></div>
+    <div class="card"><h2>Recados e lembretes</h2><div id="notasLista"></div></div>
     <div class="card"><h2>Gráfico por centro de custo</h2><div id="grafico" class="chart"></div></div>
   </div>
+
+  <div id="usuarios">
+    <div class="card"><h2>Gestão de usuários</h2><div class="three"><input id="unome" placeholder="Nome"><input id="uusuario" placeholder="Usuário"><input id="usenha" placeholder="Senha"></div><div class="three"><select id="utipo"><option value="gerente">Gerente</option><option value="admin">Admin</option></select><select id="uloja"><option value="">Todas/Admin</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="upagar"><option value="true">Pode marcar pago</option><option value="false">Só visualiza</option></select></div><button onclick="salvarUsuario()">Salvar usuário</button><button class="btn-dark" onclick="mostrarPainel()">Voltar</button></div>
+    <div class="card"><h2>Usuários cadastrados</h2><div id="usuariosLista"></div></div>
+  </div>
 </div>
+</div>
+
 <script>
 const URL="https://vyhjjtzdvofoqoericak.supabase.co";
 const KEY="sb_publishable_lC1mtt21iCdk-e6Kdf-3nw_5pdCPIcw";
 const HEAD={apikey:KEY,Authorization:"Bearer "+KEY,"Content-Type":"application/json"};
-let usuario=null, contas=[];
+let usuario=null, contas=[], notas=[], usuarios=[];
 const centros=["Dona Flor Andradina","Dona Flor Paranaíba","Dona Flor Três Lagoas","Brilho Dourado","Pessoal"];
 async function api(path,opts={}){const r=await fetch(URL+"/rest/v1/"+path,{...opts,headers:{...HEAD,...(opts.headers||{})}});const t=await r.text();const data=t?JSON.parse(t):null;if(!r.ok)throw new Error(data?.message||t||r.status);return data;}
-function moeda(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}function hoje(){return new Date().toISOString().slice(0,10)}function mesAno(d){return d?d.slice(0,7):""}function parseValor(v){return Number(String(v||"").replace(/[R$\s]/g,"").replace(/\./g,"").replace(",","."))}
-async function entrar(){const u=user.value.trim().toLowerCase(),s=pass.value.trim();loginErro.style.display="none";try{const dados=await api("df_usuarios?select=*");const achado=dados.find(x=>String(x.usuario).toLowerCase()===u&&String(x.senha)===s&&x.ativo===true);if(!achado){loginErro.style.display="block";loginErro.textContent="Credenciais inválidas.";return}usuario=achado;localStorage.setItem("df_user_pro",JSON.stringify(usuario));abrir();}catch(e){loginErro.style.display="block";loginErro.innerHTML="Erro ao conectar no Supabase:<br>"+e.message;}}
-function abrir(){login.style.display="none";app.style.display="block";userInfo.textContent=usuario.nome||usuario.usuario;carregar();}function sair(){localStorage.removeItem("df_user_pro");location.reload();}window.onload=()=>{const u=localStorage.getItem("df_user_pro");if(u){usuario=JSON.parse(u);abrir();}}
-async function carregar(){try{contas=await api("df_contas?select=*&order=vencimento.asc");render();}catch(e){alert("Erro ao carregar contas: "+e.message);}}
-async function salvarConta(){const item={descricao:desc.value.trim(),valor:parseValor(valor.value),vencimento:venc.value||hoje(),centro:centro.value,status:status.value,observacao:obs.value.trim(),criado_por:usuario.usuario};if(!item.descricao||!item.valor){alert("Preencha descrição e valor.");return}try{await api("df_contas",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(item)});desc.value=valor.value=venc.value=obs.value="";carregar();}catch(e){alert("Erro ao salvar: "+e.message);}}
-async function excluir(id){if(confirm("Excluir conta?")){await api("df_contas?id=eq."+id,{method:"DELETE"});carregar();}}async function marcarPago(id,statusAtual){await api("df_contas?id=eq."+id,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({status:statusAtual==="Pago"?"Aberto":"Pago"})});carregar();}
-function render(){const h=hoje(),m=mesAno(h);totalAberto.textContent=moeda(contas.filter(c=>c.status==="Aberto").reduce((s,c)=>s+Number(c.valor),0));pagoMes.textContent=moeda(contas.filter(c=>c.status==="Pago"&&mesAno(c.vencimento)===m).reduce((s,c)=>s+Number(c.valor),0));vencidas.textContent=moeda(contas.filter(c=>c.status==="Aberto"&&c.vencimento<h).reduce((s,c)=>s+Number(c.valor),0));venceHoje.textContent=moeda(contas.filter(c=>c.status==="Aberto"&&c.vencimento===h).reduce((s,c)=>s+Number(c.valor),0));quantidade.textContent=contas.length;tbody.innerHTML=contas.map(c=>`<tr><td>${c.descricao}</td><td>${moeda(c.valor)}</td><td>${c.vencimento}</td><td>${c.centro}</td><td><span class="badge">${c.status}</span></td><td class="no-print"><button class="btn-green" onclick="marcarPago('${c.id}','${c.status}')">Pago/Aberto</button><button class="btn-red" onclick="excluir('${c.id}')">Excluir</button></td></tr>`).join("")||'<tr><td colspan="6">Nenhuma conta cadastrada.</td></tr>';renderGrafico();}
-function renderGrafico(){const dados=centros.map(centro=>contas.filter(c=>c.centro===centro).reduce((s,c)=>s+Number(c.valor),0));const max=Math.max(...dados,1);grafico.innerHTML=centros.map((c,i)=>`<div class="barwrap"><div class="bar" style="height:${Math.max(6,(dados[i]/max)*220)}px"></div>${c}<br><b>${moeda(dados[i])}</b></div>`).join("");}
-function exportarCSV(){const linhas=[["Descrição","Valor","Vencimento","Centro","Status"],...contas.map(c=>[c.descricao,c.valor,c.vencimento,c.centro,c.status])];const csv=linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="contas-dona-flor.csv";a.click();URL.revokeObjectURL(url);}
-function whatsapp(){const total=contas.filter(c=>c.status==="Aberto").reduce((s,c)=>s+Number(c.valor),0);window.open("https://wa.me/?text="+encodeURIComponent(`Dona Flor Gestão Financeira PRO\nTotal em aberto: ${moeda(total)}\nQuantidade: ${contas.length}`),"_blank");}
-function recuperarSenha(){alert("Por enquanto, peça ao administrador para alterar a senha no Supabase.")}
-</script></body></html>
+function moeda(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}function hoje(){return new Date().toISOString().slice(0,10)}function mesAno(d){return d?d.slice(0,7):""}function parseValor(v){return Number(String(v||"").replace(/[R$\s]/g,"").replace(/\./g,"").replace(",","."))}function isAdmin(){return String(usuario?.tipo||"").toLowerCase()==="admin"}function visContas(){return isAdmin()?contas:contas.filter(c=>c.centro===usuario.loja)}function visNotas(){return isAdmin()?notas:notas.filter(n=>!n.loja||n.loja===usuario.loja)}
+
+async function entrar(){const u=user.value.trim().toLowerCase(),s=pass.value.trim();loginErro.style.display="none";try{const dados=await api("df_usuarios?select=*");const achado=dados.find(x=>String(x.usuario).toLowerCase()===u&&String(x.senha)===s&&x.ativo===true);if(!achado){loginErro.style.display="block";loginErro.textContent="Credenciais inválidas.";return}usuario=achado;localStorage.setItem("df_user_v10",JSON.stringify(usuario));abrir();}catch(e){loginErro.style.display="block";loginErro.innerHTML="Erro ao conectar:<br>"+e.message;}}
+function abrir(){login.style.display="none";app.style.display="block";userInfo.textContent=usuario.nome||usuario.usuario;btnUsers.style.display=isAdmin()?"":"none";carregar();}function sair(){localStorage.removeItem("df_user_v10");location.reload();}window.onload=()=>{const u=localStorage.getItem("df_user_v10");if(u){usuario=JSON.parse(u);abrir();}}
+async function carregar(){contas=await api("df_contas?select=*&order=vencimento.asc");notas=await api("df_notas?select=*&order=data_lembrete.asc");usuarios=await api("df_usuarios?select=*&order=nome.asc");render();renderUsuarios();setTimeout(mostrarPopup,300);}
+function mostrarPainel(){painel.style.display="block";usuarios.style.display="none"}function mostrarUsuarios(){painel.style.display="none";usuarios.style.display="block";renderUsuarios();}
+function mostrarPopup(){let h=hoje(),items=visContas().filter(c=>c.status==="Aberto"&&c.vencimento===h),total=items.reduce((s,c)=>s+Number(c.valor),0);modalTexto.innerHTML="Total vencendo hoje: <b>"+moeda(total)+"</b>";modalLista.innerHTML=items.length?items.map(c=>'<div class="item"><div><b>'+c.descricao+'</b><br>'+c.centro+'</div><b>'+moeda(c.valor)+'</b></div>').join(""):"Nenhuma conta vencendo hoje.";modal.style.display="flex"}function fecharModal(){modal.style.display="none"}
+async function salvarConta(){let item={descricao:desc.value.trim(),valor:parseValor(valor.value),vencimento:venc.value||hoje(),centro:centro.value,status:status.value,observacao:obs.value.trim(),criado_por:usuario.usuario};if(!item.descricao||!item.valor){alert("Preencha descrição e valor.");return}await api("df_contas",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(item)});desc.value=valor.value=venc.value=obs.value="";carregar();}
+async function excluir(id){if(confirm("Excluir conta?")){await api("df_contas?id=eq."+id,{method:"DELETE"});carregar();}}async function marcarPago(id,statusAtual){await api("df_contas?id=eq."+id,{method:"PATCH",headers:{Prefer:"return:minimal"},body:JSON.stringify({status:statusAtual==="Pago"?"Aberto":"Pago"})});carregar();}
+async function salvarNota(){let item={titulo:ntitulo.value||"Sem título",texto:ntexto.value,data_lembrete:ndata.value||null,prioridade:nprio.value,loja:nloja.value||null,criado_por:usuario.usuario};await api("df_notas",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(item)});ntitulo.value=ntexto.value=ndata.value="";nloja.value="";carregar();}
+function render(){let base=visContas(),h=hoje(),m=mesAno(h),fc=fCentro.value,fs=fStatus.value;totalAberto.textContent=moeda(base.filter(c=>c.status==="Aberto").reduce((s,c)=>s+Number(c.valor),0));pagoMes.textContent=moeda(base.filter(c=>c.status==="Pago"&&mesAno(c.vencimento)===m).reduce((s,c)=>s+Number(c.valor),0));vencidas.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento<h).reduce((s,c)=>s+Number(c.valor),0));venceHoje.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento===h).reduce((s,c)=>s+Number(c.valor),0));lembretesHoje.textContent=visNotas().filter(n=>n.data_lembrete===h).length;quantidade.textContent=base.length;let filtrada=base.filter(c=>(!fc||c.centro===fc)&&(!fs||c.status===fs));tbody.innerHTML=filtrada.map(c=>`<tr><td>${c.descricao}</td><td>${moeda(c.valor)}</td><td>${c.vencimento}</td><td>${c.centro}</td><td><span class="badge">${c.status}</span></td><td class="no-print"><button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">Pago/Aberto</button><button class="btn-red btn-small" onclick="excluir('${c.id}')">Excluir</button></td></tr>`).join("")||'<tr><td colspan="6">Nenhuma conta cadastrada.</td></tr>';renderNotas();renderGrafico(base);}
+function renderNotas(){notasLista.innerHTML=visNotas().map(n=>'<div class="item"><div><b>'+n.titulo+'</b><br>'+(n.texto||'')+'<br><span class="sub">'+(n.data_lembrete||"Sem data")+(n.loja?" • "+n.loja:"")+'</span></div><span class="badge">'+n.prioridade+'</span></div>').join("")||"<p>Nenhum lembrete.</p>"}
+function renderGrafico(base){let dados=centros.map(centro=>base.filter(c=>c.centro===centro).reduce((s,c)=>s+Number(c.valor),0));let max=Math.max(...dados,1);grafico.innerHTML=centros.map((c,i)=>`<div class="barwrap"><div class="bar" style="height:${Math.max(6,(dados[i]/max)*220)}px"></div>${c}<br><b>${moeda(dados[i])}</b></div>`).join("");}
+async function salvarUsuario(){if(!isAdmin())return;let item={nome:unome.value,usuario:uusuario.value.trim().toLowerCase(),senha:usenha.value,tipo:utipo.value,loja:uloja.value||null,pode_pagar:upagar.value==="true",ativo:true};if(!item.nome||!item.usuario||!item.senha){alert("Preencha nome, usuário e senha.");return}await api("df_usuarios",{method:"POST",headers:{Prefer:"return:minimal"},body:JSON.stringify(item)});unome.value=uusuario.value=usenha.value="";carregar();}
+function renderUsuarios(){if(!isAdmin())return;usuariosLista.innerHTML=usuarios.map(u=>'<div class="item"><div><b>'+u.nome+'</b><br><span class="sub">'+u.usuario+' • '+u.tipo+' • '+(u.loja||"Todas")+'</span></div><span class="badge">'+(u.ativo?"Ativo":"Inativo")+'</span></div>').join("")}
+function exportarCSV(){let linhas=[["Descrição","Valor","Vencimento","Centro","Status"],...visContas().map(c=>[c.descricao,c.valor,c.vencimento,c.centro,c.status])];let csv=linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");let blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="contas-dona-flor.csv";a.click();URL.revokeObjectURL(url);}
+function whatsapp(){let total=visContas().filter(c=>c.status==="Aberto").reduce((s,c)=>s+Number(c.valor),0);window.open("https://wa.me/?text="+encodeURIComponent(`Dona Flor Gestão Financeira\nTotal em aberto: ${moeda(total)}\nQuantidade: ${visContas().length}`),"_blank");}
+</script>
+</body>
+</html>

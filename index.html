@@ -209,6 +209,30 @@ table{min-width:760px}
 /* V18 E-mail */
 .email-preview{background:#F8FAFC;border:1px dashed #CBD5E1;border-radius:14px;padding:12px;margin-top:10px;white-space:pre-wrap;font-size:13px;color:#334155;max-height:220px;overflow:auto}
 
+
+/* V18.1 Menu profissional recolhível */
+.sidebar{transition:width .2s ease;overflow:hidden}
+.sidebar.collapsed{width:74px}
+.sidebar.collapsed .brand div,
+.sidebar.collapsed .side-text,
+.sidebar.collapsed .side-spacer{display:none}
+.sidebar.collapsed .brand{justify-content:center}
+.sidebar.collapsed .side-btn{justify-content:center}
+.sidebar.collapsed .side-btn span:first-child{font-size:20px}
+.sidebar-toggle{width:100%;background:#F1F5F9;color:#0F172A;margin-top:10px}
+.sidebar.collapsed .sidebar-toggle{font-size:0}
+.sidebar.collapsed .sidebar-toggle:after{content:"☰";font-size:18px}
+.top-user-wrap{display:flex;align-items:center;gap:8px}
+.top-user-wrap .config-btn{width:34px;height:34px;font-size:16px}
+.config-power{background:#ECFDF5;border-color:#A7F3D0}
+.power-url-input{font-size:12px}
+@media(min-width:900px){
+  .app-shell.sidebar-collapsed{grid-template-columns:74px 1fr}
+}
+@media(max-width:899px){
+  .sidebar-toggle{display:none}
+}
+
 </style>
 </head>
 <body>
@@ -257,6 +281,18 @@ table{min-width:760px}
       <div id="emailPreview" class="email-preview" style="display:none"></div>
     </div>
 
+
+    <div class="config-option config-power">
+      <strong>⚡ Envio automático via Power Automate</strong>
+      <span class="sub">Cole aqui a URL do fluxo do Power Automate quando estiver pronta. Depois o sistema poderá enviar o resumo sem abrir o Outlook.</span>
+      <input id="powerUrl" class="power-url-input" placeholder="URL do Power Automate">
+      <div class="config-actions">
+        <button class="btn-green btn-small" onclick="salvarPowerUrl()">Salvar URL</button>
+        <button class="btn-blue btn-small" onclick="enviarResumoPowerAutomate()">Enviar automático</button>
+      </div>
+      <div id="powerStatus" class="notify-status"></div>
+    </div>
+
     <div class="config-option">
       <strong>📱 Aplicativo</strong>
       <span class="sub">Para atualizar ícone/layout no celular, remova e adicione novamente à tela inicial.</span>
@@ -268,19 +304,19 @@ table{min-width:760px}
   </div>
 </div>
 
-<div class="app-shell">
+<div id="appShell" class="app-shell">
   <aside class="sidebar no-print">
     <div class="brand"><img src="/icon-512.png"><div><strong>Dona Flor</strong><br><span class="sub">Gestão Financeira</span></div></div>
     <button id="sidePainel" class="side-btn active" onclick="mostrarPainel();setActiveMenu(this)">📊 Painel</button>
     <button id="sideUsuarios" class="side-btn" onclick="mostrarUsuarios();setActiveMenu(this)">👥 Gestão de usuários</button>
     <div class="side-spacer"></div>
-    <button class="side-btn" onclick="sair()">↩ Sair</button>
+    <button id="sideConfig" class="side-btn" onclick="abrirConfiguracoes()"><span>⚙️</span><span class="side-text">Configurações</span></button><button class="sidebar-toggle" onclick="alternarMenu()">Recolher menu</button><button class="side-btn" onclick="sair()"><span>↩</span><span class="side-text">Sair</span></button>
   </aside>
   <main>
     <div class="topbar no-print">
       <div class="topbar-inner">
         <div class="topbar-title"><img src="/icon-512.png"><span>Dona Flor Gestão Financeira</span></div>
-        <button class="config-btn" onclick="abrirConfiguracoes()" title="Configurações">⚙️</button><div class="user-pill" id="userInfo">Admin</div>
+        <div class="top-user-wrap"><div class="user-pill" id="userInfo">Admin</div><button class="config-btn" onclick="abrirConfiguracoes()" title="Configurações">⚙️</button></div>
       </div>
     </div>
 
@@ -442,9 +478,62 @@ async function enviarNotificacaoAlertas(forcar=false){
 
 
 
+
+function alternarMenu(){
+  const side = document.querySelector('.sidebar');
+  side.classList.toggle('collapsed');
+  appShell.classList.toggle('sidebar-collapsed');
+  localStorage.setItem('df_menu_collapsed', side.classList.contains('collapsed') ? '1' : '0');
+}
+function aplicarMenuSalvo(){
+  if(localStorage.getItem('df_menu_collapsed') === '1'){
+    const side = document.querySelector('.sidebar');
+    if(side){
+      side.classList.add('collapsed');
+      appShell.classList.add('sidebar-collapsed');
+    }
+  }
+}
+function salvarPowerUrl(){
+  localStorage.setItem('df_power_url', powerUrl.value.trim());
+  powerStatus.textContent = powerUrl.value.trim() ? 'URL salva com sucesso.' : 'URL removida.';
+}
+function carregarPowerUrl(){
+  if(typeof powerUrl !== 'undefined'){
+    powerUrl.value = localStorage.getItem('df_power_url') || '';
+  }
+}
+async function enviarResumoPowerAutomate(){
+  const url = localStorage.getItem('df_power_url') || (typeof powerUrl !== 'undefined' ? powerUrl.value.trim() : '');
+  if(!url){
+    alert('Cole primeiro a URL do fluxo do Power Automate.');
+    return;
+  }
+  try{
+    const resumo = montarResumoEmail();
+    const resp = await fetch(url, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        para: EMAIL_DESTINO_PADRAO,
+        assunto: 'Resumo financeiro - Dona Flor',
+        corpo: resumo,
+        geradoEm: new Date().toISOString()
+      })
+    });
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    powerStatus.textContent = 'Resumo enviado automaticamente.';
+    alert('Resumo enviado pelo Power Automate.');
+  }catch(e){
+    powerStatus.textContent = 'Falha no envio automático: '+e.message;
+    alert('Não foi possível enviar automaticamente: '+e.message);
+  }
+}
+
 function abrirConfiguracoes(){
   configModal.style.display="flex";
   atualizarStatusNotificacao();
+  carregarPowerUrl();
   if(typeof configUsuarioInfo !== "undefined" && usuarioLogado){
     configUsuarioInfo.textContent = (usuarioLogado.nome||usuarioLogado.usuario) + " • " + (usuarioLogado.tipo||"") + (usuarioLogado.loja ? " • " + usuarioLogado.loja : "");
   }
@@ -472,7 +561,7 @@ function mostrarPainel(){painel.style.display="block";telaUsuarios.style.display
 function mostrarUsuarios(){if(!isAdmin())return;painel.style.display="none";telaUsuarios.style.display="block";sideUsuarios.classList.add("active");sidePainel.classList.remove("active");navUsuarios.classList.add("active");navPainel.classList.remove("active");renderUsuarios();}
 
 async function salvarConta(){let item={descricao:primeiraMaiuscula(desc.value),valor:parseValor(valor.value),vencimento:venc.value||hoje(),centro:centro.value,status:status.value,observacao:primeiraMaiuscula(obs.value),criado_por:usuarioLogado.usuario};if(!item.descricao||!item.valor){alert("Preencha descrição e valor.");return}await api("df_contas",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(item)});desc.value=valor.value=venc.value=obs.value="";carregar();}
-async function excluir(id){if(!isAdmin())return alert("Apenas admin pode excluir.");if(confirm("Excluir conta?")){await api("df_contas?id=eq."+id,{method:"DELETE"});carregar();}}
+async function excluir(id){if(!isAdmin())return alert("Apenas admin pode excluir.");if(confirm("Excluir conta?")){await api("df_contas?id=eq."+id,{method:"DELETE"});aplicarMenuSalvo();carregar();}}
 async function marcarPago(id,statusAtual){if(!canPay())return alert("Usuário sem permissão para marcar pagamento.");await api("df_contas?id=eq."+id,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({status:statusAtual==="Pago"?"Aberto":"Pago"})});carregar();}
 async function salvarNota(){let item={titulo:primeiraMaiuscula(ntitulo.value)||"Sem título",texto:primeiraMaiuscula(ntexto.value),data_lembrete:ndata.value||null,prioridade:nprio.value,loja:nloja.value||null,criado_por:usuarioLogado.usuario};await api("df_notas",{method:"POST",headers:{Prefer:"return:minimal"},body:JSON.stringify(item)});ntitulo.value=ntexto.value=ndata.value="";nloja.value="";carregar();}
 

@@ -378,129 +378,8 @@ table{min-width:760px}
 }
 
 
-/* V18.7.2 Completa Corrigida - patch seguro */
-.config-option:has(#webhookUrl) input,
-#webhookUrl{
-  font-size:12px;
-}
-
-.user-menu-btn{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-}
-.user-menu-btn span + span,
-.user-menu-btn::after{
-  content:"";
-}
-@media(max-width:899px){
-  .top-user-wrap{
-    display:none!important;
-  }
-  .topbar-title span{
-    max-width:calc(100vw - 135px)!important;
-  }
-}
-
-/* Submenu estável do menu lateral */
-.side-section-label{
-  display:none!important;
-}
-.side-sub-safe-label{
-  font-size:11px;
-  font-weight:900;
-  text-transform:uppercase;
-  color:#94A3B8;
-  margin:14px 8px 6px;
-  letter-spacing:.06em;
-}
-.side-btn.subitem{
-  padding-left:42px!important;
-  min-height:38px!important;
-  font-size:13px!important;
-  background:transparent!important;
-}
-.side-btn.subitem:hover{
-  background:#F1F5F9!important;
-}
-
-/* Botão topo */
-.btn-topo{
-  display:none;
-  position:fixed;
-  right:18px;
-  bottom:18px;
-  width:48px;
-  height:48px;
-  border-radius:999px;
-  background:var(--principal);
-  color:white;
-  box-shadow:0 12px 30px rgba(15,23,42,.25);
-  z-index:700;
-  font-size:22px;
-  padding:0;
-}
-.btn-topo.show{display:flex;align-items:center;justify-content:center}
-
-/* Cards e botões de contas */
-.action-row,
-.mobile-account-actions{
-  gap:8px;
-}
-.status-chip{
-  display:inline-flex;
-  align-items:center;
-  gap:5px;
-  border-radius:999px;
-  padding:5px 10px;
-  font-size:12px;
-  font-weight:800;
-}
-.status-aberto{background:#fef3c7;color:#92400e}
-.status-pago{background:#dcfce7;color:#166534}
-.status-vencido{background:#fee2e2;color:#991b1b}
-
-/* Notas */
-.note-actions{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:10px;
-}
-.note-actions button{
-  font-size:12px;
-  padding:8px 10px;
-}
-.priority-normal{background:#e0f2fe!important;color:#075985!important}
-.priority-importante{background:#fef3c7!important;color:#92400e!important}
-.priority-urgente{background:#fee2e2!important;color:#991b1b!important}
-
-/* Gráfico horizontal melhorado sem quebrar o original */
-.center-summary{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-  margin-bottom:12px;
-}
-.center-summary .mini{
-  background:#F8FAFC;
-  border:1px solid #E2E8F0;
-  border-radius:14px;
-  padding:12px;
-  font-weight:800;
-}
-.hbar-list{display:flex;flex-direction:column;gap:10px}
-.hbar-row{display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center;cursor:pointer}
-.hbar-track{height:18px;background:#E2E8F0;border-radius:999px;overflow:hidden}
-.hbar-fill{height:100%;background:linear-gradient(90deg,#0f766e,#14b8a6);border-radius:999px;min-width:4px}
-.hbar-row.max .hbar-fill{background:linear-gradient(90deg,#b91c1c,#ef4444)}
-.hbar-name{font-size:13px;font-weight:800;color:#334155}
-.hbar-value{font-size:13px;font-weight:900;text-align:right}
-@media(max-width:899px){
-  .center-summary{grid-template-columns:1fr}
-  .hbar-row{grid-template-columns:1fr;gap:5px}
-  .hbar-value{text-align:left}
-}
+/* V18.6.2 estável real */
+.side-submenu{display:none;margin:0 0 8px 0}.side-submenu.open{display:block}.side-btn.subitem{min-height:38px!important;padding-left:42px!important;font-size:13px!important;background:transparent!important}.side-btn.subitem:hover{background:#F1F5F9!important}.side-arrow{margin-left:auto}.sidebar.collapsed .side-submenu{display:none!important}.sidebar.collapsed .side-arrow{display:none!important}.config-option:has(#webhookUrl) input,#webhookUrl{font-size:12px}.btn-topo{display:none;position:fixed;right:18px;bottom:18px;width:48px;height:48px;border-radius:999px;background:var(--principal);color:white;box-shadow:0 12px 30px rgba(15,23,42,.25);z-index:700;font-size:22px;padding:0}.btn-topo.show{display:flex;align-items:center;justify-content:center}@media(max-width:899px){.top-user-wrap{display:none!important}.topbar-title span{max-width:calc(100vw - 135px)!important}.nav-mobile{display:none!important}.sidebar.mobile-open{left:0!important}.mobile-sidebar-overlay.open{display:block!important}}
 
 </style>
 </head>
@@ -563,9 +442,14 @@ table{min-width:760px}
       <span class="side-icon">☰</span><span class="side-text">Recolher menu</span>
     </button>
 
-    <button id="sidePainel" class="side-btn active" onclick="mostrarPainel()">
-      <span class="side-icon">📊</span><span class="side-text">Painel</span>
+    <button id="sidePainel" class="side-btn active" onclick="mostrarPainel();togglePainelSubmenu(event)">
+      <span class="side-icon">📊</span><span class="side-text">Painel</span><span class="side-arrow side-text">▾</span>
     </button>
+    <div id="painelSubmenu" class="side-submenu open">
+      <button class="side-btn subitem" onclick="irParaSecao('atalhoContas')"><span class="side-icon">📄</span><span class="side-text">Contas a pagar</span></button>
+      <button class="side-btn subitem" onclick="irParaSecao('atalhoLancamento')"><span class="side-icon">➕</span><span class="side-text">Lançamento</span></button>
+      <button class="side-btn subitem" onclick="irParaSecao('atalhoLembrete')"><span class="side-icon">📝</span><span class="side-text">Lembretes</span></button>
+    </div>
 
     <button id="sideUsuarios" class="side-btn" onclick="mostrarUsuarios()">
       <span class="side-icon">👥</span><span class="side-text">Gestão de usuários</span>
@@ -573,17 +457,6 @@ table{min-width:760px}
 
     <button id="sideConfig" class="side-btn" onclick="abrirConfiguracoes()">
       <span class="side-icon">⚙️</span><span class="side-text">Configurações</span>
-    </button>
-
-    <div id="sideAtalhos" class="side-section-label side-text">Atalhos</div>
-    <button class="side-btn" onclick="irParaSecao('atalhoContas')">
-      <span class="side-icon">📄</span><span class="side-text">Contas a pagar</span>
-    </button>
-    <button class="side-btn" onclick="irParaSecao('atalhoLancamento')">
-      <span class="side-icon">➕</span><span class="side-text">Lançamento</span>
-    </button>
-    <button class="side-btn" onclick="irParaSecao('atalhoLembrete')">
-      <span class="side-icon">📝</span><span class="side-text">Lembretes</span>
     </button>
 
     <div class="side-spacer"></div>
@@ -601,7 +474,7 @@ table{min-width:760px}
     </div>
 
     <div class="container">
-      <div class="nav-mobile no-print"><button id="navPainel" class="active" onclick="mostrarPainel();setActiveMenu(this)">Painel</button><button id="navUsuarios" onclick="mostrarUsuarios();setActiveMenu(this)">Gestão de usuários</button><button onclick="abrirConfiguracoes()">Configurações</button><button onclick="irParaSecao(\'atalhoContas\')">Contas</button><button onclick="irParaSecao(\'atalhoLancamento\')">Lançar</button><button onclick="irParaSecao(\'atalhoLembrete\')">Lembretes</button><button class="btn-dark" onclick="sair()">Sair</button></div>
+      <div class="nav-mobile no-print"><button id="navPainel" class="active" onclick="mostrarPainel();setActiveMenu(this)">Painel</button><button id="navUsuarios" onclick="mostrarUsuarios();setActiveMenu(this)">Gestão de usuários</button><button onclick="abrirConfiguracoes()">Configurações</button><button onclick="irParaSecao('atalhoContas')">Contas</button><button onclick="irParaSecao('atalhoLancamento')">Lançar</button><button onclick="irParaSecao('atalhoLembrete')">Lembretes</button><button class="btn-dark" onclick="sair()">Sair</button></div>
 
       <div id="painel">
 
@@ -630,7 +503,7 @@ table{min-width:760px}
         </div>
 
         <div class="two no-print">
-          <div id="atalhoLancamento" class="card"><h2>Lançamento de contas</h2><input id="desc" data-cap placeholder="Descrição"><input id="valor" inputmode="decimal" placeholder="Valor - Ex: 150,90"><input id="venc" type="date"><select id="centro"><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="status"><option>Aberto</option><option>Pago</option></select><textarea id="obs" data-cap placeholder="Observação"></textarea><button class="btn-full" id="btnSalvarConta" onclick="salvarConta()">Salvar conta</button></div>
+          <div id="atalhoLancamento" class="card"><h2>Lançamento de contas</h2><input id="desc" data-cap placeholder="Descrição"><input id="valor" inputmode="decimal" placeholder="Valor - Ex: 150,90"><input id="venc" type="date"><select id="centro"><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="status"><option>Aberto</option><option>Pago</option></select><textarea id="obs" data-cap placeholder="Observação"></textarea><button class="btn-full" onclick="salvarConta()">Salvar conta</button></div>
           <div id="atalhoLembrete" class="card"><h2>Adicionar lembrete</h2><input id="ntitulo" data-cap placeholder="Título"><textarea id="ntexto" data-cap placeholder="Recado"></textarea><input id="ndata" type="date"><select id="nprio"><option>Normal</option><option>Urgente</option></select><select id="nloja"><option value="">Todas as lojas</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><button class="btn-full" onclick="salvarNota()">Salvar lembrete</button></div>
         </div>
 
@@ -807,7 +680,7 @@ function primeiraMaiuscula(txt){txt=String(txt||"").trimStart();return txt?txt.c
 document.addEventListener("input",e=>{if(e.target.matches("[data-cap]")){let pos=e.target.selectionStart;e.target.value=primeiraMaiuscula(e.target.value);e.target.setSelectionRange(pos,pos);}});
 
 async function entrar(){const u=user.value.trim().toLowerCase(),s=pass.value.trim();loginErro.style.display="none";try{const dados=await rpc("login_usuario",{p_usuario:u,p_senha:s});const achado=Array.isArray(dados)?dados[0]:dados;if(!achado){loginErro.style.display="block";loginErro.textContent="Credenciais inválidas.";return}usuarioLogado=achado;localStorage.setItem("df_user_v15",JSON.stringify(usuarioLogado));abrir();}catch(e){loginErro.style.display="block";loginErro.innerHTML="Erro ao conectar:<br>"+e.message;}}
-function abrir(){login.style.display="none";app.style.display="block";userInfo.textContent=(usuarioLogado.nome||usuarioLogado.usuario)+" ▾";sideUsuarios.style.display=isAdmin()?"flex":"none";navUsuarios.style.display=isAdmin()?"":"none";aplicarMenuSalvo();garantirWebhookPadraoDF();carregar();}
+function abrir(){login.style.display="none";app.style.display="block";userInfo.textContent=(usuarioLogado.nome||usuarioLogado.usuario)+" ▾";sideUsuarios.style.display=isAdmin()?"flex":"none";navUsuarios.style.display=isAdmin()?"":"none";aplicarMenuSalvo();garantirWebhookPadrao();carregar();}
 function sair(){localStorage.removeItem("df_user_v15");location.reload();}window.onload=()=>{const u=localStorage.getItem("df_user_v15");if(u){usuarioLogado=JSON.parse(u);abrir();}}
 
 async function carregar(){try{contasDados=await api("df_contas?select=*&order=vencimento.asc");notasDados=await api("df_notas?select=*&order=data_lembrete.asc");usuariosDados=await api("df_usuarios?select=id,nome,usuario,email,tipo,loja,pode_pagar,ativo&order=nome.asc");render();renderUsuarios();}catch(e){alert("Erro ao carregar dados: "+e.message);}}
@@ -839,7 +712,7 @@ function renderAlertas(){
 }
 
 function filtroContas(){let base=visContas(),fc=fCentro.value,fs=fStatus.value;return base.filter(c=>(!fc||c.centro===fc)&&(!fs||c.status===fs))}
-function render(){let base=visContas(),h=hoje(),m=mesAno(h),filtrada=filtroContas();totalAberto.textContent=moeda(base.filter(c=>c.status==="Aberto").reduce((s,c)=>s+Number(c.valor),0));pagoMes.textContent=moeda(base.filter(c=>c.status==="Pago"&&mesAno(c.vencimento)===m).reduce((s,c)=>s+Number(c.valor),0));vencidas.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento<h).reduce((s,c)=>s+Number(c.valor),0));venceHoje.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento===h).reduce((s,c)=>s+Number(c.valor),0));lembretesHoje.textContent=visNotas().filter(n=>n.data_lembrete===h).length;quantidade.textContent=base.length;tbody.innerHTML=filtrada.map(c=>`<tr><td>${c.descricao}</td><td>${moeda(c.valor)}</td><td>${c.vencimento}</td><td>${c.centro}</td><td><span class="badge ${c.status==="Pago"?"badge-pago":"badge-aberto"}">${c.status}</span></td><td>${c.observacao||""}</td><td class="no-print"><button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">${c.status==="Pago"?"↩️ Reabrir":"✅ Pago"}</button><button class="btn-blue btn-small" onclick="editarConta(\'${c.id}\')">✏️ Editar</button><button class="btn-red btn-small" onclick="excluir('${c.id}')">Excluir</button></td></tr>`).join("")||'<tr><td colspan="7">Nenhuma conta cadastrada.</td></tr>';renderMobileContas(filtrada);renderAlertas();enviarNotificacaoAlertas();atualizarStatusNotificacao();renderHoje();renderNotas();renderGrafico(base);renderGraficoMelhoradoDF();}
+function render(){let base=visContas(),h=hoje(),m=mesAno(h),filtrada=filtroContas();totalAberto.textContent=moeda(base.filter(c=>c.status==="Aberto").reduce((s,c)=>s+Number(c.valor),0));pagoMes.textContent=moeda(base.filter(c=>c.status==="Pago"&&mesAno(c.vencimento)===m).reduce((s,c)=>s+Number(c.valor),0));vencidas.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento<h).reduce((s,c)=>s+Number(c.valor),0));venceHoje.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento===h).reduce((s,c)=>s+Number(c.valor),0));lembretesHoje.textContent=visNotas().filter(n=>n.data_lembrete===h).length;quantidade.textContent=base.length;tbody.innerHTML=filtrada.map(c=>`<tr><td>${c.descricao}</td><td>${moeda(c.valor)}</td><td>${c.vencimento}</td><td>${c.centro}</td><td><span class="badge ${c.status==="Pago"?"badge-pago":"badge-aberto"}">${c.status}</span></td><td>${c.observacao||""}</td><td class="no-print"><button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">Pago/Aberto</button><button class="btn-red btn-small" onclick="excluir('${c.id}')">Excluir</button></td></tr>`).join("")||'<tr><td colspan="7">Nenhuma conta cadastrada.</td></tr>';renderMobileContas(filtrada);renderAlertas();enviarNotificacaoAlertas();atualizarStatusNotificacao();renderHoje();renderNotas();renderGrafico(base);}
 
 function renderMobileContas(filtrada){
   if(typeof mobileContasLista === "undefined") return;
@@ -918,9 +791,11 @@ function normalizarWebhookUrl(url){
 }
 function carregarWebhookUrl(){
   try{
-    const salva = localStorage.getItem("df_webhook_pipedream") || WEBHOOK_PADRAO_DF || "https://eoyhe0a00fihgig.m.pipedream.net";
+    const salva = localStorage.getItem("df_webhook_pipedream") || WEBHOOK_PADRAO_FIXO || "https://eoyhe0a00fihgig.m.pipedream.net";
     if(typeof webhookUrl !== "undefined") webhookUrl.value = salva;
-    if(typeof webhookStatus !== "undefined" && salva) webhookStatus.innerHTML = "<span class='status-ok'>URL salva.</span>";
+    if(typeof webhookStatus !== "undefined" && salva){
+      webhookStatus.innerHTML = "<span class='status-ok'>URL salva.</span>";
+    }
   }catch(e){}
 }
 function salvarWebhookUrl(){
@@ -952,7 +827,10 @@ async function enviarResumoWebhook(){
       body:JSON.stringify({
         para:"donafloradm@outlook.com",
         assunto:"Resumo financeiro - Dona Flor",
-        corpo:corpo,
+        corpo:corpo || "Nenhuma conta encontrada.",
+        resumo:corpo || "Nenhuma conta encontrada.",
+        body:corpo || "Nenhuma conta encontrada.",
+        text:corpo || "Nenhuma conta encontrada.",
         origem:"Dona Flor Gestão Financeira",
         geradoEm:new Date().toISOString()
       })
@@ -978,6 +856,28 @@ function irParaSecao(id){
 }
 
 
+
+const WEBHOOK_PADRAO_FIXO = "https://eoyhe0a00fihgig.m.pipedream.net";
+function togglePainelSubmenu(ev){
+  try{
+    const sub=document.getElementById('painelSubmenu');
+    if(sub) sub.classList.toggle('open');
+  }catch(e){}
+}
+function garantirWebhookPadrao(){
+  try{
+    if(!localStorage.getItem('df_webhook_pipedream')) localStorage.setItem('df_webhook_pipedream', WEBHOOK_PADRAO_FIXO);
+    if(typeof webhookUrl !== 'undefined' && !webhookUrl.value) webhookUrl.value = localStorage.getItem('df_webhook_pipedream') || WEBHOOK_PADRAO_FIXO;
+  }catch(e){}
+}
+function voltarTopo(){ window.scrollTo({top:0,behavior:'smooth'}); }
+window.addEventListener('scroll',()=>{ const b=document.getElementById('btnTopo'); if(b) b.classList.toggle('show', window.scrollY>420); });
+window.addEventListener('error',function(e){
+  const msg=String(e.message||'');
+  if(msg.includes('notas is not defined')){ window.notasDados=[]; e.preventDefault(); return true; }
+  if(msg.includes('usuarios is not defined')){ window.usuariosDados=[]; e.preventDefault(); return true; }
+});
+
 function executarRelatorio(){let acao=acaoRelatorio.value;if(acao==="csv")exportarCSV();if(acao==="pdf")window.print();acaoRelatorio.value="";}
 function exportarCSV(){let linhas=[["Descrição","Valor","Vencimento","Centro","Status","Observação"],...filtroContas().map(c=>[c.descricao,c.valor,c.vencimento,c.centro,c.status,c.observacao||""])];let csv=linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");let blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="contas-dona-flor.csv";a.click();URL.revokeObjectURL(url);}
 
@@ -989,76 +889,6 @@ document.addEventListener("keydown", e=>{
     fecharConfiguracoes();
   }
 });
-
-
-const WEBHOOK_PADRAO_DF = "https://eoyhe0a00fihgig.m.pipedream.net";
-let editandoContaIdDF = null;
-
-function garantirWebhookPadraoDF(){
-  try{
-    if(!localStorage.getItem("df_webhook_pipedream")){
-      localStorage.setItem("df_webhook_pipedream", WEBHOOK_PADRAO_DF);
-    }
-    if(typeof webhookUrl !== "undefined" && !webhookUrl.value){
-      webhookUrl.value = localStorage.getItem("df_webhook_pipedream") || WEBHOOK_PADRAO_DF;
-    }
-  }catch(e){}
-}
-
-function voltarTopo(){
-  window.scrollTo({top:0, behavior:"smooth"});
-}
-
-window.addEventListener("scroll", ()=>{
-  const b=document.getElementById("btnTopo");
-  if(b) b.classList.toggle("show", window.scrollY > 420);
-});
-
-function statusContaDF(c){
-  if(c.status==="Pago") return "✅ Pago";
-  if(c.status==="Aberto" && c.vencimento < hoje()) return "🔴 Vencido";
-  if(c.status==="Aberto" && c.vencimento === hoje()) return "⚠️ Vence hoje";
-  return "🟢 Aberto";
-}
-
-function editarConta(id){
-  try{
-    const c=(contas||[]).find(x=>String(x.id)===String(id));
-    if(!c) return alert("Conta não encontrada.");
-    editandoContaIdDF=id;
-    if(typeof descricao !== "undefined") descricao.value=c.descricao||"";
-    if(typeof valor !== "undefined") valor.value=c.valor||"";
-    if(typeof vencimento !== "undefined") vencimento.value=c.vencimento||"";
-    if(typeof centro !== "undefined") centro.value=c.centro||"";
-    if(typeof status !== "undefined") status.value=c.status||"Aberto";
-    if(typeof observacao !== "undefined") observacao.value=c.observacao||"";
-    const btn=document.getElementById("btnSalvarConta");
-    if(btn) btn.textContent="Salvar alteração";
-    document.getElementById("atalhoLancamento")?.scrollIntoView({behavior:"smooth",block:"start"});
-  }catch(e){ alert("Erro ao editar conta: "+e.message); }
-}
-
-function prioridadeClasseDF(p){
-  p=(p||"Normal").toLowerCase();
-  if(p.includes("urgent")) return "priority-urgente";
-  if(p.includes("import")) return "priority-importante";
-  return "priority-normal";
-}
-
-function renderGraficoMelhoradoDF(){
-  try{
-    const alvo=document.querySelector(".chart");
-    if(!alvo || typeof visContas === "undefined") return;
-    const centros=["Dona Flor Andradina","Dona Flor Paranaíba","Dona Flor Três Lagoas","Brilho Dourado","Pessoal"];
-    const base=visContas().filter(c=>c.status==="Aberto");
-    const vals=centros.map(nome=>({nome,valor:base.filter(c=>c.centro===nome).reduce((s,c)=>s+Number(c.valor||0),0)}));
-    const total=vals.reduce((s,v)=>s+v.valor,0);
-    const max=Math.max(...vals.map(v=>v.valor),1);
-    const maior=vals.reduce((a,b)=>b.valor>a.valor?b:a,vals[0]);
-    alvo.innerHTML=`<div class="center-summary"><div class="mini">💰 Total<br>${moeda(total)}</div><div class="mini">🏆 Maior<br>${maior.nome}</div><div class="mini">📉 Sem custo<br>${vals.filter(v=>v.valor===0).length}</div></div><div class="hbar-list">${vals.map(v=>`<div class="hbar-row ${v.valor===max&&v.valor>0?'max':''}" onclick="if(typeof fCentro!=='undefined'){fCentro.value='${v.nome}';render();}"><div class="hbar-name">${v.nome}</div><div class="hbar-track"><div class="hbar-fill" style="width:${Math.max(3,(v.valor/max)*100)}%"></div></div><div class="hbar-value">${moeda(v.valor)} ${total?Math.round(v.valor/total*100):0}%</div></div>`).join("")}</div>`;
-  }catch(e){}
-}
-
 
 </script>
 <button id="btnTopo" class="btn-topo no-print" onclick="voltarTopo()">↑</button>

@@ -150,6 +150,21 @@ table{min-width:760px}
   .mobile-account-actions button{min-width:0;width:100%}
 }
 
+
+/* V17.4 Configurações */
+.config-btn{background:rgba(255,255,255,.18);color:white;border:1px solid rgba(255,255,255,.18);border-radius:999px;width:40px;height:40px;padding:0;font-size:20px;display:inline-flex;align-items:center;justify-content:center}
+.config-btn:hover{background:rgba(255,255,255,.28)}
+.config-modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:999;align-items:center;justify-content:center;padding:18px}
+.config-modal{background:white;border-radius:22px;padding:20px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.config-modal h2{margin-bottom:6px}
+.config-option{border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0;background:#F8FAFC}
+.config-option strong{display:block;color:#0F172A;margin-bottom:4px}
+.config-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+@media(max-width:899px){
+  .config-btn{width:38px;height:38px;font-size:18px;flex:0 0 auto}
+  .topbar-inner{gap:8px}
+}
+
 </style>
 </head>
 <body>
@@ -166,6 +181,38 @@ table{min-width:760px}
 </div>
 
 <div id="app">
+
+<div id="configModal" class="config-modal-bg no-print">
+  <div class="config-modal">
+    <h2>⚙️ Configurações</h2>
+    <p class="sub">Ajustes do app Dona Flor Gestão Financeira.</p>
+
+    <div class="config-option">
+      <strong>🔔 Notificações</strong>
+      <span class="sub">Receba aviso de contas vencidas, vencendo hoje e amanhã.</span>
+      <div class="config-actions">
+        <button class="btn-blue btn-small" onclick="ativarNotificacoes()">Ativar notificações</button>
+        <button class="btn-light btn-small" onclick="testarNotificacao()">Testar notificação</button>
+      </div>
+      <div id="notifyStatus" class="notify-status"></div>
+    </div>
+
+    <div class="config-option">
+      <strong>👤 Usuário</strong>
+      <span class="sub" id="configUsuarioInfo">Usuário conectado.</span>
+    </div>
+
+    <div class="config-option">
+      <strong>📱 Aplicativo</strong>
+      <span class="sub">Para atualizar ícone/layout no celular, remova e adicione novamente à tela inicial.</span>
+    </div>
+
+    <div class="row" style="justify-content:flex-end;margin-top:12px">
+      <button class="btn-dark" onclick="fecharConfiguracoes()">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div class="app-shell">
   <aside class="sidebar no-print">
     <div class="brand"><img src="/icon-512.png"><div><strong>Dona Flor</strong><br><span class="sub">Gestão Financeira</span></div></div>
@@ -178,7 +225,7 @@ table{min-width:760px}
     <div class="topbar no-print">
       <div class="topbar-inner">
         <div class="topbar-title"><img src="/icon-512.png"><span>Dona Flor Gestão Financeira</span></div>
-        <div class="user-pill" id="userInfo">Admin</div>
+        <button class="config-btn" onclick="abrirConfiguracoes()" title="Configurações">⚙️</button><div class="user-pill" id="userInfo">Admin</div>
       </div>
     </div>
 
@@ -195,15 +242,6 @@ table{min-width:760px}
             <div class="alert-mini"><span>Vencem amanhã</span><strong id="qtdAmanhaAlerta">0</strong><small id="valorAmanhaAlerta">R$ 0,00</small></div>
           </div>
           <div id="listaAlertasVencimento" class="alert-list"></div>
-        </div>
-
-
-        <div class="notify-box no-print">
-          <strong>🔔 Notificações</strong>
-          <p class="sub" style="margin:6px 0">Ative para receber aviso de contas vencidas, vencendo hoje e amanhã quando abrir o sistema.</p>
-          <button class="btn-blue btn-small" onclick="ativarNotificacoes()">Ativar notificações</button>
-          <button class="btn-light btn-small" onclick="testarNotificacao()">Testar</button>
-          <div id="notifyStatus" class="notify-status"></div>
         </div>
 
         <div class="grid">
@@ -255,8 +293,9 @@ if ("serviceWorker" in navigator) {
 let notificacaoJaEnviada = false;
 
 function atualizarStatusNotificacao(){
+  if(typeof notifyStatus === "undefined") return;
   if(!("Notification" in window)){
-    if(typeof notifyStatus !== "undefined") notifyStatus.textContent = "Este navegador não suporta notificações.";
+    notifyStatus.textContent = "Este navegador não suporta notificações.";
     return;
   }
   if(Notification.permission === "granted"){
@@ -346,6 +385,21 @@ async function enviarNotificacaoAlertas(forcar=false){
   notificacaoJaEnviada = true;
 }
 
+
+
+function abrirConfiguracoes(){
+  configModal.style.display="flex";
+  atualizarStatusNotificacao();
+  if(typeof configUsuarioInfo !== "undefined" && usuarioLogado){
+    configUsuarioInfo.textContent = (usuarioLogado.nome||usuarioLogado.usuario) + " • " + (usuarioLogado.tipo||"") + (usuarioLogado.loja ? " • " + usuarioLogado.loja : "");
+  }
+}
+function fecharConfiguracoes(){
+  configModal.style.display="none";
+}
+document.addEventListener("click", e=>{
+  if(e.target && e.target.id === "configModal") fecharConfiguracoes();
+});
 
 async function api(path,opts={}){const r=await fetch(URL+"/rest/v1/"+path,{...opts,headers:{...HEAD,...(opts.headers||{})}});const t=await r.text();const data=t?JSON.parse(t):null;if(!r.ok)throw new Error(data?.message||t||r.status);return data;}
 async function rpc(fn, body){return api("rpc/"+fn,{method:"POST",body:JSON.stringify(body)})}

@@ -1,21 +1,13 @@
-Dona Flor V17.2 - Responsiva
+Dona Flor V17.3 - Sem rolagem lateral no celular
 
-Inclui:
-- Tudo da V17.1 com notificações corrigidas.
-- Layout adaptado para smartphone.
-- Tabela de contas vira cards no celular.
-- Melhor aproveitamento do desktop.
-- Menu mobile mais limpo.
-- Ajustes de cards, botões e textos.
+Correções:
+- Trava overflow horizontal.
+- Header ajustado no smartphone.
+- Cards e filtros não vazam da tela.
+- Tabela fica oculta no celular e as contas aparecem em cards.
+- Gráficos e menus não estouram a largura.
 
-Não precisa novo SQL se você já rodou o SQL da V15.
+Não precisa novo SQL.
 
-Passos:
-1. Substitua os arquivos no GitHub.
-2. Faça redeploy na Vercel.
-3. No celular, remova o app antigo da tela inicial.
-4. Adicione novamente à tela inicial para atualizar cache/ícone/service worker.
-
-Logins:
-admin / admin123
-hindeburg / 123456
+IMPORTANTE:
+Depois de subir no GitHub/Vercel, remova o app antigo da tela inicial e adicione novamente para limpar cache do service worker.

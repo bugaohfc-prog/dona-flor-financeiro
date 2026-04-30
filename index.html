@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>Dona Flor Gestão Financeira</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon-192.png">
@@ -108,6 +108,46 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px;bord
   .alert-grid{grid-template-columns:1fr}
   .user-pill{display:none}
   .topbar-title span{max-width:240px}
+}
+
+
+/* V17.3 Correção definitiva de rolagem lateral no celular */
+html,body{max-width:100%;overflow-x:hidden}
+*{max-width:100%}
+img,svg,video{max-width:100%;height:auto}
+.app-shell,main,.container,.card,.topbar,.topbar-inner,#app,#painel,#telaUsuarios{max-width:100%;overflow-x:hidden}
+table{min-width:760px}
+.desktop-table{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:899px){
+  .app-shell{display:block;width:100%}
+  main{width:100%;min-width:0}
+  .container{width:100%;max-width:100%;padding-left:8px;padding-right:8px}
+  .card{width:100%;max-width:100%;overflow:hidden}
+  .topbar{width:100%;max-width:100%;overflow:hidden}
+  .topbar-inner{width:100%;max-width:100%;min-width:0}
+  .topbar-title{min-width:0;flex:1}
+  .topbar-title span{display:block;max-width:calc(100vw - 90px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nav-mobile{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden}
+  .nav-mobile::-webkit-scrollbar{display:none}
+  .grid,.two,.three{width:100%;max-width:100%;overflow:hidden}
+  .alert-grid{width:100%;max-width:100%}
+  .row{width:100%;max-width:100%;overflow:hidden}
+  .row select,.row input,.row button{min-width:0;flex:1 1 100%}
+  #acaoRelatorio,#fCentro,#fStatus{width:100%}
+  .mobile-account{width:100%;max-width:100%}
+  .mobile-account-head{width:100%;min-width:0}
+  .mobile-account-title,.mobile-account-meta{word-break:break-word;overflow-wrap:anywhere}
+  .mobile-account-value{font-size:15px;white-space:normal;text-align:right}
+  .mobile-account-actions button{flex:1 1 auto;min-width:120px}
+  .chart{width:100%;max-width:100%;overflow-x:auto}
+  .barwrap{min-width:88px}
+}
+@media(max-width:430px){
+  .topbar-title span{max-width:calc(100vw - 72px)}
+  .grid{grid-template-columns:1fr}
+  .card{padding:12px}
+  .mobile-account-actions{display:grid;grid-template-columns:1fr 1fr}
+  .mobile-account-actions button{min-width:0;width:100%}
 }
 
 </style>

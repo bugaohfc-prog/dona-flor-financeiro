@@ -52,6 +52,64 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px;bord
 .notify-box strong{color:#1E40AF}
 .notify-status{font-size:13px;color:#475569;margin-top:6px}
 
+
+/* V17.2 Responsiva */
+.mobile-cards{display:none}
+.desktop-table{display:block}
+.compact-actions{display:flex;gap:6px;flex-wrap:wrap}
+@media(max-width:899px){
+  body{background:#F8FAFC}
+  .topbar{padding:10px 12px}
+  .topbar-title{font-size:14px;min-width:0}
+  .topbar-title img{width:34px;height:34px}
+  .topbar-title span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}
+  .user-pill{font-size:13px;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .container{padding:10px}
+  .card{border-radius:16px;padding:14px;margin-bottom:10px}
+  h1{font-size:22px}
+  h2{font-size:18px;margin-bottom:10px}
+  input,select,textarea{padding:12px;font-size:15px;border-radius:12px}
+  button{padding:11px 12px;border-radius:12px}
+  .nav-mobile{position:sticky;top:0;z-index:20;background:#F8FAFC;padding:8px 0;margin:0 0 8px;overflow:auto;flex-wrap:nowrap}
+  .nav-mobile button{white-space:nowrap;min-width:max-content}
+  .grid{grid-template-columns:1fr 1fr;gap:8px}
+  .grid .card{min-height:92px}
+  .metric-title{font-size:11px}
+  .resumo strong,.alerta strong,.recado strong{font-size:20px}
+  .two,.three{grid-template-columns:1fr;gap:10px}
+  .notify-box,.alert-box{padding:12px;border-radius:16px;margin-bottom:10px}
+  .alert-grid{grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .alert-mini{padding:9px;border-radius:12px}
+  .alert-mini strong{font-size:18px}
+  .desktop-table{display:none}
+  .mobile-cards{display:block}
+  .mobile-account{background:white;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:0 4px 14px rgba(15,23,42,.05)}
+  .mobile-account-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+  .mobile-account-title{font-weight:800;color:#0F172A}
+  .mobile-account-value{font-weight:900;color:var(--principal);white-space:nowrap}
+  .mobile-account-meta{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.45}
+  .mobile-account-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .mobile-account-actions button{font-size:12px;padding:8px 10px}
+  .chart{height:210px;padding:10px}
+  .barwrap{min-width:100px}
+  .bar{width:38px}
+  .item{align-items:flex-start}
+}
+@media(min-width:900px){
+  .sidebar{position:sticky;top:0;height:100vh}
+  .container{padding:18px 22px}
+  .card{transition:transform .15s ease, box-shadow .15s ease}
+  .card:hover{transform:translateY(-1px);box-shadow:0 14px 34px rgba(15,23,42,.08)}
+  .topbar-title span{display:inline}
+  .grid{grid-template-columns:repeat(6,1fr)}
+}
+@media(max-width:430px){
+  .grid{grid-template-columns:1fr}
+  .alert-grid{grid-template-columns:1fr}
+  .user-pill{display:none}
+  .topbar-title span{max-width:240px}
+}
+
 </style>
 </head>
 <body>
@@ -79,7 +137,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px;bord
   <main>
     <div class="topbar no-print">
       <div class="topbar-inner">
-        <div class="topbar-title"><img src="/icon-512.png">Dona Flor Gestão Financeira</div>
+        <div class="topbar-title"><img src="/icon-512.png"><span>Dona Flor Gestão Financeira</span></div>
         <div class="user-pill" id="userInfo">Admin</div>
       </div>
     </div>
@@ -127,7 +185,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px;bord
           <div class="card"><h2>Novo lembrete</h2><input id="ntitulo" data-cap placeholder="Título"><textarea id="ntexto" data-cap placeholder="Recado"></textarea><input id="ndata" type="date"><select id="nprio"><option>Normal</option><option>Urgente</option></select><select id="nloja"><option value="">Todas as lojas</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><button class="btn-full" onclick="salvarNota()">Salvar lembrete</button></div>
         </div>
 
-        <div class="card"><h2>Contas a pagar</h2><div class="row no-print"><select id="fCentro" onchange="render()"><option value="">Todos os centros</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="fStatus" onchange="render()"><option value="">Todos os status</option><option>Aberto</option><option>Pago</option></select><select id="acaoRelatorio" onchange="executarRelatorio()"><option value="">Exportar</option><option value="pdf">PDF</option><option value="csv">CSV</option></select></div><div style="overflow:auto"><table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Centro</th><th>Status</th><th>Observação</th><th class="no-print">Ações</th></tr></thead><tbody id="tbody"></tbody></table></div></div>
+        <div class="card"><h2>Contas a pagar</h2><div class="row no-print"><select id="fCentro" onchange="render()"><option value="">Todos os centros</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="fStatus" onchange="render()"><option value="">Todos os status</option><option>Aberto</option><option>Pago</option></select><select id="acaoRelatorio" onchange="executarRelatorio()"><option value="">Exportar</option><option value="pdf">PDF</option><option value="csv">CSV</option></select></div><div class="desktop-table" style="overflow:auto"><table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Centro</th><th>Status</th><th>Observação</th><th class="no-print">Ações</th></tr></thead><tbody id="tbody"></tbody></table></div><div id="mobileContasLista" class="mobile-cards"></div></div>
         <div class="card"><h2>Resumo por centro de custo</h2><div id="grafico" class="chart"></div></div>
       </div>
 
@@ -289,7 +347,29 @@ function renderAlertas(){
 }
 
 function filtroContas(){let base=visContas(),fc=fCentro.value,fs=fStatus.value;return base.filter(c=>(!fc||c.centro===fc)&&(!fs||c.status===fs))}
-function render(){let base=visContas(),h=hoje(),m=mesAno(h),filtrada=filtroContas();totalAberto.textContent=moeda(base.filter(c=>c.status==="Aberto").reduce((s,c)=>s+Number(c.valor),0));pagoMes.textContent=moeda(base.filter(c=>c.status==="Pago"&&mesAno(c.vencimento)===m).reduce((s,c)=>s+Number(c.valor),0));vencidas.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento<h).reduce((s,c)=>s+Number(c.valor),0));venceHoje.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento===h).reduce((s,c)=>s+Number(c.valor),0));lembretesHoje.textContent=visNotas().filter(n=>n.data_lembrete===h).length;quantidade.textContent=base.length;tbody.innerHTML=filtrada.map(c=>`<tr><td>${c.descricao}</td><td>${moeda(c.valor)}</td><td>${c.vencimento}</td><td>${c.centro}</td><td><span class="badge ${c.status==="Pago"?"badge-pago":"badge-aberto"}">${c.status}</span></td><td>${c.observacao||""}</td><td class="no-print"><button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">Pago/Aberto</button><button class="btn-red btn-small" onclick="excluir('${c.id}')">Excluir</button></td></tr>`).join("")||'<tr><td colspan="7">Nenhuma conta cadastrada.</td></tr>';renderAlertas();enviarNotificacaoAlertas();atualizarStatusNotificacao();renderHoje();renderNotas();renderGrafico(base);}
+function render(){let base=visContas(),h=hoje(),m=mesAno(h),filtrada=filtroContas();totalAberto.textContent=moeda(base.filter(c=>c.status==="Aberto").reduce((s,c)=>s+Number(c.valor),0));pagoMes.textContent=moeda(base.filter(c=>c.status==="Pago"&&mesAno(c.vencimento)===m).reduce((s,c)=>s+Number(c.valor),0));vencidas.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento<h).reduce((s,c)=>s+Number(c.valor),0));venceHoje.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento===h).reduce((s,c)=>s+Number(c.valor),0));lembretesHoje.textContent=visNotas().filter(n=>n.data_lembrete===h).length;quantidade.textContent=base.length;tbody.innerHTML=filtrada.map(c=>`<tr><td>${c.descricao}</td><td>${moeda(c.valor)}</td><td>${c.vencimento}</td><td>${c.centro}</td><td><span class="badge ${c.status==="Pago"?"badge-pago":"badge-aberto"}">${c.status}</span></td><td>${c.observacao||""}</td><td class="no-print"><button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">Pago/Aberto</button><button class="btn-red btn-small" onclick="excluir('${c.id}')">Excluir</button></td></tr>`).join("")||'<tr><td colspan="7">Nenhuma conta cadastrada.</td></tr>';renderMobileContas(filtrada);renderAlertas();enviarNotificacaoAlertas();atualizarStatusNotificacao();renderHoje();renderNotas();renderGrafico(base);}
+
+function renderMobileContas(filtrada){
+  if(typeof mobileContasLista === "undefined") return;
+  mobileContasLista.innerHTML = filtrada.map(c=>`
+    <div class="mobile-account">
+      <div class="mobile-account-head">
+        <div>
+          <div class="mobile-account-title">${c.descricao}</div>
+          <div class="mobile-account-meta">${c.centro}<br>Vencimento: ${c.vencimento}</div>
+        </div>
+        <div class="mobile-account-value">${moeda(c.valor)}</div>
+      </div>
+      <div class="mobile-account-meta">${c.observacao||""}</div>
+      <div style="margin-top:8px"><span class="badge ${c.status==="Pago"?"badge-pago":"badge-aberto"}">${c.status}</span></div>
+      <div class="mobile-account-actions no-print">
+        <button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">Pago/Aberto</button>
+        <button class="btn-red btn-small" onclick="excluir('${c.id}')">Excluir</button>
+      </div>
+    </div>
+  `).join("") || '<p class="empty">Nenhuma conta cadastrada.</p>';
+}
+
 function renderHoje(){let h=hoje(),items=visContas().filter(c=>c.status==="Aberto"&&c.vencimento===h);contasHoje.innerHTML=items.length?items.map(c=>'<div class="item"><div><b>'+c.descricao+'</b><br><span class="sub">'+c.centro+'</span></div><b>'+moeda(c.valor)+'</b></div>').join(""):'<p class="empty">Nenhuma conta em aberto vence hoje.</p>';}
 function renderNotas(){notasLista.innerHTML=visNotas().slice(0,8).map(n=>'<div class="item"><div><b>'+n.titulo+'</b><br>'+(n.texto||'')+'<br><span class="sub">'+(n.data_lembrete||"Sem data")+(n.loja?" • "+n.loja:"")+'</span></div><span class="badge '+(n.prioridade==="Urgente"?"badge-red":"")+'">'+n.prioridade+'</span></div>').join("")||"<p class='empty'>Nenhum lembrete.</p>"}
 function renderGrafico(base){let dados=centros.map(centro=>base.filter(c=>c.centro===centro).reduce((s,c)=>s+Number(c.valor),0));let max=Math.max(...dados,1);grafico.innerHTML=centros.map((c,i)=>`<div class="barwrap"><div class="bar" style="height:${Math.max(6,(dados[i]/max)*220)}px"></div>${c}<br><b>${moeda(dados[i])}</b></div>`).join("");}

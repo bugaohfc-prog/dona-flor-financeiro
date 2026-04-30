@@ -1,8 +1,12 @@
-Dona Flor V17.1 - Notificações corrigidas
+Dona Flor V17.2 - Responsiva
 
-Correção:
-- Agora as notificações no Android usam ServiceWorkerRegistration.showNotification().
-- Corrige erro: Illegal constructor / Use ServiceWorkerRegistration.showNotification().
+Inclui:
+- Tudo da V17.1 com notificações corrigidas.
+- Layout adaptado para smartphone.
+- Tabela de contas vira cards no celular.
+- Melhor aproveitamento do desktop.
+- Menu mobile mais limpo.
+- Ajustes de cards, botões e textos.
 
 Não precisa novo SQL se você já rodou o SQL da V15.
 
@@ -10,8 +14,7 @@ Passos:
 1. Substitua os arquivos no GitHub.
 2. Faça redeploy na Vercel.
 3. No celular, remova o app antigo da tela inicial.
-4. Abra o site, adicione novamente à tela inicial.
-5. Abra pelo ícone e clique em Ativar notificações.
+4. Adicione novamente à tela inicial para atualizar cache/ícone/service worker.
 
 Logins:
 admin / admin123

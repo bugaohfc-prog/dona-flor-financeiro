@@ -165,6 +165,46 @@ table{min-width:760px}
   .topbar-inner{gap:8px}
 }
 
+
+/* V17.5 Refinamento visual */
+.topbar-title span{font-weight:700;font-size:16px}
+.user-pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2)}
+.config-btn{opacity:.85}
+.config-btn:hover{opacity:1}
+
+.nav-mobile button{
+  background:#E2E8F0;
+  color:#0F172A;
+  font-weight:600;
+}
+.nav-mobile button.active{
+  background:var(--principal);
+  color:white;
+}
+
+.metric-title{font-size:12px;color:#64748B}
+.resumo strong,.alerta strong,.recado strong{
+  font-size:22px;
+  letter-spacing:.5px;
+}
+
+.card{
+  border:1px solid #E2E8F0;
+}
+
+.config-option{
+  display:flex;
+  flex-direction:column;
+}
+
+.config-status{
+  margin-top:6px;
+  font-weight:700;
+}
+
+.status-on{color:#16A34A}
+.status-off{color:#DC2626}
+
 </style>
 </head>
 <body>
@@ -216,8 +256,8 @@ table{min-width:760px}
 <div class="app-shell">
   <aside class="sidebar no-print">
     <div class="brand"><img src="/icon-512.png"><div><strong>Dona Flor</strong><br><span class="sub">Gestão Financeira</span></div></div>
-    <button id="sidePainel" class="side-btn active" onclick="mostrarPainel()">📊 Painel</button>
-    <button id="sideUsuarios" class="side-btn" onclick="mostrarUsuarios()">👥 Gestão de usuários</button>
+    <button id="sidePainel" class="side-btn active" onclick="mostrarPainel();setActiveMenu(this)">📊 Painel</button>
+    <button id="sideUsuarios" class="side-btn" onclick="mostrarUsuarios();setActiveMenu(this)">👥 Gestão de usuários</button>
     <div class="side-spacer"></div>
     <button class="side-btn" onclick="sair()">↩ Sair</button>
   </aside>
@@ -230,7 +270,7 @@ table{min-width:760px}
     </div>
 
     <div class="container">
-      <div class="nav-mobile no-print"><button id="navPainel" class="active" onclick="mostrarPainel()">Painel</button><button id="navUsuarios" onclick="mostrarUsuarios()">Gestão de usuários</button><button class="btn-dark" onclick="sair()">Sair</button></div>
+      <div class="nav-mobile no-print"><button id="navPainel" class="active" onclick="mostrarPainel();setActiveMenu(this)">Painel</button><button id="navUsuarios" onclick="mostrarUsuarios();setActiveMenu(this)">Gestão de usuários</button><button class="btn-dark" onclick="sair()">Sair</button></div>
 
       <div id="painel">
 
@@ -269,7 +309,7 @@ table{min-width:760px}
 
       <div id="telaUsuarios">
         <div id="diagUsuarios" class="diag"></div>
-        <div class="card"><h2>Gestão de usuários</h2><p class="sub">Senhas são gravadas criptografadas no Supabase. Admin vê tudo; gerente vê apenas a loja dele.</p><div class="three"><input id="unome" data-cap placeholder="Nome"><input id="uusuario" placeholder="Usuário"><input id="uemail" placeholder="E-mail"><input id="usenha" type="password" placeholder="Senha"></div><div class="three"><select id="utipo"><option value="gerente">Gerente</option><option value="admin">Admin</option></select><select id="uloja"><option value="">Todas/Admin</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="upagar"><option value="true">Pode marcar pago</option><option value="false">Só visualiza</option></select></div><button onclick="salvarUsuario()">Salvar usuário</button><button class="btn-dark" onclick="mostrarPainel()">Voltar</button></div>
+        <div class="card"><h2>Gestão de usuários</h2><p class="sub">Senhas são gravadas criptografadas no Supabase. Admin vê tudo; gerente vê apenas a loja dele.</p><div class="three"><input id="unome" data-cap placeholder="Nome"><input id="uusuario" placeholder="Usuário"><input id="uemail" placeholder="E-mail"><input id="usenha" type="password" placeholder="Senha"></div><div class="three"><select id="utipo"><option value="gerente">Gerente</option><option value="admin">Admin</option></select><select id="uloja"><option value="">Todas/Admin</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="upagar"><option value="true">Pode marcar pago</option><option value="false">Só visualiza</option></select></div><button onclick="salvarUsuario()">Salvar usuário</button><button class="btn-dark" onclick="mostrarPainel();setActiveMenu(this)">Voltar</button></div>
         <div class="card"><h2>Usuários cadastrados</h2><div id="usuariosLista"></div></div>
       </div>
       <div class="footer no-print">© Dona Flor Gestão Financeira</div>
@@ -299,11 +339,11 @@ function atualizarStatusNotificacao(){
     return;
   }
   if(Notification.permission === "granted"){
-    notifyStatus.textContent = "Notificações ativadas neste dispositivo.";
+    notifyStatus.innerHTML = "<span class='config-status status-on'>🟢 Ativado</span>";
   } else if(Notification.permission === "denied"){
-    notifyStatus.textContent = "Notificações bloqueadas. Ative nas configurações do navegador.";
+    notifyStatus.innerHTML = "<span class='config-status status-off'>🔴 Bloqueado</span>";
   } else {
-    notifyStatus.textContent = "Notificações ainda não ativadas.";
+    notifyStatus.innerHTML = "<span class='config-status status-off'>🔴 Desativado</span>";
   }
 }
 

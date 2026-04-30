@@ -1,0 +1,19 @@
+PIPEDREAM - AJUSTE DO E-MAIL PROFISSIONAL
+
+No step Gmail > Send Email:
+
+To:
+donafloradm@outlook.com
+
+Subject:
+{{steps.trigger.event.body.subject || steps.trigger.event.body.assunto || "Resumo financeiro - Dona Flor"}}
+
+Email Body / Text:
+{{steps.trigger.event.body.body || steps.trigger.event.body.corpo || steps.trigger.event.body.resumo || "Nenhuma conta encontrada."}}
+
+Se tiver campo HTML:
+{{steps.trigger.event.body.html}}
+
+IMPORTANTE:
+Se o Gmail step tiver a opção de HTML, use o campo HTML acima para chegar formatado.
+Se não tiver, use o campo Text mesmo. O e-mail não virá vazio.

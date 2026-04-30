@@ -501,6 +501,17 @@ table{min-width:760px}
   }
 }
 
+
+/* V18.7.2 E-mail Profissional */
+.email-preview{
+  margin-top:12px;
+  border:1px solid #E2E8F0;
+  border-radius:14px;
+  overflow:auto;
+  max-height:420px;
+  background:#F8FAFC;
+}
+
 </style>
 </head>
 <body>
@@ -1468,6 +1479,197 @@ if(carregarOriginalContasLixeiraDF){
   carregar = async function(){
     await carregarOriginalContasLixeiraDF();
     try{ renderLixeiraDF(trashTipoAtualDF || "nota"); }catch(e){}
+  }
+}
+
+
+/* V18.7.2 E-mail Profissional */
+function contasAtivasEmailDF(){
+  try{
+    if(typeof visContas === "function") return visContas().filter(c => !(c.deletado || c.data_exclusao));
+    if(typeof contas !== "undefined" && Array.isArray(contas)) return contas.filter(c => !(c.deletado || c.data_exclusao));
+  }catch(e){}
+  return [];
+}
+
+function escapeHtmlDF(v){
+  return String(v ?? "").replace(/[&<>"']/g, s => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[s]));
+}
+
+function moedaEmailDF(v){
+  try{
+    if(typeof moeda === "function") return moeda(Number(v||0));
+  }catch(e){}
+  return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+}
+
+function hojeEmailDF(){
+  try{ if(typeof hoje === "function") return hoje(); }catch(e){}
+  return new Date().toISOString().slice(0,10);
+}
+
+function addDiasEmailDF(data, dias){
+  const d = new Date(data + "T00:00:00");
+  d.setDate(d.getDate()+dias);
+  return d.toISOString().slice(0,10);
+}
+
+function montarDadosEmailProfissionalDF(modo="geral"){
+  const base = contasAtivasEmailDF().filter(c => (c.status || "Aberto") === "Aberto");
+  const h = hojeEmailDF();
+  const am = addDiasEmailDF(h,1);
+  const vencidas = base.filter(c => c.vencimento && c.vencimento < h);
+  const hojeLista = base.filter(c => c.vencimento === h);
+  const amanhaLista = base.filter(c => c.vencimento === am);
+  const total = arr => arr.reduce((s,c)=>s+Number(c.valor||0),0);
+  let foco = base;
+  let tituloFoco = "Resumo financeiro";
+  if(modo === "hoje"){ foco = hojeLista; tituloFoco = "Contas que vencem hoje"; }
+  if(modo === "amanha"){ foco = amanhaLista; tituloFoco = "Contas que vencem amanhã"; }
+  if(modo === "vencidas"){ foco = vencidas; tituloFoco = "Contas vencidas"; }
+
+  return {
+    base, vencidas, hojeLista, amanhaLista, foco, tituloFoco,
+    totalAberto: total(base),
+    totalVencidas: total(vencidas),
+    totalHoje: total(hojeLista),
+    totalAmanha: total(amanhaLista),
+    dataGeracao: new Date().toLocaleString("pt-BR")
+  };
+}
+
+function linhaContaTextoDF(c){
+  return `• ${c.descricao || "Sem descrição"} | ${c.centro || "-"} | Venc.: ${c.vencimento || "-"} | ${moedaEmailDF(c.valor)} | ${c.status || "Aberto"}`;
+}
+
+function montarResumoEmail(){
+  const d = montarDadosEmailProfissionalDF("geral");
+  const lista = d.base.length ? d.base.map(linhaContaTextoDF).join("\n") : "Nenhuma conta em aberto encontrada.";
+  return `DONA FLOR GESTÃO FINANCEIRA
+
+Resumo financeiro
+Gerado em: ${d.dataGeracao}
+
+Vencidas: ${d.vencidas.length} | ${moedaEmailDF(d.totalVencidas)}
+Vencem hoje: ${d.hojeLista.length} | ${moedaEmailDF(d.totalHoje)}
+Vencem amanhã: ${d.amanhaLista.length} | ${moedaEmailDF(d.totalAmanha)}
+Total em aberto: ${moedaEmailDF(d.totalAberto)}
+
+CONTAS
+${lista}
+
+Mensagem automática do sistema Dona Flor Gestão Financeira.`;
+}
+
+function montarHtmlEmailProfissionalDF(modo="geral"){
+  const d = montarDadosEmailProfissionalDF(modo);
+  const cards = [
+    ["Vencidas", d.vencidas.length, d.totalVencidas, "#991b1b"],
+    ["Vencem hoje", d.hojeLista.length, d.totalHoje, "#92400e"],
+    ["Vencem amanhã", d.amanhaLista.length, d.totalAmanha, "#075985"],
+    ["Total aberto", d.base.length, d.totalAberto, "#0f766e"],
+  ].map(([t,q,v,c]) => `
+    <td style="padding:10px;border:1px solid #e5e7eb;border-radius:12px;background:#ffffff;">
+      <div style="font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase">${t}</div>
+      <div style="font-size:22px;color:${c};font-weight:900">${q}</div>
+      <div style="font-size:14px;color:#0f172a;font-weight:800">${moedaEmailDF(v)}</div>
+    </td>
+  `).join("");
+
+  const linhas = d.foco.length ? d.foco.map(c => `
+    <tr>
+      <td style="padding:10px;border-bottom:1px solid #e5e7eb;font-weight:700;color:#0f172a">${escapeHtmlDF(c.descricao || "Sem descrição")}</td>
+      <td style="padding:10px;border-bottom:1px solid #e5e7eb;color:#475569">${escapeHtmlDF(c.centro || "-")}</td>
+      <td style="padding:10px;border-bottom:1px solid #e5e7eb;color:#475569">${escapeHtmlDF(c.vencimento || "-")}</td>
+      <td style="padding:10px;border-bottom:1px solid #e5e7eb;color:#475569">${escapeHtmlDF(c.status || "Aberto")}</td>
+      <td style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:900;color:#0f766e">${moedaEmailDF(c.valor)}</td>
+    </tr>
+  `).join("") : `
+    <tr><td colspan="5" style="padding:18px;text-align:center;color:#64748b">Nenhuma conta encontrada para este período.</td></tr>
+  `;
+
+  return `
+  <div style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;color:#0f172a">
+    <div style="max-width:760px;margin:0 auto;padding:24px">
+      <div style="background:#003c3c;color:white;border-radius:18px 18px 0 0;padding:22px">
+        <div style="font-size:22px;font-weight:900">Dona Flor Gestão Financeira</div>
+        <div style="font-size:13px;opacity:.85;margin-top:4px">Resumo automático • ${escapeHtmlDF(d.dataGeracao)}</div>
+      </div>
+      <div style="background:white;border-radius:0 0 18px 18px;padding:22px;border:1px solid #e2e8f0">
+        <h2 style="margin:0 0 14px;font-size:24px;color:#0f172a">${escapeHtmlDF(d.tituloFoco)}</h2>
+        <table style="width:100%;border-spacing:8px;margin-bottom:20px"><tr>${cards}</tr></table>
+        <table style="width:100%;border-collapse:collapse;background:white;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden">
+          <thead>
+            <tr style="background:#f8fafc">
+              <th style="padding:10px;text-align:left;color:#334155">Conta</th>
+              <th style="padding:10px;text-align:left;color:#334155">Centro</th>
+              <th style="padding:10px;text-align:left;color:#334155">Vencimento</th>
+              <th style="padding:10px;text-align:left;color:#334155">Status</th>
+              <th style="padding:10px;text-align:right;color:#334155">Valor</th>
+            </tr>
+          </thead>
+          <tbody>${linhas}</tbody>
+        </table>
+        <p style="margin-top:18px;font-size:12px;color:#64748b">Mensagem automática enviada pelo sistema Dona Flor Gestão Financeira.</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+function montarPayloadEmailProfissionalDF(modo="geral"){
+  const texto = montarResumoEmail();
+  const html = montarHtmlEmailProfissionalDF(modo);
+  return {
+    para:"donafloradm@outlook.com",
+    assunto:"Resumo financeiro - Dona Flor",
+    subject:"Resumo financeiro - Dona Flor",
+    corpo:texto,
+    resumo:texto,
+    body:texto,
+    text:texto,
+    html:html,
+    origem:"Dona Flor Gestão Financeira",
+    modo:modo,
+    geradoEm:new Date().toISOString()
+  };
+}
+
+async function enviarResumoWebhook(){
+  const urlCampo = (typeof webhookUrl !== "undefined" ? webhookUrl.value.trim() : "");
+  const urlSalva = localStorage.getItem("df_webhook_pipedream") || "";
+  const url = urlCampo || urlSalva;
+  if(!url){
+    alert("Cole e salve a URL do Pipedream primeiro.");
+    return;
+  }
+  try{
+    localStorage.setItem("df_webhook_pipedream", url);
+    if(typeof webhookStatus !== "undefined") webhookStatus.textContent = "Enviando...";
+    const payload = montarPayloadEmailProfissionalDF("geral");
+    const resp = await fetch(url, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload)
+    });
+    if(!resp.ok) throw new Error("HTTP " + resp.status);
+    if(typeof webhookStatus !== "undefined") webhookStatus.innerHTML = "<span class='status-ok'>Resumo profissional enviado.</span>";
+    alert("Resumo profissional enviado.");
+  }catch(e){
+    if(typeof webhookStatus !== "undefined") webhookStatus.innerHTML = "<span class='status-error'>Erro no envio: " + e.message + "</span>";
+    alert("Erro ao enviar: " + e.message);
+  }
+}
+
+function preverResumoEmail(){
+  const preview = document.getElementById("emailPreview");
+  const html = montarHtmlEmailProfissionalDF("geral");
+  if(preview){
+    preview.style.display = "block";
+    preview.innerHTML = html;
+  }else{
+    alert(montarResumoEmail());
   }
 }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = "dona-flor-v18-7-1";
+const CACHE_NAME = "dona-flor-v18-7-2-email";
 const ASSETS = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {

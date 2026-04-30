@@ -1,27 +1,16 @@
-Dona Flor V18.7.1 - Contas + Lixeira
+Dona Flor V18.7.2 - E-mail Profissional
 
-Base: V18.7.0 Notas + Lixeira.
+Base: V18.7.1 Contas + Lixeira validada.
 
 Inclui:
-- Lixeira por tipo: Notas e Contas.
-- Excluir conta agora envia para lixeira.
-- Restaurar conta.
-- Excluir conta definitivamente.
-- Listagens escondem contas na lixeira.
-- Mantém notas + lixeira funcionando.
+- Corrige envio de e-mail em branco.
+- Envia payload com corpo, resumo, body, text e html.
+- Pré-visualização profissional.
+- Modelo de e-mail com cabeçalho, cards e tabela de contas.
+- Mantém lixeira de notas e contas.
+
+Pipedream:
+Confira o arquivo pipedream-config-email-profissional.txt
 
 SQL:
-Rode o arquivo:
-supabase-sql-v18-7-1-contas-lixeira.sql
-
-Passos:
-1. Rode o SQL no Supabase.
-2. Substitua os arquivos no GitHub.
-3. Redeploy na Vercel.
-4. Limpe cache/reinstale app no celular se necessário.
-
-Teste:
-- Excluir uma conta.
-- Abrir Lixeira > Contas.
-- Restaurar.
-- Excluir definitivo.
+Não precisa novo SQL.

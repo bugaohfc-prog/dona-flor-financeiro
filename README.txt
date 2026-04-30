@@ -1,11 +1,11 @@
-Dona Flor V18.5 - Fluidez Final
+Dona Flor V18.6 - Menu UX
 
 Ajustes:
-- URL do Pipedream salva de forma persistente.
-- Remove botão Abrir Outlook.
-- Remove bloco Aplicativo das Configurações.
-- Adiciona atalhos para Contas, Lançamento e Lembretes.
-- Renomeia Novo lembrete para Adicionar lembrete.
+- Atalhos viraram submenu dentro de Painel.
+- Remove título ATALHOS separado.
+- Adiciona botão flutuante para voltar ao topo.
+- Menu do usuário no topo agora abre opções: Perfil, Configurações e Sair.
+- No smartphone, menu lateral abre via botão hamburger.
 - Mantém e-mail automático via Pipedream.
 - Não precisa SQL.
 

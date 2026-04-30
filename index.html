@@ -512,6 +512,24 @@ table{min-width:760px}
   background:#F8FAFC;
 }
 
+/* V18.8 UX Mobile + Edição + Recolher/Expandir */
+.mobile-menu-btn{display:none;background:rgba(255,255,255,.18)!important;color:#fff!important;border-radius:14px!important;width:48px;height:48px;padding:0!important;font-size:24px;align-items:center;justify-content:center;margin:0 8px 0 0!important}
+.mobile-sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:900}
+.section-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.section-title-row h2{margin:0}.collapse-toggle{background:#E8F8F6!important;color:var(--principal)!important;border:1px solid rgba(15,118,110,.16);width:40px;height:40px;border-radius:999px!important;padding:0!important;margin:0!important;font-size:18px;display:flex;align-items:center;justify-content:center}.collapsible-card.is-collapsed .collapsible-body{display:none!important}.collapsible-card.is-collapsed{padding-bottom:12px}.editando-conta-badge{display:none;margin:8px 0 2px;padding:10px 12px;border-radius:12px;background:#E8F8F6;color:#075E58;font-weight:800}.editando-conta-badge.show{display:block}.btn-edit{background:#2563EB!important;color:white!important}
+@media(max-width:899px){
+  .mobile-menu-btn{display:flex!important}
+  .sidebar{position:fixed!important;top:0;left:-290px;width:280px!important;max-width:85vw;height:100vh;display:block!important;z-index:1000;transition:left .22s ease;box-shadow:20px 0 45px rgba(15,23,42,.22);overflow-y:auto}
+  .sidebar.mobile-open{left:0!important}
+  .mobile-sidebar-overlay.open{display:block!important}
+  .sidebar .side-text,.sidebar .brand div{display:inline!important}
+  .sidebar.collapsed{width:280px!important;min-width:280px!important;padding:16px!important}
+  .sidebar.collapsed .side-text{display:inline!important}
+  .sidebar.collapsed .side-btn{justify-content:flex-start!important;gap:12px!important;padding:12px!important}
+  .sidebar.collapsed .side-icon{width:24px!important;min-width:24px!important}
+  .mobile-account-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mobile-account-actions button{width:100%;margin:0!important}.mobile-account-actions .btn-edit{grid-column:1/-1}
+}
+
 </style>
 </head>
 <body>
@@ -1672,6 +1690,192 @@ function preverResumoEmail(){
     alert(montarResumoEmail());
   }
 }
+
+/* V18.8 UX Mobile + Editar Conta + Recolher/Expandir */
+let contaEditandoDF = null;
+
+function fecharMenuMobileDF(){
+  document.querySelector('.sidebar')?.classList.remove('mobile-open');
+  document.getElementById('mobileSidebarOverlayDF')?.classList.remove('open');
+}
+function abrirMenuMobileDF(){
+  document.querySelector('.sidebar')?.classList.add('mobile-open');
+  document.getElementById('mobileSidebarOverlayDF')?.classList.add('open');
+}
+function toggleMenuMobileDF(){
+  const side=document.querySelector('.sidebar');
+  if(!side) return;
+  if(side.classList.contains('mobile-open')) fecharMenuMobileDF(); else abrirMenuMobileDF();
+}
+function prepararMenuMobileDF(){
+  if(!document.getElementById('mobileSidebarOverlayDF')){
+    const ov=document.createElement('div');
+    ov.id='mobileSidebarOverlayDF';
+    ov.className='mobile-sidebar-overlay no-print';
+    ov.onclick=fecharMenuMobileDF;
+    document.body.appendChild(ov);
+  }
+  const topTitle=document.querySelector('.topbar-title');
+  if(topTitle && !document.getElementById('mobileMenuBtnDF')){
+    const btn=document.createElement('button');
+    btn.id='mobileMenuBtnDF';
+    btn.className='mobile-menu-btn no-print';
+    btn.type='button';
+    btn.innerHTML='☰';
+    btn.onclick=toggleMenuMobileDF;
+    topTitle.parentNode.insertBefore(btn, topTitle);
+  }
+  document.querySelectorAll('.sidebar .side-btn').forEach(b=>{
+    if(!b.classList.contains('sidebar-toggle')) b.addEventListener('click',()=>{ if(window.innerWidth<900) setTimeout(fecharMenuMobileDF,120); });
+  });
+}
+
+function toggleCardDF(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.classList.toggle('is-collapsed');
+  const btn=el.querySelector('.collapse-toggle');
+  if(btn) btn.textContent = el.classList.contains('is-collapsed') ? '▾' : '▴';
+  try{ localStorage.setItem('df_collapse_'+id, el.classList.contains('is-collapsed')?'1':'0'); }catch(e){}
+}
+function prepararCardRecolhivelDF(el, id){
+  if(!el || el.dataset.collapseReady==='1') return;
+  el.dataset.collapseReady='1';
+  el.id = el.id || id;
+  el.classList.add('collapsible-card');
+  const h2=el.querySelector('h2');
+  if(!h2) return;
+  const row=document.createElement('div');
+  row.className='section-title-row no-print';
+  const title=h2.cloneNode(true);
+  const btn=document.createElement('button');
+  btn.type='button'; btn.className='collapse-toggle'; btn.textContent='▴';
+  btn.onclick=()=>toggleCardDF(el.id);
+  row.appendChild(title); row.appendChild(btn);
+  h2.replaceWith(row);
+  const body=document.createElement('div');
+  body.className='collapsible-body';
+  const nodes=[];
+  let n=row.nextSibling;
+  while(n){ nodes.push(n); n=n.nextSibling; }
+  nodes.forEach(x=>body.appendChild(x));
+  el.appendChild(body);
+  try{ if(localStorage.getItem('df_collapse_'+el.id)==='1') toggleCardDF(el.id); }catch(e){}
+}
+function prepararRecolherExpandirDF(){
+  prepararCardRecolhivelDF(document.getElementById('alertasVencimento'), 'alertasVencimento');
+  prepararCardRecolhivelDF(document.getElementById('contasHoje')?.closest('.card'), 'cardContasHojeDF');
+  prepararCardRecolhivelDF(document.getElementById('notasLista')?.closest('.card'), 'cardNotasDF');
+  prepararCardRecolhivelDF(document.getElementById('atalhoContas'), 'atalhoContas');
+  prepararCardRecolhivelDF(document.getElementById('grafico')?.closest('.card'), 'cardGraficoDF');
+}
+
+function setBotaoSalvarContaDF(texto){
+  try{
+    const btn=[...document.querySelectorAll('#atalhoLancamento button')].find(b=>String(b.textContent).includes('Salvar'));
+    if(btn) btn.textContent=texto;
+  }catch(e){}
+}
+function mostrarBadgeEdicaoContaDF(c){
+  let box=document.getElementById('editandoContaBadgeDF');
+  const card=document.getElementById('atalhoLancamento');
+  if(!card) return;
+  if(!box){
+    box=document.createElement('div');
+    box.id='editandoContaBadgeDF';
+    box.className='editando-conta-badge';
+    const body=card.querySelector('.collapsible-body') || card;
+    body.insertBefore(box, body.firstChild);
+  }
+  if(c){
+    box.classList.add('show');
+    box.innerHTML='✏️ Editando conta: <b>'+(c.descricao||'')+'</b> <button class="btn-small btn-light" onclick="cancelarEdicaoContaDF()">Cancelar</button>';
+  }else{
+    box.classList.remove('show');
+    box.innerHTML='';
+  }
+}
+function cancelarEdicaoContaDF(){
+  contaEditandoDF=null;
+  desc.value=valor.value=venc.value=obs.value='';
+  status.value='Aberto';
+  setBotaoSalvarContaDF('Salvar conta');
+  mostrarBadgeEdicaoContaDF(null);
+}
+function editarContaDF(id){
+  const fonte = (typeof visContas==='function' ? visContas() : (typeof getContasArrayDF==='function' ? getContasArrayDF() : []));
+  const c=fonte.find(x=>String(x.id)===String(id));
+  if(!c) return alert('Conta não encontrada.');
+  contaEditandoDF=id;
+  desc.value=c.descricao||'';
+  valor.value=String(c.valor||'').replace('.',',');
+  venc.value=c.vencimento||hoje();
+  centro.value=c.centro||centro.value;
+  status.value=c.status||'Aberto';
+  obs.value=c.observacao||'';
+  setBotaoSalvarContaDF('Salvar alteração');
+  mostrarBadgeEdicaoContaDF(c);
+  mostrarPainel();
+  const card=document.getElementById('atalhoLancamento');
+  if(card?.classList.contains('is-collapsed')) toggleCardDF('atalhoLancamento');
+  setTimeout(()=>card?.scrollIntoView({behavior:'smooth',block:'start'}),80);
+}
+
+async function salvarConta(){
+  const item={descricao:primeiraMaiuscula(desc.value),valor:parseValor(valor.value),vencimento:venc.value||hoje(),centro:centro.value,status:status.value,observacao:primeiraMaiuscula(obs.value),criado_por:usuarioLogado.usuario};
+  if(!item.descricao||!item.valor){alert('Preencha descrição e valor.');return}
+  if(contaEditandoDF){
+    await atualizarContaSupabaseDF(contaEditandoDF,item);
+    cancelarEdicaoContaDF();
+  }else{
+    await api('df_contas',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(item)});
+    desc.value=valor.value=venc.value=obs.value='';
+  }
+  await carregar();
+}
+
+function renderMobileContas(filtrada){
+  if(typeof mobileContasLista === 'undefined') return;
+  mobileContasLista.innerHTML = filtrada.map(c=>`
+    <div class="mobile-account">
+      <div class="mobile-account-head">
+        <div>
+          <div class="mobile-account-title">${c.descricao}</div>
+          <div class="mobile-account-meta">${c.centro}<br>Vencimento: ${c.vencimento}</div>
+        </div>
+        <div class="mobile-account-value">${moeda(c.valor)}</div>
+      </div>
+      <div class="mobile-account-meta">${c.observacao||''}</div>
+      <div style="margin-top:8px"><span class="badge ${c.status==='Pago'?'badge-pago':'badge-aberto'}">${c.status}</span></div>
+      <div class="mobile-account-actions no-print">
+        <button class="btn-edit btn-small" onclick="editarContaDF('${c.id}')">✏️ Editar</button>
+        <button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">Pago/Aberto</button>
+        <button class="btn-red btn-small" onclick="excluir('${c.id}')">Excluir</button>
+      </div>
+    </div>
+  `).join('') || '<p class="empty">Nenhuma conta cadastrada.</p>';
+}
+
+function render(){
+  let base=visContas(),h=hoje(),m=mesAno(h),filtrada=filtroContas();
+  totalAberto.textContent=moeda(base.filter(c=>c.status==='Aberto').reduce((s,c)=>s+Number(c.valor),0));
+  pagoMes.textContent=moeda(base.filter(c=>c.status==='Pago'&&mesAno(c.vencimento)===m).reduce((s,c)=>s+Number(c.valor),0));
+  vencidas.textContent=moeda(base.filter(c=>c.status==='Aberto'&&c.vencimento<h).reduce((s,c)=>s+Number(c.valor),0));
+  venceHoje.textContent=moeda(base.filter(c=>c.status==='Aberto'&&c.vencimento===h).reduce((s,c)=>s+Number(c.valor),0));
+  lembretesHoje.textContent=visNotas().filter(n=>n.data_lembrete===h).length;
+  quantidade.textContent=base.length;
+  tbody.innerHTML=filtrada.map(c=>`<tr><td>${c.descricao}</td><td>${moeda(c.valor)}</td><td>${c.vencimento}</td><td>${c.centro}</td><td><span class="badge ${c.status==='Pago'?'badge-pago':'badge-aberto'}">${c.status}</span></td><td>${c.observacao||''}</td><td class="no-print"><button class="btn-edit btn-small" onclick="editarContaDF('${c.id}')">✏️ Editar</button><button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">Pago/Aberto</button><button class="btn-red btn-small" onclick="excluir('${c.id}')">Excluir</button></td></tr>`).join('')||'<tr><td colspan="7">Nenhuma conta cadastrada.</td></tr>';
+  renderMobileContas(filtrada);renderAlertas();enviarNotificacaoAlertas();atualizarStatusNotificacao();renderHoje();renderNotas();renderGrafico(base);prepararRecolherExpandirDF();
+}
+
+const abrirOriginalV188DF = typeof abrir === 'function' ? abrir : null;
+if(abrirOriginalV188DF){
+  abrir = function(){
+    abrirOriginalV188DF();
+    setTimeout(()=>{prepararMenuMobileDF();prepararRecolherExpandirDF();},120);
+  }
+}
+document.addEventListener('DOMContentLoaded',()=>{prepararMenuMobileDF();prepararRecolherExpandirDF();});
 
 </script>
 <button id="btnTopo" class="btn-topo no-print" onclick="voltarTopo()">↑</button>

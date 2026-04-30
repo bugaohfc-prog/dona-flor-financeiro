@@ -1,18 +1,14 @@
-Dona Flor V18.1 - Menu profissional completo
+Dona Flor V18.2 - Menu corrigido nível SaaS
 
-Inclui:
-- Tudo da V18.
-- Menu lateral recolhível em modo ícones.
-- Configurações no menu lateral e junto do usuário no topo.
-- Base para Power Automate: campo para URL e envio automático do resumo.
+Correções:
+- Remove engrenagem duplicada do topo.
+- Configurações fica no menu lateral junto de Painel e Gestão de usuários.
+- Recolher menu vira item limpo com ícone.
+- Menu recolhido mostra APENAS ícones.
+- Layout do menu mais proporcional.
 - Não precisa novo SQL.
 
 Passos:
 1. Substitua os arquivos no GitHub.
 2. Faça redeploy na Vercel.
-3. Remova e reinstale o app no celular para atualizar cache.
-
-Power Automate:
-- Crie um fluxo com gatilho HTTP.
-- Copie a URL do gatilho.
-- Cole em Configurações > Envio automático via Power Automate.
+3. No celular, remova e adicione novamente o app para limpar cache.

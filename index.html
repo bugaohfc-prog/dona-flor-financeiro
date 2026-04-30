@@ -233,6 +233,86 @@ table{min-width:760px}
   .sidebar-toggle{display:none}
 }
 
+
+/* V18.2 Menu corrigido nível SaaS */
+.sidebar{
+  width:240px;
+  transition:width .22s ease;
+  display:flex;
+  flex-direction:column;
+}
+.brand{min-height:56px}
+.side-spacer{flex:1;height:auto}
+.side-btn{
+  min-height:46px;
+  gap:12px;
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+}
+.side-icon{
+  width:24px;
+  min-width:24px;
+  text-align:center;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:18px;
+}
+.side-text{
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.sidebar-toggle{
+  background:#F1F5F9!important;
+  color:#0F172A!important;
+  margin-top:8px!important;
+}
+.sidebar.collapsed{
+  width:74px!important;
+  padding-left:10px;
+  padding-right:10px;
+}
+.sidebar.collapsed .brand div,
+.sidebar.collapsed .side-text{
+  display:none!important;
+}
+.sidebar.collapsed .brand{
+  justify-content:center;
+}
+.sidebar.collapsed .brand img{
+  width:42px;
+  height:42px;
+}
+.sidebar.collapsed .side-btn{
+  justify-content:center!important;
+  padding-left:0;
+  padding-right:0;
+  gap:0;
+}
+.sidebar.collapsed .side-icon{
+  width:44px;
+  min-width:44px;
+  font-size:20px;
+}
+.sidebar.collapsed .sidebar-toggle:after{
+  content:"";
+}
+.top-user-wrap .config-btn{display:none!important}
+.user-pill{
+  max-width:220px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+@media(min-width:900px){
+  .app-shell.sidebar-collapsed{grid-template-columns:74px 1fr!important}
+}
+@media(max-width:899px){
+  .sidebar{display:none!important}
+  .top-user-wrap{display:flex}
+}
+
 </style>
 </head>
 <body>
@@ -310,13 +390,13 @@ table{min-width:760px}
     <button id="sidePainel" class="side-btn active" onclick="mostrarPainel();setActiveMenu(this)">📊 Painel</button>
     <button id="sideUsuarios" class="side-btn" onclick="mostrarUsuarios();setActiveMenu(this)">👥 Gestão de usuários</button>
     <div class="side-spacer"></div>
-    <button id="sideConfig" class="side-btn" onclick="abrirConfiguracoes()"><span>⚙️</span><span class="side-text">Configurações</span></button><button class="sidebar-toggle" onclick="alternarMenu()">Recolher menu</button><button class="side-btn" onclick="sair()"><span>↩</span><span class="side-text">Sair</span></button>
+    <button class="side-btn" onclick="sair()"><span>↩</span><span class="side-text">Sair</span></button>
   </aside>
   <main>
     <div class="topbar no-print">
       <div class="topbar-inner">
         <div class="topbar-title"><img src="/icon-512.png"><span>Dona Flor Gestão Financeira</span></div>
-        <div class="top-user-wrap"><div class="user-pill" id="userInfo">Admin</div><button class="config-btn" onclick="abrirConfiguracoes()" title="Configurações">⚙️</button></div>
+        <div class="top-user-wrap"><div class="user-pill" id="userInfo">Admin</div></div>
       </div>
     </div>
 
@@ -479,6 +559,16 @@ async function enviarNotificacaoAlertas(forcar=false){
 
 
 
+
+function marcarMenuAtivo(secao){
+  ['sidePainel','sideUsuarios','sideConfig'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.remove('active');
+  });
+  const alvo=document.getElementById(secao);
+  if(alvo) alvo.classList.add('active');
+}
+
 function alternarMenu(){
   const side = document.querySelector('.sidebar');
   side.classList.toggle('collapsed');
@@ -531,6 +621,7 @@ async function enviarResumoPowerAutomate(){
 }
 
 function abrirConfiguracoes(){
+  marcarMenuAtivo("sideConfig");
   configModal.style.display="flex";
   atualizarStatusNotificacao();
   carregarPowerUrl();
@@ -557,8 +648,8 @@ function abrir(){login.style.display="none";app.style.display="block";userInfo.t
 function sair(){localStorage.removeItem("df_user_v15");location.reload();}window.onload=()=>{const u=localStorage.getItem("df_user_v15");if(u){usuarioLogado=JSON.parse(u);abrir();}}
 
 async function carregar(){try{contasDados=await api("df_contas?select=*&order=vencimento.asc");notasDados=await api("df_notas?select=*&order=data_lembrete.asc");usuariosDados=await api("df_usuarios?select=id,nome,usuario,email,tipo,loja,pode_pagar,ativo&order=nome.asc");render();renderUsuarios();}catch(e){alert("Erro ao carregar dados: "+e.message);}}
-function mostrarPainel(){painel.style.display="block";telaUsuarios.style.display="none";sidePainel.classList.add("active");sideUsuarios.classList.remove("active");navPainel.classList.add("active");navUsuarios.classList.remove("active")}
-function mostrarUsuarios(){if(!isAdmin())return;painel.style.display="none";telaUsuarios.style.display="block";sideUsuarios.classList.add("active");sidePainel.classList.remove("active");navUsuarios.classList.add("active");navPainel.classList.remove("active");renderUsuarios();}
+function mostrarPainel(){marcarMenuAtivo("sidePainel");painel.style.display="block";telaUsuarios.style.display="none";sidePainel.classList.add("active");sideUsuarios.classList.remove("active");navPainel.classList.add("active");navUsuarios.classList.remove("active")}
+function mostrarUsuarios(){if(!isAdmin())return;marcarMenuAtivo("sideUsuarios");painel.style.display="none";telaUsuarios.style.display="block";sideUsuarios.classList.add("active");sidePainel.classList.remove("active");navUsuarios.classList.add("active");navPainel.classList.remove("active");renderUsuarios();}
 
 async function salvarConta(){let item={descricao:primeiraMaiuscula(desc.value),valor:parseValor(valor.value),vencimento:venc.value||hoje(),centro:centro.value,status:status.value,observacao:primeiraMaiuscula(obs.value),criado_por:usuarioLogado.usuario};if(!item.descricao||!item.valor){alert("Preencha descrição e valor.");return}await api("df_contas",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(item)});desc.value=valor.value=venc.value=obs.value="";carregar();}
 async function excluir(id){if(!isAdmin())return alert("Apenas admin pode excluir.");if(confirm("Excluir conta?")){await api("df_contas?id=eq."+id,{method:"DELETE"});aplicarMenuSalvo();carregar();}}

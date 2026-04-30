@@ -515,6 +515,49 @@ table{min-width:760px}
   .user-menu{right:0;width:190px}
 }
 
+
+/* V18.7 Consolidada */
+:root{--ok:#15803d;--warn:#d97706;--danger:#b91c1c}
+.user-menu-btn{display:inline-flex;align-items:center;gap:6px}
+.user-menu-btn::after{content:"";}
+@media(max-width:899px){
+  .top-user-wrap{display:none!important}
+  .topbar-title span{max-width:calc(100vw - 135px)!important}
+}
+.section-card{position:relative}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer}
+.section-head h2,.section-head h1{margin:0}
+.section-toggle{background:#f1f5f9!important;color:#0f172a!important;border-radius:999px;width:34px;height:34px;padding:0;font-weight:900}
+.section-body.collapsed{display:none!important}
+.status-chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:800}
+.status-aberto{background:#fef3c7;color:#92400e}
+.status-pago{background:#dcfce7;color:#166534}
+.status-vencido{background:#fee2e2;color:#991b1b}
+.action-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.action-row button{flex:1 1 120px}
+.note-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.note-actions button{font-size:12px;padding:8px 10px}
+.priority-normal{background:#e0f2fe!important;color:#075985!important}
+.priority-importante{background:#fef3c7!important;color:#92400e!important}
+.priority-urgente{background:#fee2e2!important;color:#991b1b!important}
+.trash-card{border:1px dashed #cbd5e1;border-radius:14px;padding:12px;margin:8px 0;background:#f8fafc}
+.center-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.center-summary .mini{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px;font-weight:800}
+.hbar-list{display:flex;flex-direction:column;gap:10px}
+.hbar-row{display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center}
+.hbar-track{height:18px;background:#e2e8f0;border-radius:999px;overflow:hidden}
+.hbar-fill{height:100%;background:linear-gradient(90deg,#0f766e,#14b8a6);border-radius:999px;min-width:4px}
+.hbar-row.max .hbar-fill{background:linear-gradient(90deg,#b91c1c,#ef4444)}
+.hbar-name{font-size:13px;font-weight:800;color:#334155}
+.hbar-value{font-size:13px;font-weight:900;text-align:right}
+.side-submenu.closed{display:none!important}
+.sidebar.collapsed .side-submenu{display:none!important}
+@media(max-width:899px){
+  .center-summary{grid-template-columns:1fr}
+  .hbar-row{grid-template-columns:1fr;gap:5px}
+  .hbar-value{text-align:left}
+}
+
 </style>
 </head>
 <body>
@@ -549,17 +592,12 @@ table{min-width:760px}
       <div id="notifyStatus" class="notify-status"></div>
     </div>
 
-    <div class="config-option">
-      <strong>👤 Usuário</strong>
-      <span class="sub" id="configUsuarioInfo">Usuário conectado.</span>
-    </div>
-
 
     
     <div class="config-option">
       <strong>📧 E-mail automático</strong>
       <span class="sub">Cole a URL do Pipedream para enviar o resumo sem abrir o Outlook.</span>
-      <input id="webhookUrl" class="webhook-input" placeholder="Cole aqui a URL do Pipedream">
+      <input id="webhookUrl" class="webhook-input" value="https://eoyhe0a00fihgig.m.pipedream.net" placeholder="Cole aqui a URL do Pipedream">
       <div class="config-actions">
         <button class="btn-blue btn-small" onclick="salvarWebhookUrl()">Salvar URL</button>
         <button class="btn-green btn-small" onclick="enviarResumoWebhook()">Enviar automático</button>
@@ -593,6 +631,10 @@ table{min-width:760px}
 
     <button id="sideUsuarios" class="side-btn" onclick="mostrarUsuarios()">
       <span class="side-icon">👥</span><span class="side-text">Gestão de usuários</span>
+    </button>
+
+    <button id="sideTrash" class="side-btn" onclick="mostrarLixeira()">
+      <span class="side-icon">🗑️</span><span class="side-text">Lixeira</span>
     </button>
 
     <button id="sideConfig" class="side-btn" onclick="abrirConfiguracoes()">
@@ -645,17 +687,17 @@ table{min-width:760px}
         </div>
 
         <div class="two">
-          <div class="card"><h2>Contas de hoje</h2><div id="contasHoje"></div></div>
-          <div class="card"><h2>Bloco de notas</h2><div id="notasLista"></div></div>
+          <div class="card"><div class="section-head" onclick="toggleSection(\'contasHoje\')"><h2>Contas de hoje</h2><button class="section-toggle" type="button">▾</button></div><div id="sec-contasHoje" class="section-body"><div id="contasHoje"></div></div>
+          <div class="card"><div class="section-head" onclick="toggleSection(\'notas\')"><h2>Bloco de notas</h2><button class="section-toggle" type="button">▾</button></div><div id="sec-notas" class="section-body"><div id="notasLista"></div></div>
         </div>
 
         <div class="two no-print">
-          <div id="atalhoLancamento" class="card"><h2>Lançamento de contas</h2><input id="desc" data-cap placeholder="Descrição"><input id="valor" inputmode="decimal" placeholder="Valor - Ex: 150,90"><input id="venc" type="date"><select id="centro"><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="status"><option>Aberto</option><option>Pago</option></select><textarea id="obs" data-cap placeholder="Observação"></textarea><button class="btn-full" onclick="salvarConta()">Salvar conta</button></div>
-          <div id="atalhoLembrete" class="card"><h2>Adicionar lembrete</h2><input id="ntitulo" data-cap placeholder="Título"><textarea id="ntexto" data-cap placeholder="Recado"></textarea><input id="ndata" type="date"><select id="nprio"><option>Normal</option><option>Urgente</option></select><select id="nloja"><option value="">Todas as lojas</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><button class="btn-full" onclick="salvarNota()">Salvar lembrete</button></div>
+          <div id="atalhoLancamento" class="card"><div class="section-head" onclick="toggleSection(\'lancamento\')"><h2>Lançamento de contas</h2><button class="section-toggle" type="button">▾</button></div><div id="sec-lancamento" class="section-body"><input id="desc" data-cap placeholder="Descrição"><input id="valor" inputmode="decimal" placeholder="Valor - Ex: 150,90"><input id="venc" type="date"><select id="centro"><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="status"><option>Aberto</option><option>Pago</option></select><textarea id="obs" data-cap placeholder="Observação"></textarea><button class="btn-full" id="btnSalvarConta" onclick="salvarConta()">Salvar conta</button></div>
+          <div id="atalhoLembrete" class="card"><h2>Adicionar lembrete</h2><input id="ntitulo" data-cap placeholder="Título"><textarea id="ntexto" data-cap placeholder="Recado"></textarea><input id="ndata" type="date"><select id="nprio"><option>Normal</option><option>Urgente</option></select><select id="nloja"><option value="">Todas as lojas</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><button class="btn-full" id="btnSalvarNota" onclick="salvarNota()">Salvar lembrete</button></div>
         </div>
 
-        <div id="atalhoContas" class="card"><h2>Contas a pagar</h2><div class="row no-print"><select id="fCentro" onchange="render()"><option value="">Todos os centros</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="fStatus" onchange="render()"><option value="">Todos os status</option><option>Aberto</option><option>Pago</option></select><select id="acaoRelatorio" onchange="executarRelatorio()"><option value="">Exportar</option><option value="pdf">PDF</option><option value="csv">CSV</option></select></div><div class="desktop-table" style="overflow:auto"><table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Centro</th><th>Status</th><th>Observação</th><th class="no-print">Ações</th></tr></thead><tbody id="tbody"></tbody></table></div><div id="mobileContasLista" class="mobile-cards"></div></div>
-        <div class="card"><h2>Resumo por centro de custo</h2><div id="grafico" class="chart"></div></div>
+        <div id="atalhoContas" class="card"><div class="section-head" onclick="toggleSection(\'contasPagar\')"><h2>Contas a pagar</h2><button class="section-toggle" type="button">▾</button></div><div id="sec-contasPagar" class="section-body"><div class="row no-print"><select id="fCentro" onchange="render()"><option value="">Todos os centros</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="fStatus" onchange="render()"><option value="">Todos os status</option><option>Aberto</option><option>Pago</option></select><select id="acaoRelatorio" onchange="executarRelatorio()"><option value="">Exportar</option><option value="pdf">PDF</option><option value="csv">CSV</option></select></div><div class="desktop-table" style="overflow:auto"><table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Centro</th><th>Status</th><th>Observação</th><th class="no-print">Ações</th></tr></thead><tbody id="tbody"></tbody></table></div><div id="mobileContasLista" class="mobile-cards"></div></div>
+        <div class="card"><div class="section-head" onclick="toggleSection(\'centro\')"><h2>Resumo por centro de custo</h2><button class="section-toggle" type="button">▾</button></div><div id="sec-centro" class="section-body"><div id="grafico" class="chart"></div></div>
       </div>
 
       <div id="telaUsuarios">
@@ -665,7 +707,21 @@ table{min-width:760px}
       </div>
       <div class="footer no-print">© Dona Flor Gestão Financeira</div>
     </div>
-  </main>
+  
+      <section id="telaLixeira" style="display:none">
+        <div class="card section-card">
+          <div class="section-head" onclick="toggleSection('lixeira')">
+            <h1>🗑️ Lixeira</h1>
+            <button class="section-toggle" type="button">▾</button>
+          </div>
+          <div id="sec-lixeira" class="section-body">
+            <p class="sub">Anotações excluídas ficam aqui por até 60 dias.</p>
+            <div id="trashList"></div>
+          </div>
+        </div>
+      </section>
+
+</main>
 </div>
 </div>
 
@@ -827,7 +883,7 @@ function primeiraMaiuscula(txt){txt=String(txt||"").trimStart();return txt?txt.c
 document.addEventListener("input",e=>{if(e.target.matches("[data-cap]")){let pos=e.target.selectionStart;e.target.value=primeiraMaiuscula(e.target.value);e.target.setSelectionRange(pos,pos);}});
 
 async function entrar(){const u=user.value.trim().toLowerCase(),s=pass.value.trim();loginErro.style.display="none";try{const dados=await rpc("login_usuario",{p_usuario:u,p_senha:s});const achado=Array.isArray(dados)?dados[0]:dados;if(!achado){loginErro.style.display="block";loginErro.textContent="Credenciais inválidas.";return}usuarioLogado=achado;localStorage.setItem("df_user_v15",JSON.stringify(usuarioLogado));abrir();}catch(e){loginErro.style.display="block";loginErro.innerHTML="Erro ao conectar:<br>"+e.message;}}
-function abrir(){login.style.display="none";app.style.display="block";userInfo.textContent=(usuarioLogado.nome||usuarioLogado.usuario)+" ▾";sideUsuarios.style.display=isAdmin()?"flex":"none";navUsuarios.style.display=isAdmin()?"":"none";aplicarMenuSalvo();carregar();}
+function abrir(){login.style.display="none";app.style.display="block";userInfo.textContent=(usuarioLogado.nome||usuarioLogado.usuario)+" ▾";sideUsuarios.style.display=isAdmin()?"flex":"none";navUsuarios.style.display=isAdmin()?"":"none";aplicarMenuSalvo();initWebhookPadrao();restaurarSections();carregar();}
 function sair(){localStorage.removeItem("df_user_v15");location.reload();}window.onload=()=>{const u=localStorage.getItem("df_user_v15");if(u){usuarioLogado=JSON.parse(u);abrir();}}
 
 async function carregar(){try{contasDados=await api("df_contas?select=*&order=vencimento.asc");notasDados=await api("df_notas?select=*&order=data_lembrete.asc");usuariosDados=await api("df_usuarios?select=id,nome,usuario,email,tipo,loja,pode_pagar,ativo&order=nome.asc");render();renderUsuarios();}catch(e){alert("Erro ao carregar dados: "+e.message);}}
@@ -859,7 +915,7 @@ function renderAlertas(){
 }
 
 function filtroContas(){let base=visContas(),fc=fCentro.value,fs=fStatus.value;return base.filter(c=>(!fc||c.centro===fc)&&(!fs||c.status===fs))}
-function render(){let base=visContas(),h=hoje(),m=mesAno(h),filtrada=filtroContas();totalAberto.textContent=moeda(base.filter(c=>c.status==="Aberto").reduce((s,c)=>s+Number(c.valor),0));pagoMes.textContent=moeda(base.filter(c=>c.status==="Pago"&&mesAno(c.vencimento)===m).reduce((s,c)=>s+Number(c.valor),0));vencidas.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento<h).reduce((s,c)=>s+Number(c.valor),0));venceHoje.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento===h).reduce((s,c)=>s+Number(c.valor),0));lembretesHoje.textContent=visNotas().filter(n=>n.data_lembrete===h).length;quantidade.textContent=base.length;tbody.innerHTML=filtrada.map(c=>`<tr><td>${c.descricao}</td><td>${moeda(c.valor)}</td><td>${c.vencimento}</td><td>${c.centro}</td><td><span class="badge ${c.status==="Pago"?"badge-pago":"badge-aberto"}">${c.status}</span></td><td>${c.observacao||""}</td><td class="no-print"><button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">Pago/Aberto</button><button class="btn-red btn-small" onclick="excluir('${c.id}')">Excluir</button></td></tr>`).join("")||'<tr><td colspan="7">Nenhuma conta cadastrada.</td></tr>';renderMobileContas(filtrada);renderAlertas();enviarNotificacaoAlertas();atualizarStatusNotificacao();renderHoje();renderNotas();renderGrafico(base);}
+function render(){let base=visContas(),h=hoje(),m=mesAno(h),filtrada=filtroContas();totalAberto.textContent=moeda(base.filter(c=>c.status==="Aberto").reduce((s,c)=>s+Number(c.valor),0));pagoMes.textContent=moeda(base.filter(c=>c.status==="Pago"&&mesAno(c.vencimento)===m).reduce((s,c)=>s+Number(c.valor),0));vencidas.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento<h).reduce((s,c)=>s+Number(c.valor),0));venceHoje.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento===h).reduce((s,c)=>s+Number(c.valor),0));lembretesHoje.textContent=visNotas().filter(n=>n.data_lembrete===h).length;quantidade.textContent=base.length;tbody.innerHTML=filtrada.map(c=>`<tr><td>${c.descricao}</td><td>${moeda(c.valor)}</td><td>${c.vencimento}</td><td>${c.centro}</td><td><span class="badge ${c.status==="Pago"?"badge-pago":"badge-aberto"}">${c.status}</span></td><td>${c.observacao||""}</td><td class="no-print"><button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">${c.status==="Pago"?"↩️ Reabrir":"✅ Pago"}</button><button class="btn-blue btn-small" onclick="editarConta('${c.id}')">✏️ Editar</button><button class="btn-red btn-small" onclick="excluir('${c.id}')">Excluir</button></td></tr>`).join("")||'<tr><td colspan="7">Nenhuma conta cadastrada.</td></tr>';renderMobileContas(filtrada);renderAlertas();enviarNotificacaoAlertas();atualizarStatusNotificacao();renderHoje();renderNotas();renderGrafico(base);renderGraficoMelhorado();renderLixeira();}
 
 function renderMobileContas(filtrada){
   if(typeof mobileContasLista === "undefined") return;
@@ -875,7 +931,7 @@ function renderMobileContas(filtrada){
       <div class="mobile-account-meta">${c.observacao||""}</div>
       <div style="margin-top:8px"><span class="badge ${c.status==="Pago"?"badge-pago":"badge-aberto"}">${c.status}</span></div>
       <div class="mobile-account-actions no-print">
-        <button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">Pago/Aberto</button>
+        <button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">${c.status==="Pago"?"↩️ Reabrir":"✅ Pago"}</button><button class="btn-blue btn-small" onclick="editarConta('${c.id}')">✏️ Editar</button>
         <button class="btn-red btn-small" onclick="excluir('${c.id}')">Excluir</button>
       </div>
     </div>
@@ -966,18 +1022,161 @@ document.addEventListener("click", e=>{
   if(!e.target.closest(".top-user-wrap")) fecharUserMenu();
 });
 
+
+const WEBHOOK_PADRAO = "https://eoyhe0a00fihgig.m.pipedream.net";
+let editandoContaId = null;
+let editandoNotaId = null;
+
+function initWebhookPadrao(){
+  try{
+    if(!localStorage.getItem("df_webhook_pipedream")) localStorage.setItem("df_webhook_pipedream", WEBHOOK_PADRAO);
+    if(typeof webhookUrl !== "undefined" && !webhookUrl.value) webhookUrl.value = localStorage.getItem("df_webhook_pipedream") || WEBHOOK_PADRAO;
+  }catch(e){}
+}
+
+function toggleSection(id){
+  const el=document.getElementById("sec-"+id);
+  if(!el) return;
+  el.classList.toggle("collapsed");
+  try{localStorage.setItem("df_sec_"+id, el.classList.contains("collapsed")?"0":"1");}catch(e){}
+}
+
+function restaurarSections(){
+  document.querySelectorAll('[id^="sec-"]').forEach(el=>{
+    const id=el.id.replace("sec-","");
+    const st=localStorage.getItem("df_sec_"+id);
+    if(st==="0") el.classList.add("collapsed");
+  });
+}
+
+function statusConta(c){
+  if(c.status==="Pago") return "✅ Pago";
+  if(c.status==="Aberto" && c.vencimento < hoje()) return "🔴 Vencido";
+  if(c.status==="Aberto" && c.vencimento === hoje()) return "⚠️ Vence hoje";
+  return "🟢 Aberto";
+}
+
+function classeStatusConta(c){
+  if(c.status==="Pago") return "status-pago";
+  if(c.vencimento < hoje()) return "status-vencido";
+  return "status-aberto";
+}
+
+function editarConta(id){
+  const c=contas.find(x=>String(x.id)===String(id));
+  if(!c) return;
+  editandoContaId=id;
+  descricao.value=c.descricao||"";
+  valor.value=c.valor||"";
+  vencimento.value=c.vencimento||"";
+  centro.value=c.centro||"";
+  observacao.value=c.observacao||"";
+  if(typeof btnSalvarConta !== "undefined") btnSalvarConta.textContent="Salvar alteração";
+  document.getElementById("atalhoLancamento")?.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function prioridadeClasse(p){
+  p=(p||"Normal").toLowerCase();
+  if(p.includes("urgent")) return "priority-urgente";
+  if(p.includes("import")) return "priority-importante";
+  return "priority-normal";
+}
+
+function editarNota(id){
+  const n=notas.find(x=>String(x.id)===String(id));
+  if(!n) return;
+  editandoNotaId=id;
+  tituloNota.value=n.titulo||"";
+  textoNota.value=n.texto||n.recado||"";
+  dataNota.value=n.data||"";
+  prioridadeNota.value=n.prioridade||"Normal";
+  if(typeof btnSalvarNota !== "undefined") btnSalvarNota.textContent="Salvar alteração";
+  document.getElementById("atalhoLembrete")?.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function excluirNotaSoft(id){
+  if(!confirm("Mover anotação para a lixeira?")) return;
+  const n=notas.find(x=>String(x.id)===String(id));
+  if(!n) return;
+  n.deletado=true;
+  n.dataExclusao=new Date().toISOString();
+  await salvarNotasLocal();
+  render();
+}
+
+async function mudarPrioridadeNota(id){
+  const n=notas.find(x=>String(x.id)===String(id));
+  if(!n) return;
+  const atual=n.prioridade||"Normal";
+  n.prioridade= atual==="Normal" ? "Importante" : atual==="Importante" ? "Urgente" : "Normal";
+  await salvarNotasLocal();
+  render();
+}
+
+function limparLixeira60dias(){
+  const agora=Date.now();
+  notas=notas.filter(n=>{
+    if(!n.deletado) return true;
+    const dt=new Date(n.dataExclusao||0).getTime();
+    return ((agora-dt)/(1000*60*60*24)) < 60;
+  });
+}
+
+async function restaurarNota(id){
+  const n=notas.find(x=>String(x.id)===String(id));
+  if(!n) return;
+  n.deletado=false; n.dataExclusao=null;
+  await salvarNotasLocal();
+  render(); mostrarLixeira();
+}
+
+async function excluirNotaDefinitivo(id){
+  if(!confirm("Excluir definitivamente?")) return;
+  notas=notas.filter(x=>String(x.id)!==String(id));
+  await salvarNotasLocal();
+  render(); mostrarLixeira();
+}
+
+function renderLixeira(){
+  if(typeof trashList==="undefined") return;
+  const excluidas=notas.filter(n=>n.deletado);
+  trashList.innerHTML=excluidas.map(n=>{
+    let dias=60;
+    if(n.dataExclusao) dias=Math.max(0,60-Math.floor((Date.now()-new Date(n.dataExclusao).getTime())/(1000*60*60*24)));
+    return `<div class="trash-card"><strong>${n.titulo||"Sem título"}</strong><p class="sub">${n.texto||n.recado||""}</p><small>Restam ${dias} dias</small><div class="note-actions"><button class="btn-green btn-small" onclick="restaurarNota('${n.id}')">Restaurar</button><button class="btn-red btn-small" onclick="excluirNotaDefinitivo('${n.id}')">Excluir definitivo</button></div></div>`;
+  }).join("") || '<p class="empty">Lixeira vazia.</p>';
+}
+
+function mostrarLixeira(){
+  marcarMenuAtivo("sideTrash");
+  if(typeof painel!=="undefined") painel.style.display="none";
+  if(typeof telaUsuarios!=="undefined") telaUsuarios.style.display="none";
+  if(typeof telaLixeira!=="undefined") telaLixeira.style.display="block";
+  renderLixeira();
+  fecharMenuMobile?.();
+}
+
+function renderGraficoMelhorado(){
+  const alvo=document.querySelector(".chart");
+  if(!alvo) return;
+  const centros=["Dona Flor Andradina","Dona Flor Paranaíba","Dona Flor Três Lagoas","Brilho Dourado","Pessoal"];
+  const base=visContas().filter(c=>c.status==="Aberto");
+  const vals=centros.map(nome=>({nome,valor:base.filter(c=>c.centro===nome).reduce((s,c)=>s+Number(c.valor||0),0)}));
+  const total=vals.reduce((s,v)=>s+v.valor,0);
+  const max=Math.max(...vals.map(v=>v.valor),1);
+  const maior=vals.reduce((a,b)=>b.valor>a.valor?b:a,vals[0]);
+  alvo.innerHTML=`<div class="center-summary"><div class="mini">💰 Total<br>${moeda(total)}</div><div class="mini">🏆 Maior<br>${maior.nome}</div><div class="mini">📉 Sem custo<br>${vals.filter(v=>v.valor===0).length}</div></div><div class="hbar-list">${vals.map(v=>`<div class="hbar-row ${v.valor===max&&v.valor>0?'max':''}" onclick="fCentro.value='${v.nome}';render()"><div class="hbar-name">${v.nome}</div><div class="hbar-track"><div class="hbar-fill" style="width:${Math.max(3,(v.valor/max)*100)}%"></div></div><div class="hbar-value">${moeda(v.valor)} ${total?Math.round(v.valor/total*100):0}%</div></div>`).join("")}</div>`;
+}
+
+
 function normalizarWebhookUrl(url){
   return String(url || "").trim();
 }
 function carregarWebhookUrl(){
   try{
-    const salva = localStorage.getItem("df_webhook_pipedream") || "";
-    if(typeof webhookUrl !== "undefined"){
-      webhookUrl.value = salva;
-    }
-    if(typeof webhookStatus !== "undefined" && salva){
-      webhookStatus.innerHTML = "<span class='status-ok'>URL salva.</span>";
-    }
+    const salva = localStorage.getItem("df_webhook_pipedream") || WEBHOOK_PADRAO;
+    if(typeof webhookUrl !== "undefined") webhookUrl.value = salva;
+    if(typeof webhookStatus !== "undefined" && salva) webhookStatus.innerHTML = "<span class='status-ok'>URL salva.</span>";
   }catch(e){}
 }
 function salvarWebhookUrl(){

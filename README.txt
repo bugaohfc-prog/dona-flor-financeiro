@@ -1,20 +1,27 @@
-Dona Flor V18.7.0 - Notas + Lixeira por tipo
+Dona Flor V18.7.1 - Contas + Lixeira
+
+Base: V18.7.0 Notas + Lixeira.
 
 Inclui:
-- Notas com Editar.
-- Notas com Excluir para Lixeira.
-- Alterar prioridade: Normal, Importante, Urgente.
-- Menu Lixeira por tipo: Notas e Contas.
-- Restaurar nota.
-- Excluir nota definitivamente.
-- Lixeira de contas já preparada para próxima etapa.
+- Lixeira por tipo: Notas e Contas.
+- Excluir conta agora envia para lixeira.
+- Restaurar conta.
+- Excluir conta definitivamente.
+- Listagens escondem contas na lixeira.
+- Mantém notas + lixeira funcionando.
 
 SQL:
-- Pode não precisar se a tabela já aceitar os campos.
-- Se der erro ao excluir/restaurar nota por coluna inexistente, rode:
-  supabase-sql-v18-7-0-lixeira-notas.sql
+Rode o arquivo:
+supabase-sql-v18-7-1-contas-lixeira.sql
 
 Passos:
-1. Substitua os arquivos no GitHub.
-2. Redeploy na Vercel.
-3. Limpe cache/reinstale app no celular se necessário.
+1. Rode o SQL no Supabase.
+2. Substitua os arquivos no GitHub.
+3. Redeploy na Vercel.
+4. Limpe cache/reinstale app no celular se necessário.
+
+Teste:
+- Excluir uma conta.
+- Abrir Lixeira > Contas.
+- Restaurar.
+- Excluir definitivo.

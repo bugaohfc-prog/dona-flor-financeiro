@@ -459,6 +459,48 @@ table{min-width:760px}
   }
 }
 
+
+/* V18.7.1 Contas + Lixeira */
+.conta-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.conta-actions button{
+  font-size:12px;
+  padding:8px 10px;
+  border-radius:10px;
+}
+.trash-conta-card{
+  border:1px dashed #CBD5E1;
+  border-radius:14px;
+  padding:12px;
+  margin:10px 0;
+  background:#F8FAFC;
+}
+.trash-conta-top{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:flex-start;
+}
+.trash-conta-title{font-weight:900;color:#0F172A}
+.trash-conta-value{font-weight:900;color:#0F766E}
+.trash-conta-meta{color:#64748B;font-size:13px;margin-top:4px}
+.trash-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+@media(max-width:899px){
+  .conta-actions button,.trash-actions button{
+    flex:1 1 100%;
+    width:100%;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1257,6 +1299,175 @@ if(oldCarregarDF){
   carregar = async function(){
     await oldCarregarDF();
     try{ renderNotasMelhoradoDF(); renderLixeiraDF(trashTipoAtualDF || "nota"); }catch(e){}
+  }
+}
+
+
+/* V18.7.1 Contas + Lixeira */
+function getContasArrayDF(){
+  try{
+    if(typeof contas !== "undefined" && Array.isArray(contas)) return contas;
+    if(typeof contasDados !== "undefined" && Array.isArray(contasDados)) return contasDados;
+  }catch(e){}
+  window.contas = [];
+  return window.contas;
+}
+
+function setContasArrayDF(arr){
+  try{
+    if(typeof contas !== "undefined") contas = arr;
+    else window.contas = arr;
+  }catch(e){ window.contas = arr; }
+}
+
+async function atualizarContaSupabaseDF(id, dados){
+  if(typeof api === "function"){
+    await api("df_contas?id=eq."+id, {
+      method:"PATCH",
+      headers:{Prefer:"return=minimal"},
+      body:JSON.stringify(dados)
+    });
+  }else{
+    let arr = getContasArrayDF().map(c => String(c.id)===String(id) ? {...c, ...dados} : c);
+    setContasArrayDF(arr);
+    localStorage.setItem("df_contas_local", JSON.stringify(arr));
+  }
+}
+
+async function deletarContaSupabaseDF(id){
+  if(typeof api === "function"){
+    await api("df_contas?id=eq."+id, {method:"DELETE"});
+  }else{
+    let arr = getContasArrayDF().filter(c => String(c.id)!==String(id));
+    setContasArrayDF(arr);
+    localStorage.setItem("df_contas_local", JSON.stringify(arr));
+  }
+}
+
+function contaAtivaDF(c){
+  return !(c.deletado === true || c.deletado === "true" || c.data_exclusao || c.dataExclusao);
+}
+
+function contasAtivasDF(){
+  return getContasArrayDF().filter(contaAtivaDF);
+}
+
+async function excluirContaLixeiraDF(id){
+  if(!confirm("Mover esta conta para a lixeira?")) return;
+  await atualizarContaSupabaseDF(id, {
+    deletado:true,
+    data_exclusao:new Date().toISOString()
+  });
+  alert("Conta enviada para a lixeira.");
+  if(typeof carregar === "function") await carregar();
+  else if(typeof render === "function") render();
+}
+
+async function restaurarContaDF(id){
+  await atualizarContaSupabaseDF(id, {
+    deletado:false,
+    data_exclusao:null
+  });
+  alert("Conta restaurada.");
+  if(typeof carregar === "function") await carregar();
+  renderLixeiraDF("conta");
+}
+
+async function excluirContaDefinitivoDF(id){
+  if(!confirm("Excluir definitivamente esta conta?")) return;
+  await deletarContaSupabaseDF(id);
+  alert("Conta excluída definitivamente.");
+  if(typeof carregar === "function") await carregar();
+  renderLixeiraDF("conta");
+}
+
+function diasRestantesLixeiraDF(dt){
+  try{
+    return Math.max(0, 60 - Math.floor((Date.now() - new Date(dt).getTime()) / (1000*60*60*24)));
+  }catch(e){ return 60; }
+}
+
+function renderLixeiraContasDF(){
+  const lista = document.getElementById("trashListDF");
+  if(!lista) return;
+  const arr = getContasArrayDF().filter(c => !contaAtivaDF(c));
+  if(!arr.length){
+    lista.innerHTML = "<p class='empty'>Nenhuma conta na lixeira.</p>";
+    return;
+  }
+  lista.innerHTML = arr.map(c => {
+    const dt = c.data_exclusao || c.dataExclusao || new Date().toISOString();
+    const dias = diasRestantesLixeiraDF(dt);
+    return `
+      <div class="trash-conta-card">
+        <div class="trash-conta-top">
+          <div>
+            <div class="trash-conta-title">${c.descricao || "Sem descrição"}</div>
+            <div class="trash-conta-meta">${c.centro || ""} • Vencimento: ${c.vencimento || ""} • Status: ${c.status || ""}</div>
+            <small>Excluído em: ${new Date(dt).toLocaleDateString("pt-BR")} • Restam ${dias} dias</small>
+          </div>
+          <div class="trash-conta-value">${typeof moeda === "function" ? moeda(Number(c.valor||0)) : "R$ " + Number(c.valor||0).toFixed(2)}</div>
+        </div>
+        <div class="trash-actions">
+          <button class="btn-green btn-small" onclick="restaurarContaDF('${c.id}')">🔄 Restaurar</button>
+          <button class="btn-red btn-small" onclick="excluirContaDefinitivoDF('${c.id}')">❌ Excluir definitivo</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+/* Patch da lixeira por tipo: mantém notas e ativa contas */
+const renderLixeiraOriginalDF = typeof renderLixeiraDF === "function" ? renderLixeiraDF : null;
+renderLixeiraDF = function(tipo="nota"){
+  try{
+    trashTipoAtualDF = tipo;
+    document.getElementById("tabTrashNotas")?.classList.toggle("active", tipo==="nota");
+    document.getElementById("tabTrashContas")?.classList.toggle("active", tipo==="conta");
+    if(tipo === "conta") return renderLixeiraContasDF();
+    if(renderLixeiraOriginalDF) return renderLixeiraOriginalDF("nota");
+  }catch(e){
+    alert("Erro ao renderizar lixeira: " + e.message);
+  }
+};
+
+/* Patch excluir conta existente: em vez de deletar direto, manda para lixeira */
+const excluirContaOriginalDF = typeof excluirConta === "function" ? excluirConta : null;
+if(typeof excluirConta === "function"){
+  excluirConta = async function(id){
+    return excluirContaLixeiraDF(id);
+  }
+}
+
+/* Patch render/visContas para esconder deletados */
+const visContasOriginalDF = typeof visContas === "function" ? visContas : null;
+if(visContasOriginalDF){
+  visContas = function(){
+    try{
+      return visContasOriginalDF().filter(contaAtivaDF);
+    }catch(e){
+      return contasAtivasDF();
+    }
+  }
+}
+
+/* Fallback: se a tela tiver botões antigos Excluir chamando excluirConta(id), o patch acima resolve.
+   Se houver templates chamando excluir(id), tentamos interceptar também. */
+if(typeof excluir === "function"){
+  const excluirOriginalGenericoDF = excluir;
+  excluir = async function(id){
+    const existeConta = getContasArrayDF().some(c => String(c.id)===String(id));
+    if(existeConta) return excluirContaLixeiraDF(id);
+    return excluirOriginalGenericoDF(id);
+  }
+}
+
+/* Renderiza lixeira novamente após carregar */
+const carregarOriginalContasLixeiraDF = typeof carregar === "function" ? carregar : null;
+if(carregarOriginalContasLixeiraDF){
+  carregar = async function(){
+    await carregarOriginalContasLixeiraDF();
+    try{ renderLixeiraDF(trashTipoAtualDF || "nota"); }catch(e){}
   }
 }
 

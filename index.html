@@ -1,1 +1,706 @@
-<!-- versão placeholder corrigida, reenvio -->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>Dona Flor Gestão Financeira</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="theme-color" content="#0F766E">
+<style>
+:root{--principal:#0F766E;--principal2:#075E58;--destaque:#14B8A6;--fundo:#F1F5F9;--texto:#334155;--muted:#64748B;--red:#B91C1C;--green:#15803D;--blue:#2563EB;--orange:#F59E0B;--line:#E5E7EB;--card:#FFFFFF}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#F8FAFC;color:var(--texto)}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(circle at 50% 5%,rgba(20,184,166,.28),transparent 42%),linear-gradient(180deg,#F8FAFC,#EAF0F3)}
+.login{width:100%;max-width:470px;text-align:center;background:white;border-radius:28px;padding:26px;box-shadow:0 20px 55px rgba(15,23,42,.12)}
+.logo-login{width:128px;height:128px;border-radius:30px;object-fit:cover;box-shadow:0 14px 34px rgba(15,118,110,.28)}
+h1{margin:0;color:var(--principal);font-size:32px;line-height:1.1}h2{margin-top:0;color:#0F172A}.sub{color:var(--muted);margin-top:6px;line-height:1.35}
+input,select,textarea{width:100%;padding:13px 14px;margin:7px 0;border-radius:13px;border:1px solid #D7DEE8;font-size:15px;outline:none;background:white}
+input:focus,select:focus,textarea:focus{border-color:var(--destaque);box-shadow:0 0 0 4px rgba(20,184,166,.12)}textarea{min-height:85px;resize:vertical}
+button{padding:11px 14px;border:0;border-radius:12px;background:var(--principal);color:white;font-weight:800;margin:4px;cursor:pointer}button:hover{filter:brightness(.97)}
+.btn-full{width:100%;margin-top:10px}.btn-light{background:#EEF2F7;color:#111827}.btn-blue{background:var(--blue)}.btn-green{background:var(--green)}.btn-red{background:var(--red)}.btn-dark{background:#334155}.btn-orange{background:var(--orange);color:#111827}.btn-small{font-size:12px;padding:8px 10px}
+.erro{background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;padding:10px;border-radius:14px;margin-top:10px;display:none}.ok{background:#ECFDF5;border:1px solid #A7F3D0;color:#065F46;padding:10px;border-radius:14px;margin-top:10px}
+#app{display:none}.app-shell{display:grid;grid-template-columns:1fr;min-height:100vh}
+.sidebar{background:white;border-right:1px solid var(--line);padding:16px;display:none}.brand{display:flex;gap:10px;align-items:center;margin-bottom:24px}.brand img{width:44px;height:44px;border-radius:12px;object-fit:cover}.brand strong{color:var(--principal)}
+.side-btn{display:flex;align-items:center;width:100%;gap:10px;background:white;color:#0f172a;text-align:left;margin:4px 0;padding:12px;border-radius:12px}.side-btn.active{background:#E8F8F6;color:var(--principal)}.side-spacer{height:44vh}
+.topbar{background:linear-gradient(90deg,var(--principal2),var(--principal));color:white;padding:14px 18px;box-shadow:0 4px 18px rgba(15,23,42,.12)}.topbar-inner{max-width:1180px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:12px}.topbar img{width:38px;height:38px;border-radius:10px;object-fit:cover}.topbar-title{display:flex;align-items:center;gap:10px;font-weight:800}.user-pill{background:rgba(255,255,255,.15);padding:8px 10px;border-radius:999px}
+.container{max-width:1180px;margin:auto;padding:16px}.card{background:white;border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 10px 30px rgba(15,23,42,.07);border:1px solid rgba(20,184,166,.08)}
+.nav-mobile{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.nav-mobile button{background:#E8F8F6;color:var(--principal)}.nav-mobile button.active{background:var(--principal);color:white}
+.grid{display:grid;grid-template-columns:1fr;gap:12px}.two{display:grid;grid-template-columns:1fr;gap:16px}.three{display:grid;grid-template-columns:1fr;gap:12px}
+.resumo{background:white;border-left:5px solid var(--destaque)}.alerta{background:white;border-left:5px solid var(--orange)}.recado{background:white;border-left:5px solid #EF4444}.resumo strong,.alerta strong,.recado strong{font-size:22px;color:#0f172a}.metric-title{font-size:12px;font-weight:800;color:var(--principal);text-transform:uppercase}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}th{background:#F9FAFB;color:#0f172a}
+.badge{display:inline-block;padding:4px 9px;border-radius:999px;background:#E7FFFC;color:var(--principal);font-size:12px;font-weight:700}.badge-pago{background:#DCFCE7;color:#166534}.badge-aberto{background:#FEF3C7;color:#92400E}.badge-red{background:#FEE2E2;color:#991B1B}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.item{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding:11px 0}.item:last-child{border-bottom:0}
+#telaUsuarios{display:none}.chart{display:flex;gap:12px;align-items:end;height:260px;overflow:auto;border:1px solid var(--line);border-radius:16px;padding:12px}.barwrap{min-width:125px;text-align:center;font-size:12px;color:#687385}.bar{width:46px;margin:auto;background:linear-gradient(180deg,var(--destaque),var(--principal));border-radius:12px 12px 0 0}
+.empty{color:var(--muted);font-size:14px}.diag{background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;padding:10px;border-radius:14px;margin-bottom:10px;display:none}
+.footer{text-align:center;color:#64748b;font-size:12px;padding:16px}
+@media(min-width:900px){.app-shell{grid-template-columns:240px 1fr}.sidebar{display:block}.nav-mobile{display:none}.grid{grid-template-columns:repeat(4,1fr)}.two{grid-template-columns:1fr 1fr}.three{grid-template-columns:repeat(3,1fr)}.topbar-inner{max-width:none}}
+@media(min-width:1180px){.grid{grid-template-columns:repeat(6,1fr)}}
+@media print{.no-print,.sidebar,#telaUsuarios,.topbar{display:none!important}body{background:#fff}.app-shell{display:block}.card{box-shadow:none;border:1px solid #ddd}}
+
+.alert-box{background:linear-gradient(90deg,#FEF2F2,#FFF7ED);border:1px solid #FECACA;border-left:6px solid #DC2626;border-radius:18px;padding:16px;margin-bottom:16px;display:none}
+.alert-box h2{margin:0 0 8px;color:#991B1B}
+.alert-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.alert-mini{background:white;border:1px solid #FDE68A;border-radius:14px;padding:12px}
+.alert-mini strong{display:block;font-size:20px;color:#0F172A}
+.alert-list{margin-top:10px;border-top:1px solid #FECACA;padding-top:8px}
+.alert-list .item{border-bottom:1px solid #FEE2E2}
+@media(min-width:760px){.alert-grid{grid-template-columns:repeat(3,1fr)}}
+
+
+.notify-box{background:#EFF6FF;border:1px solid #BFDBFE;border-left:6px solid #2563EB;border-radius:18px;padding:14px;margin-bottom:16px}
+.notify-box strong{color:#1E40AF}
+.notify-status{font-size:13px;color:#475569;margin-top:6px}
+
+
+/* V17.2 Responsiva */
+.mobile-cards{display:none}
+.desktop-table{display:block}
+.compact-actions{display:flex;gap:6px;flex-wrap:wrap}
+@media(max-width:899px){
+  body{background:#F8FAFC}
+  .topbar{padding:10px 12px}
+  .topbar-title{font-size:14px;min-width:0}
+  .topbar-title img{width:34px;height:34px}
+  .topbar-title span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}
+  .user-pill{font-size:13px;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .container{padding:10px}
+  .card{border-radius:16px;padding:14px;margin-bottom:10px}
+  h1{font-size:22px}
+  h2{font-size:18px;margin-bottom:10px}
+  input,select,textarea{padding:12px;font-size:15px;border-radius:12px}
+  button{padding:11px 12px;border-radius:12px}
+  .nav-mobile{position:sticky;top:0;z-index:20;background:#F8FAFC;padding:8px 0;margin:0 0 8px;overflow:auto;flex-wrap:nowrap}
+  .nav-mobile button{white-space:nowrap;min-width:max-content}
+  .grid{grid-template-columns:1fr 1fr;gap:8px}
+  .grid .card{min-height:92px}
+  .metric-title{font-size:11px}
+  .resumo strong,.alerta strong,.recado strong{font-size:20px}
+  .two,.three{grid-template-columns:1fr;gap:10px}
+  .notify-box,.alert-box{padding:12px;border-radius:16px;margin-bottom:10px}
+  .alert-grid{grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .alert-mini{padding:9px;border-radius:12px}
+  .alert-mini strong{font-size:18px}
+  .desktop-table{display:none}
+  .mobile-cards{display:block}
+  .mobile-account{background:white;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:0 4px 14px rgba(15,23,42,.05)}
+  .mobile-account-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+  .mobile-account-title{font-weight:800;color:#0F172A}
+  .mobile-account-value{font-weight:900;color:var(--principal);white-space:nowrap}
+  .mobile-account-meta{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.45}
+  .mobile-account-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .mobile-account-actions button{font-size:12px;padding:8px 10px}
+  .chart{height:210px;padding:10px}
+  .barwrap{min-width:100px}
+  .bar{width:38px}
+  .item{align-items:flex-start}
+}
+@media(min-width:900px){
+  .sidebar{position:sticky;top:0;height:100vh}
+  .container{padding:18px 22px}
+  .card{transition:transform .15s ease, box-shadow .15s ease}
+  .card:hover{transform:translateY(-1px);box-shadow:0 14px 34px rgba(15,23,42,.08)}
+  .topbar-title span{display:inline}
+  .grid{grid-template-columns:repeat(6,1fr)}
+}
+@media(max-width:430px){
+  .grid{grid-template-columns:1fr}
+  .alert-grid{grid-template-columns:1fr}
+  .user-pill{display:none}
+  .topbar-title span{max-width:240px}
+}
+
+
+/* V17.3 Correção definitiva de rolagem lateral no celular */
+html,body{max-width:100%;overflow-x:hidden}
+*{max-width:100%}
+img,svg,video{max-width:100%;height:auto}
+.app-shell,main,.container,.card,.topbar,.topbar-inner,#app,#painel,#telaUsuarios{max-width:100%;overflow-x:hidden}
+table{min-width:760px}
+.desktop-table{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:899px){
+  .app-shell{display:block;width:100%}
+  main{width:100%;min-width:0}
+  .container{width:100%;max-width:100%;padding-left:8px;padding-right:8px}
+  .card{width:100%;max-width:100%;overflow:hidden}
+  .topbar{width:100%;max-width:100%;overflow:hidden}
+  .topbar-inner{width:100%;max-width:100%;min-width:0}
+  .topbar-title{min-width:0;flex:1}
+  .topbar-title span{display:block;max-width:calc(100vw - 90px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nav-mobile{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden}
+  .nav-mobile::-webkit-scrollbar{display:none}
+  .grid,.two,.three{width:100%;max-width:100%;overflow:hidden}
+  .alert-grid{width:100%;max-width:100%}
+  .row{width:100%;max-width:100%;overflow:hidden}
+  .row select,.row input,.row button{min-width:0;flex:1 1 100%}
+  #acaoRelatorio,#fCentro,#fStatus{width:100%}
+  .mobile-account{width:100%;max-width:100%}
+  .mobile-account-head{width:100%;min-width:0}
+  .mobile-account-title,.mobile-account-meta{word-break:break-word;overflow-wrap:anywhere}
+  .mobile-account-value{font-size:15px;white-space:normal;text-align:right}
+  .mobile-account-actions button{flex:1 1 auto;min-width:120px}
+  .chart{width:100%;max-width:100%;overflow-x:auto}
+  .barwrap{min-width:88px}
+}
+@media(max-width:430px){
+  .topbar-title span{max-width:calc(100vw - 72px)}
+  .grid{grid-template-columns:1fr}
+  .card{padding:12px}
+  .mobile-account-actions{display:grid;grid-template-columns:1fr 1fr}
+  .mobile-account-actions button{min-width:0;width:100%}
+}
+
+
+/* V17.4 Configurações */
+.config-btn{background:rgba(255,255,255,.18);color:white;border:1px solid rgba(255,255,255,.18);border-radius:999px;width:40px;height:40px;padding:0;font-size:20px;display:inline-flex;align-items:center;justify-content:center}
+.config-btn:hover{background:rgba(255,255,255,.28)}
+.config-modal-bg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:999;align-items:center;justify-content:center;padding:18px}
+.config-modal{background:white;border-radius:22px;padding:20px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.config-modal h2{margin-bottom:6px}
+.config-option{border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0;background:#F8FAFC}
+.config-option strong{display:block;color:#0F172A;margin-bottom:4px}
+.config-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+@media(max-width:899px){
+  .config-btn{width:38px;height:38px;font-size:18px;flex:0 0 auto}
+  .topbar-inner{gap:8px}
+}
+
+
+/* V17.5 Refinamento visual */
+.topbar-title span{font-weight:700;font-size:16px}
+.user-pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2)}
+.config-btn{opacity:.85}
+.config-btn:hover{opacity:1}
+
+.nav-mobile button{
+  background:#E2E8F0;
+  color:#0F172A;
+  font-weight:600;
+}
+.nav-mobile button.active{
+  background:var(--principal);
+  color:white;
+}
+
+.metric-title{font-size:12px;color:#64748B}
+.resumo strong,.alerta strong,.recado strong{
+  font-size:22px;
+  letter-spacing:.5px;
+}
+
+.card{
+  border:1px solid #E2E8F0;
+}
+
+.config-option{
+  display:flex;
+  flex-direction:column;
+}
+
+.config-status{
+  margin-top:6px;
+  font-weight:700;
+}
+
+.status-on{color:#16A34A}
+.status-off{color:#DC2626}
+
+
+/* V18 E-mail */
+.email-preview{background:#F8FAFC;border:1px dashed #CBD5E1;border-radius:14px;padding:12px;margin-top:10px;white-space:pre-wrap;font-size:13px;color:#334155;max-height:220px;overflow:auto}
+
+
+/* V18.2.1 Estável Real - menu SaaS corrigido */
+.sidebar{
+  width:240px;
+  min-width:240px;
+  transition:width .22s ease, min-width .22s ease;
+  display:flex!important;
+  flex-direction:column;
+  overflow:hidden;
+}
+.brand{min-height:56px}
+.side-spacer{flex:1;height:auto}
+.side-btn{
+  min-height:46px;
+  gap:12px;
+  font-weight:700;
+  white-space:nowrap;
+  overflow:hidden;
+  display:flex!important;
+  align-items:center;
+}
+.side-icon{
+  width:24px;
+  min-width:24px;
+  text-align:center;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:18px;
+}
+.side-text{
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.sidebar-toggle{
+  background:#F1F5F9!important;
+  color:#0F172A!important;
+  margin-bottom:10px!important;
+}
+.sidebar.collapsed{
+  width:74px!important;
+  min-width:74px!important;
+  padding-left:10px;
+  padding-right:10px;
+}
+.sidebar.collapsed .brand div,
+.sidebar.collapsed .side-text{
+  display:none!important;
+}
+.sidebar.collapsed .brand{
+  justify-content:center;
+}
+.sidebar.collapsed .brand img{
+  width:42px;
+  height:42px;
+}
+.sidebar.collapsed .side-btn{
+  justify-content:center!important;
+  padding-left:0;
+  padding-right:0;
+  gap:0;
+}
+.sidebar.collapsed .side-icon{
+  width:44px;
+  min-width:44px;
+  font-size:20px;
+}
+.top-user-wrap .config-btn{display:none!important}
+.user-pill{
+  max-width:220px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+@media(min-width:900px){
+  .app-shell.sidebar-collapsed{grid-template-columns:74px 1fr!important}
+}
+@media(max-width:899px){
+  .sidebar{display:none!important}
+}
+
+</style>
+</head>
+<body>
+<div id="login" class="login-wrap">
+  <div class="login">
+    <img src="/icon-512.png" class="logo-login" alt="Dona Flor">
+    <h1>Dona Flor</h1><p class="sub">Gestão Financeira</p>
+    <input id="user" placeholder="Usuário" autocomplete="username">
+    <input id="pass" type="password" placeholder="Senha" autocomplete="current-password">
+    <button class="btn-full" onclick="entrar()">Acessar sistema</button>
+    <button class="btn-light" onclick="alert('Login inicial: admin / admin123 ou hindeburg / 123456')">Esqueci minha senha</button>
+    <div id="loginErro" class="erro"></div>
+  </div>
+</div>
+
+<div id="app">
+
+<div id="configModal" class="config-modal-bg no-print">
+  <div class="config-modal">
+    <h2>⚙️ Configurações</h2>
+    <p class="sub">Ajustes do app Dona Flor Gestão Financeira.</p>
+
+    <div class="config-option">
+      <strong>🔔 Notificações</strong>
+      <span class="sub">Receba aviso de contas vencidas, vencendo hoje e amanhã.</span>
+      <div class="config-actions">
+        <button class="btn-blue btn-small" onclick="ativarNotificacoes()">Ativar notificações</button>
+        <button class="btn-light btn-small" onclick="testarNotificacao()">Testar notificação</button>
+      </div>
+      <div id="notifyStatus" class="notify-status"></div>
+    </div>
+
+    <div class="config-option">
+      <strong>👤 Usuário</strong>
+      <span class="sub" id="configUsuarioInfo">Usuário conectado.</span>
+    </div>
+
+
+    <div class="config-option">
+      <strong>📧 E-mail de resumo</strong>
+      <span class="sub">Gere um resumo das contas vencidas, de hoje e de amanhã para enviar ao Outlook.</span>
+      <div class="config-actions">
+        <button class="btn-green btn-small" onclick="enviarResumoEmail()">Enviar resumo agora</button>
+        <button class="btn-light btn-small" onclick="preverResumoEmail()">Pré-visualizar</button>
+      </div>
+      <div id="emailPreview" class="email-preview" style="display:none"></div>
+    </div>
+
+    <div class="config-option">
+      <strong>📱 Aplicativo</strong>
+      <span class="sub">Para atualizar ícone/layout no celular, remova e adicione novamente à tela inicial.</span>
+    </div>
+
+    <div class="row" style="justify-content:flex-end;margin-top:12px">
+      <button class="btn-dark" onclick="fecharConfiguracoes()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div id="appShell" class="app-shell">
+  <aside class="sidebar no-print">
+    <div class="brand">
+      <img src="/icon-512.png">
+      <div><strong>Dona Flor</strong><br><span class="sub">Gestão Financeira</span></div>
+    </div>
+
+    <button class="side-btn sidebar-toggle" onclick="alternarMenu()" title="Recolher menu">
+      <span class="side-icon">☰</span><span class="side-text">Recolher menu</span>
+    </button>
+
+    <button id="sidePainel" class="side-btn active" onclick="mostrarPainel()">
+      <span class="side-icon">📊</span><span class="side-text">Painel</span>
+    </button>
+
+    <button id="sideUsuarios" class="side-btn" onclick="mostrarUsuarios()">
+      <span class="side-icon">👥</span><span class="side-text">Gestão de usuários</span>
+    </button>
+
+    <button id="sideConfig" class="side-btn" onclick="abrirConfiguracoes()">
+      <span class="side-icon">⚙️</span><span class="side-text">Configurações</span>
+    </button>
+
+    <div class="side-spacer"></div>
+
+    <button class="side-btn" onclick="sair()">
+      <span class="side-icon">↩</span><span class="side-text">Sair</span>
+    </button>
+  </aside>
+  <main>
+    <div class="topbar no-print">
+      <div class="topbar-inner">
+        <div class="topbar-title"><img src="/icon-512.png"><span>Dona Flor Gestão Financeira</span></div>
+        <div class="user-pill" id="userInfo">Admin</div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="nav-mobile no-print"><button id="navPainel" class="active" onclick="mostrarPainel();setActiveMenu(this)">Painel</button><button id="navUsuarios" onclick="mostrarUsuarios();setActiveMenu(this)">Gestão de usuários</button><button class="btn-dark" onclick="sair()">Sair</button></div>
+
+      <div id="painel">
+
+        <div id="alertasVencimento" class="alert-box">
+          <h2>⚠️ Atenção financeira</h2>
+          <div class="alert-grid">
+            <div class="alert-mini"><span>Vencidas</span><strong id="qtdVencidasAlerta">0</strong><small id="valorVencidasAlerta">R$ 0,00</small></div>
+            <div class="alert-mini"><span>Vencem hoje</span><strong id="qtdHojeAlerta">0</strong><small id="valorHojeAlerta">R$ 0,00</small></div>
+            <div class="alert-mini"><span>Vencem amanhã</span><strong id="qtdAmanhaAlerta">0</strong><small id="valorAmanhaAlerta">R$ 0,00</small></div>
+          </div>
+          <div id="listaAlertasVencimento" class="alert-list"></div>
+        </div>
+
+        <div class="grid">
+          <div class="card resumo"><div class="metric-title">Total aberto</div><strong id="totalAberto">R$ 0,00</strong></div>
+          <div class="card resumo"><div class="metric-title">Pago no mês</div><strong id="pagoMes">R$ 0,00</strong></div>
+          <div class="card alerta"><div class="metric-title">Vencidas</div><strong id="vencidas">R$ 0,00</strong></div>
+          <div class="card alerta"><div class="metric-title">Vence hoje</div><strong id="venceHoje">R$ 0,00</strong></div>
+          <div class="card recado"><div class="metric-title">Lembretes hoje</div><strong id="lembretesHoje">0</strong></div>
+          <div class="card resumo"><div class="metric-title">Quantidade</div><strong id="quantidade">0</strong></div>
+        </div>
+
+        <div class="two">
+          <div class="card"><h2>Contas de hoje</h2><div id="contasHoje"></div></div>
+          <div class="card"><h2>Bloco de notas</h2><div id="notasLista"></div></div>
+        </div>
+
+        <div class="two no-print">
+          <div class="card"><h2>Lançamento de contas</h2><input id="desc" data-cap placeholder="Descrição"><input id="valor" inputmode="decimal" placeholder="Valor - Ex: 150,90"><input id="venc" type="date"><select id="centro"><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="status"><option>Aberto</option><option>Pago</option></select><textarea id="obs" data-cap placeholder="Observação"></textarea><button class="btn-full" onclick="salvarConta()">Salvar conta</button></div>
+          <div class="card"><h2>Novo lembrete</h2><input id="ntitulo" data-cap placeholder="Título"><textarea id="ntexto" data-cap placeholder="Recado"></textarea><input id="ndata" type="date"><select id="nprio"><option>Normal</option><option>Urgente</option></select><select id="nloja"><option value="">Todas as lojas</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><button class="btn-full" onclick="salvarNota()">Salvar lembrete</button></div>
+        </div>
+
+        <div class="card"><h2>Contas a pagar</h2><div class="row no-print"><select id="fCentro" onchange="render()"><option value="">Todos os centros</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="fStatus" onchange="render()"><option value="">Todos os status</option><option>Aberto</option><option>Pago</option></select><select id="acaoRelatorio" onchange="executarRelatorio()"><option value="">Exportar</option><option value="pdf">PDF</option><option value="csv">CSV</option></select></div><div class="desktop-table" style="overflow:auto"><table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Centro</th><th>Status</th><th>Observação</th><th class="no-print">Ações</th></tr></thead><tbody id="tbody"></tbody></table></div><div id="mobileContasLista" class="mobile-cards"></div></div>
+        <div class="card"><h2>Resumo por centro de custo</h2><div id="grafico" class="chart"></div></div>
+      </div>
+
+      <div id="telaUsuarios">
+        <div id="diagUsuarios" class="diag"></div>
+        <div class="card"><h2>Gestão de usuários</h2><p class="sub">Senhas são gravadas criptografadas no Supabase. Admin vê tudo; gerente vê apenas a loja dele.</p><div class="three"><input id="unome" data-cap placeholder="Nome"><input id="uusuario" placeholder="Usuário"><input id="uemail" placeholder="E-mail"><input id="usenha" type="password" placeholder="Senha"></div><div class="three"><select id="utipo"><option value="gerente">Gerente</option><option value="admin">Admin</option></select><select id="uloja"><option value="">Todas/Admin</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="upagar"><option value="true">Pode marcar pago</option><option value="false">Só visualiza</option></select></div><button onclick="salvarUsuario()">Salvar usuário</button><button class="btn-dark" onclick="mostrarPainel();setActiveMenu(this)">Voltar</button></div>
+        <div class="card"><h2>Usuários cadastrados</h2><div id="usuariosLista"></div></div>
+      </div>
+      <div class="footer no-print">© Dona Flor Gestão Financeira</div>
+    </div>
+  </main>
+</div>
+</div>
+
+<script>
+const URL="https://vyhjjtzdvofoqoericak.supabase.co";
+const KEY="sb_publishable_lC1mtt21iCdk-e6Kdf-3nw_5pdCPIcw";
+const HEAD={apikey:KEY,Authorization:"Bearer "+KEY,"Content-Type":"application/json"};
+let usuarioLogado=null, contasDados=[], notasDados=[], usuariosDados=[];
+const centros=["Dona Flor Andradina","Dona Flor Paranaíba","Dona Flor Três Lagoas","Brilho Dourado","Pessoal"];
+
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/service-worker.js").catch(()=>{});
+}
+
+let notificacaoJaEnviada = false;
+
+function atualizarStatusNotificacao(){
+  if(typeof notifyStatus === "undefined") return;
+  if(!("Notification" in window)){
+    notifyStatus.textContent = "Este navegador não suporta notificações.";
+    return;
+  }
+  if(Notification.permission === "granted"){
+    notifyStatus.innerHTML = "<span class='config-status status-on'>🟢 Ativado</span>";
+  } else if(Notification.permission === "denied"){
+    notifyStatus.innerHTML = "<span class='config-status status-off'>🔴 Bloqueado</span>";
+  } else {
+    notifyStatus.innerHTML = "<span class='config-status status-off'>🔴 Desativado</span>";
+  }
+}
+
+async function ativarNotificacoes(){
+  if(!("Notification" in window)){
+    alert("Este navegador não suporta notificações.");
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  atualizarStatusNotificacao();
+  if(perm === "granted"){
+    if("serviceWorker" in navigator){
+      await navigator.serviceWorker.ready.catch(()=>{});
+    }
+    await testarNotificacao();
+    await enviarNotificacaoAlertas(true);
+  }
+}
+
+
+async function mostrarNotificacao(titulo, opcoes){
+  if(!("Notification" in window)){
+    alert("Este navegador não suporta notificações.");
+    return;
+  }
+
+  if(Notification.permission !== "granted"){
+    alert("Clique primeiro em Ativar notificações.");
+    return;
+  }
+
+  try{
+    if("serviceWorker" in navigator){
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(titulo, opcoes);
+      return;
+    }
+  }catch(e){
+    console.warn("Falha no Service Worker:", e);
+  }
+
+  try{
+    new Notification(titulo, opcoes);
+  }catch(e){
+    alert("Não foi possível exibir a notificação neste navegador.");
+  }
+}
+
+async function testarNotificacao(){
+  await mostrarNotificacao("Dona Flor Gestão Financeira", {
+    body: "Notificações ativadas com sucesso.",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png"
+  });
+}
+
+async function enviarNotificacaoAlertas(forcar=false){
+  if(!("Notification" in window) || Notification.permission !== "granted") return;
+  if(notificacaoJaEnviada && !forcar) return;
+
+  let base=visContas().filter(c=>c.status==="Aberto"), h=hoje(), am=adicionarDias(h,1);
+  let vencidas=base.filter(c=>c.vencimento<h);
+  let hojeLista=base.filter(c=>c.vencimento===h);
+  let amanhaLista=base.filter(c=>c.vencimento===am);
+
+  let totalQtd = vencidas.length + hojeLista.length + amanhaLista.length;
+  if(totalQtd === 0 && !forcar) return;
+
+  let msg = totalQtd === 0
+    ? "Tudo certo. Nenhuma conta vencida, para hoje ou amanhã."
+    : `${vencidas.length} vencidas • ${hojeLista.length} hoje • ${amanhaLista.length} amanhã`;
+
+  await mostrarNotificacao("Atenção financeira - Dona Flor", {
+    body: msg,
+    icon: "/icon-192.png",
+    badge: "/icon-192.png"
+  });
+
+  notificacaoJaEnviada = true;
+}
+
+
+
+
+function marcarMenuAtivo(secao){
+  ['sidePainel','sideUsuarios','sideConfig'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.remove('active');
+  });
+  const alvo=document.getElementById(secao);
+  if(alvo) alvo.classList.add('active');
+}
+function alternarMenu(){
+  const side = document.querySelector('.sidebar');
+  if(!side) return;
+  side.classList.toggle('collapsed');
+  if(typeof appShell !== 'undefined') appShell.classList.toggle('sidebar-collapsed');
+  localStorage.setItem('df_menu_collapsed', side.classList.contains('collapsed') ? '1' : '0');
+}
+function aplicarMenuSalvo(){
+  const side = document.querySelector('.sidebar');
+  if(!side) return;
+  if(localStorage.getItem('df_menu_collapsed') === '1'){
+    side.classList.add('collapsed');
+    if(typeof appShell !== 'undefined') appShell.classList.add('sidebar-collapsed');
+  }
+}
+
+function abrirConfiguracoes(){
+  marcarMenuAtivo("sideConfig");
+  configModal.style.display="flex";
+  atualizarStatusNotificacao();
+  if(typeof configUsuarioInfo !== "undefined" && usuarioLogado){
+    configUsuarioInfo.textContent = (usuarioLogado.nome||usuarioLogado.usuario) + " • " + (usuarioLogado.tipo||"") + (usuarioLogado.loja ? " • " + usuarioLogado.loja : "");
+  }
+}
+function fecharConfiguracoes(){
+  configModal.style.display="none";
+}
+document.addEventListener("click", e=>{
+  if(e.target && e.target.id === "configModal") fecharConfiguracoes();
+});
+
+async function api(path,opts={}){const r=await fetch(URL+"/rest/v1/"+path,{...opts,headers:{...HEAD,...(opts.headers||{})}});const t=await r.text();const data=t?JSON.parse(t):null;if(!r.ok)throw new Error(data?.message||t||r.status);return data;}
+async function rpc(fn, body){return api("rpc/"+fn,{method:"POST",body:JSON.stringify(body)})}
+function moeda(v){return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}function hoje(){return new Date().toISOString().slice(0,10)}function mesAno(d){return d?d.slice(0,7):""}function parseValor(v){return Number(String(v||"").replace(/[R$\s]/g,"").replace(/\./g,"").replace(",","."))}
+function isAdmin(){return String(usuarioLogado?.tipo||"").toLowerCase()==="admin"}function canPay(){return isAdmin() || usuarioLogado?.pode_pagar===true}function visContas(){return isAdmin()?contasDados:contasDados.filter(c=>c.centro===usuarioLogado.loja)}function visNotas(){return isAdmin()?notasDados:notasDados.filter(n=>!n.loja||n.loja===usuarioLogado.loja)}
+function primeiraMaiuscula(txt){txt=String(txt||"").trimStart();return txt?txt.charAt(0).toUpperCase()+txt.slice(1):""}
+document.addEventListener("input",e=>{if(e.target.matches("[data-cap]")){let pos=e.target.selectionStart;e.target.value=primeiraMaiuscula(e.target.value);e.target.setSelectionRange(pos,pos);}});
+
+async function entrar(){const u=user.value.trim().toLowerCase(),s=pass.value.trim();loginErro.style.display="none";try{const dados=await rpc("login_usuario",{p_usuario:u,p_senha:s});const achado=Array.isArray(dados)?dados[0]:dados;if(!achado){loginErro.style.display="block";loginErro.textContent="Credenciais inválidas.";return}usuarioLogado=achado;localStorage.setItem("df_user_v15",JSON.stringify(usuarioLogado));abrir();}catch(e){loginErro.style.display="block";loginErro.innerHTML="Erro ao conectar:<br>"+e.message;}}
+function abrir(){login.style.display="none";app.style.display="block";userInfo.textContent=(usuarioLogado.nome||usuarioLogado.usuario)+" ▾";sideUsuarios.style.display=isAdmin()?"flex":"none";navUsuarios.style.display=isAdmin()?"":"none";aplicarMenuSalvo();carregar();}
+function sair(){localStorage.removeItem("df_user_v15");location.reload();}window.onload=()=>{const u=localStorage.getItem("df_user_v15");if(u){usuarioLogado=JSON.parse(u);abrir();}}
+
+async function carregar(){try{contasDados=await api("df_contas?select=*&order=vencimento.asc");notasDados=await api("df_notas?select=*&order=data_lembrete.asc");usuariosDados=await api("df_usuarios?select=id,nome,usuario,email,tipo,loja,pode_pagar,ativo&order=nome.asc");render();renderUsuarios();}catch(e){alert("Erro ao carregar dados: "+e.message);}}
+function mostrarPainel(){marcarMenuAtivo("sidePainel");painel.style.display="block";telaUsuarios.style.display="none";sidePainel.classList.add("active");sideUsuarios.classList.remove("active");navPainel.classList.add("active");navUsuarios.classList.remove("active")}
+function mostrarUsuarios(){if(!isAdmin())return;marcarMenuAtivo("sideUsuarios");painel.style.display="none";telaUsuarios.style.display="block";sideUsuarios.classList.add("active");sidePainel.classList.remove("active");navUsuarios.classList.add("active");navPainel.classList.remove("active");renderUsuarios();}
+
+async function salvarConta(){let item={descricao:primeiraMaiuscula(desc.value),valor:parseValor(valor.value),vencimento:venc.value||hoje(),centro:centro.value,status:status.value,observacao:primeiraMaiuscula(obs.value),criado_por:usuarioLogado.usuario};if(!item.descricao||!item.valor){alert("Preencha descrição e valor.");return}await api("df_contas",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(item)});desc.value=valor.value=venc.value=obs.value="";carregar();}
+async function excluir(id){if(!isAdmin())return alert("Apenas admin pode excluir.");if(confirm("Excluir conta?")){await api("df_contas?id=eq."+id,{method:"DELETE"});carregar();}}
+async function marcarPago(id,statusAtual){if(!canPay())return alert("Usuário sem permissão para marcar pagamento.");await api("df_contas?id=eq."+id,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({status:statusAtual==="Pago"?"Aberto":"Pago"})});carregar();}
+async function salvarNota(){let item={titulo:primeiraMaiuscula(ntitulo.value)||"Sem título",texto:primeiraMaiuscula(ntexto.value),data_lembrete:ndata.value||null,prioridade:nprio.value,loja:nloja.value||null,criado_por:usuarioLogado.usuario};await api("df_notas",{method:"POST",headers:{Prefer:"return:minimal"},body:JSON.stringify(item)});ntitulo.value=ntexto.value=ndata.value="";nloja.value="";carregar();}
+
+
+function adicionarDias(data, dias){let d=new Date(data+"T00:00:00");d.setDate(d.getDate()+dias);return d.toISOString().slice(0,10)}
+function renderAlertas(){
+  let base=visContas().filter(c=>c.status==="Aberto"), h=hoje(), am=adicionarDias(h,1);
+  let vencidas=base.filter(c=>c.vencimento<h);
+  let hojeLista=base.filter(c=>c.vencimento===h);
+  let amanhaLista=base.filter(c=>c.vencimento===am);
+  let soma=arr=>arr.reduce((s,c)=>s+Number(c.valor),0);
+  qtdVencidasAlerta.textContent=vencidas.length;
+  qtdHojeAlerta.textContent=hojeLista.length;
+  qtdAmanhaAlerta.textContent=amanhaLista.length;
+  valorVencidasAlerta.textContent=moeda(soma(vencidas));
+  valorHojeAlerta.textContent=moeda(soma(hojeLista));
+  valorAmanhaAlerta.textContent=moeda(soma(amanhaLista));
+  let todos=[...vencidas.map(c=>({...c,tipoAlerta:"Vencida"})),...hojeLista.map(c=>({...c,tipoAlerta:"Hoje"})),...amanhaLista.map(c=>({...c,tipoAlerta:"Amanhã"}))];
+  alertasVencimento.style.display=todos.length?"block":"none";
+  listaAlertasVencimento.innerHTML=todos.slice(0,8).map(c=>'<div class="item"><div><b>'+c.tipoAlerta+' • '+c.descricao+'</b><br><span class="sub">'+c.centro+' • '+c.vencimento+'</span></div><b>'+moeda(c.valor)+'</b></div>').join("");
+}
+
+function filtroContas(){let base=visContas(),fc=fCentro.value,fs=fStatus.value;return base.filter(c=>(!fc||c.centro===fc)&&(!fs||c.status===fs))}
+function render(){let base=visContas(),h=hoje(),m=mesAno(h),filtrada=filtroContas();totalAberto.textContent=moeda(base.filter(c=>c.status==="Aberto").reduce((s,c)=>s+Number(c.valor),0));pagoMes.textContent=moeda(base.filter(c=>c.status==="Pago"&&mesAno(c.vencimento)===m).reduce((s,c)=>s+Number(c.valor),0));vencidas.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento<h).reduce((s,c)=>s+Number(c.valor),0));venceHoje.textContent=moeda(base.filter(c=>c.status==="Aberto"&&c.vencimento===h).reduce((s,c)=>s+Number(c.valor),0));lembretesHoje.textContent=visNotas().filter(n=>n.data_lembrete===h).length;quantidade.textContent=base.length;tbody.innerHTML=filtrada.map(c=>`<tr><td>${c.descricao}</td><td>${moeda(c.valor)}</td><td>${c.vencimento}</td><td>${c.centro}</td><td><span class="badge ${c.status==="Pago"?"badge-pago":"badge-aberto"}">${c.status}</span></td><td>${c.observacao||""}</td><td class="no-print"><button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">Pago/Aberto</button><button class="btn-red btn-small" onclick="excluir('${c.id}')">Excluir</button></td></tr>`).join("")||'<tr><td colspan="7">Nenhuma conta cadastrada.</td></tr>';renderMobileContas(filtrada);renderAlertas();enviarNotificacaoAlertas();atualizarStatusNotificacao();renderHoje();renderNotas();renderGrafico(base);}
+
+function renderMobileContas(filtrada){
+  if(typeof mobileContasLista === "undefined") return;
+  mobileContasLista.innerHTML = filtrada.map(c=>`
+    <div class="mobile-account">
+      <div class="mobile-account-head">
+        <div>
+          <div class="mobile-account-title">${c.descricao}</div>
+          <div class="mobile-account-meta">${c.centro}<br>Vencimento: ${c.vencimento}</div>
+        </div>
+        <div class="mobile-account-value">${moeda(c.valor)}</div>
+      </div>
+      <div class="mobile-account-meta">${c.observacao||""}</div>
+      <div style="margin-top:8px"><span class="badge ${c.status==="Pago"?"badge-pago":"badge-aberto"}">${c.status}</span></div>
+      <div class="mobile-account-actions no-print">
+        <button class="btn-green btn-small" onclick="marcarPago('${c.id}','${c.status}')">Pago/Aberto</button>
+        <button class="btn-red btn-small" onclick="excluir('${c.id}')">Excluir</button>
+      </div>
+    </div>
+  `).join("") || '<p class="empty">Nenhuma conta cadastrada.</p>';
+}
+
+function renderHoje(){let h=hoje(),items=visContas().filter(c=>c.status==="Aberto"&&c.vencimento===h);contasHoje.innerHTML=items.length?items.map(c=>'<div class="item"><div><b>'+c.descricao+'</b><br><span class="sub">'+c.centro+'</span></div><b>'+moeda(c.valor)+'</b></div>').join(""):'<p class="empty">Nenhuma conta em aberto vence hoje.</p>';}
+function renderNotas(){notasLista.innerHTML=visNotas().slice(0,8).map(n=>'<div class="item"><div><b>'+n.titulo+'</b><br>'+(n.texto||'')+'<br><span class="sub">'+(n.data_lembrete||"Sem data")+(n.loja?" • "+n.loja:"")+'</span></div><span class="badge '+(n.prioridade==="Urgente"?"badge-red":"")+'">'+n.prioridade+'</span></div>').join("")||"<p class='empty'>Nenhum lembrete.</p>"}
+function renderGrafico(base){let dados=centros.map(centro=>base.filter(c=>c.centro===centro).reduce((s,c)=>s+Number(c.valor),0));let max=Math.max(...dados,1);grafico.innerHTML=centros.map((c,i)=>`<div class="barwrap"><div class="bar" style="height:${Math.max(6,(dados[i]/max)*220)}px"></div>${c}<br><b>${moeda(dados[i])}</b></div>`).join("");}
+
+async function salvarUsuario(){if(!isAdmin())return;let item={p_nome:primeiraMaiuscula(unome.value),p_usuario:uusuario.value.trim().toLowerCase(),p_senha:usenha.value,p_email:uemail.value.trim()||null,p_tipo:utipo.value,p_loja:uloja.value||null,p_pode_pagar:upagar.value==="true"};if(!item.p_nome||!item.p_usuario||!item.p_senha){alert("Preencha nome, usuário e senha.");return}if(item.p_tipo==="gerente"&&!item.p_loja){alert("Gerente precisa ter uma loja vinculada.");return}try{await rpc("criar_usuario",item);unome.value=uusuario.value=uemail.value=usenha.value="";await carregar();mostrarUsuarios();}catch(e){alert("Erro ao salvar usuário: "+e.message);}}
+async function alternarUsuario(id,ativoAtual){if(!confirm(ativoAtual?"Revogar este usuário?":"Reativar este usuário?"))return;await api("df_usuarios?id=eq."+id,{method:"PATCH",headers:{Prefer:"return:minimal"},body:JSON.stringify({ativo:!ativoAtual})});await carregar();mostrarUsuarios();}
+function renderUsuarios(){if(!isAdmin())return;try{diagUsuarios.style.display="none";usuariosLista.innerHTML=usuariosDados.map(u=>'<div class="item"><div><b>'+u.nome+'</b><br><span class="sub">'+u.usuario+' • '+(u.email||"sem e-mail")+' • '+u.tipo+' • '+(u.loja||"Todas")+' • '+(u.pode_pagar?"Pode pagar":"Só visualiza")+'</span></div><div><span class="badge '+(u.ativo?'':'badge-red')+'">'+(u.ativo?"Ativo":"Revogado")+'</span><br><button class="btn-small '+(u.ativo?'btn-red':'btn-green')+'" onclick="alternarUsuario(\''+u.id+'\','+u.ativo+')">'+(u.ativo?'Revogar':'Reativar')+'</button></div></div>').join("")||"<p class='empty'>Nenhum usuário encontrado.</p>";}catch(e){diagUsuarios.style.display="block";diagUsuarios.textContent="Erro ao montar gestão de usuários: "+e.message;}}
+
+const EMAIL_DESTINO_PADRAO = "donafloradm@outlook.com";
+
+function montarResumoEmail(){
+  let base = visContas().filter(c=>c.status==="Aberto");
+  let h = hoje(), am = adicionarDias(h,1);
+  let vencidas = base.filter(c=>c.vencimento < h);
+  let hojeLista = base.filter(c=>c.vencimento === h);
+  let amanhaLista = base.filter(c=>c.vencimento === am);
+  let soma = arr => arr.reduce((s,c)=>s+Number(c.valor),0);
+
+  function bloco(titulo, arr){
+    if(!arr.length) return `${titulo}: nenhuma\n`;
+    return `${titulo} (${arr.length}) - Total ${moeda(soma(arr))}\n` + arr.map(c=>`• ${c.descricao} | ${moeda(c.valor)} | ${c.centro} | Venc.: ${c.vencimento}`).join("\n") + "\n";
+  }
+
+  return `Resumo financeiro - Dona Flor
+
+${bloco("Contas vencidas", vencidas)}
+${bloco("Vencem hoje", hojeLista)}
+${bloco("Vencem amanhã", amanhaLista)}
+
+Total em aberto: ${moeda(soma(base))}
+Gerado por: ${usuarioLogado?.nome || usuarioLogado?.usuario || "Sistema"}
+Data: ${new Date().toLocaleString("pt-BR")}
+
+Dona Flor Gestão Financeira`;
+}
+
+function preverResumoEmail(){
+  let texto = montarResumoEmail();
+  emailPreview.style.display = "block";
+  emailPreview.textContent = texto;
+}
+
+function enviarResumoEmail(){
+  let assunto = "Resumo financeiro - Dona Flor";
+  let corpo = montarResumoEmail();
+  let link = `mailto:${EMAIL_DESTINO_PADRAO}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
+  window.location.href = link;
+}
+
+function executarRelatorio(){let acao=acaoRelatorio.value;if(acao==="csv")exportarCSV();if(acao==="pdf")window.print();acaoRelatorio.value="";}
+function exportarCSV(){let linhas=[["Descrição","Valor","Vencimento","Centro","Status","Observação"],...filtroContas().map(c=>[c.descricao,c.valor,c.vencimento,c.centro,c.status,c.observacao||""])];let csv=linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");let blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="contas-dona-flor.csv";a.click();URL.revokeObjectURL(url);}
+
+setInterval(()=>{ try { notificacaoJaEnviada=false; enviarNotificacaoAlertas(); } catch(e){} }, 30*60*1000);
+
+</script>
+</body>
+</html>

@@ -1,13 +1,21 @@
-Dona Flor V18.7 Consolidada
+Dona Flor V18.7.2 Completa Corrigida
 
-Inclui:
-- URL do Pipedream padrão já configurada.
-- Ajustes de menu e mobile.
-- Base para lixeira de anotações.
-- Base para edição de contas/anotações.
-- Gráfico de centro de custo melhorado.
-- Botão voltar ao topo e seções recolhíveis.
-- Não precisa SQL.
+Base: V18.5 estável completa.
 
-Observação:
-Esta versão é uma consolidação grande para revisão. Teste antes de avançar.
+Correções seguras:
+- Mantém sistema completo com banco, usuários, contas e notas.
+- URL do Pipedream padrão já preenchida e salva.
+- Remove bloco Usuário das configurações.
+- Remove botão Abrir Outlook.
+- Ajusta usuário no mobile.
+- Botão voltar ao topo.
+- Gráfico por centro melhorado.
+- Base para editar contas sem quebrar o sistema.
+- Não inclui mudanças instáveis da V18.7.
+
+Não precisa SQL.
+
+Passos:
+1. Substituir arquivos no GitHub.
+2. Redeploy na Vercel.
+3. Limpar cache/reinstalar app se necessário.

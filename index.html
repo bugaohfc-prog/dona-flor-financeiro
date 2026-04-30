@@ -381,6 +381,84 @@ table{min-width:760px}
 /* V18.6.2 estável real */
 .side-submenu{display:none;margin:0 0 8px 0}.side-submenu.open{display:block}.side-btn.subitem{min-height:38px!important;padding-left:42px!important;font-size:13px!important;background:transparent!important}.side-btn.subitem:hover{background:#F1F5F9!important}.side-arrow{margin-left:auto}.sidebar.collapsed .side-submenu{display:none!important}.sidebar.collapsed .side-arrow{display:none!important}.config-option:has(#webhookUrl) input,#webhookUrl{font-size:12px}.btn-topo{display:none;position:fixed;right:18px;bottom:18px;width:48px;height:48px;border-radius:999px;background:var(--principal);color:white;box-shadow:0 12px 30px rgba(15,23,42,.25);z-index:700;font-size:22px;padding:0}.btn-topo.show{display:flex;align-items:center;justify-content:center}@media(max-width:899px){.top-user-wrap{display:none!important}.topbar-title span{max-width:calc(100vw - 135px)!important}.nav-mobile{display:none!important}.sidebar.mobile-open{left:0!important}.mobile-sidebar-overlay.open{display:block!important}}
 
+
+/* V18.7.0 Notas + Lixeira */
+.nota-card{
+  border:1px solid #E2E8F0;
+  border-radius:14px;
+  padding:12px;
+  margin:10px 0;
+  background:#FFFFFF;
+}
+.nota-top{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:flex-start;
+}
+.nota-title{font-weight:900;color:#0F172A}
+.nota-text{color:#475569;margin:6px 0;line-height:1.35}
+.nota-meta{font-size:12px;color:#64748B}
+.nota-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+.nota-actions button,.nota-actions select{
+  font-size:12px;
+  padding:8px 10px;
+  border-radius:10px;
+  width:auto;
+  margin:0;
+}
+.prio-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:4px 9px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+}
+.prio-normal{background:#E0F2FE;color:#075985}
+.prio-importante{background:#FEF3C7;color:#92400E}
+.prio-urgente{background:#FEE2E2;color:#991B1B}
+.trash-tabs{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:12px;
+}
+.trash-tabs button{
+  background:#F1F5F9;
+  color:#0F172A;
+}
+.trash-tabs button.active{
+  background:var(--principal);
+  color:#fff;
+}
+.trash-item{
+  border:1px dashed #CBD5E1;
+  border-radius:14px;
+  padding:12px;
+  margin:10px 0;
+  background:#F8FAFC;
+}
+.trash-item strong{color:#0F172A}
+.trash-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+@media(max-width:899px){
+  .nota-actions button,.nota-actions select,.trash-actions button{
+    flex:1 1 100%;
+    width:100%;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -455,6 +533,10 @@ table{min-width:760px}
       <span class="side-icon">👥</span><span class="side-text">Gestão de usuários</span>
     </button>
 
+    <button id="sideLixeira" class="side-btn" onclick="mostrarLixeiraDF()">
+      <span class="side-icon">🗑️</span><span class="side-text">Lixeira</span>
+    </button>
+
     <button id="sideConfig" class="side-btn" onclick="abrirConfiguracoes()">
       <span class="side-icon">⚙️</span><span class="side-text">Configurações</span>
     </button>
@@ -474,7 +556,7 @@ table{min-width:760px}
     </div>
 
     <div class="container">
-      <div class="nav-mobile no-print"><button id="navPainel" class="active" onclick="mostrarPainel();setActiveMenu(this)">Painel</button><button id="navUsuarios" onclick="mostrarUsuarios();setActiveMenu(this)">Gestão de usuários</button><button onclick="abrirConfiguracoes()">Configurações</button><button onclick="irParaSecao('atalhoContas')">Contas</button><button onclick="irParaSecao('atalhoLancamento')">Lançar</button><button onclick="irParaSecao('atalhoLembrete')">Lembretes</button><button class="btn-dark" onclick="sair()">Sair</button></div>
+      <div class="nav-mobile no-print"><button id="navPainel" class="active" onclick="mostrarPainel();setActiveMenu(this)">Painel</button><button id="navUsuarios" onclick="mostrarUsuarios();setActiveMenu(this)">Gestão de usuários</button><button onclick="abrirConfiguracoes()">Configurações</button><button onclick="irParaSecao('atalhoContas')">Contas</button><button onclick="irParaSecao('atalhoLancamento')">Lançar</button><button onclick="irParaSecao('atalhoLembrete')">Lembretes</button><button onclick="mostrarLixeiraDF()">Lixeira</button><button class="btn-dark" onclick="sair()">Sair</button></div>
 
       <div id="painel">
 
@@ -504,7 +586,7 @@ table{min-width:760px}
 
         <div class="two no-print">
           <div id="atalhoLancamento" class="card"><h2>Lançamento de contas</h2><input id="desc" data-cap placeholder="Descrição"><input id="valor" inputmode="decimal" placeholder="Valor - Ex: 150,90"><input id="venc" type="date"><select id="centro"><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="status"><option>Aberto</option><option>Pago</option></select><textarea id="obs" data-cap placeholder="Observação"></textarea><button class="btn-full" onclick="salvarConta()">Salvar conta</button></div>
-          <div id="atalhoLembrete" class="card"><h2>Adicionar lembrete</h2><input id="ntitulo" data-cap placeholder="Título"><textarea id="ntexto" data-cap placeholder="Recado"></textarea><input id="ndata" type="date"><select id="nprio"><option>Normal</option><option>Urgente</option></select><select id="nloja"><option value="">Todas as lojas</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><button class="btn-full" onclick="salvarNota()">Salvar lembrete</button></div>
+          <div id="atalhoLembrete" class="card"><h2>Adicionar lembrete</h2><input id="ntitulo" data-cap placeholder="Título"><textarea id="ntexto" data-cap placeholder="Recado"></textarea><input id="ndata" type="date"><select id="nprio"><option>Normal</option><option>Urgente</option></select><select id="nloja"><option value="">Todas as lojas</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><button class="btn-full" id="btnSalvarNotaDF" onclick="salvarNotaDF()">Salvar lembrete</button></div>
         </div>
 
         <div id="atalhoContas" class="card"><h2>Contas a pagar</h2><div class="row no-print"><select id="fCentro" onchange="render()"><option value="">Todos os centros</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="fStatus" onchange="render()"><option value="">Todos os status</option><option>Aberto</option><option>Pago</option></select><select id="acaoRelatorio" onchange="executarRelatorio()"><option value="">Exportar</option><option value="pdf">PDF</option><option value="csv">CSV</option></select></div><div class="desktop-table" style="overflow:auto"><table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Centro</th><th>Status</th><th>Observação</th><th class="no-print">Ações</th></tr></thead><tbody id="tbody"></tbody></table></div><div id="mobileContasLista" class="mobile-cards"></div></div>
@@ -516,6 +598,19 @@ table{min-width:760px}
         <div class="card"><h2>Gestão de usuários</h2><p class="sub">Senhas são gravadas criptografadas no Supabase. Admin vê tudo; gerente vê apenas a loja dele.</p><div class="three"><input id="unome" data-cap placeholder="Nome"><input id="uusuario" placeholder="Usuário"><input id="uemail" placeholder="E-mail"><input id="usenha" type="password" placeholder="Senha"></div><div class="three"><select id="utipo"><option value="gerente">Gerente</option><option value="admin">Admin</option></select><select id="uloja"><option value="">Todas/Admin</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="upagar"><option value="true">Pode marcar pago</option><option value="false">Só visualiza</option></select></div><button onclick="salvarUsuario()">Salvar usuário</button><button class="btn-dark" onclick="mostrarPainel();setActiveMenu(this)">Voltar</button></div>
         <div class="card"><h2>Usuários cadastrados</h2><div id="usuariosLista"></div></div>
       </div>
+      
+      <div id="telaLixeiraDF" style="display:none">
+        <div class="card">
+          <h2>🗑️ Lixeira</h2>
+          <p class="sub">Itens excluídos ficam aqui por tipo. Você pode restaurar ou excluir definitivamente.</p>
+          <div class="trash-tabs">
+            <button id="tabTrashNotas" class="active" onclick="renderLixeiraDF('nota')">🗒️ Notas</button>
+            <button id="tabTrashContas" onclick="renderLixeiraDF('conta')">🧾 Contas</button>
+          </div>
+          <div id="trashListDF"></div>
+        </div>
+      </div>
+
       <div class="footer no-print">© Dona Flor Gestão Financeira</div>
     </div>
   </main>
@@ -889,6 +984,281 @@ document.addEventListener("keydown", e=>{
     fecharConfiguracoes();
   }
 });
+
+
+/* V18.7.0 Notas + Lixeira */
+let notaEditandoDF = null;
+let trashTipoAtualDF = "nota";
+
+function getNotasArrayDF(){
+  try{
+    if(typeof notasDados !== "undefined" && Array.isArray(notasDados)) return notasDados;
+    if(typeof notas !== "undefined" && Array.isArray(notas)) return notas;
+  }catch(e){}
+  window.notasDados = [];
+  return window.notasDados;
+}
+
+function setNotasArrayDF(arr){
+  try{
+    if(typeof notasDados !== "undefined") notasDados = arr;
+    else window.notasDados = arr;
+  }catch(e){ window.notasDados = arr; }
+}
+
+function prioClasseDF(p){
+  p = String(p || "Normal").toLowerCase();
+  if(p.includes("urgent")) return "prio-urgente";
+  if(p.includes("important")) return "prio-importante";
+  return "prio-normal";
+}
+
+function prioLabelDF(p){
+  p = String(p || "Normal");
+  if(p.toLowerCase().includes("urgent")) return "🔴 Urgente";
+  if(p.toLowerCase().includes("important")) return "🟡 Importante";
+  return "🟢 Normal";
+}
+
+async function atualizarNotaSupabaseDF(id, dados){
+  if(typeof api === "function"){
+    await api("df_notas?id=eq."+id, {
+      method:"PATCH",
+      headers:{Prefer:"return=minimal"},
+      body:JSON.stringify(dados)
+    });
+  }else{
+    let arr = getNotasArrayDF().map(n => String(n.id)===String(id) ? {...n, ...dados} : n);
+    setNotasArrayDF(arr);
+    localStorage.setItem("df_notas_local", JSON.stringify(arr));
+  }
+}
+
+async function deletarNotaSupabaseDF(id){
+  if(typeof api === "function"){
+    await api("df_notas?id=eq."+id, {method:"DELETE"});
+  }else{
+    let arr = getNotasArrayDF().filter(n => String(n.id)!==String(id));
+    setNotasArrayDF(arr);
+    localStorage.setItem("df_notas_local", JSON.stringify(arr));
+  }
+}
+
+async function salvarNovaNotaSupabaseDF(dados){
+  if(typeof api === "function"){
+    await api("df_notas", {
+      method:"POST",
+      headers:{Prefer:"return=minimal"},
+      body:JSON.stringify(dados)
+    });
+  }else{
+    let arr = getNotasArrayDF();
+    arr.push({...dados, id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now())});
+    setNotasArrayDF(arr);
+    localStorage.setItem("df_notas_local", JSON.stringify(arr));
+  }
+}
+
+function camposNotaDF(){
+  return {
+    titulo: document.getElementById("ntitulo") || document.getElementById("tituloNota"),
+    texto: document.getElementById("ntexto") || document.getElementById("textoNota"),
+    data: document.getElementById("ndata") || document.getElementById("dataNota"),
+    prioridade: document.getElementById("nprio") || document.getElementById("prioridadeNota"),
+    loja: document.getElementById("nloja")
+  };
+}
+
+function limparCamposNotaDF(){
+  const c = camposNotaDF();
+  if(c.titulo) c.titulo.value = "";
+  if(c.texto) c.texto.value = "";
+  if(c.data) c.data.value = "";
+  if(c.prioridade) c.prioridade.value = "Normal";
+  if(c.loja) c.loja.value = "";
+  const btn = document.getElementById("btnSalvarNotaDF");
+  if(btn) btn.textContent = "Salvar lembrete";
+  notaEditandoDF = null;
+}
+
+function editarNotaDF(id){
+  const n = getNotasArrayDF().find(x => String(x.id) === String(id));
+  if(!n) return alert("Nota não encontrada.");
+  notaEditandoDF = id;
+  const c = camposNotaDF();
+  if(c.titulo) c.titulo.value = n.titulo || "";
+  if(c.texto) c.texto.value = n.texto || n.recado || "";
+  if(c.data) c.data.value = n.data_lembrete || n.data || "";
+  if(c.prioridade) c.prioridade.value = n.prioridade || "Normal";
+  if(c.loja) c.loja.value = n.loja || "";
+  const btn = document.getElementById("btnSalvarNotaDF");
+  if(btn) btn.textContent = "Salvar alteração";
+  const alvo = document.getElementById("atalhoLembrete");
+  if(alvo) alvo.scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+async function salvarNotaDF(){
+  const c = camposNotaDF();
+  const dados = {
+    titulo: (c.titulo?.value || "Sem título").trim(),
+    texto: (c.texto?.value || "").trim(),
+    data_lembrete: c.data?.value || null,
+    prioridade: c.prioridade?.value || "Normal",
+    loja: c.loja?.value || null,
+    criado_por: (typeof usuarioLogado !== "undefined" && usuarioLogado?.usuario) ? usuarioLogado.usuario : "sistema"
+  };
+  if(notaEditandoDF){
+    await atualizarNotaSupabaseDF(notaEditandoDF, dados);
+  }else{
+    await salvarNovaNotaSupabaseDF(dados);
+  }
+  limparCamposNotaDF();
+  if(typeof carregar === "function") await carregar();
+  else if(typeof render === "function") render();
+}
+
+async function moverNotaLixeiraDF(id){
+  if(!confirm("Mover esta nota para a lixeira?")) return;
+  await atualizarNotaSupabaseDF(id, {
+    deletado: true,
+    data_exclusao: new Date().toISOString()
+  });
+  if(typeof carregar === "function") await carregar();
+  else if(typeof render === "function") render();
+}
+
+async function alterarPrioridadeNotaDF(id, prioridade){
+  await atualizarNotaSupabaseDF(id, {prioridade});
+  if(typeof carregar === "function") await carregar();
+  else if(typeof render === "function") render();
+}
+
+async function restaurarNotaDF(id){
+  await atualizarNotaSupabaseDF(id, {
+    deletado: false,
+    data_exclusao: null
+  });
+  if(typeof carregar === "function") await carregar();
+  renderLixeiraDF("nota");
+}
+
+async function excluirNotaDefinitivoDF(id){
+  if(!confirm("Excluir definitivamente esta nota?")) return;
+  await deletarNotaSupabaseDF(id);
+  if(typeof carregar === "function") await carregar();
+  renderLixeiraDF("nota");
+}
+
+function renderNotasMelhoradoDF(){
+  const lista = document.getElementById("notasLista");
+  if(!lista) return;
+  const arr = getNotasArrayDF().filter(n => !n.deletado && !n.data_exclusao);
+  if(!arr.length){
+    lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+    return;
+  }
+  lista.innerHTML = arr.slice(0,20).map(n => `
+    <div class="nota-card">
+      <div class="nota-top">
+        <div>
+          <div class="nota-title">${n.titulo || "Sem título"}</div>
+          <div class="nota-text">${n.texto || n.recado || ""}</div>
+          <div class="nota-meta">${n.data_lembrete || n.data || "Sem data"} ${n.loja ? "• "+n.loja : ""}</div>
+        </div>
+        <span class="prio-badge ${prioClasseDF(n.prioridade)}">${prioLabelDF(n.prioridade)}</span>
+      </div>
+      <div class="nota-actions no-print">
+        <button class="btn-blue btn-small" onclick="editarNotaDF('${n.id}')">✏️ Editar</button>
+        <select onchange="alterarPrioridadeNotaDF('${n.id}', this.value)">
+          <option ${n.prioridade==="Normal"?"selected":""}>Normal</option>
+          <option ${n.prioridade==="Importante"?"selected":""}>Importante</option>
+          <option ${n.prioridade==="Urgente"?"selected":""}>Urgente</option>
+        </select>
+        <button class="btn-red btn-small" onclick="moverNotaLixeiraDF('${n.id}')">🗑️ Excluir</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderLixeiraDF(tipo="nota"){
+  trashTipoAtualDF = tipo;
+  const lista = document.getElementById("trashListDF");
+  if(!lista) return;
+  document.getElementById("tabTrashNotas")?.classList.toggle("active", tipo==="nota");
+  document.getElementById("tabTrashContas")?.classList.toggle("active", tipo==="conta");
+
+  if(tipo === "conta"){
+    lista.innerHTML = "<p class='empty'>Lixeira de contas preparada para a próxima etapa.</p>";
+    return;
+  }
+
+  const arr = getNotasArrayDF().filter(n => n.deletado || n.data_exclusao);
+  if(!arr.length){
+    lista.innerHTML = "<p class='empty'>Nenhuma nota na lixeira.</p>";
+    return;
+  }
+
+  lista.innerHTML = arr.map(n => {
+    const dt = n.data_exclusao || n.dataExclusao || new Date().toISOString();
+    const dias = Math.max(0, 60 - Math.floor((Date.now() - new Date(dt).getTime()) / (1000*60*60*24)));
+    return `
+      <div class="trash-item">
+        <strong>${n.titulo || "Sem título"}</strong>
+        <p class="sub">${n.texto || n.recado || ""}</p>
+        <small>Excluído em: ${new Date(dt).toLocaleDateString("pt-BR")} • Restam ${dias} dias</small>
+        <div class="trash-actions">
+          <button class="btn-green btn-small" onclick="restaurarNotaDF('${n.id}')">🔄 Restaurar</button>
+          <button class="btn-red btn-small" onclick="excluirNotaDefinitivoDF('${n.id}')">❌ Excluir definitivo</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function mostrarLixeiraDF(){
+  try{
+    if(typeof painel !== "undefined") painel.style.display = "none";
+    if(typeof telaUsuarios !== "undefined") telaUsuarios.style.display = "none";
+    const l = document.getElementById("telaLixeiraDF");
+    if(l) l.style.display = "block";
+    if(typeof marcarMenuAtivo === "function") marcarMenuAtivo("sideLixeira");
+    renderLixeiraDF(trashTipoAtualDF || "nota");
+    if(typeof fecharMenuMobile === "function") fecharMenuMobile();
+  }catch(e){ alert("Erro ao abrir lixeira: "+e.message); }
+}
+
+const oldMostrarPainelDF = typeof mostrarPainel === "function" ? mostrarPainel : null;
+if(oldMostrarPainelDF){
+  mostrarPainel = function(){
+    const l = document.getElementById("telaLixeiraDF");
+    if(l) l.style.display = "none";
+    oldMostrarPainelDF();
+  }
+}
+const oldMostrarUsuariosDF = typeof mostrarUsuarios === "function" ? mostrarUsuarios : null;
+if(oldMostrarUsuariosDF){
+  mostrarUsuarios = function(){
+    const l = document.getElementById("telaLixeiraDF");
+    if(l) l.style.display = "none";
+    oldMostrarUsuariosDF();
+  }
+}
+
+const oldRenderNotasDF = typeof renderNotas === "function" ? renderNotas : null;
+if(oldRenderNotasDF){
+  renderNotas = function(){
+    try{ renderNotasMelhoradoDF(); }
+    catch(e){ console.warn(e); oldRenderNotasDF(); }
+  }
+}
+
+const oldCarregarDF = typeof carregar === "function" ? carregar : null;
+if(oldCarregarDF){
+  carregar = async function(){
+    await oldCarregarDF();
+    try{ renderNotasMelhoradoDF(); renderLixeiraDF(trashTipoAtualDF || "nota"); }catch(e){}
+  }
+}
 
 </script>
 <button id="btnTopo" class="btn-topo no-print" onclick="voltarTopo()">↑</button>

@@ -205,6 +205,10 @@ table{min-width:760px}
 .status-on{color:#16A34A}
 .status-off{color:#DC2626}
 
+
+/* V18 E-mail */
+.email-preview{background:#F8FAFC;border:1px dashed #CBD5E1;border-radius:14px;padding:12px;margin-top:10px;white-space:pre-wrap;font-size:13px;color:#334155;max-height:220px;overflow:auto}
+
 </style>
 </head>
 <body>
@@ -240,6 +244,17 @@ table{min-width:760px}
     <div class="config-option">
       <strong>👤 Usuário</strong>
       <span class="sub" id="configUsuarioInfo">Usuário conectado.</span>
+    </div>
+
+
+    <div class="config-option">
+      <strong>📧 E-mail de resumo</strong>
+      <span class="sub">Gere um resumo das contas vencidas, de hoje e de amanhã para enviar ao Outlook.</span>
+      <div class="config-actions">
+        <button class="btn-green btn-small" onclick="enviarResumoEmail()">Enviar resumo agora</button>
+        <button class="btn-light btn-small" onclick="preverResumoEmail()">Pré-visualizar</button>
+      </div>
+      <div id="emailPreview" class="email-preview" style="display:none"></div>
     </div>
 
     <div class="config-option">
@@ -511,6 +526,48 @@ function renderGrafico(base){let dados=centros.map(centro=>base.filter(c=>c.cent
 async function salvarUsuario(){if(!isAdmin())return;let item={p_nome:primeiraMaiuscula(unome.value),p_usuario:uusuario.value.trim().toLowerCase(),p_senha:usenha.value,p_email:uemail.value.trim()||null,p_tipo:utipo.value,p_loja:uloja.value||null,p_pode_pagar:upagar.value==="true"};if(!item.p_nome||!item.p_usuario||!item.p_senha){alert("Preencha nome, usuário e senha.");return}if(item.p_tipo==="gerente"&&!item.p_loja){alert("Gerente precisa ter uma loja vinculada.");return}try{await rpc("criar_usuario",item);unome.value=uusuario.value=uemail.value=usenha.value="";await carregar();mostrarUsuarios();}catch(e){alert("Erro ao salvar usuário: "+e.message);}}
 async function alternarUsuario(id,ativoAtual){if(!confirm(ativoAtual?"Revogar este usuário?":"Reativar este usuário?"))return;await api("df_usuarios?id=eq."+id,{method:"PATCH",headers:{Prefer:"return:minimal"},body:JSON.stringify({ativo:!ativoAtual})});await carregar();mostrarUsuarios();}
 function renderUsuarios(){if(!isAdmin())return;try{diagUsuarios.style.display="none";usuariosLista.innerHTML=usuariosDados.map(u=>'<div class="item"><div><b>'+u.nome+'</b><br><span class="sub">'+u.usuario+' • '+(u.email||"sem e-mail")+' • '+u.tipo+' • '+(u.loja||"Todas")+' • '+(u.pode_pagar?"Pode pagar":"Só visualiza")+'</span></div><div><span class="badge '+(u.ativo?'':'badge-red')+'">'+(u.ativo?"Ativo":"Revogado")+'</span><br><button class="btn-small '+(u.ativo?'btn-red':'btn-green')+'" onclick="alternarUsuario(\''+u.id+'\','+u.ativo+')">'+(u.ativo?'Revogar':'Reativar')+'</button></div></div>').join("")||"<p class='empty'>Nenhum usuário encontrado.</p>";}catch(e){diagUsuarios.style.display="block";diagUsuarios.textContent="Erro ao montar gestão de usuários: "+e.message;}}
+
+const EMAIL_DESTINO_PADRAO = "donafloradm@outlook.com";
+
+function montarResumoEmail(){
+  let base = visContas().filter(c=>c.status==="Aberto");
+  let h = hoje(), am = adicionarDias(h,1);
+  let vencidas = base.filter(c=>c.vencimento < h);
+  let hojeLista = base.filter(c=>c.vencimento === h);
+  let amanhaLista = base.filter(c=>c.vencimento === am);
+  let soma = arr => arr.reduce((s,c)=>s+Number(c.valor),0);
+
+  function bloco(titulo, arr){
+    if(!arr.length) return `${titulo}: nenhuma\n`;
+    return `${titulo} (${arr.length}) - Total ${moeda(soma(arr))}\n` + arr.map(c=>`• ${c.descricao} | ${moeda(c.valor)} | ${c.centro} | Venc.: ${c.vencimento}`).join("\n") + "\n";
+  }
+
+  return `Resumo financeiro - Dona Flor
+
+${bloco("Contas vencidas", vencidas)}
+${bloco("Vencem hoje", hojeLista)}
+${bloco("Vencem amanhã", amanhaLista)}
+
+Total em aberto: ${moeda(soma(base))}
+Gerado por: ${usuarioLogado?.nome || usuarioLogado?.usuario || "Sistema"}
+Data: ${new Date().toLocaleString("pt-BR")}
+
+Dona Flor Gestão Financeira`;
+}
+
+function preverResumoEmail(){
+  let texto = montarResumoEmail();
+  emailPreview.style.display = "block";
+  emailPreview.textContent = texto;
+}
+
+function enviarResumoEmail(){
+  let assunto = "Resumo financeiro - Dona Flor";
+  let corpo = montarResumoEmail();
+  let link = `mailto:${EMAIL_DESTINO_PADRAO}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
+  window.location.href = link;
+}
+
 function executarRelatorio(){let acao=acaoRelatorio.value;if(acao==="csv")exportarCSV();if(acao==="pdf")window.print();acaoRelatorio.value="";}
 function exportarCSV(){let linhas=[["Descrição","Valor","Vencimento","Centro","Status","Observação"],...filtroContas().map(c=>[c.descricao,c.valor,c.vencimento,c.centro,c.status,c.observacao||""])];let csv=linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");let blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="contas-dona-flor.csv";a.click();URL.revokeObjectURL(url);}
 

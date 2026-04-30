@@ -1,19 +1,17 @@
-Dona Flor V17.4 - Configurações
+Dona Flor V18 - E-mail de Resumo
 
-Mudanças:
-- Remove o bloco grande de notificações do painel.
-- Adiciona botão de engrenagem ⚙️ no topo.
-- Notificações ficam dentro de Configurações.
-- Mantém alertas, PWA, service worker e layout sem rolagem lateral.
+Inclui:
+- Tudo da V17.5.
+- Opção em Configurações para gerar e enviar resumo por e-mail.
+- Envio via mailto para donafloradm@outlook.com.
+- Pré-visualização do resumo antes do envio.
 
-Não precisa novo SQL.
+Importante:
+- Não precisa novo SQL.
+- Esta versão não envia e-mail automático em segundo plano, pois isso exige serviço externo/API SMTP.
+- Próximo nível pode ser V18.1/V19 com automação real usando serviço de e-mail.
 
 Passos:
 1. Substitua os arquivos no GitHub.
 2. Faça redeploy na Vercel.
-3. No celular, remova o app antigo da tela inicial e adicione novamente.
-4. Abra Configurações ⚙️ e ative/teste notificações.
-
-Logins:
-admin / admin123
-hindeburg / 123456
+3. Remova e adicione novamente o app no celular para atualizar cache.

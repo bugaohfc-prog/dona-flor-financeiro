@@ -1,0 +1,6 @@
+.menu { width: 250px; background: #f5f5f5; padding: 10px; }
+.menu-item { padding: 10px; cursor: pointer; }
+.submenu { display: none; padding-left: 10px; }
+.submenu.open { display: block; }
+
+.content { padding: 20px; }

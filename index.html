@@ -359,6 +359,24 @@ table{min-width:760px}
   }
 }
 
+
+/* V18.5 Fluidez final */
+.side-section-label{
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  color:#94A3B8;
+  margin:14px 8px 6px;
+  letter-spacing:.06em;
+}
+.sidebar.collapsed .side-section-label{display:none!important}
+.config-option .config-actions{gap:8px}
+#webhookUrl{font-size:12px}
+@media(max-width:899px){
+  .nav-mobile{gap:6px}
+  .nav-mobile button{font-size:13px;padding:10px 12px}
+}
+
 </style>
 </head>
 <body>
@@ -407,16 +425,9 @@ table{min-width:760px}
         <button class="btn-blue btn-small" onclick="salvarWebhookUrl()">Salvar URL</button>
         <button class="btn-green btn-small" onclick="enviarResumoWebhook()">Enviar automático</button>
         <button class="btn-light btn-small" onclick="preverResumoEmail()">Pré-visualizar</button>
-        <button class="btn-light btn-small email-manual" onclick="enviarResumoEmail()">Abrir Outlook</button>
       </div>
       <div id="webhookStatus" class="webhook-status"></div>
       <div id="emailPreview" class="email-preview" style="display:none"></div>
-    </div>
-
-
-    <div class="config-option">
-      <strong>📱 Aplicativo</strong>
-      <span class="sub">Para atualizar ícone/layout no celular, remova e adicione novamente à tela inicial.</span>
     </div>
 
     <div class="row" style="justify-content:flex-end;margin-top:12px">
@@ -444,6 +455,17 @@ table{min-width:760px}
       <span class="side-icon">⚙️</span><span class="side-text">Configurações</span>
     </button>
 
+    <div id="sideAtalhos" class="side-section-label side-text">Atalhos</div>
+    <button class="side-btn" onclick="irParaSecao('atalhoContas')">
+      <span class="side-icon">📄</span><span class="side-text">Contas a pagar</span>
+    </button>
+    <button class="side-btn" onclick="irParaSecao('atalhoLancamento')">
+      <span class="side-icon">➕</span><span class="side-text">Lançamento</span>
+    </button>
+    <button class="side-btn" onclick="irParaSecao('atalhoLembrete')">
+      <span class="side-icon">📝</span><span class="side-text">Lembretes</span>
+    </button>
+
     <div class="side-spacer"></div>
 
     <button class="side-btn" onclick="sair()">
@@ -459,7 +481,7 @@ table{min-width:760px}
     </div>
 
     <div class="container">
-      <div class="nav-mobile no-print"><button id="navPainel" class="active" onclick="mostrarPainel();setActiveMenu(this)">Painel</button><button id="navUsuarios" onclick="mostrarUsuarios();setActiveMenu(this)">Gestão de usuários</button><button onclick="abrirConfiguracoes()">Configurações</button><button class="btn-dark" onclick="sair()">Sair</button></div>
+      <div class="nav-mobile no-print"><button id="navPainel" class="active" onclick="mostrarPainel();setActiveMenu(this)">Painel</button><button id="navUsuarios" onclick="mostrarUsuarios();setActiveMenu(this)">Gestão de usuários</button><button onclick="abrirConfiguracoes()">Configurações</button><button onclick="irParaSecao(\'atalhoContas\')">Contas</button><button onclick="irParaSecao(\'atalhoLancamento\')">Lançar</button><button onclick="irParaSecao(\'atalhoLembrete\')">Lembretes</button><button class="btn-dark" onclick="sair()">Sair</button></div>
 
       <div id="painel">
 
@@ -488,11 +510,11 @@ table{min-width:760px}
         </div>
 
         <div class="two no-print">
-          <div class="card"><h2>Lançamento de contas</h2><input id="desc" data-cap placeholder="Descrição"><input id="valor" inputmode="decimal" placeholder="Valor - Ex: 150,90"><input id="venc" type="date"><select id="centro"><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="status"><option>Aberto</option><option>Pago</option></select><textarea id="obs" data-cap placeholder="Observação"></textarea><button class="btn-full" onclick="salvarConta()">Salvar conta</button></div>
-          <div class="card"><h2>Novo lembrete</h2><input id="ntitulo" data-cap placeholder="Título"><textarea id="ntexto" data-cap placeholder="Recado"></textarea><input id="ndata" type="date"><select id="nprio"><option>Normal</option><option>Urgente</option></select><select id="nloja"><option value="">Todas as lojas</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><button class="btn-full" onclick="salvarNota()">Salvar lembrete</button></div>
+          <div id="atalhoLancamento" class="card"><h2>Lançamento de contas</h2><input id="desc" data-cap placeholder="Descrição"><input id="valor" inputmode="decimal" placeholder="Valor - Ex: 150,90"><input id="venc" type="date"><select id="centro"><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="status"><option>Aberto</option><option>Pago</option></select><textarea id="obs" data-cap placeholder="Observação"></textarea><button class="btn-full" onclick="salvarConta()">Salvar conta</button></div>
+          <div id="atalhoLembrete" class="card"><h2>Adicionar lembrete</h2><input id="ntitulo" data-cap placeholder="Título"><textarea id="ntexto" data-cap placeholder="Recado"></textarea><input id="ndata" type="date"><select id="nprio"><option>Normal</option><option>Urgente</option></select><select id="nloja"><option value="">Todas as lojas</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><button class="btn-full" onclick="salvarNota()">Salvar lembrete</button></div>
         </div>
 
-        <div class="card"><h2>Contas a pagar</h2><div class="row no-print"><select id="fCentro" onchange="render()"><option value="">Todos os centros</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="fStatus" onchange="render()"><option value="">Todos os status</option><option>Aberto</option><option>Pago</option></select><select id="acaoRelatorio" onchange="executarRelatorio()"><option value="">Exportar</option><option value="pdf">PDF</option><option value="csv">CSV</option></select></div><div class="desktop-table" style="overflow:auto"><table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Centro</th><th>Status</th><th>Observação</th><th class="no-print">Ações</th></tr></thead><tbody id="tbody"></tbody></table></div><div id="mobileContasLista" class="mobile-cards"></div></div>
+        <div id="atalhoContas" class="card"><h2>Contas a pagar</h2><div class="row no-print"><select id="fCentro" onchange="render()"><option value="">Todos os centros</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="fStatus" onchange="render()"><option value="">Todos os status</option><option>Aberto</option><option>Pago</option></select><select id="acaoRelatorio" onchange="executarRelatorio()"><option value="">Exportar</option><option value="pdf">PDF</option><option value="csv">CSV</option></select></div><div class="desktop-table" style="overflow:auto"><table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Centro</th><th>Status</th><th>Observação</th><th class="no-print">Ações</th></tr></thead><tbody id="tbody"></tbody></table></div><div id="mobileContasLista" class="mobile-cards"></div></div>
         <div class="card"><h2>Resumo por centro de custo</h2><div id="grafico" class="chart"></div></div>
       </div>
 
@@ -770,25 +792,40 @@ function enviarResumoEmail(){
 }
 
 
+
+function normalizarWebhookUrl(url){
+  return String(url || "").trim();
+}
 function carregarWebhookUrl(){
-  if(typeof webhookUrl !== "undefined"){
-    webhookUrl.value = localStorage.getItem("df_webhook_pipedream") || "";
-  }
+  try{
+    const salva = localStorage.getItem("df_webhook_pipedream") || "";
+    if(typeof webhookUrl !== "undefined"){
+      webhookUrl.value = salva;
+    }
+    if(typeof webhookStatus !== "undefined" && salva){
+      webhookStatus.innerHTML = "<span class='status-ok'>URL salva.</span>";
+    }
+  }catch(e){}
 }
 function salvarWebhookUrl(){
-  const url = webhookUrl.value.trim();
-  localStorage.setItem("df_webhook_pipedream", url);
+  const url = normalizarWebhookUrl(typeof webhookUrl !== "undefined" ? webhookUrl.value : "");
+  try{
+    localStorage.setItem("df_webhook_pipedream", url);
+  }catch(e){}
   if(typeof webhookStatus !== "undefined"){
     webhookStatus.innerHTML = url ? "<span class='status-ok'>URL salva com sucesso.</span>" : "<span class='status-error'>URL removida.</span>";
   }
 }
 async function enviarResumoWebhook(){
-  const url = (typeof webhookUrl !== "undefined" ? webhookUrl.value.trim() : "") || localStorage.getItem("df_webhook_pipedream") || "";
+  const urlCampo = normalizarWebhookUrl(typeof webhookUrl !== "undefined" ? webhookUrl.value : "");
+  const urlSalva = normalizarWebhookUrl(localStorage.getItem("df_webhook_pipedream") || "");
+  const url = urlCampo || urlSalva;
   if(!url){
     alert("Cole e salve a URL do Pipedream primeiro.");
     return;
   }
   try{
+    if(urlCampo) localStorage.setItem("df_webhook_pipedream", urlCampo);
     const corpo = montarResumoEmail();
     if(typeof webhookStatus !== "undefined"){
       webhookStatus.textContent = "Enviando...";
@@ -805,18 +842,25 @@ async function enviarResumoWebhook(){
       })
     });
     if(!resp.ok) throw new Error("HTTP " + resp.status);
-    localStorage.setItem("df_webhook_pipedream", url);
     if(typeof webhookStatus !== "undefined"){
       webhookStatus.innerHTML = "<span class='status-ok'>Resumo enviado automaticamente.</span>";
     }
-    alert("Resumo enviado automaticamente pelo Pipedream.");
+    alert("Resumo enviado automaticamente.");
   }catch(e){
     if(typeof webhookStatus !== "undefined"){
       webhookStatus.innerHTML = "<span class='status-error'>Erro no envio: " + e.message + "</span>";
     }
-    alert("Erro ao enviar pelo Pipedream: " + e.message);
+    alert("Erro ao enviar: " + e.message);
   }
 }
+function irParaSecao(id){
+  mostrarPainel();
+  setTimeout(()=>{
+    const el=document.getElementById(id);
+    if(el) el.scrollIntoView({behavior:"smooth", block:"start"});
+  },80);
+}
+
 
 function executarRelatorio(){let acao=acaoRelatorio.value;if(acao==="csv")exportarCSV();if(acao==="pdf")window.print();acaoRelatorio.value="";}
 function exportarCSV(){let linhas=[["Descrição","Valor","Vencimento","Centro","Status","Observação"],...filtroContas().map(c=>[c.descricao,c.valor,c.vencimento,c.centro,c.status,c.observacao||""])];let csv=linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");let blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="contas-dona-flor.csv";a.click();URL.revokeObjectURL(url);}

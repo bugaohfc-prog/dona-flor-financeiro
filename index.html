@@ -290,6 +290,14 @@ table{min-width:760px}
   .sidebar{display:none!important}
 }
 
+
+/* V18.3 Webhook Pipedream */
+.webhook-input{font-size:12px}
+.webhook-status{font-size:13px;margin-top:6px;font-weight:700}
+.status-ok{color:#15803D}
+.status-error{color:#B91C1C}
+.email-manual{background:#F8FAFC!important;color:#0F172A!important}
+
 </style>
 </head>
 <body>
@@ -328,15 +336,21 @@ table{min-width:760px}
     </div>
 
 
+    
     <div class="config-option">
-      <strong>📧 E-mail de resumo</strong>
-      <span class="sub">Gere um resumo das contas vencidas, de hoje e de amanhã para enviar ao Outlook.</span>
+      <strong>📧 E-mail automático</strong>
+      <span class="sub">Cole a URL do Pipedream para enviar o resumo sem abrir o Outlook.</span>
+      <input id="webhookUrl" class="webhook-input" placeholder="Cole aqui a URL do Pipedream">
       <div class="config-actions">
-        <button class="btn-green btn-small" onclick="enviarResumoEmail()">Enviar resumo agora</button>
+        <button class="btn-blue btn-small" onclick="salvarWebhookUrl()">Salvar URL</button>
+        <button class="btn-green btn-small" onclick="enviarResumoWebhook()">Enviar automático</button>
         <button class="btn-light btn-small" onclick="preverResumoEmail()">Pré-visualizar</button>
+        <button class="btn-light btn-small email-manual" onclick="enviarResumoEmail()">Abrir Outlook</button>
       </div>
+      <div id="webhookStatus" class="webhook-status"></div>
       <div id="emailPreview" class="email-preview" style="display:none"></div>
     </div>
+
 
     <div class="config-option">
       <strong>📱 Aplicativo</strong>
@@ -471,6 +485,7 @@ async function ativarNotificacoes(){
   }
   const perm = await Notification.requestPermission();
   atualizarStatusNotificacao();
+  carregarWebhookUrl();
   if(perm === "granted"){
     if("serviceWorker" in navigator){
       await navigator.serviceWorker.ready.catch(()=>{});
@@ -694,6 +709,55 @@ function enviarResumoEmail(){
   let corpo = montarResumoEmail();
   let link = `mailto:${EMAIL_DESTINO_PADRAO}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
   window.location.href = link;
+}
+
+
+function carregarWebhookUrl(){
+  if(typeof webhookUrl !== "undefined"){
+    webhookUrl.value = localStorage.getItem("df_webhook_pipedream") || "";
+  }
+}
+function salvarWebhookUrl(){
+  const url = webhookUrl.value.trim();
+  localStorage.setItem("df_webhook_pipedream", url);
+  if(typeof webhookStatus !== "undefined"){
+    webhookStatus.innerHTML = url ? "<span class='status-ok'>URL salva com sucesso.</span>" : "<span class='status-error'>URL removida.</span>";
+  }
+}
+async function enviarResumoWebhook(){
+  const url = (typeof webhookUrl !== "undefined" ? webhookUrl.value.trim() : "") || localStorage.getItem("df_webhook_pipedream") || "";
+  if(!url){
+    alert("Cole e salve a URL do Pipedream primeiro.");
+    return;
+  }
+  try{
+    const corpo = montarResumoEmail();
+    if(typeof webhookStatus !== "undefined"){
+      webhookStatus.textContent = "Enviando...";
+    }
+    const resp = await fetch(url, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        para:"donafloradm@outlook.com",
+        assunto:"Resumo financeiro - Dona Flor",
+        corpo:corpo,
+        origem:"Dona Flor Gestão Financeira",
+        geradoEm:new Date().toISOString()
+      })
+    });
+    if(!resp.ok) throw new Error("HTTP " + resp.status);
+    localStorage.setItem("df_webhook_pipedream", url);
+    if(typeof webhookStatus !== "undefined"){
+      webhookStatus.innerHTML = "<span class='status-ok'>Resumo enviado automaticamente.</span>";
+    }
+    alert("Resumo enviado automaticamente pelo Pipedream.");
+  }catch(e){
+    if(typeof webhookStatus !== "undefined"){
+      webhookStatus.innerHTML = "<span class='status-error'>Erro no envio: " + e.message + "</span>";
+    }
+    alert("Erro ao enviar pelo Pipedream: " + e.message);
+  }
 }
 
 function executarRelatorio(){let acao=acaoRelatorio.value;if(acao==="csv")exportarCSV();if(acao==="pdf")window.print();acaoRelatorio.value="";}

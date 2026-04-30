@@ -1,21 +1,14 @@
-Dona Flor V18.3 - Webhook Pipedream
+Dona Flor V18.4 - Configurações e menu limpo
 
-Correção:
-- Adiciona campo para colar URL do Pipedream em Configurações.
-- Botão Enviar automático usa fetch() e não abre Outlook.
-- Mantém botão Abrir Outlook como alternativa manual.
+Ajustes:
+- Modal de Configurações com botão X para fechar.
+- Modal com altura proporcional e rolagem interna.
+- Configurações aparece também no menu mobile.
+- Remove logo/texto redundante do menu lateral.
+- Mantém e-mail automático via Pipedream.
 - Não precisa novo SQL.
 
-Como usar:
-1. Suba os arquivos no GitHub.
+Passos:
+1. Substitua os arquivos no GitHub.
 2. Faça redeploy na Vercel.
-3. Abra Configurações > E-mail automático.
-4. Cole a URL do Pipedream.
-5. Clique em Salvar URL.
-6. Clique em Enviar automático.
-
-Pipedream:
-- Trigger: HTTP / Webhook > New Requests.
-- Step: Email > Send Yourself an Email.
-- Subject: Resumo financeiro - Dona Flor
-- Text: {{steps.trigger.event.body.corpo}}
+3. No celular, remova e adicione novamente o app para limpar cache.

@@ -298,6 +298,67 @@ table{min-width:760px}
 .status-error{color:#B91C1C}
 .email-manual{background:#F8FAFC!important;color:#0F172A!important}
 
+
+/* V18.4 Configurações e menu limpo */
+.sidebar{
+  padding-top:18px;
+}
+.sidebar .brand{
+  display:none!important;
+}
+.sidebar-toggle{
+  margin-bottom:16px!important;
+}
+.config-modal-bg{
+  align-items:flex-start!important;
+  padding-top:36px!important;
+  overflow-y:auto!important;
+}
+.config-modal{
+  position:relative;
+  max-height:88vh;
+  overflow-y:auto;
+  padding:22px!important;
+}
+.config-close{
+  position:absolute;
+  top:12px;
+  right:12px;
+  width:36px;
+  height:36px;
+  border-radius:999px;
+  background:#F1F5F9;
+  color:#0F172A;
+  padding:0;
+  font-size:24px;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.config-close:hover{
+  background:#E2E8F0;
+}
+@media(max-width:899px){
+  .nav-mobile button{
+    flex:0 0 auto;
+  }
+  .config-modal-bg{
+    padding:14px!important;
+    align-items:center!important;
+  }
+  .config-modal{
+    width:100%;
+    max-height:86vh;
+    border-radius:20px;
+    padding:18px!important;
+  }
+  .config-modal h2{
+    padding-right:42px;
+    font-size:22px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -317,6 +378,7 @@ table{min-width:760px}
 
 <div id="configModal" class="config-modal-bg no-print">
   <div class="config-modal">
+    <button class="config-close" onclick="fecharConfiguracoes()" title="Fechar">×</button>
     <h2>⚙️ Configurações</h2>
     <p class="sub">Ajustes do app Dona Flor Gestão Financeira.</p>
 
@@ -365,10 +427,6 @@ table{min-width:760px}
 
 <div id="appShell" class="app-shell">
   <aside class="sidebar no-print">
-    <div class="brand">
-      <img src="/icon-512.png">
-      <div><strong>Dona Flor</strong><br><span class="sub">Gestão Financeira</span></div>
-    </div>
 
     <button class="side-btn sidebar-toggle" onclick="alternarMenu()" title="Recolher menu">
       <span class="side-icon">☰</span><span class="side-text">Recolher menu</span>
@@ -401,7 +459,7 @@ table{min-width:760px}
     </div>
 
     <div class="container">
-      <div class="nav-mobile no-print"><button id="navPainel" class="active" onclick="mostrarPainel();setActiveMenu(this)">Painel</button><button id="navUsuarios" onclick="mostrarUsuarios();setActiveMenu(this)">Gestão de usuários</button><button class="btn-dark" onclick="sair()">Sair</button></div>
+      <div class="nav-mobile no-print"><button id="navPainel" class="active" onclick="mostrarPainel();setActiveMenu(this)">Painel</button><button id="navUsuarios" onclick="mostrarUsuarios();setActiveMenu(this)">Gestão de usuários</button><button onclick="abrirConfiguracoes()">Configurações</button><button class="btn-dark" onclick="sair()">Sair</button></div>
 
       <div id="painel">
 
@@ -764,6 +822,13 @@ function executarRelatorio(){let acao=acaoRelatorio.value;if(acao==="csv")export
 function exportarCSV(){let linhas=[["Descrição","Valor","Vencimento","Centro","Status","Observação"],...filtroContas().map(c=>[c.descricao,c.valor,c.vencimento,c.centro,c.status,c.observacao||""])];let csv=linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");let blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="contas-dona-flor.csv";a.click();URL.revokeObjectURL(url);}
 
 setInterval(()=>{ try { notificacaoJaEnviada=false; enviarNotificacaoAlertas(); } catch(e){} }, 30*60*1000);
+
+
+document.addEventListener("keydown", e=>{
+  if(e.key === "Escape" && typeof configModal !== "undefined" && configModal.style.display === "flex"){
+    fecharConfiguracoes();
+  }
+});
 
 </script>
 </body>

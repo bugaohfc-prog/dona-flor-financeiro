@@ -1,4 +1,4 @@
-const CACHE_NAME = "dona-flor-v21-5-menu-config";
+const CACHE_NAME = "dona-flor-v21-6-botao-sair";
 const ASSETS = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
@@ -2821,6 +2821,227 @@ self.addEventListener("notificationclick", event => {
   }
 
   interceptarConfiguracoes();
+
+  setTimeout(aplicar, 600);
+  setTimeout(aplicar, 1600);
+  setTimeout(aplicar, 3200);
+})();
+
+
+
+
+/* ==========================================================
+   DONA FLOR - V21.6 BOTÃO SAIR RESTAURADO
+   Correções:
+   - Restaura botão Sair no menu lateral
+   - Garante que submenus continuam visíveis
+   - Botão Sair não fica escondido por classes hidden
+   - Configurações continua fechando o menu no mobile
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V216_BOTAO_SAIR__) return;
+  window.__DONA_FLOR_V216_BOTAO_SAIR__ = true;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function injectCss(){
+    if(document.getElementById("df-v216-sair-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v216-sair-css";
+    style.textContent = `
+      /* Sair sempre visível no menu */
+      .df-v216-sair,
+      nav .df-v216-sair,
+      aside .df-v216-sair,
+      .sidebar .df-v216-sair,
+      .menu .df-v216-sair {
+        display:flex !important;
+        visibility:visible !important;
+        opacity:1 !important;
+        align-items:center !important;
+        gap:12px !important;
+        width:100% !important;
+        min-height:44px !important;
+        padding:12px 16px !important;
+        background:transparent !important;
+        color:#111827 !important;
+        border:0 !important;
+        box-shadow:none !important;
+        font-weight:800 !important;
+        text-align:left !important;
+        cursor:pointer !important;
+      }
+
+      .df-v216-sair-ico {
+        width:26px !important;
+        display:inline-flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        font-size:20px !important;
+      }
+
+      /* Restaura itens escondidos do menu lateral */
+      nav .df-hidden-v203,
+      nav .df-hidden-v204,
+      nav .df-v208-hidden,
+      nav .df-v206-hidden,
+      nav .df-v2041-hidden,
+      nav .df-v2042-hidden,
+      nav .df-v2044-hidden,
+      nav .df-v21-hidden,
+      nav .df-v212-hidden,
+      nav .df-v213-hidden,
+      aside .df-hidden-v203,
+      aside .df-hidden-v204,
+      aside .df-v208-hidden,
+      aside .df-v206-hidden,
+      aside .df-v2041-hidden,
+      aside .df-v2042-hidden,
+      aside .df-v2044-hidden,
+      aside .df-v21-hidden,
+      aside .df-v212-hidden,
+      aside .df-v213-hidden,
+      .sidebar .df-hidden-v203,
+      .sidebar .df-hidden-v204,
+      .sidebar .df-v208-hidden,
+      .sidebar .df-v206-hidden,
+      .sidebar .df-v2041-hidden,
+      .sidebar .df-v2042-hidden,
+      .sidebar .df-v2044-hidden,
+      .sidebar .df-v21-hidden,
+      .sidebar .df-v212-hidden,
+      .sidebar .df-v213-hidden {
+        display:block !important;
+        visibility:visible !important;
+        opacity:1 !important;
+      }
+
+      /* Mas mantém formulários estacionados escondidos */
+      #df-v213-parking,
+      #df-v213-parking #atalhoLancamento,
+      #df-v213-parking #atalhoLembrete {
+        display:none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function chamarSair(){
+    try{
+      if(typeof sair === "function") return sair();
+      if(typeof logout === "function") return logout();
+      if(typeof deslogar === "function") return deslogar();
+      if(typeof sairDF === "function") return sairDF();
+      if(typeof logoutDF === "function") return logoutDF();
+    }catch(e){}
+
+    try{
+      localStorage.removeItem("usuarioLogado");
+      localStorage.removeItem("df_usuario_logado");
+      sessionStorage.clear();
+    }catch(e){}
+
+    const login = document.getElementById("login");
+    const app = document.getElementById("app");
+    if(app) app.style.display = "none";
+    if(login) login.style.display = "flex";
+    location.reload();
+  }
+
+  function encontrarMenu(){
+    return document.querySelector(".sidebar") ||
+           document.querySelector("aside") ||
+           document.querySelector("nav") ||
+           document.querySelector(".menu") ||
+           document.querySelector("[class*='side']");
+  }
+
+  function restaurarSair(){
+    injectCss();
+
+    const menu = encontrarMenu();
+    if(!menu) return;
+
+    // se já existir item sair, só restaura visibilidade
+    const existente = Array.from(menu.querySelectorAll("button,a,div,li,span"))
+      .find(el => /^↩?\s*Sair$/i.test(txt(el)) || /^sair$/i.test(txt(el)));
+
+    if(existente){
+      existente.classList.add("df-v216-sair");
+      existente.classList.remove(
+        "df-hidden-v203","df-hidden-v204","df-v208-hidden","df-v206-hidden",
+        "df-v2041-hidden","df-v2042-hidden","df-v2044-hidden",
+        "df-v21-hidden","df-v212-hidden","df-v213-hidden"
+      );
+      if(existente.style){
+        existente.style.display = "";
+        existente.style.visibility = "";
+        existente.style.opacity = "";
+      }
+      if(!existente.dataset.dfSairOk){
+        existente.dataset.dfSairOk = "1";
+        existente.addEventListener("click", function(e){
+          e.preventDefault();
+          e.stopPropagation();
+          chamarSair();
+        }, true);
+      }
+      return;
+    }
+
+    // cria botão sair no fim do menu
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "df-v216-sair";
+    btn.innerHTML = `<span class="df-v216-sair-ico">↩</span><span>Sair</span>`;
+    btn.addEventListener("click", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      chamarSair();
+    }, true);
+
+    menu.appendChild(btn);
+  }
+
+  function restaurarSubmenus(){
+    const nomes = [
+      "contas a pagar","lançamento","lancamento","lembretes",
+      "gestão de usuários","gestao de usuarios","lixeira",
+      "configurações","configuracoes","notificações","notificacoes",
+      "configuração de e-mail","configuracao de e-mail","sair"
+    ];
+
+    document.querySelectorAll("nav *, aside *, .sidebar *, .menu *, [class*='side'] *").forEach(el => {
+      const t = txt(el).toLowerCase();
+      if(nomes.includes(t)){
+        el.classList.remove(
+          "df-hidden-v203","df-hidden-v204","df-v208-hidden","df-v206-hidden",
+          "df-v2041-hidden","df-v2042-hidden","df-v2044-hidden",
+          "df-v21-hidden","df-v212-hidden","df-v213-hidden"
+        );
+        if(el.style){
+          if(el.style.display === "none") el.style.display = "";
+          el.style.visibility = "";
+          el.style.opacity = "";
+        }
+      }
+    });
+  }
+
+  function aplicar(){
+    injectCss();
+    restaurarSubmenus();
+    restaurarSair();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", aplicar, {once:true});
+  }else{
+    aplicar();
+  }
 
   setTimeout(aplicar, 600);
   setTimeout(aplicar, 1600);

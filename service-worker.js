@@ -1,4 +1,4 @@
-const CACHE_NAME = "dona-flor-v24-pdf-final";
+const CACHE_NAME = "dona-flor-v25-estavel";
 const ASSETS = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
@@ -8584,5 +8584,1177 @@ ${montarRelatorioHTML(f)
   setTimeout(configurarSelectV24, 1600);
   setTimeout(configurarSelectV24, 3200);
   setTimeout(configurarSelectV24, 5000);
+})();
+
+
+
+
+/* ==========================================================
+   DONA FLOR - V25 ESTÁVEL
+   Correções profundas:
+   - PDF final blindado: sem nova aba, sem iframe, sem document.write, sem Blob HTML
+   - Intercepta o select Exportar antes dos scripts antigos
+   - Menu/submenus estabilizados
+   - Recolher menu mais discreto
+   - Bloco de notas refeito com padrão igual ao Contas a pagar
+   - Prioridade agora altera corretamente: Normal / Urgente / Crítico
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V25_ESTAVEL__) return;
+  window.__DONA_FLOR_V25_ESTAVEL__ = true;
+
+  let contasCacheV25 = [];
+  let notasRenderizadasV25 = false;
+
+  function texto(el){ return (el?.innerText || el?.textContent || "").trim(); }
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function norm(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function moedaV25(v){
+    try{ if(typeof moeda === "function") return moeda(v); }catch(e){}
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function supaURL(){
+    try{ if(typeof URL !== "undefined" && String(URL).includes("supabase")) return URL; }catch(e){}
+    try{ if(typeof SupabaseURL !== "undefined") return SupabaseURL; }catch(e){}
+    return "";
+  }
+
+  function supaKEY(){
+    try{ if(typeof KEY !== "undefined") return KEY; }catch(e){}
+    try{ if(typeof SupabaseKey !== "undefined") return SupabaseKey; }catch(e){}
+    return "";
+  }
+
+  function prioLabel(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function prioClass(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function prioIcon(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function cssV25(){
+    if(document.getElementById("df-v25-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v25-css";
+    style.textContent = `
+      /* ===== MENU ESTÁVEL ===== */
+      .side-submenu{
+        overflow:hidden !important;
+        max-height:0 !important;
+        opacity:0 !important;
+        transition:max-height .22s ease, opacity .18s ease !important;
+      }
+
+      .side-submenu.open{
+        max-height:420px !important;
+        opacity:1 !important;
+      }
+
+      .side-submenu .side-btn{
+        min-height:38px !important;
+        padding-top:8px !important;
+        padding-bottom:8px !important;
+        font-size:14px !important;
+      }
+
+      #toggleSidebarBtn,
+      button[title="Recolher menu"],
+      button[onclick*="toggleSidebar"]{
+        background:#F8FAFC !important;
+        border:1px solid #E2E8F0 !important;
+        box-shadow:none !important;
+        border-radius:12px !important;
+        color:#0F172A !important;
+        min-height:44px !important;
+      }
+
+      #toggleSidebarBtn .side-icon,
+      button[title="Recolher menu"] .side-icon{
+        font-size:18px !important;
+      }
+
+      body.df-sidebar-collapsed .side-text{
+        display:none !important;
+      }
+
+      body.df-sidebar-collapsed .sidebar{
+        width:76px !important;
+      }
+
+      body.df-sidebar-collapsed .side-btn{
+        justify-content:center !important;
+        padding-left:10px !important;
+        padding-right:10px !important;
+      }
+
+      /* ===== PADRÃO DOS CARDS ===== */
+      #notasLista, #atalhoContas{
+        font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif !important;
+      }
+
+      #notasLista{
+        display:block !important;
+      }
+
+      #notasLista .item,
+      #notasLista .nota-card,
+      #notasLista .df-v23-nota-card,
+      #notasLista .df-v25-old-hidden{
+        display:none !important;
+      }
+
+      #notasLista select,
+      #notasLista .df-prioridade-box-v223,
+      #notasLista .df-prioridade-box-v225{
+        display:none !important;
+      }
+
+      .df-v25-nota-card{
+        background:#FFFFFF !important;
+        border:1px solid #E2E8F0 !important;
+        border-radius:14px !important;
+        padding:14px !important;
+        margin:12px 0 !important;
+        box-shadow:0 8px 18px rgba(15,23,42,.06) !important;
+      }
+
+      .df-v25-nota-top{
+        display:flex !important;
+        align-items:flex-start !important;
+        justify-content:space-between !important;
+        gap:10px !important;
+      }
+
+      .df-v25-nota-title{
+        font-size:18px !important;
+        font-weight:900 !important;
+        color:#0F172A !important;
+        line-height:1.15 !important;
+      }
+
+      .df-v25-nota-text{
+        color:#475569 !important;
+        margin-top:6px !important;
+        font-size:15px !important;
+        line-height:1.3 !important;
+      }
+
+      .df-v25-nota-meta{
+        color:#64748B !important;
+        margin-top:8px !important;
+        font-size:13px !important;
+      }
+
+      .df-v25-badge{
+        display:inline-flex !important;
+        align-items:center !important;
+        gap:6px !important;
+        border-radius:999px !important;
+        padding:6px 10px !important;
+        font-weight:900 !important;
+        font-size:13px !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v25-badge.normal{background:#E0F2FE !important;color:#075985 !important;}
+      .df-v25-badge.urgente{background:#FEE2E2 !important;color:#B91C1C !important;}
+      .df-v25-badge.critico{background:#7F1D1D !important;color:#FFFFFF !important;}
+
+      .df-v25-nota-actions{
+        display:grid !important;
+        grid-template-columns:1fr !important;
+        gap:10px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v25-btn{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:0 !important;
+        font-weight:900 !important;
+        font-size:15px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v25-btn-edit{background:#2563EB !important;color:#FFFFFF !important;}
+      .df-v25-btn-del{background:#B91C1C !important;color:#FFFFFF !important;}
+
+      .df-v25-prio-box{
+        position:relative !important;
+        width:100% !important;
+        z-index:100 !important;
+      }
+
+      .df-v25-prio-btn{
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        border:1px solid #CBD5E1 !important;
+        justify-content:space-between !important;
+        padding:0 12px !important;
+      }
+
+      .df-v25-prio-btn.normal{background:#ECFDF5 !important;color:#047857 !important;border-color:#A7F3D0 !important;}
+      .df-v25-prio-btn.urgente{background:#FEE2E2 !important;color:#B91C1C !important;border-color:#FECACA !important;}
+      .df-v25-prio-btn.critico{background:#7F1D1D !important;color:#FFFFFF !important;border-color:#450A0A !important;}
+
+      .df-v25-prio-menu{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#FFFFFF !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:999999 !important;
+      }
+
+      .df-v25-prio-box.open .df-v25-prio-menu{
+        display:block !important;
+      }
+
+      .df-v25-prio-option{
+        width:100% !important;
+        min-height:44px !important;
+        background:#FFFFFF !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        padding:12px !important;
+        text-align:left !important;
+        font-weight:900 !important;
+        cursor:pointer !important;
+      }
+
+      .df-v25-prio-option:last-child{border-bottom:0 !important;}
+
+      /* remove retângulo estranho atrás do título */
+      #notasLista + *,
+      #notasLista h2,
+      #notasLista .df-v25-title-bg{
+        background:transparent !important;
+        box-shadow:none !important;
+      }
+
+      /* ===== RELATÓRIO / PDF FINAL ===== */
+      .df-v221-report-actions,
+      .df-v221-mini-btn,
+      button[onclick*="df221AbrirFiltros"]{
+        display:none !important;
+      }
+
+      .df-v25-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:2147483647 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v25-bg.open{display:flex !important;}
+
+      .df-v25-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#FFFFFF !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0F172A !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v25-report-actions,
+      .df-v25-actions{
+        display:flex !important;
+        flex-wrap:wrap !important;
+        gap:8px !important;
+        justify-content:flex-end !important;
+        margin-bottom:12px !important;
+      }
+
+      .df-v25-actions button,
+      .df-v25-report-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0F766E !important;
+        color:#FFFFFF !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v25-actions .light,
+      .df-v25-report-actions .light{
+        background:#FFFFFF !important;
+        color:#000000 !important;
+      }
+
+      .df-v25-grid{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:10px !important;
+      }
+
+      .df-v25-field label{
+        display:block !important;
+        font-size:12px !important;
+        font-weight:900 !important;
+        color:#64748B !important;
+        margin:0 0 4px !important;
+        text-transform:uppercase !important;
+      }
+
+      .df-v25-field input,
+      .df-v25-field select{
+        width:100% !important;
+        min-height:44px !important;
+        border:1px solid #CBD5E1 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        box-sizing:border-box !important;
+        font-size:15px !important;
+        background:#FFFFFF !important;
+      }
+
+      .df-v25-checks{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v25-check{
+        border:1px solid #E2E8F0 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        background:#FAFAF9 !important;
+        font-weight:800 !important;
+      }
+
+      .df-v25-report h1{
+        color:#0F766E !important;
+        margin:0 !important;
+        font-size:24px !important;
+      }
+
+      .df-v25-report h2{
+        font-size:18px !important;
+        margin:18px 0 8px !important;
+      }
+
+      .df-v25-report .sub{
+        color:#64748B !important;
+        font-size:12px !important;
+        margin-top:4px !important;
+      }
+
+      .df-v25-report .cards{
+        display:grid !important;
+        grid-template-columns:repeat(4,1fr) !important;
+        gap:8px !important;
+        margin:12px 0 !important;
+      }
+
+      .df-v25-report .card-mini{
+        border:1px solid #E2E8F0 !important;
+        border-radius:10px !important;
+        padding:10px !important;
+        background:#FAFAF9 !important;
+      }
+
+      .df-v25-report .label{
+        font-size:10px !important;
+        text-transform:uppercase !important;
+        color:#64748B !important;
+        font-weight:bold !important;
+      }
+
+      .df-v25-report .num{
+        font-size:17px !important;
+        font-weight:bold !important;
+        margin-top:3px !important;
+      }
+
+      .df-v25-report .centros{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin:8px 0 14px !important;
+      }
+
+      .df-v25-report .centro{
+        display:flex !important;
+        justify-content:space-between !important;
+        border:1px solid #E2E8F0 !important;
+        border-radius:10px !important;
+        padding:8px !important;
+      }
+
+      .df-v25-report .centro small{
+        display:block !important;
+        color:#64748B !important;
+      }
+
+      .df-v25-report table{
+        width:100% !important;
+        border-collapse:collapse !important;
+        font-size:12px !important;
+      }
+
+      .df-v25-report th{
+        background:#0F766E !important;
+        color:#FFFFFF !important;
+        text-align:left !important;
+        padding:7px !important;
+      }
+
+      .df-v25-report td{
+        border-bottom:1px solid #E2E8F0 !important;
+        padding:7px !important;
+        vertical-align:top !important;
+      }
+
+      .df-v25-report .valor{
+        font-weight:bold !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v25-report .status{
+        border-radius:999px !important;
+        padding:3px 7px !important;
+        font-weight:bold !important;
+        font-size:11px !important;
+        display:inline-block !important;
+      }
+
+      .df-v25-report .pago{background:#DCFCE7 !important;color:#15803D !important;}
+      .df-v25-report .aberto{background:#FEF3C7 !important;color:#92400E !important;}
+
+      @media(max-width:760px){
+        .df-v25-box{padding:14px !important;border-radius:16px !important;}
+        .df-v25-actions,.df-v25-report-actions{justify-content:flex-start !important;}
+        .df-v25-grid,.df-v25-checks,.df-v25-report .centros{grid-template-columns:1fr !important;}
+        .df-v25-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v25-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        html, body{
+          background:#FFFFFF !important;
+          margin:0 !important;
+          padding:0 !important;
+        }
+
+        body > *{
+          display:none !important;
+        }
+
+        #df-v25-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#FFFFFF !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v25-report-bg .df-v25-box{
+          display:block !important;
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v25-report-bg .df-v25-report-actions{
+          display:none !important;
+        }
+
+        #df-v25-report-content{
+          display:block !important;
+        }
+
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  /* ===== MENU ===== */
+  function toggleSubmenuV25(id, btn){
+    const submenu = document.getElementById(id);
+    if(!submenu) return;
+
+    document.querySelectorAll(".side-submenu").forEach(el => {
+      if(el !== submenu) el.classList.remove("open");
+    });
+
+    submenu.classList.toggle("open");
+
+    if(btn){
+      const arrow = btn.querySelector(".side-arrow");
+      if(arrow) arrow.textContent = submenu.classList.contains("open") ? "▴" : "▾";
+    }
+  }
+
+  function instalarMenuV25(){
+    window.toggleSubmenuDF = toggleSubmenuV25;
+
+    const toggle = document.getElementById("toggleSidebarBtn") || document.querySelector("button[title='Recolher menu']");
+    if(toggle && !toggle.dataset.df25Bound){
+      toggle.dataset.df25Bound = "1";
+      toggle.innerHTML = `<span class="side-icon">☰</span><span class="side-text">Menu</span>`;
+      toggle.addEventListener("click", function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        document.body.classList.toggle("df-sidebar-collapsed");
+      }, true);
+    }
+
+    const painel = document.getElementById("painelSubmenu");
+    if(painel && !document.querySelector(".side-submenu.open")){
+      painel.classList.add("open");
+    }
+  }
+
+  /* ===== NOTAS ===== */
+  function getNotasV25(){
+    try{
+      if(typeof visNotas === "function"){
+        const arr = visNotas();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getNotasArrayDF === "function"){
+        const arr = getNotasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.notasDados)) return window.notasDados.filter(n => !n.deletado && !n.data_exclusao);
+    }catch(e){}
+
+    return [];
+  }
+
+  async function alterarPrioridadeV25(id, prioridade){
+    const nova = prioLabel(prioridade);
+
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = nova;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof atualizarNotaSupabaseDF === "function"){
+        await atualizarNotaSupabaseDF(id, {prioridade:nova});
+        if(typeof carregar === "function") await carregar();
+        else renderNotasV25();
+        return;
+      }
+    }catch(e){}
+
+    try{
+      const url = supaURL();
+      const key = supaKEY();
+      if(url && key){
+        await fetch(url + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{
+            "apikey":key,
+            "Authorization":"Bearer " + key,
+            "Content-Type":"application/json",
+            "Prefer":"return=representation"
+          },
+          body:JSON.stringify({prioridade:nova})
+        });
+        if(typeof carregar === "function") await carregar();
+        else renderNotasV25();
+        return;
+      }
+    }catch(e){
+      alert("Não foi possível alterar a prioridade agora.");
+    }
+
+    renderNotasV25();
+  }
+
+  function renderNotasV25(){
+    cssV25();
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const notas = getNotasV25().slice(0,20);
+
+    if(!notas.length){
+      lista.innerHTML = `<p class="empty">Nenhum lembrete.</p>`;
+      return;
+    }
+
+    lista.innerHTML = notas.map(n => {
+      const p = prioLabel(n.prioridade || "Normal");
+      const pc = prioClass(p);
+      const id = esc(n.id);
+
+      return `
+        <div class="df-v25-nota-card" data-nota-id="${id}">
+          <div class="df-v25-nota-top">
+            <div>
+              <div class="df-v25-nota-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df-v25-nota-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df-v25-nota-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df-v25-badge ${pc}">${prioIcon(p)} ${p}</span>
+          </div>
+
+          <div class="df-v25-nota-actions no-print">
+            <button type="button" class="df-v25-btn df-v25-btn-edit" data-edit-nota="${id}">✏️ Editar</button>
+
+            <div class="df-v25-prio-box">
+              <button type="button" class="df-v25-btn df-v25-prio-btn ${pc}">
+                <span>${prioIcon(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df-v25-prio-menu">
+                <button type="button" class="df-v25-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df-v25-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df-v25-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+
+            <button type="button" class="df-v25-btn df-v25-btn-del" data-del-nota="${id}">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function bindNotasV25(){
+    if(document.body.dataset.df25NotasBound) return;
+    document.body.dataset.df25NotasBound = "1";
+
+    document.addEventListener("click", async function(e){
+      const edit = e.target.closest("[data-edit-nota]");
+      if(edit){
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        const id = edit.dataset.editNota;
+        if(typeof editarNotaDF === "function") editarNotaDF(id);
+        return;
+      }
+
+      const del = e.target.closest("[data-del-nota]");
+      if(del){
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        const id = del.dataset.delNota;
+        if(typeof moverNotaLixeiraDF === "function") moverNotaLixeiraDF(id);
+        return;
+      }
+
+      const prioBtn = e.target.closest(".df-v25-prio-btn");
+      if(prioBtn){
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        const box = prioBtn.closest(".df-v25-prio-box");
+        document.querySelectorAll(".df-v25-prio-box.open").forEach(b => {
+          if(b !== box) b.classList.remove("open");
+        });
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df-v25-prio-option");
+      if(op){
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        const id = op.dataset.id;
+        const p = op.dataset.p;
+        const box = op.closest(".df-v25-prio-box");
+        if(box) box.classList.remove("open");
+
+        await alterarPrioridadeV25(id, p);
+        setTimeout(renderNotasV25, 300);
+        return;
+      }
+
+      if(!e.target.closest(".df-v25-prio-box")){
+        document.querySelectorAll(".df-v25-prio-box.open").forEach(b => b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function instalarNotasV25(){
+    window.renderNotas = renderNotasV25;
+    window.renderNotasMelhoradoDF = renderNotasV25;
+    bindNotasV25();
+    renderNotasV25();
+  }
+
+  /* ===== RELATÓRIO/PDF ===== */
+  async function carregarContasRelatorioV25(){
+    const url = supaURL();
+    const key = supaKEY();
+
+    try{
+      if(url && key){
+        const r = await fetch(url + "/rest/v1/df_contas?select=*&order=vencimento.asc", {
+          headers:{
+            "apikey":key,
+            "Authorization":"Bearer " + key,
+            "Content-Type":"application/json"
+          }
+        });
+
+        if(r.ok){
+          const data = await r.json();
+          if(Array.isArray(data)){
+            contasCacheV25 = data.filter(c => !c.deletado);
+            return contasCacheV25;
+          }
+        }
+      }
+    }catch(e){}
+
+    try{
+      if(typeof visContas === "function"){
+        const data = visContas();
+        if(Array.isArray(data)){
+          contasCacheV25 = data.filter(c => !c.deletado);
+          return contasCacheV25;
+        }
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)){
+        contasCacheV25 = window.contasDados.filter(c => !c.deletado);
+        return contasCacheV25;
+      }
+    }catch(e){}
+
+    contasCacheV25 = [];
+    return contasCacheV25;
+  }
+
+  function centrosRelatorioV25(){
+    return Array.from(new Set(contasCacheV25.map(c => c.centro || c.centro_custo || c.loja).filter(Boolean))).sort();
+  }
+
+  function filtrosV25(){
+    return {
+      centro: document.getElementById("df25Centro")?.value || "",
+      status: document.getElementById("df25Status")?.value || "",
+      inicio: document.getElementById("df25Inicio")?.value || "",
+      fim: document.getElementById("df25Fim")?.value || "",
+      resumo: document.getElementById("df25Resumo")?.checked !== false,
+      centros: document.getElementById("df25Centros")?.checked !== false,
+      detalhes: document.getElementById("df25Detalhes")?.checked !== false,
+      aberto: document.getElementById("df25Aberto")?.checked || false
+    };
+  }
+
+  function filtrarContasV25(f){
+    return contasCacheV25.filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.inicio && data && data < f.inicio) return false;
+      if(f.fim && data && data > f.fim) return false;
+      return true;
+    });
+  }
+
+  function resumoContasV25(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago: pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV25(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function montarRelatorioV25(f){
+    const contas = filtrarContasV25(f);
+    const r = resumoContasV25(contas);
+    const centros = porCentroV25(contas);
+
+    const filtroDesc = [
+      f.centro ? "Centro: " + f.centro : "Todos os centros",
+      f.status ? "Status: " + f.status : "Todos os status",
+      f.inicio ? "De " + dataBR(f.inicio) : "",
+      f.fim ? "Até " + dataBR(f.fim) : "",
+      f.aberto ? "Somente em aberto" : ""
+    ].filter(Boolean).join(" • ");
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV25(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV25(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV25(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centrosHTML = f.centros ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro, info]) => `
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${moedaV25(info.total)}</b>
+          </div>
+        `).join("") : `<div>Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV25(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhes ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div>Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v25-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(filtroDesc)}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  async function abrirFiltrosRelatorioV25(){
+    cssV25();
+    await carregarContasRelatorioV25();
+
+    let bg = document.getElementById("df-v25-filter-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v25-filter-bg";
+      bg.className = "df-v25-bg";
+      document.body.appendChild(bg);
+      bg.addEventListener("click", function(e){
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    const centros = centrosRelatorioV25().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+
+    bg.innerHTML = `
+      <div class="df-v25-box">
+        <div class="df-v25-actions">
+          <button type="button" class="light" id="df25FechaFiltro">Fechar</button>
+        </div>
+
+        <h1 style="margin:0 0 4px;color:#0f766e">Filtros do relatório</h1>
+        <p style="margin:0 0 14px;color:#64748b">Base carregada: ${contasCacheV25.length} conta(s).</p>
+
+        <div class="df-v25-grid">
+          <div class="df-v25-field"><label>Centro</label><select id="df25Centro"><option value="">Todos</option>${centros}</select></div>
+          <div class="df-v25-field"><label>Status</label><select id="df25Status"><option value="">Todos</option><option>Aberto</option><option>Pago</option></select></div>
+          <div class="df-v25-field"><label>Data inicial</label><input id="df25Inicio" type="date"></div>
+          <div class="df-v25-field"><label>Data final</label><input id="df25Fim" type="date"></div>
+        </div>
+
+        <div class="df-v25-checks">
+          <label class="df-v25-check"><input id="df25Resumo" type="checkbox" checked> Mostrar resumo</label>
+          <label class="df-v25-check"><input id="df25Centros" type="checkbox" checked> Mostrar centros</label>
+          <label class="df-v25-check"><input id="df25Detalhes" type="checkbox" checked> Mostrar detalhes</label>
+          <label class="df-v25-check"><input id="df25Aberto" type="checkbox"> Somente em aberto</label>
+        </div>
+
+        <div class="df-v25-actions" style="justify-content:flex-start!important;margin-top:16px">
+          <button type="button" id="df25PDFBtn">Visualizar relatório</button>
+          <button type="button" id="df25CSVBtn">Exportar CSV</button>
+        </div>
+      </div>
+    `;
+
+    bg.querySelector("#df25FechaFiltro").addEventListener("click", () => bg.classList.remove("open"));
+    bg.querySelector("#df25PDFBtn").addEventListener("click", abrirPreviewPDFV25, true);
+    bg.querySelector("#df25CSVBtn").addEventListener("click", exportarCSVV25, true);
+
+    bg.classList.add("open");
+  }
+
+  function abrirPreviewPDFV25(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    const f = filtrosV25();
+
+    const filter = document.getElementById("df-v25-filter-bg");
+    if(filter) filter.classList.remove("open");
+
+    let bg = document.getElementById("df-v25-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v25-report-bg";
+      bg.className = "df-v25-bg";
+      bg.innerHTML = `
+        <div class="df-v25-box">
+          <div class="df-v25-report-actions no-print">
+            <button type="button" id="df25PrintBtn">Salvar em PDF</button>
+            <button type="button" class="light" id="df25CloseReportBtn">Fechar</button>
+          </div>
+          <div id="df-v25-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+
+      bg.addEventListener("click", evt => {
+        if(evt.target === bg) bg.classList.remove("open");
+      });
+
+      bg.querySelector("#df25PrintBtn").addEventListener("click", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+        setTimeout(() => window.print(), 150);
+      }, true);
+
+      bg.querySelector("#df25CloseReportBtn").addEventListener("click", () => bg.classList.remove("open"));
+    }
+
+    bg.querySelector("#df-v25-report-content").innerHTML = montarRelatorioV25(f);
+    bg.classList.add("open");
+  }
+
+  async function exportarCSVV25(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    const f = filtrosV25();
+    const contas = filtrarContasV25(f);
+
+    if(!contas.length){
+      alert("Nenhum dado para exportar com esses filtros.");
+      return;
+    }
+
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c => [
+        c.descricao || c.conta || "",
+        Number(c.valor || 0).toFixed(2).replace(".", ","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+
+    const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+    const file = new File([blob], "relatorio-dona-flor.csv", {type:"text/csv"});
+
+    try{
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:"Relatório Dona Flor"});
+        return;
+      }
+    }catch(err){}
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.target = "_blank";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      try{ a.remove(); }catch(e){}
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }, 1000);
+  }
+
+  function configurarRelatorioV25(){
+    cssV25();
+
+    document.querySelectorAll(".df-v221-report-actions").forEach(el => el.remove());
+
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+
+    sel.onchange = null;
+    sel.removeAttribute("onchange");
+
+    if(!sel.dataset.df25Bound){
+      sel.dataset.df25Bound = "1";
+      sel.addEventListener("change", function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        if(sel.value === "pdf" || sel.value === "csv"){
+          abrirFiltrosRelatorioV25();
+        }
+
+        sel.value = "";
+      }, true);
+    }
+  }
+
+  // Blindagem contra funções antigas de PDF
+  window.df25AbrirFiltros = abrirFiltrosRelatorioV25;
+  window.df25PDF = abrirPreviewPDFV25;
+  window.df25CSV = exportarCSVV25;
+
+  window.gerarRelatorioFinanceiroDF = abrirFiltrosRelatorioV25;
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(sel && (sel.value === "pdf" || sel.value === "csv")){
+      abrirFiltrosRelatorioV25();
+      sel.value = "";
+    }
+  };
+
+  window.df226GerarPDF = abrirPreviewPDFV25;
+  window.df224GerarPDF = abrirPreviewPDFV25;
+  window.df222GerarPDF = abrirPreviewPDFV25;
+  window.df23GerarPDF = abrirPreviewPDFV25;
+  window.df24GerarPdf = abrirPreviewPDFV25;
+
+  function iniciarV25(){
+    cssV25();
+    instalarMenuV25();
+    instalarNotasV25();
+    configurarRelatorioV25();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", iniciarV25, {once:true});
+  }else{
+    iniciarV25();
+  }
+
+  // Roda depois dos scripts antigos, para vencer os setTimeouts deles.
+  setTimeout(iniciarV25, 700);
+  setTimeout(iniciarV25, 1600);
+  setTimeout(iniciarV25, 3200);
+  setTimeout(iniciarV25, 5600);
 })();
 

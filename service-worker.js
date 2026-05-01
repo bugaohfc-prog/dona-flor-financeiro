@@ -579,7 +579,7 @@ self.addEventListener("notificationclick", event => {
     document.querySelectorAll("a,button,li,p,span,div").forEach(el => {
       const t = texto(el);
       if (/^(\+|•|\s)*lançamento de notas$/i.test(t) || /^(\+|•|\s)*lancamento de notas$/i.test(t)) {
-        el.classList.remove('df-hidden-v203');
+        el.classList.add("df-hidden-v203");
       }
     });
   }
@@ -645,7 +645,7 @@ self.addEventListener("notificationclick", event => {
 
     // mantém o form dentro do modal escondido para não voltar a ocupar tela
     if(formNotasOriginal){
-      formNotasOriginal.classList.remove('df-hidden-v203');
+      formNotasOriginal.classList.add("df-hidden-v203");
     }
   }
 
@@ -659,7 +659,7 @@ self.addEventListener("notificationclick", event => {
     formNotasOriginal = formCard;
     formNotasParentOriginal = formCard.parentNode;
     formNotasNextSibling = formCard.nextSibling;
-    formNotasOriginal.classList.remove('df-hidden-v203');
+    formNotasOriginal.classList.add("df-hidden-v203");
   }
 
   function adicionarBotaoNoBlocoNotas(){
@@ -895,7 +895,7 @@ self.addEventListener("notificationclick", event => {
         t === "lançamento de notas" ||
         t === "lancamento de notas"
       ) {
-        el.classList.remove('df-hidden-v204');
+        el.classList.add("df-hidden-v204");
       }
     });
   }
@@ -942,7 +942,7 @@ self.addEventListener("notificationclick", event => {
   function fecharModalConta(){
     const modal = document.getElementById("df-modal-conta-v204");
     if(modal) modal.classList.remove("open");
-    if(formContaOriginal) formContaOriginal.classList.remove('df-hidden-v204');
+    if(formContaOriginal) formContaOriginal.classList.add("df-hidden-v204");
   }
 
   function capturarFormConta(){
@@ -953,7 +953,7 @@ self.addEventListener("notificationclick", event => {
     if(!/descrição|descricao|valor|salvar conta/i.test(t)) return;
 
     formContaOriginal = formCard;
-    formContaOriginal.classList.remove('df-hidden-v204');
+    formContaOriginal.classList.add("df-hidden-v204");
   }
 
   function adicionarBotaoConta(){
@@ -1018,690 +1018,61 @@ self.addEventListener("notificationclick", event => {
 
 
 
-/* =========================
-   V20.4.1 desativado pelo V20.4.2 popup
-   Base: V20.4 estável
-   - O botão + abre/fecha o formulário de lançamento de notas
-   - Sem modal/overlay
-   - Mantém o layout atual
-   ========================= */
-(function(){
-  if (window.__DF_V2041_PLUS_NOTAS__) return;
-  window.__DF_V2041_PLUS_NOTAS__ = true; /* desativado */
-
-  let formNota = null;
-
-  function txt(el){
-    return (el?.innerText || el?.textContent || "").trim();
-  }
-
-  function injectCss(){
-    if (document.getElementById("df-v2041-plus-css")) return;
-
-    const style = document.createElement("style");
-    style.id = "df-v2041-plus-css";
-    style.textContent = `
-      .df-v2041-hidden {
-        display: none !important;
-      }
-
-      .df-v2041-inline-form {
-        margin-top: 14px !important;
-        padding: 14px !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 12px !important;
-        background: #FFFFFF !important;
-        box-shadow: 0 6px 14px rgba(15,23,42,.06) !important;
-      }
-
-      .df-v2041-inline-form h1,
-      .df-v2041-inline-form h2,
-      .df-v2041-inline-form h3 {
-        display: none !important;
-      }
-
-      .df-v2041-plus-btn,
-      .df-add-nota-btn-v203 {
-        width: 38px !important;
-        height: 38px !important;
-        min-width: 38px !important;
-        min-height: 38px !important;
-        border-radius: 999px !important;
-        border: 0 !important;
-        background: #0f766e !important;
-        color: #fff !important;
-        font-size: 22px !important;
-        font-weight: 900 !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        box-shadow: 0 6px 18px rgba(15,118,110,.24) !important;
-        cursor: pointer !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        line-height: 1 !important;
-      }
-
-      .df-v2041-bloco-head {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        gap: 12px !important;
-      }
-
-      /* garante que modais antigos não abram vazio */
-      #df-modal-notas-v203,
-      #df-v206-modal-nota {
-        display: none !important;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  function findCardByTitle(regex){
-    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"));
-    return candidates
-      .filter(el => regex.test(txt(el)))
-      .sort((a,b) => txt(a).length - txt(b).length)[0] || null;
-  }
-
-  function findFormNota(){
-    if (formNota) return formNota;
-
-    const buttons = Array.from(document.querySelectorAll("button,input[type='submit'],input[type='button']"));
-    const salvarBtn = buttons.find(b => /salvar nota/i.test(txt(b) || b.value || ""));
-
-    if (salvarBtn) {
-      let cur = salvarBtn;
-      while (cur && cur !== document.body) {
-        if (cur.querySelectorAll && cur.querySelectorAll("input,textarea,select").length >= 2) {
-          formNota = cur;
-          break;
-        }
-        cur = cur.parentElement;
-      }
-    }
-
-    if (!formNota) {
-      const candidates = Array.from(document.querySelectorAll("section,article,.card,div"))
-        .filter(el => /salvar nota/i.test(txt(el)) && el.querySelectorAll("input,textarea,select").length >= 2)
-        .sort((a,b) => txt(a).length - txt(b).length);
-
-      formNota = candidates[0] || null;
-    }
-
-    if (formNota) {
-      formNota.classList.add("df-v2041-inline-form", "df-v2041-hidden");
-    }
-
-    return formNota;
-  }
-
-  function garantirBotaoPlus(){
-    const bloco = findCardByTitle(/bloco de notas/i);
-    if (!bloco) return;
-
-    let btn = bloco.querySelector(".df-v2041-plus-btn") || bloco.querySelector(".df-add-nota-btn-v203");
-
-    const title = Array.from(bloco.querySelectorAll("h1,h2,h3,h4,strong,div"))
-      .find(el => /bloco de notas/i.test(txt(el)) && txt(el).length < 80);
-
-    if (!title) return;
-
-    let wrapper = title.closest(".df-v2041-bloco-head");
-
-    if (!wrapper) {
-      wrapper = document.createElement("div");
-      wrapper.className = "df-v2041-bloco-head";
-      title.parentNode.insertBefore(wrapper, title);
-      wrapper.appendChild(title);
-    }
-
-    if (!btn) {
-      btn = document.createElement("button");
-      btn.type = "button";
-      btn.textContent = "+";
-      wrapper.appendChild(btn);
-    } else if (!wrapper.contains(btn)) {
-      wrapper.appendChild(btn);
-    }
-
-    btn.classList.add("df-v2041-plus-btn");
-    btn.title = "Adicionar nota";
-    btn.onclick = function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      abrirFecharFormNota();
-    };
-  }
-
-  function abrirFecharFormNota(){
-    const bloco = findCardByTitle(/bloco de notas/i);
-    const form = findFormNota();
-
-    if (!bloco || !form) {
-      alert("Não encontrei o formulário de lançamento de notas.");
-      return;
-    }
-
-    if (!bloco.contains(form)) {
-      const header = bloco.querySelector(".df-v2041-bloco-head");
-      if (header && header.nextSibling) {
-        bloco.insertBefore(form, header.nextSibling);
-      } else {
-        bloco.insertBefore(form, bloco.firstChild);
-      }
-    }
-
-    form.classList.toggle("df-v2041-hidden");
-
-    if (!form.classList.contains("df-v2041-hidden")) {
-      form.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  }
-
-  function esconderFormFixoInicial(){
-    const form = findFormNota();
-    if (form && !form.classList.contains("df-v2041-inline-form")) {
-      form.classList.add("df-v2041-inline-form");
-    }
-    if (form && !form.closest("#df-modal-notas-v203")) {
-      form.classList.add("df-v2041-hidden");
-    }
-  }
-
-  function fecharModaisAntigos(){
-    ["df-modal-notas-v203", "df-v206-modal-nota"].forEach(id => {
-      const modal = document.getElementById(id);
-      if (modal) {
-        modal.classList.remove("open");
-        modal.style.display = "none";
-      }
-    });
-  }
-
-  function aplicar(){
-    injectCss();
-    esconderFormFixoInicial();
-    garantirBotaoPlus();
-    fecharModaisAntigos();
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", aplicar, { once: true });
-  } else {
-    aplicar();
-  }
-
-  setTimeout(aplicar, 700);
-  setTimeout(aplicar, 1600);
-})();
-
-
-
-
-/* =========================
-   V20.4.2 - Botão + em POP-UP
-   Base: V20.4.1 estável
-   - O botão + do Bloco de notas abre uma tela pop-up para digitar e salvar
-   - O formulário não fica fixo na tela
-   - Fecha no X ou clicando fora
-   ========================= */
-(function(){
-  if (window.__DF_V2042_PLUS_POPUP__) return;
-  window.__DF_V2042_PLUS_POPUP__ = true;
-
-  let formNota = null;
-
-  function txt(el){
-    return (el?.innerText || el?.textContent || "").trim();
-  }
-
-  function injectCss(){
-    if (document.getElementById("df-v2042-popup-css")) return;
-
-    const style = document.createElement("style");
-    style.id = "df-v2042-popup-css";
-    style.textContent = `
-      .df-v2042-hidden {
-        display: none !important;
-      }
-
-      .df-v2042-plus-btn {
-        width: 40px !important;
-        height: 40px !important;
-        min-width: 40px !important;
-        min-height: 40px !important;
-        border-radius: 999px !important;
-        border: 2px solid #000 !important;
-        background: #0f766e !important;
-        color: #fff !important;
-        font-size: 24px !important;
-        font-weight: 900 !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        box-shadow: 4px 4px 0 #000 !important;
-        cursor: pointer !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        line-height: 1 !important;
-      }
-
-      .df-v2042-bloco-head {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        gap: 12px !important;
-      }
-
-      .df-v2042-overlay {
-        position: fixed !important;
-        inset: 0 !important;
-        background: rgba(15, 23, 42, 0.58) !important;
-        z-index: 999999 !important;
-        display: none !important;
-        align-items: center !important;
-        justify-content: center !important;
-        padding: 18px !important;
-        box-sizing: border-box !important;
-      }
-
-      .df-v2042-overlay.open {
-        display: flex !important;
-      }
-
-      .df-v2042-popup {
-        width: 100% !important;
-        max-width: 520px !important;
-        background: #ffffff !important;
-        border: 2px solid #000 !important;
-        border-radius: 18px !important;
-        box-shadow: 6px 6px 0 #000 !important;
-        padding: 18px !important;
-        box-sizing: border-box !important;
-        max-height: 88vh !important;
-        overflow: auto !important;
-      }
-
-      .df-v2042-popup-head {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        margin-bottom: 14px !important;
-      }
-
-      .df-v2042-popup-title {
-        font-size: 22px !important;
-        font-weight: 900 !important;
-        color: #0f172a !important;
-      }
-
-      .df-v2042-close {
-        width: 38px !important;
-        height: 38px !important;
-        border-radius: 999px !important;
-        border: 2px solid #000 !important;
-        background: #fff !important;
-        color: #000 !important;
-        font-size: 24px !important;
-        font-weight: 900 !important;
-        box-shadow: 3px 3px 0 #000 !important;
-        cursor: pointer !important;
-      }
-
-      .df-v2042-popup-body .df-force-white-card,
-      .df-v2042-popup-body .card,
-      .df-v2042-popup-body section,
-      .df-v2042-popup-body div {
-        background-image: none !important;
-      }
-
-      .df-v2042-popup-body h1,
-      .df-v2042-popup-body h2,
-      .df-v2042-popup-body h3 {
-        display: none !important;
-      }
-
-      .df-v2042-popup-body input,
-      .df-v2042-popup-body textarea,
-      .df-v2042-popup-body select {
-        width: 100% !important;
-        box-sizing: border-box !important;
-        background: #fff !important;
-        min-height: 44px !important;
-      }
-
-      .df-v2042-popup-body textarea {
-        min-height: 110px !important;
-      }
-
-      #df-modal-notas-v203,
-      #df-v206-modal-nota {
-        display: none !important;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  function findFormNota(){
-    if (formNota) return formNota;
-
-    const buttons = Array.from(document.querySelectorAll("button,input[type='submit'],input[type='button']"));
-    const salvarBtn = buttons.find(b => /salvar nota/i.test(txt(b) || b.value || ""));
-
-    if (salvarBtn) {
-      let cur = salvarBtn;
-      while (cur && cur !== document.body) {
-        if (cur.querySelectorAll && cur.querySelectorAll("input,textarea,select").length >= 2) {
-          formNota = cur;
-          break;
-        }
-        cur = cur.parentElement;
-      }
-    }
-
-    if (!formNota) {
-      const candidates = Array.from(document.querySelectorAll("section,article,.card,div"))
-        .filter(el => /salvar nota/i.test(txt(el)) && el.querySelectorAll("input,textarea,select").length >= 2)
-        .sort((a,b) => txt(a).length - txt(b).length);
-
-      formNota = candidates[0] || null;
-    }
-
-    if (formNota) {
-      formNota.classList.add("df-v2042-hidden");
-    }
-
-    return formNota;
-  }
-
-  function createPopup(){
-    let overlay = document.getElementById("df-v2042-popup-nota");
-    if (overlay) return overlay;
-
-    overlay = document.createElement("div");
-    overlay.id = "df-v2042-popup-nota";
-    overlay.className = "df-v2042-overlay";
-    overlay.innerHTML = `
-      <div class="df-v2042-popup">
-        <div class="df-v2042-popup-head">
-          <div class="df-v2042-popup-title">Lançamento de notas</div>
-          <button type="button" class="df-v2042-close">×</button>
-        </div>
-        <div class="df-v2042-popup-body"></div>
-      </div>
-    `;
-
-    document.body.appendChild(overlay);
-
-    overlay.querySelector(".df-v2042-close").addEventListener("click", fecharPopupNota);
-    overlay.addEventListener("click", function(e){
-      if (e.target === overlay) fecharPopupNota();
-    });
-
-    return overlay;
-  }
-
-  function abrirPopupNota(){
-    injectCss();
-
-    const form = findFormNota();
-    const overlay = createPopup();
-    const body = overlay.querySelector(".df-v2042-popup-body");
-
-    if (!form) {
-      alert("Não encontrei o formulário de lançamento de notas.");
-      return;
-    }
-
-    body.innerHTML = "";
-    body.appendChild(form);
-
-    form.classList.remove("df-v2042-hidden");
-    form.style.display = "";
-    overlay.classList.add("open");
-
-    setTimeout(() => {
-      const first = form.querySelector("input,textarea,select");
-      if (first) first.focus();
-    }, 150);
-  }
-
-  function fecharPopupNota(){
-    const overlay = document.getElementById("df-v2042-popup-nota");
-    if (overlay) overlay.classList.remove("open");
-
-    if (formNota) {
-      formNota.classList.add("df-v2042-hidden");
-    }
-  }
-
-  function findCardByTitle(regex){
-    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"));
-    return candidates
-      .filter(el => regex.test(txt(el)))
-      .sort((a,b) => txt(a).length - txt(b).length)[0] || null;
-  }
-
-  function garantirBotaoPlus(){
-    const bloco = findCardByTitle(/bloco de notas/i);
-    if (!bloco) return;
-
-    let btn = bloco.querySelector(".df-v2042-plus-btn") || bloco.querySelector(".df-v2041-plus-btn") || bloco.querySelector(".df-add-nota-btn-v203");
-
-    const title = Array.from(bloco.querySelectorAll("h1,h2,h3,h4,strong,div"))
-      .find(el => /bloco de notas/i.test(txt(el)) && txt(el).length < 80);
-
-    if (!title) return;
-
-    let wrapper = title.closest(".df-v2042-bloco-head");
-
-    if (!wrapper) {
-      wrapper = document.createElement("div");
-      wrapper.className = "df-v2042-bloco-head";
-      title.parentNode.insertBefore(wrapper, title);
-      wrapper.appendChild(title);
-    }
-
-    if (!btn) {
-      btn = document.createElement("button");
-      btn.type = "button";
-      btn.textContent = "+";
-      wrapper.appendChild(btn);
-    } else if (!wrapper.contains(btn)) {
-      wrapper.appendChild(btn);
-    }
-
-    btn.className = "df-v2042-plus-btn";
-    btn.title = "Adicionar nota";
-    btn.onclick = function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      abrirPopupNota();
-    };
-  }
-
-  function esconderFormFixo(){
-    const form = findFormNota();
-    if (form && !document.getElementById("df-v2042-popup-nota")?.contains(form)) {
-      form.classList.add("df-v2042-hidden");
-    }
-  }
-
-  function fecharModaisAntigos(){
-    ["df-modal-notas-v203", "df-v206-modal-nota"].forEach(id => {
-      const modal = document.getElementById(id);
-      if (modal) {
-        modal.classList.remove("open");
-        modal.style.display = "none";
-      }
-    });
-  }
-
-  function aplicar(){
-    injectCss();
-    createPopup();
-    esconderFormFixo();
-    garantirBotaoPlus();
-    fecharModaisAntigos();
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", aplicar, { once: true });
-  } else {
-    aplicar();
-  }
-
-  setTimeout(aplicar, 700);
-  setTimeout(aplicar, 1600);
-})();
-
-
-
-
-/* =========================
-   V20.4.3 - Correção submenus
-   - Mantém o botão + em pop-up
-   - Restaura submenus que foram escondidos
-   - Garante menu Painel / Gestão / Lixeira / Configurações visível
-   ========================= */
-(function(){
-  if (window.__DF_V2043_SUBMENUS__) return;
-  window.__DF_V2043_SUBMENUS__ = true;
-
-  function txt(el){
-    return (el?.innerText || el?.textContent || "").trim();
-  }
-
-  function injectCss(){
-    if (document.getElementById("df-v2043-submenus-css")) return;
-
-    const style = document.createElement("style");
-    style.id = "df-v2043-submenus-css";
-    style.textContent = `
-      /* Reexibe submenus escondidos por versões anteriores */
-      .df-hidden-v203,
-      .df-hidden-v204,
-      .df-v208-hidden {
-        display: revert !important;
-      }
-
-      /* Mas não reexibe formulários que o botão + controla */
-      .df-v2042-hidden {
-        display: none !important;
-      }
-
-      /* Submenus do menu lateral sempre visíveis quando o menu estiver aberto */
-      nav .df-hidden-v203,
-      nav .df-hidden-v204,
-      nav .df-v208-hidden,
-      aside .df-hidden-v203,
-      aside .df-hidden-v204,
-      aside .df-v208-hidden,
-      .menu .df-hidden-v203,
-      .menu .df-hidden-v204,
-      .menu .df-v208-hidden,
-      [class*="menu"] .df-hidden-v203,
-      [class*="menu"] .df-hidden-v204,
-      [class*="menu"] .df-v208-hidden {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  function restaurarSubmenus(){
-    document.querySelectorAll("a,button,li,p,span,div").forEach(el => {
-      const t = txt(el).toLowerCase();
-
-      const ehSubmenu =
-        t === "contas a pagar" ||
-        t === "lançamento" ||
-        t === "lancamento" ||
-        t === "lançamento de contas" ||
-        t === "lancamento de contas" ||
-        t === "lançamento de notas" ||
-        t === "lancamento de notas" ||
-        t === "lembretes" ||
-        t === "notas" ||
-        t === "alertas" ||
-        t === "resumo por centro" ||
-        t === "novo usuário" ||
-        t === "usuarios cadastrados" ||
-        t === "usuários cadastrados" ||
-        t === "permissões por loja" ||
-        t === "permissoes por loja" ||
-        t === "notas excluídas" ||
-        t === "notas excluidas" ||
-        t === "contas excluídas" ||
-        t === "contas excluidas" ||
-        t === "notificações" ||
-        t === "notificacoes" ||
-        t === "configuração de e-mail" ||
-        t === "configuracao de e-mail" ||
-        t === "geral";
-
-      if (ehSubmenu) {
-        el.classList.remove("df-hidden-v203", "df-hidden-v204", "df-v208-hidden", "df-v206-hidden");
-        if (el.style) {
-          if (el.style.display === "none") el.style.display = "";
-          el.style.visibility = "";
-          el.style.opacity = "";
-        }
-      }
-    });
-  }
-
-  function aplicar(){
-    injectCss();
-    restaurarSubmenus();
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", aplicar, { once: true });
-  } else {
-    aplicar();
-  }
-
-  setTimeout(aplicar, 700);
-  setTimeout(aplicar, 1600);
-  setTimeout(aplicar, 3000);
-})();
-
-
-
-
-/* =========================
-   V20.4.4 - Correção definitiva do botão +
-   - Remove botões + duplicados
-   - Mantém só 1 botão + no Bloco de notas
-   - Mantém só 1 botão + em Contas a pagar
-   - Pop-up abre com formulário correto
-   - Fecha no X ou clicando fora
-   ========================= */
+/* ==========================================================
+   DONA FLOR - V21 FINAL REBUILD LIMPO
+   Objetivo:
+   - 1 único botão + no Bloco de notas
+   - 1 único botão + em Contas a pagar
+   - Pop-up limpo para lançamento de notas e contas
+   - Remove scripts/visuais antigos que duplicavam +
+   - Submenus preservados
+   - Soft delete preservado
+   ========================================================== */
 (function () {
-  if (window.__DF_V2044_PLUS_POPUP_FIX__) return;
-  window.__DF_V2044_PLUS_POPUP_FIX__ = true;
+  if (window.__DONA_FLOR_V21_FINAL__) return;
+  window.__DONA_FLOR_V21_FINAL__ = true;
 
-  let formNota = null;
-  let formConta = null;
+  const V21 = {
+    notaForm: null,
+    contaForm: null,
+    initialized: false
+  };
 
   function txt(el) {
     return (el?.innerText || el?.textContent || "").trim();
   }
 
   function injectCss() {
-    if (document.getElementById("df-v2044-plus-css")) return;
+    if (document.getElementById("df-v21-final-css")) return;
 
-    const style = document.createElement("style");
-    style.id = "df-v2044-plus-css";
-    style.textContent = `
-      .df-v2044-hidden { display: none !important; }
+    const css = document.createElement("style");
+    css.id = "df-v21-final-css";
+    css.textContent = `
+      html, body, #root, #app, main, .container {
+        background-color:#F1F5F9 !important;
+        background-image:none !important;
+      }
 
-      .df-v2044-head {
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif !important;
+        color:#111827 !important;
+      }
+
+      .df-force-white-card,
+      .card,
+      section {
+        background:#FFFFFF !important;
+        background-image:none !important;
+        border:1px solid #E2E8F0 !important;
+        border-radius:12px !important;
+        box-shadow:
+          0 10px 15px -3px rgba(0,0,0,.10),
+          0 4px 6px -4px rgba(0,0,0,.05) !important;
+      }
+
+      .df-v21-hidden { display:none !important; }
+
+      .df-v21-section-head {
         display:flex !important;
         align-items:center !important;
         justify-content:space-between !important;
@@ -1709,49 +1080,55 @@ self.addEventListener("notificationclick", event => {
         width:100% !important;
       }
 
-      .df-v2044-plus {
-        width:40px !important;
-        height:40px !important;
-        min-width:40px !important;
-        min-height:40px !important;
+      .df-v21-plus {
+        width:42px !important;
+        height:42px !important;
+        min-width:42px !important;
+        min-height:42px !important;
         border-radius:999px !important;
-        background:#0f766e !important;
-        color:#fff !important;
+        border:2px solid #000 !important;
+        background:#0F766E !important;
+        color:#FFF !important;
         font-size:24px !important;
         font-weight:900 !important;
-        border:2px solid #000 !important;
         box-shadow:4px 4px 0 #000 !important;
-        cursor:pointer !important;
         display:inline-flex !important;
         align-items:center !important;
         justify-content:center !important;
+        line-height:1 !important;
         padding:0 !important;
         margin:0 !important;
-        line-height:1 !important;
+        cursor:pointer !important;
+        touch-action:manipulation !important;
       }
 
-      .df-v2044-modal {
+      .df-v21-plus:active {
+        transform: translate(2px, 2px) !important;
+        box-shadow:2px 2px 0 #000 !important;
+      }
+
+      .df-v21-modal {
         position:fixed !important;
         inset:0 !important;
-        background:rgba(15,23,42,.62) !important;
         z-index:999999 !important;
         display:none !important;
         align-items:center !important;
         justify-content:center !important;
         padding:18px !important;
         box-sizing:border-box !important;
+        background:rgba(15,23,42,.62) !important;
       }
 
-      .df-v2044-modal.open {
+      .df-v21-modal.open {
         display:flex !important;
       }
 
-      .df-v2044-box {
+      .df-v21-box {
         width:100% !important;
-        max-width:520px !important;
+        max-width:540px !important;
         max-height:88vh !important;
         overflow:auto !important;
-        background:#fff !important;
+        background:#FFFFFF !important;
         border:2px solid #000 !important;
         border-radius:18px !important;
         box-shadow:6px 6px 0 #000 !important;
@@ -1759,35 +1136,36 @@ self.addEventListener("notificationclick", event => {
         box-sizing:border-box !important;
       }
 
-      .df-v2044-modal-head {
+      .df-v21-modal-head {
         display:flex !important;
         align-items:center !important;
         justify-content:space-between !important;
         margin-bottom:14px !important;
       }
 
-      .df-v2044-title {
+      .df-v21-title {
         font-size:22px !important;
         font-weight:900 !important;
-        color:#0f172a !important;
+        color:#0F172A !important;
       }
 
-      .df-v2044-close {
-        width:38px !important;
-        height:38px !important;
+      .df-v21-close {
+        width:40px !important;
+        height:40px !important;
         border-radius:999px !important;
-        background:#fff !important;
         border:2px solid #000 !important;
-        box-shadow:3px 3px 0 #000 !important;
+        background:#FFF !important;
         color:#000 !important;
         font-size:22px !important;
         font-weight:900 !important;
+        box-shadow:3px 3px 0 #000 !important;
         cursor:pointer !important;
+        padding:0 !important;
       }
 
-      .df-v2044-body .card,
-      .df-v2044-body section,
-      .df-v2044-body .df-force-white-card {
+      .df-v21-body .card,
+      .df-v21-body section,
+      .df-v21-body .df-force-white-card {
         background:#fff !important;
         background-image:none !important;
         border:0 !important;
@@ -1796,83 +1174,69 @@ self.addEventListener("notificationclick", event => {
         margin:0 !important;
       }
 
-      .df-v2044-body h1,
-      .df-v2044-body h2,
-      .df-v2044-body h3 {
+      .df-v21-body h1,
+      .df-v21-body h2,
+      .df-v21-body h3,
+      .df-v21-body h4 {
         display:none !important;
       }
 
-      .df-v2044-body input,
-      .df-v2044-body textarea,
-      .df-v2044-body select {
+      .df-v21-body input,
+      .df-v21-body textarea,
+      .df-v21-body select {
         width:100% !important;
         box-sizing:border-box !important;
         background:#fff !important;
         min-height:44px !important;
+        font-family:inherit !important;
+        font-size:15px !important;
       }
 
-      .df-v2044-body textarea {
+      .df-v21-body textarea {
         min-height:110px !important;
       }
 
-      /* desativa botões e modais antigos que estavam duplicando */
-      .df-v2042-plus-btn,
+      .df-v21-toggle-clean,
+      .df-toggle-clean-v204 {
+        background:transparent !important;
+        box-shadow:none !important;
+        border:none !important;
+        min-width:24px !important;
+        min-height:24px !important;
+        width:auto !important;
+        height:auto !important;
+        padding:4px !important;
+        color:#0F766E !important;
+      }
+
+      /* mata os botões + e modais antigos que causavam duplicação */
       .df-v2041-plus-btn,
+      .df-v2042-plus-btn,
+      .df-v2044-plus,
       .df-add-nota-btn-v203,
       .df-add-conta-btn-v204,
+      .df-add-btn-v204,
       .df-v206-add-btn,
-      .df-add-btn-v204 {
+      .df-v208-add-btn {
         display:none !important;
       }
 
       #df-v2042-popup-nota,
+      #df-v2044-modal-nota,
+      #df-v2044-modal-conta,
       #df-modal-notas-v203,
       #df-modal-conta-v204,
       #df-v206-modal-nota,
       #df-v206-modal-conta {
         display:none !important;
       }
-    `;
-    document.head.appendChild(style);
-  }
 
-  function findCard(regex) {
-    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"));
-    return candidates
-      .filter(el => regex.test(txt(el)))
-      .sort((a,b) => txt(a).length - txt(b).length)[0] || null;
-  }
-
-  function findFormByButton(regex) {
-    const buttons = Array.from(document.querySelectorAll("button,input[type='button'],input[type='submit']"));
-    const btn = buttons.find(b => regex.test(txt(b) || b.value || ""));
-    if (btn) {
-      let cur = btn;
-      while (cur && cur !== document.body) {
-        if (cur.querySelectorAll && cur.querySelectorAll("input,textarea,select").length >= 2) {
-          return cur;
-        }
-        cur = cur.parentElement;
+      button, select {
+        min-height:40px !important;
+        touch-action:manipulation !important;
       }
-    }
-
-    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"))
-      .filter(el => regex.test(txt(el)) && el.querySelectorAll("input,textarea,select").length >= 2)
-      .sort((a,b) => txt(a).length - txt(b).length);
-
-    return candidates[0] || null;
-  }
-
-  function captureForms() {
-    if (!formNota) {
-      formNota = findFormByButton(/salvar nota/i);
-      if (formNota) formNota.classList.add("df-v2044-hidden");
-    }
-
-    if (!formConta) {
-      formConta = findFormByButton(/salvar conta/i);
-      if (formConta) formConta.classList.add("df-v2044-hidden");
-    }
+    `;
+    document.head.appendChild(css);
   }
 
   function createModal(id, title) {
@@ -1881,20 +1245,19 @@ self.addEventListener("notificationclick", event => {
 
     modal = document.createElement("div");
     modal.id = id;
-    modal.className = "df-v2044-modal";
+    modal.className = "df-v21-modal";
     modal.innerHTML = `
-      <div class="df-v2044-box">
-        <div class="df-v2044-modal-head">
-          <div class="df-v2044-title">${title}</div>
-          <button type="button" class="df-v2044-close">×</button>
+      <div class="df-v21-box">
+        <div class="df-v21-modal-head">
+          <div class="df-v21-title">${title}</div>
+          <button type="button" class="df-v21-close" aria-label="Fechar">×</button>
         </div>
-        <div class="df-v2044-body"></div>
+        <div class="df-v21-body"></div>
       </div>
     `;
-
     document.body.appendChild(modal);
 
-    modal.querySelector(".df-v2044-close").addEventListener("click", () => closeModal(modal));
+    modal.querySelector(".df-v21-close").addEventListener("click", () => closeModal(modal));
     modal.addEventListener("click", (e) => {
       if (e.target === modal) closeModal(modal);
     });
@@ -1902,120 +1265,229 @@ self.addEventListener("notificationclick", event => {
     return modal;
   }
 
-  function openModal(type) {
+  function closeModal(modal) {
+    if (!modal) return;
+    modal.classList.remove("open");
+
+    const child = modal.querySelector(".df-v21-body > *");
+    if (child) child.classList.add("df-v21-hidden");
+  }
+
+  function findFormByButton(labelRegex) {
+    const btns = Array.from(document.querySelectorAll("button,input[type='button'],input[type='submit']"));
+    const btn = btns.find(b => labelRegex.test(txt(b) || b.value || ""));
+    if (btn) {
+      let cur = btn;
+      while (cur && cur !== document.body) {
+        if (cur.querySelectorAll && cur.querySelectorAll("input,textarea,select").length >= 2) return cur;
+        cur = cur.parentElement;
+      }
+    }
+
+    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"))
+      .filter(el => labelRegex.test(txt(el)) && el.querySelectorAll("input,textarea,select").length >= 2)
+      .sort((a, b) => txt(a).length - txt(b).length);
+
+    return candidates[0] || null;
+  }
+
+  function captureForms() {
+    if (!V21.notaForm) {
+      V21.notaForm = findFormByButton(/salvar nota/i);
+      if (V21.notaForm) V21.notaForm.classList.add("df-v21-hidden");
+    }
+
+    if (!V21.contaForm) {
+      V21.contaForm = findFormByButton(/salvar conta/i);
+      if (V21.contaForm) V21.contaForm.classList.add("df-v21-hidden");
+    }
+  }
+
+  function findSection(titleRegex) {
+    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"));
+    return candidates
+      .filter(el => titleRegex.test(txt(el)))
+      .sort((a, b) => txt(a).length - txt(b).length)[0] || null;
+  }
+
+  function getTitle(section, titleRegex) {
+    return Array.from(section.querySelectorAll("h1,h2,h3,h4,strong,div"))
+      .find(el => titleRegex.test(txt(el)) && txt(el).length < 90);
+  }
+
+  function removeOldPlus(section) {
+    const old = Array.from(section.querySelectorAll("button"))
+      .filter(b => {
+        const cls = String(b.className || "");
+        const t = txt(b);
+        return t === "+" || /plus|add-nota|add-conta|add-btn/i.test(cls);
+      });
+    old.forEach(b => b.remove());
+  }
+
+  function ensureHead(section, titleRegex) {
+    const title = getTitle(section, titleRegex);
+    if (!title) return null;
+
+    let head = title.closest(".df-v21-section-head");
+    if (!head) {
+      head = document.createElement("div");
+      head.className = "df-v21-section-head";
+      title.parentNode.insertBefore(head, title);
+      head.appendChild(title);
+    }
+    return head;
+  }
+
+  function addPlus(sectionRegex, titleRegex, type) {
+    const section = findSection(sectionRegex);
+    if (!section) return;
+
+    removeOldPlus(section);
+
+    const head = ensureHead(section, titleRegex);
+    if (!head) return;
+
+    if (head.querySelector(".df-v21-plus")) return;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "df-v21-plus";
+    btn.textContent = "+";
+    btn.title = type === "nota" ? "Adicionar nota" : "Adicionar conta";
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openForm(type);
+    });
+
+    head.appendChild(btn);
+  }
+
+  function openForm(type) {
     captureForms();
 
     const isNota = type === "nota";
-    const form = isNota ? formNota : formConta;
+    const form = isNota ? V21.notaForm : V21.contaForm;
     const modal = createModal(
-      isNota ? "df-v2044-modal-nota" : "df-v2044-modal-conta",
+      isNota ? "df-v21-modal-nota" : "df-v21-modal-conta",
       isNota ? "Lançamento de notas" : "Lançamento de contas"
     );
+    const body = modal.querySelector(".df-v21-body");
 
-    const body = modal.querySelector(".df-v2044-body");
     body.innerHTML = "";
 
     if (!form) {
-      body.innerHTML = `<div style="padding:12px;color:#b91c1c;font-weight:800;">Formulário não encontrado.</div>`;
+      body.innerHTML = `<div style="padding:12px;color:#B91C1C;font-weight:900;">Formulário não encontrado.</div>`;
       modal.classList.add("open");
       return;
     }
 
     body.appendChild(form);
-    form.classList.remove("df-v2044-hidden");
+    form.classList.remove("df-v21-hidden");
     form.style.display = "";
     modal.classList.add("open");
 
     setTimeout(() => {
       const first = form.querySelector("input,textarea,select");
       if (first) first.focus();
-    }, 150);
+    }, 120);
   }
 
-  function closeModal(modal) {
-    if (!modal) return;
-    modal.classList.remove("open");
-
-    const form = modal.querySelector(".df-v2044-body > *");
-    if (form) form.classList.add("df-v2044-hidden");
-  }
-
-  function ensureHeader(section, titleRegex) {
-    const title = Array.from(section.querySelectorAll("h1,h2,h3,h4,strong,div"))
-      .find(el => titleRegex.test(txt(el)) && txt(el).length < 80);
-
-    if (!title) return null;
-
-    let head = title.closest(".df-v2044-head");
-    if (!head) {
-      head = document.createElement("div");
-      head.className = "df-v2044-head";
-      title.parentNode.insertBefore(head, title);
-      head.appendChild(title);
-    }
-
-    return head;
-  }
-
-  function removeDuplicatePlus(section) {
-    const buttons = Array.from(section.querySelectorAll("button"))
-      .filter(btn => txt(btn) === "+" || btn.className.toString().includes("plus") || btn.className.toString().includes("add"));
-
-    buttons.forEach(btn => btn.remove());
-  }
-
-  function addPlus(sectionRegex, titleRegex, type) {
-    const section = findCard(sectionRegex);
-    if (!section) return;
-
-    removeDuplicatePlus(section);
-
-    const head = ensureHeader(section, titleRegex);
-    if (!head) return;
-
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "df-v2044-plus";
-    btn.textContent = "+";
-    btn.title = type === "nota" ? "Adicionar nota" : "Adicionar conta";
-    btn.onclick = function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      openModal(type);
-    };
-
-    head.appendChild(btn);
-  }
-
-  function hideFormsIfOutsideModal() {
+  function hideFormsOutsideModal() {
     captureForms();
 
-    if (formNota && !document.getElementById("df-v2044-modal-nota")?.contains(formNota)) {
-      formNota.classList.add("df-v2044-hidden");
+    if (V21.notaForm && !document.getElementById("df-v21-modal-nota")?.contains(V21.notaForm)) {
+      V21.notaForm.classList.add("df-v21-hidden");
     }
-
-    if (formConta && !document.getElementById("df-v2044-modal-conta")?.contains(formConta)) {
-      formConta.classList.add("df-v2044-hidden");
+    if (V21.contaForm && !document.getElementById("df-v21-modal-conta")?.contains(V21.contaForm)) {
+      V21.contaForm.classList.add("df-v21-hidden");
     }
   }
 
-  function closeOldModals() {
-    ["df-v2042-popup-nota","df-modal-notas-v203","df-modal-conta-v204","df-v206-modal-nota","df-v206-modal-conta"].forEach(id => {
-      const modal = document.getElementById(id);
-      if (modal) {
-        modal.classList.remove("open");
-        modal.style.display = "none";
+  function cleanToggles() {
+    document.querySelectorAll("button,span,div").forEach(el => {
+      const t = txt(el);
+      if (t === "▲" || t === "▼" || t === "▴" || t === "▾") {
+        el.classList.add("df-v21-toggle-clean");
+        if (el.style) {
+          el.style.background = "transparent";
+          el.style.boxShadow = "none";
+          el.style.border = "none";
+        }
       }
     });
   }
 
+  function closeOldModals() {
+    [
+      "df-v2042-popup-nota",
+      "df-v2044-modal-nota",
+      "df-v2044-modal-conta",
+      "df-modal-notas-v203",
+      "df-modal-conta-v204",
+      "df-v206-modal-nota",
+      "df-v206-modal-conta"
+    ].forEach(id => {
+      const m = document.getElementById(id);
+      if (m) {
+        m.classList.remove("open");
+        m.style.display = "none";
+      }
+    });
+  }
+
+  function softDeleteGuards() {
+    if (typeof SupabaseURL === "undefined" || typeof SupabaseKey === "undefined") return;
+
+    window.excluirConta = async function(id) {
+      if (typeof isAdmin === "function" && !isAdmin()) return alert("Operação restrita a administradores.");
+      if (!confirm("Deseja mover esta conta para a Lixeira?")) return;
+      if (typeof render_loading === "function") render_loading(true);
+
+      await fetch(SupabaseURL + "/rest/v1/df_contas?id=eq." + id, {
+        method: "PATCH",
+        headers: {
+          "apikey": SupabaseKey,
+          "Authorization": "Bearer " + SupabaseKey,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({ deletado: true, data_exclusao: new Date().toISOString() })
+      });
+
+      if (typeof carregar === "function") carregar();
+    };
+
+    window.excluirNota = async function(id) {
+      if (typeof isAdmin === "function" && !isAdmin()) return alert("Operação restrita a administradores.");
+      if (!confirm("Deseja mover esta nota para a Lixeira?")) return;
+      if (typeof render_loading === "function") render_loading(true);
+
+      await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + id, {
+        method: "PATCH",
+        headers: {
+          "apikey": SupabaseKey,
+          "Authorization": "Bearer " + SupabaseKey,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({ deletado: true, data_exclusao: new Date().toISOString() })
+      });
+
+      if (typeof carregar === "function") carregar();
+    };
+  }
+
   function aplicar() {
     injectCss();
-    captureForms();
     closeOldModals();
+    captureForms();
+    hideFormsOutsideModal();
     addPlus(/bloco de notas/i, /bloco de notas/i, "nota");
     addPlus(/contas a pagar/i, /contas a pagar/i, "conta");
-    hideFormsIfOutsideModal();
+    cleanToggles();
+    softDeleteGuards();
   }
 
   if (document.readyState === "loading") {
@@ -2024,7 +1496,9 @@ self.addEventListener("notificationclick", event => {
     aplicar();
   }
 
+  // poucas reaplicações para esperar o app renderizar, sem loop permanente
   setTimeout(aplicar, 600);
   setTimeout(aplicar, 1600);
+  setTimeout(aplicar, 3200);
 })();
 

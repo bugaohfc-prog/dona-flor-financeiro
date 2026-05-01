@@ -6453,6 +6453,463 @@ if(abrirSyncOriginalDF){
   css();
 })();
 </script>
+<script>
+/* ==========================================================
+   DONA FLOR - V22.1 RELATÓRIO ATIVO
+   Correção:
+   - Select Exportar deixa de ficar inerte
+   - Adiciona botões diretos PDF e CSV ao lado do select
+   - Usa click/change/input em captura para funcionar no celular
+   - Garante abertura da tela de filtros
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V221_RELATORIO_ATIVO__) return;
+  window.__DONA_FLOR_V221_RELATORIO_ATIVO__ = true;
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function moeda(v){
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function getContasBase(){
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const r = getContasArrayDF();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof visContas === "function"){
+        const r = visContas();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    for(const nome of ["contas","contasDados","df_contas","contasDF"]){
+      try{
+        if(Array.isArray(window[nome])) return window[nome].filter(c => !c.deletado);
+      }catch(e){}
+    }
+    return [];
+  }
+
+  function centrosDisponiveis(){
+    return Array.from(new Set(getContasBase().map(c => c.centro || c.centro_custo || c.loja).filter(Boolean))).sort();
+  }
+
+  function filtrosValores(){
+    return {
+      centro: document.getElementById("df221Centro")?.value || "",
+      status: document.getElementById("df221Status")?.value || "",
+      dataInicio: document.getElementById("df221Inicio")?.value || "",
+      dataFim: document.getElementById("df221Fim")?.value || "",
+      resumo: document.getElementById("df221Resumo")?.checked !== false,
+      centroResumo: document.getElementById("df221CentroResumo")?.checked !== false,
+      detalhe: document.getElementById("df221Detalhe")?.checked !== false,
+      aberto: document.getElementById("df221Aberto")?.checked || false
+    };
+  }
+
+  function filtrar(f){
+    return getContasBase().filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function resumo(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function css(){
+    if(document.getElementById("df-v221-relatorio-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v221-relatorio-css";
+    style.textContent = `
+      .df-v221-report-actions{
+        display:flex!important;
+        gap:8px!important;
+        flex-wrap:wrap!important;
+        margin-top:8px!important;
+      }
+      .df-v221-mini-btn{
+        min-height:40px!important;
+        border-radius:10px!important;
+        border:2px solid #000!important;
+        box-shadow:3px 3px 0 #000!important;
+        background:#0f766e!important;
+        color:#fff!important;
+        font-weight:900!important;
+        padding:8px 12px!important;
+        cursor:pointer!important;
+      }
+      .df-v221-mini-btn.light{background:#fff!important;color:#000!important;}
+
+      .df-v221-bg{
+        position:fixed!important;
+        inset:0!important;
+        z-index:1000005!important;
+        background:rgba(15,23,42,.65)!important;
+        display:none!important;
+        align-items:center!important;
+        justify-content:center!important;
+        padding:14px!important;
+        box-sizing:border-box!important;
+      }
+      .df-v221-bg.open{display:flex!important;}
+      .df-v221-box{
+        width:100%!important;
+        max-width:980px!important;
+        max-height:92vh!important;
+        overflow:auto!important;
+        background:#fff!important;
+        border:2px solid #000!important;
+        border-radius:18px!important;
+        box-shadow:6px 6px 0 #000!important;
+        padding:18px!important;
+        box-sizing:border-box!important;
+        color:#0f172a!important;
+        font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important;
+      }
+      .df-v221-top{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:12px!important;border-bottom:1px solid #e2e8f0!important;padding-bottom:12px!important;margin-bottom:14px!important;}
+      .df-v221-title{margin:0!important;font-size:24px!important;line-height:1.1!important;font-weight:950!important;color:#0f766e!important;}
+      .df-v221-sub{color:#64748b!important;margin-top:4px!important;font-size:13px!important;}
+      .df-v221-actions{display:flex!important;flex-wrap:wrap!important;gap:8px!important;justify-content:flex-end!important;}
+      .df-v221-actions button,.df-v221-btn{min-height:40px!important;border-radius:10px!important;border:2px solid #000!important;box-shadow:3px 3px 0 #000!important;background:#0f766e!important;color:#fff!important;font-weight:900!important;padding:8px 12px!important;cursor:pointer!important;}
+      .df-v221-actions .light,.df-v221-btn.light{background:#fff!important;color:#000!important;}
+      .df-v221-grid{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:10px!important;}
+      .df-v221-field label{display:block!important;font-size:12px!important;font-weight:900!important;color:#64748b!important;margin:0 0 4px!important;text-transform:uppercase!important;}
+      .df-v221-field input,.df-v221-field select{width:100%!important;min-height:44px!important;border:1px solid #cbd5e1!important;border-radius:12px!important;padding:10px!important;box-sizing:border-box!important;font-size:15px!important;background:#fff!important;}
+      .df-v221-checks{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin-top:12px!important;}
+      .df-v221-check{border:1px solid #e2e8f0!important;border-radius:12px!important;padding:10px!important;background:#fafaf9!important;font-weight:800!important;}
+      .df-v221-check input{margin-right:8px!important;}
+      .df-v221-cards{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:10px!important;margin:14px 0!important;}
+      .df-v221-card{background:#fafaf9!important;border:1px solid #e2e8f0!important;border-radius:14px!important;padding:12px!important;}
+      .df-v221-label{font-size:11px!important;text-transform:uppercase!important;color:#64748b!important;font-weight:950!important;}
+      .df-v221-num{font-size:19px!important;font-weight:950!important;margin-top:3px!important;}
+      .df-v221-centros{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin:10px 0 16px!important;}
+      .df-v221-centro{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;border:1px solid #e2e8f0!important;border-radius:12px!important;padding:10px!important;background:#fff!important;}
+      .df-v221-centro small{display:block!important;color:#64748b!important;margin-top:2px!important;}
+      .df-v221-table-wrap{overflow:auto!important;border-radius:12px!important;border:1px solid #e2e8f0!important;}
+      .df-v221-table{width:100%!important;border-collapse:collapse!important;font-size:13px!important;}
+      .df-v221-table th{background:#0f766e!important;color:#fff!important;text-align:left!important;padding:9px!important;white-space:nowrap!important;}
+      .df-v221-table td{border-bottom:1px solid #e2e8f0!important;padding:9px!important;vertical-align:top!important;}
+      .df-v221-value{font-weight:950!important;white-space:nowrap!important;}
+      .df-v221-status{display:inline-block!important;border-radius:999px!important;padding:4px 8px!important;font-weight:900!important;font-size:12px!important;}
+      .df-v221-status.pago{background:#dcfce7!important;color:#15803d!important;}
+      .df-v221-status.aberto{background:#fef3c7!important;color:#92400e!important;}
+      .df-v221-empty{padding:18px!important;border:1px dashed #cbd5e1!important;border-radius:12px!important;color:#64748b!important;text-align:center!important;}
+      @media(max-width:760px){
+        .df-v221-box{padding:14px!important;border-radius:16px!important;}
+        .df-v221-top{display:block!important;}
+        .df-v221-actions{justify-content:flex-start!important;margin-top:10px!important;}
+        .df-v221-grid,.df-v221-checks,.df-v221-centros{grid-template-columns:1fr!important;}
+        .df-v221-cards{grid-template-columns:1fr 1fr!important;}
+        .df-v221-table{font-size:12px!important;}
+      }
+      @media print{
+        body *{visibility:hidden!important;}
+        #df-v221-report-bg,#df-v221-report-bg *{visibility:visible!important;}
+        #df-v221-report-bg{position:absolute!important;inset:0!important;display:block!important;background:#fff!important;padding:0!important;}
+        #df-v221-report-bg .df-v221-box{max-height:none!important;overflow:visible!important;box-shadow:none!important;border:0!important;border-radius:0!important;max-width:none!important;padding:0!important;}
+        .df-v221-actions{display:none!important;}
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function abrirFiltros(){
+    css();
+    let bg = document.getElementById("df-v221-filter-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v221-filter-bg";
+      bg.className = "df-v221-bg";
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e => { if(e.target === bg) bg.classList.remove("open"); });
+    }
+
+    const centros = centrosDisponiveis().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+
+    bg.innerHTML = `
+      <div class="df-v221-box">
+        <div class="df-v221-top">
+          <div>
+            <h1 class="df-v221-title">Filtros do relatório</h1>
+            <div class="df-v221-sub">Escolha o que deseja imprimir ou exportar.</div>
+          </div>
+          <div class="df-v221-actions"><button type="button" class="light" onclick="document.getElementById('df-v221-filter-bg').classList.remove('open')">Fechar</button></div>
+        </div>
+
+        <div class="df-v221-grid">
+          <div class="df-v221-field"><label>Centro</label><select id="df221Centro"><option value="">Todos</option>${centros}</select></div>
+          <div class="df-v221-field"><label>Status</label><select id="df221Status"><option value="">Todos</option><option>Aberto</option><option>Pago</option></select></div>
+          <div class="df-v221-field"><label>Data inicial</label><input id="df221Inicio" type="date"></div>
+          <div class="df-v221-field"><label>Data final</label><input id="df221Fim" type="date"></div>
+        </div>
+
+        <div class="df-v221-checks">
+          <label class="df-v221-check"><input id="df221Resumo" type="checkbox" checked> Mostrar resumo</label>
+          <label class="df-v221-check"><input id="df221CentroResumo" type="checkbox" checked> Mostrar centros</label>
+          <label class="df-v221-check"><input id="df221Detalhe" type="checkbox" checked> Mostrar detalhes</label>
+          <label class="df-v221-check"><input id="df221Aberto" type="checkbox"> Somente em aberto</label>
+        </div>
+
+        <div class="df-v221-actions" style="margin-top:16px;justify-content:flex-start!important">
+          <button type="button" onclick="window.df221Visualizar()">Visualizar / PDF</button>
+          <button type="button" onclick="window.df221CSV()">Exportar CSV</button>
+        </div>
+      </div>
+    `;
+    bg.classList.add("open");
+  }
+
+  function filtros(){
+    return {
+      centro: document.getElementById("df221Centro")?.value || "",
+      status: document.getElementById("df221Status")?.value || "",
+      dataInicio: document.getElementById("df221Inicio")?.value || "",
+      dataFim: document.getElementById("df221Fim")?.value || "",
+      resumo: document.getElementById("df221Resumo")?.checked !== false,
+      centroResumo: document.getElementById("df221CentroResumo")?.checked !== false,
+      detalhe: document.getElementById("df221Detalhe")?.checked !== false,
+      aberto: document.getElementById("df221Aberto")?.checked || false
+    };
+  }
+
+  function contasFiltradas(f){
+    return getContasBase().filter(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function montarHTML(f){
+    const contas = contasFiltradas(f);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+
+    const resumoHTML = f.resumo ? `
+      <div class="df-v221-cards">
+        <div class="df-v221-card"><div class="df-v221-label">Quantidade</div><div class="df-v221-num">${r.qtd}</div></div>
+        <div class="df-v221-card"><div class="df-v221-label">Total aberto</div><div class="df-v221-num">${moeda(r.totalAberto)}</div></div>
+        <div class="df-v221-card"><div class="df-v221-label">Pago</div><div class="df-v221-num">${moeda(r.totalPago)}</div></div>
+        <div class="df-v221-card"><div class="df-v221-label">Vencidas</div><div class="df-v221-num">${moeda(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centroHTML = f.centroResumo ? `
+      <h2>Resumo por centro</h2>
+      <div class="df-v221-centros">
+        ${centros.length ? centros.map(([centro,info])=>`
+          <div class="df-v221-centro"><div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div><b>${moeda(info.total)}</b></div>
+        `).join("") : `<div class="df-v221-empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c=>{
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="df-v221-status ${pago?"pago":"aberto"}">${esc(status)}</span></td>
+          <td class="df-v221-value">${moeda(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalheHTML = f.detalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <div class="df-v221-table-wrap">
+          <table class="df-v221-table">
+            <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+            <tbody>${linhas}</tbody>
+          </table>
+        </div>
+      ` : `<div class="df-v221-empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v221-top">
+        <div>
+          <h1 class="df-v221-title">Dona Flor Gestão Financeira</h1>
+          <div class="df-v221-sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        </div>
+        <div class="df-v221-actions">
+          <button type="button" onclick="window.print()">Imprimir/PDF</button>
+          <button type="button" onclick="window.df221CSV(true)">CSV</button>
+          <button type="button" class="light" onclick="document.getElementById('df-v221-report-bg').classList.remove('open');window.df221AbrirFiltros()">Filtros</button>
+          <button type="button" class="light" onclick="document.getElementById('df-v221-report-bg').classList.remove('open')">Fechar</button>
+        </div>
+      </div>
+      ${resumoHTML}
+      ${centroHTML}
+      ${detalheHTML}
+    `;
+  }
+
+  let filtrosAtuais = {};
+
+  window.df221Visualizar = function(){
+    filtrosAtuais = filtros();
+    const filterBg = document.getElementById("df-v221-filter-bg");
+    if(filterBg) filterBg.classList.remove("open");
+
+    let bg = document.getElementById("df-v221-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v221-report-bg";
+      bg.className = "df-v221-bg";
+      bg.innerHTML = `<div class="df-v221-box" id="df-v221-report"></div>`;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e => { if(e.target === bg) bg.classList.remove("open"); });
+    }
+
+    document.getElementById("df-v221-report").innerHTML = montarHTML(filtrosAtuais);
+    bg.classList.add("open");
+  };
+
+  window.df221CSV = function(usarAtuais){
+    const f = usarAtuais === true ? (filtrosAtuais || {}) : filtros();
+    const contas = contasFiltradas(f);
+
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c => [
+        c.descricao || c.conta || "",
+        Number(c.valor || 0).toFixed(2).replace(".", ","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+
+    const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");
+    const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ a.remove(); URL.revokeObjectURL(url); }, 150);
+  };
+
+  window.df221AbrirFiltros = abrirFiltros;
+  window.gerarRelatorioFinanceiroDF = abrirFiltros;
+  window.exportarCSV = abrirFiltros;
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    const acao = sel ? sel.value : "";
+    if(acao === "pdf" || acao === "csv") abrirFiltros();
+    if(sel) sel.value = "";
+  };
+
+  function colocarBotoes(){
+    css();
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+
+    // Garante que o select não fica inerte
+    sel.onchange = window.executarRelatorio;
+    sel.addEventListener("change", function(e){
+      if(sel.value){
+        e.preventDefault();
+        e.stopPropagation();
+        window.executarRelatorio();
+      }
+    }, true);
+
+    const parent = sel.parentElement;
+    if(!parent || parent.querySelector(".df-v221-report-actions")) return;
+
+    const div = document.createElement("div");
+    div.className = "df-v221-report-actions";
+    div.innerHTML = `
+      <button type="button" class="df-v221-mini-btn" onclick="window.df221AbrirFiltros()">PDF / Relatório</button>
+      <button type="button" class="df-v221-mini-btn light" onclick="window.df221AbrirFiltros()">CSV</button>
+    `;
+
+    parent.appendChild(div);
+  }
+
+  document.addEventListener("click", function(e){
+    const sel = e.target.closest && e.target.closest("#acaoRelatorio");
+    if(sel && sel.value){
+      setTimeout(window.executarRelatorio, 50);
+    }
+  }, true);
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", colocarBotoes, {once:true});
+  }else{
+    colocarBotoes();
+  }
+
+  setTimeout(colocarBotoes, 700);
+  setTimeout(colocarBotoes, 1600);
+  setTimeout(colocarBotoes, 3200);
+})();
+</script>
 </body>
 </html>`;
 
@@ -9064,6 +9521,463 @@ if(abrirSyncOriginalDF){
   };
 
   css();
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V22.1 RELATÓRIO ATIVO
+   Correção:
+   - Select Exportar deixa de ficar inerte
+   - Adiciona botões diretos PDF e CSV ao lado do select
+   - Usa click/change/input em captura para funcionar no celular
+   - Garante abertura da tela de filtros
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V221_RELATORIO_ATIVO__) return;
+  window.__DONA_FLOR_V221_RELATORIO_ATIVO__ = true;
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function moeda(v){
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function getContasBase(){
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const r = getContasArrayDF();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof visContas === "function"){
+        const r = visContas();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    for(const nome of ["contas","contasDados","df_contas","contasDF"]){
+      try{
+        if(Array.isArray(window[nome])) return window[nome].filter(c => !c.deletado);
+      }catch(e){}
+    }
+    return [];
+  }
+
+  function centrosDisponiveis(){
+    return Array.from(new Set(getContasBase().map(c => c.centro || c.centro_custo || c.loja).filter(Boolean))).sort();
+  }
+
+  function filtrosValores(){
+    return {
+      centro: document.getElementById("df221Centro")?.value || "",
+      status: document.getElementById("df221Status")?.value || "",
+      dataInicio: document.getElementById("df221Inicio")?.value || "",
+      dataFim: document.getElementById("df221Fim")?.value || "",
+      resumo: document.getElementById("df221Resumo")?.checked !== false,
+      centroResumo: document.getElementById("df221CentroResumo")?.checked !== false,
+      detalhe: document.getElementById("df221Detalhe")?.checked !== false,
+      aberto: document.getElementById("df221Aberto")?.checked || false
+    };
+  }
+
+  function filtrar(f){
+    return getContasBase().filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function resumo(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function css(){
+    if(document.getElementById("df-v221-relatorio-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v221-relatorio-css";
+    style.textContent = `
+      .df-v221-report-actions{
+        display:flex!important;
+        gap:8px!important;
+        flex-wrap:wrap!important;
+        margin-top:8px!important;
+      }
+      .df-v221-mini-btn{
+        min-height:40px!important;
+        border-radius:10px!important;
+        border:2px solid #000!important;
+        box-shadow:3px 3px 0 #000!important;
+        background:#0f766e!important;
+        color:#fff!important;
+        font-weight:900!important;
+        padding:8px 12px!important;
+        cursor:pointer!important;
+      }
+      .df-v221-mini-btn.light{background:#fff!important;color:#000!important;}
+
+      .df-v221-bg{
+        position:fixed!important;
+        inset:0!important;
+        z-index:1000005!important;
+        background:rgba(15,23,42,.65)!important;
+        display:none!important;
+        align-items:center!important;
+        justify-content:center!important;
+        padding:14px!important;
+        box-sizing:border-box!important;
+      }
+      .df-v221-bg.open{display:flex!important;}
+      .df-v221-box{
+        width:100%!important;
+        max-width:980px!important;
+        max-height:92vh!important;
+        overflow:auto!important;
+        background:#fff!important;
+        border:2px solid #000!important;
+        border-radius:18px!important;
+        box-shadow:6px 6px 0 #000!important;
+        padding:18px!important;
+        box-sizing:border-box!important;
+        color:#0f172a!important;
+        font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important;
+      }
+      .df-v221-top{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:12px!important;border-bottom:1px solid #e2e8f0!important;padding-bottom:12px!important;margin-bottom:14px!important;}
+      .df-v221-title{margin:0!important;font-size:24px!important;line-height:1.1!important;font-weight:950!important;color:#0f766e!important;}
+      .df-v221-sub{color:#64748b!important;margin-top:4px!important;font-size:13px!important;}
+      .df-v221-actions{display:flex!important;flex-wrap:wrap!important;gap:8px!important;justify-content:flex-end!important;}
+      .df-v221-actions button,.df-v221-btn{min-height:40px!important;border-radius:10px!important;border:2px solid #000!important;box-shadow:3px 3px 0 #000!important;background:#0f766e!important;color:#fff!important;font-weight:900!important;padding:8px 12px!important;cursor:pointer!important;}
+      .df-v221-actions .light,.df-v221-btn.light{background:#fff!important;color:#000!important;}
+      .df-v221-grid{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:10px!important;}
+      .df-v221-field label{display:block!important;font-size:12px!important;font-weight:900!important;color:#64748b!important;margin:0 0 4px!important;text-transform:uppercase!important;}
+      .df-v221-field input,.df-v221-field select{width:100%!important;min-height:44px!important;border:1px solid #cbd5e1!important;border-radius:12px!important;padding:10px!important;box-sizing:border-box!important;font-size:15px!important;background:#fff!important;}
+      .df-v221-checks{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin-top:12px!important;}
+      .df-v221-check{border:1px solid #e2e8f0!important;border-radius:12px!important;padding:10px!important;background:#fafaf9!important;font-weight:800!important;}
+      .df-v221-check input{margin-right:8px!important;}
+      .df-v221-cards{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:10px!important;margin:14px 0!important;}
+      .df-v221-card{background:#fafaf9!important;border:1px solid #e2e8f0!important;border-radius:14px!important;padding:12px!important;}
+      .df-v221-label{font-size:11px!important;text-transform:uppercase!important;color:#64748b!important;font-weight:950!important;}
+      .df-v221-num{font-size:19px!important;font-weight:950!important;margin-top:3px!important;}
+      .df-v221-centros{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin:10px 0 16px!important;}
+      .df-v221-centro{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;border:1px solid #e2e8f0!important;border-radius:12px!important;padding:10px!important;background:#fff!important;}
+      .df-v221-centro small{display:block!important;color:#64748b!important;margin-top:2px!important;}
+      .df-v221-table-wrap{overflow:auto!important;border-radius:12px!important;border:1px solid #e2e8f0!important;}
+      .df-v221-table{width:100%!important;border-collapse:collapse!important;font-size:13px!important;}
+      .df-v221-table th{background:#0f766e!important;color:#fff!important;text-align:left!important;padding:9px!important;white-space:nowrap!important;}
+      .df-v221-table td{border-bottom:1px solid #e2e8f0!important;padding:9px!important;vertical-align:top!important;}
+      .df-v221-value{font-weight:950!important;white-space:nowrap!important;}
+      .df-v221-status{display:inline-block!important;border-radius:999px!important;padding:4px 8px!important;font-weight:900!important;font-size:12px!important;}
+      .df-v221-status.pago{background:#dcfce7!important;color:#15803d!important;}
+      .df-v221-status.aberto{background:#fef3c7!important;color:#92400e!important;}
+      .df-v221-empty{padding:18px!important;border:1px dashed #cbd5e1!important;border-radius:12px!important;color:#64748b!important;text-align:center!important;}
+      @media(max-width:760px){
+        .df-v221-box{padding:14px!important;border-radius:16px!important;}
+        .df-v221-top{display:block!important;}
+        .df-v221-actions{justify-content:flex-start!important;margin-top:10px!important;}
+        .df-v221-grid,.df-v221-checks,.df-v221-centros{grid-template-columns:1fr!important;}
+        .df-v221-cards{grid-template-columns:1fr 1fr!important;}
+        .df-v221-table{font-size:12px!important;}
+      }
+      @media print{
+        body *{visibility:hidden!important;}
+        #df-v221-report-bg,#df-v221-report-bg *{visibility:visible!important;}
+        #df-v221-report-bg{position:absolute!important;inset:0!important;display:block!important;background:#fff!important;padding:0!important;}
+        #df-v221-report-bg .df-v221-box{max-height:none!important;overflow:visible!important;box-shadow:none!important;border:0!important;border-radius:0!important;max-width:none!important;padding:0!important;}
+        .df-v221-actions{display:none!important;}
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function abrirFiltros(){
+    css();
+    let bg = document.getElementById("df-v221-filter-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v221-filter-bg";
+      bg.className = "df-v221-bg";
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e => { if(e.target === bg) bg.classList.remove("open"); });
+    }
+
+    const centros = centrosDisponiveis().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+
+    bg.innerHTML = `
+      <div class="df-v221-box">
+        <div class="df-v221-top">
+          <div>
+            <h1 class="df-v221-title">Filtros do relatório</h1>
+            <div class="df-v221-sub">Escolha o que deseja imprimir ou exportar.</div>
+          </div>
+          <div class="df-v221-actions"><button type="button" class="light" onclick="document.getElementById('df-v221-filter-bg').classList.remove('open')">Fechar</button></div>
+        </div>
+
+        <div class="df-v221-grid">
+          <div class="df-v221-field"><label>Centro</label><select id="df221Centro"><option value="">Todos</option>${centros}</select></div>
+          <div class="df-v221-field"><label>Status</label><select id="df221Status"><option value="">Todos</option><option>Aberto</option><option>Pago</option></select></div>
+          <div class="df-v221-field"><label>Data inicial</label><input id="df221Inicio" type="date"></div>
+          <div class="df-v221-field"><label>Data final</label><input id="df221Fim" type="date"></div>
+        </div>
+
+        <div class="df-v221-checks">
+          <label class="df-v221-check"><input id="df221Resumo" type="checkbox" checked> Mostrar resumo</label>
+          <label class="df-v221-check"><input id="df221CentroResumo" type="checkbox" checked> Mostrar centros</label>
+          <label class="df-v221-check"><input id="df221Detalhe" type="checkbox" checked> Mostrar detalhes</label>
+          <label class="df-v221-check"><input id="df221Aberto" type="checkbox"> Somente em aberto</label>
+        </div>
+
+        <div class="df-v221-actions" style="margin-top:16px;justify-content:flex-start!important">
+          <button type="button" onclick="window.df221Visualizar()">Visualizar / PDF</button>
+          <button type="button" onclick="window.df221CSV()">Exportar CSV</button>
+        </div>
+      </div>
+    `;
+    bg.classList.add("open");
+  }
+
+  function filtros(){
+    return {
+      centro: document.getElementById("df221Centro")?.value || "",
+      status: document.getElementById("df221Status")?.value || "",
+      dataInicio: document.getElementById("df221Inicio")?.value || "",
+      dataFim: document.getElementById("df221Fim")?.value || "",
+      resumo: document.getElementById("df221Resumo")?.checked !== false,
+      centroResumo: document.getElementById("df221CentroResumo")?.checked !== false,
+      detalhe: document.getElementById("df221Detalhe")?.checked !== false,
+      aberto: document.getElementById("df221Aberto")?.checked || false
+    };
+  }
+
+  function contasFiltradas(f){
+    return getContasBase().filter(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function montarHTML(f){
+    const contas = contasFiltradas(f);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+
+    const resumoHTML = f.resumo ? `
+      <div class="df-v221-cards">
+        <div class="df-v221-card"><div class="df-v221-label">Quantidade</div><div class="df-v221-num">${r.qtd}</div></div>
+        <div class="df-v221-card"><div class="df-v221-label">Total aberto</div><div class="df-v221-num">${moeda(r.totalAberto)}</div></div>
+        <div class="df-v221-card"><div class="df-v221-label">Pago</div><div class="df-v221-num">${moeda(r.totalPago)}</div></div>
+        <div class="df-v221-card"><div class="df-v221-label">Vencidas</div><div class="df-v221-num">${moeda(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centroHTML = f.centroResumo ? `
+      <h2>Resumo por centro</h2>
+      <div class="df-v221-centros">
+        ${centros.length ? centros.map(([centro,info])=>`
+          <div class="df-v221-centro"><div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div><b>${moeda(info.total)}</b></div>
+        `).join("") : `<div class="df-v221-empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c=>{
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="df-v221-status ${pago?"pago":"aberto"}">${esc(status)}</span></td>
+          <td class="df-v221-value">${moeda(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalheHTML = f.detalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <div class="df-v221-table-wrap">
+          <table class="df-v221-table">
+            <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+            <tbody>${linhas}</tbody>
+          </table>
+        </div>
+      ` : `<div class="df-v221-empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v221-top">
+        <div>
+          <h1 class="df-v221-title">Dona Flor Gestão Financeira</h1>
+          <div class="df-v221-sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        </div>
+        <div class="df-v221-actions">
+          <button type="button" onclick="window.print()">Imprimir/PDF</button>
+          <button type="button" onclick="window.df221CSV(true)">CSV</button>
+          <button type="button" class="light" onclick="document.getElementById('df-v221-report-bg').classList.remove('open');window.df221AbrirFiltros()">Filtros</button>
+          <button type="button" class="light" onclick="document.getElementById('df-v221-report-bg').classList.remove('open')">Fechar</button>
+        </div>
+      </div>
+      ${resumoHTML}
+      ${centroHTML}
+      ${detalheHTML}
+    `;
+  }
+
+  let filtrosAtuais = {};
+
+  window.df221Visualizar = function(){
+    filtrosAtuais = filtros();
+    const filterBg = document.getElementById("df-v221-filter-bg");
+    if(filterBg) filterBg.classList.remove("open");
+
+    let bg = document.getElementById("df-v221-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v221-report-bg";
+      bg.className = "df-v221-bg";
+      bg.innerHTML = `<div class="df-v221-box" id="df-v221-report"></div>`;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e => { if(e.target === bg) bg.classList.remove("open"); });
+    }
+
+    document.getElementById("df-v221-report").innerHTML = montarHTML(filtrosAtuais);
+    bg.classList.add("open");
+  };
+
+  window.df221CSV = function(usarAtuais){
+    const f = usarAtuais === true ? (filtrosAtuais || {}) : filtros();
+    const contas = contasFiltradas(f);
+
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c => [
+        c.descricao || c.conta || "",
+        Number(c.valor || 0).toFixed(2).replace(".", ","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+
+    const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");
+    const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ a.remove(); URL.revokeObjectURL(url); }, 150);
+  };
+
+  window.df221AbrirFiltros = abrirFiltros;
+  window.gerarRelatorioFinanceiroDF = abrirFiltros;
+  window.exportarCSV = abrirFiltros;
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    const acao = sel ? sel.value : "";
+    if(acao === "pdf" || acao === "csv") abrirFiltros();
+    if(sel) sel.value = "";
+  };
+
+  function colocarBotoes(){
+    css();
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+
+    // Garante que o select não fica inerte
+    sel.onchange = window.executarRelatorio;
+    sel.addEventListener("change", function(e){
+      if(sel.value){
+        e.preventDefault();
+        e.stopPropagation();
+        window.executarRelatorio();
+      }
+    }, true);
+
+    const parent = sel.parentElement;
+    if(!parent || parent.querySelector(".df-v221-report-actions")) return;
+
+    const div = document.createElement("div");
+    div.className = "df-v221-report-actions";
+    div.innerHTML = `
+      <button type="button" class="df-v221-mini-btn" onclick="window.df221AbrirFiltros()">PDF / Relatório</button>
+      <button type="button" class="df-v221-mini-btn light" onclick="window.df221AbrirFiltros()">CSV</button>
+    `;
+
+    parent.appendChild(div);
+  }
+
+  document.addEventListener("click", function(e){
+    const sel = e.target.closest && e.target.closest("#acaoRelatorio");
+    if(sel && sel.value){
+      setTimeout(window.executarRelatorio, 50);
+    }
+  }, true);
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", colocarBotoes, {once:true});
+  }else{
+    colocarBotoes();
+  }
+
+  setTimeout(colocarBotoes, 700);
+  setTimeout(colocarBotoes, 1600);
+  setTimeout(colocarBotoes, 3200);
 })();
 </script>
 </body>

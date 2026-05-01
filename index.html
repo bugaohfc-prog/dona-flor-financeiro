@@ -2519,7 +2519,7 @@ if(abrirSyncOriginalDF){
     document.querySelectorAll("h1,h2,h3,h4,button,span,a,label,div").forEach(el => {
       if(!el || !el.childNodes || el.childNodes.length !== 1) return;
       const txt = (el.textContent || "").trim();
-      if(txt === "Adicionar lembrete" || txt === "Novo lembrete"){
+      if(txt === "Lançamento de notas" || txt === "Novo lembrete"){
         el.textContent = "Lançamento de notas";
       }
     });
@@ -2530,6 +2530,290 @@ if(abrirSyncOriginalDF){
     renomear();
     normalizarSelectPrioridade();
     corrigirCardsNotas();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", aplicar, { once:true });
+  } else {
+    aplicar();
+  }
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
+})();
+</script>
+<script>
+/* =========================
+   V20.3 - Notas em modal + tela limpa
+   - Remove badge "Urgente" solto do lançamento de notas
+   - Remove "Lançamento de notas" do submenu
+   - Esconde a seção fixa "Lançamento de notas"
+   - Adiciona botão + Nota no Bloco de notas
+   - Abre o formulário de notas em janela/modal
+   ========================= */
+(function(){
+  if (window.__DF_V203_NOTAS_MODAL__) return;
+  window.__DF_V203_NOTAS_MODAL__ = true;
+
+  let formNotasOriginal = null;
+  let formNotasParentOriginal = null;
+  let formNotasNextSibling = null;
+
+  function injectCss(){
+    if (document.getElementById("df-v203-notas-modal-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v203-notas-modal-css";
+    style.textContent = `
+      .df-hidden-v203{display:none !important;}
+
+      .df-add-nota-btn-v203{
+        width:44px !important;
+        height:44px !important;
+        border-radius:999px !important;
+        border:0 !important;
+        background:#0f766e !important;
+        color:white !important;
+        font-size:22px !important;
+        font-weight:900 !important;
+        display:inline-flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        box-shadow:0 8px 22px rgba(15,118,110,.25) !important;
+        cursor:pointer !important;
+        margin-left:auto !important;
+      }
+
+      .df-bloco-header-v203{
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        gap:12px !important;
+      }
+
+      .df-modal-backdrop-v203{
+        position:fixed !important;
+        inset:0 !important;
+        background:rgba(15,23,42,.55) !important;
+        z-index:999999 !important;
+        display:none;
+        align-items:flex-end !important;
+        justify-content:center !important;
+      }
+
+      .df-modal-backdrop-v203.open{display:flex !important;}
+
+      .df-modal-v203{
+        width:100% !important;
+        max-width:640px !important;
+        background:#ffffff !important;
+        border-radius:24px 24px 0 0 !important;
+        padding:18px !important;
+        max-height:86vh !important;
+        overflow:auto !important;
+        box-shadow:0 -12px 40px rgba(15,23,42,.25) !important;
+        animation:dfV203Up .22s ease-out !important;
+      }
+
+      @keyframes dfV203Up{
+        from{transform:translateY(24px);opacity:.4}
+        to{transform:translateY(0);opacity:1}
+      }
+
+      .df-modal-head-v203{
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        margin-bottom:12px !important;
+      }
+
+      .df-modal-title-v203{
+        font-size:22px !important;
+        font-weight:900 !important;
+        color:#0f172a !important;
+      }
+
+      .df-modal-close-v203{
+        width:38px !important;
+        height:38px !important;
+        border-radius:999px !important;
+        border:0 !important;
+        background:#f1f5f9 !important;
+        color:#0f172a !important;
+        font-size:22px !important;
+        font-weight:900 !important;
+      }
+
+      .df-modal-v203 .df-force-white-card,
+      .df-modal-v203 section,
+      .df-modal-v203 .card{
+        box-shadow:none !important;
+        border:0 !important;
+        padding:0 !important;
+        margin:0 !important;
+        background:#fff !important;
+      }
+
+      .df-modal-v203 h1,
+      .df-modal-v203 h2,
+      .df-modal-v203 h3{
+        display:none !important;
+      }
+
+      .df-modal-v203 input,
+      .df-modal-v203 textarea,
+      .df-modal-v203 select{
+        background:#fff !important;
+      }
+
+      /* tira badges soltos como Urgente acima do formulário */
+      .df-remove-badge-v203{
+        display:none !important;
+      }
+
+      /* ações das notas cadastradas: ícones menores */
+      .nota-card button,
+      .note-card button,
+      .lembrete-card button,
+      [data-nota-id] button{
+        min-height:36px !important;
+        font-size:13px !important;
+        border-radius:10px !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function texto(el){ return (el?.innerText || el?.textContent || "").trim(); }
+
+  function findCardByTitle(titleRegex){
+    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"));
+    return candidates
+      .filter(el => titleRegex.test(texto(el)))
+      .sort((a,b) => texto(a).length - texto(b).length)[0] || null;
+  }
+
+  function esconderSubmenuLancamentoNotas(){
+    document.querySelectorAll("a,button,li,p,span,div").forEach(el => {
+      const t = texto(el);
+      if (/^(\+|•|\s)*lançamento de notas$/i.test(t) || /^(\+|•|\s)*lancamento de notas$/i.test(t)) {
+        el.classList.add("df-hidden-v203");
+      }
+    });
+  }
+
+  function removerBadgeUrgenteSolto(){
+    document.querySelectorAll("span,div,p").forEach(el => {
+      const t = texto(el);
+      const isBadge = /^(🔴|●)?\s*Urgente$/i.test(t);
+      if (!isBadge) return;
+
+      const nearForm = el.closest("section,.card,div");
+      const txt = texto(nearForm);
+      if (/lançamento de notas|lancamento de notas|título|recado|salvar nota/i.test(txt)) {
+        el.classList.add("df-remove-badge-v203");
+      }
+    });
+  }
+
+  function criarModal(){
+    if (document.getElementById("df-modal-notas-v203")) return;
+
+    const backdrop = document.createElement("div");
+    backdrop.id = "df-modal-notas-v203";
+    backdrop.className = "df-modal-backdrop-v203";
+    backdrop.innerHTML = `
+      <div class="df-modal-v203">
+        <div class="df-modal-head-v203">
+          <div class="df-modal-title-v203">Lançamento de notas</div>
+          <button type="button" class="df-modal-close-v203">×</button>
+        </div>
+        <div id="df-modal-notas-body-v203"></div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+
+    backdrop.querySelector(".df-modal-close-v203").addEventListener("click", fecharModal);
+    backdrop.addEventListener("click", (e) => {
+      if(e.target === backdrop) fecharModal();
+    });
+  }
+
+  function abrirModal(){
+    criarModal();
+    const modal = document.getElementById("df-modal-notas-v203");
+    const body = document.getElementById("df-modal-notas-body-v203");
+
+    if (!formNotasOriginal) {
+      capturarFormNotas();
+    }
+
+    if (formNotasOriginal && body && !body.contains(formNotasOriginal)) {
+      body.appendChild(formNotasOriginal);
+      formNotasOriginal.classList.remove("df-hidden-v203");
+      formNotasOriginal.style.display = "";
+    }
+
+    modal.classList.add("open");
+  }
+
+  function fecharModal(){
+    const modal = document.getElementById("df-modal-notas-v203");
+    if(modal) modal.classList.remove("open");
+
+    // mantém o form dentro do modal escondido para não voltar a ocupar tela
+    if(formNotasOriginal){
+      formNotasOriginal.classList.add("df-hidden-v203");
+    }
+  }
+
+  function capturarFormNotas(){
+    const formCard = findCardByTitle(/lançamento de notas|lancamento de notas|salvar nota/i);
+    if (!formCard) return;
+
+    const txt = texto(formCard);
+    if (!/título|recado|salvar nota/i.test(txt)) return;
+
+    formNotasOriginal = formCard;
+    formNotasParentOriginal = formCard.parentNode;
+    formNotasNextSibling = formCard.nextSibling;
+    formNotasOriginal.classList.add("df-hidden-v203");
+  }
+
+  function adicionarBotaoNoBlocoNotas(){
+    const bloco = findCardByTitle(/bloco de notas/i);
+    if (!bloco) return;
+
+    if (bloco.querySelector(".df-add-nota-btn-v203")) return;
+
+    const title = Array.from(bloco.querySelectorAll("h1,h2,h3,h4,strong,div"))
+      .find(el => /^(\s*📝\s*)?Bloco de notas$/i.test(texto(el)));
+
+    if (!title) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "df-bloco-header-v203";
+
+    title.parentNode.insertBefore(wrapper, title);
+    wrapper.appendChild(title);
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "df-add-nota-btn-v203";
+    btn.title = "Adicionar nota";
+    btn.textContent = "+";
+    btn.addEventListener("click", abrirModal);
+
+    wrapper.appendChild(btn);
+  }
+
+  function aplicar(){
+    injectCss();
+    esconderSubmenuLancamentoNotas();
+    removerBadgeUrgenteSolto();
+    capturarFormNotas();
+    criarModal();
+    adicionarBotaoNoBlocoNotas();
   }
 
   if(document.readyState === "loading"){

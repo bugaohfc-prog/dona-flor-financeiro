@@ -9065,6 +9065,672 @@ ${montarRelatorioHTML(f)
     ${centrosHTML}
     ${detalhes}
   </div>
+<script>
+/* ==========================================================
+   DONA FLOR - V23 BUILD LIMPA NOTAS + PDF
+   Correções profundas:
+   - Reescreve o Bloco de notas por completo após todos os patches antigos
+   - Remove duplicações visuais no bloco de notas
+   - Prioridade vira botão dentro de cada nota, sem select visível
+   - PDF não abre nova aba, não usa iframe, não usa document.write
+   - PDF abre uma prévia limpa dentro do app; usuário clica Imprimir/Salvar PDF
+   - Mantém CSV funcionando
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V23_BUILD_LIMPA__) return;
+  window.__DONA_FLOR_V23_BUILD_LIMPA__ = true;
+
+  let contasRelatorioV23 = [];
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function norm(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function moedaV23(v){
+    if(typeof moeda === "function"){
+      try{return moeda(v)}catch(e){}
+    }
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function labelPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function classPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function emojiPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotasV23(){
+    try{
+      if(typeof visNotas === "function"){
+        const arr = visNotas();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getNotasArrayDF === "function"){
+        const arr = getNotasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.notasDados)) return window.notasDados.filter(n => !n.deletado && !n.data_exclusao);
+    }catch(e){}
+
+    return [];
+  }
+
+  function getContasBaseV23(){
+    try{
+      if(typeof visContas === "function"){
+        const arr = visContas();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const arr = getContasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)) return window.contasDados.filter(c => !c.deletado);
+    }catch(e){}
+
+    return [];
+  }
+
+  function cssV23(){
+    if(document.getElementById("df-v23-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v23-css";
+    style.textContent = `
+      /* Esconde resíduos de versões anteriores no bloco de notas */
+      #notasLista .df-prioridade-box-v223,
+      #notasLista .df-prioridade-box-v225,
+      #notasLista select,
+      #notasLista .df-prioridade-select-original-v223,
+      #notasLista .df-prioridade-select-original-v225{
+        display:none !important;
+      }
+
+      #notasLista{
+        display:block !important;
+      }
+
+      .df-v23-nota-card{
+        background:#fff !important;
+        border:1px solid #E2E8F0 !important;
+        border-radius:14px !important;
+        padding:14px !important;
+        margin:12px 0 !important;
+        box-shadow:0 8px 18px rgba(15,23,42,.06) !important;
+      }
+
+      .df-v23-nota-top{
+        display:flex !important;
+        justify-content:space-between !important;
+        align-items:flex-start !important;
+        gap:10px !important;
+        margin-bottom:10px !important;
+      }
+
+      .df-v23-nota-title{
+        font-size:18px !important;
+        font-weight:950 !important;
+        color:#0f172a !important;
+        line-height:1.15 !important;
+      }
+
+      .df-v23-nota-text{
+        color:#475569 !important;
+        margin-top:6px !important;
+        font-size:15px !important;
+        line-height:1.3 !important;
+      }
+
+      .df-v23-nota-meta{
+        color:#64748b !important;
+        margin-top:8px !important;
+        font-size:13px !important;
+      }
+
+      .df-v23-prio-badge{
+        display:inline-flex !important;
+        align-items:center !important;
+        gap:6px !important;
+        border-radius:999px !important;
+        padding:6px 10px !important;
+        font-weight:900 !important;
+        font-size:13px !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v23-prio-badge.normal{background:#E0F2FE !important;color:#075985 !important;}
+      .df-v23-prio-badge.urgente{background:#FEE2E2 !important;color:#B91C1C !important;}
+      .df-v23-prio-badge.critico{background:#7F1D1D !important;color:#fff !important;}
+
+      .df-v23-nota-actions{
+        display:grid !important;
+        grid-template-columns:1fr !important;
+        gap:10px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v23-btn{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:0 !important;
+        font-weight:950 !important;
+        font-size:15px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-btn-edit{background:#2563EB !important;color:#fff !important;}
+      .df-v23-btn-del{background:#B91C1C !important;color:#fff !important;}
+
+      .df-v23-prio-box{
+        position:relative !important;
+        width:100% !important;
+        z-index:50 !important;
+      }
+
+      .df-v23-btn-prio{
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        border:1px solid #CBD5E1 !important;
+        justify-content:space-between !important;
+        padding:0 12px !important;
+      }
+
+      .df-v23-btn-prio.normal{background:#ECFDF5 !important;color:#047857 !important;border-color:#A7F3D0 !important;}
+      .df-v23-btn-prio.urgente{background:#FEE2E2 !important;color:#B91C1C !important;border-color:#FECACA !important;}
+      .df-v23-btn-prio.critico{background:#7F1D1D !important;color:#fff !important;border-color:#450A0A !important;}
+
+      .df-v23-prio-menu{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:999999 !important;
+      }
+
+      .df-v23-prio-box.open .df-v23-prio-menu{
+        display:block !important;
+      }
+
+      .df-v23-prio-option{
+        width:100% !important;
+        min-height:44px !important;
+        background:#fff !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        padding:12px !important;
+        text-align:left !important;
+        font-weight:950 !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-prio-option:last-child{border-bottom:0 !important;}
+
+      /* PDF */
+      .df-v23-report-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:1000010 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v23-report-bg.open{display:flex !important;}
+
+      .df-v23-report-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v23-report-actions{
+        display:flex !important;
+        gap:8px !important;
+        flex-wrap:wrap !important;
+        justify-content:flex-end !important;
+        margin-bottom:12px !important;
+      }
+
+      .df-v23-report-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+      }
+
+      .df-v23-report-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v23-report h1{color:#0f766e !important;margin:0 !important;font-size:24px !important;}
+      .df-v23-report h2{font-size:18px !important;margin:18px 0 8px !important;}
+      .df-v23-report .sub{color:#64748b !important;font-size:12px !important;margin-top:4px !important;}
+      .df-v23-report .cards{display:grid !important;grid-template-columns:repeat(4,1fr) !important;gap:8px !important;margin:12px 0 !important;}
+      .df-v23-report .card-mini{border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:10px !important;background:#fafaf9 !important;}
+      .df-v23-report .label{font-size:10px !important;text-transform:uppercase !important;color:#64748b !important;font-weight:bold !important;}
+      .df-v23-report .num{font-size:17px !important;font-weight:bold !important;margin-top:3px !important;}
+      .df-v23-report .centros{display:grid !important;grid-template-columns:repeat(2,1fr) !important;gap:8px !important;margin:8px 0 14px !important;}
+      .df-v23-report .centro{display:flex !important;justify-content:space-between !important;border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:8px !important;}
+      .df-v23-report .centro small{display:block !important;color:#64748b !important;}
+      .df-v23-report table{width:100% !important;border-collapse:collapse !important;font-size:12px !important;}
+      .df-v23-report th{background:#0f766e !important;color:white !important;text-align:left !important;padding:7px !important;}
+      .df-v23-report td{border-bottom:1px solid #e2e8f0 !important;padding:7px !important;vertical-align:top !important;}
+      .df-v23-report .valor{font-weight:bold !important;white-space:nowrap !important;}
+      .df-v23-report .status{border-radius:999px !important;padding:3px 7px !important;font-weight:bold !important;font-size:11px !important;display:inline-block !important;}
+      .df-v23-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v23-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v23-report-box{padding:14px !important;border-radius:16px !important;}
+        .df-v23-report-actions{justify-content:flex-start !important;}
+        .df-v23-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v23-report .centros{grid-template-columns:1fr !important;}
+        .df-v23-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        body > *:not(#df-v23-report-bg){
+          display:none !important;
+        }
+        #df-v23-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+        }
+        #df-v23-report-bg .df-v23-report-box{
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+        }
+        .df-v23-report-actions{
+          display:none !important;
+        }
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  async function setPrioridadeV23(id, prioridade){
+    const p = labelPrio(prioridade);
+    try{
+      if(typeof alterarPrioridadeNotaDF === "function"){
+        await alterarPrioridadeNotaDF(id, p);
+        return;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{
+            "apikey":SupabaseKey,
+            "Authorization":"Bearer " + SupabaseKey,
+            "Content-Type":"application/json",
+            "Prefer":"return=representation"
+          },
+          body:JSON.stringify({prioridade:p})
+        });
+        if(typeof carregar === "function") await carregar();
+        return;
+      }
+    }catch(e){}
+
+    // fallback local
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = p;
+        renderNotasV23();
+      }
+    }catch(e){}
+  }
+
+  window.renderNotasV23 = function(){
+    cssV23();
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const arr = getNotasV23().slice(0,20);
+
+    if(!arr.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = arr.map(n => {
+      const p = labelPrio(n.prioridade || "Normal");
+      const pc = classPrio(p);
+      const id = esc(n.id);
+      return `
+        <div class="df-v23-nota-card" data-nota-id="${id}">
+          <div class="df-v23-nota-top">
+            <div>
+              <div class="df-v23-nota-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df-v23-nota-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df-v23-nota-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df-v23-prio-badge ${pc}">${emojiPrio(p)} ${p}</span>
+          </div>
+
+          <div class="df-v23-nota-actions no-print">
+            <button type="button" class="df-v23-btn df-v23-btn-edit" onclick="editarNotaDF('${id}')">✏️ Editar</button>
+
+            <div class="df-v23-prio-box">
+              <button type="button" class="df-v23-btn df-v23-btn-prio ${pc}">
+                <span>${emojiPrio(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df-v23-prio-menu">
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+
+            <button type="button" class="df-v23-btn df-v23-btn-del" onclick="moverNotaLixeiraDF('${id}')">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function bindNotasV23(){
+    document.addEventListener("click", async function(e){
+      const btnPrio = e.target.closest(".df-v23-btn-prio");
+      if(btnPrio){
+        e.preventDefault();
+        e.stopPropagation();
+        const box = btnPrio.closest(".df-v23-prio-box");
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => {
+          if(b !== box) b.classList.remove("open");
+        });
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df-v23-prio-option");
+      if(op){
+        e.preventDefault();
+        e.stopPropagation();
+        const id = op.dataset.id;
+        const p = op.dataset.p;
+        const box = op.closest(".df-v23-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridadeV23(id, p);
+        setTimeout(renderNotasV23, 300);
+        return;
+      }
+
+      if(!e.target.closest(".df-v23-prio-box")){
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function instalarRenderNotas(){
+    cssV23();
+    window.renderNotas = window.renderNotasV23;
+    window.renderNotasMelhoradoDF = window.renderNotasV23;
+    renderNotasV23();
+  }
+
+  /* PDF limpo */
+  function filtrosRelatorioV23(){
+    return {
+      centro: document.getElementById("df224Centro")?.value || document.getElementById("df222Centro")?.value || "",
+      status: document.getElementById("df224Status")?.value || document.getElementById("df222Status")?.value || "",
+      dataInicio: document.getElementById("df224Inicio")?.value || document.getElementById("df222Inicio")?.value || "",
+      dataFim: document.getElementById("df224Fim")?.value || document.getElementById("df222Fim")?.value || "",
+      resumo: (document.getElementById("df224Resumo")?.checked ?? document.getElementById("df222Resumo")?.checked) !== false,
+      centroResumo: (document.getElementById("df224CentroResumo")?.checked ?? document.getElementById("df222CentroResumo")?.checked) !== false,
+      detalhe: (document.getElementById("df224Detalhe")?.checked ?? document.getElementById("df222Detalhe")?.checked) !== false,
+      aberto: document.getElementById("df224Aberto")?.checked || document.getElementById("df222Aberto")?.checked || false
+    };
+  }
+
+  function filtrarContasV23(f){
+    const base = contasRelatorioV23.length ? contasRelatorioV23 : getContasBaseV23();
+    return base.filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function resumoContasV23(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV23(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function montarRelatorioV23(f){
+    const contas = filtrarContasV23(f);
+    const r = resumoContasV23(contas);
+    const centros = porCentroV23(contas);
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV23(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV23(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV23(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centroHTML = f.centroResumo ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro"><div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div><b>${moedaV23(info.total)}</b></div>
+        `).join("") : `<div class="empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV23(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div class="empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v23-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        ${cards}
+        ${centroHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  window.df23GerarPDF = function(){
+    cssV23();
+    const f = filtrosRelatorioV23();
+
+    let bg = document.getElementById("df-v23-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v23-report-bg";
+      bg.className = "df-v23-report-bg";
+      bg.innerHTML = `
+        <div class="df-v23-report-box">
+          <div class="df-v23-report-actions no-print">
+            <button type="button" onclick="window.print()">Imprimir / Salvar PDF</button>
+            <button type="button" class="light" onclick="document.getElementById('df-v23-report-bg').classList.remove('open')">Fechar</button>
+          </div>
+          <div id="df-v23-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", function(e){
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    document.getElementById("df-v23-report-content").innerHTML = montarRelatorioV23(f);
+    bg.classList.add("open");
+  };
+
+  // Sobrescreve somente o PDF; CSV fica intacto.
+  window.df224GerarPDF = window.df23GerarPDF;
+  window.df222GerarPDF = window.df23GerarPDF;
+  window.df226GerarPDF = window.df23GerarPDF;
+
+  function corrigirBotoesPDF(){
+    document.querySelectorAll("button").forEach(btn => {
+      const t = (btn.innerText || btn.textContent || "").trim().toLowerCase();
+      const old = btn.getAttribute("onclick") || "";
+      if(t.includes("gerar pdf") || t.includes("imprimir") || old.includes("df224GerarPDF") || old.includes("df222GerarPDF") || old.includes("df226GerarPDF")){
+        btn.setAttribute("onclick", "window.df23GerarPDF()");
+      }
+    });
+  }
+
+  function iniciar(){
+    cssV23();
+    bindNotasV23();
+    instalarRenderNotas();
+    corrigirBotoesPDF();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", iniciar, {once:true});
+  }else{
+    iniciar();
+  }
+
+  // roda depois dos scripts antigos para limpar o que eles recriam
+  setTimeout(iniciar, 800);
+  setTimeout(iniciar, 1800);
+  setTimeout(iniciar, 3600);
+})();
+</script>
 </body>
 </html>`;
   }
@@ -9111,6 +9777,672 @@ ${montarRelatorioHTML(f)
   setTimeout(corrigirBotoesPDF, 700);
   setTimeout(corrigirBotoesPDF, 1600);
   setTimeout(corrigirBotoesPDF, 3200);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V23 BUILD LIMPA NOTAS + PDF
+   Correções profundas:
+   - Reescreve o Bloco de notas por completo após todos os patches antigos
+   - Remove duplicações visuais no bloco de notas
+   - Prioridade vira botão dentro de cada nota, sem select visível
+   - PDF não abre nova aba, não usa iframe, não usa document.write
+   - PDF abre uma prévia limpa dentro do app; usuário clica Imprimir/Salvar PDF
+   - Mantém CSV funcionando
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V23_BUILD_LIMPA__) return;
+  window.__DONA_FLOR_V23_BUILD_LIMPA__ = true;
+
+  let contasRelatorioV23 = [];
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function norm(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function moedaV23(v){
+    if(typeof moeda === "function"){
+      try{return moeda(v)}catch(e){}
+    }
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function labelPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function classPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function emojiPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotasV23(){
+    try{
+      if(typeof visNotas === "function"){
+        const arr = visNotas();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getNotasArrayDF === "function"){
+        const arr = getNotasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.notasDados)) return window.notasDados.filter(n => !n.deletado && !n.data_exclusao);
+    }catch(e){}
+
+    return [];
+  }
+
+  function getContasBaseV23(){
+    try{
+      if(typeof visContas === "function"){
+        const arr = visContas();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const arr = getContasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)) return window.contasDados.filter(c => !c.deletado);
+    }catch(e){}
+
+    return [];
+  }
+
+  function cssV23(){
+    if(document.getElementById("df-v23-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v23-css";
+    style.textContent = `
+      /* Esconde resíduos de versões anteriores no bloco de notas */
+      #notasLista .df-prioridade-box-v223,
+      #notasLista .df-prioridade-box-v225,
+      #notasLista select,
+      #notasLista .df-prioridade-select-original-v223,
+      #notasLista .df-prioridade-select-original-v225{
+        display:none !important;
+      }
+
+      #notasLista{
+        display:block !important;
+      }
+
+      .df-v23-nota-card{
+        background:#fff !important;
+        border:1px solid #E2E8F0 !important;
+        border-radius:14px !important;
+        padding:14px !important;
+        margin:12px 0 !important;
+        box-shadow:0 8px 18px rgba(15,23,42,.06) !important;
+      }
+
+      .df-v23-nota-top{
+        display:flex !important;
+        justify-content:space-between !important;
+        align-items:flex-start !important;
+        gap:10px !important;
+        margin-bottom:10px !important;
+      }
+
+      .df-v23-nota-title{
+        font-size:18px !important;
+        font-weight:950 !important;
+        color:#0f172a !important;
+        line-height:1.15 !important;
+      }
+
+      .df-v23-nota-text{
+        color:#475569 !important;
+        margin-top:6px !important;
+        font-size:15px !important;
+        line-height:1.3 !important;
+      }
+
+      .df-v23-nota-meta{
+        color:#64748b !important;
+        margin-top:8px !important;
+        font-size:13px !important;
+      }
+
+      .df-v23-prio-badge{
+        display:inline-flex !important;
+        align-items:center !important;
+        gap:6px !important;
+        border-radius:999px !important;
+        padding:6px 10px !important;
+        font-weight:900 !important;
+        font-size:13px !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v23-prio-badge.normal{background:#E0F2FE !important;color:#075985 !important;}
+      .df-v23-prio-badge.urgente{background:#FEE2E2 !important;color:#B91C1C !important;}
+      .df-v23-prio-badge.critico{background:#7F1D1D !important;color:#fff !important;}
+
+      .df-v23-nota-actions{
+        display:grid !important;
+        grid-template-columns:1fr !important;
+        gap:10px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v23-btn{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:0 !important;
+        font-weight:950 !important;
+        font-size:15px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-btn-edit{background:#2563EB !important;color:#fff !important;}
+      .df-v23-btn-del{background:#B91C1C !important;color:#fff !important;}
+
+      .df-v23-prio-box{
+        position:relative !important;
+        width:100% !important;
+        z-index:50 !important;
+      }
+
+      .df-v23-btn-prio{
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        border:1px solid #CBD5E1 !important;
+        justify-content:space-between !important;
+        padding:0 12px !important;
+      }
+
+      .df-v23-btn-prio.normal{background:#ECFDF5 !important;color:#047857 !important;border-color:#A7F3D0 !important;}
+      .df-v23-btn-prio.urgente{background:#FEE2E2 !important;color:#B91C1C !important;border-color:#FECACA !important;}
+      .df-v23-btn-prio.critico{background:#7F1D1D !important;color:#fff !important;border-color:#450A0A !important;}
+
+      .df-v23-prio-menu{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:999999 !important;
+      }
+
+      .df-v23-prio-box.open .df-v23-prio-menu{
+        display:block !important;
+      }
+
+      .df-v23-prio-option{
+        width:100% !important;
+        min-height:44px !important;
+        background:#fff !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        padding:12px !important;
+        text-align:left !important;
+        font-weight:950 !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-prio-option:last-child{border-bottom:0 !important;}
+
+      /* PDF */
+      .df-v23-report-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:1000010 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v23-report-bg.open{display:flex !important;}
+
+      .df-v23-report-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v23-report-actions{
+        display:flex !important;
+        gap:8px !important;
+        flex-wrap:wrap !important;
+        justify-content:flex-end !important;
+        margin-bottom:12px !important;
+      }
+
+      .df-v23-report-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+      }
+
+      .df-v23-report-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v23-report h1{color:#0f766e !important;margin:0 !important;font-size:24px !important;}
+      .df-v23-report h2{font-size:18px !important;margin:18px 0 8px !important;}
+      .df-v23-report .sub{color:#64748b !important;font-size:12px !important;margin-top:4px !important;}
+      .df-v23-report .cards{display:grid !important;grid-template-columns:repeat(4,1fr) !important;gap:8px !important;margin:12px 0 !important;}
+      .df-v23-report .card-mini{border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:10px !important;background:#fafaf9 !important;}
+      .df-v23-report .label{font-size:10px !important;text-transform:uppercase !important;color:#64748b !important;font-weight:bold !important;}
+      .df-v23-report .num{font-size:17px !important;font-weight:bold !important;margin-top:3px !important;}
+      .df-v23-report .centros{display:grid !important;grid-template-columns:repeat(2,1fr) !important;gap:8px !important;margin:8px 0 14px !important;}
+      .df-v23-report .centro{display:flex !important;justify-content:space-between !important;border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:8px !important;}
+      .df-v23-report .centro small{display:block !important;color:#64748b !important;}
+      .df-v23-report table{width:100% !important;border-collapse:collapse !important;font-size:12px !important;}
+      .df-v23-report th{background:#0f766e !important;color:white !important;text-align:left !important;padding:7px !important;}
+      .df-v23-report td{border-bottom:1px solid #e2e8f0 !important;padding:7px !important;vertical-align:top !important;}
+      .df-v23-report .valor{font-weight:bold !important;white-space:nowrap !important;}
+      .df-v23-report .status{border-radius:999px !important;padding:3px 7px !important;font-weight:bold !important;font-size:11px !important;display:inline-block !important;}
+      .df-v23-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v23-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v23-report-box{padding:14px !important;border-radius:16px !important;}
+        .df-v23-report-actions{justify-content:flex-start !important;}
+        .df-v23-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v23-report .centros{grid-template-columns:1fr !important;}
+        .df-v23-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        body > *:not(#df-v23-report-bg){
+          display:none !important;
+        }
+        #df-v23-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+        }
+        #df-v23-report-bg .df-v23-report-box{
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+        }
+        .df-v23-report-actions{
+          display:none !important;
+        }
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  async function setPrioridadeV23(id, prioridade){
+    const p = labelPrio(prioridade);
+    try{
+      if(typeof alterarPrioridadeNotaDF === "function"){
+        await alterarPrioridadeNotaDF(id, p);
+        return;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{
+            "apikey":SupabaseKey,
+            "Authorization":"Bearer " + SupabaseKey,
+            "Content-Type":"application/json",
+            "Prefer":"return=representation"
+          },
+          body:JSON.stringify({prioridade:p})
+        });
+        if(typeof carregar === "function") await carregar();
+        return;
+      }
+    }catch(e){}
+
+    // fallback local
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = p;
+        renderNotasV23();
+      }
+    }catch(e){}
+  }
+
+  window.renderNotasV23 = function(){
+    cssV23();
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const arr = getNotasV23().slice(0,20);
+
+    if(!arr.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = arr.map(n => {
+      const p = labelPrio(n.prioridade || "Normal");
+      const pc = classPrio(p);
+      const id = esc(n.id);
+      return `
+        <div class="df-v23-nota-card" data-nota-id="${id}">
+          <div class="df-v23-nota-top">
+            <div>
+              <div class="df-v23-nota-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df-v23-nota-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df-v23-nota-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df-v23-prio-badge ${pc}">${emojiPrio(p)} ${p}</span>
+          </div>
+
+          <div class="df-v23-nota-actions no-print">
+            <button type="button" class="df-v23-btn df-v23-btn-edit" onclick="editarNotaDF('${id}')">✏️ Editar</button>
+
+            <div class="df-v23-prio-box">
+              <button type="button" class="df-v23-btn df-v23-btn-prio ${pc}">
+                <span>${emojiPrio(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df-v23-prio-menu">
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+
+            <button type="button" class="df-v23-btn df-v23-btn-del" onclick="moverNotaLixeiraDF('${id}')">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function bindNotasV23(){
+    document.addEventListener("click", async function(e){
+      const btnPrio = e.target.closest(".df-v23-btn-prio");
+      if(btnPrio){
+        e.preventDefault();
+        e.stopPropagation();
+        const box = btnPrio.closest(".df-v23-prio-box");
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => {
+          if(b !== box) b.classList.remove("open");
+        });
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df-v23-prio-option");
+      if(op){
+        e.preventDefault();
+        e.stopPropagation();
+        const id = op.dataset.id;
+        const p = op.dataset.p;
+        const box = op.closest(".df-v23-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridadeV23(id, p);
+        setTimeout(renderNotasV23, 300);
+        return;
+      }
+
+      if(!e.target.closest(".df-v23-prio-box")){
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function instalarRenderNotas(){
+    cssV23();
+    window.renderNotas = window.renderNotasV23;
+    window.renderNotasMelhoradoDF = window.renderNotasV23;
+    renderNotasV23();
+  }
+
+  /* PDF limpo */
+  function filtrosRelatorioV23(){
+    return {
+      centro: document.getElementById("df224Centro")?.value || document.getElementById("df222Centro")?.value || "",
+      status: document.getElementById("df224Status")?.value || document.getElementById("df222Status")?.value || "",
+      dataInicio: document.getElementById("df224Inicio")?.value || document.getElementById("df222Inicio")?.value || "",
+      dataFim: document.getElementById("df224Fim")?.value || document.getElementById("df222Fim")?.value || "",
+      resumo: (document.getElementById("df224Resumo")?.checked ?? document.getElementById("df222Resumo")?.checked) !== false,
+      centroResumo: (document.getElementById("df224CentroResumo")?.checked ?? document.getElementById("df222CentroResumo")?.checked) !== false,
+      detalhe: (document.getElementById("df224Detalhe")?.checked ?? document.getElementById("df222Detalhe")?.checked) !== false,
+      aberto: document.getElementById("df224Aberto")?.checked || document.getElementById("df222Aberto")?.checked || false
+    };
+  }
+
+  function filtrarContasV23(f){
+    const base = contasRelatorioV23.length ? contasRelatorioV23 : getContasBaseV23();
+    return base.filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function resumoContasV23(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV23(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function montarRelatorioV23(f){
+    const contas = filtrarContasV23(f);
+    const r = resumoContasV23(contas);
+    const centros = porCentroV23(contas);
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV23(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV23(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV23(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centroHTML = f.centroResumo ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro"><div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div><b>${moedaV23(info.total)}</b></div>
+        `).join("") : `<div class="empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV23(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div class="empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v23-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        ${cards}
+        ${centroHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  window.df23GerarPDF = function(){
+    cssV23();
+    const f = filtrosRelatorioV23();
+
+    let bg = document.getElementById("df-v23-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v23-report-bg";
+      bg.className = "df-v23-report-bg";
+      bg.innerHTML = `
+        <div class="df-v23-report-box">
+          <div class="df-v23-report-actions no-print">
+            <button type="button" onclick="window.print()">Imprimir / Salvar PDF</button>
+            <button type="button" class="light" onclick="document.getElementById('df-v23-report-bg').classList.remove('open')">Fechar</button>
+          </div>
+          <div id="df-v23-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", function(e){
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    document.getElementById("df-v23-report-content").innerHTML = montarRelatorioV23(f);
+    bg.classList.add("open");
+  };
+
+  // Sobrescreve somente o PDF; CSV fica intacto.
+  window.df224GerarPDF = window.df23GerarPDF;
+  window.df222GerarPDF = window.df23GerarPDF;
+  window.df226GerarPDF = window.df23GerarPDF;
+
+  function corrigirBotoesPDF(){
+    document.querySelectorAll("button").forEach(btn => {
+      const t = (btn.innerText || btn.textContent || "").trim().toLowerCase();
+      const old = btn.getAttribute("onclick") || "";
+      if(t.includes("gerar pdf") || t.includes("imprimir") || old.includes("df224GerarPDF") || old.includes("df222GerarPDF") || old.includes("df226GerarPDF")){
+        btn.setAttribute("onclick", "window.df23GerarPDF()");
+      }
+    });
+  }
+
+  function iniciar(){
+    cssV23();
+    bindNotasV23();
+    instalarRenderNotas();
+    corrigirBotoesPDF();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", iniciar, {once:true});
+  }else{
+    iniciar();
+  }
+
+  // roda depois dos scripts antigos para limpar o que eles recriam
+  setTimeout(iniciar, 800);
+  setTimeout(iniciar, 1800);
+  setTimeout(iniciar, 3600);
 })();
 </script>
 </body>
@@ -10911,6 +12243,672 @@ ${montarRelatorioHTML(f)
     ${centrosHTML}
     ${detalhes}
   </div>
+<script>
+/* ==========================================================
+   DONA FLOR - V23 BUILD LIMPA NOTAS + PDF
+   Correções profundas:
+   - Reescreve o Bloco de notas por completo após todos os patches antigos
+   - Remove duplicações visuais no bloco de notas
+   - Prioridade vira botão dentro de cada nota, sem select visível
+   - PDF não abre nova aba, não usa iframe, não usa document.write
+   - PDF abre uma prévia limpa dentro do app; usuário clica Imprimir/Salvar PDF
+   - Mantém CSV funcionando
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V23_BUILD_LIMPA__) return;
+  window.__DONA_FLOR_V23_BUILD_LIMPA__ = true;
+
+  let contasRelatorioV23 = [];
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function norm(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function moedaV23(v){
+    if(typeof moeda === "function"){
+      try{return moeda(v)}catch(e){}
+    }
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function labelPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function classPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function emojiPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotasV23(){
+    try{
+      if(typeof visNotas === "function"){
+        const arr = visNotas();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getNotasArrayDF === "function"){
+        const arr = getNotasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.notasDados)) return window.notasDados.filter(n => !n.deletado && !n.data_exclusao);
+    }catch(e){}
+
+    return [];
+  }
+
+  function getContasBaseV23(){
+    try{
+      if(typeof visContas === "function"){
+        const arr = visContas();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const arr = getContasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)) return window.contasDados.filter(c => !c.deletado);
+    }catch(e){}
+
+    return [];
+  }
+
+  function cssV23(){
+    if(document.getElementById("df-v23-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v23-css";
+    style.textContent = `
+      /* Esconde resíduos de versões anteriores no bloco de notas */
+      #notasLista .df-prioridade-box-v223,
+      #notasLista .df-prioridade-box-v225,
+      #notasLista select,
+      #notasLista .df-prioridade-select-original-v223,
+      #notasLista .df-prioridade-select-original-v225{
+        display:none !important;
+      }
+
+      #notasLista{
+        display:block !important;
+      }
+
+      .df-v23-nota-card{
+        background:#fff !important;
+        border:1px solid #E2E8F0 !important;
+        border-radius:14px !important;
+        padding:14px !important;
+        margin:12px 0 !important;
+        box-shadow:0 8px 18px rgba(15,23,42,.06) !important;
+      }
+
+      .df-v23-nota-top{
+        display:flex !important;
+        justify-content:space-between !important;
+        align-items:flex-start !important;
+        gap:10px !important;
+        margin-bottom:10px !important;
+      }
+
+      .df-v23-nota-title{
+        font-size:18px !important;
+        font-weight:950 !important;
+        color:#0f172a !important;
+        line-height:1.15 !important;
+      }
+
+      .df-v23-nota-text{
+        color:#475569 !important;
+        margin-top:6px !important;
+        font-size:15px !important;
+        line-height:1.3 !important;
+      }
+
+      .df-v23-nota-meta{
+        color:#64748b !important;
+        margin-top:8px !important;
+        font-size:13px !important;
+      }
+
+      .df-v23-prio-badge{
+        display:inline-flex !important;
+        align-items:center !important;
+        gap:6px !important;
+        border-radius:999px !important;
+        padding:6px 10px !important;
+        font-weight:900 !important;
+        font-size:13px !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v23-prio-badge.normal{background:#E0F2FE !important;color:#075985 !important;}
+      .df-v23-prio-badge.urgente{background:#FEE2E2 !important;color:#B91C1C !important;}
+      .df-v23-prio-badge.critico{background:#7F1D1D !important;color:#fff !important;}
+
+      .df-v23-nota-actions{
+        display:grid !important;
+        grid-template-columns:1fr !important;
+        gap:10px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v23-btn{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:0 !important;
+        font-weight:950 !important;
+        font-size:15px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-btn-edit{background:#2563EB !important;color:#fff !important;}
+      .df-v23-btn-del{background:#B91C1C !important;color:#fff !important;}
+
+      .df-v23-prio-box{
+        position:relative !important;
+        width:100% !important;
+        z-index:50 !important;
+      }
+
+      .df-v23-btn-prio{
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        border:1px solid #CBD5E1 !important;
+        justify-content:space-between !important;
+        padding:0 12px !important;
+      }
+
+      .df-v23-btn-prio.normal{background:#ECFDF5 !important;color:#047857 !important;border-color:#A7F3D0 !important;}
+      .df-v23-btn-prio.urgente{background:#FEE2E2 !important;color:#B91C1C !important;border-color:#FECACA !important;}
+      .df-v23-btn-prio.critico{background:#7F1D1D !important;color:#fff !important;border-color:#450A0A !important;}
+
+      .df-v23-prio-menu{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:999999 !important;
+      }
+
+      .df-v23-prio-box.open .df-v23-prio-menu{
+        display:block !important;
+      }
+
+      .df-v23-prio-option{
+        width:100% !important;
+        min-height:44px !important;
+        background:#fff !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        padding:12px !important;
+        text-align:left !important;
+        font-weight:950 !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-prio-option:last-child{border-bottom:0 !important;}
+
+      /* PDF */
+      .df-v23-report-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:1000010 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v23-report-bg.open{display:flex !important;}
+
+      .df-v23-report-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v23-report-actions{
+        display:flex !important;
+        gap:8px !important;
+        flex-wrap:wrap !important;
+        justify-content:flex-end !important;
+        margin-bottom:12px !important;
+      }
+
+      .df-v23-report-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+      }
+
+      .df-v23-report-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v23-report h1{color:#0f766e !important;margin:0 !important;font-size:24px !important;}
+      .df-v23-report h2{font-size:18px !important;margin:18px 0 8px !important;}
+      .df-v23-report .sub{color:#64748b !important;font-size:12px !important;margin-top:4px !important;}
+      .df-v23-report .cards{display:grid !important;grid-template-columns:repeat(4,1fr) !important;gap:8px !important;margin:12px 0 !important;}
+      .df-v23-report .card-mini{border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:10px !important;background:#fafaf9 !important;}
+      .df-v23-report .label{font-size:10px !important;text-transform:uppercase !important;color:#64748b !important;font-weight:bold !important;}
+      .df-v23-report .num{font-size:17px !important;font-weight:bold !important;margin-top:3px !important;}
+      .df-v23-report .centros{display:grid !important;grid-template-columns:repeat(2,1fr) !important;gap:8px !important;margin:8px 0 14px !important;}
+      .df-v23-report .centro{display:flex !important;justify-content:space-between !important;border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:8px !important;}
+      .df-v23-report .centro small{display:block !important;color:#64748b !important;}
+      .df-v23-report table{width:100% !important;border-collapse:collapse !important;font-size:12px !important;}
+      .df-v23-report th{background:#0f766e !important;color:white !important;text-align:left !important;padding:7px !important;}
+      .df-v23-report td{border-bottom:1px solid #e2e8f0 !important;padding:7px !important;vertical-align:top !important;}
+      .df-v23-report .valor{font-weight:bold !important;white-space:nowrap !important;}
+      .df-v23-report .status{border-radius:999px !important;padding:3px 7px !important;font-weight:bold !important;font-size:11px !important;display:inline-block !important;}
+      .df-v23-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v23-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v23-report-box{padding:14px !important;border-radius:16px !important;}
+        .df-v23-report-actions{justify-content:flex-start !important;}
+        .df-v23-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v23-report .centros{grid-template-columns:1fr !important;}
+        .df-v23-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        body > *:not(#df-v23-report-bg){
+          display:none !important;
+        }
+        #df-v23-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+        }
+        #df-v23-report-bg .df-v23-report-box{
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+        }
+        .df-v23-report-actions{
+          display:none !important;
+        }
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  async function setPrioridadeV23(id, prioridade){
+    const p = labelPrio(prioridade);
+    try{
+      if(typeof alterarPrioridadeNotaDF === "function"){
+        await alterarPrioridadeNotaDF(id, p);
+        return;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{
+            "apikey":SupabaseKey,
+            "Authorization":"Bearer " + SupabaseKey,
+            "Content-Type":"application/json",
+            "Prefer":"return=representation"
+          },
+          body:JSON.stringify({prioridade:p})
+        });
+        if(typeof carregar === "function") await carregar();
+        return;
+      }
+    }catch(e){}
+
+    // fallback local
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = p;
+        renderNotasV23();
+      }
+    }catch(e){}
+  }
+
+  window.renderNotasV23 = function(){
+    cssV23();
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const arr = getNotasV23().slice(0,20);
+
+    if(!arr.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = arr.map(n => {
+      const p = labelPrio(n.prioridade || "Normal");
+      const pc = classPrio(p);
+      const id = esc(n.id);
+      return `
+        <div class="df-v23-nota-card" data-nota-id="${id}">
+          <div class="df-v23-nota-top">
+            <div>
+              <div class="df-v23-nota-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df-v23-nota-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df-v23-nota-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df-v23-prio-badge ${pc}">${emojiPrio(p)} ${p}</span>
+          </div>
+
+          <div class="df-v23-nota-actions no-print">
+            <button type="button" class="df-v23-btn df-v23-btn-edit" onclick="editarNotaDF('${id}')">✏️ Editar</button>
+
+            <div class="df-v23-prio-box">
+              <button type="button" class="df-v23-btn df-v23-btn-prio ${pc}">
+                <span>${emojiPrio(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df-v23-prio-menu">
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+
+            <button type="button" class="df-v23-btn df-v23-btn-del" onclick="moverNotaLixeiraDF('${id}')">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function bindNotasV23(){
+    document.addEventListener("click", async function(e){
+      const btnPrio = e.target.closest(".df-v23-btn-prio");
+      if(btnPrio){
+        e.preventDefault();
+        e.stopPropagation();
+        const box = btnPrio.closest(".df-v23-prio-box");
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => {
+          if(b !== box) b.classList.remove("open");
+        });
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df-v23-prio-option");
+      if(op){
+        e.preventDefault();
+        e.stopPropagation();
+        const id = op.dataset.id;
+        const p = op.dataset.p;
+        const box = op.closest(".df-v23-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridadeV23(id, p);
+        setTimeout(renderNotasV23, 300);
+        return;
+      }
+
+      if(!e.target.closest(".df-v23-prio-box")){
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function instalarRenderNotas(){
+    cssV23();
+    window.renderNotas = window.renderNotasV23;
+    window.renderNotasMelhoradoDF = window.renderNotasV23;
+    renderNotasV23();
+  }
+
+  /* PDF limpo */
+  function filtrosRelatorioV23(){
+    return {
+      centro: document.getElementById("df224Centro")?.value || document.getElementById("df222Centro")?.value || "",
+      status: document.getElementById("df224Status")?.value || document.getElementById("df222Status")?.value || "",
+      dataInicio: document.getElementById("df224Inicio")?.value || document.getElementById("df222Inicio")?.value || "",
+      dataFim: document.getElementById("df224Fim")?.value || document.getElementById("df222Fim")?.value || "",
+      resumo: (document.getElementById("df224Resumo")?.checked ?? document.getElementById("df222Resumo")?.checked) !== false,
+      centroResumo: (document.getElementById("df224CentroResumo")?.checked ?? document.getElementById("df222CentroResumo")?.checked) !== false,
+      detalhe: (document.getElementById("df224Detalhe")?.checked ?? document.getElementById("df222Detalhe")?.checked) !== false,
+      aberto: document.getElementById("df224Aberto")?.checked || document.getElementById("df222Aberto")?.checked || false
+    };
+  }
+
+  function filtrarContasV23(f){
+    const base = contasRelatorioV23.length ? contasRelatorioV23 : getContasBaseV23();
+    return base.filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function resumoContasV23(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV23(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function montarRelatorioV23(f){
+    const contas = filtrarContasV23(f);
+    const r = resumoContasV23(contas);
+    const centros = porCentroV23(contas);
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV23(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV23(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV23(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centroHTML = f.centroResumo ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro"><div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div><b>${moedaV23(info.total)}</b></div>
+        `).join("") : `<div class="empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV23(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div class="empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v23-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        ${cards}
+        ${centroHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  window.df23GerarPDF = function(){
+    cssV23();
+    const f = filtrosRelatorioV23();
+
+    let bg = document.getElementById("df-v23-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v23-report-bg";
+      bg.className = "df-v23-report-bg";
+      bg.innerHTML = `
+        <div class="df-v23-report-box">
+          <div class="df-v23-report-actions no-print">
+            <button type="button" onclick="window.print()">Imprimir / Salvar PDF</button>
+            <button type="button" class="light" onclick="document.getElementById('df-v23-report-bg').classList.remove('open')">Fechar</button>
+          </div>
+          <div id="df-v23-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", function(e){
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    document.getElementById("df-v23-report-content").innerHTML = montarRelatorioV23(f);
+    bg.classList.add("open");
+  };
+
+  // Sobrescreve somente o PDF; CSV fica intacto.
+  window.df224GerarPDF = window.df23GerarPDF;
+  window.df222GerarPDF = window.df23GerarPDF;
+  window.df226GerarPDF = window.df23GerarPDF;
+
+  function corrigirBotoesPDF(){
+    document.querySelectorAll("button").forEach(btn => {
+      const t = (btn.innerText || btn.textContent || "").trim().toLowerCase();
+      const old = btn.getAttribute("onclick") || "";
+      if(t.includes("gerar pdf") || t.includes("imprimir") || old.includes("df224GerarPDF") || old.includes("df222GerarPDF") || old.includes("df226GerarPDF")){
+        btn.setAttribute("onclick", "window.df23GerarPDF()");
+      }
+    });
+  }
+
+  function iniciar(){
+    cssV23();
+    bindNotasV23();
+    instalarRenderNotas();
+    corrigirBotoesPDF();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", iniciar, {once:true});
+  }else{
+    iniciar();
+  }
+
+  // roda depois dos scripts antigos para limpar o que eles recriam
+  setTimeout(iniciar, 800);
+  setTimeout(iniciar, 1800);
+  setTimeout(iniciar, 3600);
+})();
+</script>
 </body>
 </html>`;
   }
@@ -10957,6 +12955,672 @@ ${montarRelatorioHTML(f)
   setTimeout(corrigirBotoesPDF, 700);
   setTimeout(corrigirBotoesPDF, 1600);
   setTimeout(corrigirBotoesPDF, 3200);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V23 BUILD LIMPA NOTAS + PDF
+   Correções profundas:
+   - Reescreve o Bloco de notas por completo após todos os patches antigos
+   - Remove duplicações visuais no bloco de notas
+   - Prioridade vira botão dentro de cada nota, sem select visível
+   - PDF não abre nova aba, não usa iframe, não usa document.write
+   - PDF abre uma prévia limpa dentro do app; usuário clica Imprimir/Salvar PDF
+   - Mantém CSV funcionando
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V23_BUILD_LIMPA__) return;
+  window.__DONA_FLOR_V23_BUILD_LIMPA__ = true;
+
+  let contasRelatorioV23 = [];
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function norm(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function moedaV23(v){
+    if(typeof moeda === "function"){
+      try{return moeda(v)}catch(e){}
+    }
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function labelPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function classPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function emojiPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotasV23(){
+    try{
+      if(typeof visNotas === "function"){
+        const arr = visNotas();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getNotasArrayDF === "function"){
+        const arr = getNotasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.notasDados)) return window.notasDados.filter(n => !n.deletado && !n.data_exclusao);
+    }catch(e){}
+
+    return [];
+  }
+
+  function getContasBaseV23(){
+    try{
+      if(typeof visContas === "function"){
+        const arr = visContas();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const arr = getContasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)) return window.contasDados.filter(c => !c.deletado);
+    }catch(e){}
+
+    return [];
+  }
+
+  function cssV23(){
+    if(document.getElementById("df-v23-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v23-css";
+    style.textContent = `
+      /* Esconde resíduos de versões anteriores no bloco de notas */
+      #notasLista .df-prioridade-box-v223,
+      #notasLista .df-prioridade-box-v225,
+      #notasLista select,
+      #notasLista .df-prioridade-select-original-v223,
+      #notasLista .df-prioridade-select-original-v225{
+        display:none !important;
+      }
+
+      #notasLista{
+        display:block !important;
+      }
+
+      .df-v23-nota-card{
+        background:#fff !important;
+        border:1px solid #E2E8F0 !important;
+        border-radius:14px !important;
+        padding:14px !important;
+        margin:12px 0 !important;
+        box-shadow:0 8px 18px rgba(15,23,42,.06) !important;
+      }
+
+      .df-v23-nota-top{
+        display:flex !important;
+        justify-content:space-between !important;
+        align-items:flex-start !important;
+        gap:10px !important;
+        margin-bottom:10px !important;
+      }
+
+      .df-v23-nota-title{
+        font-size:18px !important;
+        font-weight:950 !important;
+        color:#0f172a !important;
+        line-height:1.15 !important;
+      }
+
+      .df-v23-nota-text{
+        color:#475569 !important;
+        margin-top:6px !important;
+        font-size:15px !important;
+        line-height:1.3 !important;
+      }
+
+      .df-v23-nota-meta{
+        color:#64748b !important;
+        margin-top:8px !important;
+        font-size:13px !important;
+      }
+
+      .df-v23-prio-badge{
+        display:inline-flex !important;
+        align-items:center !important;
+        gap:6px !important;
+        border-radius:999px !important;
+        padding:6px 10px !important;
+        font-weight:900 !important;
+        font-size:13px !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v23-prio-badge.normal{background:#E0F2FE !important;color:#075985 !important;}
+      .df-v23-prio-badge.urgente{background:#FEE2E2 !important;color:#B91C1C !important;}
+      .df-v23-prio-badge.critico{background:#7F1D1D !important;color:#fff !important;}
+
+      .df-v23-nota-actions{
+        display:grid !important;
+        grid-template-columns:1fr !important;
+        gap:10px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v23-btn{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:0 !important;
+        font-weight:950 !important;
+        font-size:15px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-btn-edit{background:#2563EB !important;color:#fff !important;}
+      .df-v23-btn-del{background:#B91C1C !important;color:#fff !important;}
+
+      .df-v23-prio-box{
+        position:relative !important;
+        width:100% !important;
+        z-index:50 !important;
+      }
+
+      .df-v23-btn-prio{
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        border:1px solid #CBD5E1 !important;
+        justify-content:space-between !important;
+        padding:0 12px !important;
+      }
+
+      .df-v23-btn-prio.normal{background:#ECFDF5 !important;color:#047857 !important;border-color:#A7F3D0 !important;}
+      .df-v23-btn-prio.urgente{background:#FEE2E2 !important;color:#B91C1C !important;border-color:#FECACA !important;}
+      .df-v23-btn-prio.critico{background:#7F1D1D !important;color:#fff !important;border-color:#450A0A !important;}
+
+      .df-v23-prio-menu{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:999999 !important;
+      }
+
+      .df-v23-prio-box.open .df-v23-prio-menu{
+        display:block !important;
+      }
+
+      .df-v23-prio-option{
+        width:100% !important;
+        min-height:44px !important;
+        background:#fff !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        padding:12px !important;
+        text-align:left !important;
+        font-weight:950 !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-prio-option:last-child{border-bottom:0 !important;}
+
+      /* PDF */
+      .df-v23-report-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:1000010 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v23-report-bg.open{display:flex !important;}
+
+      .df-v23-report-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v23-report-actions{
+        display:flex !important;
+        gap:8px !important;
+        flex-wrap:wrap !important;
+        justify-content:flex-end !important;
+        margin-bottom:12px !important;
+      }
+
+      .df-v23-report-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+      }
+
+      .df-v23-report-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v23-report h1{color:#0f766e !important;margin:0 !important;font-size:24px !important;}
+      .df-v23-report h2{font-size:18px !important;margin:18px 0 8px !important;}
+      .df-v23-report .sub{color:#64748b !important;font-size:12px !important;margin-top:4px !important;}
+      .df-v23-report .cards{display:grid !important;grid-template-columns:repeat(4,1fr) !important;gap:8px !important;margin:12px 0 !important;}
+      .df-v23-report .card-mini{border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:10px !important;background:#fafaf9 !important;}
+      .df-v23-report .label{font-size:10px !important;text-transform:uppercase !important;color:#64748b !important;font-weight:bold !important;}
+      .df-v23-report .num{font-size:17px !important;font-weight:bold !important;margin-top:3px !important;}
+      .df-v23-report .centros{display:grid !important;grid-template-columns:repeat(2,1fr) !important;gap:8px !important;margin:8px 0 14px !important;}
+      .df-v23-report .centro{display:flex !important;justify-content:space-between !important;border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:8px !important;}
+      .df-v23-report .centro small{display:block !important;color:#64748b !important;}
+      .df-v23-report table{width:100% !important;border-collapse:collapse !important;font-size:12px !important;}
+      .df-v23-report th{background:#0f766e !important;color:white !important;text-align:left !important;padding:7px !important;}
+      .df-v23-report td{border-bottom:1px solid #e2e8f0 !important;padding:7px !important;vertical-align:top !important;}
+      .df-v23-report .valor{font-weight:bold !important;white-space:nowrap !important;}
+      .df-v23-report .status{border-radius:999px !important;padding:3px 7px !important;font-weight:bold !important;font-size:11px !important;display:inline-block !important;}
+      .df-v23-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v23-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v23-report-box{padding:14px !important;border-radius:16px !important;}
+        .df-v23-report-actions{justify-content:flex-start !important;}
+        .df-v23-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v23-report .centros{grid-template-columns:1fr !important;}
+        .df-v23-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        body > *:not(#df-v23-report-bg){
+          display:none !important;
+        }
+        #df-v23-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+        }
+        #df-v23-report-bg .df-v23-report-box{
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+        }
+        .df-v23-report-actions{
+          display:none !important;
+        }
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  async function setPrioridadeV23(id, prioridade){
+    const p = labelPrio(prioridade);
+    try{
+      if(typeof alterarPrioridadeNotaDF === "function"){
+        await alterarPrioridadeNotaDF(id, p);
+        return;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{
+            "apikey":SupabaseKey,
+            "Authorization":"Bearer " + SupabaseKey,
+            "Content-Type":"application/json",
+            "Prefer":"return=representation"
+          },
+          body:JSON.stringify({prioridade:p})
+        });
+        if(typeof carregar === "function") await carregar();
+        return;
+      }
+    }catch(e){}
+
+    // fallback local
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = p;
+        renderNotasV23();
+      }
+    }catch(e){}
+  }
+
+  window.renderNotasV23 = function(){
+    cssV23();
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const arr = getNotasV23().slice(0,20);
+
+    if(!arr.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = arr.map(n => {
+      const p = labelPrio(n.prioridade || "Normal");
+      const pc = classPrio(p);
+      const id = esc(n.id);
+      return `
+        <div class="df-v23-nota-card" data-nota-id="${id}">
+          <div class="df-v23-nota-top">
+            <div>
+              <div class="df-v23-nota-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df-v23-nota-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df-v23-nota-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df-v23-prio-badge ${pc}">${emojiPrio(p)} ${p}</span>
+          </div>
+
+          <div class="df-v23-nota-actions no-print">
+            <button type="button" class="df-v23-btn df-v23-btn-edit" onclick="editarNotaDF('${id}')">✏️ Editar</button>
+
+            <div class="df-v23-prio-box">
+              <button type="button" class="df-v23-btn df-v23-btn-prio ${pc}">
+                <span>${emojiPrio(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df-v23-prio-menu">
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+
+            <button type="button" class="df-v23-btn df-v23-btn-del" onclick="moverNotaLixeiraDF('${id}')">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function bindNotasV23(){
+    document.addEventListener("click", async function(e){
+      const btnPrio = e.target.closest(".df-v23-btn-prio");
+      if(btnPrio){
+        e.preventDefault();
+        e.stopPropagation();
+        const box = btnPrio.closest(".df-v23-prio-box");
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => {
+          if(b !== box) b.classList.remove("open");
+        });
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df-v23-prio-option");
+      if(op){
+        e.preventDefault();
+        e.stopPropagation();
+        const id = op.dataset.id;
+        const p = op.dataset.p;
+        const box = op.closest(".df-v23-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridadeV23(id, p);
+        setTimeout(renderNotasV23, 300);
+        return;
+      }
+
+      if(!e.target.closest(".df-v23-prio-box")){
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function instalarRenderNotas(){
+    cssV23();
+    window.renderNotas = window.renderNotasV23;
+    window.renderNotasMelhoradoDF = window.renderNotasV23;
+    renderNotasV23();
+  }
+
+  /* PDF limpo */
+  function filtrosRelatorioV23(){
+    return {
+      centro: document.getElementById("df224Centro")?.value || document.getElementById("df222Centro")?.value || "",
+      status: document.getElementById("df224Status")?.value || document.getElementById("df222Status")?.value || "",
+      dataInicio: document.getElementById("df224Inicio")?.value || document.getElementById("df222Inicio")?.value || "",
+      dataFim: document.getElementById("df224Fim")?.value || document.getElementById("df222Fim")?.value || "",
+      resumo: (document.getElementById("df224Resumo")?.checked ?? document.getElementById("df222Resumo")?.checked) !== false,
+      centroResumo: (document.getElementById("df224CentroResumo")?.checked ?? document.getElementById("df222CentroResumo")?.checked) !== false,
+      detalhe: (document.getElementById("df224Detalhe")?.checked ?? document.getElementById("df222Detalhe")?.checked) !== false,
+      aberto: document.getElementById("df224Aberto")?.checked || document.getElementById("df222Aberto")?.checked || false
+    };
+  }
+
+  function filtrarContasV23(f){
+    const base = contasRelatorioV23.length ? contasRelatorioV23 : getContasBaseV23();
+    return base.filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function resumoContasV23(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV23(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function montarRelatorioV23(f){
+    const contas = filtrarContasV23(f);
+    const r = resumoContasV23(contas);
+    const centros = porCentroV23(contas);
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV23(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV23(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV23(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centroHTML = f.centroResumo ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro"><div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div><b>${moedaV23(info.total)}</b></div>
+        `).join("") : `<div class="empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV23(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div class="empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v23-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        ${cards}
+        ${centroHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  window.df23GerarPDF = function(){
+    cssV23();
+    const f = filtrosRelatorioV23();
+
+    let bg = document.getElementById("df-v23-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v23-report-bg";
+      bg.className = "df-v23-report-bg";
+      bg.innerHTML = `
+        <div class="df-v23-report-box">
+          <div class="df-v23-report-actions no-print">
+            <button type="button" onclick="window.print()">Imprimir / Salvar PDF</button>
+            <button type="button" class="light" onclick="document.getElementById('df-v23-report-bg').classList.remove('open')">Fechar</button>
+          </div>
+          <div id="df-v23-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", function(e){
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    document.getElementById("df-v23-report-content").innerHTML = montarRelatorioV23(f);
+    bg.classList.add("open");
+  };
+
+  // Sobrescreve somente o PDF; CSV fica intacto.
+  window.df224GerarPDF = window.df23GerarPDF;
+  window.df222GerarPDF = window.df23GerarPDF;
+  window.df226GerarPDF = window.df23GerarPDF;
+
+  function corrigirBotoesPDF(){
+    document.querySelectorAll("button").forEach(btn => {
+      const t = (btn.innerText || btn.textContent || "").trim().toLowerCase();
+      const old = btn.getAttribute("onclick") || "";
+      if(t.includes("gerar pdf") || t.includes("imprimir") || old.includes("df224GerarPDF") || old.includes("df222GerarPDF") || old.includes("df226GerarPDF")){
+        btn.setAttribute("onclick", "window.df23GerarPDF()");
+      }
+    });
+  }
+
+  function iniciar(){
+    cssV23();
+    bindNotasV23();
+    instalarRenderNotas();
+    corrigirBotoesPDF();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", iniciar, {once:true});
+  }else{
+    iniciar();
+  }
+
+  // roda depois dos scripts antigos para limpar o que eles recriam
+  setTimeout(iniciar, 800);
+  setTimeout(iniciar, 1800);
+  setTimeout(iniciar, 3600);
 })();
 </script>
 </body>
@@ -16184,6 +18848,672 @@ ${montarRelatorioHTML(f)
     ${centrosHTML}
     ${detalhes}
   </div>
+<script>
+/* ==========================================================
+   DONA FLOR - V23 BUILD LIMPA NOTAS + PDF
+   Correções profundas:
+   - Reescreve o Bloco de notas por completo após todos os patches antigos
+   - Remove duplicações visuais no bloco de notas
+   - Prioridade vira botão dentro de cada nota, sem select visível
+   - PDF não abre nova aba, não usa iframe, não usa document.write
+   - PDF abre uma prévia limpa dentro do app; usuário clica Imprimir/Salvar PDF
+   - Mantém CSV funcionando
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V23_BUILD_LIMPA__) return;
+  window.__DONA_FLOR_V23_BUILD_LIMPA__ = true;
+
+  let contasRelatorioV23 = [];
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function norm(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function moedaV23(v){
+    if(typeof moeda === "function"){
+      try{return moeda(v)}catch(e){}
+    }
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function labelPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function classPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function emojiPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotasV23(){
+    try{
+      if(typeof visNotas === "function"){
+        const arr = visNotas();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getNotasArrayDF === "function"){
+        const arr = getNotasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.notasDados)) return window.notasDados.filter(n => !n.deletado && !n.data_exclusao);
+    }catch(e){}
+
+    return [];
+  }
+
+  function getContasBaseV23(){
+    try{
+      if(typeof visContas === "function"){
+        const arr = visContas();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const arr = getContasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)) return window.contasDados.filter(c => !c.deletado);
+    }catch(e){}
+
+    return [];
+  }
+
+  function cssV23(){
+    if(document.getElementById("df-v23-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v23-css";
+    style.textContent = `
+      /* Esconde resíduos de versões anteriores no bloco de notas */
+      #notasLista .df-prioridade-box-v223,
+      #notasLista .df-prioridade-box-v225,
+      #notasLista select,
+      #notasLista .df-prioridade-select-original-v223,
+      #notasLista .df-prioridade-select-original-v225{
+        display:none !important;
+      }
+
+      #notasLista{
+        display:block !important;
+      }
+
+      .df-v23-nota-card{
+        background:#fff !important;
+        border:1px solid #E2E8F0 !important;
+        border-radius:14px !important;
+        padding:14px !important;
+        margin:12px 0 !important;
+        box-shadow:0 8px 18px rgba(15,23,42,.06) !important;
+      }
+
+      .df-v23-nota-top{
+        display:flex !important;
+        justify-content:space-between !important;
+        align-items:flex-start !important;
+        gap:10px !important;
+        margin-bottom:10px !important;
+      }
+
+      .df-v23-nota-title{
+        font-size:18px !important;
+        font-weight:950 !important;
+        color:#0f172a !important;
+        line-height:1.15 !important;
+      }
+
+      .df-v23-nota-text{
+        color:#475569 !important;
+        margin-top:6px !important;
+        font-size:15px !important;
+        line-height:1.3 !important;
+      }
+
+      .df-v23-nota-meta{
+        color:#64748b !important;
+        margin-top:8px !important;
+        font-size:13px !important;
+      }
+
+      .df-v23-prio-badge{
+        display:inline-flex !important;
+        align-items:center !important;
+        gap:6px !important;
+        border-radius:999px !important;
+        padding:6px 10px !important;
+        font-weight:900 !important;
+        font-size:13px !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v23-prio-badge.normal{background:#E0F2FE !important;color:#075985 !important;}
+      .df-v23-prio-badge.urgente{background:#FEE2E2 !important;color:#B91C1C !important;}
+      .df-v23-prio-badge.critico{background:#7F1D1D !important;color:#fff !important;}
+
+      .df-v23-nota-actions{
+        display:grid !important;
+        grid-template-columns:1fr !important;
+        gap:10px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v23-btn{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:0 !important;
+        font-weight:950 !important;
+        font-size:15px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-btn-edit{background:#2563EB !important;color:#fff !important;}
+      .df-v23-btn-del{background:#B91C1C !important;color:#fff !important;}
+
+      .df-v23-prio-box{
+        position:relative !important;
+        width:100% !important;
+        z-index:50 !important;
+      }
+
+      .df-v23-btn-prio{
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        border:1px solid #CBD5E1 !important;
+        justify-content:space-between !important;
+        padding:0 12px !important;
+      }
+
+      .df-v23-btn-prio.normal{background:#ECFDF5 !important;color:#047857 !important;border-color:#A7F3D0 !important;}
+      .df-v23-btn-prio.urgente{background:#FEE2E2 !important;color:#B91C1C !important;border-color:#FECACA !important;}
+      .df-v23-btn-prio.critico{background:#7F1D1D !important;color:#fff !important;border-color:#450A0A !important;}
+
+      .df-v23-prio-menu{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:999999 !important;
+      }
+
+      .df-v23-prio-box.open .df-v23-prio-menu{
+        display:block !important;
+      }
+
+      .df-v23-prio-option{
+        width:100% !important;
+        min-height:44px !important;
+        background:#fff !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        padding:12px !important;
+        text-align:left !important;
+        font-weight:950 !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-prio-option:last-child{border-bottom:0 !important;}
+
+      /* PDF */
+      .df-v23-report-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:1000010 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v23-report-bg.open{display:flex !important;}
+
+      .df-v23-report-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v23-report-actions{
+        display:flex !important;
+        gap:8px !important;
+        flex-wrap:wrap !important;
+        justify-content:flex-end !important;
+        margin-bottom:12px !important;
+      }
+
+      .df-v23-report-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+      }
+
+      .df-v23-report-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v23-report h1{color:#0f766e !important;margin:0 !important;font-size:24px !important;}
+      .df-v23-report h2{font-size:18px !important;margin:18px 0 8px !important;}
+      .df-v23-report .sub{color:#64748b !important;font-size:12px !important;margin-top:4px !important;}
+      .df-v23-report .cards{display:grid !important;grid-template-columns:repeat(4,1fr) !important;gap:8px !important;margin:12px 0 !important;}
+      .df-v23-report .card-mini{border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:10px !important;background:#fafaf9 !important;}
+      .df-v23-report .label{font-size:10px !important;text-transform:uppercase !important;color:#64748b !important;font-weight:bold !important;}
+      .df-v23-report .num{font-size:17px !important;font-weight:bold !important;margin-top:3px !important;}
+      .df-v23-report .centros{display:grid !important;grid-template-columns:repeat(2,1fr) !important;gap:8px !important;margin:8px 0 14px !important;}
+      .df-v23-report .centro{display:flex !important;justify-content:space-between !important;border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:8px !important;}
+      .df-v23-report .centro small{display:block !important;color:#64748b !important;}
+      .df-v23-report table{width:100% !important;border-collapse:collapse !important;font-size:12px !important;}
+      .df-v23-report th{background:#0f766e !important;color:white !important;text-align:left !important;padding:7px !important;}
+      .df-v23-report td{border-bottom:1px solid #e2e8f0 !important;padding:7px !important;vertical-align:top !important;}
+      .df-v23-report .valor{font-weight:bold !important;white-space:nowrap !important;}
+      .df-v23-report .status{border-radius:999px !important;padding:3px 7px !important;font-weight:bold !important;font-size:11px !important;display:inline-block !important;}
+      .df-v23-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v23-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v23-report-box{padding:14px !important;border-radius:16px !important;}
+        .df-v23-report-actions{justify-content:flex-start !important;}
+        .df-v23-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v23-report .centros{grid-template-columns:1fr !important;}
+        .df-v23-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        body > *:not(#df-v23-report-bg){
+          display:none !important;
+        }
+        #df-v23-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+        }
+        #df-v23-report-bg .df-v23-report-box{
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+        }
+        .df-v23-report-actions{
+          display:none !important;
+        }
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  async function setPrioridadeV23(id, prioridade){
+    const p = labelPrio(prioridade);
+    try{
+      if(typeof alterarPrioridadeNotaDF === "function"){
+        await alterarPrioridadeNotaDF(id, p);
+        return;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{
+            "apikey":SupabaseKey,
+            "Authorization":"Bearer " + SupabaseKey,
+            "Content-Type":"application/json",
+            "Prefer":"return=representation"
+          },
+          body:JSON.stringify({prioridade:p})
+        });
+        if(typeof carregar === "function") await carregar();
+        return;
+      }
+    }catch(e){}
+
+    // fallback local
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = p;
+        renderNotasV23();
+      }
+    }catch(e){}
+  }
+
+  window.renderNotasV23 = function(){
+    cssV23();
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const arr = getNotasV23().slice(0,20);
+
+    if(!arr.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = arr.map(n => {
+      const p = labelPrio(n.prioridade || "Normal");
+      const pc = classPrio(p);
+      const id = esc(n.id);
+      return `
+        <div class="df-v23-nota-card" data-nota-id="${id}">
+          <div class="df-v23-nota-top">
+            <div>
+              <div class="df-v23-nota-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df-v23-nota-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df-v23-nota-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df-v23-prio-badge ${pc}">${emojiPrio(p)} ${p}</span>
+          </div>
+
+          <div class="df-v23-nota-actions no-print">
+            <button type="button" class="df-v23-btn df-v23-btn-edit" onclick="editarNotaDF('${id}')">✏️ Editar</button>
+
+            <div class="df-v23-prio-box">
+              <button type="button" class="df-v23-btn df-v23-btn-prio ${pc}">
+                <span>${emojiPrio(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df-v23-prio-menu">
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+
+            <button type="button" class="df-v23-btn df-v23-btn-del" onclick="moverNotaLixeiraDF('${id}')">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function bindNotasV23(){
+    document.addEventListener("click", async function(e){
+      const btnPrio = e.target.closest(".df-v23-btn-prio");
+      if(btnPrio){
+        e.preventDefault();
+        e.stopPropagation();
+        const box = btnPrio.closest(".df-v23-prio-box");
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => {
+          if(b !== box) b.classList.remove("open");
+        });
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df-v23-prio-option");
+      if(op){
+        e.preventDefault();
+        e.stopPropagation();
+        const id = op.dataset.id;
+        const p = op.dataset.p;
+        const box = op.closest(".df-v23-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridadeV23(id, p);
+        setTimeout(renderNotasV23, 300);
+        return;
+      }
+
+      if(!e.target.closest(".df-v23-prio-box")){
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function instalarRenderNotas(){
+    cssV23();
+    window.renderNotas = window.renderNotasV23;
+    window.renderNotasMelhoradoDF = window.renderNotasV23;
+    renderNotasV23();
+  }
+
+  /* PDF limpo */
+  function filtrosRelatorioV23(){
+    return {
+      centro: document.getElementById("df224Centro")?.value || document.getElementById("df222Centro")?.value || "",
+      status: document.getElementById("df224Status")?.value || document.getElementById("df222Status")?.value || "",
+      dataInicio: document.getElementById("df224Inicio")?.value || document.getElementById("df222Inicio")?.value || "",
+      dataFim: document.getElementById("df224Fim")?.value || document.getElementById("df222Fim")?.value || "",
+      resumo: (document.getElementById("df224Resumo")?.checked ?? document.getElementById("df222Resumo")?.checked) !== false,
+      centroResumo: (document.getElementById("df224CentroResumo")?.checked ?? document.getElementById("df222CentroResumo")?.checked) !== false,
+      detalhe: (document.getElementById("df224Detalhe")?.checked ?? document.getElementById("df222Detalhe")?.checked) !== false,
+      aberto: document.getElementById("df224Aberto")?.checked || document.getElementById("df222Aberto")?.checked || false
+    };
+  }
+
+  function filtrarContasV23(f){
+    const base = contasRelatorioV23.length ? contasRelatorioV23 : getContasBaseV23();
+    return base.filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function resumoContasV23(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV23(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function montarRelatorioV23(f){
+    const contas = filtrarContasV23(f);
+    const r = resumoContasV23(contas);
+    const centros = porCentroV23(contas);
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV23(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV23(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV23(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centroHTML = f.centroResumo ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro"><div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div><b>${moedaV23(info.total)}</b></div>
+        `).join("") : `<div class="empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV23(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div class="empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v23-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        ${cards}
+        ${centroHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  window.df23GerarPDF = function(){
+    cssV23();
+    const f = filtrosRelatorioV23();
+
+    let bg = document.getElementById("df-v23-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v23-report-bg";
+      bg.className = "df-v23-report-bg";
+      bg.innerHTML = `
+        <div class="df-v23-report-box">
+          <div class="df-v23-report-actions no-print">
+            <button type="button" onclick="window.print()">Imprimir / Salvar PDF</button>
+            <button type="button" class="light" onclick="document.getElementById('df-v23-report-bg').classList.remove('open')">Fechar</button>
+          </div>
+          <div id="df-v23-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", function(e){
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    document.getElementById("df-v23-report-content").innerHTML = montarRelatorioV23(f);
+    bg.classList.add("open");
+  };
+
+  // Sobrescreve somente o PDF; CSV fica intacto.
+  window.df224GerarPDF = window.df23GerarPDF;
+  window.df222GerarPDF = window.df23GerarPDF;
+  window.df226GerarPDF = window.df23GerarPDF;
+
+  function corrigirBotoesPDF(){
+    document.querySelectorAll("button").forEach(btn => {
+      const t = (btn.innerText || btn.textContent || "").trim().toLowerCase();
+      const old = btn.getAttribute("onclick") || "";
+      if(t.includes("gerar pdf") || t.includes("imprimir") || old.includes("df224GerarPDF") || old.includes("df222GerarPDF") || old.includes("df226GerarPDF")){
+        btn.setAttribute("onclick", "window.df23GerarPDF()");
+      }
+    });
+  }
+
+  function iniciar(){
+    cssV23();
+    bindNotasV23();
+    instalarRenderNotas();
+    corrigirBotoesPDF();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", iniciar, {once:true});
+  }else{
+    iniciar();
+  }
+
+  // roda depois dos scripts antigos para limpar o que eles recriam
+  setTimeout(iniciar, 800);
+  setTimeout(iniciar, 1800);
+  setTimeout(iniciar, 3600);
+})();
+</script>
 </body>
 </html>`;
   }
@@ -16230,6 +19560,672 @@ ${montarRelatorioHTML(f)
   setTimeout(corrigirBotoesPDF, 700);
   setTimeout(corrigirBotoesPDF, 1600);
   setTimeout(corrigirBotoesPDF, 3200);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V23 BUILD LIMPA NOTAS + PDF
+   Correções profundas:
+   - Reescreve o Bloco de notas por completo após todos os patches antigos
+   - Remove duplicações visuais no bloco de notas
+   - Prioridade vira botão dentro de cada nota, sem select visível
+   - PDF não abre nova aba, não usa iframe, não usa document.write
+   - PDF abre uma prévia limpa dentro do app; usuário clica Imprimir/Salvar PDF
+   - Mantém CSV funcionando
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V23_BUILD_LIMPA__) return;
+  window.__DONA_FLOR_V23_BUILD_LIMPA__ = true;
+
+  let contasRelatorioV23 = [];
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function norm(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function moedaV23(v){
+    if(typeof moeda === "function"){
+      try{return moeda(v)}catch(e){}
+    }
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function labelPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function classPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function emojiPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotasV23(){
+    try{
+      if(typeof visNotas === "function"){
+        const arr = visNotas();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getNotasArrayDF === "function"){
+        const arr = getNotasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.notasDados)) return window.notasDados.filter(n => !n.deletado && !n.data_exclusao);
+    }catch(e){}
+
+    return [];
+  }
+
+  function getContasBaseV23(){
+    try{
+      if(typeof visContas === "function"){
+        const arr = visContas();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const arr = getContasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)) return window.contasDados.filter(c => !c.deletado);
+    }catch(e){}
+
+    return [];
+  }
+
+  function cssV23(){
+    if(document.getElementById("df-v23-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v23-css";
+    style.textContent = `
+      /* Esconde resíduos de versões anteriores no bloco de notas */
+      #notasLista .df-prioridade-box-v223,
+      #notasLista .df-prioridade-box-v225,
+      #notasLista select,
+      #notasLista .df-prioridade-select-original-v223,
+      #notasLista .df-prioridade-select-original-v225{
+        display:none !important;
+      }
+
+      #notasLista{
+        display:block !important;
+      }
+
+      .df-v23-nota-card{
+        background:#fff !important;
+        border:1px solid #E2E8F0 !important;
+        border-radius:14px !important;
+        padding:14px !important;
+        margin:12px 0 !important;
+        box-shadow:0 8px 18px rgba(15,23,42,.06) !important;
+      }
+
+      .df-v23-nota-top{
+        display:flex !important;
+        justify-content:space-between !important;
+        align-items:flex-start !important;
+        gap:10px !important;
+        margin-bottom:10px !important;
+      }
+
+      .df-v23-nota-title{
+        font-size:18px !important;
+        font-weight:950 !important;
+        color:#0f172a !important;
+        line-height:1.15 !important;
+      }
+
+      .df-v23-nota-text{
+        color:#475569 !important;
+        margin-top:6px !important;
+        font-size:15px !important;
+        line-height:1.3 !important;
+      }
+
+      .df-v23-nota-meta{
+        color:#64748b !important;
+        margin-top:8px !important;
+        font-size:13px !important;
+      }
+
+      .df-v23-prio-badge{
+        display:inline-flex !important;
+        align-items:center !important;
+        gap:6px !important;
+        border-radius:999px !important;
+        padding:6px 10px !important;
+        font-weight:900 !important;
+        font-size:13px !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v23-prio-badge.normal{background:#E0F2FE !important;color:#075985 !important;}
+      .df-v23-prio-badge.urgente{background:#FEE2E2 !important;color:#B91C1C !important;}
+      .df-v23-prio-badge.critico{background:#7F1D1D !important;color:#fff !important;}
+
+      .df-v23-nota-actions{
+        display:grid !important;
+        grid-template-columns:1fr !important;
+        gap:10px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v23-btn{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:0 !important;
+        font-weight:950 !important;
+        font-size:15px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-btn-edit{background:#2563EB !important;color:#fff !important;}
+      .df-v23-btn-del{background:#B91C1C !important;color:#fff !important;}
+
+      .df-v23-prio-box{
+        position:relative !important;
+        width:100% !important;
+        z-index:50 !important;
+      }
+
+      .df-v23-btn-prio{
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        border:1px solid #CBD5E1 !important;
+        justify-content:space-between !important;
+        padding:0 12px !important;
+      }
+
+      .df-v23-btn-prio.normal{background:#ECFDF5 !important;color:#047857 !important;border-color:#A7F3D0 !important;}
+      .df-v23-btn-prio.urgente{background:#FEE2E2 !important;color:#B91C1C !important;border-color:#FECACA !important;}
+      .df-v23-btn-prio.critico{background:#7F1D1D !important;color:#fff !important;border-color:#450A0A !important;}
+
+      .df-v23-prio-menu{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:999999 !important;
+      }
+
+      .df-v23-prio-box.open .df-v23-prio-menu{
+        display:block !important;
+      }
+
+      .df-v23-prio-option{
+        width:100% !important;
+        min-height:44px !important;
+        background:#fff !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        padding:12px !important;
+        text-align:left !important;
+        font-weight:950 !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-prio-option:last-child{border-bottom:0 !important;}
+
+      /* PDF */
+      .df-v23-report-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:1000010 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v23-report-bg.open{display:flex !important;}
+
+      .df-v23-report-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v23-report-actions{
+        display:flex !important;
+        gap:8px !important;
+        flex-wrap:wrap !important;
+        justify-content:flex-end !important;
+        margin-bottom:12px !important;
+      }
+
+      .df-v23-report-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+      }
+
+      .df-v23-report-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v23-report h1{color:#0f766e !important;margin:0 !important;font-size:24px !important;}
+      .df-v23-report h2{font-size:18px !important;margin:18px 0 8px !important;}
+      .df-v23-report .sub{color:#64748b !important;font-size:12px !important;margin-top:4px !important;}
+      .df-v23-report .cards{display:grid !important;grid-template-columns:repeat(4,1fr) !important;gap:8px !important;margin:12px 0 !important;}
+      .df-v23-report .card-mini{border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:10px !important;background:#fafaf9 !important;}
+      .df-v23-report .label{font-size:10px !important;text-transform:uppercase !important;color:#64748b !important;font-weight:bold !important;}
+      .df-v23-report .num{font-size:17px !important;font-weight:bold !important;margin-top:3px !important;}
+      .df-v23-report .centros{display:grid !important;grid-template-columns:repeat(2,1fr) !important;gap:8px !important;margin:8px 0 14px !important;}
+      .df-v23-report .centro{display:flex !important;justify-content:space-between !important;border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:8px !important;}
+      .df-v23-report .centro small{display:block !important;color:#64748b !important;}
+      .df-v23-report table{width:100% !important;border-collapse:collapse !important;font-size:12px !important;}
+      .df-v23-report th{background:#0f766e !important;color:white !important;text-align:left !important;padding:7px !important;}
+      .df-v23-report td{border-bottom:1px solid #e2e8f0 !important;padding:7px !important;vertical-align:top !important;}
+      .df-v23-report .valor{font-weight:bold !important;white-space:nowrap !important;}
+      .df-v23-report .status{border-radius:999px !important;padding:3px 7px !important;font-weight:bold !important;font-size:11px !important;display:inline-block !important;}
+      .df-v23-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v23-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v23-report-box{padding:14px !important;border-radius:16px !important;}
+        .df-v23-report-actions{justify-content:flex-start !important;}
+        .df-v23-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v23-report .centros{grid-template-columns:1fr !important;}
+        .df-v23-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        body > *:not(#df-v23-report-bg){
+          display:none !important;
+        }
+        #df-v23-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+        }
+        #df-v23-report-bg .df-v23-report-box{
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+        }
+        .df-v23-report-actions{
+          display:none !important;
+        }
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  async function setPrioridadeV23(id, prioridade){
+    const p = labelPrio(prioridade);
+    try{
+      if(typeof alterarPrioridadeNotaDF === "function"){
+        await alterarPrioridadeNotaDF(id, p);
+        return;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{
+            "apikey":SupabaseKey,
+            "Authorization":"Bearer " + SupabaseKey,
+            "Content-Type":"application/json",
+            "Prefer":"return=representation"
+          },
+          body:JSON.stringify({prioridade:p})
+        });
+        if(typeof carregar === "function") await carregar();
+        return;
+      }
+    }catch(e){}
+
+    // fallback local
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = p;
+        renderNotasV23();
+      }
+    }catch(e){}
+  }
+
+  window.renderNotasV23 = function(){
+    cssV23();
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const arr = getNotasV23().slice(0,20);
+
+    if(!arr.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = arr.map(n => {
+      const p = labelPrio(n.prioridade || "Normal");
+      const pc = classPrio(p);
+      const id = esc(n.id);
+      return `
+        <div class="df-v23-nota-card" data-nota-id="${id}">
+          <div class="df-v23-nota-top">
+            <div>
+              <div class="df-v23-nota-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df-v23-nota-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df-v23-nota-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df-v23-prio-badge ${pc}">${emojiPrio(p)} ${p}</span>
+          </div>
+
+          <div class="df-v23-nota-actions no-print">
+            <button type="button" class="df-v23-btn df-v23-btn-edit" onclick="editarNotaDF('${id}')">✏️ Editar</button>
+
+            <div class="df-v23-prio-box">
+              <button type="button" class="df-v23-btn df-v23-btn-prio ${pc}">
+                <span>${emojiPrio(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df-v23-prio-menu">
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+
+            <button type="button" class="df-v23-btn df-v23-btn-del" onclick="moverNotaLixeiraDF('${id}')">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function bindNotasV23(){
+    document.addEventListener("click", async function(e){
+      const btnPrio = e.target.closest(".df-v23-btn-prio");
+      if(btnPrio){
+        e.preventDefault();
+        e.stopPropagation();
+        const box = btnPrio.closest(".df-v23-prio-box");
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => {
+          if(b !== box) b.classList.remove("open");
+        });
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df-v23-prio-option");
+      if(op){
+        e.preventDefault();
+        e.stopPropagation();
+        const id = op.dataset.id;
+        const p = op.dataset.p;
+        const box = op.closest(".df-v23-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridadeV23(id, p);
+        setTimeout(renderNotasV23, 300);
+        return;
+      }
+
+      if(!e.target.closest(".df-v23-prio-box")){
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function instalarRenderNotas(){
+    cssV23();
+    window.renderNotas = window.renderNotasV23;
+    window.renderNotasMelhoradoDF = window.renderNotasV23;
+    renderNotasV23();
+  }
+
+  /* PDF limpo */
+  function filtrosRelatorioV23(){
+    return {
+      centro: document.getElementById("df224Centro")?.value || document.getElementById("df222Centro")?.value || "",
+      status: document.getElementById("df224Status")?.value || document.getElementById("df222Status")?.value || "",
+      dataInicio: document.getElementById("df224Inicio")?.value || document.getElementById("df222Inicio")?.value || "",
+      dataFim: document.getElementById("df224Fim")?.value || document.getElementById("df222Fim")?.value || "",
+      resumo: (document.getElementById("df224Resumo")?.checked ?? document.getElementById("df222Resumo")?.checked) !== false,
+      centroResumo: (document.getElementById("df224CentroResumo")?.checked ?? document.getElementById("df222CentroResumo")?.checked) !== false,
+      detalhe: (document.getElementById("df224Detalhe")?.checked ?? document.getElementById("df222Detalhe")?.checked) !== false,
+      aberto: document.getElementById("df224Aberto")?.checked || document.getElementById("df222Aberto")?.checked || false
+    };
+  }
+
+  function filtrarContasV23(f){
+    const base = contasRelatorioV23.length ? contasRelatorioV23 : getContasBaseV23();
+    return base.filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function resumoContasV23(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV23(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function montarRelatorioV23(f){
+    const contas = filtrarContasV23(f);
+    const r = resumoContasV23(contas);
+    const centros = porCentroV23(contas);
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV23(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV23(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV23(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centroHTML = f.centroResumo ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro"><div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div><b>${moedaV23(info.total)}</b></div>
+        `).join("") : `<div class="empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV23(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div class="empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v23-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        ${cards}
+        ${centroHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  window.df23GerarPDF = function(){
+    cssV23();
+    const f = filtrosRelatorioV23();
+
+    let bg = document.getElementById("df-v23-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v23-report-bg";
+      bg.className = "df-v23-report-bg";
+      bg.innerHTML = `
+        <div class="df-v23-report-box">
+          <div class="df-v23-report-actions no-print">
+            <button type="button" onclick="window.print()">Imprimir / Salvar PDF</button>
+            <button type="button" class="light" onclick="document.getElementById('df-v23-report-bg').classList.remove('open')">Fechar</button>
+          </div>
+          <div id="df-v23-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", function(e){
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    document.getElementById("df-v23-report-content").innerHTML = montarRelatorioV23(f);
+    bg.classList.add("open");
+  };
+
+  // Sobrescreve somente o PDF; CSV fica intacto.
+  window.df224GerarPDF = window.df23GerarPDF;
+  window.df222GerarPDF = window.df23GerarPDF;
+  window.df226GerarPDF = window.df23GerarPDF;
+
+  function corrigirBotoesPDF(){
+    document.querySelectorAll("button").forEach(btn => {
+      const t = (btn.innerText || btn.textContent || "").trim().toLowerCase();
+      const old = btn.getAttribute("onclick") || "";
+      if(t.includes("gerar pdf") || t.includes("imprimir") || old.includes("df224GerarPDF") || old.includes("df222GerarPDF") || old.includes("df226GerarPDF")){
+        btn.setAttribute("onclick", "window.df23GerarPDF()");
+      }
+    });
+  }
+
+  function iniciar(){
+    cssV23();
+    bindNotasV23();
+    instalarRenderNotas();
+    corrigirBotoesPDF();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", iniciar, {once:true});
+  }else{
+    iniciar();
+  }
+
+  // roda depois dos scripts antigos para limpar o que eles recriam
+  setTimeout(iniciar, 800);
+  setTimeout(iniciar, 1800);
+  setTimeout(iniciar, 3600);
 })();
 </script>
 </body>
@@ -18030,6 +22026,672 @@ ${montarRelatorioHTML(f)
     ${centrosHTML}
     ${detalhes}
   </div>
+<script>
+/* ==========================================================
+   DONA FLOR - V23 BUILD LIMPA NOTAS + PDF
+   Correções profundas:
+   - Reescreve o Bloco de notas por completo após todos os patches antigos
+   - Remove duplicações visuais no bloco de notas
+   - Prioridade vira botão dentro de cada nota, sem select visível
+   - PDF não abre nova aba, não usa iframe, não usa document.write
+   - PDF abre uma prévia limpa dentro do app; usuário clica Imprimir/Salvar PDF
+   - Mantém CSV funcionando
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V23_BUILD_LIMPA__) return;
+  window.__DONA_FLOR_V23_BUILD_LIMPA__ = true;
+
+  let contasRelatorioV23 = [];
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function norm(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function moedaV23(v){
+    if(typeof moeda === "function"){
+      try{return moeda(v)}catch(e){}
+    }
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function labelPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function classPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function emojiPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotasV23(){
+    try{
+      if(typeof visNotas === "function"){
+        const arr = visNotas();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getNotasArrayDF === "function"){
+        const arr = getNotasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.notasDados)) return window.notasDados.filter(n => !n.deletado && !n.data_exclusao);
+    }catch(e){}
+
+    return [];
+  }
+
+  function getContasBaseV23(){
+    try{
+      if(typeof visContas === "function"){
+        const arr = visContas();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const arr = getContasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)) return window.contasDados.filter(c => !c.deletado);
+    }catch(e){}
+
+    return [];
+  }
+
+  function cssV23(){
+    if(document.getElementById("df-v23-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v23-css";
+    style.textContent = `
+      /* Esconde resíduos de versões anteriores no bloco de notas */
+      #notasLista .df-prioridade-box-v223,
+      #notasLista .df-prioridade-box-v225,
+      #notasLista select,
+      #notasLista .df-prioridade-select-original-v223,
+      #notasLista .df-prioridade-select-original-v225{
+        display:none !important;
+      }
+
+      #notasLista{
+        display:block !important;
+      }
+
+      .df-v23-nota-card{
+        background:#fff !important;
+        border:1px solid #E2E8F0 !important;
+        border-radius:14px !important;
+        padding:14px !important;
+        margin:12px 0 !important;
+        box-shadow:0 8px 18px rgba(15,23,42,.06) !important;
+      }
+
+      .df-v23-nota-top{
+        display:flex !important;
+        justify-content:space-between !important;
+        align-items:flex-start !important;
+        gap:10px !important;
+        margin-bottom:10px !important;
+      }
+
+      .df-v23-nota-title{
+        font-size:18px !important;
+        font-weight:950 !important;
+        color:#0f172a !important;
+        line-height:1.15 !important;
+      }
+
+      .df-v23-nota-text{
+        color:#475569 !important;
+        margin-top:6px !important;
+        font-size:15px !important;
+        line-height:1.3 !important;
+      }
+
+      .df-v23-nota-meta{
+        color:#64748b !important;
+        margin-top:8px !important;
+        font-size:13px !important;
+      }
+
+      .df-v23-prio-badge{
+        display:inline-flex !important;
+        align-items:center !important;
+        gap:6px !important;
+        border-radius:999px !important;
+        padding:6px 10px !important;
+        font-weight:900 !important;
+        font-size:13px !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v23-prio-badge.normal{background:#E0F2FE !important;color:#075985 !important;}
+      .df-v23-prio-badge.urgente{background:#FEE2E2 !important;color:#B91C1C !important;}
+      .df-v23-prio-badge.critico{background:#7F1D1D !important;color:#fff !important;}
+
+      .df-v23-nota-actions{
+        display:grid !important;
+        grid-template-columns:1fr !important;
+        gap:10px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v23-btn{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:0 !important;
+        font-weight:950 !important;
+        font-size:15px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-btn-edit{background:#2563EB !important;color:#fff !important;}
+      .df-v23-btn-del{background:#B91C1C !important;color:#fff !important;}
+
+      .df-v23-prio-box{
+        position:relative !important;
+        width:100% !important;
+        z-index:50 !important;
+      }
+
+      .df-v23-btn-prio{
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        border:1px solid #CBD5E1 !important;
+        justify-content:space-between !important;
+        padding:0 12px !important;
+      }
+
+      .df-v23-btn-prio.normal{background:#ECFDF5 !important;color:#047857 !important;border-color:#A7F3D0 !important;}
+      .df-v23-btn-prio.urgente{background:#FEE2E2 !important;color:#B91C1C !important;border-color:#FECACA !important;}
+      .df-v23-btn-prio.critico{background:#7F1D1D !important;color:#fff !important;border-color:#450A0A !important;}
+
+      .df-v23-prio-menu{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:999999 !important;
+      }
+
+      .df-v23-prio-box.open .df-v23-prio-menu{
+        display:block !important;
+      }
+
+      .df-v23-prio-option{
+        width:100% !important;
+        min-height:44px !important;
+        background:#fff !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        padding:12px !important;
+        text-align:left !important;
+        font-weight:950 !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-prio-option:last-child{border-bottom:0 !important;}
+
+      /* PDF */
+      .df-v23-report-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:1000010 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v23-report-bg.open{display:flex !important;}
+
+      .df-v23-report-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v23-report-actions{
+        display:flex !important;
+        gap:8px !important;
+        flex-wrap:wrap !important;
+        justify-content:flex-end !important;
+        margin-bottom:12px !important;
+      }
+
+      .df-v23-report-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+      }
+
+      .df-v23-report-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v23-report h1{color:#0f766e !important;margin:0 !important;font-size:24px !important;}
+      .df-v23-report h2{font-size:18px !important;margin:18px 0 8px !important;}
+      .df-v23-report .sub{color:#64748b !important;font-size:12px !important;margin-top:4px !important;}
+      .df-v23-report .cards{display:grid !important;grid-template-columns:repeat(4,1fr) !important;gap:8px !important;margin:12px 0 !important;}
+      .df-v23-report .card-mini{border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:10px !important;background:#fafaf9 !important;}
+      .df-v23-report .label{font-size:10px !important;text-transform:uppercase !important;color:#64748b !important;font-weight:bold !important;}
+      .df-v23-report .num{font-size:17px !important;font-weight:bold !important;margin-top:3px !important;}
+      .df-v23-report .centros{display:grid !important;grid-template-columns:repeat(2,1fr) !important;gap:8px !important;margin:8px 0 14px !important;}
+      .df-v23-report .centro{display:flex !important;justify-content:space-between !important;border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:8px !important;}
+      .df-v23-report .centro small{display:block !important;color:#64748b !important;}
+      .df-v23-report table{width:100% !important;border-collapse:collapse !important;font-size:12px !important;}
+      .df-v23-report th{background:#0f766e !important;color:white !important;text-align:left !important;padding:7px !important;}
+      .df-v23-report td{border-bottom:1px solid #e2e8f0 !important;padding:7px !important;vertical-align:top !important;}
+      .df-v23-report .valor{font-weight:bold !important;white-space:nowrap !important;}
+      .df-v23-report .status{border-radius:999px !important;padding:3px 7px !important;font-weight:bold !important;font-size:11px !important;display:inline-block !important;}
+      .df-v23-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v23-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v23-report-box{padding:14px !important;border-radius:16px !important;}
+        .df-v23-report-actions{justify-content:flex-start !important;}
+        .df-v23-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v23-report .centros{grid-template-columns:1fr !important;}
+        .df-v23-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        body > *:not(#df-v23-report-bg){
+          display:none !important;
+        }
+        #df-v23-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+        }
+        #df-v23-report-bg .df-v23-report-box{
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+        }
+        .df-v23-report-actions{
+          display:none !important;
+        }
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  async function setPrioridadeV23(id, prioridade){
+    const p = labelPrio(prioridade);
+    try{
+      if(typeof alterarPrioridadeNotaDF === "function"){
+        await alterarPrioridadeNotaDF(id, p);
+        return;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{
+            "apikey":SupabaseKey,
+            "Authorization":"Bearer " + SupabaseKey,
+            "Content-Type":"application/json",
+            "Prefer":"return=representation"
+          },
+          body:JSON.stringify({prioridade:p})
+        });
+        if(typeof carregar === "function") await carregar();
+        return;
+      }
+    }catch(e){}
+
+    // fallback local
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = p;
+        renderNotasV23();
+      }
+    }catch(e){}
+  }
+
+  window.renderNotasV23 = function(){
+    cssV23();
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const arr = getNotasV23().slice(0,20);
+
+    if(!arr.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = arr.map(n => {
+      const p = labelPrio(n.prioridade || "Normal");
+      const pc = classPrio(p);
+      const id = esc(n.id);
+      return `
+        <div class="df-v23-nota-card" data-nota-id="${id}">
+          <div class="df-v23-nota-top">
+            <div>
+              <div class="df-v23-nota-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df-v23-nota-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df-v23-nota-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df-v23-prio-badge ${pc}">${emojiPrio(p)} ${p}</span>
+          </div>
+
+          <div class="df-v23-nota-actions no-print">
+            <button type="button" class="df-v23-btn df-v23-btn-edit" onclick="editarNotaDF('${id}')">✏️ Editar</button>
+
+            <div class="df-v23-prio-box">
+              <button type="button" class="df-v23-btn df-v23-btn-prio ${pc}">
+                <span>${emojiPrio(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df-v23-prio-menu">
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+
+            <button type="button" class="df-v23-btn df-v23-btn-del" onclick="moverNotaLixeiraDF('${id}')">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function bindNotasV23(){
+    document.addEventListener("click", async function(e){
+      const btnPrio = e.target.closest(".df-v23-btn-prio");
+      if(btnPrio){
+        e.preventDefault();
+        e.stopPropagation();
+        const box = btnPrio.closest(".df-v23-prio-box");
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => {
+          if(b !== box) b.classList.remove("open");
+        });
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df-v23-prio-option");
+      if(op){
+        e.preventDefault();
+        e.stopPropagation();
+        const id = op.dataset.id;
+        const p = op.dataset.p;
+        const box = op.closest(".df-v23-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridadeV23(id, p);
+        setTimeout(renderNotasV23, 300);
+        return;
+      }
+
+      if(!e.target.closest(".df-v23-prio-box")){
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function instalarRenderNotas(){
+    cssV23();
+    window.renderNotas = window.renderNotasV23;
+    window.renderNotasMelhoradoDF = window.renderNotasV23;
+    renderNotasV23();
+  }
+
+  /* PDF limpo */
+  function filtrosRelatorioV23(){
+    return {
+      centro: document.getElementById("df224Centro")?.value || document.getElementById("df222Centro")?.value || "",
+      status: document.getElementById("df224Status")?.value || document.getElementById("df222Status")?.value || "",
+      dataInicio: document.getElementById("df224Inicio")?.value || document.getElementById("df222Inicio")?.value || "",
+      dataFim: document.getElementById("df224Fim")?.value || document.getElementById("df222Fim")?.value || "",
+      resumo: (document.getElementById("df224Resumo")?.checked ?? document.getElementById("df222Resumo")?.checked) !== false,
+      centroResumo: (document.getElementById("df224CentroResumo")?.checked ?? document.getElementById("df222CentroResumo")?.checked) !== false,
+      detalhe: (document.getElementById("df224Detalhe")?.checked ?? document.getElementById("df222Detalhe")?.checked) !== false,
+      aberto: document.getElementById("df224Aberto")?.checked || document.getElementById("df222Aberto")?.checked || false
+    };
+  }
+
+  function filtrarContasV23(f){
+    const base = contasRelatorioV23.length ? contasRelatorioV23 : getContasBaseV23();
+    return base.filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function resumoContasV23(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV23(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function montarRelatorioV23(f){
+    const contas = filtrarContasV23(f);
+    const r = resumoContasV23(contas);
+    const centros = porCentroV23(contas);
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV23(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV23(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV23(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centroHTML = f.centroResumo ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro"><div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div><b>${moedaV23(info.total)}</b></div>
+        `).join("") : `<div class="empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV23(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div class="empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v23-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        ${cards}
+        ${centroHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  window.df23GerarPDF = function(){
+    cssV23();
+    const f = filtrosRelatorioV23();
+
+    let bg = document.getElementById("df-v23-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v23-report-bg";
+      bg.className = "df-v23-report-bg";
+      bg.innerHTML = `
+        <div class="df-v23-report-box">
+          <div class="df-v23-report-actions no-print">
+            <button type="button" onclick="window.print()">Imprimir / Salvar PDF</button>
+            <button type="button" class="light" onclick="document.getElementById('df-v23-report-bg').classList.remove('open')">Fechar</button>
+          </div>
+          <div id="df-v23-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", function(e){
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    document.getElementById("df-v23-report-content").innerHTML = montarRelatorioV23(f);
+    bg.classList.add("open");
+  };
+
+  // Sobrescreve somente o PDF; CSV fica intacto.
+  window.df224GerarPDF = window.df23GerarPDF;
+  window.df222GerarPDF = window.df23GerarPDF;
+  window.df226GerarPDF = window.df23GerarPDF;
+
+  function corrigirBotoesPDF(){
+    document.querySelectorAll("button").forEach(btn => {
+      const t = (btn.innerText || btn.textContent || "").trim().toLowerCase();
+      const old = btn.getAttribute("onclick") || "";
+      if(t.includes("gerar pdf") || t.includes("imprimir") || old.includes("df224GerarPDF") || old.includes("df222GerarPDF") || old.includes("df226GerarPDF")){
+        btn.setAttribute("onclick", "window.df23GerarPDF()");
+      }
+    });
+  }
+
+  function iniciar(){
+    cssV23();
+    bindNotasV23();
+    instalarRenderNotas();
+    corrigirBotoesPDF();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", iniciar, {once:true});
+  }else{
+    iniciar();
+  }
+
+  // roda depois dos scripts antigos para limpar o que eles recriam
+  setTimeout(iniciar, 800);
+  setTimeout(iniciar, 1800);
+  setTimeout(iniciar, 3600);
+})();
+</script>
 </body>
 </html>`;
   }
@@ -18076,6 +22738,672 @@ ${montarRelatorioHTML(f)
   setTimeout(corrigirBotoesPDF, 700);
   setTimeout(corrigirBotoesPDF, 1600);
   setTimeout(corrigirBotoesPDF, 3200);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V23 BUILD LIMPA NOTAS + PDF
+   Correções profundas:
+   - Reescreve o Bloco de notas por completo após todos os patches antigos
+   - Remove duplicações visuais no bloco de notas
+   - Prioridade vira botão dentro de cada nota, sem select visível
+   - PDF não abre nova aba, não usa iframe, não usa document.write
+   - PDF abre uma prévia limpa dentro do app; usuário clica Imprimir/Salvar PDF
+   - Mantém CSV funcionando
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V23_BUILD_LIMPA__) return;
+  window.__DONA_FLOR_V23_BUILD_LIMPA__ = true;
+
+  let contasRelatorioV23 = [];
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function norm(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function moedaV23(v){
+    if(typeof moeda === "function"){
+      try{return moeda(v)}catch(e){}
+    }
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function labelPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function classPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function emojiPrio(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotasV23(){
+    try{
+      if(typeof visNotas === "function"){
+        const arr = visNotas();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getNotasArrayDF === "function"){
+        const arr = getNotasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(n => !n.deletado && !n.data_exclusao);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.notasDados)) return window.notasDados.filter(n => !n.deletado && !n.data_exclusao);
+    }catch(e){}
+
+    return [];
+  }
+
+  function getContasBaseV23(){
+    try{
+      if(typeof visContas === "function"){
+        const arr = visContas();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const arr = getContasArrayDF();
+        if(Array.isArray(arr)) return arr.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)) return window.contasDados.filter(c => !c.deletado);
+    }catch(e){}
+
+    return [];
+  }
+
+  function cssV23(){
+    if(document.getElementById("df-v23-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v23-css";
+    style.textContent = `
+      /* Esconde resíduos de versões anteriores no bloco de notas */
+      #notasLista .df-prioridade-box-v223,
+      #notasLista .df-prioridade-box-v225,
+      #notasLista select,
+      #notasLista .df-prioridade-select-original-v223,
+      #notasLista .df-prioridade-select-original-v225{
+        display:none !important;
+      }
+
+      #notasLista{
+        display:block !important;
+      }
+
+      .df-v23-nota-card{
+        background:#fff !important;
+        border:1px solid #E2E8F0 !important;
+        border-radius:14px !important;
+        padding:14px !important;
+        margin:12px 0 !important;
+        box-shadow:0 8px 18px rgba(15,23,42,.06) !important;
+      }
+
+      .df-v23-nota-top{
+        display:flex !important;
+        justify-content:space-between !important;
+        align-items:flex-start !important;
+        gap:10px !important;
+        margin-bottom:10px !important;
+      }
+
+      .df-v23-nota-title{
+        font-size:18px !important;
+        font-weight:950 !important;
+        color:#0f172a !important;
+        line-height:1.15 !important;
+      }
+
+      .df-v23-nota-text{
+        color:#475569 !important;
+        margin-top:6px !important;
+        font-size:15px !important;
+        line-height:1.3 !important;
+      }
+
+      .df-v23-nota-meta{
+        color:#64748b !important;
+        margin-top:8px !important;
+        font-size:13px !important;
+      }
+
+      .df-v23-prio-badge{
+        display:inline-flex !important;
+        align-items:center !important;
+        gap:6px !important;
+        border-radius:999px !important;
+        padding:6px 10px !important;
+        font-weight:900 !important;
+        font-size:13px !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v23-prio-badge.normal{background:#E0F2FE !important;color:#075985 !important;}
+      .df-v23-prio-badge.urgente{background:#FEE2E2 !important;color:#B91C1C !important;}
+      .df-v23-prio-badge.critico{background:#7F1D1D !important;color:#fff !important;}
+
+      .df-v23-nota-actions{
+        display:grid !important;
+        grid-template-columns:1fr !important;
+        gap:10px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v23-btn{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:0 !important;
+        font-weight:950 !important;
+        font-size:15px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-btn-edit{background:#2563EB !important;color:#fff !important;}
+      .df-v23-btn-del{background:#B91C1C !important;color:#fff !important;}
+
+      .df-v23-prio-box{
+        position:relative !important;
+        width:100% !important;
+        z-index:50 !important;
+      }
+
+      .df-v23-btn-prio{
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        border:1px solid #CBD5E1 !important;
+        justify-content:space-between !important;
+        padding:0 12px !important;
+      }
+
+      .df-v23-btn-prio.normal{background:#ECFDF5 !important;color:#047857 !important;border-color:#A7F3D0 !important;}
+      .df-v23-btn-prio.urgente{background:#FEE2E2 !important;color:#B91C1C !important;border-color:#FECACA !important;}
+      .df-v23-btn-prio.critico{background:#7F1D1D !important;color:#fff !important;border-color:#450A0A !important;}
+
+      .df-v23-prio-menu{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:999999 !important;
+      }
+
+      .df-v23-prio-box.open .df-v23-prio-menu{
+        display:block !important;
+      }
+
+      .df-v23-prio-option{
+        width:100% !important;
+        min-height:44px !important;
+        background:#fff !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        padding:12px !important;
+        text-align:left !important;
+        font-weight:950 !important;
+        cursor:pointer !important;
+      }
+
+      .df-v23-prio-option:last-child{border-bottom:0 !important;}
+
+      /* PDF */
+      .df-v23-report-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:1000010 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v23-report-bg.open{display:flex !important;}
+
+      .df-v23-report-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v23-report-actions{
+        display:flex !important;
+        gap:8px !important;
+        flex-wrap:wrap !important;
+        justify-content:flex-end !important;
+        margin-bottom:12px !important;
+      }
+
+      .df-v23-report-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+      }
+
+      .df-v23-report-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v23-report h1{color:#0f766e !important;margin:0 !important;font-size:24px !important;}
+      .df-v23-report h2{font-size:18px !important;margin:18px 0 8px !important;}
+      .df-v23-report .sub{color:#64748b !important;font-size:12px !important;margin-top:4px !important;}
+      .df-v23-report .cards{display:grid !important;grid-template-columns:repeat(4,1fr) !important;gap:8px !important;margin:12px 0 !important;}
+      .df-v23-report .card-mini{border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:10px !important;background:#fafaf9 !important;}
+      .df-v23-report .label{font-size:10px !important;text-transform:uppercase !important;color:#64748b !important;font-weight:bold !important;}
+      .df-v23-report .num{font-size:17px !important;font-weight:bold !important;margin-top:3px !important;}
+      .df-v23-report .centros{display:grid !important;grid-template-columns:repeat(2,1fr) !important;gap:8px !important;margin:8px 0 14px !important;}
+      .df-v23-report .centro{display:flex !important;justify-content:space-between !important;border:1px solid #e2e8f0 !important;border-radius:10px !important;padding:8px !important;}
+      .df-v23-report .centro small{display:block !important;color:#64748b !important;}
+      .df-v23-report table{width:100% !important;border-collapse:collapse !important;font-size:12px !important;}
+      .df-v23-report th{background:#0f766e !important;color:white !important;text-align:left !important;padding:7px !important;}
+      .df-v23-report td{border-bottom:1px solid #e2e8f0 !important;padding:7px !important;vertical-align:top !important;}
+      .df-v23-report .valor{font-weight:bold !important;white-space:nowrap !important;}
+      .df-v23-report .status{border-radius:999px !important;padding:3px 7px !important;font-weight:bold !important;font-size:11px !important;display:inline-block !important;}
+      .df-v23-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v23-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v23-report-box{padding:14px !important;border-radius:16px !important;}
+        .df-v23-report-actions{justify-content:flex-start !important;}
+        .df-v23-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v23-report .centros{grid-template-columns:1fr !important;}
+        .df-v23-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        body > *:not(#df-v23-report-bg){
+          display:none !important;
+        }
+        #df-v23-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+        }
+        #df-v23-report-bg .df-v23-report-box{
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+        }
+        .df-v23-report-actions{
+          display:none !important;
+        }
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  async function setPrioridadeV23(id, prioridade){
+    const p = labelPrio(prioridade);
+    try{
+      if(typeof alterarPrioridadeNotaDF === "function"){
+        await alterarPrioridadeNotaDF(id, p);
+        return;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{
+            "apikey":SupabaseKey,
+            "Authorization":"Bearer " + SupabaseKey,
+            "Content-Type":"application/json",
+            "Prefer":"return=representation"
+          },
+          body:JSON.stringify({prioridade:p})
+        });
+        if(typeof carregar === "function") await carregar();
+        return;
+      }
+    }catch(e){}
+
+    // fallback local
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = p;
+        renderNotasV23();
+      }
+    }catch(e){}
+  }
+
+  window.renderNotasV23 = function(){
+    cssV23();
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const arr = getNotasV23().slice(0,20);
+
+    if(!arr.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = arr.map(n => {
+      const p = labelPrio(n.prioridade || "Normal");
+      const pc = classPrio(p);
+      const id = esc(n.id);
+      return `
+        <div class="df-v23-nota-card" data-nota-id="${id}">
+          <div class="df-v23-nota-top">
+            <div>
+              <div class="df-v23-nota-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df-v23-nota-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df-v23-nota-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df-v23-prio-badge ${pc}">${emojiPrio(p)} ${p}</span>
+          </div>
+
+          <div class="df-v23-nota-actions no-print">
+            <button type="button" class="df-v23-btn df-v23-btn-edit" onclick="editarNotaDF('${id}')">✏️ Editar</button>
+
+            <div class="df-v23-prio-box">
+              <button type="button" class="df-v23-btn df-v23-btn-prio ${pc}">
+                <span>${emojiPrio(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df-v23-prio-menu">
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df-v23-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+
+            <button type="button" class="df-v23-btn df-v23-btn-del" onclick="moverNotaLixeiraDF('${id}')">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function bindNotasV23(){
+    document.addEventListener("click", async function(e){
+      const btnPrio = e.target.closest(".df-v23-btn-prio");
+      if(btnPrio){
+        e.preventDefault();
+        e.stopPropagation();
+        const box = btnPrio.closest(".df-v23-prio-box");
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => {
+          if(b !== box) b.classList.remove("open");
+        });
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df-v23-prio-option");
+      if(op){
+        e.preventDefault();
+        e.stopPropagation();
+        const id = op.dataset.id;
+        const p = op.dataset.p;
+        const box = op.closest(".df-v23-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridadeV23(id, p);
+        setTimeout(renderNotasV23, 300);
+        return;
+      }
+
+      if(!e.target.closest(".df-v23-prio-box")){
+        document.querySelectorAll(".df-v23-prio-box.open").forEach(b => b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function instalarRenderNotas(){
+    cssV23();
+    window.renderNotas = window.renderNotasV23;
+    window.renderNotasMelhoradoDF = window.renderNotasV23;
+    renderNotasV23();
+  }
+
+  /* PDF limpo */
+  function filtrosRelatorioV23(){
+    return {
+      centro: document.getElementById("df224Centro")?.value || document.getElementById("df222Centro")?.value || "",
+      status: document.getElementById("df224Status")?.value || document.getElementById("df222Status")?.value || "",
+      dataInicio: document.getElementById("df224Inicio")?.value || document.getElementById("df222Inicio")?.value || "",
+      dataFim: document.getElementById("df224Fim")?.value || document.getElementById("df222Fim")?.value || "",
+      resumo: (document.getElementById("df224Resumo")?.checked ?? document.getElementById("df222Resumo")?.checked) !== false,
+      centroResumo: (document.getElementById("df224CentroResumo")?.checked ?? document.getElementById("df222CentroResumo")?.checked) !== false,
+      detalhe: (document.getElementById("df224Detalhe")?.checked ?? document.getElementById("df222Detalhe")?.checked) !== false,
+      aberto: document.getElementById("df224Aberto")?.checked || document.getElementById("df222Aberto")?.checked || false
+    };
+  }
+
+  function filtrarContasV23(f){
+    const base = contasRelatorioV23.length ? contasRelatorioV23 : getContasBaseV23();
+    return base.filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function resumoContasV23(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV23(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function montarRelatorioV23(f){
+    const contas = filtrarContasV23(f);
+    const r = resumoContasV23(contas);
+    const centros = porCentroV23(contas);
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV23(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV23(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV23(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centroHTML = f.centroResumo ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro"><div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div><b>${moedaV23(info.total)}</b></div>
+        `).join("") : `<div class="empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV23(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div class="empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v23-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        ${cards}
+        ${centroHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  window.df23GerarPDF = function(){
+    cssV23();
+    const f = filtrosRelatorioV23();
+
+    let bg = document.getElementById("df-v23-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v23-report-bg";
+      bg.className = "df-v23-report-bg";
+      bg.innerHTML = `
+        <div class="df-v23-report-box">
+          <div class="df-v23-report-actions no-print">
+            <button type="button" onclick="window.print()">Imprimir / Salvar PDF</button>
+            <button type="button" class="light" onclick="document.getElementById('df-v23-report-bg').classList.remove('open')">Fechar</button>
+          </div>
+          <div id="df-v23-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", function(e){
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    document.getElementById("df-v23-report-content").innerHTML = montarRelatorioV23(f);
+    bg.classList.add("open");
+  };
+
+  // Sobrescreve somente o PDF; CSV fica intacto.
+  window.df224GerarPDF = window.df23GerarPDF;
+  window.df222GerarPDF = window.df23GerarPDF;
+  window.df226GerarPDF = window.df23GerarPDF;
+
+  function corrigirBotoesPDF(){
+    document.querySelectorAll("button").forEach(btn => {
+      const t = (btn.innerText || btn.textContent || "").trim().toLowerCase();
+      const old = btn.getAttribute("onclick") || "";
+      if(t.includes("gerar pdf") || t.includes("imprimir") || old.includes("df224GerarPDF") || old.includes("df222GerarPDF") || old.includes("df226GerarPDF")){
+        btn.setAttribute("onclick", "window.df23GerarPDF()");
+      }
+    });
+  }
+
+  function iniciar(){
+    cssV23();
+    bindNotasV23();
+    instalarRenderNotas();
+    corrigirBotoesPDF();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", iniciar, {once:true});
+  }else{
+    iniciar();
+  }
+
+  // roda depois dos scripts antigos para limpar o que eles recriam
+  setTimeout(iniciar, 800);
+  setTimeout(iniciar, 1800);
+  setTimeout(iniciar, 3600);
 })();
 </script>
 </body>

@@ -1,4 +1,4 @@
-const CACHE_NAME = "dona-flor-v20-ux";
+const CACHE_NAME = "dona-flor-v21-1-relatorios";
 const ASSETS = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
@@ -1500,5 +1500,325 @@ self.addEventListener("notificationclick", event => {
   setTimeout(aplicar, 600);
   setTimeout(aplicar, 1600);
   setTimeout(aplicar, 3200);
+})();
+
+
+
+
+/* ==========================================================
+   DONA FLOR - V21.1 RELATÓRIOS CORRIGIDOS
+   - Não imprime mais a tela inteira do app
+   - Gera uma página limpa de relatório
+   - PDF/Impressão com resumo + contas filtradas
+   - CSV melhorado
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V211_RELATORIOS__) return;
+  window.__DONA_FLOR_V211_RELATORIOS__ = true;
+
+  function money(v){
+    const n = Number(v || 0);
+    return n.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function escapeHTML(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function contasRelatorio(){
+    try{
+      if (typeof filtroContas === "function") {
+        return filtroContas() || [];
+      }
+    }catch(e){}
+
+    try{
+      if (Array.isArray(window.contas)) return window.contas.filter(c => !c.deletado);
+      if (Array.isArray(window.contasDados)) return window.contasDados.filter(c => !c.deletado);
+    }catch(e){}
+
+    return [];
+  }
+
+  function resumo(contas){
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const total = contas.reduce((a,c)=>a + Number(c.valor || 0), 0);
+    const totalAberto = abertas.reduce((a,c)=>a + Number(c.valor || 0), 0);
+    const totalPago = pagas.reduce((a,c)=>a + Number(c.valor || 0), 0);
+
+    return { total, totalAberto, totalPago, qtd: contas.length, abertas: abertas.length, pagas: pagas.length };
+  }
+
+  function agrupadoPorCentro(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = { qtd:0, total:0 };
+      map[centro].qtd += 1;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  window.gerarRelatorioFinanceiroDF = function(){
+    const contas = contasRelatorio();
+    const r = resumo(contas);
+    const porCentro = agrupadoPorCentro(contas);
+    const agora = new Date().toLocaleString("pt-BR");
+
+    const linhas = contas.map(c => `
+      <tr>
+        <td><strong>${escapeHTML(c.descricao || c.conta || "Sem descrição")}</strong></td>
+        <td>${escapeHTML(c.centro || c.centro_custo || c.loja || "-")}</td>
+        <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+        <td><span class="status ${String(c.status||"").toLowerCase()==="pago" ? "pago" : "aberto"}">${escapeHTML(c.status || "Aberto")}</span></td>
+        <td class="valor">${money(c.valor)}</td>
+        <td>${escapeHTML(c.observacao || "")}</td>
+      </tr>
+    `).join("");
+
+    const centros = porCentro.map(([centro, info]) => `
+      <div class="centro">
+        <div>
+          <strong>${escapeHTML(centro)}</strong>
+          <small>${info.qtd} conta(s)</small>
+        </div>
+        <b>${money(info.total)}</b>
+      </div>
+    `).join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório Dona Flor</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    padding:24px;
+    background:#F1F5F9;
+    color:#0F172A;
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  }
+  .page{
+    max-width:980px;
+    margin:0 auto;
+    background:white;
+    border:1px solid #E2E8F0;
+    border-radius:18px;
+    padding:24px;
+    box-shadow:0 10px 25px rgba(15,23,42,.08);
+  }
+  .top{
+    display:flex;
+    justify-content:space-between;
+    gap:16px;
+    align-items:flex-start;
+    border-bottom:1px solid #E2E8F0;
+    padding-bottom:16px;
+    margin-bottom:18px;
+  }
+  h1{margin:0;font-size:28px;line-height:1.1;color:#0F766E}
+  .sub{color:#64748B;margin-top:6px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap}
+  button{
+    border:0;
+    border-radius:10px;
+    padding:10px 14px;
+    font-weight:800;
+    cursor:pointer;
+    background:#0F766E;
+    color:white;
+  }
+  .btn-light{background:#E2E8F0;color:#0F172A}
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    margin:18px 0;
+  }
+  .card{
+    border:1px solid #E2E8F0;
+    border-radius:14px;
+    padding:14px;
+    background:#FAFAF9;
+  }
+  .label{font-size:12px;color:#64748B;font-weight:900;text-transform:uppercase}
+  .num{font-size:22px;font-weight:950;margin-top:4px}
+  .centros{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+    margin:18px 0;
+  }
+  .centro{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    border:1px solid #E2E8F0;
+    border-radius:12px;
+    padding:10px 12px;
+    background:#fff;
+  }
+  .centro small{display:block;color:#64748B;margin-top:2px}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:16px;
+    font-size:13px;
+  }
+  th{
+    background:#0F766E;
+    color:white;
+    text-align:left;
+    padding:10px;
+  }
+  td{
+    border-bottom:1px solid #E2E8F0;
+    padding:10px;
+    vertical-align:top;
+  }
+  .valor{font-weight:900;white-space:nowrap}
+  .status{
+    display:inline-block;
+    border-radius:999px;
+    padding:4px 8px;
+    font-weight:900;
+    font-size:12px;
+  }
+  .status.pago{background:#DCFCE7;color:#15803D}
+  .status.aberto{background:#FEF3C7;color:#92400E}
+  .empty{
+    padding:18px;
+    border:1px dashed #CBD5E1;
+    border-radius:12px;
+    color:#64748B;
+    text-align:center;
+    margin-top:16px;
+  }
+  @media(max-width:760px){
+    body{padding:12px}
+    .page{padding:16px;border-radius:14px}
+    .top{display:block}
+    .actions{margin-top:12px}
+    .cards{grid-template-columns:1fr 1fr}
+    .centros{grid-template-columns:1fr}
+    table{font-size:12px}
+    th,td{padding:8px}
+  }
+  @media print{
+    body{background:white;padding:0}
+    .page{box-shadow:none;border:0;border-radius:0;max-width:none}
+    .actions{display:none}
+    @page{margin:12mm}
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="top">
+      <div>
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório de contas a pagar • Gerado em ${escapeHTML(agora)}</div>
+      </div>
+      <div class="actions">
+        <button onclick="window.print()">Imprimir / PDF</button>
+        <button class="btn-light" onclick="window.close()">Fechar</button>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="card"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+      <div class="card"><div class="label">Total</div><div class="num">${money(r.total)}</div></div>
+      <div class="card"><div class="label">Em aberto</div><div class="num">${money(r.totalAberto)}</div></div>
+      <div class="card"><div class="label">Pago</div><div class="num">${money(r.totalPago)}</div></div>
+    </div>
+
+    <h2>Resumo por centro</h2>
+    ${centros ? `<div class="centros">${centros}</div>` : `<div class="empty">Nenhum centro encontrado.</div>`}
+
+    <h2>Detalhamento</h2>
+    ${contas.length ? `
+      <table>
+        <thead>
+          <tr>
+            <th>Conta</th>
+            <th>Centro</th>
+            <th>Vencimento</th>
+            <th>Status</th>
+            <th>Valor</th>
+            <th>Obs.</th>
+          </tr>
+        </thead>
+        <tbody>${linhas}</tbody>
+      </table>
+    ` : `<div class="empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+  </div>
+
+  <script>
+    setTimeout(function(){ window.print(); }, 450);
+  </script>
+</body>
+</html>`;
+
+    const w = window.open("", "_blank");
+    if(!w){
+      alert("O navegador bloqueou o pop-up. Permita pop-ups para gerar o PDF.");
+      return;
+    }
+
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  };
+
+  window.exportarCSV = function(){
+    const contas = contasRelatorio();
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c => [
+        c.descricao || c.conta || "",
+        Number(c.valor || 0).toFixed(2).replace(".", ","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+
+    const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");
+    const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio") || window.acaoRelatorio;
+    const acao = sel ? sel.value : "";
+    if (acao === "csv") window.exportarCSV();
+    if (acao === "pdf") window.gerarRelatorioFinanceiroDF();
+    if (sel) sel.value = "";
+  };
 })();
 

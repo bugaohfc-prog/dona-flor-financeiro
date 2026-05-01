@@ -5559,6 +5559,182 @@ if(abrirSyncOriginalDF){
   setTimeout(bindSelect, 3200);
 })();
 </script>
+<script>
+/* ==========================================================
+   DONA FLOR - V21.8 FECHAMENTO DE POP-UP CORRIGIDO
+   Correções:
+   - Fecha pop-up ao salvar conta/nota/alteração
+   - Fecha ao clicar fora da caixa branca
+   - Remove tela escura presa na frente
+   - Devolve formulários para estacionamento oculto
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V218_POPUP_CLOSE_FIX__) return;
+  window.__DONA_FLOR_V218_POPUP_CLOSE_FIX__ = true;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function parking(){
+    let p = document.getElementById("df-v213-parking");
+    if(!p){
+      p = document.createElement("div");
+      p.id = "df-v213-parking";
+      p.style.display = "none";
+      document.body.appendChild(p);
+    }
+    return p;
+  }
+
+  function devolverForms(){
+    const p = parking();
+
+    ["atalhoLancamento", "atalhoLembrete"].forEach(id => {
+      const form = document.getElementById(id);
+      if(form && (
+        form.closest(".df-v213-modal") ||
+        form.closest(".df-v214-modal") ||
+        form.closest(".df-v212-modal") ||
+        form.closest(".df-v21-modal") ||
+        form.closest("#df-v214-modal") ||
+        form.closest("#df-v213-modal") ||
+        form.closest("#df-v212-modal")
+      )){
+        p.appendChild(form);
+      }
+    });
+  }
+
+  function fecharPopupsFormulario(){
+    devolverForms();
+
+    [
+      "df-v213-modal",
+      "df-v214-modal",
+      "df-v212-modal",
+      "df-v21-modal-nota",
+      "df-v21-modal-conta",
+      "df-v2044-modal-nota",
+      "df-v2044-modal-conta",
+      "df-v2042-popup-nota",
+      "df-modal-notas-v203",
+      "df-modal-conta-v204"
+    ].forEach(id => {
+      const modal = document.getElementById(id);
+      if(modal){
+        modal.classList.remove("open", "show", "active");
+        modal.style.display = "none";
+      }
+    });
+
+    document.querySelectorAll(".df-v213-modal,.df-v214-modal,.df-v212-modal,.df-v21-modal,.df-v2044-modal,.df-v2042-overlay").forEach(modal => {
+      modal.classList.remove("open", "show", "active");
+      modal.style.display = "none";
+    });
+
+    document.body.classList.remove("modal-open", "df-modal-open");
+  }
+
+  window.fecharPopupDonaFlor = fecharPopupsFormulario;
+
+  function bindCliqueFora(){
+    document.addEventListener("click", function(e){
+      const modal = e.target.closest(".df-v213-modal,.df-v214-modal,.df-v212-modal,.df-v21-modal,#df-v213-modal,#df-v214-modal,#df-v212-modal");
+
+      // Clique exatamente no fundo escuro
+      if(modal && e.target === modal){
+        e.preventDefault();
+        e.stopPropagation();
+        fecharPopupsFormulario();
+        return;
+      }
+
+      // Clique em X de qualquer modal
+      const closeBtn = e.target.closest(".df-v213-close,.df-v214-close,.df-v212-close,.df-v21-close");
+      if(closeBtn){
+        e.preventDefault();
+        e.stopPropagation();
+        fecharPopupsFormulario();
+        return;
+      }
+    }, true);
+  }
+
+  function bindSalvarFecha(){
+    document.addEventListener("click", function(e){
+      const btn = e.target.closest("button,input[type='button'],input[type='submit']");
+      if(!btn) return;
+
+      const texto = (txt(btn) || btn.value || "").toLowerCase();
+
+      const dentroPopup = btn.closest(".df-v213-modal,.df-v214-modal,.df-v212-modal,.df-v21-modal,#df-v213-modal,#df-v214-modal,#df-v212-modal");
+
+      if(!dentroPopup) return;
+
+      const ehSalvar =
+        texto.includes("salvar conta") ||
+        texto.includes("salvar nota") ||
+        texto.includes("salvar alteração") ||
+        texto.includes("salvar alteracao") ||
+        texto === "salvar";
+
+      if(ehSalvar){
+        setTimeout(function(){
+          fecharPopupsFormulario();
+        }, 900);
+      }
+    }, true);
+  }
+
+  function fecharTelaEscuraOrfa(){
+    const aberto = document.querySelector(".df-v213-modal.open,.df-v214-modal.open,.df-v212-modal.open,.df-v21-modal.open,#df-v213-modal.open,#df-v214-modal.open,#df-v212-modal.open");
+    if(!aberto) return;
+
+    const box = aberto.querySelector(".df-v213-box,.df-v214-box,.df-v212-box,.df-v21-box");
+    const body = aberto.querySelector(".df-v213-body,.df-v214-body,.df-v212-body,.df-v21-body");
+
+    // se o overlay ficou sem corpo/formulário, fecha automaticamente
+    if(body && body.children.length === 0){
+      fecharPopupsFormulario();
+      return;
+    }
+
+    // se não tiver caixa branca válida, fecha
+    if(!box){
+      fecharPopupsFormulario();
+    }
+  }
+
+  function css(){
+    if(document.getElementById("df-v218-popup-close-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v218-popup-close-css";
+    style.textContent = `
+      #df-v213-parking,
+      #df-v213-parking #atalhoLancamento,
+      #df-v213-parking #atalhoLembrete {
+        display:none !important;
+      }
+
+      .df-v213-modal:not(.open),
+      .df-v214-modal:not(.open),
+      .df-v212-modal:not(.open),
+      .df-v21-modal:not(.open) {
+        display:none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  css();
+  bindCliqueFora();
+  bindSalvarFecha();
+
+  setInterval(fecharTelaEscuraOrfa, 2000);
+})();
+</script>
 </body>
 </html>`;
 
@@ -7276,6 +7452,182 @@ if(abrirSyncOriginalDF){
   setTimeout(bindSelect, 700);
   setTimeout(bindSelect, 1600);
   setTimeout(bindSelect, 3200);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V21.8 FECHAMENTO DE POP-UP CORRIGIDO
+   Correções:
+   - Fecha pop-up ao salvar conta/nota/alteração
+   - Fecha ao clicar fora da caixa branca
+   - Remove tela escura presa na frente
+   - Devolve formulários para estacionamento oculto
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V218_POPUP_CLOSE_FIX__) return;
+  window.__DONA_FLOR_V218_POPUP_CLOSE_FIX__ = true;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function parking(){
+    let p = document.getElementById("df-v213-parking");
+    if(!p){
+      p = document.createElement("div");
+      p.id = "df-v213-parking";
+      p.style.display = "none";
+      document.body.appendChild(p);
+    }
+    return p;
+  }
+
+  function devolverForms(){
+    const p = parking();
+
+    ["atalhoLancamento", "atalhoLembrete"].forEach(id => {
+      const form = document.getElementById(id);
+      if(form && (
+        form.closest(".df-v213-modal") ||
+        form.closest(".df-v214-modal") ||
+        form.closest(".df-v212-modal") ||
+        form.closest(".df-v21-modal") ||
+        form.closest("#df-v214-modal") ||
+        form.closest("#df-v213-modal") ||
+        form.closest("#df-v212-modal")
+      )){
+        p.appendChild(form);
+      }
+    });
+  }
+
+  function fecharPopupsFormulario(){
+    devolverForms();
+
+    [
+      "df-v213-modal",
+      "df-v214-modal",
+      "df-v212-modal",
+      "df-v21-modal-nota",
+      "df-v21-modal-conta",
+      "df-v2044-modal-nota",
+      "df-v2044-modal-conta",
+      "df-v2042-popup-nota",
+      "df-modal-notas-v203",
+      "df-modal-conta-v204"
+    ].forEach(id => {
+      const modal = document.getElementById(id);
+      if(modal){
+        modal.classList.remove("open", "show", "active");
+        modal.style.display = "none";
+      }
+    });
+
+    document.querySelectorAll(".df-v213-modal,.df-v214-modal,.df-v212-modal,.df-v21-modal,.df-v2044-modal,.df-v2042-overlay").forEach(modal => {
+      modal.classList.remove("open", "show", "active");
+      modal.style.display = "none";
+    });
+
+    document.body.classList.remove("modal-open", "df-modal-open");
+  }
+
+  window.fecharPopupDonaFlor = fecharPopupsFormulario;
+
+  function bindCliqueFora(){
+    document.addEventListener("click", function(e){
+      const modal = e.target.closest(".df-v213-modal,.df-v214-modal,.df-v212-modal,.df-v21-modal,#df-v213-modal,#df-v214-modal,#df-v212-modal");
+
+      // Clique exatamente no fundo escuro
+      if(modal && e.target === modal){
+        e.preventDefault();
+        e.stopPropagation();
+        fecharPopupsFormulario();
+        return;
+      }
+
+      // Clique em X de qualquer modal
+      const closeBtn = e.target.closest(".df-v213-close,.df-v214-close,.df-v212-close,.df-v21-close");
+      if(closeBtn){
+        e.preventDefault();
+        e.stopPropagation();
+        fecharPopupsFormulario();
+        return;
+      }
+    }, true);
+  }
+
+  function bindSalvarFecha(){
+    document.addEventListener("click", function(e){
+      const btn = e.target.closest("button,input[type='button'],input[type='submit']");
+      if(!btn) return;
+
+      const texto = (txt(btn) || btn.value || "").toLowerCase();
+
+      const dentroPopup = btn.closest(".df-v213-modal,.df-v214-modal,.df-v212-modal,.df-v21-modal,#df-v213-modal,#df-v214-modal,#df-v212-modal");
+
+      if(!dentroPopup) return;
+
+      const ehSalvar =
+        texto.includes("salvar conta") ||
+        texto.includes("salvar nota") ||
+        texto.includes("salvar alteração") ||
+        texto.includes("salvar alteracao") ||
+        texto === "salvar";
+
+      if(ehSalvar){
+        setTimeout(function(){
+          fecharPopupsFormulario();
+        }, 900);
+      }
+    }, true);
+  }
+
+  function fecharTelaEscuraOrfa(){
+    const aberto = document.querySelector(".df-v213-modal.open,.df-v214-modal.open,.df-v212-modal.open,.df-v21-modal.open,#df-v213-modal.open,#df-v214-modal.open,#df-v212-modal.open");
+    if(!aberto) return;
+
+    const box = aberto.querySelector(".df-v213-box,.df-v214-box,.df-v212-box,.df-v21-box");
+    const body = aberto.querySelector(".df-v213-body,.df-v214-body,.df-v212-body,.df-v21-body");
+
+    // se o overlay ficou sem corpo/formulário, fecha automaticamente
+    if(body && body.children.length === 0){
+      fecharPopupsFormulario();
+      return;
+    }
+
+    // se não tiver caixa branca válida, fecha
+    if(!box){
+      fecharPopupsFormulario();
+    }
+  }
+
+  function css(){
+    if(document.getElementById("df-v218-popup-close-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v218-popup-close-css";
+    style.textContent = `
+      #df-v213-parking,
+      #df-v213-parking #atalhoLancamento,
+      #df-v213-parking #atalhoLembrete {
+        display:none !important;
+      }
+
+      .df-v213-modal:not(.open),
+      .df-v214-modal:not(.open),
+      .df-v212-modal:not(.open),
+      .df-v21-modal:not(.open) {
+        display:none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  css();
+  bindCliqueFora();
+  bindSalvarFecha();
+
+  setInterval(fecharTelaEscuraOrfa, 2000);
 })();
 </script>
 </body>

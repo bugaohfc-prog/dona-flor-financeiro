@@ -552,6 +552,16 @@ table{min-width:760px}
 .user-pill{pointer-events:none!important;user-select:none!important}
 .side-submenu .subitem .side-text{white-space:normal!important;line-height:1.2}
 #atalhoLancamento .section-title-row h2::after,#atalhoLembrete .section-title-row h2::after{content:""}
+
+/* V20 UX Dona Flor */
+.df-v20-user-top{
+  cursor:default !important;
+}
+.df-v20-user-top::after{
+  content:"" !important;
+  display:none !important;
+}
+
 </style>
 </head>
 <body>
@@ -1970,5 +1980,177 @@ if(abrirSyncOriginalDF){
 
 </script>
 <button id="btnTopo" class="btn-topo no-print" onclick="voltarTopo()">↑</button>
+<script>
+/* =========================
+   V20 UX - Dona Flor
+   - Lançamento de notas
+   - Botões na ordem: editar, excluir, prioridade
+   - Prioridade estilo semáforo + select
+   ========================= */
+
+(function(){
+  const DFV20 = {
+    prioridadeLabel(p){
+      const v = String(p || "Normal").toLowerCase();
+      if(v.includes("urgent") || v.includes("alta")) return "🔴 Urgente";
+      if(v.includes("media") || v.includes("média") || v.includes("importante")) return "🟡 Média";
+      return "🟢 Normal";
+    },
+    prioridadeClass(p){
+      const v = String(p || "Normal").toLowerCase();
+      if(v.includes("urgent") || v.includes("alta")) return "df-prio-urgente";
+      if(v.includes("media") || v.includes("média") || v.includes("importante")) return "df-prio-media";
+      return "df-prio-normal";
+    },
+    normalizarPrioridade(p){
+      const v = String(p || "Normal").toLowerCase();
+      if(v.includes("urgent") || v.includes("alta")) return "Urgente";
+      if(v.includes("media") || v.includes("média") || v.includes("importante")) return "Média";
+      return "Normal";
+    }
+  };
+
+  window.DFV20 = DFV20;
+
+  // troca textos legados
+  function renomearTextosV20(){
+    document.querySelectorAll("h1,h2,h3,h4,button,span,a,label,div").forEach(el => {
+      if(!el || !el.childNodes || el.childNodes.length !== 1) return;
+      const txt = (el.textContent || "").trim();
+      if(txt === "Adicionar lembrete" || txt === "Novo lembrete"){
+        el.textContent = "Lançamento de notas";
+      }
+      if(txt === "Lembretes"){
+        el.textContent = "Notas";
+      }
+    });
+  }
+
+  // injeta CSS V20
+  function injectCssV20(){
+    if(document.getElementById("df-v20-ux-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v20-ux-css";
+    style.textContent = `
+      .df-note-actions-v20{
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+        align-items:center;
+        margin-top:10px;
+      }
+      .df-note-actions-v20 button,
+      .df-note-actions-v20 select{
+        width:auto !important;
+        min-width:92px;
+        padding:8px 10px !important;
+        border-radius:10px !important;
+        font-size:12px !important;
+        margin:0 !important;
+      }
+      .df-prio-badge-v20{
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        padding:5px 10px;
+        border-radius:999px;
+        font-size:12px;
+        font-weight:900;
+        color:white;
+        white-space:nowrap;
+      }
+      .df-prio-normal{background:#0f766e;}
+      .df-prio-media{background:#f59e0b;}
+      .df-prio-urgente{background:#dc2626;}
+      .df-note-card-v20{
+        border:1px solid #e2e8f0;
+        border-left:6px solid #0f766e;
+        border-radius:14px;
+        padding:12px;
+        background:#fff;
+        margin:10px 0;
+      }
+      .df-note-card-v20.df-prio-media{border-left-color:#f59e0b;}
+      .df-note-card-v20.df-prio-urgente{border-left-color:#dc2626;}
+      @media(max-width:760px){
+        .df-note-actions-v20{
+          display:grid;
+          grid-template-columns:1fr;
+        }
+        .df-note-actions-v20 button,
+        .df-note-actions-v20 select{
+          width:100% !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // melhora os cards de notas se existirem botões antigos
+  function melhorarNotasV20(){
+    const possiveisCards = Array.from(document.querySelectorAll(".nota-card,.note-card,[data-nota-id],.lembrete-card,.card"))
+      .filter(card => /editar|excluir|prioridade|normal|urgente|média|media|importante/i.test(card.innerText || ""));
+
+    possiveisCards.forEach(card => {
+      if(card.dataset.v20UxApplied === "1") return;
+
+      const texto = card.innerText || "";
+      const prioridadeAtual =
+        /urgente|alta/i.test(texto) ? "Urgente" :
+        /m[eé]dia|importante/i.test(texto) ? "Média" :
+        "Normal";
+
+      card.classList.add("df-note-card-v20", DFV20.prioridadeClass(prioridadeAtual));
+      card.dataset.v20UxApplied = "1";
+
+      // cria/atualiza badge visual se não existir
+      if(!card.querySelector(".df-prio-badge-v20")){
+        const badge = document.createElement("span");
+        badge.className = "df-prio-badge-v20 " + DFV20.prioridadeClass(prioridadeAtual);
+        badge.textContent = DFV20.prioridadeLabel(prioridadeAtual);
+        card.insertBefore(badge, card.firstChild);
+      }
+
+      // reordena ações: editar, excluir, prioridade
+      const buttons = Array.from(card.querySelectorAll("button"));
+      const selects = Array.from(card.querySelectorAll("select"));
+      if(buttons.length || selects.length){
+        const actions = document.createElement("div");
+        actions.className = "df-note-actions-v20";
+
+        const editar = buttons.find(b => /editar|alterar|✏️/i.test(b.innerText || b.title || b.ariaLabel || ""));
+        const excluir = buttons.find(b => /excluir|lixeira|🗑️/i.test(b.innerText || b.title || b.ariaLabel || ""));
+        const prioridadeSelect = selects.find(s => /prioridade|normal|urgente|média|media|importante/i.test(s.outerHTML || ""));
+
+        if(editar) actions.appendChild(editar);
+        if(excluir) actions.appendChild(excluir);
+
+        if(prioridadeSelect){
+          prioridadeSelect.innerHTML = `
+            <option value="Normal">🟢 Normal</option>
+            <option value="Média">🟡 Média</option>
+            <option value="Urgente">🔴 Urgente</option>
+          `;
+          prioridadeSelect.value = DFV20.normalizarPrioridade(prioridadeAtual);
+          actions.appendChild(prioridadeSelect);
+        }
+
+        if(actions.childNodes.length){
+          card.appendChild(actions);
+        }
+      }
+    });
+  }
+
+  function aplicarV20(){
+    injectCssV20();
+    renomearTextosV20();
+    melhorarNotasV20();
+  }
+
+  document.addEventListener("DOMContentLoaded", aplicarV20);
+  setInterval(aplicarV20, 2000);
+})();
+</script>
 </body>
 </html>

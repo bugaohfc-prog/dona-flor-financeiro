@@ -1,4 +1,4 @@
-// App.js
+// app.js
 import { useEffect, useState } from "react";
 
 function useAutoSync(callback) {

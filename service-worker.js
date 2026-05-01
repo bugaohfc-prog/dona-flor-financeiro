@@ -1,4 +1,4 @@
-const CACHE_NAME = "dona-flor-v21-6-botao-sair";
+const CACHE_NAME = "dona-flor-v21-7-relatorio-final";
 const ASSETS = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
@@ -3046,5 +3046,461 @@ self.addEventListener("notificationclick", event => {
   setTimeout(aplicar, 600);
   setTimeout(aplicar, 1600);
   setTimeout(aplicar, 3200);
+})();
+
+
+
+
+/* ==========================================================
+   DONA FLOR - V21.7 RELATÓRIO FINAL CORRIGIDO
+   Correções:
+   - Não usa mais pop-up/nova aba para relatório
+   - Relatório abre em tela/modal dentro do app
+   - Botão Imprimir/PDF funciona no celular
+   - CSV funciona separado
+   - Evita tela em branco e bloqueio de pop-up
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V217_RELATORIO_FINAL__) return;
+  window.__DONA_FLOR_V217_RELATORIO_FINAL__ = true;
+
+  function moeda(v){
+    const n = Number(v || 0);
+    return n.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function getContasRelatorioDF(){
+    try{
+      if(typeof visContas === "function"){
+        const r = visContas();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof filtroContas === "function"){
+        const r = filtroContas();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const r = getContasArrayDF();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    const nomes = ["contas", "contasDados", "df_contas", "contasDF"];
+    for(const n of nomes){
+      try{
+        if(Array.isArray(window[n])) return window[n].filter(c => !c.deletado);
+      }catch(e){}
+    }
+
+    return [];
+  }
+
+  function resumo(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    const venceHoje = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) === hoje);
+
+    return {
+      qtd: contas.length,
+      abertas: abertas.length,
+      pagas: pagas.length,
+      vencidas: vencidas.length,
+      venceHoje: venceHoje.length,
+      total: contas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalHoje: venceHoje.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd += 1;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function css(){
+    if(document.getElementById("df-v217-relatorio-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v217-relatorio-css";
+    style.textContent = `
+      .df-v217-report-bg{
+        position:fixed!important;
+        inset:0!important;
+        z-index:1000002!important;
+        background:rgba(15,23,42,.65)!important;
+        display:none!important;
+        align-items:center!important;
+        justify-content:center!important;
+        padding:14px!important;
+        box-sizing:border-box!important;
+      }
+
+      .df-v217-report-bg.open{display:flex!important;}
+
+      .df-v217-report{
+        width:100%!important;
+        max-width:980px!important;
+        max-height:92vh!important;
+        overflow:auto!important;
+        background:#fff!important;
+        border:2px solid #000!important;
+        border-radius:18px!important;
+        box-shadow:6px 6px 0 #000!important;
+        padding:18px!important;
+        box-sizing:border-box!important;
+        color:#0f172a!important;
+        font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important;
+      }
+
+      .df-v217-report-top{
+        display:flex!important;
+        align-items:flex-start!important;
+        justify-content:space-between!important;
+        gap:12px!important;
+        border-bottom:1px solid #e2e8f0!important;
+        padding-bottom:12px!important;
+        margin-bottom:14px!important;
+      }
+
+      .df-v217-report h1{
+        margin:0!important;
+        font-size:24px!important;
+        line-height:1.1!important;
+        font-weight:950!important;
+        color:#0f766e!important;
+      }
+
+      .df-v217-sub{color:#64748b!important;margin-top:4px!important;font-size:13px!important;}
+
+      .df-v217-actions{
+        display:flex!important;
+        flex-wrap:wrap!important;
+        gap:8px!important;
+        justify-content:flex-end!important;
+      }
+
+      .df-v217-actions button{
+        min-height:38px!important;
+        border-radius:10px!important;
+        border:2px solid #000!important;
+        box-shadow:3px 3px 0 #000!important;
+        background:#0f766e!important;
+        color:#fff!important;
+        font-weight:900!important;
+        padding:8px 12px!important;
+        cursor:pointer!important;
+      }
+
+      .df-v217-actions .light{
+        background:#fff!important;
+        color:#000!important;
+      }
+
+      .df-v217-cards{
+        display:grid!important;
+        grid-template-columns:repeat(4,1fr)!important;
+        gap:10px!important;
+        margin:14px 0!important;
+      }
+
+      .df-v217-card{
+        background:#fafaf9!important;
+        border:1px solid #e2e8f0!important;
+        border-radius:14px!important;
+        padding:12px!important;
+      }
+
+      .df-v217-label{
+        font-size:11px!important;
+        text-transform:uppercase!important;
+        color:#64748b!important;
+        font-weight:950!important;
+      }
+
+      .df-v217-num{
+        font-size:19px!important;
+        font-weight:950!important;
+        margin-top:3px!important;
+      }
+
+      .df-v217-centros{
+        display:grid!important;
+        grid-template-columns:repeat(2,1fr)!important;
+        gap:8px!important;
+        margin:10px 0 16px!important;
+      }
+
+      .df-v217-centro{
+        display:flex!important;
+        align-items:center!important;
+        justify-content:space-between!important;
+        gap:10px!important;
+        border:1px solid #e2e8f0!important;
+        border-radius:12px!important;
+        padding:10px!important;
+        background:#fff!important;
+      }
+
+      .df-v217-centro small{display:block!important;color:#64748b!important;margin-top:2px!important;}
+
+      .df-v217-table-wrap{overflow:auto!important;border-radius:12px!important;border:1px solid #e2e8f0!important;}
+      .df-v217-table{width:100%!important;border-collapse:collapse!important;font-size:13px!important;}
+      .df-v217-table th{
+        background:#0f766e!important;
+        color:#fff!important;
+        text-align:left!important;
+        padding:9px!important;
+        white-space:nowrap!important;
+      }
+      .df-v217-table td{
+        border-bottom:1px solid #e2e8f0!important;
+        padding:9px!important;
+        vertical-align:top!important;
+      }
+      .df-v217-value{font-weight:950!important;white-space:nowrap!important;}
+      .df-v217-status{
+        display:inline-block!important;
+        border-radius:999px!important;
+        padding:4px 8px!important;
+        font-weight:900!important;
+        font-size:12px!important;
+      }
+      .df-v217-status.pago{background:#dcfce7!important;color:#15803d!important;}
+      .df-v217-status.aberto{background:#fef3c7!important;color:#92400e!important;}
+      .df-v217-empty{
+        padding:18px!important;
+        border:1px dashed #cbd5e1!important;
+        border-radius:12px!important;
+        color:#64748b!important;
+        text-align:center!important;
+      }
+
+      @media(max-width:760px){
+        .df-v217-report{padding:14px!important;border-radius:16px!important;}
+        .df-v217-report-top{display:block!important;}
+        .df-v217-actions{justify-content:flex-start!important;margin-top:10px!important;}
+        .df-v217-cards{grid-template-columns:1fr 1fr!important;}
+        .df-v217-centros{grid-template-columns:1fr!important;}
+        .df-v217-table{font-size:12px!important;}
+      }
+
+      @media print{
+        body *{visibility:hidden!important;}
+        #df-v217-report-bg,
+        #df-v217-report-bg *{visibility:visible!important;}
+        #df-v217-report-bg{
+          position:absolute!important;
+          inset:0!important;
+          display:block!important;
+          background:#fff!important;
+          padding:0!important;
+        }
+        .df-v217-report{
+          max-height:none!important;
+          overflow:visible!important;
+          box-shadow:none!important;
+          border:0!important;
+          border-radius:0!important;
+          max-width:none!important;
+          padding:0!important;
+        }
+        .df-v217-actions{display:none!important;}
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function montarRelatorioHTML(){
+    const contas = getContasRelatorioDF();
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+    const agora = new Date().toLocaleString("pt-BR");
+
+    const centroHTML = centros.length ? centros.map(([centro, info]) => `
+      <div class="df-v217-centro">
+        <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+        <b>${moeda(info.total)}</b>
+      </div>
+    `).join("") : `<div class="df-v217-empty">Nenhum centro encontrado.</div>`;
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="df-v217-status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="df-v217-value">${moeda(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    return `
+      <div class="df-v217-report-top">
+        <div>
+          <h1>Dona Flor Gestão Financeira</h1>
+          <div class="df-v217-sub">Relatório financeiro • Gerado em ${esc(agora)}</div>
+        </div>
+        <div class="df-v217-actions">
+          <button type="button" onclick="window.print()">Imprimir/PDF</button>
+          <button type="button" onclick="window.exportarCSVDF217()">CSV</button>
+          <button type="button" class="light" onclick="window.fecharRelatorioDF217()">Fechar</button>
+        </div>
+      </div>
+
+      <div class="df-v217-cards">
+        <div class="df-v217-card"><div class="df-v217-label">Quantidade</div><div class="df-v217-num">${r.qtd}</div></div>
+        <div class="df-v217-card"><div class="df-v217-label">Total aberto</div><div class="df-v217-num">${moeda(r.totalAberto)}</div></div>
+        <div class="df-v217-card"><div class="df-v217-label">Pago</div><div class="df-v217-num">${moeda(r.totalPago)}</div></div>
+        <div class="df-v217-card"><div class="df-v217-label">Vencidas</div><div class="df-v217-num">${moeda(r.totalVencido)}</div></div>
+      </div>
+
+      <h2>Resumo por centro</h2>
+      <div class="df-v217-centros">${centroHTML}</div>
+
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <div class="df-v217-table-wrap">
+          <table class="df-v217-table">
+            <thead>
+              <tr>
+                <th>Conta</th>
+                <th>Centro</th>
+                <th>Vencimento</th>
+                <th>Status</th>
+                <th>Valor</th>
+                <th>Obs.</th>
+              </tr>
+            </thead>
+            <tbody>${linhas}</tbody>
+          </table>
+        </div>
+      ` : `<div class="df-v217-empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    `;
+  }
+
+  function abrirRelatorioDF217(){
+    css();
+    let bg = document.getElementById("df-v217-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v217-report-bg";
+      bg.className = "df-v217-report-bg";
+      bg.innerHTML = `<div class="df-v217-report" id="df-v217-report"></div>`;
+      document.body.appendChild(bg);
+
+      bg.addEventListener("click", function(e){
+        if(e.target === bg) window.fecharRelatorioDF217();
+      });
+    }
+
+    const box = document.getElementById("df-v217-report");
+    box.innerHTML = montarRelatorioHTML();
+    bg.classList.add("open");
+  }
+
+  window.fecharRelatorioDF217 = function(){
+    const bg = document.getElementById("df-v217-report-bg");
+    if(bg) bg.classList.remove("open");
+  };
+
+  window.exportarCSVDF217 = function(){
+    const contas = getContasRelatorioDF();
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c => [
+        c.descricao || c.conta || "",
+        Number(c.valor || 0).toFixed(2).replace(".", ","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+
+    const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");
+    const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  window.gerarRelatorioFinanceiroDF = abrirRelatorioDF217;
+
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    const acao = sel ? sel.value : "";
+
+    if(acao === "pdf"){
+      abrirRelatorioDF217();
+    }else if(acao === "csv"){
+      window.exportarCSVDF217();
+    }
+
+    if(sel) sel.value = "";
+  };
+
+  function bindSelect(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel || sel.dataset.df217Bound) return;
+
+    sel.dataset.df217Bound = "1";
+    sel.addEventListener("change", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      window.executarRelatorio();
+    }, true);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", bindSelect, {once:true});
+  }else{
+    bindSelect();
+  }
+
+  setTimeout(bindSelect, 700);
+  setTimeout(bindSelect, 1600);
+  setTimeout(bindSelect, 3200);
 })();
 

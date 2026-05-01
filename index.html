@@ -7379,6 +7379,323 @@ ${montarRelatorioHTML(f)
   .replaceAll("df-v222-value","valor")
   .replaceAll("df-v222-status","status")
 }
+<script>
+/* ==========================================================
+   DONA FLOR - V22.3 PRIORIDADE EM BOTÃO
+   Correções:
+   - Remove o select fixo de prioridade dos cards de notas
+   - Cria botão "Prioridade"
+   - Ao clicar, abre menu com Normal, Urgente e Crítico
+   - Atualiza prioridade usando a função existente quando disponível
+   - Remove botões extras antigos de relatório da tela principal
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V223_PRIORIDADE_BOTAO__) return;
+  window.__DONA_FLOR_V223_PRIORIDADE_BOTAO__ = true;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function normalizar(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function labelPrioridade(v){
+    const p = normalizar(v);
+    if(p === "critico" || p === "crítico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function corClass(v){
+    const p = normalizar(v);
+    if(p === "critico" || p === "crítico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function emoji(v){
+    const p = normalizar(v);
+    if(p === "critico" || p === "crítico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function css(){
+    if(document.getElementById("df-v223-prioridade-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v223-prioridade-css";
+    style.textContent = `
+      /* Remove os botões extras de relatório que estavam sobrando */
+      .df-v221-report-actions,
+      .df-v221-mini-btn,
+      button[onclick*="df221AbrirFiltros"] {
+        display:none !important;
+      }
+
+      .df-prioridade-box-v223{
+        position:relative !important;
+        width:100% !important;
+        margin:10px 0 !important;
+        z-index:30 !important;
+      }
+
+      .df-btn-prioridade-v223{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:1px solid #CBD5E1 !important;
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        font-size:15px !important;
+        padding:10px 12px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        gap:10px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+      }
+
+      .df-btn-prioridade-v223.normal{
+        background:#ECFDF5 !important;
+        color:#047857 !important;
+        border-color:#A7F3D0 !important;
+      }
+
+      .df-btn-prioridade-v223.urgente{
+        background:#FEE2E2 !important;
+        color:#B91C1C !important;
+        border-color:#FECACA !important;
+      }
+
+      .df-btn-prioridade-v223.critico{
+        background:#7F1D1D !important;
+        color:#FFFFFF !important;
+        border-color:#450A0A !important;
+      }
+
+      .df-prioridade-menu-v223{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#FFFFFF !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:99999 !important;
+      }
+
+      .df-prioridade-box-v223.open .df-prioridade-menu-v223{
+        display:block !important;
+      }
+
+      .df-prioridade-opcao-v223{
+        width:100% !important;
+        min-height:44px !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        background:#FFFFFF !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        padding:12px !important;
+        text-align:left !important;
+        display:flex !important;
+        align-items:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+        border-radius:0 !important;
+      }
+
+      .df-prioridade-opcao-v223:last-child{
+        border-bottom:0 !important;
+      }
+
+      .df-prioridade-opcao-v223:hover{
+        background:#F1F5F9 !important;
+      }
+
+      .df-prioridade-opcao-v223.normal{color:#047857 !important;}
+      .df-prioridade-opcao-v223.urgente{color:#B91C1C !important;}
+      .df-prioridade-opcao-v223.critico{color:#7F1D1D !important;}
+
+      select.df-prioridade-select-original-v223{
+        display:none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function acharNotaId(card, select){
+    const attrNames = ["data-id","data-nota-id","data-lembrete-id","data-key"];
+    for(const a of attrNames){
+      const v = card?.getAttribute?.(a) || select?.getAttribute?.(a);
+      if(v) return v;
+    }
+
+    const onclicks = Array.from(card.querySelectorAll("[onclick]"))
+      .map(el => el.getAttribute("onclick") || "")
+      .join(" ");
+
+    let m = onclicks.match(/(?:alterarPrioridade|editarNotaDF|excluirNota|excluirNotaDF)\s*\(\s*['"]?([^,'")]+)['"]?/i);
+    if(m) return m[1];
+
+    return select?.dataset?.id || select?.id || "";
+  }
+
+  async function aplicarPrioridade(select, id, valor){
+    const label = labelPrioridade(valor);
+
+    if(select){
+      select.value = label;
+      select.dispatchEvent(new Event("change", { bubbles:true }));
+    }
+
+    try{
+      if(typeof window.alterarPrioridade === "function"){
+        try { return window.alterarPrioridade(select, id, label); } catch(e){}
+        try { return window.alterarPrioridade(id, label); } catch(e){}
+        try { return window.alterarPrioridade(label, id); } catch(e){}
+      }
+    }catch(e){}
+
+    try{
+      if(typeof window.alterarPrioridadeNotaDF === "function"){
+        try { return window.alterarPrioridadeNotaDF(id, label); } catch(e){}
+      }
+    }catch(e){}
+
+    // fallback direto Supabase, se existir estrutura padrão
+    try{
+      if(id && typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method: "PATCH",
+          headers: {
+            "apikey": SupabaseKey,
+            "Authorization": "Bearer " + SupabaseKey,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+          },
+          body: JSON.stringify({ prioridade: label })
+        });
+        if(typeof carregar === "function") carregar();
+        else if(typeof render === "function") render();
+      }
+    }catch(e){}
+  }
+
+  function criarBotaoPrioridade(select){
+    if(!select || select.dataset.df223Ok) return;
+
+    const valorAtual = labelPrioridade(select.value || select.options?.[select.selectedIndex]?.text || "Normal");
+
+    const card = select.closest(".card,section,article,div");
+    const id = acharNotaId(card, select);
+
+    select.dataset.df223Ok = "1";
+    select.classList.add("df-prioridade-select-original-v223");
+
+    const box = document.createElement("div");
+    box.className = "df-prioridade-box-v223";
+    box.dataset.id = id;
+
+    box.innerHTML = `
+      <button type="button" class="df-btn-prioridade-v223 ${corClass(valorAtual)}">
+        <span>${emoji(valorAtual)} Prioridade</span>
+        <strong>${valorAtual}</strong>
+      </button>
+      <div class="df-prioridade-menu-v223">
+        <button type="button" class="df-prioridade-opcao-v223 normal" data-prioridade="Normal">🟢 Normal</button>
+        <button type="button" class="df-prioridade-opcao-v223 urgente" data-prioridade="Urgente">🔴 Urgente</button>
+        <button type="button" class="df-prioridade-opcao-v223 critico" data-prioridade="Crítico">🔥 Crítico</button>
+      </div>
+    `;
+
+    select.parentNode.insertBefore(box, select.nextSibling);
+
+    const btn = box.querySelector(".df-btn-prioridade-v223");
+    const strong = btn.querySelector("strong");
+
+    btn.addEventListener("click", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+
+      document.querySelectorAll(".df-prioridade-box-v223.open").forEach(b => {
+        if(b !== box) b.classList.remove("open");
+      });
+
+      box.classList.toggle("open");
+    });
+
+    box.querySelectorAll(".df-prioridade-opcao-v223").forEach(op => {
+      op.addEventListener("click", async function(e){
+        e.preventDefault();
+        e.stopPropagation();
+
+        const novo = op.dataset.prioridade;
+        btn.classList.remove("normal","urgente","critico");
+        btn.classList.add(corClass(novo));
+        btn.querySelector("span").textContent = `${emoji(novo)} Prioridade`;
+        strong.textContent = labelPrioridade(novo);
+        box.classList.remove("open");
+
+        await aplicarPrioridade(select, id, novo);
+      });
+    });
+  }
+
+  function aplicar(){
+    css();
+
+    // Remove botões extras de relatório que ainda estiverem no DOM.
+    document.querySelectorAll(".df-v221-report-actions").forEach(el => el.remove());
+
+    const selects = Array.from(document.querySelectorAll("select")).filter(sel => {
+      const t = (sel.textContent || "").toLowerCase();
+      const id = (sel.id || "").toLowerCase();
+      const cls = String(sel.className || "").toLowerCase();
+
+      const contemPrioridades =
+        t.includes("normal") &&
+        t.includes("urgente") &&
+        !id.includes("status") &&
+        !id.includes("centro") &&
+        !id.includes("acao");
+
+      return contemPrioridades || id.includes("prior") || cls.includes("prior");
+    });
+
+    selects.forEach(criarBotaoPrioridade);
+  }
+
+  document.addEventListener("click", function(e){
+    if(!e.target.closest(".df-prioridade-box-v223")){
+      document.querySelectorAll(".df-prioridade-box-v223.open").forEach(b => b.classList.remove("open"));
+    }
+  }, true);
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", aplicar, {once:true});
+  }else{
+    aplicar();
+  }
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
+  setTimeout(aplicar, 3200);
+})();
+</script>
 </body>
 </html>`;
   }
@@ -7489,6 +7806,323 @@ ${montarRelatorioHTML(f)
   setTimeout(configurarSelect, 700);
   setTimeout(configurarSelect, 1600);
   setTimeout(configurarSelect, 3200);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V22.3 PRIORIDADE EM BOTÃO
+   Correções:
+   - Remove o select fixo de prioridade dos cards de notas
+   - Cria botão "Prioridade"
+   - Ao clicar, abre menu com Normal, Urgente e Crítico
+   - Atualiza prioridade usando a função existente quando disponível
+   - Remove botões extras antigos de relatório da tela principal
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V223_PRIORIDADE_BOTAO__) return;
+  window.__DONA_FLOR_V223_PRIORIDADE_BOTAO__ = true;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function normalizar(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function labelPrioridade(v){
+    const p = normalizar(v);
+    if(p === "critico" || p === "crítico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function corClass(v){
+    const p = normalizar(v);
+    if(p === "critico" || p === "crítico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function emoji(v){
+    const p = normalizar(v);
+    if(p === "critico" || p === "crítico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function css(){
+    if(document.getElementById("df-v223-prioridade-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v223-prioridade-css";
+    style.textContent = `
+      /* Remove os botões extras de relatório que estavam sobrando */
+      .df-v221-report-actions,
+      .df-v221-mini-btn,
+      button[onclick*="df221AbrirFiltros"] {
+        display:none !important;
+      }
+
+      .df-prioridade-box-v223{
+        position:relative !important;
+        width:100% !important;
+        margin:10px 0 !important;
+        z-index:30 !important;
+      }
+
+      .df-btn-prioridade-v223{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:1px solid #CBD5E1 !important;
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        font-size:15px !important;
+        padding:10px 12px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        gap:10px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+      }
+
+      .df-btn-prioridade-v223.normal{
+        background:#ECFDF5 !important;
+        color:#047857 !important;
+        border-color:#A7F3D0 !important;
+      }
+
+      .df-btn-prioridade-v223.urgente{
+        background:#FEE2E2 !important;
+        color:#B91C1C !important;
+        border-color:#FECACA !important;
+      }
+
+      .df-btn-prioridade-v223.critico{
+        background:#7F1D1D !important;
+        color:#FFFFFF !important;
+        border-color:#450A0A !important;
+      }
+
+      .df-prioridade-menu-v223{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#FFFFFF !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:99999 !important;
+      }
+
+      .df-prioridade-box-v223.open .df-prioridade-menu-v223{
+        display:block !important;
+      }
+
+      .df-prioridade-opcao-v223{
+        width:100% !important;
+        min-height:44px !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        background:#FFFFFF !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        padding:12px !important;
+        text-align:left !important;
+        display:flex !important;
+        align-items:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+        border-radius:0 !important;
+      }
+
+      .df-prioridade-opcao-v223:last-child{
+        border-bottom:0 !important;
+      }
+
+      .df-prioridade-opcao-v223:hover{
+        background:#F1F5F9 !important;
+      }
+
+      .df-prioridade-opcao-v223.normal{color:#047857 !important;}
+      .df-prioridade-opcao-v223.urgente{color:#B91C1C !important;}
+      .df-prioridade-opcao-v223.critico{color:#7F1D1D !important;}
+
+      select.df-prioridade-select-original-v223{
+        display:none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function acharNotaId(card, select){
+    const attrNames = ["data-id","data-nota-id","data-lembrete-id","data-key"];
+    for(const a of attrNames){
+      const v = card?.getAttribute?.(a) || select?.getAttribute?.(a);
+      if(v) return v;
+    }
+
+    const onclicks = Array.from(card.querySelectorAll("[onclick]"))
+      .map(el => el.getAttribute("onclick") || "")
+      .join(" ");
+
+    let m = onclicks.match(/(?:alterarPrioridade|editarNotaDF|excluirNota|excluirNotaDF)\s*\(\s*['"]?([^,'")]+)['"]?/i);
+    if(m) return m[1];
+
+    return select?.dataset?.id || select?.id || "";
+  }
+
+  async function aplicarPrioridade(select, id, valor){
+    const label = labelPrioridade(valor);
+
+    if(select){
+      select.value = label;
+      select.dispatchEvent(new Event("change", { bubbles:true }));
+    }
+
+    try{
+      if(typeof window.alterarPrioridade === "function"){
+        try { return window.alterarPrioridade(select, id, label); } catch(e){}
+        try { return window.alterarPrioridade(id, label); } catch(e){}
+        try { return window.alterarPrioridade(label, id); } catch(e){}
+      }
+    }catch(e){}
+
+    try{
+      if(typeof window.alterarPrioridadeNotaDF === "function"){
+        try { return window.alterarPrioridadeNotaDF(id, label); } catch(e){}
+      }
+    }catch(e){}
+
+    // fallback direto Supabase, se existir estrutura padrão
+    try{
+      if(id && typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method: "PATCH",
+          headers: {
+            "apikey": SupabaseKey,
+            "Authorization": "Bearer " + SupabaseKey,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+          },
+          body: JSON.stringify({ prioridade: label })
+        });
+        if(typeof carregar === "function") carregar();
+        else if(typeof render === "function") render();
+      }
+    }catch(e){}
+  }
+
+  function criarBotaoPrioridade(select){
+    if(!select || select.dataset.df223Ok) return;
+
+    const valorAtual = labelPrioridade(select.value || select.options?.[select.selectedIndex]?.text || "Normal");
+
+    const card = select.closest(".card,section,article,div");
+    const id = acharNotaId(card, select);
+
+    select.dataset.df223Ok = "1";
+    select.classList.add("df-prioridade-select-original-v223");
+
+    const box = document.createElement("div");
+    box.className = "df-prioridade-box-v223";
+    box.dataset.id = id;
+
+    box.innerHTML = `
+      <button type="button" class="df-btn-prioridade-v223 ${corClass(valorAtual)}">
+        <span>${emoji(valorAtual)} Prioridade</span>
+        <strong>${valorAtual}</strong>
+      </button>
+      <div class="df-prioridade-menu-v223">
+        <button type="button" class="df-prioridade-opcao-v223 normal" data-prioridade="Normal">🟢 Normal</button>
+        <button type="button" class="df-prioridade-opcao-v223 urgente" data-prioridade="Urgente">🔴 Urgente</button>
+        <button type="button" class="df-prioridade-opcao-v223 critico" data-prioridade="Crítico">🔥 Crítico</button>
+      </div>
+    `;
+
+    select.parentNode.insertBefore(box, select.nextSibling);
+
+    const btn = box.querySelector(".df-btn-prioridade-v223");
+    const strong = btn.querySelector("strong");
+
+    btn.addEventListener("click", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+
+      document.querySelectorAll(".df-prioridade-box-v223.open").forEach(b => {
+        if(b !== box) b.classList.remove("open");
+      });
+
+      box.classList.toggle("open");
+    });
+
+    box.querySelectorAll(".df-prioridade-opcao-v223").forEach(op => {
+      op.addEventListener("click", async function(e){
+        e.preventDefault();
+        e.stopPropagation();
+
+        const novo = op.dataset.prioridade;
+        btn.classList.remove("normal","urgente","critico");
+        btn.classList.add(corClass(novo));
+        btn.querySelector("span").textContent = `${emoji(novo)} Prioridade`;
+        strong.textContent = labelPrioridade(novo);
+        box.classList.remove("open");
+
+        await aplicarPrioridade(select, id, novo);
+      });
+    });
+  }
+
+  function aplicar(){
+    css();
+
+    // Remove botões extras de relatório que ainda estiverem no DOM.
+    document.querySelectorAll(".df-v221-report-actions").forEach(el => el.remove());
+
+    const selects = Array.from(document.querySelectorAll("select")).filter(sel => {
+      const t = (sel.textContent || "").toLowerCase();
+      const id = (sel.id || "").toLowerCase();
+      const cls = String(sel.className || "").toLowerCase();
+
+      const contemPrioridades =
+        t.includes("normal") &&
+        t.includes("urgente") &&
+        !id.includes("status") &&
+        !id.includes("centro") &&
+        !id.includes("acao");
+
+      return contemPrioridades || id.includes("prior") || cls.includes("prior");
+    });
+
+    selects.forEach(criarBotaoPrioridade);
+  }
+
+  document.addEventListener("click", function(e){
+    if(!e.target.closest(".df-prioridade-box-v223")){
+      document.querySelectorAll(".df-prioridade-box-v223.open").forEach(b => b.classList.remove("open"));
+    }
+  }, true);
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", aplicar, {once:true});
+  }else{
+    aplicar();
+  }
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
+  setTimeout(aplicar, 3200);
 })();
 </script>
 </body>
@@ -11030,6 +11664,323 @@ ${montarRelatorioHTML(f)
   .replaceAll("df-v222-value","valor")
   .replaceAll("df-v222-status","status")
 }
+<script>
+/* ==========================================================
+   DONA FLOR - V22.3 PRIORIDADE EM BOTÃO
+   Correções:
+   - Remove o select fixo de prioridade dos cards de notas
+   - Cria botão "Prioridade"
+   - Ao clicar, abre menu com Normal, Urgente e Crítico
+   - Atualiza prioridade usando a função existente quando disponível
+   - Remove botões extras antigos de relatório da tela principal
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V223_PRIORIDADE_BOTAO__) return;
+  window.__DONA_FLOR_V223_PRIORIDADE_BOTAO__ = true;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function normalizar(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function labelPrioridade(v){
+    const p = normalizar(v);
+    if(p === "critico" || p === "crítico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function corClass(v){
+    const p = normalizar(v);
+    if(p === "critico" || p === "crítico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function emoji(v){
+    const p = normalizar(v);
+    if(p === "critico" || p === "crítico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function css(){
+    if(document.getElementById("df-v223-prioridade-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v223-prioridade-css";
+    style.textContent = `
+      /* Remove os botões extras de relatório que estavam sobrando */
+      .df-v221-report-actions,
+      .df-v221-mini-btn,
+      button[onclick*="df221AbrirFiltros"] {
+        display:none !important;
+      }
+
+      .df-prioridade-box-v223{
+        position:relative !important;
+        width:100% !important;
+        margin:10px 0 !important;
+        z-index:30 !important;
+      }
+
+      .df-btn-prioridade-v223{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:1px solid #CBD5E1 !important;
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        font-size:15px !important;
+        padding:10px 12px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        gap:10px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+      }
+
+      .df-btn-prioridade-v223.normal{
+        background:#ECFDF5 !important;
+        color:#047857 !important;
+        border-color:#A7F3D0 !important;
+      }
+
+      .df-btn-prioridade-v223.urgente{
+        background:#FEE2E2 !important;
+        color:#B91C1C !important;
+        border-color:#FECACA !important;
+      }
+
+      .df-btn-prioridade-v223.critico{
+        background:#7F1D1D !important;
+        color:#FFFFFF !important;
+        border-color:#450A0A !important;
+      }
+
+      .df-prioridade-menu-v223{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#FFFFFF !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:99999 !important;
+      }
+
+      .df-prioridade-box-v223.open .df-prioridade-menu-v223{
+        display:block !important;
+      }
+
+      .df-prioridade-opcao-v223{
+        width:100% !important;
+        min-height:44px !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        background:#FFFFFF !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        padding:12px !important;
+        text-align:left !important;
+        display:flex !important;
+        align-items:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+        border-radius:0 !important;
+      }
+
+      .df-prioridade-opcao-v223:last-child{
+        border-bottom:0 !important;
+      }
+
+      .df-prioridade-opcao-v223:hover{
+        background:#F1F5F9 !important;
+      }
+
+      .df-prioridade-opcao-v223.normal{color:#047857 !important;}
+      .df-prioridade-opcao-v223.urgente{color:#B91C1C !important;}
+      .df-prioridade-opcao-v223.critico{color:#7F1D1D !important;}
+
+      select.df-prioridade-select-original-v223{
+        display:none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function acharNotaId(card, select){
+    const attrNames = ["data-id","data-nota-id","data-lembrete-id","data-key"];
+    for(const a of attrNames){
+      const v = card?.getAttribute?.(a) || select?.getAttribute?.(a);
+      if(v) return v;
+    }
+
+    const onclicks = Array.from(card.querySelectorAll("[onclick]"))
+      .map(el => el.getAttribute("onclick") || "")
+      .join(" ");
+
+    let m = onclicks.match(/(?:alterarPrioridade|editarNotaDF|excluirNota|excluirNotaDF)\s*\(\s*['"]?([^,'")]+)['"]?/i);
+    if(m) return m[1];
+
+    return select?.dataset?.id || select?.id || "";
+  }
+
+  async function aplicarPrioridade(select, id, valor){
+    const label = labelPrioridade(valor);
+
+    if(select){
+      select.value = label;
+      select.dispatchEvent(new Event("change", { bubbles:true }));
+    }
+
+    try{
+      if(typeof window.alterarPrioridade === "function"){
+        try { return window.alterarPrioridade(select, id, label); } catch(e){}
+        try { return window.alterarPrioridade(id, label); } catch(e){}
+        try { return window.alterarPrioridade(label, id); } catch(e){}
+      }
+    }catch(e){}
+
+    try{
+      if(typeof window.alterarPrioridadeNotaDF === "function"){
+        try { return window.alterarPrioridadeNotaDF(id, label); } catch(e){}
+      }
+    }catch(e){}
+
+    // fallback direto Supabase, se existir estrutura padrão
+    try{
+      if(id && typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method: "PATCH",
+          headers: {
+            "apikey": SupabaseKey,
+            "Authorization": "Bearer " + SupabaseKey,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+          },
+          body: JSON.stringify({ prioridade: label })
+        });
+        if(typeof carregar === "function") carregar();
+        else if(typeof render === "function") render();
+      }
+    }catch(e){}
+  }
+
+  function criarBotaoPrioridade(select){
+    if(!select || select.dataset.df223Ok) return;
+
+    const valorAtual = labelPrioridade(select.value || select.options?.[select.selectedIndex]?.text || "Normal");
+
+    const card = select.closest(".card,section,article,div");
+    const id = acharNotaId(card, select);
+
+    select.dataset.df223Ok = "1";
+    select.classList.add("df-prioridade-select-original-v223");
+
+    const box = document.createElement("div");
+    box.className = "df-prioridade-box-v223";
+    box.dataset.id = id;
+
+    box.innerHTML = `
+      <button type="button" class="df-btn-prioridade-v223 ${corClass(valorAtual)}">
+        <span>${emoji(valorAtual)} Prioridade</span>
+        <strong>${valorAtual}</strong>
+      </button>
+      <div class="df-prioridade-menu-v223">
+        <button type="button" class="df-prioridade-opcao-v223 normal" data-prioridade="Normal">🟢 Normal</button>
+        <button type="button" class="df-prioridade-opcao-v223 urgente" data-prioridade="Urgente">🔴 Urgente</button>
+        <button type="button" class="df-prioridade-opcao-v223 critico" data-prioridade="Crítico">🔥 Crítico</button>
+      </div>
+    `;
+
+    select.parentNode.insertBefore(box, select.nextSibling);
+
+    const btn = box.querySelector(".df-btn-prioridade-v223");
+    const strong = btn.querySelector("strong");
+
+    btn.addEventListener("click", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+
+      document.querySelectorAll(".df-prioridade-box-v223.open").forEach(b => {
+        if(b !== box) b.classList.remove("open");
+      });
+
+      box.classList.toggle("open");
+    });
+
+    box.querySelectorAll(".df-prioridade-opcao-v223").forEach(op => {
+      op.addEventListener("click", async function(e){
+        e.preventDefault();
+        e.stopPropagation();
+
+        const novo = op.dataset.prioridade;
+        btn.classList.remove("normal","urgente","critico");
+        btn.classList.add(corClass(novo));
+        btn.querySelector("span").textContent = `${emoji(novo)} Prioridade`;
+        strong.textContent = labelPrioridade(novo);
+        box.classList.remove("open");
+
+        await aplicarPrioridade(select, id, novo);
+      });
+    });
+  }
+
+  function aplicar(){
+    css();
+
+    // Remove botões extras de relatório que ainda estiverem no DOM.
+    document.querySelectorAll(".df-v221-report-actions").forEach(el => el.remove());
+
+    const selects = Array.from(document.querySelectorAll("select")).filter(sel => {
+      const t = (sel.textContent || "").toLowerCase();
+      const id = (sel.id || "").toLowerCase();
+      const cls = String(sel.className || "").toLowerCase();
+
+      const contemPrioridades =
+        t.includes("normal") &&
+        t.includes("urgente") &&
+        !id.includes("status") &&
+        !id.includes("centro") &&
+        !id.includes("acao");
+
+      return contemPrioridades || id.includes("prior") || cls.includes("prior");
+    });
+
+    selects.forEach(criarBotaoPrioridade);
+  }
+
+  document.addEventListener("click", function(e){
+    if(!e.target.closest(".df-prioridade-box-v223")){
+      document.querySelectorAll(".df-prioridade-box-v223.open").forEach(b => b.classList.remove("open"));
+    }
+  }, true);
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", aplicar, {once:true});
+  }else{
+    aplicar();
+  }
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
+  setTimeout(aplicar, 3200);
+})();
+</script>
 </body>
 </html>`;
   }
@@ -11140,6 +12091,323 @@ ${montarRelatorioHTML(f)
   setTimeout(configurarSelect, 700);
   setTimeout(configurarSelect, 1600);
   setTimeout(configurarSelect, 3200);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V22.3 PRIORIDADE EM BOTÃO
+   Correções:
+   - Remove o select fixo de prioridade dos cards de notas
+   - Cria botão "Prioridade"
+   - Ao clicar, abre menu com Normal, Urgente e Crítico
+   - Atualiza prioridade usando a função existente quando disponível
+   - Remove botões extras antigos de relatório da tela principal
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V223_PRIORIDADE_BOTAO__) return;
+  window.__DONA_FLOR_V223_PRIORIDADE_BOTAO__ = true;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function normalizar(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function labelPrioridade(v){
+    const p = normalizar(v);
+    if(p === "critico" || p === "crítico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function corClass(v){
+    const p = normalizar(v);
+    if(p === "critico" || p === "crítico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function emoji(v){
+    const p = normalizar(v);
+    if(p === "critico" || p === "crítico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function css(){
+    if(document.getElementById("df-v223-prioridade-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v223-prioridade-css";
+    style.textContent = `
+      /* Remove os botões extras de relatório que estavam sobrando */
+      .df-v221-report-actions,
+      .df-v221-mini-btn,
+      button[onclick*="df221AbrirFiltros"] {
+        display:none !important;
+      }
+
+      .df-prioridade-box-v223{
+        position:relative !important;
+        width:100% !important;
+        margin:10px 0 !important;
+        z-index:30 !important;
+      }
+
+      .df-btn-prioridade-v223{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:1px solid #CBD5E1 !important;
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        font-size:15px !important;
+        padding:10px 12px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        gap:10px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+      }
+
+      .df-btn-prioridade-v223.normal{
+        background:#ECFDF5 !important;
+        color:#047857 !important;
+        border-color:#A7F3D0 !important;
+      }
+
+      .df-btn-prioridade-v223.urgente{
+        background:#FEE2E2 !important;
+        color:#B91C1C !important;
+        border-color:#FECACA !important;
+      }
+
+      .df-btn-prioridade-v223.critico{
+        background:#7F1D1D !important;
+        color:#FFFFFF !important;
+        border-color:#450A0A !important;
+      }
+
+      .df-prioridade-menu-v223{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#FFFFFF !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:99999 !important;
+      }
+
+      .df-prioridade-box-v223.open .df-prioridade-menu-v223{
+        display:block !important;
+      }
+
+      .df-prioridade-opcao-v223{
+        width:100% !important;
+        min-height:44px !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        background:#FFFFFF !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        padding:12px !important;
+        text-align:left !important;
+        display:flex !important;
+        align-items:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+        border-radius:0 !important;
+      }
+
+      .df-prioridade-opcao-v223:last-child{
+        border-bottom:0 !important;
+      }
+
+      .df-prioridade-opcao-v223:hover{
+        background:#F1F5F9 !important;
+      }
+
+      .df-prioridade-opcao-v223.normal{color:#047857 !important;}
+      .df-prioridade-opcao-v223.urgente{color:#B91C1C !important;}
+      .df-prioridade-opcao-v223.critico{color:#7F1D1D !important;}
+
+      select.df-prioridade-select-original-v223{
+        display:none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function acharNotaId(card, select){
+    const attrNames = ["data-id","data-nota-id","data-lembrete-id","data-key"];
+    for(const a of attrNames){
+      const v = card?.getAttribute?.(a) || select?.getAttribute?.(a);
+      if(v) return v;
+    }
+
+    const onclicks = Array.from(card.querySelectorAll("[onclick]"))
+      .map(el => el.getAttribute("onclick") || "")
+      .join(" ");
+
+    let m = onclicks.match(/(?:alterarPrioridade|editarNotaDF|excluirNota|excluirNotaDF)\s*\(\s*['"]?([^,'")]+)['"]?/i);
+    if(m) return m[1];
+
+    return select?.dataset?.id || select?.id || "";
+  }
+
+  async function aplicarPrioridade(select, id, valor){
+    const label = labelPrioridade(valor);
+
+    if(select){
+      select.value = label;
+      select.dispatchEvent(new Event("change", { bubbles:true }));
+    }
+
+    try{
+      if(typeof window.alterarPrioridade === "function"){
+        try { return window.alterarPrioridade(select, id, label); } catch(e){}
+        try { return window.alterarPrioridade(id, label); } catch(e){}
+        try { return window.alterarPrioridade(label, id); } catch(e){}
+      }
+    }catch(e){}
+
+    try{
+      if(typeof window.alterarPrioridadeNotaDF === "function"){
+        try { return window.alterarPrioridadeNotaDF(id, label); } catch(e){}
+      }
+    }catch(e){}
+
+    // fallback direto Supabase, se existir estrutura padrão
+    try{
+      if(id && typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method: "PATCH",
+          headers: {
+            "apikey": SupabaseKey,
+            "Authorization": "Bearer " + SupabaseKey,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+          },
+          body: JSON.stringify({ prioridade: label })
+        });
+        if(typeof carregar === "function") carregar();
+        else if(typeof render === "function") render();
+      }
+    }catch(e){}
+  }
+
+  function criarBotaoPrioridade(select){
+    if(!select || select.dataset.df223Ok) return;
+
+    const valorAtual = labelPrioridade(select.value || select.options?.[select.selectedIndex]?.text || "Normal");
+
+    const card = select.closest(".card,section,article,div");
+    const id = acharNotaId(card, select);
+
+    select.dataset.df223Ok = "1";
+    select.classList.add("df-prioridade-select-original-v223");
+
+    const box = document.createElement("div");
+    box.className = "df-prioridade-box-v223";
+    box.dataset.id = id;
+
+    box.innerHTML = `
+      <button type="button" class="df-btn-prioridade-v223 ${corClass(valorAtual)}">
+        <span>${emoji(valorAtual)} Prioridade</span>
+        <strong>${valorAtual}</strong>
+      </button>
+      <div class="df-prioridade-menu-v223">
+        <button type="button" class="df-prioridade-opcao-v223 normal" data-prioridade="Normal">🟢 Normal</button>
+        <button type="button" class="df-prioridade-opcao-v223 urgente" data-prioridade="Urgente">🔴 Urgente</button>
+        <button type="button" class="df-prioridade-opcao-v223 critico" data-prioridade="Crítico">🔥 Crítico</button>
+      </div>
+    `;
+
+    select.parentNode.insertBefore(box, select.nextSibling);
+
+    const btn = box.querySelector(".df-btn-prioridade-v223");
+    const strong = btn.querySelector("strong");
+
+    btn.addEventListener("click", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+
+      document.querySelectorAll(".df-prioridade-box-v223.open").forEach(b => {
+        if(b !== box) b.classList.remove("open");
+      });
+
+      box.classList.toggle("open");
+    });
+
+    box.querySelectorAll(".df-prioridade-opcao-v223").forEach(op => {
+      op.addEventListener("click", async function(e){
+        e.preventDefault();
+        e.stopPropagation();
+
+        const novo = op.dataset.prioridade;
+        btn.classList.remove("normal","urgente","critico");
+        btn.classList.add(corClass(novo));
+        btn.querySelector("span").textContent = `${emoji(novo)} Prioridade`;
+        strong.textContent = labelPrioridade(novo);
+        box.classList.remove("open");
+
+        await aplicarPrioridade(select, id, novo);
+      });
+    });
+  }
+
+  function aplicar(){
+    css();
+
+    // Remove botões extras de relatório que ainda estiverem no DOM.
+    document.querySelectorAll(".df-v221-report-actions").forEach(el => el.remove());
+
+    const selects = Array.from(document.querySelectorAll("select")).filter(sel => {
+      const t = (sel.textContent || "").toLowerCase();
+      const id = (sel.id || "").toLowerCase();
+      const cls = String(sel.className || "").toLowerCase();
+
+      const contemPrioridades =
+        t.includes("normal") &&
+        t.includes("urgente") &&
+        !id.includes("status") &&
+        !id.includes("centro") &&
+        !id.includes("acao");
+
+      return contemPrioridades || id.includes("prior") || cls.includes("prior");
+    });
+
+    selects.forEach(criarBotaoPrioridade);
+  }
+
+  document.addEventListener("click", function(e){
+    if(!e.target.closest(".df-prioridade-box-v223")){
+      document.querySelectorAll(".df-prioridade-box-v223.open").forEach(b => b.classList.remove("open"));
+    }
+  }, true);
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", aplicar, {once:true});
+  }else{
+    aplicar();
+  }
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
+  setTimeout(aplicar, 3200);
 })();
 </script>
 </body>

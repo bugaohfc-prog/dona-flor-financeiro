@@ -563,7 +563,6 @@ table{min-width:760px}
 }
 
 </style>
-  <link rel="stylesheet" href="css/v26.css?v=26">
 </head>
 <body>
 <div id="login" class="login-wrap">
@@ -3843,7 +3842,6 @@ if(abrirSyncOriginalDF){
     @page{margin:12mm}
   }
 </style>
-  <link rel="stylesheet" href="css/v26.css?v=26">
 </head>
 <body>
   <div class="page">
@@ -7365,7 +7363,6 @@ if(abrirSyncOriginalDF){
   .aberto{background:#fef3c7;color:#92400e}
   @page{margin:12mm}
 </style>
-  <link rel="stylesheet" href="css/v26.css?v=26">
 </head>
 <body>
 ${montarRelatorioHTML(f)
@@ -9051,7 +9048,6 @@ ${montarRelatorioHTML(f)
     @page{margin:12mm}
   }
 </style>
-  <link rel="stylesheet" href="css/v26.css?v=26">
 </head>
 <body>
   <div class="page">
@@ -11637,11 +11633,617 @@ ${montarRelatorioHTML(f)
 
 
 
-<script src="js/v26/core.js?v=26"></script>
-<script src="js/v26/menu.js?v=26"></script>
-<script src="js/v26/notas.js?v=26"></script>
-<script src="js/v26/relatorios.js?v=26"></script>
-<script src="js/v26/init.js?v=26"></script>
+
+<style id="df-v25-5-simplificada-css">
+/* ==========================================================
+   Dona Flor V25.5 Simplificada
+   Mantém tudo em 1 index, sem arquivos modulares V26.
+   ========================================================== */
+
+html,body{max-width:100%;overflow-x:hidden!important}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
+
+.card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:16px!important;
+  box-shadow:0 10px 24px rgba(15,23,42,.06)!important;
+}
+
+.collapse-toggle{
+  background:transparent!important;
+  color:#0F766E!important;
+  border:0!important;
+  box-shadow:none!important;
+  width:28px!important;
+  height:28px!important;
+  min-width:28px!important;
+  font-size:14px!important;
+}
+
+.side-submenu{
+  overflow:hidden!important;
+  max-height:0!important;
+  opacity:0!important;
+  transition:max-height .22s ease,opacity .18s ease!important;
+  display:block!important;
+}
+.side-submenu.open{
+  max-height:520px!important;
+  opacity:1!important;
+}
+.sidebar.collapsed .side-submenu{display:none!important}
+
+.df255-note-card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:14px!important;
+  padding:14px!important;
+  margin:12px 0!important;
+  box-shadow:0 8px 18px rgba(15,23,42,.05)!important;
+}
+.df255-note-top{
+  display:flex!important;
+  justify-content:space-between!important;
+  align-items:flex-start!important;
+  gap:10px!important;
+}
+.df255-note-title{
+  font-size:18px!important;
+  font-weight:900!important;
+  color:#0F172A!important;
+  line-height:1.15!important;
+}
+.df255-note-text{
+  color:#475569!important;
+  margin-top:6px!important;
+  font-size:15px!important;
+  line-height:1.3!important;
+}
+.df255-note-meta{
+  color:#64748B!important;
+  margin-top:8px!important;
+  font-size:13px!important;
+}
+.df255-badge{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  border-radius:999px!important;
+  padding:6px 10px!important;
+  font-weight:900!important;
+  font-size:13px!important;
+  white-space:nowrap!important;
+}
+.df255-badge.normal{background:#E0F2FE!important;color:#075985!important}
+.df255-badge.urgente{background:#FEE2E2!important;color:#B91C1C!important}
+.df255-badge.critico{background:#7F1D1D!important;color:white!important}
+
+.df255-actions{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:10px!important;
+  margin-top:12px!important;
+}
+.df255-btn{
+  width:100%!important;
+  min-height:44px!important;
+  border-radius:12px!important;
+  border:0!important;
+  font-weight:900!important;
+  font-size:15px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  cursor:pointer!important;
+}
+.df255-edit{background:#2563EB!important;color:#fff!important}
+.df255-del{background:#B91C1C!important;color:#fff!important}
+
+.df255-prio-box{position:relative!important;width:100%!important;z-index:40!important}
+.df255-prio-btn{
+  background:#F8FAFC!important;
+  color:#0F172A!important;
+  border:1px solid #CBD5E1!important;
+  justify-content:space-between!important;
+  padding:0 12px!important;
+}
+.df255-prio-btn.normal{background:#ECFDF5!important;color:#047857!important;border-color:#A7F3D0!important}
+.df255-prio-btn.urgente{background:#FEE2E2!important;color:#B91C1C!important;border-color:#FECACA!important}
+.df255-prio-btn.critico{background:#7F1D1D!important;color:#fff!important;border-color:#450A0A!important}
+.df255-prio-menu{
+  display:none!important;
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  top:50px!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:14px!important;
+  box-shadow:4px 4px 0 #000!important;
+  overflow:hidden!important;
+  z-index:99999!important;
+}
+.df255-prio-box.open .df255-prio-menu{display:block!important}
+.df255-prio-option{
+  width:100%!important;
+  min-height:44px!important;
+  background:#fff!important;
+  border:0!important;
+  border-bottom:1px solid #E2E8F0!important;
+  padding:12px!important;
+  text-align:left!important;
+  font-weight:900!important;
+  cursor:pointer!important;
+}
+.df255-prio-option:last-child{border-bottom:0!important}
+
+.df255-report-bg{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147483647!important;
+  background:rgba(15,23,42,.66)!important;
+  display:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:14px!important;
+  box-sizing:border-box!important;
+}
+.df255-report-bg.open{display:flex!important}
+.df255-report-box{
+  width:100%!important;
+  max-width:980px!important;
+  max-height:92vh!important;
+  overflow:auto!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:18px!important;
+  box-shadow:6px 6px 0 #000!important;
+  padding:18px!important;
+  box-sizing:border-box!important;
+  color:#0F172A!important;
+  font-family:Arial,Helvetica,sans-serif!important;
+}
+.df255-report-actions{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:8px!important;
+  justify-content:flex-end!important;
+  margin-bottom:12px!important;
+}
+.df255-report-actions button{
+  min-height:40px!important;
+  border-radius:10px!important;
+  border:2px solid #000!important;
+  box-shadow:3px 3px 0 #000!important;
+  background:#0F766E!important;
+  color:#fff!important;
+  font-weight:900!important;
+  padding:8px 12px!important;
+  cursor:pointer!important;
+}
+.df255-report-actions .light{background:#fff!important;color:#000!important}
+
+.df255-report h1{color:#0F766E!important;margin:0!important;font-size:24px!important}
+.df255-report h2{font-size:18px!important;margin:18px 0 8px!important}
+.df255-report .sub{color:#64748B!important;font-size:12px!important;margin-top:4px!important}
+.df255-report .cards{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important;margin:12px 0!important}
+.df255-report .card-mini{border:1px solid #E2E8F0!important;border-radius:10px!important;padding:10px!important;background:#FAFAF9!important}
+.df255-report .label{font-size:10px!important;text-transform:uppercase!important;color:#64748B!important;font-weight:bold!important}
+.df255-report .num{font-size:17px!important;font-weight:bold!important;margin-top:3px!important}
+.df255-report .centros{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin:8px 0 14px!important}
+.df255-report .centro{display:flex!important;justify-content:space-between!important;border:1px solid #E2E8F0!important;border-radius:10px!important;padding:8px!important}
+.df255-report .centro small{display:block!important;color:#64748B!important}
+.df255-report table{width:100%!important;border-collapse:collapse!important;font-size:12px!important}
+.df255-report th{background:#0F766E!important;color:white!important;text-align:left!important;padding:7px!important}
+.df255-report td{border-bottom:1px solid #E2E8F0!important;padding:7px!important;vertical-align:top!important}
+.df255-report .valor{font-weight:bold!important;white-space:nowrap!important}
+.df255-report .status{border-radius:999px!important;padding:3px 7px!important;font-weight:bold!important;font-size:11px!important;display:inline-block!important}
+.df255-report .pago{background:#DCFCE7!important;color:#15803D!important}
+.df255-report .aberto{background:#FEF3C7!important;color:#92400E!important}
+
+@media(max-width:760px){
+  .df255-report-box{padding:14px!important;border-radius:16px!important}
+  .df255-report-actions{justify-content:flex-start!important}
+  .df255-report .cards{grid-template-columns:1fr 1fr!important}
+  .df255-report .centros{grid-template-columns:1fr!important}
+  .df255-report table{font-size:11px!important}
+}
+@media print{
+  html,body{background:#fff!important;margin:0!important;padding:0!important}
+  body > *{display:none!important}
+  #df255-report-bg{
+    display:block!important;
+    position:static!important;
+    inset:auto!important;
+    background:#fff!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-box{
+    display:block!important;
+    max-height:none!important;
+    overflow:visible!important;
+    box-shadow:none!important;
+    border:0!important;
+    border-radius:0!important;
+    max-width:none!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-actions{display:none!important}
+  #df255-report-content{display:block!important}
+  @page{margin:12mm}
+}
+</style>
+
+<script id="df-v25-5-simplificada-js">
+(function(){
+  if(window.__DF255_SIMPLIFICADA__) return;
+  window.__DF255_SIMPLIFICADA__ = true;
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function norm(v){
+    return String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  }
+  function money(v){
+    try{ if(typeof moeda === "function") return moeda(v); }catch(e){}
+    return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  }
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+  function prioLabel(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+  function prioClass(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+  function prioIcon(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotas(){
+    try{ if(typeof visNotas === "function") return visNotas().filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    try{ if(Array.isArray(window.notasDados)) return window.notasDados.filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    return [];
+  }
+
+  async function setPrioridade(id, prioridade){
+    const nova = prioLabel(prioridade);
+
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = nova;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof api === "function"){
+        await api("df_notas?id=eq."+encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{Prefer:"return=minimal"},
+          body:JSON.stringify({prioridade:nova})
+        });
+        if(typeof carregar === "function") await carregar();
+        else window.renderNotas();
+        return;
+      }
+    }catch(e){
+      alert("Não foi possível alterar a prioridade agora.");
+    }
+
+    window.renderNotas();
+  }
+
+  window.renderNotas = function(){
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const notas = getNotas().slice(0,20);
+    if(!notas.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = notas.map(n=>{
+      const p = prioLabel(n.prioridade || "Normal");
+      const pc = prioClass(p);
+      const id = esc(n.id || "");
+      return `
+        <div class="df255-note-card" data-nota-id="${id}">
+          <div class="df255-note-top">
+            <div>
+              <div class="df255-note-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df255-note-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df255-note-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df255-badge ${pc}">${prioIcon(p)} ${p}</span>
+          </div>
+
+          <div class="df255-actions no-print">
+            <button type="button" class="df255-btn df255-edit" data-df255-edit="${id}">✏️ Editar</button>
+            <div class="df255-prio-box">
+              <button type="button" class="df255-btn df255-prio-btn ${pc}">
+                <span>${prioIcon(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df255-prio-menu">
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+            <button type="button" class="df255-btn df255-del" data-df255-del="${id}">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function getContasBase(){
+    try{ if(typeof visContas === "function") return visContas().filter(c=>!c.deletado); }catch(e){}
+    try{ if(Array.isArray(window.contasDados)) return window.contasDados.filter(c=>!c.deletado); }catch(e){}
+    return [];
+  }
+  function filtrosRelatorio(){
+    return {
+      centro: document.getElementById("fCentro")?.value || "",
+      status: document.getElementById("fStatus")?.value || "",
+      resumo:true,
+      centros:true,
+      detalhes:true,
+      aberto:false
+    };
+  }
+  function filtrarContas(f){
+    return getContasBase().filter(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase()==="pago") return false;
+      return true;
+    });
+  }
+  function resumo(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c=>String(c.status||"").toLowerCase()!=="pago");
+    const pagas = contas.filter(c=>String(c.status||"").toLowerCase()==="pago");
+    const vencidas = abertas.filter(c=>String(c.vencimento||c.data_vencimento||"").slice(0,10)<hoje);
+    return {
+      qtd:contas.length,
+      totalAberto:abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago:pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido:vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor||0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+  function montarRelatorio(){
+    const f = filtrosRelatorio();
+    const contas = filtrarContas(f);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+
+    const cards = `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${money(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${money(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${money(r.totalVencido)}</div></div>
+      </div>`;
+
+    const centrosHTML = `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info])=>`
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${money(info.total)}</b>
+          </div>
+        `).join("") : "<div>Nenhum centro encontrado.</div>"}
+      </div>`;
+
+    const linhas = contas.map(c=>{
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${money(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>`;
+    }).join("");
+
+    const detalhes = `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>` : "<div>Nenhuma conta encontrada.</div>"}`;
+
+    return `
+      <div class="df255-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(f.centro || "Todos os centros")} • ${esc(f.status || "Todos os status")}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>`;
+  }
+
+  function abrirRelatorioPDF(){
+    let bg = document.getElementById("df255-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df255-report-bg";
+      bg.className = "df255-report-bg";
+      bg.innerHTML = `
+        <div class="df255-report-box">
+          <div class="df255-report-actions no-print">
+            <button type="button" id="df255Print">Salvar em PDF</button>
+            <button type="button" class="light" id="df255Close">Fechar</button>
+          </div>
+          <div id="df255-report-content"></div>
+        </div>`;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e=>{ if(e.target === bg) bg.classList.remove("open"); });
+      bg.querySelector("#df255Print").addEventListener("click", e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        setTimeout(()=>window.print(),150);
+      }, true);
+      bg.querySelector("#df255Close").addEventListener("click", ()=>bg.classList.remove("open"));
+    }
+    bg.querySelector("#df255-report-content").innerHTML = montarRelatorio();
+    bg.classList.add("open");
+  }
+
+  function exportarCSV(){
+    const contas = filtrarContas(filtrosRelatorio());
+    if(!contas.length){
+      alert("Nenhum dado para exportar.");
+      return;
+    }
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c=>[
+        c.descricao || c.conta || "",
+        Number(c.valor||0).toFixed(2).replace(".",","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+    const csv = linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{a.remove(); URL.revokeObjectURL(url);},1000);
+  }
+
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+    const acao = sel.value;
+    sel.value = "";
+    if(acao === "pdf") abrirRelatorioPDF();
+    if(acao === "csv") exportarCSV();
+  };
+
+  function bind(){
+    if(document.body.dataset.df255Bound) return;
+    document.body.dataset.df255Bound = "1";
+
+    const nprio = document.getElementById("nprio");
+    if(nprio && !Array.from(nprio.options).some(o=>norm(o.value)==="critico")){
+      const opt = document.createElement("option");
+      opt.value = "Crítico";
+      opt.textContent = "Crítico";
+      nprio.appendChild(opt);
+    }
+
+    document.addEventListener("click", async function(e){
+      const edit = e.target.closest("[data-df255-edit]");
+      if(edit){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = edit.dataset.df255Edit;
+        if(typeof editarNotaDF === "function") editarNotaDF(id);
+        return;
+      }
+
+      const del = e.target.closest("[data-df255-del]");
+      if(del){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = del.dataset.df255Del;
+        if(typeof moverNotaLixeiraDF === "function") moverNotaLixeiraDF(id);
+        else if(typeof excluirNota === "function") excluirNota(id);
+        return;
+      }
+
+      const btn = e.target.closest(".df255-prio-btn");
+      if(btn){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = btn.closest(".df255-prio-box");
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>{if(b!==box)b.classList.remove("open")});
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df255-prio-option");
+      if(op){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = op.closest(".df255-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridade(op.dataset.id, op.dataset.p);
+        setTimeout(window.renderNotas,300);
+        return;
+      }
+
+      if(!e.target.closest(".df255-prio-box")){
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function init(){
+    bind();
+    if(typeof window.renderNotas === "function") window.renderNotas();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", init, {once:true});
+  }else{
+    init();
+  }
+  setTimeout(init,800);
+  setTimeout(init,1800);
+  setTimeout(init,3200);
+})();
+</script>
+
 </body>
 </html>`;
   }
@@ -14258,11 +14860,617 @@ ${montarRelatorioHTML(f)
 
 
 
-<script src="js/v26/core.js?v=26"></script>
-<script src="js/v26/menu.js?v=26"></script>
-<script src="js/v26/notas.js?v=26"></script>
-<script src="js/v26/relatorios.js?v=26"></script>
-<script src="js/v26/init.js?v=26"></script>
+
+<style id="df-v25-5-simplificada-css">
+/* ==========================================================
+   Dona Flor V25.5 Simplificada
+   Mantém tudo em 1 index, sem arquivos modulares V26.
+   ========================================================== */
+
+html,body{max-width:100%;overflow-x:hidden!important}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
+
+.card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:16px!important;
+  box-shadow:0 10px 24px rgba(15,23,42,.06)!important;
+}
+
+.collapse-toggle{
+  background:transparent!important;
+  color:#0F766E!important;
+  border:0!important;
+  box-shadow:none!important;
+  width:28px!important;
+  height:28px!important;
+  min-width:28px!important;
+  font-size:14px!important;
+}
+
+.side-submenu{
+  overflow:hidden!important;
+  max-height:0!important;
+  opacity:0!important;
+  transition:max-height .22s ease,opacity .18s ease!important;
+  display:block!important;
+}
+.side-submenu.open{
+  max-height:520px!important;
+  opacity:1!important;
+}
+.sidebar.collapsed .side-submenu{display:none!important}
+
+.df255-note-card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:14px!important;
+  padding:14px!important;
+  margin:12px 0!important;
+  box-shadow:0 8px 18px rgba(15,23,42,.05)!important;
+}
+.df255-note-top{
+  display:flex!important;
+  justify-content:space-between!important;
+  align-items:flex-start!important;
+  gap:10px!important;
+}
+.df255-note-title{
+  font-size:18px!important;
+  font-weight:900!important;
+  color:#0F172A!important;
+  line-height:1.15!important;
+}
+.df255-note-text{
+  color:#475569!important;
+  margin-top:6px!important;
+  font-size:15px!important;
+  line-height:1.3!important;
+}
+.df255-note-meta{
+  color:#64748B!important;
+  margin-top:8px!important;
+  font-size:13px!important;
+}
+.df255-badge{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  border-radius:999px!important;
+  padding:6px 10px!important;
+  font-weight:900!important;
+  font-size:13px!important;
+  white-space:nowrap!important;
+}
+.df255-badge.normal{background:#E0F2FE!important;color:#075985!important}
+.df255-badge.urgente{background:#FEE2E2!important;color:#B91C1C!important}
+.df255-badge.critico{background:#7F1D1D!important;color:white!important}
+
+.df255-actions{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:10px!important;
+  margin-top:12px!important;
+}
+.df255-btn{
+  width:100%!important;
+  min-height:44px!important;
+  border-radius:12px!important;
+  border:0!important;
+  font-weight:900!important;
+  font-size:15px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  cursor:pointer!important;
+}
+.df255-edit{background:#2563EB!important;color:#fff!important}
+.df255-del{background:#B91C1C!important;color:#fff!important}
+
+.df255-prio-box{position:relative!important;width:100%!important;z-index:40!important}
+.df255-prio-btn{
+  background:#F8FAFC!important;
+  color:#0F172A!important;
+  border:1px solid #CBD5E1!important;
+  justify-content:space-between!important;
+  padding:0 12px!important;
+}
+.df255-prio-btn.normal{background:#ECFDF5!important;color:#047857!important;border-color:#A7F3D0!important}
+.df255-prio-btn.urgente{background:#FEE2E2!important;color:#B91C1C!important;border-color:#FECACA!important}
+.df255-prio-btn.critico{background:#7F1D1D!important;color:#fff!important;border-color:#450A0A!important}
+.df255-prio-menu{
+  display:none!important;
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  top:50px!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:14px!important;
+  box-shadow:4px 4px 0 #000!important;
+  overflow:hidden!important;
+  z-index:99999!important;
+}
+.df255-prio-box.open .df255-prio-menu{display:block!important}
+.df255-prio-option{
+  width:100%!important;
+  min-height:44px!important;
+  background:#fff!important;
+  border:0!important;
+  border-bottom:1px solid #E2E8F0!important;
+  padding:12px!important;
+  text-align:left!important;
+  font-weight:900!important;
+  cursor:pointer!important;
+}
+.df255-prio-option:last-child{border-bottom:0!important}
+
+.df255-report-bg{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147483647!important;
+  background:rgba(15,23,42,.66)!important;
+  display:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:14px!important;
+  box-sizing:border-box!important;
+}
+.df255-report-bg.open{display:flex!important}
+.df255-report-box{
+  width:100%!important;
+  max-width:980px!important;
+  max-height:92vh!important;
+  overflow:auto!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:18px!important;
+  box-shadow:6px 6px 0 #000!important;
+  padding:18px!important;
+  box-sizing:border-box!important;
+  color:#0F172A!important;
+  font-family:Arial,Helvetica,sans-serif!important;
+}
+.df255-report-actions{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:8px!important;
+  justify-content:flex-end!important;
+  margin-bottom:12px!important;
+}
+.df255-report-actions button{
+  min-height:40px!important;
+  border-radius:10px!important;
+  border:2px solid #000!important;
+  box-shadow:3px 3px 0 #000!important;
+  background:#0F766E!important;
+  color:#fff!important;
+  font-weight:900!important;
+  padding:8px 12px!important;
+  cursor:pointer!important;
+}
+.df255-report-actions .light{background:#fff!important;color:#000!important}
+
+.df255-report h1{color:#0F766E!important;margin:0!important;font-size:24px!important}
+.df255-report h2{font-size:18px!important;margin:18px 0 8px!important}
+.df255-report .sub{color:#64748B!important;font-size:12px!important;margin-top:4px!important}
+.df255-report .cards{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important;margin:12px 0!important}
+.df255-report .card-mini{border:1px solid #E2E8F0!important;border-radius:10px!important;padding:10px!important;background:#FAFAF9!important}
+.df255-report .label{font-size:10px!important;text-transform:uppercase!important;color:#64748B!important;font-weight:bold!important}
+.df255-report .num{font-size:17px!important;font-weight:bold!important;margin-top:3px!important}
+.df255-report .centros{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin:8px 0 14px!important}
+.df255-report .centro{display:flex!important;justify-content:space-between!important;border:1px solid #E2E8F0!important;border-radius:10px!important;padding:8px!important}
+.df255-report .centro small{display:block!important;color:#64748B!important}
+.df255-report table{width:100%!important;border-collapse:collapse!important;font-size:12px!important}
+.df255-report th{background:#0F766E!important;color:white!important;text-align:left!important;padding:7px!important}
+.df255-report td{border-bottom:1px solid #E2E8F0!important;padding:7px!important;vertical-align:top!important}
+.df255-report .valor{font-weight:bold!important;white-space:nowrap!important}
+.df255-report .status{border-radius:999px!important;padding:3px 7px!important;font-weight:bold!important;font-size:11px!important;display:inline-block!important}
+.df255-report .pago{background:#DCFCE7!important;color:#15803D!important}
+.df255-report .aberto{background:#FEF3C7!important;color:#92400E!important}
+
+@media(max-width:760px){
+  .df255-report-box{padding:14px!important;border-radius:16px!important}
+  .df255-report-actions{justify-content:flex-start!important}
+  .df255-report .cards{grid-template-columns:1fr 1fr!important}
+  .df255-report .centros{grid-template-columns:1fr!important}
+  .df255-report table{font-size:11px!important}
+}
+@media print{
+  html,body{background:#fff!important;margin:0!important;padding:0!important}
+  body > *{display:none!important}
+  #df255-report-bg{
+    display:block!important;
+    position:static!important;
+    inset:auto!important;
+    background:#fff!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-box{
+    display:block!important;
+    max-height:none!important;
+    overflow:visible!important;
+    box-shadow:none!important;
+    border:0!important;
+    border-radius:0!important;
+    max-width:none!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-actions{display:none!important}
+  #df255-report-content{display:block!important}
+  @page{margin:12mm}
+}
+</style>
+
+<script id="df-v25-5-simplificada-js">
+(function(){
+  if(window.__DF255_SIMPLIFICADA__) return;
+  window.__DF255_SIMPLIFICADA__ = true;
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function norm(v){
+    return String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  }
+  function money(v){
+    try{ if(typeof moeda === "function") return moeda(v); }catch(e){}
+    return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  }
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+  function prioLabel(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+  function prioClass(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+  function prioIcon(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotas(){
+    try{ if(typeof visNotas === "function") return visNotas().filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    try{ if(Array.isArray(window.notasDados)) return window.notasDados.filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    return [];
+  }
+
+  async function setPrioridade(id, prioridade){
+    const nova = prioLabel(prioridade);
+
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = nova;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof api === "function"){
+        await api("df_notas?id=eq."+encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{Prefer:"return=minimal"},
+          body:JSON.stringify({prioridade:nova})
+        });
+        if(typeof carregar === "function") await carregar();
+        else window.renderNotas();
+        return;
+      }
+    }catch(e){
+      alert("Não foi possível alterar a prioridade agora.");
+    }
+
+    window.renderNotas();
+  }
+
+  window.renderNotas = function(){
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const notas = getNotas().slice(0,20);
+    if(!notas.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = notas.map(n=>{
+      const p = prioLabel(n.prioridade || "Normal");
+      const pc = prioClass(p);
+      const id = esc(n.id || "");
+      return `
+        <div class="df255-note-card" data-nota-id="${id}">
+          <div class="df255-note-top">
+            <div>
+              <div class="df255-note-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df255-note-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df255-note-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df255-badge ${pc}">${prioIcon(p)} ${p}</span>
+          </div>
+
+          <div class="df255-actions no-print">
+            <button type="button" class="df255-btn df255-edit" data-df255-edit="${id}">✏️ Editar</button>
+            <div class="df255-prio-box">
+              <button type="button" class="df255-btn df255-prio-btn ${pc}">
+                <span>${prioIcon(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df255-prio-menu">
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+            <button type="button" class="df255-btn df255-del" data-df255-del="${id}">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function getContasBase(){
+    try{ if(typeof visContas === "function") return visContas().filter(c=>!c.deletado); }catch(e){}
+    try{ if(Array.isArray(window.contasDados)) return window.contasDados.filter(c=>!c.deletado); }catch(e){}
+    return [];
+  }
+  function filtrosRelatorio(){
+    return {
+      centro: document.getElementById("fCentro")?.value || "",
+      status: document.getElementById("fStatus")?.value || "",
+      resumo:true,
+      centros:true,
+      detalhes:true,
+      aberto:false
+    };
+  }
+  function filtrarContas(f){
+    return getContasBase().filter(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase()==="pago") return false;
+      return true;
+    });
+  }
+  function resumo(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c=>String(c.status||"").toLowerCase()!=="pago");
+    const pagas = contas.filter(c=>String(c.status||"").toLowerCase()==="pago");
+    const vencidas = abertas.filter(c=>String(c.vencimento||c.data_vencimento||"").slice(0,10)<hoje);
+    return {
+      qtd:contas.length,
+      totalAberto:abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago:pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido:vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor||0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+  function montarRelatorio(){
+    const f = filtrosRelatorio();
+    const contas = filtrarContas(f);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+
+    const cards = `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${money(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${money(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${money(r.totalVencido)}</div></div>
+      </div>`;
+
+    const centrosHTML = `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info])=>`
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${money(info.total)}</b>
+          </div>
+        `).join("") : "<div>Nenhum centro encontrado.</div>"}
+      </div>`;
+
+    const linhas = contas.map(c=>{
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${money(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>`;
+    }).join("");
+
+    const detalhes = `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>` : "<div>Nenhuma conta encontrada.</div>"}`;
+
+    return `
+      <div class="df255-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(f.centro || "Todos os centros")} • ${esc(f.status || "Todos os status")}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>`;
+  }
+
+  function abrirRelatorioPDF(){
+    let bg = document.getElementById("df255-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df255-report-bg";
+      bg.className = "df255-report-bg";
+      bg.innerHTML = `
+        <div class="df255-report-box">
+          <div class="df255-report-actions no-print">
+            <button type="button" id="df255Print">Salvar em PDF</button>
+            <button type="button" class="light" id="df255Close">Fechar</button>
+          </div>
+          <div id="df255-report-content"></div>
+        </div>`;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e=>{ if(e.target === bg) bg.classList.remove("open"); });
+      bg.querySelector("#df255Print").addEventListener("click", e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        setTimeout(()=>window.print(),150);
+      }, true);
+      bg.querySelector("#df255Close").addEventListener("click", ()=>bg.classList.remove("open"));
+    }
+    bg.querySelector("#df255-report-content").innerHTML = montarRelatorio();
+    bg.classList.add("open");
+  }
+
+  function exportarCSV(){
+    const contas = filtrarContas(filtrosRelatorio());
+    if(!contas.length){
+      alert("Nenhum dado para exportar.");
+      return;
+    }
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c=>[
+        c.descricao || c.conta || "",
+        Number(c.valor||0).toFixed(2).replace(".",","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+    const csv = linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{a.remove(); URL.revokeObjectURL(url);},1000);
+  }
+
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+    const acao = sel.value;
+    sel.value = "";
+    if(acao === "pdf") abrirRelatorioPDF();
+    if(acao === "csv") exportarCSV();
+  };
+
+  function bind(){
+    if(document.body.dataset.df255Bound) return;
+    document.body.dataset.df255Bound = "1";
+
+    const nprio = document.getElementById("nprio");
+    if(nprio && !Array.from(nprio.options).some(o=>norm(o.value)==="critico")){
+      const opt = document.createElement("option");
+      opt.value = "Crítico";
+      opt.textContent = "Crítico";
+      nprio.appendChild(opt);
+    }
+
+    document.addEventListener("click", async function(e){
+      const edit = e.target.closest("[data-df255-edit]");
+      if(edit){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = edit.dataset.df255Edit;
+        if(typeof editarNotaDF === "function") editarNotaDF(id);
+        return;
+      }
+
+      const del = e.target.closest("[data-df255-del]");
+      if(del){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = del.dataset.df255Del;
+        if(typeof moverNotaLixeiraDF === "function") moverNotaLixeiraDF(id);
+        else if(typeof excluirNota === "function") excluirNota(id);
+        return;
+      }
+
+      const btn = e.target.closest(".df255-prio-btn");
+      if(btn){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = btn.closest(".df255-prio-box");
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>{if(b!==box)b.classList.remove("open")});
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df255-prio-option");
+      if(op){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = op.closest(".df255-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridade(op.dataset.id, op.dataset.p);
+        setTimeout(window.renderNotas,300);
+        return;
+      }
+
+      if(!e.target.closest(".df255-prio-box")){
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function init(){
+    bind();
+    if(typeof window.renderNotas === "function") window.renderNotas();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", init, {once:true});
+  }else{
+    init();
+  }
+  setTimeout(init,800);
+  setTimeout(init,1800);
+  setTimeout(init,3200);
+})();
+</script>
+
 </body>
 </html>`;
   }
@@ -16044,7 +17252,6 @@ ${montarRelatorioHTML(f)
     @page{margin:12mm}
   }
 </style>
-  <link rel="stylesheet" href="css/v26.css?v=26">
 </head>
 <body>
   <div class="page">
@@ -18630,11 +19837,617 @@ ${montarRelatorioHTML(f)
 
 
 
-<script src="js/v26/core.js?v=26"></script>
-<script src="js/v26/menu.js?v=26"></script>
-<script src="js/v26/notas.js?v=26"></script>
-<script src="js/v26/relatorios.js?v=26"></script>
-<script src="js/v26/init.js?v=26"></script>
+
+<style id="df-v25-5-simplificada-css">
+/* ==========================================================
+   Dona Flor V25.5 Simplificada
+   Mantém tudo em 1 index, sem arquivos modulares V26.
+   ========================================================== */
+
+html,body{max-width:100%;overflow-x:hidden!important}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
+
+.card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:16px!important;
+  box-shadow:0 10px 24px rgba(15,23,42,.06)!important;
+}
+
+.collapse-toggle{
+  background:transparent!important;
+  color:#0F766E!important;
+  border:0!important;
+  box-shadow:none!important;
+  width:28px!important;
+  height:28px!important;
+  min-width:28px!important;
+  font-size:14px!important;
+}
+
+.side-submenu{
+  overflow:hidden!important;
+  max-height:0!important;
+  opacity:0!important;
+  transition:max-height .22s ease,opacity .18s ease!important;
+  display:block!important;
+}
+.side-submenu.open{
+  max-height:520px!important;
+  opacity:1!important;
+}
+.sidebar.collapsed .side-submenu{display:none!important}
+
+.df255-note-card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:14px!important;
+  padding:14px!important;
+  margin:12px 0!important;
+  box-shadow:0 8px 18px rgba(15,23,42,.05)!important;
+}
+.df255-note-top{
+  display:flex!important;
+  justify-content:space-between!important;
+  align-items:flex-start!important;
+  gap:10px!important;
+}
+.df255-note-title{
+  font-size:18px!important;
+  font-weight:900!important;
+  color:#0F172A!important;
+  line-height:1.15!important;
+}
+.df255-note-text{
+  color:#475569!important;
+  margin-top:6px!important;
+  font-size:15px!important;
+  line-height:1.3!important;
+}
+.df255-note-meta{
+  color:#64748B!important;
+  margin-top:8px!important;
+  font-size:13px!important;
+}
+.df255-badge{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  border-radius:999px!important;
+  padding:6px 10px!important;
+  font-weight:900!important;
+  font-size:13px!important;
+  white-space:nowrap!important;
+}
+.df255-badge.normal{background:#E0F2FE!important;color:#075985!important}
+.df255-badge.urgente{background:#FEE2E2!important;color:#B91C1C!important}
+.df255-badge.critico{background:#7F1D1D!important;color:white!important}
+
+.df255-actions{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:10px!important;
+  margin-top:12px!important;
+}
+.df255-btn{
+  width:100%!important;
+  min-height:44px!important;
+  border-radius:12px!important;
+  border:0!important;
+  font-weight:900!important;
+  font-size:15px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  cursor:pointer!important;
+}
+.df255-edit{background:#2563EB!important;color:#fff!important}
+.df255-del{background:#B91C1C!important;color:#fff!important}
+
+.df255-prio-box{position:relative!important;width:100%!important;z-index:40!important}
+.df255-prio-btn{
+  background:#F8FAFC!important;
+  color:#0F172A!important;
+  border:1px solid #CBD5E1!important;
+  justify-content:space-between!important;
+  padding:0 12px!important;
+}
+.df255-prio-btn.normal{background:#ECFDF5!important;color:#047857!important;border-color:#A7F3D0!important}
+.df255-prio-btn.urgente{background:#FEE2E2!important;color:#B91C1C!important;border-color:#FECACA!important}
+.df255-prio-btn.critico{background:#7F1D1D!important;color:#fff!important;border-color:#450A0A!important}
+.df255-prio-menu{
+  display:none!important;
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  top:50px!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:14px!important;
+  box-shadow:4px 4px 0 #000!important;
+  overflow:hidden!important;
+  z-index:99999!important;
+}
+.df255-prio-box.open .df255-prio-menu{display:block!important}
+.df255-prio-option{
+  width:100%!important;
+  min-height:44px!important;
+  background:#fff!important;
+  border:0!important;
+  border-bottom:1px solid #E2E8F0!important;
+  padding:12px!important;
+  text-align:left!important;
+  font-weight:900!important;
+  cursor:pointer!important;
+}
+.df255-prio-option:last-child{border-bottom:0!important}
+
+.df255-report-bg{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147483647!important;
+  background:rgba(15,23,42,.66)!important;
+  display:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:14px!important;
+  box-sizing:border-box!important;
+}
+.df255-report-bg.open{display:flex!important}
+.df255-report-box{
+  width:100%!important;
+  max-width:980px!important;
+  max-height:92vh!important;
+  overflow:auto!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:18px!important;
+  box-shadow:6px 6px 0 #000!important;
+  padding:18px!important;
+  box-sizing:border-box!important;
+  color:#0F172A!important;
+  font-family:Arial,Helvetica,sans-serif!important;
+}
+.df255-report-actions{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:8px!important;
+  justify-content:flex-end!important;
+  margin-bottom:12px!important;
+}
+.df255-report-actions button{
+  min-height:40px!important;
+  border-radius:10px!important;
+  border:2px solid #000!important;
+  box-shadow:3px 3px 0 #000!important;
+  background:#0F766E!important;
+  color:#fff!important;
+  font-weight:900!important;
+  padding:8px 12px!important;
+  cursor:pointer!important;
+}
+.df255-report-actions .light{background:#fff!important;color:#000!important}
+
+.df255-report h1{color:#0F766E!important;margin:0!important;font-size:24px!important}
+.df255-report h2{font-size:18px!important;margin:18px 0 8px!important}
+.df255-report .sub{color:#64748B!important;font-size:12px!important;margin-top:4px!important}
+.df255-report .cards{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important;margin:12px 0!important}
+.df255-report .card-mini{border:1px solid #E2E8F0!important;border-radius:10px!important;padding:10px!important;background:#FAFAF9!important}
+.df255-report .label{font-size:10px!important;text-transform:uppercase!important;color:#64748B!important;font-weight:bold!important}
+.df255-report .num{font-size:17px!important;font-weight:bold!important;margin-top:3px!important}
+.df255-report .centros{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin:8px 0 14px!important}
+.df255-report .centro{display:flex!important;justify-content:space-between!important;border:1px solid #E2E8F0!important;border-radius:10px!important;padding:8px!important}
+.df255-report .centro small{display:block!important;color:#64748B!important}
+.df255-report table{width:100%!important;border-collapse:collapse!important;font-size:12px!important}
+.df255-report th{background:#0F766E!important;color:white!important;text-align:left!important;padding:7px!important}
+.df255-report td{border-bottom:1px solid #E2E8F0!important;padding:7px!important;vertical-align:top!important}
+.df255-report .valor{font-weight:bold!important;white-space:nowrap!important}
+.df255-report .status{border-radius:999px!important;padding:3px 7px!important;font-weight:bold!important;font-size:11px!important;display:inline-block!important}
+.df255-report .pago{background:#DCFCE7!important;color:#15803D!important}
+.df255-report .aberto{background:#FEF3C7!important;color:#92400E!important}
+
+@media(max-width:760px){
+  .df255-report-box{padding:14px!important;border-radius:16px!important}
+  .df255-report-actions{justify-content:flex-start!important}
+  .df255-report .cards{grid-template-columns:1fr 1fr!important}
+  .df255-report .centros{grid-template-columns:1fr!important}
+  .df255-report table{font-size:11px!important}
+}
+@media print{
+  html,body{background:#fff!important;margin:0!important;padding:0!important}
+  body > *{display:none!important}
+  #df255-report-bg{
+    display:block!important;
+    position:static!important;
+    inset:auto!important;
+    background:#fff!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-box{
+    display:block!important;
+    max-height:none!important;
+    overflow:visible!important;
+    box-shadow:none!important;
+    border:0!important;
+    border-radius:0!important;
+    max-width:none!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-actions{display:none!important}
+  #df255-report-content{display:block!important}
+  @page{margin:12mm}
+}
+</style>
+
+<script id="df-v25-5-simplificada-js">
+(function(){
+  if(window.__DF255_SIMPLIFICADA__) return;
+  window.__DF255_SIMPLIFICADA__ = true;
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function norm(v){
+    return String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  }
+  function money(v){
+    try{ if(typeof moeda === "function") return moeda(v); }catch(e){}
+    return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  }
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+  function prioLabel(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+  function prioClass(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+  function prioIcon(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotas(){
+    try{ if(typeof visNotas === "function") return visNotas().filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    try{ if(Array.isArray(window.notasDados)) return window.notasDados.filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    return [];
+  }
+
+  async function setPrioridade(id, prioridade){
+    const nova = prioLabel(prioridade);
+
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = nova;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof api === "function"){
+        await api("df_notas?id=eq."+encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{Prefer:"return=minimal"},
+          body:JSON.stringify({prioridade:nova})
+        });
+        if(typeof carregar === "function") await carregar();
+        else window.renderNotas();
+        return;
+      }
+    }catch(e){
+      alert("Não foi possível alterar a prioridade agora.");
+    }
+
+    window.renderNotas();
+  }
+
+  window.renderNotas = function(){
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const notas = getNotas().slice(0,20);
+    if(!notas.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = notas.map(n=>{
+      const p = prioLabel(n.prioridade || "Normal");
+      const pc = prioClass(p);
+      const id = esc(n.id || "");
+      return `
+        <div class="df255-note-card" data-nota-id="${id}">
+          <div class="df255-note-top">
+            <div>
+              <div class="df255-note-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df255-note-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df255-note-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df255-badge ${pc}">${prioIcon(p)} ${p}</span>
+          </div>
+
+          <div class="df255-actions no-print">
+            <button type="button" class="df255-btn df255-edit" data-df255-edit="${id}">✏️ Editar</button>
+            <div class="df255-prio-box">
+              <button type="button" class="df255-btn df255-prio-btn ${pc}">
+                <span>${prioIcon(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df255-prio-menu">
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+            <button type="button" class="df255-btn df255-del" data-df255-del="${id}">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function getContasBase(){
+    try{ if(typeof visContas === "function") return visContas().filter(c=>!c.deletado); }catch(e){}
+    try{ if(Array.isArray(window.contasDados)) return window.contasDados.filter(c=>!c.deletado); }catch(e){}
+    return [];
+  }
+  function filtrosRelatorio(){
+    return {
+      centro: document.getElementById("fCentro")?.value || "",
+      status: document.getElementById("fStatus")?.value || "",
+      resumo:true,
+      centros:true,
+      detalhes:true,
+      aberto:false
+    };
+  }
+  function filtrarContas(f){
+    return getContasBase().filter(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase()==="pago") return false;
+      return true;
+    });
+  }
+  function resumo(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c=>String(c.status||"").toLowerCase()!=="pago");
+    const pagas = contas.filter(c=>String(c.status||"").toLowerCase()==="pago");
+    const vencidas = abertas.filter(c=>String(c.vencimento||c.data_vencimento||"").slice(0,10)<hoje);
+    return {
+      qtd:contas.length,
+      totalAberto:abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago:pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido:vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor||0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+  function montarRelatorio(){
+    const f = filtrosRelatorio();
+    const contas = filtrarContas(f);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+
+    const cards = `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${money(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${money(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${money(r.totalVencido)}</div></div>
+      </div>`;
+
+    const centrosHTML = `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info])=>`
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${money(info.total)}</b>
+          </div>
+        `).join("") : "<div>Nenhum centro encontrado.</div>"}
+      </div>`;
+
+    const linhas = contas.map(c=>{
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${money(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>`;
+    }).join("");
+
+    const detalhes = `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>` : "<div>Nenhuma conta encontrada.</div>"}`;
+
+    return `
+      <div class="df255-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(f.centro || "Todos os centros")} • ${esc(f.status || "Todos os status")}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>`;
+  }
+
+  function abrirRelatorioPDF(){
+    let bg = document.getElementById("df255-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df255-report-bg";
+      bg.className = "df255-report-bg";
+      bg.innerHTML = `
+        <div class="df255-report-box">
+          <div class="df255-report-actions no-print">
+            <button type="button" id="df255Print">Salvar em PDF</button>
+            <button type="button" class="light" id="df255Close">Fechar</button>
+          </div>
+          <div id="df255-report-content"></div>
+        </div>`;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e=>{ if(e.target === bg) bg.classList.remove("open"); });
+      bg.querySelector("#df255Print").addEventListener("click", e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        setTimeout(()=>window.print(),150);
+      }, true);
+      bg.querySelector("#df255Close").addEventListener("click", ()=>bg.classList.remove("open"));
+    }
+    bg.querySelector("#df255-report-content").innerHTML = montarRelatorio();
+    bg.classList.add("open");
+  }
+
+  function exportarCSV(){
+    const contas = filtrarContas(filtrosRelatorio());
+    if(!contas.length){
+      alert("Nenhum dado para exportar.");
+      return;
+    }
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c=>[
+        c.descricao || c.conta || "",
+        Number(c.valor||0).toFixed(2).replace(".",","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+    const csv = linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{a.remove(); URL.revokeObjectURL(url);},1000);
+  }
+
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+    const acao = sel.value;
+    sel.value = "";
+    if(acao === "pdf") abrirRelatorioPDF();
+    if(acao === "csv") exportarCSV();
+  };
+
+  function bind(){
+    if(document.body.dataset.df255Bound) return;
+    document.body.dataset.df255Bound = "1";
+
+    const nprio = document.getElementById("nprio");
+    if(nprio && !Array.from(nprio.options).some(o=>norm(o.value)==="critico")){
+      const opt = document.createElement("option");
+      opt.value = "Crítico";
+      opt.textContent = "Crítico";
+      nprio.appendChild(opt);
+    }
+
+    document.addEventListener("click", async function(e){
+      const edit = e.target.closest("[data-df255-edit]");
+      if(edit){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = edit.dataset.df255Edit;
+        if(typeof editarNotaDF === "function") editarNotaDF(id);
+        return;
+      }
+
+      const del = e.target.closest("[data-df255-del]");
+      if(del){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = del.dataset.df255Del;
+        if(typeof moverNotaLixeiraDF === "function") moverNotaLixeiraDF(id);
+        else if(typeof excluirNota === "function") excluirNota(id);
+        return;
+      }
+
+      const btn = e.target.closest(".df255-prio-btn");
+      if(btn){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = btn.closest(".df255-prio-box");
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>{if(b!==box)b.classList.remove("open")});
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df255-prio-option");
+      if(op){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = op.closest(".df255-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridade(op.dataset.id, op.dataset.p);
+        setTimeout(window.renderNotas,300);
+        return;
+      }
+
+      if(!e.target.closest(".df255-prio-box")){
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function init(){
+    bind();
+    if(typeof window.renderNotas === "function") window.renderNotas();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", init, {once:true});
+  }else{
+    init();
+  }
+  setTimeout(init,800);
+  setTimeout(init,1800);
+  setTimeout(init,3200);
+})();
+</script>
+
 </body>
 </html>`;
   }
@@ -21251,11 +23064,617 @@ ${montarRelatorioHTML(f)
 
 
 
-<script src="js/v26/core.js?v=26"></script>
-<script src="js/v26/menu.js?v=26"></script>
-<script src="js/v26/notas.js?v=26"></script>
-<script src="js/v26/relatorios.js?v=26"></script>
-<script src="js/v26/init.js?v=26"></script>
+
+<style id="df-v25-5-simplificada-css">
+/* ==========================================================
+   Dona Flor V25.5 Simplificada
+   Mantém tudo em 1 index, sem arquivos modulares V26.
+   ========================================================== */
+
+html,body{max-width:100%;overflow-x:hidden!important}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
+
+.card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:16px!important;
+  box-shadow:0 10px 24px rgba(15,23,42,.06)!important;
+}
+
+.collapse-toggle{
+  background:transparent!important;
+  color:#0F766E!important;
+  border:0!important;
+  box-shadow:none!important;
+  width:28px!important;
+  height:28px!important;
+  min-width:28px!important;
+  font-size:14px!important;
+}
+
+.side-submenu{
+  overflow:hidden!important;
+  max-height:0!important;
+  opacity:0!important;
+  transition:max-height .22s ease,opacity .18s ease!important;
+  display:block!important;
+}
+.side-submenu.open{
+  max-height:520px!important;
+  opacity:1!important;
+}
+.sidebar.collapsed .side-submenu{display:none!important}
+
+.df255-note-card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:14px!important;
+  padding:14px!important;
+  margin:12px 0!important;
+  box-shadow:0 8px 18px rgba(15,23,42,.05)!important;
+}
+.df255-note-top{
+  display:flex!important;
+  justify-content:space-between!important;
+  align-items:flex-start!important;
+  gap:10px!important;
+}
+.df255-note-title{
+  font-size:18px!important;
+  font-weight:900!important;
+  color:#0F172A!important;
+  line-height:1.15!important;
+}
+.df255-note-text{
+  color:#475569!important;
+  margin-top:6px!important;
+  font-size:15px!important;
+  line-height:1.3!important;
+}
+.df255-note-meta{
+  color:#64748B!important;
+  margin-top:8px!important;
+  font-size:13px!important;
+}
+.df255-badge{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  border-radius:999px!important;
+  padding:6px 10px!important;
+  font-weight:900!important;
+  font-size:13px!important;
+  white-space:nowrap!important;
+}
+.df255-badge.normal{background:#E0F2FE!important;color:#075985!important}
+.df255-badge.urgente{background:#FEE2E2!important;color:#B91C1C!important}
+.df255-badge.critico{background:#7F1D1D!important;color:white!important}
+
+.df255-actions{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:10px!important;
+  margin-top:12px!important;
+}
+.df255-btn{
+  width:100%!important;
+  min-height:44px!important;
+  border-radius:12px!important;
+  border:0!important;
+  font-weight:900!important;
+  font-size:15px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  cursor:pointer!important;
+}
+.df255-edit{background:#2563EB!important;color:#fff!important}
+.df255-del{background:#B91C1C!important;color:#fff!important}
+
+.df255-prio-box{position:relative!important;width:100%!important;z-index:40!important}
+.df255-prio-btn{
+  background:#F8FAFC!important;
+  color:#0F172A!important;
+  border:1px solid #CBD5E1!important;
+  justify-content:space-between!important;
+  padding:0 12px!important;
+}
+.df255-prio-btn.normal{background:#ECFDF5!important;color:#047857!important;border-color:#A7F3D0!important}
+.df255-prio-btn.urgente{background:#FEE2E2!important;color:#B91C1C!important;border-color:#FECACA!important}
+.df255-prio-btn.critico{background:#7F1D1D!important;color:#fff!important;border-color:#450A0A!important}
+.df255-prio-menu{
+  display:none!important;
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  top:50px!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:14px!important;
+  box-shadow:4px 4px 0 #000!important;
+  overflow:hidden!important;
+  z-index:99999!important;
+}
+.df255-prio-box.open .df255-prio-menu{display:block!important}
+.df255-prio-option{
+  width:100%!important;
+  min-height:44px!important;
+  background:#fff!important;
+  border:0!important;
+  border-bottom:1px solid #E2E8F0!important;
+  padding:12px!important;
+  text-align:left!important;
+  font-weight:900!important;
+  cursor:pointer!important;
+}
+.df255-prio-option:last-child{border-bottom:0!important}
+
+.df255-report-bg{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147483647!important;
+  background:rgba(15,23,42,.66)!important;
+  display:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:14px!important;
+  box-sizing:border-box!important;
+}
+.df255-report-bg.open{display:flex!important}
+.df255-report-box{
+  width:100%!important;
+  max-width:980px!important;
+  max-height:92vh!important;
+  overflow:auto!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:18px!important;
+  box-shadow:6px 6px 0 #000!important;
+  padding:18px!important;
+  box-sizing:border-box!important;
+  color:#0F172A!important;
+  font-family:Arial,Helvetica,sans-serif!important;
+}
+.df255-report-actions{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:8px!important;
+  justify-content:flex-end!important;
+  margin-bottom:12px!important;
+}
+.df255-report-actions button{
+  min-height:40px!important;
+  border-radius:10px!important;
+  border:2px solid #000!important;
+  box-shadow:3px 3px 0 #000!important;
+  background:#0F766E!important;
+  color:#fff!important;
+  font-weight:900!important;
+  padding:8px 12px!important;
+  cursor:pointer!important;
+}
+.df255-report-actions .light{background:#fff!important;color:#000!important}
+
+.df255-report h1{color:#0F766E!important;margin:0!important;font-size:24px!important}
+.df255-report h2{font-size:18px!important;margin:18px 0 8px!important}
+.df255-report .sub{color:#64748B!important;font-size:12px!important;margin-top:4px!important}
+.df255-report .cards{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important;margin:12px 0!important}
+.df255-report .card-mini{border:1px solid #E2E8F0!important;border-radius:10px!important;padding:10px!important;background:#FAFAF9!important}
+.df255-report .label{font-size:10px!important;text-transform:uppercase!important;color:#64748B!important;font-weight:bold!important}
+.df255-report .num{font-size:17px!important;font-weight:bold!important;margin-top:3px!important}
+.df255-report .centros{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin:8px 0 14px!important}
+.df255-report .centro{display:flex!important;justify-content:space-between!important;border:1px solid #E2E8F0!important;border-radius:10px!important;padding:8px!important}
+.df255-report .centro small{display:block!important;color:#64748B!important}
+.df255-report table{width:100%!important;border-collapse:collapse!important;font-size:12px!important}
+.df255-report th{background:#0F766E!important;color:white!important;text-align:left!important;padding:7px!important}
+.df255-report td{border-bottom:1px solid #E2E8F0!important;padding:7px!important;vertical-align:top!important}
+.df255-report .valor{font-weight:bold!important;white-space:nowrap!important}
+.df255-report .status{border-radius:999px!important;padding:3px 7px!important;font-weight:bold!important;font-size:11px!important;display:inline-block!important}
+.df255-report .pago{background:#DCFCE7!important;color:#15803D!important}
+.df255-report .aberto{background:#FEF3C7!important;color:#92400E!important}
+
+@media(max-width:760px){
+  .df255-report-box{padding:14px!important;border-radius:16px!important}
+  .df255-report-actions{justify-content:flex-start!important}
+  .df255-report .cards{grid-template-columns:1fr 1fr!important}
+  .df255-report .centros{grid-template-columns:1fr!important}
+  .df255-report table{font-size:11px!important}
+}
+@media print{
+  html,body{background:#fff!important;margin:0!important;padding:0!important}
+  body > *{display:none!important}
+  #df255-report-bg{
+    display:block!important;
+    position:static!important;
+    inset:auto!important;
+    background:#fff!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-box{
+    display:block!important;
+    max-height:none!important;
+    overflow:visible!important;
+    box-shadow:none!important;
+    border:0!important;
+    border-radius:0!important;
+    max-width:none!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-actions{display:none!important}
+  #df255-report-content{display:block!important}
+  @page{margin:12mm}
+}
+</style>
+
+<script id="df-v25-5-simplificada-js">
+(function(){
+  if(window.__DF255_SIMPLIFICADA__) return;
+  window.__DF255_SIMPLIFICADA__ = true;
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function norm(v){
+    return String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  }
+  function money(v){
+    try{ if(typeof moeda === "function") return moeda(v); }catch(e){}
+    return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  }
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+  function prioLabel(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+  function prioClass(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+  function prioIcon(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotas(){
+    try{ if(typeof visNotas === "function") return visNotas().filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    try{ if(Array.isArray(window.notasDados)) return window.notasDados.filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    return [];
+  }
+
+  async function setPrioridade(id, prioridade){
+    const nova = prioLabel(prioridade);
+
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = nova;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof api === "function"){
+        await api("df_notas?id=eq."+encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{Prefer:"return=minimal"},
+          body:JSON.stringify({prioridade:nova})
+        });
+        if(typeof carregar === "function") await carregar();
+        else window.renderNotas();
+        return;
+      }
+    }catch(e){
+      alert("Não foi possível alterar a prioridade agora.");
+    }
+
+    window.renderNotas();
+  }
+
+  window.renderNotas = function(){
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const notas = getNotas().slice(0,20);
+    if(!notas.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = notas.map(n=>{
+      const p = prioLabel(n.prioridade || "Normal");
+      const pc = prioClass(p);
+      const id = esc(n.id || "");
+      return `
+        <div class="df255-note-card" data-nota-id="${id}">
+          <div class="df255-note-top">
+            <div>
+              <div class="df255-note-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df255-note-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df255-note-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df255-badge ${pc}">${prioIcon(p)} ${p}</span>
+          </div>
+
+          <div class="df255-actions no-print">
+            <button type="button" class="df255-btn df255-edit" data-df255-edit="${id}">✏️ Editar</button>
+            <div class="df255-prio-box">
+              <button type="button" class="df255-btn df255-prio-btn ${pc}">
+                <span>${prioIcon(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df255-prio-menu">
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+            <button type="button" class="df255-btn df255-del" data-df255-del="${id}">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function getContasBase(){
+    try{ if(typeof visContas === "function") return visContas().filter(c=>!c.deletado); }catch(e){}
+    try{ if(Array.isArray(window.contasDados)) return window.contasDados.filter(c=>!c.deletado); }catch(e){}
+    return [];
+  }
+  function filtrosRelatorio(){
+    return {
+      centro: document.getElementById("fCentro")?.value || "",
+      status: document.getElementById("fStatus")?.value || "",
+      resumo:true,
+      centros:true,
+      detalhes:true,
+      aberto:false
+    };
+  }
+  function filtrarContas(f){
+    return getContasBase().filter(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase()==="pago") return false;
+      return true;
+    });
+  }
+  function resumo(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c=>String(c.status||"").toLowerCase()!=="pago");
+    const pagas = contas.filter(c=>String(c.status||"").toLowerCase()==="pago");
+    const vencidas = abertas.filter(c=>String(c.vencimento||c.data_vencimento||"").slice(0,10)<hoje);
+    return {
+      qtd:contas.length,
+      totalAberto:abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago:pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido:vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor||0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+  function montarRelatorio(){
+    const f = filtrosRelatorio();
+    const contas = filtrarContas(f);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+
+    const cards = `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${money(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${money(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${money(r.totalVencido)}</div></div>
+      </div>`;
+
+    const centrosHTML = `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info])=>`
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${money(info.total)}</b>
+          </div>
+        `).join("") : "<div>Nenhum centro encontrado.</div>"}
+      </div>`;
+
+    const linhas = contas.map(c=>{
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${money(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>`;
+    }).join("");
+
+    const detalhes = `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>` : "<div>Nenhuma conta encontrada.</div>"}`;
+
+    return `
+      <div class="df255-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(f.centro || "Todos os centros")} • ${esc(f.status || "Todos os status")}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>`;
+  }
+
+  function abrirRelatorioPDF(){
+    let bg = document.getElementById("df255-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df255-report-bg";
+      bg.className = "df255-report-bg";
+      bg.innerHTML = `
+        <div class="df255-report-box">
+          <div class="df255-report-actions no-print">
+            <button type="button" id="df255Print">Salvar em PDF</button>
+            <button type="button" class="light" id="df255Close">Fechar</button>
+          </div>
+          <div id="df255-report-content"></div>
+        </div>`;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e=>{ if(e.target === bg) bg.classList.remove("open"); });
+      bg.querySelector("#df255Print").addEventListener("click", e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        setTimeout(()=>window.print(),150);
+      }, true);
+      bg.querySelector("#df255Close").addEventListener("click", ()=>bg.classList.remove("open"));
+    }
+    bg.querySelector("#df255-report-content").innerHTML = montarRelatorio();
+    bg.classList.add("open");
+  }
+
+  function exportarCSV(){
+    const contas = filtrarContas(filtrosRelatorio());
+    if(!contas.length){
+      alert("Nenhum dado para exportar.");
+      return;
+    }
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c=>[
+        c.descricao || c.conta || "",
+        Number(c.valor||0).toFixed(2).replace(".",","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+    const csv = linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{a.remove(); URL.revokeObjectURL(url);},1000);
+  }
+
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+    const acao = sel.value;
+    sel.value = "";
+    if(acao === "pdf") abrirRelatorioPDF();
+    if(acao === "csv") exportarCSV();
+  };
+
+  function bind(){
+    if(document.body.dataset.df255Bound) return;
+    document.body.dataset.df255Bound = "1";
+
+    const nprio = document.getElementById("nprio");
+    if(nprio && !Array.from(nprio.options).some(o=>norm(o.value)==="critico")){
+      const opt = document.createElement("option");
+      opt.value = "Crítico";
+      opt.textContent = "Crítico";
+      nprio.appendChild(opt);
+    }
+
+    document.addEventListener("click", async function(e){
+      const edit = e.target.closest("[data-df255-edit]");
+      if(edit){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = edit.dataset.df255Edit;
+        if(typeof editarNotaDF === "function") editarNotaDF(id);
+        return;
+      }
+
+      const del = e.target.closest("[data-df255-del]");
+      if(del){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = del.dataset.df255Del;
+        if(typeof moverNotaLixeiraDF === "function") moverNotaLixeiraDF(id);
+        else if(typeof excluirNota === "function") excluirNota(id);
+        return;
+      }
+
+      const btn = e.target.closest(".df255-prio-btn");
+      if(btn){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = btn.closest(".df255-prio-box");
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>{if(b!==box)b.classList.remove("open")});
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df255-prio-option");
+      if(op){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = op.closest(".df255-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridade(op.dataset.id, op.dataset.p);
+        setTimeout(window.renderNotas,300);
+        return;
+      }
+
+      if(!e.target.closest(".df255-prio-box")){
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function init(){
+    bind();
+    if(typeof window.renderNotas === "function") window.renderNotas();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", init, {once:true});
+  }else{
+    init();
+  }
+  setTimeout(init,800);
+  setTimeout(init,1800);
+  setTimeout(init,3200);
+})();
+</script>
+
 </body>
 </html>`;
 
@@ -24779,7 +27198,6 @@ ${montarRelatorioHTML(f)
   .aberto{background:#fef3c7;color:#92400e}
   @page{margin:12mm}
 </style>
-  <link rel="stylesheet" href="css/v26.css?v=26">
 </head>
 <body>
 ${montarRelatorioHTML(f)
@@ -26465,7 +28883,6 @@ ${montarRelatorioHTML(f)
     @page{margin:12mm}
   }
 </style>
-  <link rel="stylesheet" href="css/v26.css?v=26">
 </head>
 <body>
   <div class="page">
@@ -29051,11 +31468,617 @@ ${montarRelatorioHTML(f)
 
 
 
-<script src="js/v26/core.js?v=26"></script>
-<script src="js/v26/menu.js?v=26"></script>
-<script src="js/v26/notas.js?v=26"></script>
-<script src="js/v26/relatorios.js?v=26"></script>
-<script src="js/v26/init.js?v=26"></script>
+
+<style id="df-v25-5-simplificada-css">
+/* ==========================================================
+   Dona Flor V25.5 Simplificada
+   Mantém tudo em 1 index, sem arquivos modulares V26.
+   ========================================================== */
+
+html,body{max-width:100%;overflow-x:hidden!important}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
+
+.card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:16px!important;
+  box-shadow:0 10px 24px rgba(15,23,42,.06)!important;
+}
+
+.collapse-toggle{
+  background:transparent!important;
+  color:#0F766E!important;
+  border:0!important;
+  box-shadow:none!important;
+  width:28px!important;
+  height:28px!important;
+  min-width:28px!important;
+  font-size:14px!important;
+}
+
+.side-submenu{
+  overflow:hidden!important;
+  max-height:0!important;
+  opacity:0!important;
+  transition:max-height .22s ease,opacity .18s ease!important;
+  display:block!important;
+}
+.side-submenu.open{
+  max-height:520px!important;
+  opacity:1!important;
+}
+.sidebar.collapsed .side-submenu{display:none!important}
+
+.df255-note-card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:14px!important;
+  padding:14px!important;
+  margin:12px 0!important;
+  box-shadow:0 8px 18px rgba(15,23,42,.05)!important;
+}
+.df255-note-top{
+  display:flex!important;
+  justify-content:space-between!important;
+  align-items:flex-start!important;
+  gap:10px!important;
+}
+.df255-note-title{
+  font-size:18px!important;
+  font-weight:900!important;
+  color:#0F172A!important;
+  line-height:1.15!important;
+}
+.df255-note-text{
+  color:#475569!important;
+  margin-top:6px!important;
+  font-size:15px!important;
+  line-height:1.3!important;
+}
+.df255-note-meta{
+  color:#64748B!important;
+  margin-top:8px!important;
+  font-size:13px!important;
+}
+.df255-badge{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  border-radius:999px!important;
+  padding:6px 10px!important;
+  font-weight:900!important;
+  font-size:13px!important;
+  white-space:nowrap!important;
+}
+.df255-badge.normal{background:#E0F2FE!important;color:#075985!important}
+.df255-badge.urgente{background:#FEE2E2!important;color:#B91C1C!important}
+.df255-badge.critico{background:#7F1D1D!important;color:white!important}
+
+.df255-actions{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:10px!important;
+  margin-top:12px!important;
+}
+.df255-btn{
+  width:100%!important;
+  min-height:44px!important;
+  border-radius:12px!important;
+  border:0!important;
+  font-weight:900!important;
+  font-size:15px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  cursor:pointer!important;
+}
+.df255-edit{background:#2563EB!important;color:#fff!important}
+.df255-del{background:#B91C1C!important;color:#fff!important}
+
+.df255-prio-box{position:relative!important;width:100%!important;z-index:40!important}
+.df255-prio-btn{
+  background:#F8FAFC!important;
+  color:#0F172A!important;
+  border:1px solid #CBD5E1!important;
+  justify-content:space-between!important;
+  padding:0 12px!important;
+}
+.df255-prio-btn.normal{background:#ECFDF5!important;color:#047857!important;border-color:#A7F3D0!important}
+.df255-prio-btn.urgente{background:#FEE2E2!important;color:#B91C1C!important;border-color:#FECACA!important}
+.df255-prio-btn.critico{background:#7F1D1D!important;color:#fff!important;border-color:#450A0A!important}
+.df255-prio-menu{
+  display:none!important;
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  top:50px!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:14px!important;
+  box-shadow:4px 4px 0 #000!important;
+  overflow:hidden!important;
+  z-index:99999!important;
+}
+.df255-prio-box.open .df255-prio-menu{display:block!important}
+.df255-prio-option{
+  width:100%!important;
+  min-height:44px!important;
+  background:#fff!important;
+  border:0!important;
+  border-bottom:1px solid #E2E8F0!important;
+  padding:12px!important;
+  text-align:left!important;
+  font-weight:900!important;
+  cursor:pointer!important;
+}
+.df255-prio-option:last-child{border-bottom:0!important}
+
+.df255-report-bg{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147483647!important;
+  background:rgba(15,23,42,.66)!important;
+  display:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:14px!important;
+  box-sizing:border-box!important;
+}
+.df255-report-bg.open{display:flex!important}
+.df255-report-box{
+  width:100%!important;
+  max-width:980px!important;
+  max-height:92vh!important;
+  overflow:auto!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:18px!important;
+  box-shadow:6px 6px 0 #000!important;
+  padding:18px!important;
+  box-sizing:border-box!important;
+  color:#0F172A!important;
+  font-family:Arial,Helvetica,sans-serif!important;
+}
+.df255-report-actions{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:8px!important;
+  justify-content:flex-end!important;
+  margin-bottom:12px!important;
+}
+.df255-report-actions button{
+  min-height:40px!important;
+  border-radius:10px!important;
+  border:2px solid #000!important;
+  box-shadow:3px 3px 0 #000!important;
+  background:#0F766E!important;
+  color:#fff!important;
+  font-weight:900!important;
+  padding:8px 12px!important;
+  cursor:pointer!important;
+}
+.df255-report-actions .light{background:#fff!important;color:#000!important}
+
+.df255-report h1{color:#0F766E!important;margin:0!important;font-size:24px!important}
+.df255-report h2{font-size:18px!important;margin:18px 0 8px!important}
+.df255-report .sub{color:#64748B!important;font-size:12px!important;margin-top:4px!important}
+.df255-report .cards{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important;margin:12px 0!important}
+.df255-report .card-mini{border:1px solid #E2E8F0!important;border-radius:10px!important;padding:10px!important;background:#FAFAF9!important}
+.df255-report .label{font-size:10px!important;text-transform:uppercase!important;color:#64748B!important;font-weight:bold!important}
+.df255-report .num{font-size:17px!important;font-weight:bold!important;margin-top:3px!important}
+.df255-report .centros{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin:8px 0 14px!important}
+.df255-report .centro{display:flex!important;justify-content:space-between!important;border:1px solid #E2E8F0!important;border-radius:10px!important;padding:8px!important}
+.df255-report .centro small{display:block!important;color:#64748B!important}
+.df255-report table{width:100%!important;border-collapse:collapse!important;font-size:12px!important}
+.df255-report th{background:#0F766E!important;color:white!important;text-align:left!important;padding:7px!important}
+.df255-report td{border-bottom:1px solid #E2E8F0!important;padding:7px!important;vertical-align:top!important}
+.df255-report .valor{font-weight:bold!important;white-space:nowrap!important}
+.df255-report .status{border-radius:999px!important;padding:3px 7px!important;font-weight:bold!important;font-size:11px!important;display:inline-block!important}
+.df255-report .pago{background:#DCFCE7!important;color:#15803D!important}
+.df255-report .aberto{background:#FEF3C7!important;color:#92400E!important}
+
+@media(max-width:760px){
+  .df255-report-box{padding:14px!important;border-radius:16px!important}
+  .df255-report-actions{justify-content:flex-start!important}
+  .df255-report .cards{grid-template-columns:1fr 1fr!important}
+  .df255-report .centros{grid-template-columns:1fr!important}
+  .df255-report table{font-size:11px!important}
+}
+@media print{
+  html,body{background:#fff!important;margin:0!important;padding:0!important}
+  body > *{display:none!important}
+  #df255-report-bg{
+    display:block!important;
+    position:static!important;
+    inset:auto!important;
+    background:#fff!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-box{
+    display:block!important;
+    max-height:none!important;
+    overflow:visible!important;
+    box-shadow:none!important;
+    border:0!important;
+    border-radius:0!important;
+    max-width:none!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-actions{display:none!important}
+  #df255-report-content{display:block!important}
+  @page{margin:12mm}
+}
+</style>
+
+<script id="df-v25-5-simplificada-js">
+(function(){
+  if(window.__DF255_SIMPLIFICADA__) return;
+  window.__DF255_SIMPLIFICADA__ = true;
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function norm(v){
+    return String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  }
+  function money(v){
+    try{ if(typeof moeda === "function") return moeda(v); }catch(e){}
+    return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  }
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+  function prioLabel(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+  function prioClass(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+  function prioIcon(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotas(){
+    try{ if(typeof visNotas === "function") return visNotas().filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    try{ if(Array.isArray(window.notasDados)) return window.notasDados.filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    return [];
+  }
+
+  async function setPrioridade(id, prioridade){
+    const nova = prioLabel(prioridade);
+
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = nova;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof api === "function"){
+        await api("df_notas?id=eq."+encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{Prefer:"return=minimal"},
+          body:JSON.stringify({prioridade:nova})
+        });
+        if(typeof carregar === "function") await carregar();
+        else window.renderNotas();
+        return;
+      }
+    }catch(e){
+      alert("Não foi possível alterar a prioridade agora.");
+    }
+
+    window.renderNotas();
+  }
+
+  window.renderNotas = function(){
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const notas = getNotas().slice(0,20);
+    if(!notas.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = notas.map(n=>{
+      const p = prioLabel(n.prioridade || "Normal");
+      const pc = prioClass(p);
+      const id = esc(n.id || "");
+      return `
+        <div class="df255-note-card" data-nota-id="${id}">
+          <div class="df255-note-top">
+            <div>
+              <div class="df255-note-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df255-note-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df255-note-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df255-badge ${pc}">${prioIcon(p)} ${p}</span>
+          </div>
+
+          <div class="df255-actions no-print">
+            <button type="button" class="df255-btn df255-edit" data-df255-edit="${id}">✏️ Editar</button>
+            <div class="df255-prio-box">
+              <button type="button" class="df255-btn df255-prio-btn ${pc}">
+                <span>${prioIcon(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df255-prio-menu">
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+            <button type="button" class="df255-btn df255-del" data-df255-del="${id}">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function getContasBase(){
+    try{ if(typeof visContas === "function") return visContas().filter(c=>!c.deletado); }catch(e){}
+    try{ if(Array.isArray(window.contasDados)) return window.contasDados.filter(c=>!c.deletado); }catch(e){}
+    return [];
+  }
+  function filtrosRelatorio(){
+    return {
+      centro: document.getElementById("fCentro")?.value || "",
+      status: document.getElementById("fStatus")?.value || "",
+      resumo:true,
+      centros:true,
+      detalhes:true,
+      aberto:false
+    };
+  }
+  function filtrarContas(f){
+    return getContasBase().filter(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase()==="pago") return false;
+      return true;
+    });
+  }
+  function resumo(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c=>String(c.status||"").toLowerCase()!=="pago");
+    const pagas = contas.filter(c=>String(c.status||"").toLowerCase()==="pago");
+    const vencidas = abertas.filter(c=>String(c.vencimento||c.data_vencimento||"").slice(0,10)<hoje);
+    return {
+      qtd:contas.length,
+      totalAberto:abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago:pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido:vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor||0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+  function montarRelatorio(){
+    const f = filtrosRelatorio();
+    const contas = filtrarContas(f);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+
+    const cards = `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${money(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${money(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${money(r.totalVencido)}</div></div>
+      </div>`;
+
+    const centrosHTML = `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info])=>`
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${money(info.total)}</b>
+          </div>
+        `).join("") : "<div>Nenhum centro encontrado.</div>"}
+      </div>`;
+
+    const linhas = contas.map(c=>{
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${money(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>`;
+    }).join("");
+
+    const detalhes = `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>` : "<div>Nenhuma conta encontrada.</div>"}`;
+
+    return `
+      <div class="df255-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(f.centro || "Todos os centros")} • ${esc(f.status || "Todos os status")}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>`;
+  }
+
+  function abrirRelatorioPDF(){
+    let bg = document.getElementById("df255-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df255-report-bg";
+      bg.className = "df255-report-bg";
+      bg.innerHTML = `
+        <div class="df255-report-box">
+          <div class="df255-report-actions no-print">
+            <button type="button" id="df255Print">Salvar em PDF</button>
+            <button type="button" class="light" id="df255Close">Fechar</button>
+          </div>
+          <div id="df255-report-content"></div>
+        </div>`;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e=>{ if(e.target === bg) bg.classList.remove("open"); });
+      bg.querySelector("#df255Print").addEventListener("click", e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        setTimeout(()=>window.print(),150);
+      }, true);
+      bg.querySelector("#df255Close").addEventListener("click", ()=>bg.classList.remove("open"));
+    }
+    bg.querySelector("#df255-report-content").innerHTML = montarRelatorio();
+    bg.classList.add("open");
+  }
+
+  function exportarCSV(){
+    const contas = filtrarContas(filtrosRelatorio());
+    if(!contas.length){
+      alert("Nenhum dado para exportar.");
+      return;
+    }
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c=>[
+        c.descricao || c.conta || "",
+        Number(c.valor||0).toFixed(2).replace(".",","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+    const csv = linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{a.remove(); URL.revokeObjectURL(url);},1000);
+  }
+
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+    const acao = sel.value;
+    sel.value = "";
+    if(acao === "pdf") abrirRelatorioPDF();
+    if(acao === "csv") exportarCSV();
+  };
+
+  function bind(){
+    if(document.body.dataset.df255Bound) return;
+    document.body.dataset.df255Bound = "1";
+
+    const nprio = document.getElementById("nprio");
+    if(nprio && !Array.from(nprio.options).some(o=>norm(o.value)==="critico")){
+      const opt = document.createElement("option");
+      opt.value = "Crítico";
+      opt.textContent = "Crítico";
+      nprio.appendChild(opt);
+    }
+
+    document.addEventListener("click", async function(e){
+      const edit = e.target.closest("[data-df255-edit]");
+      if(edit){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = edit.dataset.df255Edit;
+        if(typeof editarNotaDF === "function") editarNotaDF(id);
+        return;
+      }
+
+      const del = e.target.closest("[data-df255-del]");
+      if(del){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = del.dataset.df255Del;
+        if(typeof moverNotaLixeiraDF === "function") moverNotaLixeiraDF(id);
+        else if(typeof excluirNota === "function") excluirNota(id);
+        return;
+      }
+
+      const btn = e.target.closest(".df255-prio-btn");
+      if(btn){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = btn.closest(".df255-prio-box");
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>{if(b!==box)b.classList.remove("open")});
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df255-prio-option");
+      if(op){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = op.closest(".df255-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridade(op.dataset.id, op.dataset.p);
+        setTimeout(window.renderNotas,300);
+        return;
+      }
+
+      if(!e.target.closest(".df255-prio-box")){
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function init(){
+    bind();
+    if(typeof window.renderNotas === "function") window.renderNotas();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", init, {once:true});
+  }else{
+    init();
+  }
+  setTimeout(init,800);
+  setTimeout(init,1800);
+  setTimeout(init,3200);
+})();
+</script>
+
 </body>
 </html>`;
   }
@@ -31672,11 +34695,617 @@ ${montarRelatorioHTML(f)
 
 
 
-<script src="js/v26/core.js?v=26"></script>
-<script src="js/v26/menu.js?v=26"></script>
-<script src="js/v26/notas.js?v=26"></script>
-<script src="js/v26/relatorios.js?v=26"></script>
-<script src="js/v26/init.js?v=26"></script>
+
+<style id="df-v25-5-simplificada-css">
+/* ==========================================================
+   Dona Flor V25.5 Simplificada
+   Mantém tudo em 1 index, sem arquivos modulares V26.
+   ========================================================== */
+
+html,body{max-width:100%;overflow-x:hidden!important}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
+
+.card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:16px!important;
+  box-shadow:0 10px 24px rgba(15,23,42,.06)!important;
+}
+
+.collapse-toggle{
+  background:transparent!important;
+  color:#0F766E!important;
+  border:0!important;
+  box-shadow:none!important;
+  width:28px!important;
+  height:28px!important;
+  min-width:28px!important;
+  font-size:14px!important;
+}
+
+.side-submenu{
+  overflow:hidden!important;
+  max-height:0!important;
+  opacity:0!important;
+  transition:max-height .22s ease,opacity .18s ease!important;
+  display:block!important;
+}
+.side-submenu.open{
+  max-height:520px!important;
+  opacity:1!important;
+}
+.sidebar.collapsed .side-submenu{display:none!important}
+
+.df255-note-card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:14px!important;
+  padding:14px!important;
+  margin:12px 0!important;
+  box-shadow:0 8px 18px rgba(15,23,42,.05)!important;
+}
+.df255-note-top{
+  display:flex!important;
+  justify-content:space-between!important;
+  align-items:flex-start!important;
+  gap:10px!important;
+}
+.df255-note-title{
+  font-size:18px!important;
+  font-weight:900!important;
+  color:#0F172A!important;
+  line-height:1.15!important;
+}
+.df255-note-text{
+  color:#475569!important;
+  margin-top:6px!important;
+  font-size:15px!important;
+  line-height:1.3!important;
+}
+.df255-note-meta{
+  color:#64748B!important;
+  margin-top:8px!important;
+  font-size:13px!important;
+}
+.df255-badge{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  border-radius:999px!important;
+  padding:6px 10px!important;
+  font-weight:900!important;
+  font-size:13px!important;
+  white-space:nowrap!important;
+}
+.df255-badge.normal{background:#E0F2FE!important;color:#075985!important}
+.df255-badge.urgente{background:#FEE2E2!important;color:#B91C1C!important}
+.df255-badge.critico{background:#7F1D1D!important;color:white!important}
+
+.df255-actions{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:10px!important;
+  margin-top:12px!important;
+}
+.df255-btn{
+  width:100%!important;
+  min-height:44px!important;
+  border-radius:12px!important;
+  border:0!important;
+  font-weight:900!important;
+  font-size:15px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  cursor:pointer!important;
+}
+.df255-edit{background:#2563EB!important;color:#fff!important}
+.df255-del{background:#B91C1C!important;color:#fff!important}
+
+.df255-prio-box{position:relative!important;width:100%!important;z-index:40!important}
+.df255-prio-btn{
+  background:#F8FAFC!important;
+  color:#0F172A!important;
+  border:1px solid #CBD5E1!important;
+  justify-content:space-between!important;
+  padding:0 12px!important;
+}
+.df255-prio-btn.normal{background:#ECFDF5!important;color:#047857!important;border-color:#A7F3D0!important}
+.df255-prio-btn.urgente{background:#FEE2E2!important;color:#B91C1C!important;border-color:#FECACA!important}
+.df255-prio-btn.critico{background:#7F1D1D!important;color:#fff!important;border-color:#450A0A!important}
+.df255-prio-menu{
+  display:none!important;
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  top:50px!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:14px!important;
+  box-shadow:4px 4px 0 #000!important;
+  overflow:hidden!important;
+  z-index:99999!important;
+}
+.df255-prio-box.open .df255-prio-menu{display:block!important}
+.df255-prio-option{
+  width:100%!important;
+  min-height:44px!important;
+  background:#fff!important;
+  border:0!important;
+  border-bottom:1px solid #E2E8F0!important;
+  padding:12px!important;
+  text-align:left!important;
+  font-weight:900!important;
+  cursor:pointer!important;
+}
+.df255-prio-option:last-child{border-bottom:0!important}
+
+.df255-report-bg{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147483647!important;
+  background:rgba(15,23,42,.66)!important;
+  display:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:14px!important;
+  box-sizing:border-box!important;
+}
+.df255-report-bg.open{display:flex!important}
+.df255-report-box{
+  width:100%!important;
+  max-width:980px!important;
+  max-height:92vh!important;
+  overflow:auto!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:18px!important;
+  box-shadow:6px 6px 0 #000!important;
+  padding:18px!important;
+  box-sizing:border-box!important;
+  color:#0F172A!important;
+  font-family:Arial,Helvetica,sans-serif!important;
+}
+.df255-report-actions{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:8px!important;
+  justify-content:flex-end!important;
+  margin-bottom:12px!important;
+}
+.df255-report-actions button{
+  min-height:40px!important;
+  border-radius:10px!important;
+  border:2px solid #000!important;
+  box-shadow:3px 3px 0 #000!important;
+  background:#0F766E!important;
+  color:#fff!important;
+  font-weight:900!important;
+  padding:8px 12px!important;
+  cursor:pointer!important;
+}
+.df255-report-actions .light{background:#fff!important;color:#000!important}
+
+.df255-report h1{color:#0F766E!important;margin:0!important;font-size:24px!important}
+.df255-report h2{font-size:18px!important;margin:18px 0 8px!important}
+.df255-report .sub{color:#64748B!important;font-size:12px!important;margin-top:4px!important}
+.df255-report .cards{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important;margin:12px 0!important}
+.df255-report .card-mini{border:1px solid #E2E8F0!important;border-radius:10px!important;padding:10px!important;background:#FAFAF9!important}
+.df255-report .label{font-size:10px!important;text-transform:uppercase!important;color:#64748B!important;font-weight:bold!important}
+.df255-report .num{font-size:17px!important;font-weight:bold!important;margin-top:3px!important}
+.df255-report .centros{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin:8px 0 14px!important}
+.df255-report .centro{display:flex!important;justify-content:space-between!important;border:1px solid #E2E8F0!important;border-radius:10px!important;padding:8px!important}
+.df255-report .centro small{display:block!important;color:#64748B!important}
+.df255-report table{width:100%!important;border-collapse:collapse!important;font-size:12px!important}
+.df255-report th{background:#0F766E!important;color:white!important;text-align:left!important;padding:7px!important}
+.df255-report td{border-bottom:1px solid #E2E8F0!important;padding:7px!important;vertical-align:top!important}
+.df255-report .valor{font-weight:bold!important;white-space:nowrap!important}
+.df255-report .status{border-radius:999px!important;padding:3px 7px!important;font-weight:bold!important;font-size:11px!important;display:inline-block!important}
+.df255-report .pago{background:#DCFCE7!important;color:#15803D!important}
+.df255-report .aberto{background:#FEF3C7!important;color:#92400E!important}
+
+@media(max-width:760px){
+  .df255-report-box{padding:14px!important;border-radius:16px!important}
+  .df255-report-actions{justify-content:flex-start!important}
+  .df255-report .cards{grid-template-columns:1fr 1fr!important}
+  .df255-report .centros{grid-template-columns:1fr!important}
+  .df255-report table{font-size:11px!important}
+}
+@media print{
+  html,body{background:#fff!important;margin:0!important;padding:0!important}
+  body > *{display:none!important}
+  #df255-report-bg{
+    display:block!important;
+    position:static!important;
+    inset:auto!important;
+    background:#fff!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-box{
+    display:block!important;
+    max-height:none!important;
+    overflow:visible!important;
+    box-shadow:none!important;
+    border:0!important;
+    border-radius:0!important;
+    max-width:none!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-actions{display:none!important}
+  #df255-report-content{display:block!important}
+  @page{margin:12mm}
+}
+</style>
+
+<script id="df-v25-5-simplificada-js">
+(function(){
+  if(window.__DF255_SIMPLIFICADA__) return;
+  window.__DF255_SIMPLIFICADA__ = true;
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function norm(v){
+    return String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  }
+  function money(v){
+    try{ if(typeof moeda === "function") return moeda(v); }catch(e){}
+    return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  }
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+  function prioLabel(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+  function prioClass(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+  function prioIcon(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotas(){
+    try{ if(typeof visNotas === "function") return visNotas().filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    try{ if(Array.isArray(window.notasDados)) return window.notasDados.filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    return [];
+  }
+
+  async function setPrioridade(id, prioridade){
+    const nova = prioLabel(prioridade);
+
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = nova;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof api === "function"){
+        await api("df_notas?id=eq."+encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{Prefer:"return=minimal"},
+          body:JSON.stringify({prioridade:nova})
+        });
+        if(typeof carregar === "function") await carregar();
+        else window.renderNotas();
+        return;
+      }
+    }catch(e){
+      alert("Não foi possível alterar a prioridade agora.");
+    }
+
+    window.renderNotas();
+  }
+
+  window.renderNotas = function(){
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const notas = getNotas().slice(0,20);
+    if(!notas.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = notas.map(n=>{
+      const p = prioLabel(n.prioridade || "Normal");
+      const pc = prioClass(p);
+      const id = esc(n.id || "");
+      return `
+        <div class="df255-note-card" data-nota-id="${id}">
+          <div class="df255-note-top">
+            <div>
+              <div class="df255-note-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df255-note-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df255-note-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df255-badge ${pc}">${prioIcon(p)} ${p}</span>
+          </div>
+
+          <div class="df255-actions no-print">
+            <button type="button" class="df255-btn df255-edit" data-df255-edit="${id}">✏️ Editar</button>
+            <div class="df255-prio-box">
+              <button type="button" class="df255-btn df255-prio-btn ${pc}">
+                <span>${prioIcon(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df255-prio-menu">
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+            <button type="button" class="df255-btn df255-del" data-df255-del="${id}">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function getContasBase(){
+    try{ if(typeof visContas === "function") return visContas().filter(c=>!c.deletado); }catch(e){}
+    try{ if(Array.isArray(window.contasDados)) return window.contasDados.filter(c=>!c.deletado); }catch(e){}
+    return [];
+  }
+  function filtrosRelatorio(){
+    return {
+      centro: document.getElementById("fCentro")?.value || "",
+      status: document.getElementById("fStatus")?.value || "",
+      resumo:true,
+      centros:true,
+      detalhes:true,
+      aberto:false
+    };
+  }
+  function filtrarContas(f){
+    return getContasBase().filter(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase()==="pago") return false;
+      return true;
+    });
+  }
+  function resumo(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c=>String(c.status||"").toLowerCase()!=="pago");
+    const pagas = contas.filter(c=>String(c.status||"").toLowerCase()==="pago");
+    const vencidas = abertas.filter(c=>String(c.vencimento||c.data_vencimento||"").slice(0,10)<hoje);
+    return {
+      qtd:contas.length,
+      totalAberto:abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago:pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido:vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor||0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+  function montarRelatorio(){
+    const f = filtrosRelatorio();
+    const contas = filtrarContas(f);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+
+    const cards = `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${money(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${money(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${money(r.totalVencido)}</div></div>
+      </div>`;
+
+    const centrosHTML = `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info])=>`
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${money(info.total)}</b>
+          </div>
+        `).join("") : "<div>Nenhum centro encontrado.</div>"}
+      </div>`;
+
+    const linhas = contas.map(c=>{
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${money(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>`;
+    }).join("");
+
+    const detalhes = `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>` : "<div>Nenhuma conta encontrada.</div>"}`;
+
+    return `
+      <div class="df255-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(f.centro || "Todos os centros")} • ${esc(f.status || "Todos os status")}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>`;
+  }
+
+  function abrirRelatorioPDF(){
+    let bg = document.getElementById("df255-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df255-report-bg";
+      bg.className = "df255-report-bg";
+      bg.innerHTML = `
+        <div class="df255-report-box">
+          <div class="df255-report-actions no-print">
+            <button type="button" id="df255Print">Salvar em PDF</button>
+            <button type="button" class="light" id="df255Close">Fechar</button>
+          </div>
+          <div id="df255-report-content"></div>
+        </div>`;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e=>{ if(e.target === bg) bg.classList.remove("open"); });
+      bg.querySelector("#df255Print").addEventListener("click", e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        setTimeout(()=>window.print(),150);
+      }, true);
+      bg.querySelector("#df255Close").addEventListener("click", ()=>bg.classList.remove("open"));
+    }
+    bg.querySelector("#df255-report-content").innerHTML = montarRelatorio();
+    bg.classList.add("open");
+  }
+
+  function exportarCSV(){
+    const contas = filtrarContas(filtrosRelatorio());
+    if(!contas.length){
+      alert("Nenhum dado para exportar.");
+      return;
+    }
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c=>[
+        c.descricao || c.conta || "",
+        Number(c.valor||0).toFixed(2).replace(".",","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+    const csv = linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{a.remove(); URL.revokeObjectURL(url);},1000);
+  }
+
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+    const acao = sel.value;
+    sel.value = "";
+    if(acao === "pdf") abrirRelatorioPDF();
+    if(acao === "csv") exportarCSV();
+  };
+
+  function bind(){
+    if(document.body.dataset.df255Bound) return;
+    document.body.dataset.df255Bound = "1";
+
+    const nprio = document.getElementById("nprio");
+    if(nprio && !Array.from(nprio.options).some(o=>norm(o.value)==="critico")){
+      const opt = document.createElement("option");
+      opt.value = "Crítico";
+      opt.textContent = "Crítico";
+      nprio.appendChild(opt);
+    }
+
+    document.addEventListener("click", async function(e){
+      const edit = e.target.closest("[data-df255-edit]");
+      if(edit){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = edit.dataset.df255Edit;
+        if(typeof editarNotaDF === "function") editarNotaDF(id);
+        return;
+      }
+
+      const del = e.target.closest("[data-df255-del]");
+      if(del){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = del.dataset.df255Del;
+        if(typeof moverNotaLixeiraDF === "function") moverNotaLixeiraDF(id);
+        else if(typeof excluirNota === "function") excluirNota(id);
+        return;
+      }
+
+      const btn = e.target.closest(".df255-prio-btn");
+      if(btn){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = btn.closest(".df255-prio-box");
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>{if(b!==box)b.classList.remove("open")});
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df255-prio-option");
+      if(op){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = op.closest(".df255-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridade(op.dataset.id, op.dataset.p);
+        setTimeout(window.renderNotas,300);
+        return;
+      }
+
+      if(!e.target.closest(".df255-prio-box")){
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function init(){
+    bind();
+    if(typeof window.renderNotas === "function") window.renderNotas();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", init, {once:true});
+  }else{
+    init();
+  }
+  setTimeout(init,800);
+  setTimeout(init,1800);
+  setTimeout(init,3200);
+})();
+</script>
+
 </body>
 </html>`;
   }
@@ -33458,7 +37087,6 @@ ${montarRelatorioHTML(f)
     @page{margin:12mm}
   }
 </style>
-  <link rel="stylesheet" href="css/v26.css?v=26">
 </head>
 <body>
   <div class="page">
@@ -36044,11 +39672,617 @@ ${montarRelatorioHTML(f)
 
 
 
-<script src="js/v26/core.js?v=26"></script>
-<script src="js/v26/menu.js?v=26"></script>
-<script src="js/v26/notas.js?v=26"></script>
-<script src="js/v26/relatorios.js?v=26"></script>
-<script src="js/v26/init.js?v=26"></script>
+
+<style id="df-v25-5-simplificada-css">
+/* ==========================================================
+   Dona Flor V25.5 Simplificada
+   Mantém tudo em 1 index, sem arquivos modulares V26.
+   ========================================================== */
+
+html,body{max-width:100%;overflow-x:hidden!important}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
+
+.card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:16px!important;
+  box-shadow:0 10px 24px rgba(15,23,42,.06)!important;
+}
+
+.collapse-toggle{
+  background:transparent!important;
+  color:#0F766E!important;
+  border:0!important;
+  box-shadow:none!important;
+  width:28px!important;
+  height:28px!important;
+  min-width:28px!important;
+  font-size:14px!important;
+}
+
+.side-submenu{
+  overflow:hidden!important;
+  max-height:0!important;
+  opacity:0!important;
+  transition:max-height .22s ease,opacity .18s ease!important;
+  display:block!important;
+}
+.side-submenu.open{
+  max-height:520px!important;
+  opacity:1!important;
+}
+.sidebar.collapsed .side-submenu{display:none!important}
+
+.df255-note-card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:14px!important;
+  padding:14px!important;
+  margin:12px 0!important;
+  box-shadow:0 8px 18px rgba(15,23,42,.05)!important;
+}
+.df255-note-top{
+  display:flex!important;
+  justify-content:space-between!important;
+  align-items:flex-start!important;
+  gap:10px!important;
+}
+.df255-note-title{
+  font-size:18px!important;
+  font-weight:900!important;
+  color:#0F172A!important;
+  line-height:1.15!important;
+}
+.df255-note-text{
+  color:#475569!important;
+  margin-top:6px!important;
+  font-size:15px!important;
+  line-height:1.3!important;
+}
+.df255-note-meta{
+  color:#64748B!important;
+  margin-top:8px!important;
+  font-size:13px!important;
+}
+.df255-badge{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  border-radius:999px!important;
+  padding:6px 10px!important;
+  font-weight:900!important;
+  font-size:13px!important;
+  white-space:nowrap!important;
+}
+.df255-badge.normal{background:#E0F2FE!important;color:#075985!important}
+.df255-badge.urgente{background:#FEE2E2!important;color:#B91C1C!important}
+.df255-badge.critico{background:#7F1D1D!important;color:white!important}
+
+.df255-actions{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:10px!important;
+  margin-top:12px!important;
+}
+.df255-btn{
+  width:100%!important;
+  min-height:44px!important;
+  border-radius:12px!important;
+  border:0!important;
+  font-weight:900!important;
+  font-size:15px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  cursor:pointer!important;
+}
+.df255-edit{background:#2563EB!important;color:#fff!important}
+.df255-del{background:#B91C1C!important;color:#fff!important}
+
+.df255-prio-box{position:relative!important;width:100%!important;z-index:40!important}
+.df255-prio-btn{
+  background:#F8FAFC!important;
+  color:#0F172A!important;
+  border:1px solid #CBD5E1!important;
+  justify-content:space-between!important;
+  padding:0 12px!important;
+}
+.df255-prio-btn.normal{background:#ECFDF5!important;color:#047857!important;border-color:#A7F3D0!important}
+.df255-prio-btn.urgente{background:#FEE2E2!important;color:#B91C1C!important;border-color:#FECACA!important}
+.df255-prio-btn.critico{background:#7F1D1D!important;color:#fff!important;border-color:#450A0A!important}
+.df255-prio-menu{
+  display:none!important;
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  top:50px!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:14px!important;
+  box-shadow:4px 4px 0 #000!important;
+  overflow:hidden!important;
+  z-index:99999!important;
+}
+.df255-prio-box.open .df255-prio-menu{display:block!important}
+.df255-prio-option{
+  width:100%!important;
+  min-height:44px!important;
+  background:#fff!important;
+  border:0!important;
+  border-bottom:1px solid #E2E8F0!important;
+  padding:12px!important;
+  text-align:left!important;
+  font-weight:900!important;
+  cursor:pointer!important;
+}
+.df255-prio-option:last-child{border-bottom:0!important}
+
+.df255-report-bg{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147483647!important;
+  background:rgba(15,23,42,.66)!important;
+  display:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:14px!important;
+  box-sizing:border-box!important;
+}
+.df255-report-bg.open{display:flex!important}
+.df255-report-box{
+  width:100%!important;
+  max-width:980px!important;
+  max-height:92vh!important;
+  overflow:auto!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:18px!important;
+  box-shadow:6px 6px 0 #000!important;
+  padding:18px!important;
+  box-sizing:border-box!important;
+  color:#0F172A!important;
+  font-family:Arial,Helvetica,sans-serif!important;
+}
+.df255-report-actions{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:8px!important;
+  justify-content:flex-end!important;
+  margin-bottom:12px!important;
+}
+.df255-report-actions button{
+  min-height:40px!important;
+  border-radius:10px!important;
+  border:2px solid #000!important;
+  box-shadow:3px 3px 0 #000!important;
+  background:#0F766E!important;
+  color:#fff!important;
+  font-weight:900!important;
+  padding:8px 12px!important;
+  cursor:pointer!important;
+}
+.df255-report-actions .light{background:#fff!important;color:#000!important}
+
+.df255-report h1{color:#0F766E!important;margin:0!important;font-size:24px!important}
+.df255-report h2{font-size:18px!important;margin:18px 0 8px!important}
+.df255-report .sub{color:#64748B!important;font-size:12px!important;margin-top:4px!important}
+.df255-report .cards{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important;margin:12px 0!important}
+.df255-report .card-mini{border:1px solid #E2E8F0!important;border-radius:10px!important;padding:10px!important;background:#FAFAF9!important}
+.df255-report .label{font-size:10px!important;text-transform:uppercase!important;color:#64748B!important;font-weight:bold!important}
+.df255-report .num{font-size:17px!important;font-weight:bold!important;margin-top:3px!important}
+.df255-report .centros{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin:8px 0 14px!important}
+.df255-report .centro{display:flex!important;justify-content:space-between!important;border:1px solid #E2E8F0!important;border-radius:10px!important;padding:8px!important}
+.df255-report .centro small{display:block!important;color:#64748B!important}
+.df255-report table{width:100%!important;border-collapse:collapse!important;font-size:12px!important}
+.df255-report th{background:#0F766E!important;color:white!important;text-align:left!important;padding:7px!important}
+.df255-report td{border-bottom:1px solid #E2E8F0!important;padding:7px!important;vertical-align:top!important}
+.df255-report .valor{font-weight:bold!important;white-space:nowrap!important}
+.df255-report .status{border-radius:999px!important;padding:3px 7px!important;font-weight:bold!important;font-size:11px!important;display:inline-block!important}
+.df255-report .pago{background:#DCFCE7!important;color:#15803D!important}
+.df255-report .aberto{background:#FEF3C7!important;color:#92400E!important}
+
+@media(max-width:760px){
+  .df255-report-box{padding:14px!important;border-radius:16px!important}
+  .df255-report-actions{justify-content:flex-start!important}
+  .df255-report .cards{grid-template-columns:1fr 1fr!important}
+  .df255-report .centros{grid-template-columns:1fr!important}
+  .df255-report table{font-size:11px!important}
+}
+@media print{
+  html,body{background:#fff!important;margin:0!important;padding:0!important}
+  body > *{display:none!important}
+  #df255-report-bg{
+    display:block!important;
+    position:static!important;
+    inset:auto!important;
+    background:#fff!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-box{
+    display:block!important;
+    max-height:none!important;
+    overflow:visible!important;
+    box-shadow:none!important;
+    border:0!important;
+    border-radius:0!important;
+    max-width:none!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-actions{display:none!important}
+  #df255-report-content{display:block!important}
+  @page{margin:12mm}
+}
+</style>
+
+<script id="df-v25-5-simplificada-js">
+(function(){
+  if(window.__DF255_SIMPLIFICADA__) return;
+  window.__DF255_SIMPLIFICADA__ = true;
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function norm(v){
+    return String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  }
+  function money(v){
+    try{ if(typeof moeda === "function") return moeda(v); }catch(e){}
+    return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  }
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+  function prioLabel(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+  function prioClass(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+  function prioIcon(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotas(){
+    try{ if(typeof visNotas === "function") return visNotas().filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    try{ if(Array.isArray(window.notasDados)) return window.notasDados.filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    return [];
+  }
+
+  async function setPrioridade(id, prioridade){
+    const nova = prioLabel(prioridade);
+
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = nova;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof api === "function"){
+        await api("df_notas?id=eq."+encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{Prefer:"return=minimal"},
+          body:JSON.stringify({prioridade:nova})
+        });
+        if(typeof carregar === "function") await carregar();
+        else window.renderNotas();
+        return;
+      }
+    }catch(e){
+      alert("Não foi possível alterar a prioridade agora.");
+    }
+
+    window.renderNotas();
+  }
+
+  window.renderNotas = function(){
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const notas = getNotas().slice(0,20);
+    if(!notas.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = notas.map(n=>{
+      const p = prioLabel(n.prioridade || "Normal");
+      const pc = prioClass(p);
+      const id = esc(n.id || "");
+      return `
+        <div class="df255-note-card" data-nota-id="${id}">
+          <div class="df255-note-top">
+            <div>
+              <div class="df255-note-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df255-note-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df255-note-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df255-badge ${pc}">${prioIcon(p)} ${p}</span>
+          </div>
+
+          <div class="df255-actions no-print">
+            <button type="button" class="df255-btn df255-edit" data-df255-edit="${id}">✏️ Editar</button>
+            <div class="df255-prio-box">
+              <button type="button" class="df255-btn df255-prio-btn ${pc}">
+                <span>${prioIcon(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df255-prio-menu">
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+            <button type="button" class="df255-btn df255-del" data-df255-del="${id}">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function getContasBase(){
+    try{ if(typeof visContas === "function") return visContas().filter(c=>!c.deletado); }catch(e){}
+    try{ if(Array.isArray(window.contasDados)) return window.contasDados.filter(c=>!c.deletado); }catch(e){}
+    return [];
+  }
+  function filtrosRelatorio(){
+    return {
+      centro: document.getElementById("fCentro")?.value || "",
+      status: document.getElementById("fStatus")?.value || "",
+      resumo:true,
+      centros:true,
+      detalhes:true,
+      aberto:false
+    };
+  }
+  function filtrarContas(f){
+    return getContasBase().filter(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase()==="pago") return false;
+      return true;
+    });
+  }
+  function resumo(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c=>String(c.status||"").toLowerCase()!=="pago");
+    const pagas = contas.filter(c=>String(c.status||"").toLowerCase()==="pago");
+    const vencidas = abertas.filter(c=>String(c.vencimento||c.data_vencimento||"").slice(0,10)<hoje);
+    return {
+      qtd:contas.length,
+      totalAberto:abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago:pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido:vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor||0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+  function montarRelatorio(){
+    const f = filtrosRelatorio();
+    const contas = filtrarContas(f);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+
+    const cards = `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${money(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${money(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${money(r.totalVencido)}</div></div>
+      </div>`;
+
+    const centrosHTML = `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info])=>`
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${money(info.total)}</b>
+          </div>
+        `).join("") : "<div>Nenhum centro encontrado.</div>"}
+      </div>`;
+
+    const linhas = contas.map(c=>{
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${money(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>`;
+    }).join("");
+
+    const detalhes = `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>` : "<div>Nenhuma conta encontrada.</div>"}`;
+
+    return `
+      <div class="df255-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(f.centro || "Todos os centros")} • ${esc(f.status || "Todos os status")}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>`;
+  }
+
+  function abrirRelatorioPDF(){
+    let bg = document.getElementById("df255-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df255-report-bg";
+      bg.className = "df255-report-bg";
+      bg.innerHTML = `
+        <div class="df255-report-box">
+          <div class="df255-report-actions no-print">
+            <button type="button" id="df255Print">Salvar em PDF</button>
+            <button type="button" class="light" id="df255Close">Fechar</button>
+          </div>
+          <div id="df255-report-content"></div>
+        </div>`;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e=>{ if(e.target === bg) bg.classList.remove("open"); });
+      bg.querySelector("#df255Print").addEventListener("click", e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        setTimeout(()=>window.print(),150);
+      }, true);
+      bg.querySelector("#df255Close").addEventListener("click", ()=>bg.classList.remove("open"));
+    }
+    bg.querySelector("#df255-report-content").innerHTML = montarRelatorio();
+    bg.classList.add("open");
+  }
+
+  function exportarCSV(){
+    const contas = filtrarContas(filtrosRelatorio());
+    if(!contas.length){
+      alert("Nenhum dado para exportar.");
+      return;
+    }
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c=>[
+        c.descricao || c.conta || "",
+        Number(c.valor||0).toFixed(2).replace(".",","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+    const csv = linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{a.remove(); URL.revokeObjectURL(url);},1000);
+  }
+
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+    const acao = sel.value;
+    sel.value = "";
+    if(acao === "pdf") abrirRelatorioPDF();
+    if(acao === "csv") exportarCSV();
+  };
+
+  function bind(){
+    if(document.body.dataset.df255Bound) return;
+    document.body.dataset.df255Bound = "1";
+
+    const nprio = document.getElementById("nprio");
+    if(nprio && !Array.from(nprio.options).some(o=>norm(o.value)==="critico")){
+      const opt = document.createElement("option");
+      opt.value = "Crítico";
+      opt.textContent = "Crítico";
+      nprio.appendChild(opt);
+    }
+
+    document.addEventListener("click", async function(e){
+      const edit = e.target.closest("[data-df255-edit]");
+      if(edit){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = edit.dataset.df255Edit;
+        if(typeof editarNotaDF === "function") editarNotaDF(id);
+        return;
+      }
+
+      const del = e.target.closest("[data-df255-del]");
+      if(del){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = del.dataset.df255Del;
+        if(typeof moverNotaLixeiraDF === "function") moverNotaLixeiraDF(id);
+        else if(typeof excluirNota === "function") excluirNota(id);
+        return;
+      }
+
+      const btn = e.target.closest(".df255-prio-btn");
+      if(btn){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = btn.closest(".df255-prio-box");
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>{if(b!==box)b.classList.remove("open")});
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df255-prio-option");
+      if(op){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = op.closest(".df255-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridade(op.dataset.id, op.dataset.p);
+        setTimeout(window.renderNotas,300);
+        return;
+      }
+
+      if(!e.target.closest(".df255-prio-box")){
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function init(){
+    bind();
+    if(typeof window.renderNotas === "function") window.renderNotas();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", init, {once:true});
+  }else{
+    init();
+  }
+  setTimeout(init,800);
+  setTimeout(init,1800);
+  setTimeout(init,3200);
+})();
+</script>
+
 </body>
 </html>`;
   }
@@ -38665,10 +42899,616 @@ ${montarRelatorioHTML(f)
 
 
 
-<script src="js/v26/core.js?v=26"></script>
-<script src="js/v26/menu.js?v=26"></script>
-<script src="js/v26/notas.js?v=26"></script>
-<script src="js/v26/relatorios.js?v=26"></script>
-<script src="js/v26/init.js?v=26"></script>
+
+<style id="df-v25-5-simplificada-css">
+/* ==========================================================
+   Dona Flor V25.5 Simplificada
+   Mantém tudo em 1 index, sem arquivos modulares V26.
+   ========================================================== */
+
+html,body{max-width:100%;overflow-x:hidden!important}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
+
+.card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:16px!important;
+  box-shadow:0 10px 24px rgba(15,23,42,.06)!important;
+}
+
+.collapse-toggle{
+  background:transparent!important;
+  color:#0F766E!important;
+  border:0!important;
+  box-shadow:none!important;
+  width:28px!important;
+  height:28px!important;
+  min-width:28px!important;
+  font-size:14px!important;
+}
+
+.side-submenu{
+  overflow:hidden!important;
+  max-height:0!important;
+  opacity:0!important;
+  transition:max-height .22s ease,opacity .18s ease!important;
+  display:block!important;
+}
+.side-submenu.open{
+  max-height:520px!important;
+  opacity:1!important;
+}
+.sidebar.collapsed .side-submenu{display:none!important}
+
+.df255-note-card{
+  background:#fff!important;
+  border:1px solid #E2E8F0!important;
+  border-radius:14px!important;
+  padding:14px!important;
+  margin:12px 0!important;
+  box-shadow:0 8px 18px rgba(15,23,42,.05)!important;
+}
+.df255-note-top{
+  display:flex!important;
+  justify-content:space-between!important;
+  align-items:flex-start!important;
+  gap:10px!important;
+}
+.df255-note-title{
+  font-size:18px!important;
+  font-weight:900!important;
+  color:#0F172A!important;
+  line-height:1.15!important;
+}
+.df255-note-text{
+  color:#475569!important;
+  margin-top:6px!important;
+  font-size:15px!important;
+  line-height:1.3!important;
+}
+.df255-note-meta{
+  color:#64748B!important;
+  margin-top:8px!important;
+  font-size:13px!important;
+}
+.df255-badge{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  border-radius:999px!important;
+  padding:6px 10px!important;
+  font-weight:900!important;
+  font-size:13px!important;
+  white-space:nowrap!important;
+}
+.df255-badge.normal{background:#E0F2FE!important;color:#075985!important}
+.df255-badge.urgente{background:#FEE2E2!important;color:#B91C1C!important}
+.df255-badge.critico{background:#7F1D1D!important;color:white!important}
+
+.df255-actions{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:10px!important;
+  margin-top:12px!important;
+}
+.df255-btn{
+  width:100%!important;
+  min-height:44px!important;
+  border-radius:12px!important;
+  border:0!important;
+  font-weight:900!important;
+  font-size:15px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:8px!important;
+  cursor:pointer!important;
+}
+.df255-edit{background:#2563EB!important;color:#fff!important}
+.df255-del{background:#B91C1C!important;color:#fff!important}
+
+.df255-prio-box{position:relative!important;width:100%!important;z-index:40!important}
+.df255-prio-btn{
+  background:#F8FAFC!important;
+  color:#0F172A!important;
+  border:1px solid #CBD5E1!important;
+  justify-content:space-between!important;
+  padding:0 12px!important;
+}
+.df255-prio-btn.normal{background:#ECFDF5!important;color:#047857!important;border-color:#A7F3D0!important}
+.df255-prio-btn.urgente{background:#FEE2E2!important;color:#B91C1C!important;border-color:#FECACA!important}
+.df255-prio-btn.critico{background:#7F1D1D!important;color:#fff!important;border-color:#450A0A!important}
+.df255-prio-menu{
+  display:none!important;
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  top:50px!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:14px!important;
+  box-shadow:4px 4px 0 #000!important;
+  overflow:hidden!important;
+  z-index:99999!important;
+}
+.df255-prio-box.open .df255-prio-menu{display:block!important}
+.df255-prio-option{
+  width:100%!important;
+  min-height:44px!important;
+  background:#fff!important;
+  border:0!important;
+  border-bottom:1px solid #E2E8F0!important;
+  padding:12px!important;
+  text-align:left!important;
+  font-weight:900!important;
+  cursor:pointer!important;
+}
+.df255-prio-option:last-child{border-bottom:0!important}
+
+.df255-report-bg{
+  position:fixed!important;
+  inset:0!important;
+  z-index:2147483647!important;
+  background:rgba(15,23,42,.66)!important;
+  display:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:14px!important;
+  box-sizing:border-box!important;
+}
+.df255-report-bg.open{display:flex!important}
+.df255-report-box{
+  width:100%!important;
+  max-width:980px!important;
+  max-height:92vh!important;
+  overflow:auto!important;
+  background:#fff!important;
+  border:2px solid #000!important;
+  border-radius:18px!important;
+  box-shadow:6px 6px 0 #000!important;
+  padding:18px!important;
+  box-sizing:border-box!important;
+  color:#0F172A!important;
+  font-family:Arial,Helvetica,sans-serif!important;
+}
+.df255-report-actions{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:8px!important;
+  justify-content:flex-end!important;
+  margin-bottom:12px!important;
+}
+.df255-report-actions button{
+  min-height:40px!important;
+  border-radius:10px!important;
+  border:2px solid #000!important;
+  box-shadow:3px 3px 0 #000!important;
+  background:#0F766E!important;
+  color:#fff!important;
+  font-weight:900!important;
+  padding:8px 12px!important;
+  cursor:pointer!important;
+}
+.df255-report-actions .light{background:#fff!important;color:#000!important}
+
+.df255-report h1{color:#0F766E!important;margin:0!important;font-size:24px!important}
+.df255-report h2{font-size:18px!important;margin:18px 0 8px!important}
+.df255-report .sub{color:#64748B!important;font-size:12px!important;margin-top:4px!important}
+.df255-report .cards{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important;margin:12px 0!important}
+.df255-report .card-mini{border:1px solid #E2E8F0!important;border-radius:10px!important;padding:10px!important;background:#FAFAF9!important}
+.df255-report .label{font-size:10px!important;text-transform:uppercase!important;color:#64748B!important;font-weight:bold!important}
+.df255-report .num{font-size:17px!important;font-weight:bold!important;margin-top:3px!important}
+.df255-report .centros{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin:8px 0 14px!important}
+.df255-report .centro{display:flex!important;justify-content:space-between!important;border:1px solid #E2E8F0!important;border-radius:10px!important;padding:8px!important}
+.df255-report .centro small{display:block!important;color:#64748B!important}
+.df255-report table{width:100%!important;border-collapse:collapse!important;font-size:12px!important}
+.df255-report th{background:#0F766E!important;color:white!important;text-align:left!important;padding:7px!important}
+.df255-report td{border-bottom:1px solid #E2E8F0!important;padding:7px!important;vertical-align:top!important}
+.df255-report .valor{font-weight:bold!important;white-space:nowrap!important}
+.df255-report .status{border-radius:999px!important;padding:3px 7px!important;font-weight:bold!important;font-size:11px!important;display:inline-block!important}
+.df255-report .pago{background:#DCFCE7!important;color:#15803D!important}
+.df255-report .aberto{background:#FEF3C7!important;color:#92400E!important}
+
+@media(max-width:760px){
+  .df255-report-box{padding:14px!important;border-radius:16px!important}
+  .df255-report-actions{justify-content:flex-start!important}
+  .df255-report .cards{grid-template-columns:1fr 1fr!important}
+  .df255-report .centros{grid-template-columns:1fr!important}
+  .df255-report table{font-size:11px!important}
+}
+@media print{
+  html,body{background:#fff!important;margin:0!important;padding:0!important}
+  body > *{display:none!important}
+  #df255-report-bg{
+    display:block!important;
+    position:static!important;
+    inset:auto!important;
+    background:#fff!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-box{
+    display:block!important;
+    max-height:none!important;
+    overflow:visible!important;
+    box-shadow:none!important;
+    border:0!important;
+    border-radius:0!important;
+    max-width:none!important;
+    padding:0!important;
+    margin:0!important;
+  }
+  #df255-report-bg .df255-report-actions{display:none!important}
+  #df255-report-content{display:block!important}
+  @page{margin:12mm}
+}
+</style>
+
+<script id="df-v25-5-simplificada-js">
+(function(){
+  if(window.__DF255_SIMPLIFICADA__) return;
+  window.__DF255_SIMPLIFICADA__ = true;
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function norm(v){
+    return String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  }
+  function money(v){
+    try{ if(typeof moeda === "function") return moeda(v); }catch(e){}
+    return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  }
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+  function prioLabel(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+  function prioClass(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+  function prioIcon(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function getNotas(){
+    try{ if(typeof visNotas === "function") return visNotas().filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    try{ if(Array.isArray(window.notasDados)) return window.notasDados.filter(n=>!n.deletado && !n.data_exclusao); }catch(e){}
+    return [];
+  }
+
+  async function setPrioridade(id, prioridade){
+    const nova = prioLabel(prioridade);
+
+    try{
+      if(Array.isArray(window.notasDados)){
+        const n = window.notasDados.find(x => String(x.id) === String(id));
+        if(n) n.prioridade = nova;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof api === "function"){
+        await api("df_notas?id=eq."+encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{Prefer:"return=minimal"},
+          body:JSON.stringify({prioridade:nova})
+        });
+        if(typeof carregar === "function") await carregar();
+        else window.renderNotas();
+        return;
+      }
+    }catch(e){
+      alert("Não foi possível alterar a prioridade agora.");
+    }
+
+    window.renderNotas();
+  }
+
+  window.renderNotas = function(){
+    const lista = document.getElementById("notasLista");
+    if(!lista) return;
+
+    const notas = getNotas().slice(0,20);
+    if(!notas.length){
+      lista.innerHTML = "<p class='empty'>Nenhum lembrete.</p>";
+      return;
+    }
+
+    lista.innerHTML = notas.map(n=>{
+      const p = prioLabel(n.prioridade || "Normal");
+      const pc = prioClass(p);
+      const id = esc(n.id || "");
+      return `
+        <div class="df255-note-card" data-nota-id="${id}">
+          <div class="df255-note-top">
+            <div>
+              <div class="df255-note-title">${esc(n.titulo || "Sem título")}</div>
+              <div class="df255-note-text">${esc(n.texto || n.recado || "")}</div>
+              <div class="df255-note-meta">${esc(n.data_lembrete || n.data || "Sem data")}${n.loja ? " • " + esc(n.loja) : ""}</div>
+            </div>
+            <span class="df255-badge ${pc}">${prioIcon(p)} ${p}</span>
+          </div>
+
+          <div class="df255-actions no-print">
+            <button type="button" class="df255-btn df255-edit" data-df255-edit="${id}">✏️ Editar</button>
+            <div class="df255-prio-box">
+              <button type="button" class="df255-btn df255-prio-btn ${pc}">
+                <span>${prioIcon(p)} Prioridade</span>
+                <strong>${p}</strong>
+              </button>
+              <div class="df255-prio-menu">
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Normal">🟢 Normal</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Urgente">🔴 Urgente</button>
+                <button type="button" class="df255-prio-option" data-id="${id}" data-p="Crítico">🔥 Crítico</button>
+              </div>
+            </div>
+            <button type="button" class="df255-btn df255-del" data-df255-del="${id}">🗑️ Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  function getContasBase(){
+    try{ if(typeof visContas === "function") return visContas().filter(c=>!c.deletado); }catch(e){}
+    try{ if(Array.isArray(window.contasDados)) return window.contasDados.filter(c=>!c.deletado); }catch(e){}
+    return [];
+  }
+  function filtrosRelatorio(){
+    return {
+      centro: document.getElementById("fCentro")?.value || "",
+      status: document.getElementById("fStatus")?.value || "",
+      resumo:true,
+      centros:true,
+      detalhes:true,
+      aberto:false
+    };
+  }
+  function filtrarContas(f){
+    return getContasBase().filter(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase()==="pago") return false;
+      return true;
+    });
+  }
+  function resumo(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c=>String(c.status||"").toLowerCase()!=="pago");
+    const pagas = contas.filter(c=>String(c.status||"").toLowerCase()==="pago");
+    const vencidas = abertas.filter(c=>String(c.vencimento||c.data_vencimento||"").slice(0,10)<hoje);
+    return {
+      qtd:contas.length,
+      totalAberto:abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago:pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido:vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor||0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+  function montarRelatorio(){
+    const f = filtrosRelatorio();
+    const contas = filtrarContas(f);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+
+    const cards = `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${money(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${money(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${money(r.totalVencido)}</div></div>
+      </div>`;
+
+    const centrosHTML = `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info])=>`
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${money(info.total)}</b>
+          </div>
+        `).join("") : "<div>Nenhum centro encontrado.</div>"}
+      </div>`;
+
+    const linhas = contas.map(c=>{
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${money(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>`;
+    }).join("");
+
+    const detalhes = `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>` : "<div>Nenhuma conta encontrada.</div>"}`;
+
+    return `
+      <div class="df255-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(f.centro || "Todos os centros")} • ${esc(f.status || "Todos os status")}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>`;
+  }
+
+  function abrirRelatorioPDF(){
+    let bg = document.getElementById("df255-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df255-report-bg";
+      bg.className = "df255-report-bg";
+      bg.innerHTML = `
+        <div class="df255-report-box">
+          <div class="df255-report-actions no-print">
+            <button type="button" id="df255Print">Salvar em PDF</button>
+            <button type="button" class="light" id="df255Close">Fechar</button>
+          </div>
+          <div id="df255-report-content"></div>
+        </div>`;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e=>{ if(e.target === bg) bg.classList.remove("open"); });
+      bg.querySelector("#df255Print").addEventListener("click", e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        setTimeout(()=>window.print(),150);
+      }, true);
+      bg.querySelector("#df255Close").addEventListener("click", ()=>bg.classList.remove("open"));
+    }
+    bg.querySelector("#df255-report-content").innerHTML = montarRelatorio();
+    bg.classList.add("open");
+  }
+
+  function exportarCSV(){
+    const contas = filtrarContas(filtrosRelatorio());
+    if(!contas.length){
+      alert("Nenhum dado para exportar.");
+      return;
+    }
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c=>[
+        c.descricao || c.conta || "",
+        Number(c.valor||0).toFixed(2).replace(".",","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+    const csv = linhas.map(l=>l.map(v=>`"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{a.remove(); URL.revokeObjectURL(url);},1000);
+  }
+
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+    const acao = sel.value;
+    sel.value = "";
+    if(acao === "pdf") abrirRelatorioPDF();
+    if(acao === "csv") exportarCSV();
+  };
+
+  function bind(){
+    if(document.body.dataset.df255Bound) return;
+    document.body.dataset.df255Bound = "1";
+
+    const nprio = document.getElementById("nprio");
+    if(nprio && !Array.from(nprio.options).some(o=>norm(o.value)==="critico")){
+      const opt = document.createElement("option");
+      opt.value = "Crítico";
+      opt.textContent = "Crítico";
+      nprio.appendChild(opt);
+    }
+
+    document.addEventListener("click", async function(e){
+      const edit = e.target.closest("[data-df255-edit]");
+      if(edit){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = edit.dataset.df255Edit;
+        if(typeof editarNotaDF === "function") editarNotaDF(id);
+        return;
+      }
+
+      const del = e.target.closest("[data-df255-del]");
+      if(del){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const id = del.dataset.df255Del;
+        if(typeof moverNotaLixeiraDF === "function") moverNotaLixeiraDF(id);
+        else if(typeof excluirNota === "function") excluirNota(id);
+        return;
+      }
+
+      const btn = e.target.closest(".df255-prio-btn");
+      if(btn){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = btn.closest(".df255-prio-box");
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>{if(b!==box)b.classList.remove("open")});
+        box.classList.toggle("open");
+        return;
+      }
+
+      const op = e.target.closest(".df255-prio-option");
+      if(op){
+        e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+        const box = op.closest(".df255-prio-box");
+        if(box) box.classList.remove("open");
+        await setPrioridade(op.dataset.id, op.dataset.p);
+        setTimeout(window.renderNotas,300);
+        return;
+      }
+
+      if(!e.target.closest(".df255-prio-box")){
+        document.querySelectorAll(".df255-prio-box.open").forEach(b=>b.classList.remove("open"));
+      }
+    }, true);
+  }
+
+  function init(){
+    bind();
+    if(typeof window.renderNotas === "function") window.renderNotas();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", init, {once:true});
+  }else{
+    init();
+  }
+  setTimeout(init,800);
+  setTimeout(init,1800);
+  setTimeout(init,3200);
+})();
+</script>
+
 </body>
 </html>

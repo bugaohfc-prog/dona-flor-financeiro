@@ -5682,7 +5682,7 @@ if(abrirSyncOriginalDF){
       if(ehSalvar){
         setTimeout(function(){
           fecharPopupsFormulario();
-        }, 900);
+        }, 1200);
       }
     }, true);
   }
@@ -5729,10 +5729,728 @@ if(abrirSyncOriginalDF){
   }
 
   css();
-  bindCliqueFora();
+  /* V22: bindCliqueFora removido para não fechar ao abrir teclado */
   bindSalvarFecha();
 
-  setInterval(fecharTelaEscuraOrfa, 2000);
+  /* V22: fechamento órfão removido para não fechar com teclado */
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V21.9 RELATÓRIO COM FILTROS + CSV
+   Correções:
+   - CSV funcionando
+   - Antes de imprimir/PDF, abre tela com filtros do relatório
+   - Filtros: centro, status, período, tipo de data e opções de conteúdo
+   - Gera relatório filtrado dentro do app
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V219_RELATORIO_FILTROS__) return;
+  window.__DONA_FLOR_V219_RELATORIO_FILTROS__ = true;
+
+  let filtrosAtuais = null;
+
+  function moeda(v){
+    const n = Number(v || 0);
+    return n.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function hojeISO(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function getContasBase(){
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const r = getContasArrayDF();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof visContas === "function"){
+        const r = visContas();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    const nomes = ["contas", "contasDados", "df_contas", "contasDF"];
+    for(const n of nomes){
+      try{
+        if(Array.isArray(window[n])) return window[n].filter(c => !c.deletado);
+      }catch(e){}
+    }
+
+    return [];
+  }
+
+  function centrosDisponiveis(){
+    const set = new Set();
+    getContasBase().forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja;
+      if(centro) set.add(centro);
+    });
+    return Array.from(set).sort();
+  }
+
+  function filtrarContas(filtros){
+    const f = filtros || {};
+    return getContasBase().filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+
+      return true;
+    });
+  }
+
+  function resumo(contas){
+    const hoje = hojeISO();
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    const venceHoje = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) === hoje);
+
+    return {
+      qtd: contas.length,
+      abertas: abertas.length,
+      pagas: pagas.length,
+      vencidas: vencidas.length,
+      venceHoje: venceHoje.length,
+      total: contas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalHoje: venceHoje.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd += 1;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function css(){
+    if(document.getElementById("df-v219-relatorio-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v219-relatorio-css";
+    style.textContent = `
+      .df-v219-bg{
+        position:fixed!important;
+        inset:0!important;
+        z-index:1000003!important;
+        background:rgba(15,23,42,.65)!important;
+        display:none!important;
+        align-items:center!important;
+        justify-content:center!important;
+        padding:14px!important;
+        box-sizing:border-box!important;
+      }
+      .df-v219-bg.open{display:flex!important;}
+      .df-v219-box{
+        width:100%!important;
+        max-width:980px!important;
+        max-height:92vh!important;
+        overflow:auto!important;
+        background:#fff!important;
+        border:2px solid #000!important;
+        border-radius:18px!important;
+        box-shadow:6px 6px 0 #000!important;
+        padding:18px!important;
+        box-sizing:border-box!important;
+        color:#0f172a!important;
+        font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important;
+      }
+      .df-v219-top{
+        display:flex!important;
+        align-items:flex-start!important;
+        justify-content:space-between!important;
+        gap:12px!important;
+        border-bottom:1px solid #e2e8f0!important;
+        padding-bottom:12px!important;
+        margin-bottom:14px!important;
+      }
+      .df-v219-title{
+        margin:0!important;
+        font-size:24px!important;
+        line-height:1.1!important;
+        font-weight:950!important;
+        color:#0f766e!important;
+      }
+      .df-v219-sub{color:#64748b!important;margin-top:4px!important;font-size:13px!important;}
+      .df-v219-actions{display:flex!important;flex-wrap:wrap!important;gap:8px!important;justify-content:flex-end!important;}
+      .df-v219-actions button,
+      .df-v219-btn{
+        min-height:40px!important;
+        border-radius:10px!important;
+        border:2px solid #000!important;
+        box-shadow:3px 3px 0 #000!important;
+        background:#0f766e!important;
+        color:#fff!important;
+        font-weight:900!important;
+        padding:8px 12px!important;
+        cursor:pointer!important;
+      }
+      .df-v219-actions .light,.df-v219-btn.light{background:#fff!important;color:#000!important;}
+      .df-v219-actions .red,.df-v219-btn.red{background:#fee2e2!important;color:#991b1b!important;}
+      .df-v219-grid{
+        display:grid!important;
+        grid-template-columns:repeat(2,1fr)!important;
+        gap:10px!important;
+      }
+      .df-v219-field label{
+        display:block!important;
+        font-size:12px!important;
+        font-weight:900!important;
+        color:#64748b!important;
+        margin:0 0 4px!important;
+        text-transform:uppercase!important;
+      }
+      .df-v219-field input,
+      .df-v219-field select{
+        width:100%!important;
+        min-height:44px!important;
+        border:1px solid #cbd5e1!important;
+        border-radius:12px!important;
+        padding:10px!important;
+        box-sizing:border-box!important;
+        font-size:15px!important;
+        background:#fff!important;
+      }
+      .df-v219-checks{
+        display:grid!important;
+        grid-template-columns:repeat(2,1fr)!important;
+        gap:8px!important;
+        margin-top:12px!important;
+      }
+      .df-v219-check{
+        border:1px solid #e2e8f0!important;
+        border-radius:12px!important;
+        padding:10px!important;
+        background:#fafaf9!important;
+        font-weight:800!important;
+      }
+      .df-v219-check input{margin-right:8px!important;}
+      .df-v219-cards{
+        display:grid!important;
+        grid-template-columns:repeat(4,1fr)!important;
+        gap:10px!important;
+        margin:14px 0!important;
+      }
+      .df-v219-card{
+        background:#fafaf9!important;
+        border:1px solid #e2e8f0!important;
+        border-radius:14px!important;
+        padding:12px!important;
+      }
+      .df-v219-label{font-size:11px!important;text-transform:uppercase!important;color:#64748b!important;font-weight:950!important;}
+      .df-v219-num{font-size:19px!important;font-weight:950!important;margin-top:3px!important;}
+      .df-v219-centros{
+        display:grid!important;
+        grid-template-columns:repeat(2,1fr)!important;
+        gap:8px!important;
+        margin:10px 0 16px!important;
+      }
+      .df-v219-centro{
+        display:flex!important;
+        align-items:center!important;
+        justify-content:space-between!important;
+        gap:10px!important;
+        border:1px solid #e2e8f0!important;
+        border-radius:12px!important;
+        padding:10px!important;
+        background:#fff!important;
+      }
+      .df-v219-centro small{display:block!important;color:#64748b!important;margin-top:2px!important;}
+      .df-v219-table-wrap{overflow:auto!important;border-radius:12px!important;border:1px solid #e2e8f0!important;}
+      .df-v219-table{width:100%!important;border-collapse:collapse!important;font-size:13px!important;}
+      .df-v219-table th{background:#0f766e!important;color:#fff!important;text-align:left!important;padding:9px!important;white-space:nowrap!important;}
+      .df-v219-table td{border-bottom:1px solid #e2e8f0!important;padding:9px!important;vertical-align:top!important;}
+      .df-v219-value{font-weight:950!important;white-space:nowrap!important;}
+      .df-v219-status{display:inline-block!important;border-radius:999px!important;padding:4px 8px!important;font-weight:900!important;font-size:12px!important;}
+      .df-v219-status.pago{background:#dcfce7!important;color:#15803d!important;}
+      .df-v219-status.aberto{background:#fef3c7!important;color:#92400e!important;}
+      .df-v219-empty{padding:18px!important;border:1px dashed #cbd5e1!important;border-radius:12px!important;color:#64748b!important;text-align:center!important;}
+      @media(max-width:760px){
+        .df-v219-box{padding:14px!important;border-radius:16px!important;}
+        .df-v219-top{display:block!important;}
+        .df-v219-actions{justify-content:flex-start!important;margin-top:10px!important;}
+        .df-v219-grid,.df-v219-checks,.df-v219-centros{grid-template-columns:1fr!important;}
+        .df-v219-cards{grid-template-columns:1fr 1fr!important;}
+        .df-v219-table{font-size:12px!important;}
+      }
+      @media print{
+        body *{visibility:hidden!important;}
+        #df-v219-report-bg,#df-v219-report-bg *{visibility:visible!important;}
+        #df-v219-report-bg{
+          position:absolute!important;
+          inset:0!important;
+          display:block!important;
+          background:#fff!important;
+          padding:0!important;
+        }
+        #df-v219-report-bg .df-v219-box{
+          max-height:none!important;
+          overflow:visible!important;
+          box-shadow:none!important;
+          border:0!important;
+          border-radius:0!important;
+          max-width:none!important;
+          padding:0!important;
+        }
+        .df-v219-actions{display:none!important;}
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function valoresFiltros(){
+    return {
+      centro: document.getElementById("df219Centro")?.value || "",
+      status: document.getElementById("df219Status")?.value || "",
+      dataInicio: document.getElementById("df219Inicio")?.value || "",
+      dataFim: document.getElementById("df219Fim")?.value || "",
+      mostrarResumo: document.getElementById("df219Resumo")?.checked !== false,
+      mostrarCentro: document.getElementById("df219CentroResumo")?.checked !== false,
+      mostrarDetalhe: document.getElementById("df219Detalhe")?.checked !== false,
+      somenteAberto: document.getElementById("df219SomenteAberto")?.checked || false
+    };
+  }
+
+  function contasComFiltros(f){
+    let contas = filtrarContas(f);
+    if(f?.somenteAberto){
+      contas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    }
+    return contas;
+  }
+
+  function abrirFiltrosRelatorio(){
+    css();
+    let bg = document.getElementById("df-v219-filter-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v219-filter-bg";
+      bg.className = "df-v219-bg";
+      document.body.appendChild(bg);
+      bg.addEventListener("click", function(e){
+        if(e.target === bg) fecharFiltros();
+      });
+    }
+
+    const centros = centrosDisponiveis().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+    bg.innerHTML = `
+      <div class="df-v219-box">
+        <div class="df-v219-top">
+          <div>
+            <h1 class="df-v219-title">Filtros do relatório</h1>
+            <div class="df-v219-sub">Escolha exatamente o que deseja imprimir/exportar.</div>
+          </div>
+          <div class="df-v219-actions">
+            <button type="button" class="light" onclick="window.fecharFiltrosRelatorioDF219()">Fechar</button>
+          </div>
+        </div>
+
+        <div class="df-v219-grid">
+          <div class="df-v219-field">
+            <label>Centro</label>
+            <select id="df219Centro">
+              <option value="">Todos os centros</option>
+              ${centros}
+            </select>
+          </div>
+
+          <div class="df-v219-field">
+            <label>Status</label>
+            <select id="df219Status">
+              <option value="">Todos os status</option>
+              <option value="Aberto">Aberto</option>
+              <option value="Pago">Pago</option>
+            </select>
+          </div>
+
+          <div class="df-v219-field">
+            <label>Data inicial</label>
+            <input id="df219Inicio" type="date">
+          </div>
+
+          <div class="df-v219-field">
+            <label>Data final</label>
+            <input id="df219Fim" type="date">
+          </div>
+        </div>
+
+        <div class="df-v219-checks">
+          <label class="df-v219-check"><input id="df219Resumo" type="checkbox" checked> Mostrar resumo financeiro</label>
+          <label class="df-v219-check"><input id="df219CentroResumo" type="checkbox" checked> Mostrar resumo por centro</label>
+          <label class="df-v219-check"><input id="df219Detalhe" type="checkbox" checked> Mostrar detalhamento</label>
+          <label class="df-v219-check"><input id="df219SomenteAberto" type="checkbox"> Somente contas em aberto</label>
+        </div>
+
+        <div class="df-v219-actions" style="margin-top:16px;justify-content:flex-start!important">
+          <button type="button" onclick="window.visualizarRelatorioDF219()">Visualizar / PDF</button>
+          <button type="button" onclick="window.exportarCSVDF219()">Exportar CSV</button>
+          <button type="button" class="light" onclick="window.limparFiltrosRelatorioDF219()">Limpar filtros</button>
+        </div>
+      </div>
+    `;
+
+    bg.classList.add("open");
+  }
+
+  function fecharFiltros(){
+    const bg = document.getElementById("df-v219-filter-bg");
+    if(bg) bg.classList.remove("open");
+  }
+
+  window.fecharFiltrosRelatorioDF219 = fecharFiltros;
+
+  window.limparFiltrosRelatorioDF219 = function(){
+    ["df219Centro","df219Status","df219Inicio","df219Fim"].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.value = "";
+    });
+    ["df219Resumo","df219CentroResumo","df219Detalhe"].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.checked = true;
+    });
+    const aberto = document.getElementById("df219SomenteAberto");
+    if(aberto) aberto.checked = false;
+  };
+
+  function montarRelatorioHTML(filtros){
+    const contas = contasComFiltros(filtros);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+    const agora = new Date().toLocaleString("pt-BR");
+
+    const resumoHTML = filtros.mostrarResumo ? `
+      <div class="df-v219-cards">
+        <div class="df-v219-card"><div class="df-v219-label">Quantidade</div><div class="df-v219-num">${r.qtd}</div></div>
+        <div class="df-v219-card"><div class="df-v219-label">Total aberto</div><div class="df-v219-num">${moeda(r.totalAberto)}</div></div>
+        <div class="df-v219-card"><div class="df-v219-label">Pago</div><div class="df-v219-num">${moeda(r.totalPago)}</div></div>
+        <div class="df-v219-card"><div class="df-v219-label">Vencidas</div><div class="df-v219-num">${moeda(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centroHTML = filtros.mostrarCentro ? `
+      <h2>Resumo por centro</h2>
+      <div class="df-v219-centros">
+        ${centros.length ? centros.map(([centro, info]) => `
+          <div class="df-v219-centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${moeda(info.total)}</b>
+          </div>
+        `).join("") : `<div class="df-v219-empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="df-v219-status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="df-v219-value">${moeda(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalheHTML = filtros.mostrarDetalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <div class="df-v219-table-wrap">
+          <table class="df-v219-table">
+            <thead>
+              <tr>
+                <th>Conta</th>
+                <th>Centro</th>
+                <th>Vencimento</th>
+                <th>Status</th>
+                <th>Valor</th>
+                <th>Obs.</th>
+              </tr>
+            </thead>
+            <tbody>${linhas}</tbody>
+          </table>
+        </div>
+      ` : `<div class="df-v219-empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    const filtroDesc = [
+      filtros.centro ? `Centro: ${filtros.centro}` : "Todos os centros",
+      filtros.status ? `Status: ${filtros.status}` : "Todos os status",
+      filtros.dataInicio ? `De ${dataBR(filtros.dataInicio)}` : "",
+      filtros.dataFim ? `Até ${dataBR(filtros.dataFim)}` : "",
+      filtros.somenteAberto ? "Somente em aberto" : ""
+    ].filter(Boolean).join(" • ");
+
+    return `
+      <div class="df-v219-top">
+        <div>
+          <h1 class="df-v219-title">Dona Flor Gestão Financeira</h1>
+          <div class="df-v219-sub">Relatório financeiro • Gerado em ${esc(agora)}</div>
+          <div class="df-v219-sub">${esc(filtroDesc)}</div>
+        </div>
+        <div class="df-v219-actions">
+          <button type="button" onclick="window.print()">Imprimir/PDF</button>
+          <button type="button" onclick="window.exportarCSVDF219(true)">CSV</button>
+          <button type="button" class="light" onclick="window.voltarFiltrosRelatorioDF219()">Filtros</button>
+          <button type="button" class="light" onclick="window.fecharRelatorioDF219()">Fechar</button>
+        </div>
+      </div>
+      ${resumoHTML}
+      ${centroHTML}
+      ${detalheHTML}
+    `;
+  }
+
+  window.visualizarRelatorioDF219 = function(){
+    filtrosAtuais = valoresFiltros();
+    fecharFiltros();
+
+    let bg = document.getElementById("df-v219-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v219-report-bg";
+      bg.className = "df-v219-bg";
+      bg.innerHTML = `<div class="df-v219-box" id="df-v219-report"></div>`;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", function(e){
+        if(e.target === bg) window.fecharRelatorioDF219();
+      });
+    }
+
+    document.getElementById("df-v219-report").innerHTML = montarRelatorioHTML(filtrosAtuais);
+    bg.classList.add("open");
+  };
+
+  window.fecharRelatorioDF219 = function(){
+    const bg = document.getElementById("df-v219-report-bg");
+    if(bg) bg.classList.remove("open");
+  };
+
+  window.voltarFiltrosRelatorioDF219 = function(){
+    window.fecharRelatorioDF219();
+    abrirFiltrosRelatorio();
+  };
+
+  window.exportarCSVDF219 = function(usarAtuais){
+    const filtros = usarAtuais === true ? (filtrosAtuais || {}) : valoresFiltros();
+    const contas = contasComFiltros(filtros);
+
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c => [
+        c.descricao || c.conta || "",
+        Number(c.valor || 0).toFixed(2).replace(".", ","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+
+    const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");
+    const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      a.remove();
+      URL.revokeObjectURL(url);
+    }, 100);
+  };
+
+  // sobrescreve as funções antigas de relatório
+  window.gerarRelatorioFinanceiroDF = abrirFiltrosRelatorio;
+  window.exportarCSV = function(){ abrirFiltrosRelatorio(); };
+
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    const acao = sel ? sel.value : "";
+    if(acao === "pdf" || acao === "csv"){
+      abrirFiltrosRelatorio();
+    }
+    if(sel) sel.value = "";
+  };
+
+  function bindSelect(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel || sel.dataset.df219Bound) return;
+    sel.dataset.df219Bound = "1";
+    sel.addEventListener("change", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      window.executarRelatorio();
+    }, true);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", bindSelect, {once:true});
+  }else{
+    bindSelect();
+  }
+
+  css();
+  setTimeout(bindSelect, 700);
+  setTimeout(bindSelect, 1600);
+  setTimeout(bindSelect, 3200);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V22 TECLADO + POP-UP CORRIGIDO
+   Correção:
+   - Teclado do celular não fecha mais o pop-up de edição
+   - Pop-up só fecha no X, botão salvar ou clique real fora
+   - Remove fechamento automático agressivo de versões anteriores
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V22_TECLADO_POPUP__) return;
+  window.__DONA_FLOR_V22_TECLADO_POPUP__ = true;
+
+  let focoEmCampo = false;
+  let ultimoFocoCampo = 0;
+  let abriuEm = Date.now();
+
+  function isCampo(el){
+    return !!(el && el.closest && el.closest("input, textarea, select"));
+  }
+
+  function isModalFormulario(el){
+    return !!(el && el.closest && el.closest(
+      ".df-v213-modal,.df-v214-modal,.df-v212-modal,.df-v21-modal,#df-v213-modal,#df-v214-modal,#df-v212-modal,#df-v22-modal"
+    ));
+  }
+
+  function modalAberto(){
+    return document.querySelector(
+      ".df-v213-modal.open,.df-v214-modal.open,.df-v212-modal.open,.df-v21-modal.open,#df-v213-modal.open,#df-v214-modal.open,#df-v212-modal.open,#df-v22-modal.open"
+    );
+  }
+
+  document.addEventListener("focusin", function(e){
+    if(isCampo(e.target) && isModalFormulario(e.target)){
+      focoEmCampo = true;
+      ultimoFocoCampo = Date.now();
+      document.body.classList.add("df-keyboard-open");
+    }
+  }, true);
+
+  document.addEventListener("focusout", function(e){
+    if(isCampo(e.target) && isModalFormulario(e.target)){
+      ultimoFocoCampo = Date.now();
+      setTimeout(function(){
+        const ativo = document.activeElement;
+        focoEmCampo = isCampo(ativo) && isModalFormulario(ativo);
+        if(!focoEmCampo){
+          document.body.classList.remove("df-keyboard-open");
+        }
+      }, 650);
+    }
+  }, true);
+
+  // Bloqueia fechamento por clique gerado pelo teclado/resize no celular
+  document.addEventListener("click", function(e){
+    const modal = modalAberto();
+    if(!modal) return;
+
+    const dentroCaixa = e.target.closest && e.target.closest(".df-v213-box,.df-v214-box,.df-v212-box,.df-v21-box,.df-v22-box");
+    const clicouFundo = e.target === modal;
+
+    const tecladoProvavel =
+      focoEmCampo ||
+      (Date.now() - ultimoFocoCampo < 1200) ||
+      document.body.classList.contains("df-keyboard-open");
+
+    // Se foi um clique no fundo enquanto o teclado está abrindo/fechando, não fecha.
+    if(clicouFundo && tecladoProvavel){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
+
+    // Enquanto está digitando, qualquer clique fora acidental é ignorado.
+    if(!dentroCaixa && tecladoProvavel){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
+  }, true);
+
+  function css(){
+    if(document.getElementById("df-v22-teclado-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v22-teclado-css";
+    style.textContent = `
+      body.df-keyboard-open .df-v213-modal.open,
+      body.df-keyboard-open .df-v214-modal.open,
+      body.df-keyboard-open .df-v212-modal.open,
+      body.df-keyboard-open .df-v21-modal.open {
+        align-items:flex-start !important;
+        overflow:auto !important;
+        padding-top:18px !important;
+      }
+
+      body.df-keyboard-open .df-v213-box,
+      body.df-keyboard-open .df-v214-box,
+      body.df-keyboard-open .df-v212-box,
+      body.df-keyboard-open .df-v21-box {
+        max-height:78vh !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Reforça abertura sem marcar como clique fora logo depois.
+  const oldAdd = DOMTokenList.prototype.add;
+  DOMTokenList.prototype.add = function(...tokens){
+    if(tokens.includes("open")){
+      abriuEm = Date.now();
+    }
+    return oldAdd.apply(this, tokens);
+  };
+
+  css();
 })();
 </script>
 </body>
@@ -7577,7 +8295,7 @@ if(abrirSyncOriginalDF){
       if(ehSalvar){
         setTimeout(function(){
           fecharPopupsFormulario();
-        }, 900);
+        }, 1200);
       }
     }, true);
   }
@@ -7624,10 +8342,728 @@ if(abrirSyncOriginalDF){
   }
 
   css();
-  bindCliqueFora();
+  /* V22: bindCliqueFora removido para não fechar ao abrir teclado */
   bindSalvarFecha();
 
-  setInterval(fecharTelaEscuraOrfa, 2000);
+  /* V22: fechamento órfão removido para não fechar com teclado */
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V21.9 RELATÓRIO COM FILTROS + CSV
+   Correções:
+   - CSV funcionando
+   - Antes de imprimir/PDF, abre tela com filtros do relatório
+   - Filtros: centro, status, período, tipo de data e opções de conteúdo
+   - Gera relatório filtrado dentro do app
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V219_RELATORIO_FILTROS__) return;
+  window.__DONA_FLOR_V219_RELATORIO_FILTROS__ = true;
+
+  let filtrosAtuais = null;
+
+  function moeda(v){
+    const n = Number(v || 0);
+    return n.toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function hojeISO(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function getContasBase(){
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const r = getContasArrayDF();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof visContas === "function"){
+        const r = visContas();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    const nomes = ["contas", "contasDados", "df_contas", "contasDF"];
+    for(const n of nomes){
+      try{
+        if(Array.isArray(window[n])) return window[n].filter(c => !c.deletado);
+      }catch(e){}
+    }
+
+    return [];
+  }
+
+  function centrosDisponiveis(){
+    const set = new Set();
+    getContasBase().forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja;
+      if(centro) set.add(centro);
+    });
+    return Array.from(set).sort();
+  }
+
+  function filtrarContas(filtros){
+    const f = filtros || {};
+    return getContasBase().filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+
+      return true;
+    });
+  }
+
+  function resumo(contas){
+    const hoje = hojeISO();
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    const venceHoje = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) === hoje);
+
+    return {
+      qtd: contas.length,
+      abertas: abertas.length,
+      pagas: pagas.length,
+      vencidas: vencidas.length,
+      venceHoje: venceHoje.length,
+      total: contas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalHoje: venceHoje.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd += 1;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function css(){
+    if(document.getElementById("df-v219-relatorio-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v219-relatorio-css";
+    style.textContent = `
+      .df-v219-bg{
+        position:fixed!important;
+        inset:0!important;
+        z-index:1000003!important;
+        background:rgba(15,23,42,.65)!important;
+        display:none!important;
+        align-items:center!important;
+        justify-content:center!important;
+        padding:14px!important;
+        box-sizing:border-box!important;
+      }
+      .df-v219-bg.open{display:flex!important;}
+      .df-v219-box{
+        width:100%!important;
+        max-width:980px!important;
+        max-height:92vh!important;
+        overflow:auto!important;
+        background:#fff!important;
+        border:2px solid #000!important;
+        border-radius:18px!important;
+        box-shadow:6px 6px 0 #000!important;
+        padding:18px!important;
+        box-sizing:border-box!important;
+        color:#0f172a!important;
+        font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important;
+      }
+      .df-v219-top{
+        display:flex!important;
+        align-items:flex-start!important;
+        justify-content:space-between!important;
+        gap:12px!important;
+        border-bottom:1px solid #e2e8f0!important;
+        padding-bottom:12px!important;
+        margin-bottom:14px!important;
+      }
+      .df-v219-title{
+        margin:0!important;
+        font-size:24px!important;
+        line-height:1.1!important;
+        font-weight:950!important;
+        color:#0f766e!important;
+      }
+      .df-v219-sub{color:#64748b!important;margin-top:4px!important;font-size:13px!important;}
+      .df-v219-actions{display:flex!important;flex-wrap:wrap!important;gap:8px!important;justify-content:flex-end!important;}
+      .df-v219-actions button,
+      .df-v219-btn{
+        min-height:40px!important;
+        border-radius:10px!important;
+        border:2px solid #000!important;
+        box-shadow:3px 3px 0 #000!important;
+        background:#0f766e!important;
+        color:#fff!important;
+        font-weight:900!important;
+        padding:8px 12px!important;
+        cursor:pointer!important;
+      }
+      .df-v219-actions .light,.df-v219-btn.light{background:#fff!important;color:#000!important;}
+      .df-v219-actions .red,.df-v219-btn.red{background:#fee2e2!important;color:#991b1b!important;}
+      .df-v219-grid{
+        display:grid!important;
+        grid-template-columns:repeat(2,1fr)!important;
+        gap:10px!important;
+      }
+      .df-v219-field label{
+        display:block!important;
+        font-size:12px!important;
+        font-weight:900!important;
+        color:#64748b!important;
+        margin:0 0 4px!important;
+        text-transform:uppercase!important;
+      }
+      .df-v219-field input,
+      .df-v219-field select{
+        width:100%!important;
+        min-height:44px!important;
+        border:1px solid #cbd5e1!important;
+        border-radius:12px!important;
+        padding:10px!important;
+        box-sizing:border-box!important;
+        font-size:15px!important;
+        background:#fff!important;
+      }
+      .df-v219-checks{
+        display:grid!important;
+        grid-template-columns:repeat(2,1fr)!important;
+        gap:8px!important;
+        margin-top:12px!important;
+      }
+      .df-v219-check{
+        border:1px solid #e2e8f0!important;
+        border-radius:12px!important;
+        padding:10px!important;
+        background:#fafaf9!important;
+        font-weight:800!important;
+      }
+      .df-v219-check input{margin-right:8px!important;}
+      .df-v219-cards{
+        display:grid!important;
+        grid-template-columns:repeat(4,1fr)!important;
+        gap:10px!important;
+        margin:14px 0!important;
+      }
+      .df-v219-card{
+        background:#fafaf9!important;
+        border:1px solid #e2e8f0!important;
+        border-radius:14px!important;
+        padding:12px!important;
+      }
+      .df-v219-label{font-size:11px!important;text-transform:uppercase!important;color:#64748b!important;font-weight:950!important;}
+      .df-v219-num{font-size:19px!important;font-weight:950!important;margin-top:3px!important;}
+      .df-v219-centros{
+        display:grid!important;
+        grid-template-columns:repeat(2,1fr)!important;
+        gap:8px!important;
+        margin:10px 0 16px!important;
+      }
+      .df-v219-centro{
+        display:flex!important;
+        align-items:center!important;
+        justify-content:space-between!important;
+        gap:10px!important;
+        border:1px solid #e2e8f0!important;
+        border-radius:12px!important;
+        padding:10px!important;
+        background:#fff!important;
+      }
+      .df-v219-centro small{display:block!important;color:#64748b!important;margin-top:2px!important;}
+      .df-v219-table-wrap{overflow:auto!important;border-radius:12px!important;border:1px solid #e2e8f0!important;}
+      .df-v219-table{width:100%!important;border-collapse:collapse!important;font-size:13px!important;}
+      .df-v219-table th{background:#0f766e!important;color:#fff!important;text-align:left!important;padding:9px!important;white-space:nowrap!important;}
+      .df-v219-table td{border-bottom:1px solid #e2e8f0!important;padding:9px!important;vertical-align:top!important;}
+      .df-v219-value{font-weight:950!important;white-space:nowrap!important;}
+      .df-v219-status{display:inline-block!important;border-radius:999px!important;padding:4px 8px!important;font-weight:900!important;font-size:12px!important;}
+      .df-v219-status.pago{background:#dcfce7!important;color:#15803d!important;}
+      .df-v219-status.aberto{background:#fef3c7!important;color:#92400e!important;}
+      .df-v219-empty{padding:18px!important;border:1px dashed #cbd5e1!important;border-radius:12px!important;color:#64748b!important;text-align:center!important;}
+      @media(max-width:760px){
+        .df-v219-box{padding:14px!important;border-radius:16px!important;}
+        .df-v219-top{display:block!important;}
+        .df-v219-actions{justify-content:flex-start!important;margin-top:10px!important;}
+        .df-v219-grid,.df-v219-checks,.df-v219-centros{grid-template-columns:1fr!important;}
+        .df-v219-cards{grid-template-columns:1fr 1fr!important;}
+        .df-v219-table{font-size:12px!important;}
+      }
+      @media print{
+        body *{visibility:hidden!important;}
+        #df-v219-report-bg,#df-v219-report-bg *{visibility:visible!important;}
+        #df-v219-report-bg{
+          position:absolute!important;
+          inset:0!important;
+          display:block!important;
+          background:#fff!important;
+          padding:0!important;
+        }
+        #df-v219-report-bg .df-v219-box{
+          max-height:none!important;
+          overflow:visible!important;
+          box-shadow:none!important;
+          border:0!important;
+          border-radius:0!important;
+          max-width:none!important;
+          padding:0!important;
+        }
+        .df-v219-actions{display:none!important;}
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function valoresFiltros(){
+    return {
+      centro: document.getElementById("df219Centro")?.value || "",
+      status: document.getElementById("df219Status")?.value || "",
+      dataInicio: document.getElementById("df219Inicio")?.value || "",
+      dataFim: document.getElementById("df219Fim")?.value || "",
+      mostrarResumo: document.getElementById("df219Resumo")?.checked !== false,
+      mostrarCentro: document.getElementById("df219CentroResumo")?.checked !== false,
+      mostrarDetalhe: document.getElementById("df219Detalhe")?.checked !== false,
+      somenteAberto: document.getElementById("df219SomenteAberto")?.checked || false
+    };
+  }
+
+  function contasComFiltros(f){
+    let contas = filtrarContas(f);
+    if(f?.somenteAberto){
+      contas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    }
+    return contas;
+  }
+
+  function abrirFiltrosRelatorio(){
+    css();
+    let bg = document.getElementById("df-v219-filter-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v219-filter-bg";
+      bg.className = "df-v219-bg";
+      document.body.appendChild(bg);
+      bg.addEventListener("click", function(e){
+        if(e.target === bg) fecharFiltros();
+      });
+    }
+
+    const centros = centrosDisponiveis().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+    bg.innerHTML = `
+      <div class="df-v219-box">
+        <div class="df-v219-top">
+          <div>
+            <h1 class="df-v219-title">Filtros do relatório</h1>
+            <div class="df-v219-sub">Escolha exatamente o que deseja imprimir/exportar.</div>
+          </div>
+          <div class="df-v219-actions">
+            <button type="button" class="light" onclick="window.fecharFiltrosRelatorioDF219()">Fechar</button>
+          </div>
+        </div>
+
+        <div class="df-v219-grid">
+          <div class="df-v219-field">
+            <label>Centro</label>
+            <select id="df219Centro">
+              <option value="">Todos os centros</option>
+              ${centros}
+            </select>
+          </div>
+
+          <div class="df-v219-field">
+            <label>Status</label>
+            <select id="df219Status">
+              <option value="">Todos os status</option>
+              <option value="Aberto">Aberto</option>
+              <option value="Pago">Pago</option>
+            </select>
+          </div>
+
+          <div class="df-v219-field">
+            <label>Data inicial</label>
+            <input id="df219Inicio" type="date">
+          </div>
+
+          <div class="df-v219-field">
+            <label>Data final</label>
+            <input id="df219Fim" type="date">
+          </div>
+        </div>
+
+        <div class="df-v219-checks">
+          <label class="df-v219-check"><input id="df219Resumo" type="checkbox" checked> Mostrar resumo financeiro</label>
+          <label class="df-v219-check"><input id="df219CentroResumo" type="checkbox" checked> Mostrar resumo por centro</label>
+          <label class="df-v219-check"><input id="df219Detalhe" type="checkbox" checked> Mostrar detalhamento</label>
+          <label class="df-v219-check"><input id="df219SomenteAberto" type="checkbox"> Somente contas em aberto</label>
+        </div>
+
+        <div class="df-v219-actions" style="margin-top:16px;justify-content:flex-start!important">
+          <button type="button" onclick="window.visualizarRelatorioDF219()">Visualizar / PDF</button>
+          <button type="button" onclick="window.exportarCSVDF219()">Exportar CSV</button>
+          <button type="button" class="light" onclick="window.limparFiltrosRelatorioDF219()">Limpar filtros</button>
+        </div>
+      </div>
+    `;
+
+    bg.classList.add("open");
+  }
+
+  function fecharFiltros(){
+    const bg = document.getElementById("df-v219-filter-bg");
+    if(bg) bg.classList.remove("open");
+  }
+
+  window.fecharFiltrosRelatorioDF219 = fecharFiltros;
+
+  window.limparFiltrosRelatorioDF219 = function(){
+    ["df219Centro","df219Status","df219Inicio","df219Fim"].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.value = "";
+    });
+    ["df219Resumo","df219CentroResumo","df219Detalhe"].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.checked = true;
+    });
+    const aberto = document.getElementById("df219SomenteAberto");
+    if(aberto) aberto.checked = false;
+  };
+
+  function montarRelatorioHTML(filtros){
+    const contas = contasComFiltros(filtros);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+    const agora = new Date().toLocaleString("pt-BR");
+
+    const resumoHTML = filtros.mostrarResumo ? `
+      <div class="df-v219-cards">
+        <div class="df-v219-card"><div class="df-v219-label">Quantidade</div><div class="df-v219-num">${r.qtd}</div></div>
+        <div class="df-v219-card"><div class="df-v219-label">Total aberto</div><div class="df-v219-num">${moeda(r.totalAberto)}</div></div>
+        <div class="df-v219-card"><div class="df-v219-label">Pago</div><div class="df-v219-num">${moeda(r.totalPago)}</div></div>
+        <div class="df-v219-card"><div class="df-v219-label">Vencidas</div><div class="df-v219-num">${moeda(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centroHTML = filtros.mostrarCentro ? `
+      <h2>Resumo por centro</h2>
+      <div class="df-v219-centros">
+        ${centros.length ? centros.map(([centro, info]) => `
+          <div class="df-v219-centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${moeda(info.total)}</b>
+          </div>
+        `).join("") : `<div class="df-v219-empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="df-v219-status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="df-v219-value">${moeda(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalheHTML = filtros.mostrarDetalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <div class="df-v219-table-wrap">
+          <table class="df-v219-table">
+            <thead>
+              <tr>
+                <th>Conta</th>
+                <th>Centro</th>
+                <th>Vencimento</th>
+                <th>Status</th>
+                <th>Valor</th>
+                <th>Obs.</th>
+              </tr>
+            </thead>
+            <tbody>${linhas}</tbody>
+          </table>
+        </div>
+      ` : `<div class="df-v219-empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    const filtroDesc = [
+      filtros.centro ? `Centro: ${filtros.centro}` : "Todos os centros",
+      filtros.status ? `Status: ${filtros.status}` : "Todos os status",
+      filtros.dataInicio ? `De ${dataBR(filtros.dataInicio)}` : "",
+      filtros.dataFim ? `Até ${dataBR(filtros.dataFim)}` : "",
+      filtros.somenteAberto ? "Somente em aberto" : ""
+    ].filter(Boolean).join(" • ");
+
+    return `
+      <div class="df-v219-top">
+        <div>
+          <h1 class="df-v219-title">Dona Flor Gestão Financeira</h1>
+          <div class="df-v219-sub">Relatório financeiro • Gerado em ${esc(agora)}</div>
+          <div class="df-v219-sub">${esc(filtroDesc)}</div>
+        </div>
+        <div class="df-v219-actions">
+          <button type="button" onclick="window.print()">Imprimir/PDF</button>
+          <button type="button" onclick="window.exportarCSVDF219(true)">CSV</button>
+          <button type="button" class="light" onclick="window.voltarFiltrosRelatorioDF219()">Filtros</button>
+          <button type="button" class="light" onclick="window.fecharRelatorioDF219()">Fechar</button>
+        </div>
+      </div>
+      ${resumoHTML}
+      ${centroHTML}
+      ${detalheHTML}
+    `;
+  }
+
+  window.visualizarRelatorioDF219 = function(){
+    filtrosAtuais = valoresFiltros();
+    fecharFiltros();
+
+    let bg = document.getElementById("df-v219-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v219-report-bg";
+      bg.className = "df-v219-bg";
+      bg.innerHTML = `<div class="df-v219-box" id="df-v219-report"></div>`;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", function(e){
+        if(e.target === bg) window.fecharRelatorioDF219();
+      });
+    }
+
+    document.getElementById("df-v219-report").innerHTML = montarRelatorioHTML(filtrosAtuais);
+    bg.classList.add("open");
+  };
+
+  window.fecharRelatorioDF219 = function(){
+    const bg = document.getElementById("df-v219-report-bg");
+    if(bg) bg.classList.remove("open");
+  };
+
+  window.voltarFiltrosRelatorioDF219 = function(){
+    window.fecharRelatorioDF219();
+    abrirFiltrosRelatorio();
+  };
+
+  window.exportarCSVDF219 = function(usarAtuais){
+    const filtros = usarAtuais === true ? (filtrosAtuais || {}) : valoresFiltros();
+    const contas = contasComFiltros(filtros);
+
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c => [
+        c.descricao || c.conta || "",
+        Number(c.valor || 0).toFixed(2).replace(".", ","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+
+    const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\n");
+    const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      a.remove();
+      URL.revokeObjectURL(url);
+    }, 100);
+  };
+
+  // sobrescreve as funções antigas de relatório
+  window.gerarRelatorioFinanceiroDF = abrirFiltrosRelatorio;
+  window.exportarCSV = function(){ abrirFiltrosRelatorio(); };
+
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    const acao = sel ? sel.value : "";
+    if(acao === "pdf" || acao === "csv"){
+      abrirFiltrosRelatorio();
+    }
+    if(sel) sel.value = "";
+  };
+
+  function bindSelect(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel || sel.dataset.df219Bound) return;
+    sel.dataset.df219Bound = "1";
+    sel.addEventListener("change", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      window.executarRelatorio();
+    }, true);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", bindSelect, {once:true});
+  }else{
+    bindSelect();
+  }
+
+  css();
+  setTimeout(bindSelect, 700);
+  setTimeout(bindSelect, 1600);
+  setTimeout(bindSelect, 3200);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V22 TECLADO + POP-UP CORRIGIDO
+   Correção:
+   - Teclado do celular não fecha mais o pop-up de edição
+   - Pop-up só fecha no X, botão salvar ou clique real fora
+   - Remove fechamento automático agressivo de versões anteriores
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V22_TECLADO_POPUP__) return;
+  window.__DONA_FLOR_V22_TECLADO_POPUP__ = true;
+
+  let focoEmCampo = false;
+  let ultimoFocoCampo = 0;
+  let abriuEm = Date.now();
+
+  function isCampo(el){
+    return !!(el && el.closest && el.closest("input, textarea, select"));
+  }
+
+  function isModalFormulario(el){
+    return !!(el && el.closest && el.closest(
+      ".df-v213-modal,.df-v214-modal,.df-v212-modal,.df-v21-modal,#df-v213-modal,#df-v214-modal,#df-v212-modal,#df-v22-modal"
+    ));
+  }
+
+  function modalAberto(){
+    return document.querySelector(
+      ".df-v213-modal.open,.df-v214-modal.open,.df-v212-modal.open,.df-v21-modal.open,#df-v213-modal.open,#df-v214-modal.open,#df-v212-modal.open,#df-v22-modal.open"
+    );
+  }
+
+  document.addEventListener("focusin", function(e){
+    if(isCampo(e.target) && isModalFormulario(e.target)){
+      focoEmCampo = true;
+      ultimoFocoCampo = Date.now();
+      document.body.classList.add("df-keyboard-open");
+    }
+  }, true);
+
+  document.addEventListener("focusout", function(e){
+    if(isCampo(e.target) && isModalFormulario(e.target)){
+      ultimoFocoCampo = Date.now();
+      setTimeout(function(){
+        const ativo = document.activeElement;
+        focoEmCampo = isCampo(ativo) && isModalFormulario(ativo);
+        if(!focoEmCampo){
+          document.body.classList.remove("df-keyboard-open");
+        }
+      }, 650);
+    }
+  }, true);
+
+  // Bloqueia fechamento por clique gerado pelo teclado/resize no celular
+  document.addEventListener("click", function(e){
+    const modal = modalAberto();
+    if(!modal) return;
+
+    const dentroCaixa = e.target.closest && e.target.closest(".df-v213-box,.df-v214-box,.df-v212-box,.df-v21-box,.df-v22-box");
+    const clicouFundo = e.target === modal;
+
+    const tecladoProvavel =
+      focoEmCampo ||
+      (Date.now() - ultimoFocoCampo < 1200) ||
+      document.body.classList.contains("df-keyboard-open");
+
+    // Se foi um clique no fundo enquanto o teclado está abrindo/fechando, não fecha.
+    if(clicouFundo && tecladoProvavel){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
+
+    // Enquanto está digitando, qualquer clique fora acidental é ignorado.
+    if(!dentroCaixa && tecladoProvavel){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
+  }, true);
+
+  function css(){
+    if(document.getElementById("df-v22-teclado-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v22-teclado-css";
+    style.textContent = `
+      body.df-keyboard-open .df-v213-modal.open,
+      body.df-keyboard-open .df-v214-modal.open,
+      body.df-keyboard-open .df-v212-modal.open,
+      body.df-keyboard-open .df-v21-modal.open {
+        align-items:flex-start !important;
+        overflow:auto !important;
+        padding-top:18px !important;
+      }
+
+      body.df-keyboard-open .df-v213-box,
+      body.df-keyboard-open .df-v214-box,
+      body.df-keyboard-open .df-v212-box,
+      body.df-keyboard-open .df-v21-box {
+        max-height:78vh !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Reforça abertura sem marcar como clique fora logo depois.
+  const oldAdd = DOMTokenList.prototype.add;
+  DOMTokenList.prototype.add = function(...tokens){
+    if(tokens.includes("open")){
+      abriuEm = Date.now();
+    }
+    return oldAdd.apply(this, tokens);
+  };
+
+  css();
 })();
 </script>
 </body>

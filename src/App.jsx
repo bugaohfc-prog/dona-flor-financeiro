@@ -16,26 +16,61 @@ const CENTROS = [
 ];
 
 export default function App() {
-  const [usuario, setUsuario] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("df_user_v27") || "null");
-    } catch {
-      return null;
-    }
-  });
-
+  const [usuario, setUsuario] = useState(null);
   const [contas, setContas] = useState([]);
   const [notas, setNotas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
   const [filtros, setFiltros] = useState({ centro: "", status: "" });
 
+  // 🔐 AUTENTICAÇÃO REAL
+  useEffect(() => {
+    async function getUser() {
+      const { data } = await supabase.auth.getUser();
+
+      if (data?.user) {
+        setUsuario({
+          id: data.user.id,
+          email: data.user.email,
+          nome: data.user.email,
+          usuario: data.user.email,
+          tipo: "admin",
+          pode_pagar: true,
+        });
+      }
+    }
+
+    getUser();
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          setUsuario({
+            id: session.user.id,
+            email: session.user.email,
+            nome: session.user.email,
+            usuario: session.user.email,
+            tipo: "admin",
+            pode_pagar: true,
+          });
+        } else {
+          setUsuario(null);
+        }
+      }
+    );
+
+    return () => {
+      listener?.subscription?.unsubscribe();
+    };
+  }, []);
+
   const isAdmin = String(usuario?.tipo || "").toLowerCase() === "admin";
   const canPay = isAdmin || usuario?.pode_pagar === true;
 
+  // 🔄 CARREGAR DADOS
   async function carregar() {
     if (!hasSupabaseKey()) {
-      setErro("Configure VITE_SUPABASE_ANON_KEY no Vercel para conectar ao Supabase.");
+      setErro("Configure VITE_SUPABASE_ANON_KEY no Vercel.");
       return;
     }
 
@@ -43,8 +78,8 @@ export default function App() {
     setErro("");
 
     const [contasRes, notasRes] = await Promise.all([
-      supabase.from("df_contas").select("*").order("vencimento", { ascending: true }),
-      supabase.from("df_notas").select("*").order("data_lembrete", { ascending: true }),
+      supabase.from("df_contas").select("*").order("vencimento"),
+      supabase.from("df_notas").select("*").order("data_lembrete"),
     ]);
 
     if (contasRes.error) setErro(contasRes.error.message);
@@ -52,6 +87,7 @@ export default function App() {
 
     setContas((contasRes.data || []).filter((c) => !c.deletado));
     setNotas((notasRes.data || []).filter((n) => !n.deletado));
+
     setLoading(false);
   }
 
@@ -59,24 +95,27 @@ export default function App() {
     if (usuario) carregar();
   }, [usuario]);
 
-  function sair() {
-    localStorage.removeItem("df_user_v27");
+  // 🚪 LOGOUT
+  async function sair() {
+    await supabase.auth.signOut();
     setUsuario(null);
   }
 
+  // 📊 FILTROS
   const contasVisiveis = useMemo(() => {
-    const base = isAdmin ? contas : contas.filter((c) => c.centro === usuario?.loja);
-    return base.filter((c) => {
+    return contas.filter((c) => {
+      if (c.user_id !== usuario?.id) return false;
       if (filtros.centro && c.centro !== filtros.centro) return false;
       if (filtros.status && c.status !== filtros.status) return false;
       return true;
     });
-  }, [contas, filtros, isAdmin, usuario]);
+  }, [contas, filtros, usuario]);
 
   const notasVisiveis = useMemo(() => {
-    return isAdmin ? notas : notas.filter((n) => !n.loja || n.loja === usuario?.loja);
-  }, [notas, isAdmin, usuario]);
+    return notas.filter((n) => n.user_id === usuario?.id);
+  }, [notas, usuario]);
 
+  // 💾 SALVAR CONTA
   async function salvarConta(form) {
     const payload = {
       descricao: form.descricao,
@@ -85,7 +124,7 @@ export default function App() {
       centro: form.centro,
       status: form.status,
       observacao: form.observacao,
-      criado_por: usuario?.usuario,
+      user_id: usuario?.id,
     };
 
     const { error } = await supabase.from("df_contas").insert(payload);
@@ -93,33 +132,15 @@ export default function App() {
     carregar();
   }
 
-  async function alternarPago(conta) {
-    if (!canPay) return alert("Usuário sem permissão para marcar pagamento.");
-    const novoStatus = conta.status === "Pago" ? "Aberto" : "Pago";
-    const { error } = await supabase.from("df_contas").update({ status: novoStatus }).eq("id", conta.id);
-    if (error) return alert(error.message);
-    carregar();
-  }
-
-  async function excluirConta(conta) {
-    if (!isAdmin) return alert("Apenas administrador pode excluir.");
-    if (!confirm("Mover esta conta para a lixeira?")) return;
-    const { error } = await supabase
-      .from("df_contas")
-      .update({ deletado: true, data_exclusao: new Date().toISOString() })
-      .eq("id", conta.id);
-    if (error) return alert(error.message);
-    carregar();
-  }
-
+  // 💾 SALVAR NOTA
   async function salvarNota(form) {
     const payload = {
-      titulo: form.titulo || "Sem título",
-      texto: form.texto || "",
-      data_lembrete: form.data_lembrete || null,
-      prioridade: form.prioridade || "Normal",
-      loja: form.loja || null,
-      criado_por: usuario?.usuario,
+      titulo: form.titulo,
+      texto: form.texto,
+      data_lembrete: form.data_lembrete,
+      prioridade: form.prioridade,
+      loja: form.loja,
+      user_id: usuario?.id,
     };
 
     const { error } = await supabase.from("df_notas").insert(payload);
@@ -127,32 +148,48 @@ export default function App() {
     carregar();
   }
 
-  async function alterarPrioridadeNota(nota, prioridade) {
-    const { error } = await supabase.from("df_notas").update({ prioridade }).eq("id", nota.id);
+  async function excluirConta(conta) {
+    const { error } = await supabase
+      .from("df_contas")
+      .update({ deletado: true })
+      .eq("id", conta.id);
+
     if (error) return alert(error.message);
     carregar();
   }
 
   async function excluirNota(nota) {
-    if (!confirm("Mover esta nota para a lixeira?")) return;
     const { error } = await supabase
       .from("df_notas")
-      .update({ deletado: true, data_exclusao: new Date().toISOString() })
+      .update({ deletado: true })
       .eq("id", nota.id);
+
     if (error) return alert(error.message);
     carregar();
   }
 
-  if (!usuario) {
-    return <Login onLogin={setUsuario} />;
+  async function alterarPrioridadeNota(nota, prioridade) {
+    const { error } = await supabase
+      .from("df_notas")
+      .update({ prioridade })
+      .eq("id", nota.id);
+
+    if (error) return alert(error.message);
+    carregar();
   }
 
+  // 🔐 SE NÃO LOGADO → LOGIN
+  if (!usuario) {
+    return <Login />;
+  }
+
+  // 🎯 APP PRINCIPAL
   return (
     <div className="app">
       <header className="topbar">
         <div>
           <strong>Dona Flor Gestão Financeira</strong>
-          <span>Olá, {usuario?.nome || usuario?.usuario}</span>
+          <span>Olá, {usuario?.email}</span>
         </div>
         <button onClick={sair}>Sair</button>
       </header>
@@ -177,7 +214,6 @@ export default function App() {
           filtros={filtros}
           setFiltros={setFiltros}
           onSave={salvarConta}
-          onTogglePaid={alternarPago}
           onDelete={excluirConta}
         />
 

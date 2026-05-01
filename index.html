@@ -3131,5 +3131,225 @@ if(abrirSyncOriginalDF){
   setTimeout(aplicar, 1600);
 })();
 </script>
+<script>
+/* =========================
+   V20.4.1 - Correção botão + do Bloco de notas
+   Base: V20.4 estável
+   - O botão + abre/fecha o formulário de lançamento de notas
+   - Sem modal/overlay
+   - Mantém o layout atual
+   ========================= */
+(function(){
+  if (window.__DF_V2041_PLUS_NOTAS__) return;
+  window.__DF_V2041_PLUS_NOTAS__ = true;
+
+  let formNota = null;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function injectCss(){
+    if (document.getElementById("df-v2041-plus-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v2041-plus-css";
+    style.textContent = `
+      .df-v2041-hidden {
+        display: none !important;
+      }
+
+      .df-v2041-inline-form {
+        margin-top: 14px !important;
+        padding: 14px !important;
+        border: 1px solid #E2E8F0 !important;
+        border-radius: 12px !important;
+        background: #FFFFFF !important;
+        box-shadow: 0 6px 14px rgba(15,23,42,.06) !important;
+      }
+
+      .df-v2041-inline-form h1,
+      .df-v2041-inline-form h2,
+      .df-v2041-inline-form h3 {
+        display: none !important;
+      }
+
+      .df-v2041-plus-btn,
+      .df-add-nota-btn-v203 {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        min-height: 38px !important;
+        border-radius: 999px !important;
+        border: 0 !important;
+        background: #0f766e !important;
+        color: #fff !important;
+        font-size: 22px !important;
+        font-weight: 900 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 6px 18px rgba(15,118,110,.24) !important;
+        cursor: pointer !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+      }
+
+      .df-v2041-bloco-head {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 12px !important;
+      }
+
+      /* garante que modais antigos não abram vazio */
+      #df-modal-notas-v203,
+      #df-v206-modal-nota {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function findCardByTitle(regex){
+    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"));
+    return candidates
+      .filter(el => regex.test(txt(el)))
+      .sort((a,b) => txt(a).length - txt(b).length)[0] || null;
+  }
+
+  function findFormNota(){
+    if (formNota) return formNota;
+
+    const buttons = Array.from(document.querySelectorAll("button,input[type='submit'],input[type='button']"));
+    const salvarBtn = buttons.find(b => /salvar nota/i.test(txt(b) || b.value || ""));
+
+    if (salvarBtn) {
+      let cur = salvarBtn;
+      while (cur && cur !== document.body) {
+        if (cur.querySelectorAll && cur.querySelectorAll("input,textarea,select").length >= 2) {
+          formNota = cur;
+          break;
+        }
+        cur = cur.parentElement;
+      }
+    }
+
+    if (!formNota) {
+      const candidates = Array.from(document.querySelectorAll("section,article,.card,div"))
+        .filter(el => /salvar nota/i.test(txt(el)) && el.querySelectorAll("input,textarea,select").length >= 2)
+        .sort((a,b) => txt(a).length - txt(b).length);
+
+      formNota = candidates[0] || null;
+    }
+
+    if (formNota) {
+      formNota.classList.add("df-v2041-inline-form", "df-v2041-hidden");
+    }
+
+    return formNota;
+  }
+
+  function garantirBotaoPlus(){
+    const bloco = findCardByTitle(/bloco de notas/i);
+    if (!bloco) return;
+
+    let btn = bloco.querySelector(".df-v2041-plus-btn") || bloco.querySelector(".df-add-nota-btn-v203");
+
+    const title = Array.from(bloco.querySelectorAll("h1,h2,h3,h4,strong,div"))
+      .find(el => /bloco de notas/i.test(txt(el)) && txt(el).length < 80);
+
+    if (!title) return;
+
+    let wrapper = title.closest(".df-v2041-bloco-head");
+
+    if (!wrapper) {
+      wrapper = document.createElement("div");
+      wrapper.className = "df-v2041-bloco-head";
+      title.parentNode.insertBefore(wrapper, title);
+      wrapper.appendChild(title);
+    }
+
+    if (!btn) {
+      btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = "+";
+      wrapper.appendChild(btn);
+    } else if (!wrapper.contains(btn)) {
+      wrapper.appendChild(btn);
+    }
+
+    btn.classList.add("df-v2041-plus-btn");
+    btn.title = "Adicionar nota";
+    btn.onclick = function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      abrirFecharFormNota();
+    };
+  }
+
+  function abrirFecharFormNota(){
+    const bloco = findCardByTitle(/bloco de notas/i);
+    const form = findFormNota();
+
+    if (!bloco || !form) {
+      alert("Não encontrei o formulário de lançamento de notas.");
+      return;
+    }
+
+    if (!bloco.contains(form)) {
+      const header = bloco.querySelector(".df-v2041-bloco-head");
+      if (header && header.nextSibling) {
+        bloco.insertBefore(form, header.nextSibling);
+      } else {
+        bloco.insertBefore(form, bloco.firstChild);
+      }
+    }
+
+    form.classList.toggle("df-v2041-hidden");
+
+    if (!form.classList.contains("df-v2041-hidden")) {
+      form.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+
+  function esconderFormFixoInicial(){
+    const form = findFormNota();
+    if (form && !form.classList.contains("df-v2041-inline-form")) {
+      form.classList.add("df-v2041-inline-form");
+    }
+    if (form && !form.closest("#df-modal-notas-v203")) {
+      form.classList.add("df-v2041-hidden");
+    }
+  }
+
+  function fecharModaisAntigos(){
+    ["df-modal-notas-v203", "df-v206-modal-nota"].forEach(id => {
+      const modal = document.getElementById(id);
+      if (modal) {
+        modal.classList.remove("open");
+        modal.style.display = "none";
+      }
+    });
+  }
+
+  function aplicar(){
+    injectCss();
+    esconderFormFixoInicial();
+    garantirBotaoPlus();
+    fecharModaisAntigos();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", aplicar, { once: true });
+  } else {
+    aplicar();
+  }
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
+})();
+</script>
 </body>
 </html>

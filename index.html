@@ -8360,6 +8360,759 @@ ${montarRelatorioHTML(f)
   setTimeout(configurarSelect, 3200);
 })();
 </script>
+<script>
+/* ==========================================================
+   DONA FLOR - V22.5 CORREÇÃO BLOCO DE NOTAS
+   Correções:
+   - Corrige bug visual causado pela V22.3 no Bloco de notas
+   - Remove botões Editar/Excluir duplicados fora dos cards
+   - Remove rótulos soltos "Urgente/Normal" no cabeçalho da seção
+   - Prioridade vira botão apenas dentro de cada card de nota
+   - Mantém select original escondido para não quebrar a lógica
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V225_BLOCO_NOTAS_FIX__) return;
+  window.__DONA_FLOR_V225_BLOCO_NOTAS_FIX__ = true;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function norm(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function label(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function cls(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function ico(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function css(){
+    if(document.getElementById("df-v225-bloco-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v225-bloco-css";
+    style.textContent = `
+      .df-prioridade-select-original-v223,
+      .df-prioridade-select-original-v225{
+        display:none !important;
+      }
+
+      .df-prioridade-box-v225{
+        position:relative !important;
+        width:100% !important;
+        margin:10px 0 !important;
+        z-index:20 !important;
+      }
+
+      .df-btn-prioridade-v225{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:1px solid #CBD5E1 !important;
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        font-size:15px !important;
+        padding:10px 12px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        gap:10px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+      }
+
+      .df-btn-prioridade-v225.normal{
+        background:#ECFDF5 !important;
+        color:#047857 !important;
+        border-color:#A7F3D0 !important;
+      }
+
+      .df-btn-prioridade-v225.urgente{
+        background:#FEE2E2 !important;
+        color:#B91C1C !important;
+        border-color:#FECACA !important;
+      }
+
+      .df-btn-prioridade-v225.critico{
+        background:#7F1D1D !important;
+        color:#FFFFFF !important;
+        border-color:#450A0A !important;
+      }
+
+      .df-prioridade-menu-v225{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#FFFFFF !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:99999 !important;
+      }
+
+      .df-prioridade-box-v225.open .df-prioridade-menu-v225{
+        display:block !important;
+      }
+
+      .df-prioridade-opcao-v225{
+        width:100% !important;
+        min-height:44px !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        background:#FFFFFF !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        padding:12px !important;
+        text-align:left !important;
+        display:flex !important;
+        align-items:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+        border-radius:0 !important;
+      }
+
+      .df-prioridade-opcao-v225:last-child{ border-bottom:0 !important; }
+      .df-prioridade-opcao-v225.normal{color:#047857 !important;}
+      .df-prioridade-opcao-v225.urgente{color:#B91C1C !important;}
+      .df-prioridade-opcao-v225.critico{color:#7F1D1D !important;}
+
+      /* evita que prioridade vire rótulo solto acima do título */
+      .df-v225-prioridade-solta{
+        display:none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function blocoNotas(){
+    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"))
+      .filter(el => /bloco de notas/i.test(txt(el)));
+    return candidates.sort((a,b) => txt(b).length - txt(a).length)[0] || null;
+  }
+
+  function isBotaoAcao(el){
+    const t = txt(el).toLowerCase();
+    return t === "editar" || t === "📝 editar" || t === "excluir" || t === "🗑️ excluir" || t.includes("editar") || t.includes("excluir");
+  }
+
+  function limparDuplicadosSoltos(){
+    const bloco = blocoNotas();
+    if(!bloco) return;
+
+    const cards = Array.from(bloco.children).filter(ch => {
+      const t = txt(ch).toLowerCase();
+      return t.includes("editar") && t.includes("excluir") && !/bloco de notas/i.test(t);
+    });
+
+    // Remove botões de ação diretos que ficaram soltos no final da seção, fora de card de nota.
+    Array.from(bloco.children).forEach(ch => {
+      const t = txt(ch).toLowerCase().trim();
+      const isSolto = (
+        (t === "editar" || t === "📝 editar" || t === "excluir" || t === "🗑️ excluir") ||
+        (t.includes("editar") && t.includes("excluir") && !t.includes("vamos") && !t.includes("recisao") && !t.includes("enviar"))
+      );
+
+      const ehCardNota = t.includes("editar") && t.includes("excluir") && (
+        t.includes("normal") || t.includes("urgente") || t.includes("critico") || t.includes("crítico")
+      ) && (t.includes("2026") || t.includes("recis") || t.includes("vamos") || t.includes("enviar"));
+
+      if(isSolto && !ehCardNota){
+        ch.remove();
+      }
+    });
+
+    // Remove labels de prioridade soltos no cabeçalho do bloco.
+    Array.from(bloco.querySelectorAll("span,b,strong,div")).forEach(el => {
+      const t = txt(el).toLowerCase().trim();
+      if((t === "🔴 urgente" || t === "urgente" || t === "🟢 normal" || t === "normal") && el.parentElement === bloco){
+        el.classList.add("df-v225-prioridade-solta");
+      }
+    });
+  }
+
+  async function salvarPrioridade(select, id, valor){
+    const novo = label(valor);
+
+    if(select){
+      select.value = novo;
+      select.dispatchEvent(new Event("change", { bubbles:true }));
+    }
+
+    try{
+      if(typeof window.alterarPrioridade === "function"){
+        try { return window.alterarPrioridade(select, id, novo); } catch(e){}
+        try { return window.alterarPrioridade(id, novo); } catch(e){}
+        try { return window.alterarPrioridade(novo, id); } catch(e){}
+      }
+    }catch(e){}
+
+    try{
+      if(typeof window.alterarPrioridadeNotaDF === "function"){
+        return window.alterarPrioridadeNotaDF(id, novo);
+      }
+    }catch(e){}
+
+    try{
+      if(id && typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{
+            "apikey": SupabaseKey,
+            "Authorization":"Bearer " + SupabaseKey,
+            "Content-Type":"application/json",
+            "Prefer":"return=representation"
+          },
+          body:JSON.stringify({ prioridade: novo })
+        });
+        if(typeof carregar === "function") carregar();
+      }
+    }catch(e){}
+  }
+
+  function idNota(card){
+    const onclicks = Array.from(card.querySelectorAll("[onclick]")).map(el => el.getAttribute("onclick") || "").join(" ");
+    const m = onclicks.match(/(?:editarNotaDF|excluirNota|excluirNotaDF|alterarPrioridade)\s*\(\s*['"]?([^,'")]+)['"]?/i);
+    if(m) return m[1];
+    return card.getAttribute("data-id") || card.getAttribute("data-nota-id") || "";
+  }
+
+  function transformarSelect(select){
+    if(!select || select.dataset.df225Ok) return;
+
+    const card = select.closest(".card,section,article,div");
+    if(!card) return;
+
+    const textoCard = txt(card).toLowerCase();
+
+    // Só aplica em card de nota, não em filtros, status, centros ou exportar.
+    const ehNota = textoCard.includes("editar") && textoCard.includes("excluir") && 
+                   (textoCard.includes("normal") || textoCard.includes("urgente") || textoCard.includes("critico") || textoCard.includes("crítico"));
+
+    if(!ehNota) return;
+
+    select.dataset.df225Ok = "1";
+    select.classList.add("df-prioridade-select-original-v225");
+
+    // Remove botão antigo da V22.3 se existir ao lado.
+    const next = select.nextElementSibling;
+    if(next && next.classList && next.classList.contains("df-prioridade-box-v223")){
+      next.remove();
+    }
+
+    const atual = label(select.value || select.options?.[select.selectedIndex]?.text || "Normal");
+    const id = idNota(card);
+
+    const box = document.createElement("div");
+    box.className = "df-prioridade-box-v225";
+    box.innerHTML = `
+      <button type="button" class="df-btn-prioridade-v225 ${cls(atual)}">
+        <span>${ico(atual)} Prioridade</span>
+        <strong>${atual}</strong>
+      </button>
+      <div class="df-prioridade-menu-v225">
+        <button type="button" class="df-prioridade-opcao-v225 normal" data-p="Normal">🟢 Normal</button>
+        <button type="button" class="df-prioridade-opcao-v225 urgente" data-p="Urgente">🔴 Urgente</button>
+        <button type="button" class="df-prioridade-opcao-v225 critico" data-p="Crítico">🔥 Crítico</button>
+      </div>
+    `;
+
+    select.parentNode.insertBefore(box, select.nextSibling);
+
+    const btn = box.querySelector(".df-btn-prioridade-v225");
+    const strong = btn.querySelector("strong");
+
+    btn.addEventListener("click", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+
+      document.querySelectorAll(".df-prioridade-box-v225.open").forEach(b => {
+        if(b !== box) b.classList.remove("open");
+      });
+
+      box.classList.toggle("open");
+    });
+
+    box.querySelectorAll(".df-prioridade-opcao-v225").forEach(op => {
+      op.addEventListener("click", async function(e){
+        e.preventDefault();
+        e.stopPropagation();
+
+        const novo = op.dataset.p;
+        btn.classList.remove("normal","urgente","critico");
+        btn.classList.add(cls(novo));
+        btn.querySelector("span").textContent = `${ico(novo)} Prioridade`;
+        strong.textContent = label(novo);
+        box.classList.remove("open");
+
+        await salvarPrioridade(select, id, novo);
+      });
+    });
+  }
+
+  function aplicar(){
+    css();
+    limparDuplicadosSoltos();
+
+    const bloco = blocoNotas();
+    if(!bloco) return;
+
+    const selects = Array.from(bloco.querySelectorAll("select")).filter(sel => {
+      const t = (sel.textContent || "").toLowerCase();
+      const id = (sel.id || "").toLowerCase();
+      return t.includes("normal") && t.includes("urgente") && !id.includes("status") && !id.includes("acao") && !id.includes("centro");
+    });
+
+    selects.forEach(transformarSelect);
+  }
+
+  document.addEventListener("click", function(e){
+    if(!e.target.closest(".df-prioridade-box-v225")){
+      document.querySelectorAll(".df-prioridade-box-v225.open").forEach(b => b.classList.remove("open"));
+    }
+  }, true);
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", aplicar, {once:true});
+  }else{
+    aplicar();
+  }
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
+  setTimeout(aplicar, 3200);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V22.6 PDF CORRIGIDO
+   Correção:
+   - PDF não usa mais iframe nem document.write direto
+   - Gera página HTML limpa via Blob URL
+   - Abre relatório em nova aba renderizado corretamente
+   - Botão Imprimir/PDF dentro da página limpa
+   - Mantém CSV funcionando da V22.4/V22.5
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V226_PDF_CORRIGIDO__) return;
+  window.__DONA_FLOR_V226_PDF_CORRIGIDO__ = true;
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function moeda(v){
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function hojeISO(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function getContasBase(){
+    try{
+      if(Array.isArray(window.contasRelatorioCache) && window.contasRelatorioCache.length) return window.contasRelatorioCache;
+    }catch(e){}
+
+    try{
+      if(typeof visContas === "function"){
+        const r = visContas();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const r = getContasArrayDF();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    for(const nome of ["contasDados","contas","df_contas","contasDF"]){
+      try{
+        if(Array.isArray(window[nome])) return window[nome].filter(c => !c.deletado);
+      }catch(e){}
+    }
+
+    return [];
+  }
+
+  function lerFiltrosPDF(){
+    return {
+      centro: document.getElementById("df224Centro")?.value || document.getElementById("df222Centro")?.value || "",
+      status: document.getElementById("df224Status")?.value || document.getElementById("df222Status")?.value || "",
+      dataInicio: document.getElementById("df224Inicio")?.value || document.getElementById("df222Inicio")?.value || "",
+      dataFim: document.getElementById("df224Fim")?.value || document.getElementById("df222Fim")?.value || "",
+      resumo: (document.getElementById("df224Resumo")?.checked ?? document.getElementById("df222Resumo")?.checked) !== false,
+      centroResumo: (document.getElementById("df224CentroResumo")?.checked ?? document.getElementById("df222CentroResumo")?.checked) !== false,
+      detalhe: (document.getElementById("df224Detalhe")?.checked ?? document.getElementById("df222Detalhe")?.checked) !== false,
+      aberto: document.getElementById("df224Aberto")?.checked || document.getElementById("df222Aberto")?.checked || false
+    };
+  }
+
+  function filtrarContas(f){
+    return getContasBase().filter(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function resumo(contas){
+    const hoje = hojeISO();
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function montarHTMLRelatorio(f){
+    const contas = filtrarContas(f);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+
+    const filtroDesc = [
+      f.centro ? "Centro: " + f.centro : "Todos os centros",
+      f.status ? "Status: " + f.status : "Todos os status",
+      f.dataInicio ? "De " + dataBR(f.dataInicio) : "",
+      f.dataFim ? "Até " + dataBR(f.dataFim) : "",
+      f.aberto ? "Somente em aberto" : ""
+    ].filter(Boolean).join(" • ");
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card"><div class="label">Total aberto</div><div class="num">${moeda(r.totalAberto)}</div></div>
+        <div class="card"><div class="label">Pago</div><div class="num">${moeda(r.totalPago)}</div></div>
+        <div class="card"><div class="label">Vencidas</div><div class="num">${moeda(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centrosHTML = f.centroResumo ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro, info]) => `
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${moeda(info.total)}</b>
+          </div>
+        `).join("") : `<div class="empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moeda(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead>
+            <tr>
+              <th>Conta</th>
+              <th>Centro</th>
+              <th>Vencimento</th>
+              <th>Status</th>
+              <th>Valor</th>
+              <th>Obs.</th>
+            </tr>
+          </thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div class="empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Relatório Dona Flor</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    padding:18px;
+    background:#ffffff;
+    color:#0f172a;
+    font-family:Arial, Helvetica, sans-serif;
+  }
+  .page{
+    max-width:980px;
+    margin:0 auto;
+    background:#fff;
+  }
+  .top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    border-bottom:1px solid #e2e8f0;
+    padding-bottom:12px;
+    margin-bottom:14px;
+  }
+  h1{
+    color:#0f766e;
+    margin:0;
+    font-size:24px;
+    line-height:1.1;
+  }
+  h2{
+    font-size:18px;
+    margin:18px 0 8px;
+  }
+  .sub{
+    color:#64748b;
+    font-size:12px;
+    margin-top:4px;
+  }
+  .actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  button{
+    min-height:40px;
+    border-radius:10px;
+    border:2px solid #000;
+    box-shadow:3px 3px 0 #000;
+    background:#0f766e;
+    color:#fff;
+    font-weight:900;
+    padding:8px 12px;
+    cursor:pointer;
+  }
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+    margin:12px 0;
+  }
+  .card{
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    padding:10px;
+    background:#fafaf9;
+  }
+  .label{
+    font-size:10px;
+    text-transform:uppercase;
+    color:#64748b;
+    font-weight:bold;
+  }
+  .num{
+    font-size:17px;
+    font-weight:bold;
+    margin-top:3px;
+  }
+  .centros{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:8px;
+    margin:8px 0 14px;
+  }
+  .centro{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    padding:8px;
+  }
+  .centro small{
+    display:block;
+    color:#64748b;
+    margin-top:2px;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+  }
+  th{
+    background:#0f766e;
+    color:white;
+    text-align:left;
+    padding:7px;
+  }
+  td{
+    border-bottom:1px solid #e2e8f0;
+    padding:7px;
+    vertical-align:top;
+  }
+  .valor{
+    font-weight:bold;
+    white-space:nowrap;
+  }
+  .status{
+    border-radius:999px;
+    padding:3px 7px;
+    font-weight:bold;
+    font-size:11px;
+    display:inline-block;
+  }
+  .pago{background:#dcfce7;color:#15803d}
+  .aberto{background:#fef3c7;color:#92400e}
+  .empty{
+    padding:14px;
+    border:1px dashed #cbd5e1;
+    border-radius:10px;
+    color:#64748b;
+    text-align:center;
+  }
+  @media(max-width:760px){
+    body{padding:12px}
+    .top{display:block}
+    .actions{margin-top:10px}
+    .cards{grid-template-columns:1fr 1fr}
+    .centros{grid-template-columns:1fr}
+    table{font-size:11px}
+  }
+  @media print{
+    body{padding:0}
+    .actions{display:none}
+    @page{margin:12mm}
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="top">
+      <div>
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(filtroDesc)}</div>
+      </div>
+      <div class="actions">
+        <button onclick="window.print()">Imprimir / Salvar PDF</button>
+      </div>
+    </div>
+    ${cards}
+    ${centrosHTML}
+    ${detalhes}
+  </div>
+</body>
+</html>`;
+  }
+
+  window.df226GerarPDF = function(){
+    const f = lerFiltrosPDF();
+    const html = montarHTMLRelatorio(f);
+    const blob = new Blob([html], {type:"text/html;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+
+    const win = window.open(url, "_blank");
+
+    if(!win){
+      alert("O navegador bloqueou a abertura do relatório. Toque novamente ou permita pop-ups.");
+      return;
+    }
+
+    setTimeout(function(){
+      try{ URL.revokeObjectURL(url); }catch(e){}
+    }, 60000);
+  };
+
+  // Sobrescreve botões antigos de PDF mantendo CSV intacto.
+  window.df224GerarPDF = window.df226GerarPDF;
+  window.df222GerarPDF = window.df226GerarPDF;
+
+  function corrigirBotoesPDF(){
+    document.querySelectorAll("button").forEach(btn => {
+      const t = (btn.innerText || btn.textContent || "").trim().toLowerCase();
+      const old = btn.getAttribute("onclick") || "";
+
+      if(t.includes("gerar pdf") || t.includes("imprimir") || old.includes("df224GerarPDF") || old.includes("df222GerarPDF")){
+        btn.setAttribute("onclick", "window.df226GerarPDF()");
+      }
+    });
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", corrigirBotoesPDF, {once:true});
+  }else{
+    corrigirBotoesPDF();
+  }
+
+  setTimeout(corrigirBotoesPDF, 700);
+  setTimeout(corrigirBotoesPDF, 1600);
+  setTimeout(corrigirBotoesPDF, 3200);
+})();
+</script>
 </body>
 </html>`;
   }
@@ -9451,6 +10204,759 @@ ${montarRelatorioHTML(f)
   setTimeout(configurarSelect, 700);
   setTimeout(configurarSelect, 1600);
   setTimeout(configurarSelect, 3200);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V22.5 CORREÇÃO BLOCO DE NOTAS
+   Correções:
+   - Corrige bug visual causado pela V22.3 no Bloco de notas
+   - Remove botões Editar/Excluir duplicados fora dos cards
+   - Remove rótulos soltos "Urgente/Normal" no cabeçalho da seção
+   - Prioridade vira botão apenas dentro de cada card de nota
+   - Mantém select original escondido para não quebrar a lógica
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V225_BLOCO_NOTAS_FIX__) return;
+  window.__DONA_FLOR_V225_BLOCO_NOTAS_FIX__ = true;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function norm(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function label(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function cls(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function ico(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function css(){
+    if(document.getElementById("df-v225-bloco-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v225-bloco-css";
+    style.textContent = `
+      .df-prioridade-select-original-v223,
+      .df-prioridade-select-original-v225{
+        display:none !important;
+      }
+
+      .df-prioridade-box-v225{
+        position:relative !important;
+        width:100% !important;
+        margin:10px 0 !important;
+        z-index:20 !important;
+      }
+
+      .df-btn-prioridade-v225{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:1px solid #CBD5E1 !important;
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        font-size:15px !important;
+        padding:10px 12px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        gap:10px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+      }
+
+      .df-btn-prioridade-v225.normal{
+        background:#ECFDF5 !important;
+        color:#047857 !important;
+        border-color:#A7F3D0 !important;
+      }
+
+      .df-btn-prioridade-v225.urgente{
+        background:#FEE2E2 !important;
+        color:#B91C1C !important;
+        border-color:#FECACA !important;
+      }
+
+      .df-btn-prioridade-v225.critico{
+        background:#7F1D1D !important;
+        color:#FFFFFF !important;
+        border-color:#450A0A !important;
+      }
+
+      .df-prioridade-menu-v225{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#FFFFFF !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:99999 !important;
+      }
+
+      .df-prioridade-box-v225.open .df-prioridade-menu-v225{
+        display:block !important;
+      }
+
+      .df-prioridade-opcao-v225{
+        width:100% !important;
+        min-height:44px !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        background:#FFFFFF !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        padding:12px !important;
+        text-align:left !important;
+        display:flex !important;
+        align-items:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+        border-radius:0 !important;
+      }
+
+      .df-prioridade-opcao-v225:last-child{ border-bottom:0 !important; }
+      .df-prioridade-opcao-v225.normal{color:#047857 !important;}
+      .df-prioridade-opcao-v225.urgente{color:#B91C1C !important;}
+      .df-prioridade-opcao-v225.critico{color:#7F1D1D !important;}
+
+      /* evita que prioridade vire rótulo solto acima do título */
+      .df-v225-prioridade-solta{
+        display:none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function blocoNotas(){
+    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"))
+      .filter(el => /bloco de notas/i.test(txt(el)));
+    return candidates.sort((a,b) => txt(b).length - txt(a).length)[0] || null;
+  }
+
+  function isBotaoAcao(el){
+    const t = txt(el).toLowerCase();
+    return t === "editar" || t === "📝 editar" || t === "excluir" || t === "🗑️ excluir" || t.includes("editar") || t.includes("excluir");
+  }
+
+  function limparDuplicadosSoltos(){
+    const bloco = blocoNotas();
+    if(!bloco) return;
+
+    const cards = Array.from(bloco.children).filter(ch => {
+      const t = txt(ch).toLowerCase();
+      return t.includes("editar") && t.includes("excluir") && !/bloco de notas/i.test(t);
+    });
+
+    // Remove botões de ação diretos que ficaram soltos no final da seção, fora de card de nota.
+    Array.from(bloco.children).forEach(ch => {
+      const t = txt(ch).toLowerCase().trim();
+      const isSolto = (
+        (t === "editar" || t === "📝 editar" || t === "excluir" || t === "🗑️ excluir") ||
+        (t.includes("editar") && t.includes("excluir") && !t.includes("vamos") && !t.includes("recisao") && !t.includes("enviar"))
+      );
+
+      const ehCardNota = t.includes("editar") && t.includes("excluir") && (
+        t.includes("normal") || t.includes("urgente") || t.includes("critico") || t.includes("crítico")
+      ) && (t.includes("2026") || t.includes("recis") || t.includes("vamos") || t.includes("enviar"));
+
+      if(isSolto && !ehCardNota){
+        ch.remove();
+      }
+    });
+
+    // Remove labels de prioridade soltos no cabeçalho do bloco.
+    Array.from(bloco.querySelectorAll("span,b,strong,div")).forEach(el => {
+      const t = txt(el).toLowerCase().trim();
+      if((t === "🔴 urgente" || t === "urgente" || t === "🟢 normal" || t === "normal") && el.parentElement === bloco){
+        el.classList.add("df-v225-prioridade-solta");
+      }
+    });
+  }
+
+  async function salvarPrioridade(select, id, valor){
+    const novo = label(valor);
+
+    if(select){
+      select.value = novo;
+      select.dispatchEvent(new Event("change", { bubbles:true }));
+    }
+
+    try{
+      if(typeof window.alterarPrioridade === "function"){
+        try { return window.alterarPrioridade(select, id, novo); } catch(e){}
+        try { return window.alterarPrioridade(id, novo); } catch(e){}
+        try { return window.alterarPrioridade(novo, id); } catch(e){}
+      }
+    }catch(e){}
+
+    try{
+      if(typeof window.alterarPrioridadeNotaDF === "function"){
+        return window.alterarPrioridadeNotaDF(id, novo);
+      }
+    }catch(e){}
+
+    try{
+      if(id && typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{
+            "apikey": SupabaseKey,
+            "Authorization":"Bearer " + SupabaseKey,
+            "Content-Type":"application/json",
+            "Prefer":"return=representation"
+          },
+          body:JSON.stringify({ prioridade: novo })
+        });
+        if(typeof carregar === "function") carregar();
+      }
+    }catch(e){}
+  }
+
+  function idNota(card){
+    const onclicks = Array.from(card.querySelectorAll("[onclick]")).map(el => el.getAttribute("onclick") || "").join(" ");
+    const m = onclicks.match(/(?:editarNotaDF|excluirNota|excluirNotaDF|alterarPrioridade)\s*\(\s*['"]?([^,'")]+)['"]?/i);
+    if(m) return m[1];
+    return card.getAttribute("data-id") || card.getAttribute("data-nota-id") || "";
+  }
+
+  function transformarSelect(select){
+    if(!select || select.dataset.df225Ok) return;
+
+    const card = select.closest(".card,section,article,div");
+    if(!card) return;
+
+    const textoCard = txt(card).toLowerCase();
+
+    // Só aplica em card de nota, não em filtros, status, centros ou exportar.
+    const ehNota = textoCard.includes("editar") && textoCard.includes("excluir") && 
+                   (textoCard.includes("normal") || textoCard.includes("urgente") || textoCard.includes("critico") || textoCard.includes("crítico"));
+
+    if(!ehNota) return;
+
+    select.dataset.df225Ok = "1";
+    select.classList.add("df-prioridade-select-original-v225");
+
+    // Remove botão antigo da V22.3 se existir ao lado.
+    const next = select.nextElementSibling;
+    if(next && next.classList && next.classList.contains("df-prioridade-box-v223")){
+      next.remove();
+    }
+
+    const atual = label(select.value || select.options?.[select.selectedIndex]?.text || "Normal");
+    const id = idNota(card);
+
+    const box = document.createElement("div");
+    box.className = "df-prioridade-box-v225";
+    box.innerHTML = `
+      <button type="button" class="df-btn-prioridade-v225 ${cls(atual)}">
+        <span>${ico(atual)} Prioridade</span>
+        <strong>${atual}</strong>
+      </button>
+      <div class="df-prioridade-menu-v225">
+        <button type="button" class="df-prioridade-opcao-v225 normal" data-p="Normal">🟢 Normal</button>
+        <button type="button" class="df-prioridade-opcao-v225 urgente" data-p="Urgente">🔴 Urgente</button>
+        <button type="button" class="df-prioridade-opcao-v225 critico" data-p="Crítico">🔥 Crítico</button>
+      </div>
+    `;
+
+    select.parentNode.insertBefore(box, select.nextSibling);
+
+    const btn = box.querySelector(".df-btn-prioridade-v225");
+    const strong = btn.querySelector("strong");
+
+    btn.addEventListener("click", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+
+      document.querySelectorAll(".df-prioridade-box-v225.open").forEach(b => {
+        if(b !== box) b.classList.remove("open");
+      });
+
+      box.classList.toggle("open");
+    });
+
+    box.querySelectorAll(".df-prioridade-opcao-v225").forEach(op => {
+      op.addEventListener("click", async function(e){
+        e.preventDefault();
+        e.stopPropagation();
+
+        const novo = op.dataset.p;
+        btn.classList.remove("normal","urgente","critico");
+        btn.classList.add(cls(novo));
+        btn.querySelector("span").textContent = `${ico(novo)} Prioridade`;
+        strong.textContent = label(novo);
+        box.classList.remove("open");
+
+        await salvarPrioridade(select, id, novo);
+      });
+    });
+  }
+
+  function aplicar(){
+    css();
+    limparDuplicadosSoltos();
+
+    const bloco = blocoNotas();
+    if(!bloco) return;
+
+    const selects = Array.from(bloco.querySelectorAll("select")).filter(sel => {
+      const t = (sel.textContent || "").toLowerCase();
+      const id = (sel.id || "").toLowerCase();
+      return t.includes("normal") && t.includes("urgente") && !id.includes("status") && !id.includes("acao") && !id.includes("centro");
+    });
+
+    selects.forEach(transformarSelect);
+  }
+
+  document.addEventListener("click", function(e){
+    if(!e.target.closest(".df-prioridade-box-v225")){
+      document.querySelectorAll(".df-prioridade-box-v225.open").forEach(b => b.classList.remove("open"));
+    }
+  }, true);
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", aplicar, {once:true});
+  }else{
+    aplicar();
+  }
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
+  setTimeout(aplicar, 3200);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V22.6 PDF CORRIGIDO
+   Correção:
+   - PDF não usa mais iframe nem document.write direto
+   - Gera página HTML limpa via Blob URL
+   - Abre relatório em nova aba renderizado corretamente
+   - Botão Imprimir/PDF dentro da página limpa
+   - Mantém CSV funcionando da V22.4/V22.5
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V226_PDF_CORRIGIDO__) return;
+  window.__DONA_FLOR_V226_PDF_CORRIGIDO__ = true;
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function moeda(v){
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function hojeISO(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function getContasBase(){
+    try{
+      if(Array.isArray(window.contasRelatorioCache) && window.contasRelatorioCache.length) return window.contasRelatorioCache;
+    }catch(e){}
+
+    try{
+      if(typeof visContas === "function"){
+        const r = visContas();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const r = getContasArrayDF();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    for(const nome of ["contasDados","contas","df_contas","contasDF"]){
+      try{
+        if(Array.isArray(window[nome])) return window[nome].filter(c => !c.deletado);
+      }catch(e){}
+    }
+
+    return [];
+  }
+
+  function lerFiltrosPDF(){
+    return {
+      centro: document.getElementById("df224Centro")?.value || document.getElementById("df222Centro")?.value || "",
+      status: document.getElementById("df224Status")?.value || document.getElementById("df222Status")?.value || "",
+      dataInicio: document.getElementById("df224Inicio")?.value || document.getElementById("df222Inicio")?.value || "",
+      dataFim: document.getElementById("df224Fim")?.value || document.getElementById("df222Fim")?.value || "",
+      resumo: (document.getElementById("df224Resumo")?.checked ?? document.getElementById("df222Resumo")?.checked) !== false,
+      centroResumo: (document.getElementById("df224CentroResumo")?.checked ?? document.getElementById("df222CentroResumo")?.checked) !== false,
+      detalhe: (document.getElementById("df224Detalhe")?.checked ?? document.getElementById("df222Detalhe")?.checked) !== false,
+      aberto: document.getElementById("df224Aberto")?.checked || document.getElementById("df222Aberto")?.checked || false
+    };
+  }
+
+  function filtrarContas(f){
+    return getContasBase().filter(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function resumo(contas){
+    const hoje = hojeISO();
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function montarHTMLRelatorio(f){
+    const contas = filtrarContas(f);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+
+    const filtroDesc = [
+      f.centro ? "Centro: " + f.centro : "Todos os centros",
+      f.status ? "Status: " + f.status : "Todos os status",
+      f.dataInicio ? "De " + dataBR(f.dataInicio) : "",
+      f.dataFim ? "Até " + dataBR(f.dataFim) : "",
+      f.aberto ? "Somente em aberto" : ""
+    ].filter(Boolean).join(" • ");
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card"><div class="label">Total aberto</div><div class="num">${moeda(r.totalAberto)}</div></div>
+        <div class="card"><div class="label">Pago</div><div class="num">${moeda(r.totalPago)}</div></div>
+        <div class="card"><div class="label">Vencidas</div><div class="num">${moeda(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centrosHTML = f.centroResumo ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro, info]) => `
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${moeda(info.total)}</b>
+          </div>
+        `).join("") : `<div class="empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moeda(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead>
+            <tr>
+              <th>Conta</th>
+              <th>Centro</th>
+              <th>Vencimento</th>
+              <th>Status</th>
+              <th>Valor</th>
+              <th>Obs.</th>
+            </tr>
+          </thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div class="empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Relatório Dona Flor</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    padding:18px;
+    background:#ffffff;
+    color:#0f172a;
+    font-family:Arial, Helvetica, sans-serif;
+  }
+  .page{
+    max-width:980px;
+    margin:0 auto;
+    background:#fff;
+  }
+  .top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    border-bottom:1px solid #e2e8f0;
+    padding-bottom:12px;
+    margin-bottom:14px;
+  }
+  h1{
+    color:#0f766e;
+    margin:0;
+    font-size:24px;
+    line-height:1.1;
+  }
+  h2{
+    font-size:18px;
+    margin:18px 0 8px;
+  }
+  .sub{
+    color:#64748b;
+    font-size:12px;
+    margin-top:4px;
+  }
+  .actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  button{
+    min-height:40px;
+    border-radius:10px;
+    border:2px solid #000;
+    box-shadow:3px 3px 0 #000;
+    background:#0f766e;
+    color:#fff;
+    font-weight:900;
+    padding:8px 12px;
+    cursor:pointer;
+  }
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+    margin:12px 0;
+  }
+  .card{
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    padding:10px;
+    background:#fafaf9;
+  }
+  .label{
+    font-size:10px;
+    text-transform:uppercase;
+    color:#64748b;
+    font-weight:bold;
+  }
+  .num{
+    font-size:17px;
+    font-weight:bold;
+    margin-top:3px;
+  }
+  .centros{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:8px;
+    margin:8px 0 14px;
+  }
+  .centro{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    padding:8px;
+  }
+  .centro small{
+    display:block;
+    color:#64748b;
+    margin-top:2px;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+  }
+  th{
+    background:#0f766e;
+    color:white;
+    text-align:left;
+    padding:7px;
+  }
+  td{
+    border-bottom:1px solid #e2e8f0;
+    padding:7px;
+    vertical-align:top;
+  }
+  .valor{
+    font-weight:bold;
+    white-space:nowrap;
+  }
+  .status{
+    border-radius:999px;
+    padding:3px 7px;
+    font-weight:bold;
+    font-size:11px;
+    display:inline-block;
+  }
+  .pago{background:#dcfce7;color:#15803d}
+  .aberto{background:#fef3c7;color:#92400e}
+  .empty{
+    padding:14px;
+    border:1px dashed #cbd5e1;
+    border-radius:10px;
+    color:#64748b;
+    text-align:center;
+  }
+  @media(max-width:760px){
+    body{padding:12px}
+    .top{display:block}
+    .actions{margin-top:10px}
+    .cards{grid-template-columns:1fr 1fr}
+    .centros{grid-template-columns:1fr}
+    table{font-size:11px}
+  }
+  @media print{
+    body{padding:0}
+    .actions{display:none}
+    @page{margin:12mm}
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="top">
+      <div>
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(filtroDesc)}</div>
+      </div>
+      <div class="actions">
+        <button onclick="window.print()">Imprimir / Salvar PDF</button>
+      </div>
+    </div>
+    ${cards}
+    ${centrosHTML}
+    ${detalhes}
+  </div>
+</body>
+</html>`;
+  }
+
+  window.df226GerarPDF = function(){
+    const f = lerFiltrosPDF();
+    const html = montarHTMLRelatorio(f);
+    const blob = new Blob([html], {type:"text/html;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+
+    const win = window.open(url, "_blank");
+
+    if(!win){
+      alert("O navegador bloqueou a abertura do relatório. Toque novamente ou permita pop-ups.");
+      return;
+    }
+
+    setTimeout(function(){
+      try{ URL.revokeObjectURL(url); }catch(e){}
+    }, 60000);
+  };
+
+  // Sobrescreve botões antigos de PDF mantendo CSV intacto.
+  window.df224GerarPDF = window.df226GerarPDF;
+  window.df222GerarPDF = window.df226GerarPDF;
+
+  function corrigirBotoesPDF(){
+    document.querySelectorAll("button").forEach(btn => {
+      const t = (btn.innerText || btn.textContent || "").trim().toLowerCase();
+      const old = btn.getAttribute("onclick") || "";
+
+      if(t.includes("gerar pdf") || t.includes("imprimir") || old.includes("df224GerarPDF") || old.includes("df222GerarPDF")){
+        btn.setAttribute("onclick", "window.df226GerarPDF()");
+      }
+    });
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", corrigirBotoesPDF, {once:true});
+  }else{
+    corrigirBotoesPDF();
+  }
+
+  setTimeout(corrigirBotoesPDF, 700);
+  setTimeout(corrigirBotoesPDF, 1600);
+  setTimeout(corrigirBotoesPDF, 3200);
 })();
 </script>
 </body>
@@ -13973,6 +15479,759 @@ ${montarRelatorioHTML(f)
   setTimeout(configurarSelect, 3200);
 })();
 </script>
+<script>
+/* ==========================================================
+   DONA FLOR - V22.5 CORREÇÃO BLOCO DE NOTAS
+   Correções:
+   - Corrige bug visual causado pela V22.3 no Bloco de notas
+   - Remove botões Editar/Excluir duplicados fora dos cards
+   - Remove rótulos soltos "Urgente/Normal" no cabeçalho da seção
+   - Prioridade vira botão apenas dentro de cada card de nota
+   - Mantém select original escondido para não quebrar a lógica
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V225_BLOCO_NOTAS_FIX__) return;
+  window.__DONA_FLOR_V225_BLOCO_NOTAS_FIX__ = true;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function norm(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function label(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function cls(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function ico(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function css(){
+    if(document.getElementById("df-v225-bloco-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v225-bloco-css";
+    style.textContent = `
+      .df-prioridade-select-original-v223,
+      .df-prioridade-select-original-v225{
+        display:none !important;
+      }
+
+      .df-prioridade-box-v225{
+        position:relative !important;
+        width:100% !important;
+        margin:10px 0 !important;
+        z-index:20 !important;
+      }
+
+      .df-btn-prioridade-v225{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:1px solid #CBD5E1 !important;
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        font-size:15px !important;
+        padding:10px 12px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        gap:10px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+      }
+
+      .df-btn-prioridade-v225.normal{
+        background:#ECFDF5 !important;
+        color:#047857 !important;
+        border-color:#A7F3D0 !important;
+      }
+
+      .df-btn-prioridade-v225.urgente{
+        background:#FEE2E2 !important;
+        color:#B91C1C !important;
+        border-color:#FECACA !important;
+      }
+
+      .df-btn-prioridade-v225.critico{
+        background:#7F1D1D !important;
+        color:#FFFFFF !important;
+        border-color:#450A0A !important;
+      }
+
+      .df-prioridade-menu-v225{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#FFFFFF !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:99999 !important;
+      }
+
+      .df-prioridade-box-v225.open .df-prioridade-menu-v225{
+        display:block !important;
+      }
+
+      .df-prioridade-opcao-v225{
+        width:100% !important;
+        min-height:44px !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        background:#FFFFFF !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        padding:12px !important;
+        text-align:left !important;
+        display:flex !important;
+        align-items:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+        border-radius:0 !important;
+      }
+
+      .df-prioridade-opcao-v225:last-child{ border-bottom:0 !important; }
+      .df-prioridade-opcao-v225.normal{color:#047857 !important;}
+      .df-prioridade-opcao-v225.urgente{color:#B91C1C !important;}
+      .df-prioridade-opcao-v225.critico{color:#7F1D1D !important;}
+
+      /* evita que prioridade vire rótulo solto acima do título */
+      .df-v225-prioridade-solta{
+        display:none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function blocoNotas(){
+    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"))
+      .filter(el => /bloco de notas/i.test(txt(el)));
+    return candidates.sort((a,b) => txt(b).length - txt(a).length)[0] || null;
+  }
+
+  function isBotaoAcao(el){
+    const t = txt(el).toLowerCase();
+    return t === "editar" || t === "📝 editar" || t === "excluir" || t === "🗑️ excluir" || t.includes("editar") || t.includes("excluir");
+  }
+
+  function limparDuplicadosSoltos(){
+    const bloco = blocoNotas();
+    if(!bloco) return;
+
+    const cards = Array.from(bloco.children).filter(ch => {
+      const t = txt(ch).toLowerCase();
+      return t.includes("editar") && t.includes("excluir") && !/bloco de notas/i.test(t);
+    });
+
+    // Remove botões de ação diretos que ficaram soltos no final da seção, fora de card de nota.
+    Array.from(bloco.children).forEach(ch => {
+      const t = txt(ch).toLowerCase().trim();
+      const isSolto = (
+        (t === "editar" || t === "📝 editar" || t === "excluir" || t === "🗑️ excluir") ||
+        (t.includes("editar") && t.includes("excluir") && !t.includes("vamos") && !t.includes("recisao") && !t.includes("enviar"))
+      );
+
+      const ehCardNota = t.includes("editar") && t.includes("excluir") && (
+        t.includes("normal") || t.includes("urgente") || t.includes("critico") || t.includes("crítico")
+      ) && (t.includes("2026") || t.includes("recis") || t.includes("vamos") || t.includes("enviar"));
+
+      if(isSolto && !ehCardNota){
+        ch.remove();
+      }
+    });
+
+    // Remove labels de prioridade soltos no cabeçalho do bloco.
+    Array.from(bloco.querySelectorAll("span,b,strong,div")).forEach(el => {
+      const t = txt(el).toLowerCase().trim();
+      if((t === "🔴 urgente" || t === "urgente" || t === "🟢 normal" || t === "normal") && el.parentElement === bloco){
+        el.classList.add("df-v225-prioridade-solta");
+      }
+    });
+  }
+
+  async function salvarPrioridade(select, id, valor){
+    const novo = label(valor);
+
+    if(select){
+      select.value = novo;
+      select.dispatchEvent(new Event("change", { bubbles:true }));
+    }
+
+    try{
+      if(typeof window.alterarPrioridade === "function"){
+        try { return window.alterarPrioridade(select, id, novo); } catch(e){}
+        try { return window.alterarPrioridade(id, novo); } catch(e){}
+        try { return window.alterarPrioridade(novo, id); } catch(e){}
+      }
+    }catch(e){}
+
+    try{
+      if(typeof window.alterarPrioridadeNotaDF === "function"){
+        return window.alterarPrioridadeNotaDF(id, novo);
+      }
+    }catch(e){}
+
+    try{
+      if(id && typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{
+            "apikey": SupabaseKey,
+            "Authorization":"Bearer " + SupabaseKey,
+            "Content-Type":"application/json",
+            "Prefer":"return=representation"
+          },
+          body:JSON.stringify({ prioridade: novo })
+        });
+        if(typeof carregar === "function") carregar();
+      }
+    }catch(e){}
+  }
+
+  function idNota(card){
+    const onclicks = Array.from(card.querySelectorAll("[onclick]")).map(el => el.getAttribute("onclick") || "").join(" ");
+    const m = onclicks.match(/(?:editarNotaDF|excluirNota|excluirNotaDF|alterarPrioridade)\s*\(\s*['"]?([^,'")]+)['"]?/i);
+    if(m) return m[1];
+    return card.getAttribute("data-id") || card.getAttribute("data-nota-id") || "";
+  }
+
+  function transformarSelect(select){
+    if(!select || select.dataset.df225Ok) return;
+
+    const card = select.closest(".card,section,article,div");
+    if(!card) return;
+
+    const textoCard = txt(card).toLowerCase();
+
+    // Só aplica em card de nota, não em filtros, status, centros ou exportar.
+    const ehNota = textoCard.includes("editar") && textoCard.includes("excluir") && 
+                   (textoCard.includes("normal") || textoCard.includes("urgente") || textoCard.includes("critico") || textoCard.includes("crítico"));
+
+    if(!ehNota) return;
+
+    select.dataset.df225Ok = "1";
+    select.classList.add("df-prioridade-select-original-v225");
+
+    // Remove botão antigo da V22.3 se existir ao lado.
+    const next = select.nextElementSibling;
+    if(next && next.classList && next.classList.contains("df-prioridade-box-v223")){
+      next.remove();
+    }
+
+    const atual = label(select.value || select.options?.[select.selectedIndex]?.text || "Normal");
+    const id = idNota(card);
+
+    const box = document.createElement("div");
+    box.className = "df-prioridade-box-v225";
+    box.innerHTML = `
+      <button type="button" class="df-btn-prioridade-v225 ${cls(atual)}">
+        <span>${ico(atual)} Prioridade</span>
+        <strong>${atual}</strong>
+      </button>
+      <div class="df-prioridade-menu-v225">
+        <button type="button" class="df-prioridade-opcao-v225 normal" data-p="Normal">🟢 Normal</button>
+        <button type="button" class="df-prioridade-opcao-v225 urgente" data-p="Urgente">🔴 Urgente</button>
+        <button type="button" class="df-prioridade-opcao-v225 critico" data-p="Crítico">🔥 Crítico</button>
+      </div>
+    `;
+
+    select.parentNode.insertBefore(box, select.nextSibling);
+
+    const btn = box.querySelector(".df-btn-prioridade-v225");
+    const strong = btn.querySelector("strong");
+
+    btn.addEventListener("click", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+
+      document.querySelectorAll(".df-prioridade-box-v225.open").forEach(b => {
+        if(b !== box) b.classList.remove("open");
+      });
+
+      box.classList.toggle("open");
+    });
+
+    box.querySelectorAll(".df-prioridade-opcao-v225").forEach(op => {
+      op.addEventListener("click", async function(e){
+        e.preventDefault();
+        e.stopPropagation();
+
+        const novo = op.dataset.p;
+        btn.classList.remove("normal","urgente","critico");
+        btn.classList.add(cls(novo));
+        btn.querySelector("span").textContent = `${ico(novo)} Prioridade`;
+        strong.textContent = label(novo);
+        box.classList.remove("open");
+
+        await salvarPrioridade(select, id, novo);
+      });
+    });
+  }
+
+  function aplicar(){
+    css();
+    limparDuplicadosSoltos();
+
+    const bloco = blocoNotas();
+    if(!bloco) return;
+
+    const selects = Array.from(bloco.querySelectorAll("select")).filter(sel => {
+      const t = (sel.textContent || "").toLowerCase();
+      const id = (sel.id || "").toLowerCase();
+      return t.includes("normal") && t.includes("urgente") && !id.includes("status") && !id.includes("acao") && !id.includes("centro");
+    });
+
+    selects.forEach(transformarSelect);
+  }
+
+  document.addEventListener("click", function(e){
+    if(!e.target.closest(".df-prioridade-box-v225")){
+      document.querySelectorAll(".df-prioridade-box-v225.open").forEach(b => b.classList.remove("open"));
+    }
+  }, true);
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", aplicar, {once:true});
+  }else{
+    aplicar();
+  }
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
+  setTimeout(aplicar, 3200);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V22.6 PDF CORRIGIDO
+   Correção:
+   - PDF não usa mais iframe nem document.write direto
+   - Gera página HTML limpa via Blob URL
+   - Abre relatório em nova aba renderizado corretamente
+   - Botão Imprimir/PDF dentro da página limpa
+   - Mantém CSV funcionando da V22.4/V22.5
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V226_PDF_CORRIGIDO__) return;
+  window.__DONA_FLOR_V226_PDF_CORRIGIDO__ = true;
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function moeda(v){
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function hojeISO(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function getContasBase(){
+    try{
+      if(Array.isArray(window.contasRelatorioCache) && window.contasRelatorioCache.length) return window.contasRelatorioCache;
+    }catch(e){}
+
+    try{
+      if(typeof visContas === "function"){
+        const r = visContas();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const r = getContasArrayDF();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    for(const nome of ["contasDados","contas","df_contas","contasDF"]){
+      try{
+        if(Array.isArray(window[nome])) return window[nome].filter(c => !c.deletado);
+      }catch(e){}
+    }
+
+    return [];
+  }
+
+  function lerFiltrosPDF(){
+    return {
+      centro: document.getElementById("df224Centro")?.value || document.getElementById("df222Centro")?.value || "",
+      status: document.getElementById("df224Status")?.value || document.getElementById("df222Status")?.value || "",
+      dataInicio: document.getElementById("df224Inicio")?.value || document.getElementById("df222Inicio")?.value || "",
+      dataFim: document.getElementById("df224Fim")?.value || document.getElementById("df222Fim")?.value || "",
+      resumo: (document.getElementById("df224Resumo")?.checked ?? document.getElementById("df222Resumo")?.checked) !== false,
+      centroResumo: (document.getElementById("df224CentroResumo")?.checked ?? document.getElementById("df222CentroResumo")?.checked) !== false,
+      detalhe: (document.getElementById("df224Detalhe")?.checked ?? document.getElementById("df222Detalhe")?.checked) !== false,
+      aberto: document.getElementById("df224Aberto")?.checked || document.getElementById("df222Aberto")?.checked || false
+    };
+  }
+
+  function filtrarContas(f){
+    return getContasBase().filter(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function resumo(contas){
+    const hoje = hojeISO();
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function montarHTMLRelatorio(f){
+    const contas = filtrarContas(f);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+
+    const filtroDesc = [
+      f.centro ? "Centro: " + f.centro : "Todos os centros",
+      f.status ? "Status: " + f.status : "Todos os status",
+      f.dataInicio ? "De " + dataBR(f.dataInicio) : "",
+      f.dataFim ? "Até " + dataBR(f.dataFim) : "",
+      f.aberto ? "Somente em aberto" : ""
+    ].filter(Boolean).join(" • ");
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card"><div class="label">Total aberto</div><div class="num">${moeda(r.totalAberto)}</div></div>
+        <div class="card"><div class="label">Pago</div><div class="num">${moeda(r.totalPago)}</div></div>
+        <div class="card"><div class="label">Vencidas</div><div class="num">${moeda(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centrosHTML = f.centroResumo ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro, info]) => `
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${moeda(info.total)}</b>
+          </div>
+        `).join("") : `<div class="empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moeda(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead>
+            <tr>
+              <th>Conta</th>
+              <th>Centro</th>
+              <th>Vencimento</th>
+              <th>Status</th>
+              <th>Valor</th>
+              <th>Obs.</th>
+            </tr>
+          </thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div class="empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Relatório Dona Flor</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    padding:18px;
+    background:#ffffff;
+    color:#0f172a;
+    font-family:Arial, Helvetica, sans-serif;
+  }
+  .page{
+    max-width:980px;
+    margin:0 auto;
+    background:#fff;
+  }
+  .top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    border-bottom:1px solid #e2e8f0;
+    padding-bottom:12px;
+    margin-bottom:14px;
+  }
+  h1{
+    color:#0f766e;
+    margin:0;
+    font-size:24px;
+    line-height:1.1;
+  }
+  h2{
+    font-size:18px;
+    margin:18px 0 8px;
+  }
+  .sub{
+    color:#64748b;
+    font-size:12px;
+    margin-top:4px;
+  }
+  .actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  button{
+    min-height:40px;
+    border-radius:10px;
+    border:2px solid #000;
+    box-shadow:3px 3px 0 #000;
+    background:#0f766e;
+    color:#fff;
+    font-weight:900;
+    padding:8px 12px;
+    cursor:pointer;
+  }
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+    margin:12px 0;
+  }
+  .card{
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    padding:10px;
+    background:#fafaf9;
+  }
+  .label{
+    font-size:10px;
+    text-transform:uppercase;
+    color:#64748b;
+    font-weight:bold;
+  }
+  .num{
+    font-size:17px;
+    font-weight:bold;
+    margin-top:3px;
+  }
+  .centros{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:8px;
+    margin:8px 0 14px;
+  }
+  .centro{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    padding:8px;
+  }
+  .centro small{
+    display:block;
+    color:#64748b;
+    margin-top:2px;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+  }
+  th{
+    background:#0f766e;
+    color:white;
+    text-align:left;
+    padding:7px;
+  }
+  td{
+    border-bottom:1px solid #e2e8f0;
+    padding:7px;
+    vertical-align:top;
+  }
+  .valor{
+    font-weight:bold;
+    white-space:nowrap;
+  }
+  .status{
+    border-radius:999px;
+    padding:3px 7px;
+    font-weight:bold;
+    font-size:11px;
+    display:inline-block;
+  }
+  .pago{background:#dcfce7;color:#15803d}
+  .aberto{background:#fef3c7;color:#92400e}
+  .empty{
+    padding:14px;
+    border:1px dashed #cbd5e1;
+    border-radius:10px;
+    color:#64748b;
+    text-align:center;
+  }
+  @media(max-width:760px){
+    body{padding:12px}
+    .top{display:block}
+    .actions{margin-top:10px}
+    .cards{grid-template-columns:1fr 1fr}
+    .centros{grid-template-columns:1fr}
+    table{font-size:11px}
+  }
+  @media print{
+    body{padding:0}
+    .actions{display:none}
+    @page{margin:12mm}
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="top">
+      <div>
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(filtroDesc)}</div>
+      </div>
+      <div class="actions">
+        <button onclick="window.print()">Imprimir / Salvar PDF</button>
+      </div>
+    </div>
+    ${cards}
+    ${centrosHTML}
+    ${detalhes}
+  </div>
+</body>
+</html>`;
+  }
+
+  window.df226GerarPDF = function(){
+    const f = lerFiltrosPDF();
+    const html = montarHTMLRelatorio(f);
+    const blob = new Blob([html], {type:"text/html;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+
+    const win = window.open(url, "_blank");
+
+    if(!win){
+      alert("O navegador bloqueou a abertura do relatório. Toque novamente ou permita pop-ups.");
+      return;
+    }
+
+    setTimeout(function(){
+      try{ URL.revokeObjectURL(url); }catch(e){}
+    }, 60000);
+  };
+
+  // Sobrescreve botões antigos de PDF mantendo CSV intacto.
+  window.df224GerarPDF = window.df226GerarPDF;
+  window.df222GerarPDF = window.df226GerarPDF;
+
+  function corrigirBotoesPDF(){
+    document.querySelectorAll("button").forEach(btn => {
+      const t = (btn.innerText || btn.textContent || "").trim().toLowerCase();
+      const old = btn.getAttribute("onclick") || "";
+
+      if(t.includes("gerar pdf") || t.includes("imprimir") || old.includes("df224GerarPDF") || old.includes("df222GerarPDF")){
+        btn.setAttribute("onclick", "window.df226GerarPDF()");
+      }
+    });
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", corrigirBotoesPDF, {once:true});
+  }else{
+    corrigirBotoesPDF();
+  }
+
+  setTimeout(corrigirBotoesPDF, 700);
+  setTimeout(corrigirBotoesPDF, 1600);
+  setTimeout(corrigirBotoesPDF, 3200);
+})();
+</script>
 </body>
 </html>`;
   }
@@ -15064,6 +17323,759 @@ ${montarRelatorioHTML(f)
   setTimeout(configurarSelect, 700);
   setTimeout(configurarSelect, 1600);
   setTimeout(configurarSelect, 3200);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V22.5 CORREÇÃO BLOCO DE NOTAS
+   Correções:
+   - Corrige bug visual causado pela V22.3 no Bloco de notas
+   - Remove botões Editar/Excluir duplicados fora dos cards
+   - Remove rótulos soltos "Urgente/Normal" no cabeçalho da seção
+   - Prioridade vira botão apenas dentro de cada card de nota
+   - Mantém select original escondido para não quebrar a lógica
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V225_BLOCO_NOTAS_FIX__) return;
+  window.__DONA_FLOR_V225_BLOCO_NOTAS_FIX__ = true;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function norm(v){
+    return String(v || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function label(v){
+    const p = norm(v);
+    if(p === "critico") return "Crítico";
+    if(p === "urgente") return "Urgente";
+    return "Normal";
+  }
+
+  function cls(v){
+    const p = norm(v);
+    if(p === "critico") return "critico";
+    if(p === "urgente") return "urgente";
+    return "normal";
+  }
+
+  function ico(v){
+    const p = norm(v);
+    if(p === "critico") return "🔥";
+    if(p === "urgente") return "🔴";
+    return "🟢";
+  }
+
+  function css(){
+    if(document.getElementById("df-v225-bloco-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v225-bloco-css";
+    style.textContent = `
+      .df-prioridade-select-original-v223,
+      .df-prioridade-select-original-v225{
+        display:none !important;
+      }
+
+      .df-prioridade-box-v225{
+        position:relative !important;
+        width:100% !important;
+        margin:10px 0 !important;
+        z-index:20 !important;
+      }
+
+      .df-btn-prioridade-v225{
+        width:100% !important;
+        min-height:44px !important;
+        border-radius:12px !important;
+        border:1px solid #CBD5E1 !important;
+        background:#F8FAFC !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        font-size:15px !important;
+        padding:10px 12px !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        gap:10px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+      }
+
+      .df-btn-prioridade-v225.normal{
+        background:#ECFDF5 !important;
+        color:#047857 !important;
+        border-color:#A7F3D0 !important;
+      }
+
+      .df-btn-prioridade-v225.urgente{
+        background:#FEE2E2 !important;
+        color:#B91C1C !important;
+        border-color:#FECACA !important;
+      }
+
+      .df-btn-prioridade-v225.critico{
+        background:#7F1D1D !important;
+        color:#FFFFFF !important;
+        border-color:#450A0A !important;
+      }
+
+      .df-prioridade-menu-v225{
+        display:none !important;
+        position:absolute !important;
+        left:0 !important;
+        right:0 !important;
+        top:50px !important;
+        background:#FFFFFF !important;
+        border:2px solid #000 !important;
+        border-radius:14px !important;
+        box-shadow:4px 4px 0 #000 !important;
+        overflow:hidden !important;
+        z-index:99999 !important;
+      }
+
+      .df-prioridade-box-v225.open .df-prioridade-menu-v225{
+        display:block !important;
+      }
+
+      .df-prioridade-opcao-v225{
+        width:100% !important;
+        min-height:44px !important;
+        border:0 !important;
+        border-bottom:1px solid #E2E8F0 !important;
+        background:#FFFFFF !important;
+        color:#0F172A !important;
+        font-weight:900 !important;
+        padding:12px !important;
+        text-align:left !important;
+        display:flex !important;
+        align-items:center !important;
+        gap:8px !important;
+        cursor:pointer !important;
+        box-shadow:none !important;
+        border-radius:0 !important;
+      }
+
+      .df-prioridade-opcao-v225:last-child{ border-bottom:0 !important; }
+      .df-prioridade-opcao-v225.normal{color:#047857 !important;}
+      .df-prioridade-opcao-v225.urgente{color:#B91C1C !important;}
+      .df-prioridade-opcao-v225.critico{color:#7F1D1D !important;}
+
+      /* evita que prioridade vire rótulo solto acima do título */
+      .df-v225-prioridade-solta{
+        display:none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function blocoNotas(){
+    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"))
+      .filter(el => /bloco de notas/i.test(txt(el)));
+    return candidates.sort((a,b) => txt(b).length - txt(a).length)[0] || null;
+  }
+
+  function isBotaoAcao(el){
+    const t = txt(el).toLowerCase();
+    return t === "editar" || t === "📝 editar" || t === "excluir" || t === "🗑️ excluir" || t.includes("editar") || t.includes("excluir");
+  }
+
+  function limparDuplicadosSoltos(){
+    const bloco = blocoNotas();
+    if(!bloco) return;
+
+    const cards = Array.from(bloco.children).filter(ch => {
+      const t = txt(ch).toLowerCase();
+      return t.includes("editar") && t.includes("excluir") && !/bloco de notas/i.test(t);
+    });
+
+    // Remove botões de ação diretos que ficaram soltos no final da seção, fora de card de nota.
+    Array.from(bloco.children).forEach(ch => {
+      const t = txt(ch).toLowerCase().trim();
+      const isSolto = (
+        (t === "editar" || t === "📝 editar" || t === "excluir" || t === "🗑️ excluir") ||
+        (t.includes("editar") && t.includes("excluir") && !t.includes("vamos") && !t.includes("recisao") && !t.includes("enviar"))
+      );
+
+      const ehCardNota = t.includes("editar") && t.includes("excluir") && (
+        t.includes("normal") || t.includes("urgente") || t.includes("critico") || t.includes("crítico")
+      ) && (t.includes("2026") || t.includes("recis") || t.includes("vamos") || t.includes("enviar"));
+
+      if(isSolto && !ehCardNota){
+        ch.remove();
+      }
+    });
+
+    // Remove labels de prioridade soltos no cabeçalho do bloco.
+    Array.from(bloco.querySelectorAll("span,b,strong,div")).forEach(el => {
+      const t = txt(el).toLowerCase().trim();
+      if((t === "🔴 urgente" || t === "urgente" || t === "🟢 normal" || t === "normal") && el.parentElement === bloco){
+        el.classList.add("df-v225-prioridade-solta");
+      }
+    });
+  }
+
+  async function salvarPrioridade(select, id, valor){
+    const novo = label(valor);
+
+    if(select){
+      select.value = novo;
+      select.dispatchEvent(new Event("change", { bubbles:true }));
+    }
+
+    try{
+      if(typeof window.alterarPrioridade === "function"){
+        try { return window.alterarPrioridade(select, id, novo); } catch(e){}
+        try { return window.alterarPrioridade(id, novo); } catch(e){}
+        try { return window.alterarPrioridade(novo, id); } catch(e){}
+      }
+    }catch(e){}
+
+    try{
+      if(typeof window.alterarPrioridadeNotaDF === "function"){
+        return window.alterarPrioridadeNotaDF(id, novo);
+      }
+    }catch(e){}
+
+    try{
+      if(id && typeof SupabaseURL !== "undefined" && typeof SupabaseKey !== "undefined"){
+        await fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + encodeURIComponent(id), {
+          method:"PATCH",
+          headers:{
+            "apikey": SupabaseKey,
+            "Authorization":"Bearer " + SupabaseKey,
+            "Content-Type":"application/json",
+            "Prefer":"return=representation"
+          },
+          body:JSON.stringify({ prioridade: novo })
+        });
+        if(typeof carregar === "function") carregar();
+      }
+    }catch(e){}
+  }
+
+  function idNota(card){
+    const onclicks = Array.from(card.querySelectorAll("[onclick]")).map(el => el.getAttribute("onclick") || "").join(" ");
+    const m = onclicks.match(/(?:editarNotaDF|excluirNota|excluirNotaDF|alterarPrioridade)\s*\(\s*['"]?([^,'")]+)['"]?/i);
+    if(m) return m[1];
+    return card.getAttribute("data-id") || card.getAttribute("data-nota-id") || "";
+  }
+
+  function transformarSelect(select){
+    if(!select || select.dataset.df225Ok) return;
+
+    const card = select.closest(".card,section,article,div");
+    if(!card) return;
+
+    const textoCard = txt(card).toLowerCase();
+
+    // Só aplica em card de nota, não em filtros, status, centros ou exportar.
+    const ehNota = textoCard.includes("editar") && textoCard.includes("excluir") && 
+                   (textoCard.includes("normal") || textoCard.includes("urgente") || textoCard.includes("critico") || textoCard.includes("crítico"));
+
+    if(!ehNota) return;
+
+    select.dataset.df225Ok = "1";
+    select.classList.add("df-prioridade-select-original-v225");
+
+    // Remove botão antigo da V22.3 se existir ao lado.
+    const next = select.nextElementSibling;
+    if(next && next.classList && next.classList.contains("df-prioridade-box-v223")){
+      next.remove();
+    }
+
+    const atual = label(select.value || select.options?.[select.selectedIndex]?.text || "Normal");
+    const id = idNota(card);
+
+    const box = document.createElement("div");
+    box.className = "df-prioridade-box-v225";
+    box.innerHTML = `
+      <button type="button" class="df-btn-prioridade-v225 ${cls(atual)}">
+        <span>${ico(atual)} Prioridade</span>
+        <strong>${atual}</strong>
+      </button>
+      <div class="df-prioridade-menu-v225">
+        <button type="button" class="df-prioridade-opcao-v225 normal" data-p="Normal">🟢 Normal</button>
+        <button type="button" class="df-prioridade-opcao-v225 urgente" data-p="Urgente">🔴 Urgente</button>
+        <button type="button" class="df-prioridade-opcao-v225 critico" data-p="Crítico">🔥 Crítico</button>
+      </div>
+    `;
+
+    select.parentNode.insertBefore(box, select.nextSibling);
+
+    const btn = box.querySelector(".df-btn-prioridade-v225");
+    const strong = btn.querySelector("strong");
+
+    btn.addEventListener("click", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+
+      document.querySelectorAll(".df-prioridade-box-v225.open").forEach(b => {
+        if(b !== box) b.classList.remove("open");
+      });
+
+      box.classList.toggle("open");
+    });
+
+    box.querySelectorAll(".df-prioridade-opcao-v225").forEach(op => {
+      op.addEventListener("click", async function(e){
+        e.preventDefault();
+        e.stopPropagation();
+
+        const novo = op.dataset.p;
+        btn.classList.remove("normal","urgente","critico");
+        btn.classList.add(cls(novo));
+        btn.querySelector("span").textContent = `${ico(novo)} Prioridade`;
+        strong.textContent = label(novo);
+        box.classList.remove("open");
+
+        await salvarPrioridade(select, id, novo);
+      });
+    });
+  }
+
+  function aplicar(){
+    css();
+    limparDuplicadosSoltos();
+
+    const bloco = blocoNotas();
+    if(!bloco) return;
+
+    const selects = Array.from(bloco.querySelectorAll("select")).filter(sel => {
+      const t = (sel.textContent || "").toLowerCase();
+      const id = (sel.id || "").toLowerCase();
+      return t.includes("normal") && t.includes("urgente") && !id.includes("status") && !id.includes("acao") && !id.includes("centro");
+    });
+
+    selects.forEach(transformarSelect);
+  }
+
+  document.addEventListener("click", function(e){
+    if(!e.target.closest(".df-prioridade-box-v225")){
+      document.querySelectorAll(".df-prioridade-box-v225.open").forEach(b => b.classList.remove("open"));
+    }
+  }, true);
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", aplicar, {once:true});
+  }else{
+    aplicar();
+  }
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
+  setTimeout(aplicar, 3200);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V22.6 PDF CORRIGIDO
+   Correção:
+   - PDF não usa mais iframe nem document.write direto
+   - Gera página HTML limpa via Blob URL
+   - Abre relatório em nova aba renderizado corretamente
+   - Botão Imprimir/PDF dentro da página limpa
+   - Mantém CSV funcionando da V22.4/V22.5
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V226_PDF_CORRIGIDO__) return;
+  window.__DONA_FLOR_V226_PDF_CORRIGIDO__ = true;
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function moeda(v){
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function hojeISO(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function getContasBase(){
+    try{
+      if(Array.isArray(window.contasRelatorioCache) && window.contasRelatorioCache.length) return window.contasRelatorioCache;
+    }catch(e){}
+
+    try{
+      if(typeof visContas === "function"){
+        const r = visContas();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    try{
+      if(typeof getContasArrayDF === "function"){
+        const r = getContasArrayDF();
+        if(Array.isArray(r)) return r.filter(c => !c.deletado);
+      }
+    }catch(e){}
+
+    for(const nome of ["contasDados","contas","df_contas","contasDF"]){
+      try{
+        if(Array.isArray(window[nome])) return window[nome].filter(c => !c.deletado);
+      }catch(e){}
+    }
+
+    return [];
+  }
+
+  function lerFiltrosPDF(){
+    return {
+      centro: document.getElementById("df224Centro")?.value || document.getElementById("df222Centro")?.value || "",
+      status: document.getElementById("df224Status")?.value || document.getElementById("df222Status")?.value || "",
+      dataInicio: document.getElementById("df224Inicio")?.value || document.getElementById("df222Inicio")?.value || "",
+      dataFim: document.getElementById("df224Fim")?.value || document.getElementById("df222Fim")?.value || "",
+      resumo: (document.getElementById("df224Resumo")?.checked ?? document.getElementById("df222Resumo")?.checked) !== false,
+      centroResumo: (document.getElementById("df224CentroResumo")?.checked ?? document.getElementById("df222CentroResumo")?.checked) !== false,
+      detalhe: (document.getElementById("df224Detalhe")?.checked ?? document.getElementById("df222Detalhe")?.checked) !== false,
+      aberto: document.getElementById("df224Aberto")?.checked || document.getElementById("df222Aberto")?.checked || false
+    };
+  }
+
+  function filtrarContas(f){
+    return getContasBase().filter(c=>{
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.dataInicio && data && data < f.dataInicio) return false;
+      if(f.dataFim && data && data > f.dataFim) return false;
+      return true;
+    });
+  }
+
+  function resumo(contas){
+    const hoje = hojeISO();
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalPago: pagas.reduce((a,c)=>a+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((a,c)=>a+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentro(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function montarHTMLRelatorio(f){
+    const contas = filtrarContas(f);
+    const r = resumo(contas);
+    const centros = porCentro(contas);
+
+    const filtroDesc = [
+      f.centro ? "Centro: " + f.centro : "Todos os centros",
+      f.status ? "Status: " + f.status : "Todos os status",
+      f.dataInicio ? "De " + dataBR(f.dataInicio) : "",
+      f.dataFim ? "Até " + dataBR(f.dataFim) : "",
+      f.aberto ? "Somente em aberto" : ""
+    ].filter(Boolean).join(" • ");
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card"><div class="label">Total aberto</div><div class="num">${moeda(r.totalAberto)}</div></div>
+        <div class="card"><div class="label">Pago</div><div class="num">${moeda(r.totalPago)}</div></div>
+        <div class="card"><div class="label">Vencidas</div><div class="num">${moeda(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centrosHTML = f.centroResumo ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro, info]) => `
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${moeda(info.total)}</b>
+          </div>
+        `).join("") : `<div class="empty">Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moeda(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhe ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead>
+            <tr>
+              <th>Conta</th>
+              <th>Centro</th>
+              <th>Vencimento</th>
+              <th>Status</th>
+              <th>Valor</th>
+              <th>Obs.</th>
+            </tr>
+          </thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div class="empty">Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Relatório Dona Flor</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    padding:18px;
+    background:#ffffff;
+    color:#0f172a;
+    font-family:Arial, Helvetica, sans-serif;
+  }
+  .page{
+    max-width:980px;
+    margin:0 auto;
+    background:#fff;
+  }
+  .top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    border-bottom:1px solid #e2e8f0;
+    padding-bottom:12px;
+    margin-bottom:14px;
+  }
+  h1{
+    color:#0f766e;
+    margin:0;
+    font-size:24px;
+    line-height:1.1;
+  }
+  h2{
+    font-size:18px;
+    margin:18px 0 8px;
+  }
+  .sub{
+    color:#64748b;
+    font-size:12px;
+    margin-top:4px;
+  }
+  .actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  button{
+    min-height:40px;
+    border-radius:10px;
+    border:2px solid #000;
+    box-shadow:3px 3px 0 #000;
+    background:#0f766e;
+    color:#fff;
+    font-weight:900;
+    padding:8px 12px;
+    cursor:pointer;
+  }
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+    margin:12px 0;
+  }
+  .card{
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    padding:10px;
+    background:#fafaf9;
+  }
+  .label{
+    font-size:10px;
+    text-transform:uppercase;
+    color:#64748b;
+    font-weight:bold;
+  }
+  .num{
+    font-size:17px;
+    font-weight:bold;
+    margin-top:3px;
+  }
+  .centros{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:8px;
+    margin:8px 0 14px;
+  }
+  .centro{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    padding:8px;
+  }
+  .centro small{
+    display:block;
+    color:#64748b;
+    margin-top:2px;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+  }
+  th{
+    background:#0f766e;
+    color:white;
+    text-align:left;
+    padding:7px;
+  }
+  td{
+    border-bottom:1px solid #e2e8f0;
+    padding:7px;
+    vertical-align:top;
+  }
+  .valor{
+    font-weight:bold;
+    white-space:nowrap;
+  }
+  .status{
+    border-radius:999px;
+    padding:3px 7px;
+    font-weight:bold;
+    font-size:11px;
+    display:inline-block;
+  }
+  .pago{background:#dcfce7;color:#15803d}
+  .aberto{background:#fef3c7;color:#92400e}
+  .empty{
+    padding:14px;
+    border:1px dashed #cbd5e1;
+    border-radius:10px;
+    color:#64748b;
+    text-align:center;
+  }
+  @media(max-width:760px){
+    body{padding:12px}
+    .top{display:block}
+    .actions{margin-top:10px}
+    .cards{grid-template-columns:1fr 1fr}
+    .centros{grid-template-columns:1fr}
+    table{font-size:11px}
+  }
+  @media print{
+    body{padding:0}
+    .actions{display:none}
+    @page{margin:12mm}
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="top">
+      <div>
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(filtroDesc)}</div>
+      </div>
+      <div class="actions">
+        <button onclick="window.print()">Imprimir / Salvar PDF</button>
+      </div>
+    </div>
+    ${cards}
+    ${centrosHTML}
+    ${detalhes}
+  </div>
+</body>
+</html>`;
+  }
+
+  window.df226GerarPDF = function(){
+    const f = lerFiltrosPDF();
+    const html = montarHTMLRelatorio(f);
+    const blob = new Blob([html], {type:"text/html;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+
+    const win = window.open(url, "_blank");
+
+    if(!win){
+      alert("O navegador bloqueou a abertura do relatório. Toque novamente ou permita pop-ups.");
+      return;
+    }
+
+    setTimeout(function(){
+      try{ URL.revokeObjectURL(url); }catch(e){}
+    }, 60000);
+  };
+
+  // Sobrescreve botões antigos de PDF mantendo CSV intacto.
+  window.df224GerarPDF = window.df226GerarPDF;
+  window.df222GerarPDF = window.df226GerarPDF;
+
+  function corrigirBotoesPDF(){
+    document.querySelectorAll("button").forEach(btn => {
+      const t = (btn.innerText || btn.textContent || "").trim().toLowerCase();
+      const old = btn.getAttribute("onclick") || "";
+
+      if(t.includes("gerar pdf") || t.includes("imprimir") || old.includes("df224GerarPDF") || old.includes("df222GerarPDF")){
+        btn.setAttribute("onclick", "window.df226GerarPDF()");
+      }
+    });
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", corrigirBotoesPDF, {once:true});
+  }else{
+    corrigirBotoesPDF();
+  }
+
+  setTimeout(corrigirBotoesPDF, 700);
+  setTimeout(corrigirBotoesPDF, 1600);
+  setTimeout(corrigirBotoesPDF, 3200);
 })();
 </script>
 </body>

@@ -1,0 +1,355 @@
+/* ==========================================================
+   Dona Flor V26 Estruturada
+   Camada visual isolada: menu, bloco de notas, relatório e print
+   ========================================================== */
+
+:root{
+  --df-green:#0F766E;
+  --df-green-soft:#DCFCE7;
+  --df-blue:#2563EB;
+  --df-red:#B91C1C;
+  --df-red-soft:#FEE2E2;
+  --df-border:#E2E8F0;
+  --df-text:#0F172A;
+  --df-muted:#64748B;
+  --df-bg:#F8FAFC;
+  --df-white:#FFFFFF;
+}
+
+/* ===== MENU / SUBMENUS ===== */
+.side-submenu{
+  overflow:hidden !important;
+  max-height:0 !important;
+  opacity:0 !important;
+  transition:max-height .22s ease, opacity .18s ease !important;
+}
+
+.side-submenu.open{
+  max-height:440px !important;
+  opacity:1 !important;
+}
+
+.side-submenu .side-btn{
+  min-height:38px !important;
+  padding-top:8px !important;
+  padding-bottom:8px !important;
+  font-size:14px !important;
+}
+
+#toggleSidebarBtn,
+button[title="Recolher menu"],
+button[onclick*="toggleSidebar"]{
+  background:var(--df-bg) !important;
+  border:1px solid var(--df-border) !important;
+  box-shadow:none !important;
+  border-radius:12px !important;
+  color:var(--df-text) !important;
+  min-height:44px !important;
+}
+
+body.df-sidebar-collapsed .side-text{ display:none !important; }
+body.df-sidebar-collapsed .sidebar{ width:76px !important; }
+body.df-sidebar-collapsed .side-btn{
+  justify-content:center !important;
+  padding-left:10px !important;
+  padding-right:10px !important;
+}
+
+/* ===== PADRÃO VISUAL ===== */
+#notasLista,
+#atalhoContas{
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif !important;
+}
+
+#notasLista{
+  display:block !important;
+}
+
+#notasLista .item,
+#notasLista .nota-card,
+#notasLista .df-v23-nota-card,
+#notasLista .df-v25-nota-card,
+#notasLista select,
+#notasLista .df-prioridade-box-v223,
+#notasLista .df-prioridade-box-v225{
+  display:none !important;
+}
+
+.df26-note-card{
+  background:var(--df-white) !important;
+  border:1px solid var(--df-border) !important;
+  border-radius:14px !important;
+  padding:14px !important;
+  margin:12px 0 !important;
+  box-shadow:0 8px 18px rgba(15,23,42,.06) !important;
+}
+
+.df26-note-top{
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:space-between !important;
+  gap:10px !important;
+}
+
+.df26-note-title{
+  font-size:18px !important;
+  font-weight:900 !important;
+  color:var(--df-text) !important;
+  line-height:1.15 !important;
+}
+
+.df26-note-text{
+  color:#475569 !important;
+  margin-top:6px !important;
+  font-size:15px !important;
+  line-height:1.3 !important;
+}
+
+.df26-note-meta{
+  color:var(--df-muted) !important;
+  margin-top:8px !important;
+  font-size:13px !important;
+}
+
+.df26-badge{
+  display:inline-flex !important;
+  align-items:center !important;
+  gap:6px !important;
+  border-radius:999px !important;
+  padding:6px 10px !important;
+  font-weight:900 !important;
+  font-size:13px !important;
+  white-space:nowrap !important;
+}
+
+.df26-badge.normal{background:#E0F2FE !important;color:#075985 !important;}
+.df26-badge.urgente{background:var(--df-red-soft) !important;color:var(--df-red) !important;}
+.df26-badge.critico{background:#7F1D1D !important;color:#fff !important;}
+
+.df26-note-actions{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:10px !important;
+  margin-top:12px !important;
+}
+
+.df26-btn{
+  width:100% !important;
+  min-height:44px !important;
+  border-radius:12px !important;
+  border:0 !important;
+  font-weight:900 !important;
+  font-size:15px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:8px !important;
+  cursor:pointer !important;
+}
+
+.df26-btn-edit{background:var(--df-blue) !important;color:#fff !important;}
+.df26-btn-del{background:var(--df-red) !important;color:#fff !important;}
+
+.df26-prio-box{
+  position:relative !important;
+  width:100% !important;
+  z-index:100 !important;
+}
+
+.df26-prio-btn{
+  background:var(--df-bg) !important;
+  color:var(--df-text) !important;
+  border:1px solid #CBD5E1 !important;
+  justify-content:space-between !important;
+  padding:0 12px !important;
+}
+
+.df26-prio-btn.normal{background:#ECFDF5 !important;color:#047857 !important;border-color:#A7F3D0 !important;}
+.df26-prio-btn.urgente{background:var(--df-red-soft) !important;color:var(--df-red) !important;border-color:#FECACA !important;}
+.df26-prio-btn.critico{background:#7F1D1D !important;color:#fff !important;border-color:#450A0A !important;}
+
+.df26-prio-menu{
+  display:none !important;
+  position:absolute !important;
+  left:0 !important;
+  right:0 !important;
+  top:50px !important;
+  background:#fff !important;
+  border:2px solid #000 !important;
+  border-radius:14px !important;
+  box-shadow:4px 4px 0 #000 !important;
+  overflow:hidden !important;
+  z-index:999999 !important;
+}
+
+.df26-prio-box.open .df26-prio-menu{ display:block !important; }
+
+.df26-prio-option{
+  width:100% !important;
+  min-height:44px !important;
+  background:#fff !important;
+  border:0 !important;
+  border-bottom:1px solid var(--df-border) !important;
+  padding:12px !important;
+  text-align:left !important;
+  font-weight:900 !important;
+  cursor:pointer !important;
+}
+
+.df26-prio-option:last-child{border-bottom:0 !important;}
+
+/* ===== RELATÓRIO ===== */
+.df-v221-report-actions,
+.df-v221-mini-btn,
+button[onclick*="df221AbrirFiltros"]{
+  display:none !important;
+}
+
+.df26-modal-bg{
+  position:fixed !important;
+  inset:0 !important;
+  z-index:2147483647 !important;
+  background:rgba(15,23,42,.66) !important;
+  display:none !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:14px !important;
+  box-sizing:border-box !important;
+}
+
+.df26-modal-bg.open{ display:flex !important; }
+
+.df26-modal-box{
+  width:100% !important;
+  max-width:980px !important;
+  max-height:92vh !important;
+  overflow:auto !important;
+  background:#fff !important;
+  border:2px solid #000 !important;
+  border-radius:18px !important;
+  box-shadow:6px 6px 0 #000 !important;
+  padding:18px !important;
+  box-sizing:border-box !important;
+  color:var(--df-text) !important;
+  font-family:Arial, Helvetica, sans-serif !important;
+}
+
+.df26-actions{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  gap:8px !important;
+  justify-content:flex-end !important;
+  margin-bottom:12px !important;
+}
+
+.df26-actions button{
+  min-height:40px !important;
+  border-radius:10px !important;
+  border:2px solid #000 !important;
+  box-shadow:3px 3px 0 #000 !important;
+  background:var(--df-green) !important;
+  color:#fff !important;
+  font-weight:900 !important;
+  padding:8px 12px !important;
+  cursor:pointer !important;
+}
+
+.df26-actions .light{
+  background:#fff !important;
+  color:#000 !important;
+}
+
+.df26-grid{
+  display:grid !important;
+  grid-template-columns:repeat(2,1fr) !important;
+  gap:10px !important;
+}
+
+.df26-field label{
+  display:block !important;
+  font-size:12px !important;
+  font-weight:900 !important;
+  color:var(--df-muted) !important;
+  margin:0 0 4px !important;
+  text-transform:uppercase !important;
+}
+
+.df26-field input,
+.df26-field select{
+  width:100% !important;
+  min-height:44px !important;
+  border:1px solid #CBD5E1 !important;
+  border-radius:12px !important;
+  padding:10px !important;
+  box-sizing:border-box !important;
+  font-size:15px !important;
+  background:#fff !important;
+}
+
+.df26-checks{
+  display:grid !important;
+  grid-template-columns:repeat(2,1fr) !important;
+  gap:8px !important;
+  margin-top:12px !important;
+}
+
+.df26-check{
+  border:1px solid var(--df-border) !important;
+  border-radius:12px !important;
+  padding:10px !important;
+  background:#FAFAF9 !important;
+  font-weight:800 !important;
+}
+
+.df26-report h1{ color:var(--df-green) !important; margin:0 !important; font-size:24px !important; }
+.df26-report h2{ font-size:18px !important; margin:18px 0 8px !important; }
+.df26-report .sub{ color:var(--df-muted) !important; font-size:12px !important; margin-top:4px !important; }
+.df26-report .cards{ display:grid !important; grid-template-columns:repeat(4,1fr) !important; gap:8px !important; margin:12px 0 !important; }
+.df26-report .card-mini{ border:1px solid var(--df-border) !important; border-radius:10px !important; padding:10px !important; background:#FAFAF9 !important; }
+.df26-report .label{ font-size:10px !important; text-transform:uppercase !important; color:var(--df-muted) !important; font-weight:bold !important; }
+.df26-report .num{ font-size:17px !important; font-weight:bold !important; margin-top:3px !important; }
+.df26-report .centros{ display:grid !important; grid-template-columns:repeat(2,1fr) !important; gap:8px !important; margin:8px 0 14px !important; }
+.df26-report .centro{ display:flex !important; justify-content:space-between !important; border:1px solid var(--df-border) !important; border-radius:10px !important; padding:8px !important; }
+.df26-report .centro small{ display:block !important; color:var(--df-muted) !important; }
+.df26-report table{ width:100% !important; border-collapse:collapse !important; font-size:12px !important; }
+.df26-report th{ background:var(--df-green) !important; color:#fff !important; text-align:left !important; padding:7px !important; }
+.df26-report td{ border-bottom:1px solid var(--df-border) !important; padding:7px !important; vertical-align:top !important; }
+.df26-report .valor{ font-weight:bold !important; white-space:nowrap !important; }
+.df26-report .status{ border-radius:999px !important; padding:3px 7px !important; font-weight:bold !important; font-size:11px !important; display:inline-block !important; }
+.df26-report .pago{ background:#DCFCE7 !important; color:#15803D !important; }
+.df26-report .aberto{ background:#FEF3C7 !important; color:#92400E !important; }
+
+@media(max-width:760px){
+  .df26-modal-box{ padding:14px !important; border-radius:16px !important; }
+  .df26-actions{ justify-content:flex-start !important; }
+  .df26-grid,.df26-checks,.df26-report .centros{ grid-template-columns:1fr !important; }
+  .df26-report .cards{ grid-template-columns:1fr 1fr !important; }
+  .df26-report table{ font-size:11px !important; }
+}
+
+@media print{
+  html, body{ background:#fff !important; margin:0 !important; padding:0 !important; }
+  body > *{ display:none !important; }
+  #df26-report-bg{
+    display:block !important;
+    position:static !important;
+    inset:auto !important;
+    background:#fff !important;
+    padding:0 !important;
+    margin:0 !important;
+  }
+  #df26-report-bg .df26-modal-box{
+    display:block !important;
+    max-height:none !important;
+    overflow:visible !important;
+    box-shadow:none !important;
+    border:0 !important;
+    border-radius:0 !important;
+    max-width:none !important;
+    padding:0 !important;
+    margin:0 !important;
+  }
+  #df26-report-bg .df26-actions{ display:none !important; }
+  #df26-report-content{ display:block !important; }
+  @page{ margin:12mm; }
+}

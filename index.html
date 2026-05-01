@@ -546,6 +546,12 @@ table{min-width:760px}
   .section-title-row{margin-bottom:8px}
 }
 
+
+/* V19.1 ajustes finais: usuário sem dropdown e submenus completos */
+.user-pill::after{content:none!important;display:none!important}
+.user-pill{pointer-events:none!important;user-select:none!important}
+.side-submenu .subitem .side-text{white-space:normal!important;line-height:1.2}
+#atalhoLancamento .section-title-row h2::after,#atalhoLembrete .section-title-row h2::after{content:""}
 </style>
 </head>
 <body>
@@ -611,10 +617,13 @@ table{min-width:760px}
       <span class="side-icon">📊</span><span class="side-text">Painel</span><span class="side-arrow side-text">▾</span>
     </button>
     <div id="painelSubmenu" class="side-submenu open">
-      <button class="side-btn subitem" onclick="irParaSecao('alertasVencimento')"><span class="side-icon">🚨</span><span class="side-text">Alertas</span></button>
-      <button class="side-btn subitem" onclick="irParaSecao('atalhoContas')"><span class="side-icon">📄</span><span class="side-text">Contas a pagar</span></button>
+      <button class="side-btn subitem" onclick="irParaSecao('alertasVencimento')"><span class="side-icon">🚨</span><span class="side-text">Alertas financeiros</span></button>
+      <button class="side-btn subitem" onclick="irParaSecao('resumoGeralDF')"><span class="side-icon">📈</span><span class="side-text">Resumo geral</span></button>
+      <button class="side-btn subitem" onclick="irParaSecao('contasHoje')"><span class="side-icon">📅</span><span class="side-text">Contas de hoje</span></button>
+      <button class="side-btn subitem" onclick="irParaSecao('notasLista')"><span class="side-icon">📝</span><span class="side-text">Bloco de notas</span></button>
       <button class="side-btn subitem" onclick="irParaSecao('atalhoLancamento')"><span class="side-icon">➕</span><span class="side-text">Lançamento de contas</span></button>
-      <button class="side-btn subitem" onclick="irParaSecao('atalhoLembrete')"><span class="side-icon">📝</span><span class="side-text">Lançamento de notas</span></button>
+      <button class="side-btn subitem" onclick="irParaSecao('atalhoLembrete')"><span class="side-icon">✏️</span><span class="side-text">Lançamento de notas</span></button>
+      <button class="side-btn subitem" onclick="irParaSecao('atalhoContas')"><span class="side-icon">📄</span><span class="side-text">Contas a pagar</span></button>
       <button class="side-btn subitem" onclick="irParaSecao('grafico')"><span class="side-icon">📊</span><span class="side-text">Resumo por centro</span></button>
     </div>
 
@@ -654,7 +663,7 @@ table{min-width:760px}
     <div class="topbar no-print">
       <div class="topbar-inner">
         <div class="topbar-title"><img src="/icon-512.png"><span>Dona Flor Gestão Financeira</span></div>
-        <div class="user-pill" id="userInfo">Admin</div>
+        <div class="user-pill" id="userInfo">Olá, usuário</div>
       </div>
     </div>
 
@@ -673,7 +682,7 @@ table{min-width:760px}
           <div id="listaAlertasVencimento" class="alert-list"></div>
         </div>
 
-        <div class="grid">
+        <div id="resumoGeralDF" class="grid">
           <div class="card resumo"><div class="metric-title">Total aberto</div><strong id="totalAberto">R$ 0,00</strong></div>
           <div class="card resumo"><div class="metric-title">Pago no mês</div><strong id="pagoMes">R$ 0,00</strong></div>
           <div class="card alerta"><div class="metric-title">Vencidas</div><strong id="vencidas">R$ 0,00</strong></div>
@@ -689,7 +698,7 @@ table{min-width:760px}
 
         <div class="two no-print">
           <div id="atalhoLancamento" class="card"><h2>Lançamento de contas</h2><input id="desc" data-cap placeholder="Descrição"><input id="valor" inputmode="decimal" placeholder="Valor - Ex: 150,90"><input id="venc" type="date"><select id="centro"><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="status"><option>Aberto</option><option>Pago</option></select><textarea id="obs" data-cap placeholder="Observação"></textarea><button class="btn-full" onclick="salvarConta()">Salvar conta</button></div>
-          <div id="atalhoLembrete" class="card"><h2>Adicionar lembrete</h2><input id="ntitulo" data-cap placeholder="Título"><textarea id="ntexto" data-cap placeholder="Recado"></textarea><input id="ndata" type="date"><select id="nprio"><option>Normal</option><option>Urgente</option></select><select id="nloja"><option value="">Todas as lojas</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><button class="btn-full" id="btnSalvarNotaDF" onclick="salvarNotaDF()">Salvar lembrete</button></div>
+          <div id="atalhoLembrete" class="card"><h2>Lançamento de notas</h2><input id="ntitulo" data-cap placeholder="Título"><textarea id="ntexto" data-cap placeholder="Recado"></textarea><input id="ndata" type="date"><select id="nprio"><option>Normal</option><option>Urgente</option></select><select id="nloja"><option value="">Todas as lojas</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><button class="btn-full" id="btnSalvarNotaDF" onclick="salvarNotaDF()">Salvar nota</button></div>
         </div>
 
         <div id="atalhoContas" class="card"><h2>Contas a pagar</h2><div class="row no-print"><select id="fCentro" onchange="render()"><option value="">Todos os centros</option><option>Dona Flor Andradina</option><option>Dona Flor Paranaíba</option><option>Dona Flor Três Lagoas</option><option>Brilho Dourado</option><option>Pessoal</option></select><select id="fStatus" onchange="render()"><option value="">Todos os status</option><option>Aberto</option><option>Pago</option></select><select id="acaoRelatorio" onchange="executarRelatorio()"><option value="">Exportar</option><option value="pdf">PDF</option><option value="csv">CSV</option></select></div><div class="desktop-table" style="overflow:auto"><table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Centro</th><th>Status</th><th>Observação</th><th class="no-print">Ações</th></tr></thead><tbody id="tbody"></tbody></table></div><div id="mobileContasLista" class="mobile-cards"></div></div>
@@ -878,7 +887,7 @@ function primeiraMaiuscula(txt){txt=String(txt||"").trimStart();return txt?txt.c
 document.addEventListener("input",e=>{if(e.target.matches("[data-cap]")){let pos=e.target.selectionStart;e.target.value=primeiraMaiuscula(e.target.value);e.target.setSelectionRange(pos,pos);}});
 
 async function entrar(){const u=user.value.trim().toLowerCase(),s=pass.value.trim();loginErro.style.display="none";try{const dados=await rpc("login_usuario",{p_usuario:u,p_senha:s});const achado=Array.isArray(dados)?dados[0]:dados;if(!achado){loginErro.style.display="block";loginErro.textContent="Credenciais inválidas.";return}usuarioLogado=achado;localStorage.setItem("df_user_v15",JSON.stringify(usuarioLogado));abrir();}catch(e){loginErro.style.display="block";loginErro.innerHTML="Erro ao conectar:<br>"+e.message;}}
-function abrir(){login.style.display="none";app.style.display="block";userInfo.textContent="Olá, "+(usuarioLogado.nome||usuarioLogado.usuario);sideUsuarios.style.display=isAdmin()?"flex":"none";navUsuarios.style.display=isAdmin()?"":"none";aplicarMenuSalvo();garantirWebhookPadrao();carregar();}
+function abrir(){login.style.display="none";app.style.display="block";userInfo.textContent="Olá, "+(usuarioLogado.nome||usuarioLogado.usuario||"usuário");sideUsuarios.style.display=isAdmin()?"flex":"none";navUsuarios.style.display=isAdmin()?"":"none";aplicarMenuSalvo();garantirWebhookPadrao();carregar();}
 function sair(){localStorage.removeItem("df_user_v15");location.reload();}window.onload=()=>{const u=localStorage.getItem("df_user_v15");if(u){usuarioLogado=JSON.parse(u);abrir();}}
 
 async function carregar(){try{contasDados=await api("df_contas?select=*&order=vencimento.asc");notasDados=await api("df_notas?select=*&order=data_lembrete.asc");usuariosDados=await api("df_usuarios?select=id,nome,usuario,email,tipo,loja,pode_pagar,ativo&order=nome.asc");render();renderUsuarios();}catch(e){alert("Erro ao carregar dados: "+e.message);}}
@@ -1049,7 +1058,10 @@ function irParaSecao(id){
   mostrarPainel();
   setTimeout(()=>{
     const el=document.getElementById(id);
-    if(el) el.scrollIntoView({behavior:"smooth", block:"start"});
+    if(!el) return;
+    const card = el.classList?.contains('collapsible-card') ? el : el.closest?.('.collapsible-card');
+    if(card && card.classList.contains('is-collapsed')) toggleCardDF(card.id);
+    el.scrollIntoView({behavior:"smooth", block:"start"});
   },80);
 }
 

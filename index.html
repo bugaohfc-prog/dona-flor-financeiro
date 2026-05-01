@@ -3781,5 +3781,360 @@ if(abrirSyncOriginalDF){
   setTimeout(aplicar, 3000);
 })();
 </script>
+<script>
+/* =========================
+   V20.4.4 - Correção definitiva do botão +
+   - Remove botões + duplicados
+   - Mantém só 1 botão + no Bloco de notas
+   - Mantém só 1 botão + em Contas a pagar
+   - Pop-up abre com formulário correto
+   - Fecha no X ou clicando fora
+   ========================= */
+(function () {
+  if (window.__DF_V2044_PLUS_POPUP_FIX__) return;
+  window.__DF_V2044_PLUS_POPUP_FIX__ = true;
+
+  let formNota = null;
+  let formConta = null;
+
+  function txt(el) {
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function injectCss() {
+    if (document.getElementById("df-v2044-plus-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v2044-plus-css";
+    style.textContent = `
+      .df-v2044-hidden { display: none !important; }
+
+      .df-v2044-head {
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        gap:12px !important;
+        width:100% !important;
+      }
+
+      .df-v2044-plus {
+        width:40px !important;
+        height:40px !important;
+        min-width:40px !important;
+        min-height:40px !important;
+        border-radius:999px !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-size:24px !important;
+        font-weight:900 !important;
+        border:2px solid #000 !important;
+        box-shadow:4px 4px 0 #000 !important;
+        cursor:pointer !important;
+        display:inline-flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:0 !important;
+        margin:0 !important;
+        line-height:1 !important;
+      }
+
+      .df-v2044-modal {
+        position:fixed !important;
+        inset:0 !important;
+        background:rgba(15,23,42,.62) !important;
+        z-index:999999 !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v2044-modal.open {
+        display:flex !important;
+      }
+
+      .df-v2044-box {
+        width:100% !important;
+        max-width:520px !important;
+        max-height:88vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v2044-modal-head {
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        margin-bottom:14px !important;
+      }
+
+      .df-v2044-title {
+        font-size:22px !important;
+        font-weight:900 !important;
+        color:#0f172a !important;
+      }
+
+      .df-v2044-close {
+        width:38px !important;
+        height:38px !important;
+        border-radius:999px !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        color:#000 !important;
+        font-size:22px !important;
+        font-weight:900 !important;
+        cursor:pointer !important;
+      }
+
+      .df-v2044-body .card,
+      .df-v2044-body section,
+      .df-v2044-body .df-force-white-card {
+        background:#fff !important;
+        background-image:none !important;
+        border:0 !important;
+        box-shadow:none !important;
+        padding:0 !important;
+        margin:0 !important;
+      }
+
+      .df-v2044-body h1,
+      .df-v2044-body h2,
+      .df-v2044-body h3 {
+        display:none !important;
+      }
+
+      .df-v2044-body input,
+      .df-v2044-body textarea,
+      .df-v2044-body select {
+        width:100% !important;
+        box-sizing:border-box !important;
+        background:#fff !important;
+        min-height:44px !important;
+      }
+
+      .df-v2044-body textarea {
+        min-height:110px !important;
+      }
+
+      /* desativa botões e modais antigos que estavam duplicando */
+      .df-v2042-plus-btn,
+      .df-v2041-plus-btn,
+      .df-add-nota-btn-v203,
+      .df-add-conta-btn-v204,
+      .df-v206-add-btn,
+      .df-add-btn-v204 {
+        display:none !important;
+      }
+
+      #df-v2042-popup-nota,
+      #df-modal-notas-v203,
+      #df-modal-conta-v204,
+      #df-v206-modal-nota,
+      #df-v206-modal-conta {
+        display:none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function findCard(regex) {
+    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"));
+    return candidates
+      .filter(el => regex.test(txt(el)))
+      .sort((a,b) => txt(a).length - txt(b).length)[0] || null;
+  }
+
+  function findFormByButton(regex) {
+    const buttons = Array.from(document.querySelectorAll("button,input[type='button'],input[type='submit']"));
+    const btn = buttons.find(b => regex.test(txt(b) || b.value || ""));
+    if (btn) {
+      let cur = btn;
+      while (cur && cur !== document.body) {
+        if (cur.querySelectorAll && cur.querySelectorAll("input,textarea,select").length >= 2) {
+          return cur;
+        }
+        cur = cur.parentElement;
+      }
+    }
+
+    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"))
+      .filter(el => regex.test(txt(el)) && el.querySelectorAll("input,textarea,select").length >= 2)
+      .sort((a,b) => txt(a).length - txt(b).length);
+
+    return candidates[0] || null;
+  }
+
+  function captureForms() {
+    if (!formNota) {
+      formNota = findFormByButton(/salvar nota/i);
+      if (formNota) formNota.classList.add("df-v2044-hidden");
+    }
+
+    if (!formConta) {
+      formConta = findFormByButton(/salvar conta/i);
+      if (formConta) formConta.classList.add("df-v2044-hidden");
+    }
+  }
+
+  function createModal(id, title) {
+    let modal = document.getElementById(id);
+    if (modal) return modal;
+
+    modal = document.createElement("div");
+    modal.id = id;
+    modal.className = "df-v2044-modal";
+    modal.innerHTML = `
+      <div class="df-v2044-box">
+        <div class="df-v2044-modal-head">
+          <div class="df-v2044-title">${title}</div>
+          <button type="button" class="df-v2044-close">×</button>
+        </div>
+        <div class="df-v2044-body"></div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector(".df-v2044-close").addEventListener("click", () => closeModal(modal));
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal(modal);
+    });
+
+    return modal;
+  }
+
+  function openModal(type) {
+    captureForms();
+
+    const isNota = type === "nota";
+    const form = isNota ? formNota : formConta;
+    const modal = createModal(
+      isNota ? "df-v2044-modal-nota" : "df-v2044-modal-conta",
+      isNota ? "Lançamento de notas" : "Lançamento de contas"
+    );
+
+    const body = modal.querySelector(".df-v2044-body");
+    body.innerHTML = "";
+
+    if (!form) {
+      body.innerHTML = `<div style="padding:12px;color:#b91c1c;font-weight:800;">Formulário não encontrado.</div>`;
+      modal.classList.add("open");
+      return;
+    }
+
+    body.appendChild(form);
+    form.classList.remove("df-v2044-hidden");
+    form.style.display = "";
+    modal.classList.add("open");
+
+    setTimeout(() => {
+      const first = form.querySelector("input,textarea,select");
+      if (first) first.focus();
+    }, 150);
+  }
+
+  function closeModal(modal) {
+    if (!modal) return;
+    modal.classList.remove("open");
+
+    const form = modal.querySelector(".df-v2044-body > *");
+    if (form) form.classList.add("df-v2044-hidden");
+  }
+
+  function ensureHeader(section, titleRegex) {
+    const title = Array.from(section.querySelectorAll("h1,h2,h3,h4,strong,div"))
+      .find(el => titleRegex.test(txt(el)) && txt(el).length < 80);
+
+    if (!title) return null;
+
+    let head = title.closest(".df-v2044-head");
+    if (!head) {
+      head = document.createElement("div");
+      head.className = "df-v2044-head";
+      title.parentNode.insertBefore(head, title);
+      head.appendChild(title);
+    }
+
+    return head;
+  }
+
+  function removeDuplicatePlus(section) {
+    const buttons = Array.from(section.querySelectorAll("button"))
+      .filter(btn => txt(btn) === "+" || btn.className.toString().includes("plus") || btn.className.toString().includes("add"));
+
+    buttons.forEach(btn => btn.remove());
+  }
+
+  function addPlus(sectionRegex, titleRegex, type) {
+    const section = findCard(sectionRegex);
+    if (!section) return;
+
+    removeDuplicatePlus(section);
+
+    const head = ensureHeader(section, titleRegex);
+    if (!head) return;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "df-v2044-plus";
+    btn.textContent = "+";
+    btn.title = type === "nota" ? "Adicionar nota" : "Adicionar conta";
+    btn.onclick = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      openModal(type);
+    };
+
+    head.appendChild(btn);
+  }
+
+  function hideFormsIfOutsideModal() {
+    captureForms();
+
+    if (formNota && !document.getElementById("df-v2044-modal-nota")?.contains(formNota)) {
+      formNota.classList.add("df-v2044-hidden");
+    }
+
+    if (formConta && !document.getElementById("df-v2044-modal-conta")?.contains(formConta)) {
+      formConta.classList.add("df-v2044-hidden");
+    }
+  }
+
+  function closeOldModals() {
+    ["df-v2042-popup-nota","df-modal-notas-v203","df-modal-conta-v204","df-v206-modal-nota","df-v206-modal-conta"].forEach(id => {
+      const modal = document.getElementById(id);
+      if (modal) {
+        modal.classList.remove("open");
+        modal.style.display = "none";
+      }
+    });
+  }
+
+  function aplicar() {
+    injectCss();
+    captureForms();
+    closeOldModals();
+    addPlus(/bloco de notas/i, /bloco de notas/i, "nota");
+    addPlus(/contas a pagar/i, /contas a pagar/i, "conta");
+    hideFormsIfOutsideModal();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", aplicar, { once: true });
+  } else {
+    aplicar();
+  }
+
+  setTimeout(aplicar, 600);
+  setTimeout(aplicar, 1600);
+})();
+</script>
 </body>
 </html>

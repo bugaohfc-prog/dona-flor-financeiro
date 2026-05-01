@@ -1199,3 +1199,365 @@ self.addEventListener("notificationclick", event => {
   injectCss();
 })();
 
+
+
+
+/* =========================
+   V20.6 - Correção dos botões +
+   - Corrige modal vazio
+   - Botão + do Bloco de notas abre formulário de nota
+   - Botão + das Contas a pagar abre formulário de conta
+   - Remove classe hidden ao colocar formulário no modal
+   ========================= */
+(function(){
+  if (window.__DF_V206_PLUS_FIX__) return;
+  window.__DF_V206_PLUS_FIX__ = true;
+
+  let notaForm = null;
+  let contaForm = null;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function injectCss(){
+    if(document.getElementById("df-v206-plus-fix-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v206-plus-fix-css";
+    style.textContent = `
+      .df-v206-hidden{display:none !important;}
+
+      .df-v206-add-btn{
+        width:42px !important;
+        height:42px !important;
+        border-radius:999px !important;
+        border:0 !important;
+        background:#0f766e !important;
+        color:#ffffff !important;
+        font-size:24px !important;
+        font-weight:900 !important;
+        display:inline-flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        box-shadow:0 8px 22px rgba(15,118,110,.25) !important;
+        cursor:pointer !important;
+      }
+
+      .df-v206-header{
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        gap:12px !important;
+      }
+
+      .df-v206-modal{
+        position:fixed !important;
+        inset:0 !important;
+        background:rgba(15,23,42,.55) !important;
+        z-index:999999 !important;
+        display:none !important;
+        align-items:flex-end !important;
+        justify-content:center !important;
+      }
+
+      .df-v206-modal.open{
+        display:flex !important;
+      }
+
+      .df-v206-sheet{
+        width:100% !important;
+        max-width:660px !important;
+        background:#ffffff !important;
+        border-radius:24px 24px 0 0 !important;
+        padding:18px !important;
+        max-height:88vh !important;
+        overflow:auto !important;
+        box-shadow:0 -12px 40px rgba(15,23,42,.25) !important;
+      }
+
+      .df-v206-sheet-head{
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        margin-bottom:14px !important;
+      }
+
+      .df-v206-sheet-title{
+        font-size:22px !important;
+        font-weight:900 !important;
+        color:#0f172a !important;
+      }
+
+      .df-v206-close{
+        width:40px !important;
+        height:40px !important;
+        border-radius:999px !important;
+        border:0 !important;
+        background:#f1f5f9 !important;
+        color:#0f172a !important;
+        font-size:24px !important;
+        font-weight:900 !important;
+      }
+
+      .df-v206-sheet .df-force-white-card,
+      .df-v206-sheet section,
+      .df-v206-sheet .card{
+        background:#ffffff !important;
+        box-shadow:none !important;
+        border:0 !important;
+        padding:0 !important;
+        margin:0 !important;
+      }
+
+      .df-v206-sheet h1,
+      .df-v206-sheet h2,
+      .df-v206-sheet h3{
+        display:none !important;
+      }
+
+      .df-v206-sheet input,
+      .df-v206-sheet textarea,
+      .df-v206-sheet select{
+        display:block !important;
+        visibility:visible !important;
+        opacity:1 !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function removeHiddenDeep(el){
+    if(!el) return;
+
+    const all = [el, ...Array.from(el.querySelectorAll("*"))];
+
+    all.forEach(node => {
+      node.classList?.forEach(cls => {
+        if(/^df-hidden|^df-v206-hidden|hidden/i.test(cls)){
+          node.classList.remove(cls);
+        }
+      });
+
+      if(node.style){
+        if(node.style.display === "none") node.style.display = "";
+        node.style.visibility = "";
+        node.style.opacity = "";
+      }
+    });
+  }
+
+  function hideEl(el){
+    if(!el) return;
+    el.classList.add("df-v206-hidden");
+  }
+
+  function closestUsefulCard(el){
+    let cur = el;
+    while(cur && cur !== document.body){
+      const t = txt(cur).toLowerCase();
+
+      const hasInputs =
+        cur.querySelectorAll &&
+        cur.querySelectorAll("input,textarea,select").length >= 2;
+
+      const compactEnough = t.length < 2500;
+
+      if(hasInputs && compactEnough) return cur;
+      cur = cur.parentElement;
+    }
+    return null;
+  }
+
+  function findFormBySaveText(saveRegex){
+    const buttons = Array.from(document.querySelectorAll("button,input[type='button'],input[type='submit']"));
+    const btn = buttons.find(b => saveRegex.test(txt(b) || b.value || ""));
+    if(btn) return closestUsefulCard(btn);
+
+    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"))
+      .filter(el => {
+        const t = txt(el).toLowerCase();
+        return saveRegex.test(t) && el.querySelectorAll("input,textarea,select").length >= 2;
+      })
+      .sort((a,b) => txt(a).length - txt(b).length);
+
+    return candidates[0] || null;
+  }
+
+  function captureNotaForm(){
+    if(notaForm) return notaForm;
+
+    notaForm = findFormBySaveText(/salvar nota/i);
+
+    if(notaForm){
+      hideEl(notaForm);
+    }
+
+    return notaForm;
+  }
+
+  function captureContaForm(){
+    if(contaForm) return contaForm;
+
+    contaForm = findFormBySaveText(/salvar conta/i);
+
+    if(contaForm){
+      hideEl(contaForm);
+    }
+
+    return contaForm;
+  }
+
+  function createModal(id, title){
+    let modal = document.getElementById(id);
+    if(modal) return modal;
+
+    modal = document.createElement("div");
+    modal.id = id;
+    modal.className = "df-v206-modal";
+    modal.innerHTML = `
+      <div class="df-v206-sheet">
+        <div class="df-v206-sheet-head">
+          <div class="df-v206-sheet-title">${title}</div>
+          <button type="button" class="df-v206-close">×</button>
+        </div>
+        <div class="df-v206-body"></div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector(".df-v206-close").addEventListener("click", () => closeModal(modal));
+    modal.addEventListener("click", (e) => {
+      if(e.target === modal) closeModal(modal);
+    });
+
+    return modal;
+  }
+
+  function openNotaModal(){
+    injectCss();
+
+    const modal = createModal("df-v206-modal-nota", "Lançamento de notas");
+    const body = modal.querySelector(".df-v206-body");
+
+    const form = captureNotaForm();
+
+    body.innerHTML = "";
+
+    if(form){
+      body.appendChild(form);
+      removeHiddenDeep(form);
+    } else {
+      body.innerHTML = `<div style="padding:14px;color:#b91c1c;font-weight:800;">Não encontrei o formulário de nota nesta versão.</div>`;
+    }
+
+    modal.classList.add("open");
+  }
+
+  function openContaModal(){
+    injectCss();
+
+    const modal = createModal("df-v206-modal-conta", "Lançamento de contas");
+    const body = modal.querySelector(".df-v206-body");
+
+    const form = captureContaForm();
+
+    body.innerHTML = "";
+
+    if(form){
+      body.appendChild(form);
+      removeHiddenDeep(form);
+    } else {
+      body.innerHTML = `<div style="padding:14px;color:#b91c1c;font-weight:800;">Não encontrei o formulário de conta nesta versão.</div>`;
+    }
+
+    modal.classList.add("open");
+  }
+
+  function closeModal(modal){
+    if(!modal) return;
+    modal.classList.remove("open");
+
+    const form = modal.querySelector(".df-v206-body > *");
+    if(form){
+      hideEl(form);
+    }
+  }
+
+  function findSectionByTitle(titleRegex){
+    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"));
+    return candidates
+      .filter(el => titleRegex.test(txt(el)))
+      .sort((a,b) => txt(a).length - txt(b).length)[0] || null;
+  }
+
+  function addPlusToSection(titleRegex, btnClass, handler){
+    const sec = findSectionByTitle(titleRegex);
+    if(!sec) return;
+
+    if(sec.querySelector("." + btnClass)) return;
+
+    const title = Array.from(sec.querySelectorAll("h1,h2,h3,h4,strong,div"))
+      .find(el => titleRegex.test(txt(el)) && txt(el).length < 80);
+
+    if(!title) return;
+
+    let wrapper = title.closest(".df-v206-header");
+    if(!wrapper){
+      wrapper = document.createElement("div");
+      wrapper.className = "df-v206-header";
+      title.parentNode.insertBefore(wrapper, title);
+      wrapper.appendChild(title);
+    }
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "df-v206-add-btn " + btnClass;
+    btn.textContent = "+";
+    btn.title = titleRegex.test("Bloco de notas") ? "Adicionar nota" : "Adicionar conta";
+    btn.addEventListener("click", handler);
+
+    wrapper.appendChild(btn);
+  }
+
+  function hideFixedForms(){
+    const nf = captureNotaForm();
+    const cf = captureContaForm();
+
+    if(nf && !document.getElementById("df-v206-modal-nota")?.contains(nf)) hideEl(nf);
+    if(cf && !document.getElementById("df-v206-modal-conta")?.contains(cf)) hideEl(cf);
+  }
+
+  function cleanOldEmptyModals(){
+    // se modais antigos abriram vazios, fecha para não confundir
+    ["df-modal-notas-v203", "df-modal-conta-v204"].forEach(id => {
+      const modal = document.getElementById(id);
+      if(modal && (modal.classList.contains("open") || modal.style.display === "flex")){
+        modal.classList.remove("open");
+        modal.style.display = "none";
+      }
+    });
+  }
+
+  function aplicar(){
+    injectCss();
+    captureNotaForm();
+    captureContaForm();
+    addPlusToSection(/bloco de notas/i, "df-v206-add-nota", openNotaModal);
+    addPlusToSection(/contas a pagar/i, "df-v206-add-conta", openContaModal);
+    hideFixedForms();
+    cleanOldEmptyModals();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", aplicar, { once:true });
+  } else {
+    aplicar();
+  }
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
+  setTimeout(aplicar, 3000);
+})();
+

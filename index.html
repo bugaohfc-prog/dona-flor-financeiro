@@ -9731,6 +9731,734 @@ ${montarRelatorioHTML(f)
   setTimeout(iniciar, 3600);
 })();
 </script>
+<script>
+/* ==========================================================
+   DONA FLOR - V24 PDF FINAL SEM CÓDIGO
+   Correção definitiva do PDF:
+   - Não usa nova aba
+   - Não usa iframe
+   - Não usa Blob HTML para PDF
+   - Não usa document.write
+   - Não deixa scripts antigos sobrescreverem o botão
+   - PDF imprime APENAS o relatório dentro do app
+   - CSV mantido com integração real
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V24_PDF_FINAL__) return;
+  window.__DONA_FLOR_V24_PDF_FINAL__ = true;
+
+  let contasCacheV24 = [];
+  let filtrosV24 = {};
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function moedaV24(v){
+    try {
+      if (typeof moeda === "function") return moeda(v);
+    } catch(e){}
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function supaURL(){
+    try { if(typeof URL !== "undefined" && String(URL).includes("supabase")) return URL; } catch(e){}
+    try { if(typeof SupabaseURL !== "undefined") return SupabaseURL; } catch(e){}
+    return "";
+  }
+
+  function supaKEY(){
+    try { if(typeof KEY !== "undefined") return KEY; } catch(e){}
+    try { if(typeof SupabaseKey !== "undefined") return SupabaseKey; } catch(e){}
+    return "";
+  }
+
+  async function buscarContasV24(){
+    const url = supaURL();
+    const key = supaKEY();
+
+    try{
+      if(url && key){
+        const r = await fetch(url + "/rest/v1/df_contas?select=*&order=vencimento.asc", {
+          headers:{
+            "apikey": key,
+            "Authorization": "Bearer " + key,
+            "Content-Type": "application/json"
+          }
+        });
+        if(r.ok){
+          const data = await r.json();
+          if(Array.isArray(data)){
+            contasCacheV24 = data.filter(c => !c.deletado);
+            return contasCacheV24;
+          }
+        }
+      }
+    }catch(e){
+      console.warn("V24 relatório: fallback local", e);
+    }
+
+    try{
+      if(typeof visContas === "function"){
+        const data = visContas();
+        if(Array.isArray(data)){
+          contasCacheV24 = data.filter(c => !c.deletado);
+          return contasCacheV24;
+        }
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)){
+        contasCacheV24 = window.contasDados.filter(c => !c.deletado);
+        return contasCacheV24;
+      }
+    }catch(e){}
+
+    contasCacheV24 = [];
+    return contasCacheV24;
+  }
+
+  function centrosV24(){
+    return Array.from(new Set((contasCacheV24 || []).map(c => c.centro || c.centro_custo || c.loja).filter(Boolean))).sort();
+  }
+
+  function lerFiltrosV24(){
+    return {
+      centro: document.getElementById("df24Centro")?.value || "",
+      status: document.getElementById("df24Status")?.value || "",
+      inicio: document.getElementById("df24Inicio")?.value || "",
+      fim: document.getElementById("df24Fim")?.value || "",
+      resumo: document.getElementById("df24Resumo")?.checked !== false,
+      centros: document.getElementById("df24Centros")?.checked !== false,
+      detalhes: document.getElementById("df24Detalhes")?.checked !== false,
+      aberto: document.getElementById("df24Aberto")?.checked || false
+    };
+  }
+
+  function filtrarV24(f){
+    return (contasCacheV24 || []).filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.inicio && data && data < f.inicio) return false;
+      if(f.fim && data && data > f.fim) return false;
+      return true;
+    });
+  }
+
+  function resumoV24(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago: pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV24(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function cssV24(){
+    if(document.getElementById("df-v24-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v24-css";
+    style.textContent = `
+      .df-v221-report-actions,
+      .df-v221-mini-btn,
+      button[onclick*="df221AbrirFiltros"]{
+        display:none !important;
+      }
+
+      .df-v24-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:2147483647 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v24-bg.open{
+        display:flex !important;
+      }
+
+      .df-v24-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v24-top{
+        display:flex !important;
+        align-items:flex-start !important;
+        justify-content:space-between !important;
+        gap:12px !important;
+        border-bottom:1px solid #e2e8f0 !important;
+        padding-bottom:12px !important;
+        margin-bottom:14px !important;
+      }
+
+      .df-v24-title{
+        margin:0 !important;
+        font-size:24px !important;
+        line-height:1.1 !important;
+        font-weight:950 !important;
+        color:#0f766e !important;
+      }
+
+      .df-v24-sub{
+        color:#64748b !important;
+        margin-top:4px !important;
+        font-size:13px !important;
+      }
+
+      .df-v24-actions{
+        display:flex !important;
+        flex-wrap:wrap !important;
+        gap:8px !important;
+        justify-content:flex-end !important;
+      }
+
+      .df-v24-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v24-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v24-grid{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:10px !important;
+      }
+
+      .df-v24-field label{
+        display:block !important;
+        font-size:12px !important;
+        font-weight:900 !important;
+        color:#64748b !important;
+        margin:0 0 4px !important;
+        text-transform:uppercase !important;
+      }
+
+      .df-v24-field input,
+      .df-v24-field select{
+        width:100% !important;
+        min-height:44px !important;
+        border:1px solid #cbd5e1 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        box-sizing:border-box !important;
+        font-size:15px !important;
+        background:#fff !important;
+      }
+
+      .df-v24-checks{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v24-check{
+        border:1px solid #e2e8f0 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+        font-weight:800 !important;
+      }
+
+      .df-v24-report h1{
+        color:#0f766e !important;
+        margin:0 !important;
+        font-size:24px !important;
+      }
+
+      .df-v24-report h2{
+        font-size:18px !important;
+        margin:18px 0 8px !important;
+      }
+
+      .df-v24-report .sub{
+        color:#64748b !important;
+        font-size:12px !important;
+        margin-top:4px !important;
+      }
+
+      .df-v24-report .cards{
+        display:grid !important;
+        grid-template-columns:repeat(4,1fr) !important;
+        gap:8px !important;
+        margin:12px 0 !important;
+      }
+
+      .df-v24-report .card-mini{
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+      }
+
+      .df-v24-report .label{
+        font-size:10px !important;
+        text-transform:uppercase !important;
+        color:#64748b !important;
+        font-weight:bold !important;
+      }
+
+      .df-v24-report .num{
+        font-size:17px !important;
+        font-weight:bold !important;
+        margin-top:3px !important;
+      }
+
+      .df-v24-report .centros{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin:8px 0 14px !important;
+      }
+
+      .df-v24-report .centro{
+        display:flex !important;
+        justify-content:space-between !important;
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:8px !important;
+      }
+
+      .df-v24-report .centro small{
+        display:block !important;
+        color:#64748b !important;
+      }
+
+      .df-v24-report table{
+        width:100% !important;
+        border-collapse:collapse !important;
+        font-size:12px !important;
+      }
+
+      .df-v24-report th{
+        background:#0f766e !important;
+        color:white !important;
+        text-align:left !important;
+        padding:7px !important;
+      }
+
+      .df-v24-report td{
+        border-bottom:1px solid #e2e8f0 !important;
+        padding:7px !important;
+        vertical-align:top !important;
+      }
+
+      .df-v24-report .valor{
+        font-weight:bold !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v24-report .status{
+        border-radius:999px !important;
+        padding:3px 7px !important;
+        font-weight:bold !important;
+        font-size:11px !important;
+        display:inline-block !important;
+      }
+
+      .df-v24-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v24-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v24-box{padding:14px !important;border-radius:16px !important;}
+        .df-v24-top{display:block !important;}
+        .df-v24-actions{justify-content:flex-start !important;margin-top:10px !important;}
+        .df-v24-grid,.df-v24-checks,.df-v24-report .centros{grid-template-columns:1fr !important;}
+        .df-v24-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v24-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        html, body{
+          background:#fff !important;
+          margin:0 !important;
+          padding:0 !important;
+        }
+
+        body > *{
+          display:none !important;
+        }
+
+        #df-v24-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-box{
+          display:block !important;
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-actions{
+          display:none !important;
+        }
+
+        #df-v24-report-content{
+          display:block !important;
+        }
+
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function montarRelatorioV24(f){
+    const contas = filtrarV24(f);
+    const r = resumoV24(contas);
+    const centros = porCentroV24(contas);
+
+    const filtroDesc = [
+      f.centro ? "Centro: " + f.centro : "Todos os centros",
+      f.status ? "Status: " + f.status : "Todos os status",
+      f.inicio ? "De " + dataBR(f.inicio) : "",
+      f.fim ? "Até " + dataBR(f.fim) : "",
+      f.aberto ? "Somente em aberto" : ""
+    ].filter(Boolean).join(" • ");
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV24(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV24(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV24(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centrosHTML = f.centros ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${moedaV24(info.total)}</b>
+          </div>
+        `).join("") : `<div>Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV24(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhes ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div>Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v24-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(filtroDesc)}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  async function abrirFiltrosV24(){
+    cssV24();
+    await buscarContasV24();
+
+    let bg = document.getElementById("df-v24-filter-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-filter-bg";
+      bg.className = "df-v24-bg";
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e => {
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    const centros = centrosV24().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+
+    bg.innerHTML = `
+      <div class="df-v24-box">
+        <div class="df-v24-top">
+          <div>
+            <h1 class="df-v24-title">Filtros do relatório</h1>
+            <div class="df-v24-sub">Base carregada: ${contasCacheV24.length} conta(s).</div>
+          </div>
+          <div class="df-v24-actions">
+            <button type="button" class="light" id="df24FecharFiltros">Fechar</button>
+          </div>
+        </div>
+
+        <div class="df-v24-grid">
+          <div class="df-v24-field"><label>Centro</label><select id="df24Centro"><option value="">Todos</option>${centros}</select></div>
+          <div class="df-v24-field"><label>Status</label><select id="df24Status"><option value="">Todos</option><option>Aberto</option><option>Pago</option></select></div>
+          <div class="df-v24-field"><label>Data inicial</label><input id="df24Inicio" type="date"></div>
+          <div class="df-v24-field"><label>Data final</label><input id="df24Fim" type="date"></div>
+        </div>
+
+        <div class="df-v24-checks">
+          <label class="df-v24-check"><input id="df24Resumo" type="checkbox" checked> Mostrar resumo</label>
+          <label class="df-v24-check"><input id="df24Centros" type="checkbox" checked> Mostrar centros</label>
+          <label class="df-v24-check"><input id="df24Detalhes" type="checkbox" checked> Mostrar detalhes</label>
+          <label class="df-v24-check"><input id="df24Aberto" type="checkbox"> Somente em aberto</label>
+        </div>
+
+        <div class="df-v24-actions" style="margin-top:16px;justify-content:flex-start!important">
+          <button type="button" id="df24GerarPdfBtn">Gerar PDF</button>
+          <button type="button" id="df24CsvBtn">Exportar CSV</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("df24FecharFiltros").addEventListener("click", () => bg.classList.remove("open"));
+    document.getElementById("df24GerarPdfBtn").addEventListener("click", abrirPreviewPDFV24);
+    document.getElementById("df24CsvBtn").addEventListener("click", exportarCSVV24);
+
+    bg.classList.add("open");
+  }
+
+  function abrirPreviewPDFV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    filtrosV24 = lerFiltrosV24();
+
+    const filtro = document.getElementById("df-v24-filter-bg");
+    if(filtro) filtro.classList.remove("open");
+
+    let bg = document.getElementById("df-v24-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-report-bg";
+      bg.className = "df-v24-bg";
+      bg.innerHTML = `
+        <div class="df-v24-box">
+          <div class="df-v24-actions no-print">
+            <button type="button" id="df24PrintBtn">Salvar PDF</button>
+            <button type="button" class="light" id="df24CloseReportBtn">Fechar</button>
+          </div>
+          <div id="df-v24-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", evt => {
+        if(evt.target === bg) bg.classList.remove("open");
+      });
+      document.getElementById("df24PrintBtn").addEventListener("click", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+        setTimeout(() => window.print(), 150);
+      }, true);
+      document.getElementById("df24CloseReportBtn").addEventListener("click", () => bg.classList.remove("open"));
+    }
+
+    document.getElementById("df-v24-report-content").innerHTML = montarRelatorioV24(filtrosV24);
+    bg.classList.add("open");
+  }
+
+  async function exportarCSVV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    const f = lerFiltrosV24();
+    const contas = filtrarV24(f);
+
+    if(!contas.length){
+      alert("Nenhum dado para exportar com esses filtros.");
+      return;
+    }
+
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c => [
+        c.descricao || c.conta || "",
+        Number(c.valor || 0).toFixed(2).replace(".", ","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+
+    const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+    const file = new File([blob], "relatorio-dona-flor.csv", {type:"text/csv"});
+
+    try{
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:"Relatório Dona Flor"});
+        return;
+      }
+    }catch(err){}
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.target = "_blank";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      try{ a.remove(); }catch(e){}
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }, 1000);
+  }
+
+  function limparBotoesRelatorioAntigos(){
+    document.querySelectorAll(".df-v221-report-actions").forEach(el => el.remove());
+  }
+
+  function configurarSelectV24(){
+    cssV24();
+    limparBotoesRelatorioAntigos();
+
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+
+    sel.onchange = null;
+    sel.removeAttribute("onchange");
+
+    if(!sel.dataset.df24Bound){
+      sel.dataset.df24Bound = "1";
+      sel.addEventListener("change", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+
+        if(sel.value === "pdf" || sel.value === "csv"){
+          abrirFiltrosV24();
+        }
+
+        sel.value = "";
+      }, true);
+    }
+  }
+
+  // Bloqueia funções antigas de PDF para não imprimirem código.
+  window.df24AbrirFiltros = abrirFiltrosV24;
+  window.df24GerarPdf = abrirPreviewPDFV24;
+  window.df24Csv = exportarCSVV24;
+
+  window.gerarRelatorioFinanceiroDF = abrirFiltrosV24;
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(sel && (sel.value === "pdf" || sel.value === "csv")){
+      abrirFiltrosV24();
+      sel.value = "";
+    }
+  };
+
+  window.df226GerarPDF = abrirPreviewPDFV24;
+  window.df224GerarPDF = abrirPreviewPDFV24;
+  window.df222GerarPDF = abrirPreviewPDFV24;
+  window.df23GerarPDF = abrirPreviewPDFV24;
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", configurarSelectV24, {once:true});
+  }else{
+    configurarSelectV24();
+  }
+
+  setTimeout(configurarSelectV24, 700);
+  setTimeout(configurarSelectV24, 1600);
+  setTimeout(configurarSelectV24, 3200);
+  setTimeout(configurarSelectV24, 5000);
+})();
+</script>
 </body>
 </html>`;
   }
@@ -10443,6 +11171,734 @@ ${montarRelatorioHTML(f)
   setTimeout(iniciar, 800);
   setTimeout(iniciar, 1800);
   setTimeout(iniciar, 3600);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V24 PDF FINAL SEM CÓDIGO
+   Correção definitiva do PDF:
+   - Não usa nova aba
+   - Não usa iframe
+   - Não usa Blob HTML para PDF
+   - Não usa document.write
+   - Não deixa scripts antigos sobrescreverem o botão
+   - PDF imprime APENAS o relatório dentro do app
+   - CSV mantido com integração real
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V24_PDF_FINAL__) return;
+  window.__DONA_FLOR_V24_PDF_FINAL__ = true;
+
+  let contasCacheV24 = [];
+  let filtrosV24 = {};
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function moedaV24(v){
+    try {
+      if (typeof moeda === "function") return moeda(v);
+    } catch(e){}
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function supaURL(){
+    try { if(typeof URL !== "undefined" && String(URL).includes("supabase")) return URL; } catch(e){}
+    try { if(typeof SupabaseURL !== "undefined") return SupabaseURL; } catch(e){}
+    return "";
+  }
+
+  function supaKEY(){
+    try { if(typeof KEY !== "undefined") return KEY; } catch(e){}
+    try { if(typeof SupabaseKey !== "undefined") return SupabaseKey; } catch(e){}
+    return "";
+  }
+
+  async function buscarContasV24(){
+    const url = supaURL();
+    const key = supaKEY();
+
+    try{
+      if(url && key){
+        const r = await fetch(url + "/rest/v1/df_contas?select=*&order=vencimento.asc", {
+          headers:{
+            "apikey": key,
+            "Authorization": "Bearer " + key,
+            "Content-Type": "application/json"
+          }
+        });
+        if(r.ok){
+          const data = await r.json();
+          if(Array.isArray(data)){
+            contasCacheV24 = data.filter(c => !c.deletado);
+            return contasCacheV24;
+          }
+        }
+      }
+    }catch(e){
+      console.warn("V24 relatório: fallback local", e);
+    }
+
+    try{
+      if(typeof visContas === "function"){
+        const data = visContas();
+        if(Array.isArray(data)){
+          contasCacheV24 = data.filter(c => !c.deletado);
+          return contasCacheV24;
+        }
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)){
+        contasCacheV24 = window.contasDados.filter(c => !c.deletado);
+        return contasCacheV24;
+      }
+    }catch(e){}
+
+    contasCacheV24 = [];
+    return contasCacheV24;
+  }
+
+  function centrosV24(){
+    return Array.from(new Set((contasCacheV24 || []).map(c => c.centro || c.centro_custo || c.loja).filter(Boolean))).sort();
+  }
+
+  function lerFiltrosV24(){
+    return {
+      centro: document.getElementById("df24Centro")?.value || "",
+      status: document.getElementById("df24Status")?.value || "",
+      inicio: document.getElementById("df24Inicio")?.value || "",
+      fim: document.getElementById("df24Fim")?.value || "",
+      resumo: document.getElementById("df24Resumo")?.checked !== false,
+      centros: document.getElementById("df24Centros")?.checked !== false,
+      detalhes: document.getElementById("df24Detalhes")?.checked !== false,
+      aberto: document.getElementById("df24Aberto")?.checked || false
+    };
+  }
+
+  function filtrarV24(f){
+    return (contasCacheV24 || []).filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.inicio && data && data < f.inicio) return false;
+      if(f.fim && data && data > f.fim) return false;
+      return true;
+    });
+  }
+
+  function resumoV24(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago: pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV24(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function cssV24(){
+    if(document.getElementById("df-v24-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v24-css";
+    style.textContent = `
+      .df-v221-report-actions,
+      .df-v221-mini-btn,
+      button[onclick*="df221AbrirFiltros"]{
+        display:none !important;
+      }
+
+      .df-v24-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:2147483647 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v24-bg.open{
+        display:flex !important;
+      }
+
+      .df-v24-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v24-top{
+        display:flex !important;
+        align-items:flex-start !important;
+        justify-content:space-between !important;
+        gap:12px !important;
+        border-bottom:1px solid #e2e8f0 !important;
+        padding-bottom:12px !important;
+        margin-bottom:14px !important;
+      }
+
+      .df-v24-title{
+        margin:0 !important;
+        font-size:24px !important;
+        line-height:1.1 !important;
+        font-weight:950 !important;
+        color:#0f766e !important;
+      }
+
+      .df-v24-sub{
+        color:#64748b !important;
+        margin-top:4px !important;
+        font-size:13px !important;
+      }
+
+      .df-v24-actions{
+        display:flex !important;
+        flex-wrap:wrap !important;
+        gap:8px !important;
+        justify-content:flex-end !important;
+      }
+
+      .df-v24-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v24-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v24-grid{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:10px !important;
+      }
+
+      .df-v24-field label{
+        display:block !important;
+        font-size:12px !important;
+        font-weight:900 !important;
+        color:#64748b !important;
+        margin:0 0 4px !important;
+        text-transform:uppercase !important;
+      }
+
+      .df-v24-field input,
+      .df-v24-field select{
+        width:100% !important;
+        min-height:44px !important;
+        border:1px solid #cbd5e1 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        box-sizing:border-box !important;
+        font-size:15px !important;
+        background:#fff !important;
+      }
+
+      .df-v24-checks{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v24-check{
+        border:1px solid #e2e8f0 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+        font-weight:800 !important;
+      }
+
+      .df-v24-report h1{
+        color:#0f766e !important;
+        margin:0 !important;
+        font-size:24px !important;
+      }
+
+      .df-v24-report h2{
+        font-size:18px !important;
+        margin:18px 0 8px !important;
+      }
+
+      .df-v24-report .sub{
+        color:#64748b !important;
+        font-size:12px !important;
+        margin-top:4px !important;
+      }
+
+      .df-v24-report .cards{
+        display:grid !important;
+        grid-template-columns:repeat(4,1fr) !important;
+        gap:8px !important;
+        margin:12px 0 !important;
+      }
+
+      .df-v24-report .card-mini{
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+      }
+
+      .df-v24-report .label{
+        font-size:10px !important;
+        text-transform:uppercase !important;
+        color:#64748b !important;
+        font-weight:bold !important;
+      }
+
+      .df-v24-report .num{
+        font-size:17px !important;
+        font-weight:bold !important;
+        margin-top:3px !important;
+      }
+
+      .df-v24-report .centros{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin:8px 0 14px !important;
+      }
+
+      .df-v24-report .centro{
+        display:flex !important;
+        justify-content:space-between !important;
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:8px !important;
+      }
+
+      .df-v24-report .centro small{
+        display:block !important;
+        color:#64748b !important;
+      }
+
+      .df-v24-report table{
+        width:100% !important;
+        border-collapse:collapse !important;
+        font-size:12px !important;
+      }
+
+      .df-v24-report th{
+        background:#0f766e !important;
+        color:white !important;
+        text-align:left !important;
+        padding:7px !important;
+      }
+
+      .df-v24-report td{
+        border-bottom:1px solid #e2e8f0 !important;
+        padding:7px !important;
+        vertical-align:top !important;
+      }
+
+      .df-v24-report .valor{
+        font-weight:bold !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v24-report .status{
+        border-radius:999px !important;
+        padding:3px 7px !important;
+        font-weight:bold !important;
+        font-size:11px !important;
+        display:inline-block !important;
+      }
+
+      .df-v24-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v24-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v24-box{padding:14px !important;border-radius:16px !important;}
+        .df-v24-top{display:block !important;}
+        .df-v24-actions{justify-content:flex-start !important;margin-top:10px !important;}
+        .df-v24-grid,.df-v24-checks,.df-v24-report .centros{grid-template-columns:1fr !important;}
+        .df-v24-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v24-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        html, body{
+          background:#fff !important;
+          margin:0 !important;
+          padding:0 !important;
+        }
+
+        body > *{
+          display:none !important;
+        }
+
+        #df-v24-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-box{
+          display:block !important;
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-actions{
+          display:none !important;
+        }
+
+        #df-v24-report-content{
+          display:block !important;
+        }
+
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function montarRelatorioV24(f){
+    const contas = filtrarV24(f);
+    const r = resumoV24(contas);
+    const centros = porCentroV24(contas);
+
+    const filtroDesc = [
+      f.centro ? "Centro: " + f.centro : "Todos os centros",
+      f.status ? "Status: " + f.status : "Todos os status",
+      f.inicio ? "De " + dataBR(f.inicio) : "",
+      f.fim ? "Até " + dataBR(f.fim) : "",
+      f.aberto ? "Somente em aberto" : ""
+    ].filter(Boolean).join(" • ");
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV24(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV24(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV24(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centrosHTML = f.centros ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${moedaV24(info.total)}</b>
+          </div>
+        `).join("") : `<div>Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV24(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhes ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div>Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v24-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(filtroDesc)}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  async function abrirFiltrosV24(){
+    cssV24();
+    await buscarContasV24();
+
+    let bg = document.getElementById("df-v24-filter-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-filter-bg";
+      bg.className = "df-v24-bg";
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e => {
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    const centros = centrosV24().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+
+    bg.innerHTML = `
+      <div class="df-v24-box">
+        <div class="df-v24-top">
+          <div>
+            <h1 class="df-v24-title">Filtros do relatório</h1>
+            <div class="df-v24-sub">Base carregada: ${contasCacheV24.length} conta(s).</div>
+          </div>
+          <div class="df-v24-actions">
+            <button type="button" class="light" id="df24FecharFiltros">Fechar</button>
+          </div>
+        </div>
+
+        <div class="df-v24-grid">
+          <div class="df-v24-field"><label>Centro</label><select id="df24Centro"><option value="">Todos</option>${centros}</select></div>
+          <div class="df-v24-field"><label>Status</label><select id="df24Status"><option value="">Todos</option><option>Aberto</option><option>Pago</option></select></div>
+          <div class="df-v24-field"><label>Data inicial</label><input id="df24Inicio" type="date"></div>
+          <div class="df-v24-field"><label>Data final</label><input id="df24Fim" type="date"></div>
+        </div>
+
+        <div class="df-v24-checks">
+          <label class="df-v24-check"><input id="df24Resumo" type="checkbox" checked> Mostrar resumo</label>
+          <label class="df-v24-check"><input id="df24Centros" type="checkbox" checked> Mostrar centros</label>
+          <label class="df-v24-check"><input id="df24Detalhes" type="checkbox" checked> Mostrar detalhes</label>
+          <label class="df-v24-check"><input id="df24Aberto" type="checkbox"> Somente em aberto</label>
+        </div>
+
+        <div class="df-v24-actions" style="margin-top:16px;justify-content:flex-start!important">
+          <button type="button" id="df24GerarPdfBtn">Gerar PDF</button>
+          <button type="button" id="df24CsvBtn">Exportar CSV</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("df24FecharFiltros").addEventListener("click", () => bg.classList.remove("open"));
+    document.getElementById("df24GerarPdfBtn").addEventListener("click", abrirPreviewPDFV24);
+    document.getElementById("df24CsvBtn").addEventListener("click", exportarCSVV24);
+
+    bg.classList.add("open");
+  }
+
+  function abrirPreviewPDFV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    filtrosV24 = lerFiltrosV24();
+
+    const filtro = document.getElementById("df-v24-filter-bg");
+    if(filtro) filtro.classList.remove("open");
+
+    let bg = document.getElementById("df-v24-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-report-bg";
+      bg.className = "df-v24-bg";
+      bg.innerHTML = `
+        <div class="df-v24-box">
+          <div class="df-v24-actions no-print">
+            <button type="button" id="df24PrintBtn">Salvar PDF</button>
+            <button type="button" class="light" id="df24CloseReportBtn">Fechar</button>
+          </div>
+          <div id="df-v24-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", evt => {
+        if(evt.target === bg) bg.classList.remove("open");
+      });
+      document.getElementById("df24PrintBtn").addEventListener("click", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+        setTimeout(() => window.print(), 150);
+      }, true);
+      document.getElementById("df24CloseReportBtn").addEventListener("click", () => bg.classList.remove("open"));
+    }
+
+    document.getElementById("df-v24-report-content").innerHTML = montarRelatorioV24(filtrosV24);
+    bg.classList.add("open");
+  }
+
+  async function exportarCSVV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    const f = lerFiltrosV24();
+    const contas = filtrarV24(f);
+
+    if(!contas.length){
+      alert("Nenhum dado para exportar com esses filtros.");
+      return;
+    }
+
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c => [
+        c.descricao || c.conta || "",
+        Number(c.valor || 0).toFixed(2).replace(".", ","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+
+    const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+    const file = new File([blob], "relatorio-dona-flor.csv", {type:"text/csv"});
+
+    try{
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:"Relatório Dona Flor"});
+        return;
+      }
+    }catch(err){}
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.target = "_blank";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      try{ a.remove(); }catch(e){}
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }, 1000);
+  }
+
+  function limparBotoesRelatorioAntigos(){
+    document.querySelectorAll(".df-v221-report-actions").forEach(el => el.remove());
+  }
+
+  function configurarSelectV24(){
+    cssV24();
+    limparBotoesRelatorioAntigos();
+
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+
+    sel.onchange = null;
+    sel.removeAttribute("onchange");
+
+    if(!sel.dataset.df24Bound){
+      sel.dataset.df24Bound = "1";
+      sel.addEventListener("change", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+
+        if(sel.value === "pdf" || sel.value === "csv"){
+          abrirFiltrosV24();
+        }
+
+        sel.value = "";
+      }, true);
+    }
+  }
+
+  // Bloqueia funções antigas de PDF para não imprimirem código.
+  window.df24AbrirFiltros = abrirFiltrosV24;
+  window.df24GerarPdf = abrirPreviewPDFV24;
+  window.df24Csv = exportarCSVV24;
+
+  window.gerarRelatorioFinanceiroDF = abrirFiltrosV24;
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(sel && (sel.value === "pdf" || sel.value === "csv")){
+      abrirFiltrosV24();
+      sel.value = "";
+    }
+  };
+
+  window.df226GerarPDF = abrirPreviewPDFV24;
+  window.df224GerarPDF = abrirPreviewPDFV24;
+  window.df222GerarPDF = abrirPreviewPDFV24;
+  window.df23GerarPDF = abrirPreviewPDFV24;
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", configurarSelectV24, {once:true});
+  }else{
+    configurarSelectV24();
+  }
+
+  setTimeout(configurarSelectV24, 700);
+  setTimeout(configurarSelectV24, 1600);
+  setTimeout(configurarSelectV24, 3200);
+  setTimeout(configurarSelectV24, 5000);
 })();
 </script>
 </body>
@@ -12909,6 +14365,734 @@ ${montarRelatorioHTML(f)
   setTimeout(iniciar, 3600);
 })();
 </script>
+<script>
+/* ==========================================================
+   DONA FLOR - V24 PDF FINAL SEM CÓDIGO
+   Correção definitiva do PDF:
+   - Não usa nova aba
+   - Não usa iframe
+   - Não usa Blob HTML para PDF
+   - Não usa document.write
+   - Não deixa scripts antigos sobrescreverem o botão
+   - PDF imprime APENAS o relatório dentro do app
+   - CSV mantido com integração real
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V24_PDF_FINAL__) return;
+  window.__DONA_FLOR_V24_PDF_FINAL__ = true;
+
+  let contasCacheV24 = [];
+  let filtrosV24 = {};
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function moedaV24(v){
+    try {
+      if (typeof moeda === "function") return moeda(v);
+    } catch(e){}
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function supaURL(){
+    try { if(typeof URL !== "undefined" && String(URL).includes("supabase")) return URL; } catch(e){}
+    try { if(typeof SupabaseURL !== "undefined") return SupabaseURL; } catch(e){}
+    return "";
+  }
+
+  function supaKEY(){
+    try { if(typeof KEY !== "undefined") return KEY; } catch(e){}
+    try { if(typeof SupabaseKey !== "undefined") return SupabaseKey; } catch(e){}
+    return "";
+  }
+
+  async function buscarContasV24(){
+    const url = supaURL();
+    const key = supaKEY();
+
+    try{
+      if(url && key){
+        const r = await fetch(url + "/rest/v1/df_contas?select=*&order=vencimento.asc", {
+          headers:{
+            "apikey": key,
+            "Authorization": "Bearer " + key,
+            "Content-Type": "application/json"
+          }
+        });
+        if(r.ok){
+          const data = await r.json();
+          if(Array.isArray(data)){
+            contasCacheV24 = data.filter(c => !c.deletado);
+            return contasCacheV24;
+          }
+        }
+      }
+    }catch(e){
+      console.warn("V24 relatório: fallback local", e);
+    }
+
+    try{
+      if(typeof visContas === "function"){
+        const data = visContas();
+        if(Array.isArray(data)){
+          contasCacheV24 = data.filter(c => !c.deletado);
+          return contasCacheV24;
+        }
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)){
+        contasCacheV24 = window.contasDados.filter(c => !c.deletado);
+        return contasCacheV24;
+      }
+    }catch(e){}
+
+    contasCacheV24 = [];
+    return contasCacheV24;
+  }
+
+  function centrosV24(){
+    return Array.from(new Set((contasCacheV24 || []).map(c => c.centro || c.centro_custo || c.loja).filter(Boolean))).sort();
+  }
+
+  function lerFiltrosV24(){
+    return {
+      centro: document.getElementById("df24Centro")?.value || "",
+      status: document.getElementById("df24Status")?.value || "",
+      inicio: document.getElementById("df24Inicio")?.value || "",
+      fim: document.getElementById("df24Fim")?.value || "",
+      resumo: document.getElementById("df24Resumo")?.checked !== false,
+      centros: document.getElementById("df24Centros")?.checked !== false,
+      detalhes: document.getElementById("df24Detalhes")?.checked !== false,
+      aberto: document.getElementById("df24Aberto")?.checked || false
+    };
+  }
+
+  function filtrarV24(f){
+    return (contasCacheV24 || []).filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.inicio && data && data < f.inicio) return false;
+      if(f.fim && data && data > f.fim) return false;
+      return true;
+    });
+  }
+
+  function resumoV24(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago: pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV24(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function cssV24(){
+    if(document.getElementById("df-v24-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v24-css";
+    style.textContent = `
+      .df-v221-report-actions,
+      .df-v221-mini-btn,
+      button[onclick*="df221AbrirFiltros"]{
+        display:none !important;
+      }
+
+      .df-v24-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:2147483647 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v24-bg.open{
+        display:flex !important;
+      }
+
+      .df-v24-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v24-top{
+        display:flex !important;
+        align-items:flex-start !important;
+        justify-content:space-between !important;
+        gap:12px !important;
+        border-bottom:1px solid #e2e8f0 !important;
+        padding-bottom:12px !important;
+        margin-bottom:14px !important;
+      }
+
+      .df-v24-title{
+        margin:0 !important;
+        font-size:24px !important;
+        line-height:1.1 !important;
+        font-weight:950 !important;
+        color:#0f766e !important;
+      }
+
+      .df-v24-sub{
+        color:#64748b !important;
+        margin-top:4px !important;
+        font-size:13px !important;
+      }
+
+      .df-v24-actions{
+        display:flex !important;
+        flex-wrap:wrap !important;
+        gap:8px !important;
+        justify-content:flex-end !important;
+      }
+
+      .df-v24-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v24-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v24-grid{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:10px !important;
+      }
+
+      .df-v24-field label{
+        display:block !important;
+        font-size:12px !important;
+        font-weight:900 !important;
+        color:#64748b !important;
+        margin:0 0 4px !important;
+        text-transform:uppercase !important;
+      }
+
+      .df-v24-field input,
+      .df-v24-field select{
+        width:100% !important;
+        min-height:44px !important;
+        border:1px solid #cbd5e1 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        box-sizing:border-box !important;
+        font-size:15px !important;
+        background:#fff !important;
+      }
+
+      .df-v24-checks{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v24-check{
+        border:1px solid #e2e8f0 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+        font-weight:800 !important;
+      }
+
+      .df-v24-report h1{
+        color:#0f766e !important;
+        margin:0 !important;
+        font-size:24px !important;
+      }
+
+      .df-v24-report h2{
+        font-size:18px !important;
+        margin:18px 0 8px !important;
+      }
+
+      .df-v24-report .sub{
+        color:#64748b !important;
+        font-size:12px !important;
+        margin-top:4px !important;
+      }
+
+      .df-v24-report .cards{
+        display:grid !important;
+        grid-template-columns:repeat(4,1fr) !important;
+        gap:8px !important;
+        margin:12px 0 !important;
+      }
+
+      .df-v24-report .card-mini{
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+      }
+
+      .df-v24-report .label{
+        font-size:10px !important;
+        text-transform:uppercase !important;
+        color:#64748b !important;
+        font-weight:bold !important;
+      }
+
+      .df-v24-report .num{
+        font-size:17px !important;
+        font-weight:bold !important;
+        margin-top:3px !important;
+      }
+
+      .df-v24-report .centros{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin:8px 0 14px !important;
+      }
+
+      .df-v24-report .centro{
+        display:flex !important;
+        justify-content:space-between !important;
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:8px !important;
+      }
+
+      .df-v24-report .centro small{
+        display:block !important;
+        color:#64748b !important;
+      }
+
+      .df-v24-report table{
+        width:100% !important;
+        border-collapse:collapse !important;
+        font-size:12px !important;
+      }
+
+      .df-v24-report th{
+        background:#0f766e !important;
+        color:white !important;
+        text-align:left !important;
+        padding:7px !important;
+      }
+
+      .df-v24-report td{
+        border-bottom:1px solid #e2e8f0 !important;
+        padding:7px !important;
+        vertical-align:top !important;
+      }
+
+      .df-v24-report .valor{
+        font-weight:bold !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v24-report .status{
+        border-radius:999px !important;
+        padding:3px 7px !important;
+        font-weight:bold !important;
+        font-size:11px !important;
+        display:inline-block !important;
+      }
+
+      .df-v24-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v24-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v24-box{padding:14px !important;border-radius:16px !important;}
+        .df-v24-top{display:block !important;}
+        .df-v24-actions{justify-content:flex-start !important;margin-top:10px !important;}
+        .df-v24-grid,.df-v24-checks,.df-v24-report .centros{grid-template-columns:1fr !important;}
+        .df-v24-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v24-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        html, body{
+          background:#fff !important;
+          margin:0 !important;
+          padding:0 !important;
+        }
+
+        body > *{
+          display:none !important;
+        }
+
+        #df-v24-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-box{
+          display:block !important;
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-actions{
+          display:none !important;
+        }
+
+        #df-v24-report-content{
+          display:block !important;
+        }
+
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function montarRelatorioV24(f){
+    const contas = filtrarV24(f);
+    const r = resumoV24(contas);
+    const centros = porCentroV24(contas);
+
+    const filtroDesc = [
+      f.centro ? "Centro: " + f.centro : "Todos os centros",
+      f.status ? "Status: " + f.status : "Todos os status",
+      f.inicio ? "De " + dataBR(f.inicio) : "",
+      f.fim ? "Até " + dataBR(f.fim) : "",
+      f.aberto ? "Somente em aberto" : ""
+    ].filter(Boolean).join(" • ");
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV24(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV24(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV24(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centrosHTML = f.centros ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${moedaV24(info.total)}</b>
+          </div>
+        `).join("") : `<div>Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV24(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhes ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div>Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v24-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(filtroDesc)}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  async function abrirFiltrosV24(){
+    cssV24();
+    await buscarContasV24();
+
+    let bg = document.getElementById("df-v24-filter-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-filter-bg";
+      bg.className = "df-v24-bg";
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e => {
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    const centros = centrosV24().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+
+    bg.innerHTML = `
+      <div class="df-v24-box">
+        <div class="df-v24-top">
+          <div>
+            <h1 class="df-v24-title">Filtros do relatório</h1>
+            <div class="df-v24-sub">Base carregada: ${contasCacheV24.length} conta(s).</div>
+          </div>
+          <div class="df-v24-actions">
+            <button type="button" class="light" id="df24FecharFiltros">Fechar</button>
+          </div>
+        </div>
+
+        <div class="df-v24-grid">
+          <div class="df-v24-field"><label>Centro</label><select id="df24Centro"><option value="">Todos</option>${centros}</select></div>
+          <div class="df-v24-field"><label>Status</label><select id="df24Status"><option value="">Todos</option><option>Aberto</option><option>Pago</option></select></div>
+          <div class="df-v24-field"><label>Data inicial</label><input id="df24Inicio" type="date"></div>
+          <div class="df-v24-field"><label>Data final</label><input id="df24Fim" type="date"></div>
+        </div>
+
+        <div class="df-v24-checks">
+          <label class="df-v24-check"><input id="df24Resumo" type="checkbox" checked> Mostrar resumo</label>
+          <label class="df-v24-check"><input id="df24Centros" type="checkbox" checked> Mostrar centros</label>
+          <label class="df-v24-check"><input id="df24Detalhes" type="checkbox" checked> Mostrar detalhes</label>
+          <label class="df-v24-check"><input id="df24Aberto" type="checkbox"> Somente em aberto</label>
+        </div>
+
+        <div class="df-v24-actions" style="margin-top:16px;justify-content:flex-start!important">
+          <button type="button" id="df24GerarPdfBtn">Gerar PDF</button>
+          <button type="button" id="df24CsvBtn">Exportar CSV</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("df24FecharFiltros").addEventListener("click", () => bg.classList.remove("open"));
+    document.getElementById("df24GerarPdfBtn").addEventListener("click", abrirPreviewPDFV24);
+    document.getElementById("df24CsvBtn").addEventListener("click", exportarCSVV24);
+
+    bg.classList.add("open");
+  }
+
+  function abrirPreviewPDFV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    filtrosV24 = lerFiltrosV24();
+
+    const filtro = document.getElementById("df-v24-filter-bg");
+    if(filtro) filtro.classList.remove("open");
+
+    let bg = document.getElementById("df-v24-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-report-bg";
+      bg.className = "df-v24-bg";
+      bg.innerHTML = `
+        <div class="df-v24-box">
+          <div class="df-v24-actions no-print">
+            <button type="button" id="df24PrintBtn">Salvar PDF</button>
+            <button type="button" class="light" id="df24CloseReportBtn">Fechar</button>
+          </div>
+          <div id="df-v24-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", evt => {
+        if(evt.target === bg) bg.classList.remove("open");
+      });
+      document.getElementById("df24PrintBtn").addEventListener("click", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+        setTimeout(() => window.print(), 150);
+      }, true);
+      document.getElementById("df24CloseReportBtn").addEventListener("click", () => bg.classList.remove("open"));
+    }
+
+    document.getElementById("df-v24-report-content").innerHTML = montarRelatorioV24(filtrosV24);
+    bg.classList.add("open");
+  }
+
+  async function exportarCSVV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    const f = lerFiltrosV24();
+    const contas = filtrarV24(f);
+
+    if(!contas.length){
+      alert("Nenhum dado para exportar com esses filtros.");
+      return;
+    }
+
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c => [
+        c.descricao || c.conta || "",
+        Number(c.valor || 0).toFixed(2).replace(".", ","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+
+    const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+    const file = new File([blob], "relatorio-dona-flor.csv", {type:"text/csv"});
+
+    try{
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:"Relatório Dona Flor"});
+        return;
+      }
+    }catch(err){}
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.target = "_blank";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      try{ a.remove(); }catch(e){}
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }, 1000);
+  }
+
+  function limparBotoesRelatorioAntigos(){
+    document.querySelectorAll(".df-v221-report-actions").forEach(el => el.remove());
+  }
+
+  function configurarSelectV24(){
+    cssV24();
+    limparBotoesRelatorioAntigos();
+
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+
+    sel.onchange = null;
+    sel.removeAttribute("onchange");
+
+    if(!sel.dataset.df24Bound){
+      sel.dataset.df24Bound = "1";
+      sel.addEventListener("change", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+
+        if(sel.value === "pdf" || sel.value === "csv"){
+          abrirFiltrosV24();
+        }
+
+        sel.value = "";
+      }, true);
+    }
+  }
+
+  // Bloqueia funções antigas de PDF para não imprimirem código.
+  window.df24AbrirFiltros = abrirFiltrosV24;
+  window.df24GerarPdf = abrirPreviewPDFV24;
+  window.df24Csv = exportarCSVV24;
+
+  window.gerarRelatorioFinanceiroDF = abrirFiltrosV24;
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(sel && (sel.value === "pdf" || sel.value === "csv")){
+      abrirFiltrosV24();
+      sel.value = "";
+    }
+  };
+
+  window.df226GerarPDF = abrirPreviewPDFV24;
+  window.df224GerarPDF = abrirPreviewPDFV24;
+  window.df222GerarPDF = abrirPreviewPDFV24;
+  window.df23GerarPDF = abrirPreviewPDFV24;
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", configurarSelectV24, {once:true});
+  }else{
+    configurarSelectV24();
+  }
+
+  setTimeout(configurarSelectV24, 700);
+  setTimeout(configurarSelectV24, 1600);
+  setTimeout(configurarSelectV24, 3200);
+  setTimeout(configurarSelectV24, 5000);
+})();
+</script>
 </body>
 </html>`;
   }
@@ -13621,6 +15805,734 @@ ${montarRelatorioHTML(f)
   setTimeout(iniciar, 800);
   setTimeout(iniciar, 1800);
   setTimeout(iniciar, 3600);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V24 PDF FINAL SEM CÓDIGO
+   Correção definitiva do PDF:
+   - Não usa nova aba
+   - Não usa iframe
+   - Não usa Blob HTML para PDF
+   - Não usa document.write
+   - Não deixa scripts antigos sobrescreverem o botão
+   - PDF imprime APENAS o relatório dentro do app
+   - CSV mantido com integração real
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V24_PDF_FINAL__) return;
+  window.__DONA_FLOR_V24_PDF_FINAL__ = true;
+
+  let contasCacheV24 = [];
+  let filtrosV24 = {};
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function moedaV24(v){
+    try {
+      if (typeof moeda === "function") return moeda(v);
+    } catch(e){}
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function supaURL(){
+    try { if(typeof URL !== "undefined" && String(URL).includes("supabase")) return URL; } catch(e){}
+    try { if(typeof SupabaseURL !== "undefined") return SupabaseURL; } catch(e){}
+    return "";
+  }
+
+  function supaKEY(){
+    try { if(typeof KEY !== "undefined") return KEY; } catch(e){}
+    try { if(typeof SupabaseKey !== "undefined") return SupabaseKey; } catch(e){}
+    return "";
+  }
+
+  async function buscarContasV24(){
+    const url = supaURL();
+    const key = supaKEY();
+
+    try{
+      if(url && key){
+        const r = await fetch(url + "/rest/v1/df_contas?select=*&order=vencimento.asc", {
+          headers:{
+            "apikey": key,
+            "Authorization": "Bearer " + key,
+            "Content-Type": "application/json"
+          }
+        });
+        if(r.ok){
+          const data = await r.json();
+          if(Array.isArray(data)){
+            contasCacheV24 = data.filter(c => !c.deletado);
+            return contasCacheV24;
+          }
+        }
+      }
+    }catch(e){
+      console.warn("V24 relatório: fallback local", e);
+    }
+
+    try{
+      if(typeof visContas === "function"){
+        const data = visContas();
+        if(Array.isArray(data)){
+          contasCacheV24 = data.filter(c => !c.deletado);
+          return contasCacheV24;
+        }
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)){
+        contasCacheV24 = window.contasDados.filter(c => !c.deletado);
+        return contasCacheV24;
+      }
+    }catch(e){}
+
+    contasCacheV24 = [];
+    return contasCacheV24;
+  }
+
+  function centrosV24(){
+    return Array.from(new Set((contasCacheV24 || []).map(c => c.centro || c.centro_custo || c.loja).filter(Boolean))).sort();
+  }
+
+  function lerFiltrosV24(){
+    return {
+      centro: document.getElementById("df24Centro")?.value || "",
+      status: document.getElementById("df24Status")?.value || "",
+      inicio: document.getElementById("df24Inicio")?.value || "",
+      fim: document.getElementById("df24Fim")?.value || "",
+      resumo: document.getElementById("df24Resumo")?.checked !== false,
+      centros: document.getElementById("df24Centros")?.checked !== false,
+      detalhes: document.getElementById("df24Detalhes")?.checked !== false,
+      aberto: document.getElementById("df24Aberto")?.checked || false
+    };
+  }
+
+  function filtrarV24(f){
+    return (contasCacheV24 || []).filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.inicio && data && data < f.inicio) return false;
+      if(f.fim && data && data > f.fim) return false;
+      return true;
+    });
+  }
+
+  function resumoV24(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago: pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV24(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function cssV24(){
+    if(document.getElementById("df-v24-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v24-css";
+    style.textContent = `
+      .df-v221-report-actions,
+      .df-v221-mini-btn,
+      button[onclick*="df221AbrirFiltros"]{
+        display:none !important;
+      }
+
+      .df-v24-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:2147483647 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v24-bg.open{
+        display:flex !important;
+      }
+
+      .df-v24-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v24-top{
+        display:flex !important;
+        align-items:flex-start !important;
+        justify-content:space-between !important;
+        gap:12px !important;
+        border-bottom:1px solid #e2e8f0 !important;
+        padding-bottom:12px !important;
+        margin-bottom:14px !important;
+      }
+
+      .df-v24-title{
+        margin:0 !important;
+        font-size:24px !important;
+        line-height:1.1 !important;
+        font-weight:950 !important;
+        color:#0f766e !important;
+      }
+
+      .df-v24-sub{
+        color:#64748b !important;
+        margin-top:4px !important;
+        font-size:13px !important;
+      }
+
+      .df-v24-actions{
+        display:flex !important;
+        flex-wrap:wrap !important;
+        gap:8px !important;
+        justify-content:flex-end !important;
+      }
+
+      .df-v24-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v24-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v24-grid{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:10px !important;
+      }
+
+      .df-v24-field label{
+        display:block !important;
+        font-size:12px !important;
+        font-weight:900 !important;
+        color:#64748b !important;
+        margin:0 0 4px !important;
+        text-transform:uppercase !important;
+      }
+
+      .df-v24-field input,
+      .df-v24-field select{
+        width:100% !important;
+        min-height:44px !important;
+        border:1px solid #cbd5e1 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        box-sizing:border-box !important;
+        font-size:15px !important;
+        background:#fff !important;
+      }
+
+      .df-v24-checks{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v24-check{
+        border:1px solid #e2e8f0 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+        font-weight:800 !important;
+      }
+
+      .df-v24-report h1{
+        color:#0f766e !important;
+        margin:0 !important;
+        font-size:24px !important;
+      }
+
+      .df-v24-report h2{
+        font-size:18px !important;
+        margin:18px 0 8px !important;
+      }
+
+      .df-v24-report .sub{
+        color:#64748b !important;
+        font-size:12px !important;
+        margin-top:4px !important;
+      }
+
+      .df-v24-report .cards{
+        display:grid !important;
+        grid-template-columns:repeat(4,1fr) !important;
+        gap:8px !important;
+        margin:12px 0 !important;
+      }
+
+      .df-v24-report .card-mini{
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+      }
+
+      .df-v24-report .label{
+        font-size:10px !important;
+        text-transform:uppercase !important;
+        color:#64748b !important;
+        font-weight:bold !important;
+      }
+
+      .df-v24-report .num{
+        font-size:17px !important;
+        font-weight:bold !important;
+        margin-top:3px !important;
+      }
+
+      .df-v24-report .centros{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin:8px 0 14px !important;
+      }
+
+      .df-v24-report .centro{
+        display:flex !important;
+        justify-content:space-between !important;
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:8px !important;
+      }
+
+      .df-v24-report .centro small{
+        display:block !important;
+        color:#64748b !important;
+      }
+
+      .df-v24-report table{
+        width:100% !important;
+        border-collapse:collapse !important;
+        font-size:12px !important;
+      }
+
+      .df-v24-report th{
+        background:#0f766e !important;
+        color:white !important;
+        text-align:left !important;
+        padding:7px !important;
+      }
+
+      .df-v24-report td{
+        border-bottom:1px solid #e2e8f0 !important;
+        padding:7px !important;
+        vertical-align:top !important;
+      }
+
+      .df-v24-report .valor{
+        font-weight:bold !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v24-report .status{
+        border-radius:999px !important;
+        padding:3px 7px !important;
+        font-weight:bold !important;
+        font-size:11px !important;
+        display:inline-block !important;
+      }
+
+      .df-v24-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v24-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v24-box{padding:14px !important;border-radius:16px !important;}
+        .df-v24-top{display:block !important;}
+        .df-v24-actions{justify-content:flex-start !important;margin-top:10px !important;}
+        .df-v24-grid,.df-v24-checks,.df-v24-report .centros{grid-template-columns:1fr !important;}
+        .df-v24-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v24-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        html, body{
+          background:#fff !important;
+          margin:0 !important;
+          padding:0 !important;
+        }
+
+        body > *{
+          display:none !important;
+        }
+
+        #df-v24-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-box{
+          display:block !important;
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-actions{
+          display:none !important;
+        }
+
+        #df-v24-report-content{
+          display:block !important;
+        }
+
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function montarRelatorioV24(f){
+    const contas = filtrarV24(f);
+    const r = resumoV24(contas);
+    const centros = porCentroV24(contas);
+
+    const filtroDesc = [
+      f.centro ? "Centro: " + f.centro : "Todos os centros",
+      f.status ? "Status: " + f.status : "Todos os status",
+      f.inicio ? "De " + dataBR(f.inicio) : "",
+      f.fim ? "Até " + dataBR(f.fim) : "",
+      f.aberto ? "Somente em aberto" : ""
+    ].filter(Boolean).join(" • ");
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV24(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV24(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV24(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centrosHTML = f.centros ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${moedaV24(info.total)}</b>
+          </div>
+        `).join("") : `<div>Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV24(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhes ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div>Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v24-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(filtroDesc)}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  async function abrirFiltrosV24(){
+    cssV24();
+    await buscarContasV24();
+
+    let bg = document.getElementById("df-v24-filter-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-filter-bg";
+      bg.className = "df-v24-bg";
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e => {
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    const centros = centrosV24().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+
+    bg.innerHTML = `
+      <div class="df-v24-box">
+        <div class="df-v24-top">
+          <div>
+            <h1 class="df-v24-title">Filtros do relatório</h1>
+            <div class="df-v24-sub">Base carregada: ${contasCacheV24.length} conta(s).</div>
+          </div>
+          <div class="df-v24-actions">
+            <button type="button" class="light" id="df24FecharFiltros">Fechar</button>
+          </div>
+        </div>
+
+        <div class="df-v24-grid">
+          <div class="df-v24-field"><label>Centro</label><select id="df24Centro"><option value="">Todos</option>${centros}</select></div>
+          <div class="df-v24-field"><label>Status</label><select id="df24Status"><option value="">Todos</option><option>Aberto</option><option>Pago</option></select></div>
+          <div class="df-v24-field"><label>Data inicial</label><input id="df24Inicio" type="date"></div>
+          <div class="df-v24-field"><label>Data final</label><input id="df24Fim" type="date"></div>
+        </div>
+
+        <div class="df-v24-checks">
+          <label class="df-v24-check"><input id="df24Resumo" type="checkbox" checked> Mostrar resumo</label>
+          <label class="df-v24-check"><input id="df24Centros" type="checkbox" checked> Mostrar centros</label>
+          <label class="df-v24-check"><input id="df24Detalhes" type="checkbox" checked> Mostrar detalhes</label>
+          <label class="df-v24-check"><input id="df24Aberto" type="checkbox"> Somente em aberto</label>
+        </div>
+
+        <div class="df-v24-actions" style="margin-top:16px;justify-content:flex-start!important">
+          <button type="button" id="df24GerarPdfBtn">Gerar PDF</button>
+          <button type="button" id="df24CsvBtn">Exportar CSV</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("df24FecharFiltros").addEventListener("click", () => bg.classList.remove("open"));
+    document.getElementById("df24GerarPdfBtn").addEventListener("click", abrirPreviewPDFV24);
+    document.getElementById("df24CsvBtn").addEventListener("click", exportarCSVV24);
+
+    bg.classList.add("open");
+  }
+
+  function abrirPreviewPDFV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    filtrosV24 = lerFiltrosV24();
+
+    const filtro = document.getElementById("df-v24-filter-bg");
+    if(filtro) filtro.classList.remove("open");
+
+    let bg = document.getElementById("df-v24-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-report-bg";
+      bg.className = "df-v24-bg";
+      bg.innerHTML = `
+        <div class="df-v24-box">
+          <div class="df-v24-actions no-print">
+            <button type="button" id="df24PrintBtn">Salvar PDF</button>
+            <button type="button" class="light" id="df24CloseReportBtn">Fechar</button>
+          </div>
+          <div id="df-v24-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", evt => {
+        if(evt.target === bg) bg.classList.remove("open");
+      });
+      document.getElementById("df24PrintBtn").addEventListener("click", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+        setTimeout(() => window.print(), 150);
+      }, true);
+      document.getElementById("df24CloseReportBtn").addEventListener("click", () => bg.classList.remove("open"));
+    }
+
+    document.getElementById("df-v24-report-content").innerHTML = montarRelatorioV24(filtrosV24);
+    bg.classList.add("open");
+  }
+
+  async function exportarCSVV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    const f = lerFiltrosV24();
+    const contas = filtrarV24(f);
+
+    if(!contas.length){
+      alert("Nenhum dado para exportar com esses filtros.");
+      return;
+    }
+
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c => [
+        c.descricao || c.conta || "",
+        Number(c.valor || 0).toFixed(2).replace(".", ","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+
+    const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+    const file = new File([blob], "relatorio-dona-flor.csv", {type:"text/csv"});
+
+    try{
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:"Relatório Dona Flor"});
+        return;
+      }
+    }catch(err){}
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.target = "_blank";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      try{ a.remove(); }catch(e){}
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }, 1000);
+  }
+
+  function limparBotoesRelatorioAntigos(){
+    document.querySelectorAll(".df-v221-report-actions").forEach(el => el.remove());
+  }
+
+  function configurarSelectV24(){
+    cssV24();
+    limparBotoesRelatorioAntigos();
+
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+
+    sel.onchange = null;
+    sel.removeAttribute("onchange");
+
+    if(!sel.dataset.df24Bound){
+      sel.dataset.df24Bound = "1";
+      sel.addEventListener("change", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+
+        if(sel.value === "pdf" || sel.value === "csv"){
+          abrirFiltrosV24();
+        }
+
+        sel.value = "";
+      }, true);
+    }
+  }
+
+  // Bloqueia funções antigas de PDF para não imprimirem código.
+  window.df24AbrirFiltros = abrirFiltrosV24;
+  window.df24GerarPdf = abrirPreviewPDFV24;
+  window.df24Csv = exportarCSVV24;
+
+  window.gerarRelatorioFinanceiroDF = abrirFiltrosV24;
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(sel && (sel.value === "pdf" || sel.value === "csv")){
+      abrirFiltrosV24();
+      sel.value = "";
+    }
+  };
+
+  window.df226GerarPDF = abrirPreviewPDFV24;
+  window.df224GerarPDF = abrirPreviewPDFV24;
+  window.df222GerarPDF = abrirPreviewPDFV24;
+  window.df23GerarPDF = abrirPreviewPDFV24;
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", configurarSelectV24, {once:true});
+  }else{
+    configurarSelectV24();
+  }
+
+  setTimeout(configurarSelectV24, 700);
+  setTimeout(configurarSelectV24, 1600);
+  setTimeout(configurarSelectV24, 3200);
+  setTimeout(configurarSelectV24, 5000);
 })();
 </script>
 </body>
@@ -19514,6 +22426,734 @@ ${montarRelatorioHTML(f)
   setTimeout(iniciar, 3600);
 })();
 </script>
+<script>
+/* ==========================================================
+   DONA FLOR - V24 PDF FINAL SEM CÓDIGO
+   Correção definitiva do PDF:
+   - Não usa nova aba
+   - Não usa iframe
+   - Não usa Blob HTML para PDF
+   - Não usa document.write
+   - Não deixa scripts antigos sobrescreverem o botão
+   - PDF imprime APENAS o relatório dentro do app
+   - CSV mantido com integração real
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V24_PDF_FINAL__) return;
+  window.__DONA_FLOR_V24_PDF_FINAL__ = true;
+
+  let contasCacheV24 = [];
+  let filtrosV24 = {};
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function moedaV24(v){
+    try {
+      if (typeof moeda === "function") return moeda(v);
+    } catch(e){}
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function supaURL(){
+    try { if(typeof URL !== "undefined" && String(URL).includes("supabase")) return URL; } catch(e){}
+    try { if(typeof SupabaseURL !== "undefined") return SupabaseURL; } catch(e){}
+    return "";
+  }
+
+  function supaKEY(){
+    try { if(typeof KEY !== "undefined") return KEY; } catch(e){}
+    try { if(typeof SupabaseKey !== "undefined") return SupabaseKey; } catch(e){}
+    return "";
+  }
+
+  async function buscarContasV24(){
+    const url = supaURL();
+    const key = supaKEY();
+
+    try{
+      if(url && key){
+        const r = await fetch(url + "/rest/v1/df_contas?select=*&order=vencimento.asc", {
+          headers:{
+            "apikey": key,
+            "Authorization": "Bearer " + key,
+            "Content-Type": "application/json"
+          }
+        });
+        if(r.ok){
+          const data = await r.json();
+          if(Array.isArray(data)){
+            contasCacheV24 = data.filter(c => !c.deletado);
+            return contasCacheV24;
+          }
+        }
+      }
+    }catch(e){
+      console.warn("V24 relatório: fallback local", e);
+    }
+
+    try{
+      if(typeof visContas === "function"){
+        const data = visContas();
+        if(Array.isArray(data)){
+          contasCacheV24 = data.filter(c => !c.deletado);
+          return contasCacheV24;
+        }
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)){
+        contasCacheV24 = window.contasDados.filter(c => !c.deletado);
+        return contasCacheV24;
+      }
+    }catch(e){}
+
+    contasCacheV24 = [];
+    return contasCacheV24;
+  }
+
+  function centrosV24(){
+    return Array.from(new Set((contasCacheV24 || []).map(c => c.centro || c.centro_custo || c.loja).filter(Boolean))).sort();
+  }
+
+  function lerFiltrosV24(){
+    return {
+      centro: document.getElementById("df24Centro")?.value || "",
+      status: document.getElementById("df24Status")?.value || "",
+      inicio: document.getElementById("df24Inicio")?.value || "",
+      fim: document.getElementById("df24Fim")?.value || "",
+      resumo: document.getElementById("df24Resumo")?.checked !== false,
+      centros: document.getElementById("df24Centros")?.checked !== false,
+      detalhes: document.getElementById("df24Detalhes")?.checked !== false,
+      aberto: document.getElementById("df24Aberto")?.checked || false
+    };
+  }
+
+  function filtrarV24(f){
+    return (contasCacheV24 || []).filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.inicio && data && data < f.inicio) return false;
+      if(f.fim && data && data > f.fim) return false;
+      return true;
+    });
+  }
+
+  function resumoV24(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago: pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV24(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function cssV24(){
+    if(document.getElementById("df-v24-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v24-css";
+    style.textContent = `
+      .df-v221-report-actions,
+      .df-v221-mini-btn,
+      button[onclick*="df221AbrirFiltros"]{
+        display:none !important;
+      }
+
+      .df-v24-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:2147483647 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v24-bg.open{
+        display:flex !important;
+      }
+
+      .df-v24-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v24-top{
+        display:flex !important;
+        align-items:flex-start !important;
+        justify-content:space-between !important;
+        gap:12px !important;
+        border-bottom:1px solid #e2e8f0 !important;
+        padding-bottom:12px !important;
+        margin-bottom:14px !important;
+      }
+
+      .df-v24-title{
+        margin:0 !important;
+        font-size:24px !important;
+        line-height:1.1 !important;
+        font-weight:950 !important;
+        color:#0f766e !important;
+      }
+
+      .df-v24-sub{
+        color:#64748b !important;
+        margin-top:4px !important;
+        font-size:13px !important;
+      }
+
+      .df-v24-actions{
+        display:flex !important;
+        flex-wrap:wrap !important;
+        gap:8px !important;
+        justify-content:flex-end !important;
+      }
+
+      .df-v24-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v24-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v24-grid{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:10px !important;
+      }
+
+      .df-v24-field label{
+        display:block !important;
+        font-size:12px !important;
+        font-weight:900 !important;
+        color:#64748b !important;
+        margin:0 0 4px !important;
+        text-transform:uppercase !important;
+      }
+
+      .df-v24-field input,
+      .df-v24-field select{
+        width:100% !important;
+        min-height:44px !important;
+        border:1px solid #cbd5e1 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        box-sizing:border-box !important;
+        font-size:15px !important;
+        background:#fff !important;
+      }
+
+      .df-v24-checks{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v24-check{
+        border:1px solid #e2e8f0 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+        font-weight:800 !important;
+      }
+
+      .df-v24-report h1{
+        color:#0f766e !important;
+        margin:0 !important;
+        font-size:24px !important;
+      }
+
+      .df-v24-report h2{
+        font-size:18px !important;
+        margin:18px 0 8px !important;
+      }
+
+      .df-v24-report .sub{
+        color:#64748b !important;
+        font-size:12px !important;
+        margin-top:4px !important;
+      }
+
+      .df-v24-report .cards{
+        display:grid !important;
+        grid-template-columns:repeat(4,1fr) !important;
+        gap:8px !important;
+        margin:12px 0 !important;
+      }
+
+      .df-v24-report .card-mini{
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+      }
+
+      .df-v24-report .label{
+        font-size:10px !important;
+        text-transform:uppercase !important;
+        color:#64748b !important;
+        font-weight:bold !important;
+      }
+
+      .df-v24-report .num{
+        font-size:17px !important;
+        font-weight:bold !important;
+        margin-top:3px !important;
+      }
+
+      .df-v24-report .centros{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin:8px 0 14px !important;
+      }
+
+      .df-v24-report .centro{
+        display:flex !important;
+        justify-content:space-between !important;
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:8px !important;
+      }
+
+      .df-v24-report .centro small{
+        display:block !important;
+        color:#64748b !important;
+      }
+
+      .df-v24-report table{
+        width:100% !important;
+        border-collapse:collapse !important;
+        font-size:12px !important;
+      }
+
+      .df-v24-report th{
+        background:#0f766e !important;
+        color:white !important;
+        text-align:left !important;
+        padding:7px !important;
+      }
+
+      .df-v24-report td{
+        border-bottom:1px solid #e2e8f0 !important;
+        padding:7px !important;
+        vertical-align:top !important;
+      }
+
+      .df-v24-report .valor{
+        font-weight:bold !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v24-report .status{
+        border-radius:999px !important;
+        padding:3px 7px !important;
+        font-weight:bold !important;
+        font-size:11px !important;
+        display:inline-block !important;
+      }
+
+      .df-v24-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v24-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v24-box{padding:14px !important;border-radius:16px !important;}
+        .df-v24-top{display:block !important;}
+        .df-v24-actions{justify-content:flex-start !important;margin-top:10px !important;}
+        .df-v24-grid,.df-v24-checks,.df-v24-report .centros{grid-template-columns:1fr !important;}
+        .df-v24-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v24-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        html, body{
+          background:#fff !important;
+          margin:0 !important;
+          padding:0 !important;
+        }
+
+        body > *{
+          display:none !important;
+        }
+
+        #df-v24-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-box{
+          display:block !important;
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-actions{
+          display:none !important;
+        }
+
+        #df-v24-report-content{
+          display:block !important;
+        }
+
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function montarRelatorioV24(f){
+    const contas = filtrarV24(f);
+    const r = resumoV24(contas);
+    const centros = porCentroV24(contas);
+
+    const filtroDesc = [
+      f.centro ? "Centro: " + f.centro : "Todos os centros",
+      f.status ? "Status: " + f.status : "Todos os status",
+      f.inicio ? "De " + dataBR(f.inicio) : "",
+      f.fim ? "Até " + dataBR(f.fim) : "",
+      f.aberto ? "Somente em aberto" : ""
+    ].filter(Boolean).join(" • ");
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV24(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV24(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV24(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centrosHTML = f.centros ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${moedaV24(info.total)}</b>
+          </div>
+        `).join("") : `<div>Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV24(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhes ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div>Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v24-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(filtroDesc)}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  async function abrirFiltrosV24(){
+    cssV24();
+    await buscarContasV24();
+
+    let bg = document.getElementById("df-v24-filter-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-filter-bg";
+      bg.className = "df-v24-bg";
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e => {
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    const centros = centrosV24().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+
+    bg.innerHTML = `
+      <div class="df-v24-box">
+        <div class="df-v24-top">
+          <div>
+            <h1 class="df-v24-title">Filtros do relatório</h1>
+            <div class="df-v24-sub">Base carregada: ${contasCacheV24.length} conta(s).</div>
+          </div>
+          <div class="df-v24-actions">
+            <button type="button" class="light" id="df24FecharFiltros">Fechar</button>
+          </div>
+        </div>
+
+        <div class="df-v24-grid">
+          <div class="df-v24-field"><label>Centro</label><select id="df24Centro"><option value="">Todos</option>${centros}</select></div>
+          <div class="df-v24-field"><label>Status</label><select id="df24Status"><option value="">Todos</option><option>Aberto</option><option>Pago</option></select></div>
+          <div class="df-v24-field"><label>Data inicial</label><input id="df24Inicio" type="date"></div>
+          <div class="df-v24-field"><label>Data final</label><input id="df24Fim" type="date"></div>
+        </div>
+
+        <div class="df-v24-checks">
+          <label class="df-v24-check"><input id="df24Resumo" type="checkbox" checked> Mostrar resumo</label>
+          <label class="df-v24-check"><input id="df24Centros" type="checkbox" checked> Mostrar centros</label>
+          <label class="df-v24-check"><input id="df24Detalhes" type="checkbox" checked> Mostrar detalhes</label>
+          <label class="df-v24-check"><input id="df24Aberto" type="checkbox"> Somente em aberto</label>
+        </div>
+
+        <div class="df-v24-actions" style="margin-top:16px;justify-content:flex-start!important">
+          <button type="button" id="df24GerarPdfBtn">Gerar PDF</button>
+          <button type="button" id="df24CsvBtn">Exportar CSV</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("df24FecharFiltros").addEventListener("click", () => bg.classList.remove("open"));
+    document.getElementById("df24GerarPdfBtn").addEventListener("click", abrirPreviewPDFV24);
+    document.getElementById("df24CsvBtn").addEventListener("click", exportarCSVV24);
+
+    bg.classList.add("open");
+  }
+
+  function abrirPreviewPDFV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    filtrosV24 = lerFiltrosV24();
+
+    const filtro = document.getElementById("df-v24-filter-bg");
+    if(filtro) filtro.classList.remove("open");
+
+    let bg = document.getElementById("df-v24-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-report-bg";
+      bg.className = "df-v24-bg";
+      bg.innerHTML = `
+        <div class="df-v24-box">
+          <div class="df-v24-actions no-print">
+            <button type="button" id="df24PrintBtn">Salvar PDF</button>
+            <button type="button" class="light" id="df24CloseReportBtn">Fechar</button>
+          </div>
+          <div id="df-v24-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", evt => {
+        if(evt.target === bg) bg.classList.remove("open");
+      });
+      document.getElementById("df24PrintBtn").addEventListener("click", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+        setTimeout(() => window.print(), 150);
+      }, true);
+      document.getElementById("df24CloseReportBtn").addEventListener("click", () => bg.classList.remove("open"));
+    }
+
+    document.getElementById("df-v24-report-content").innerHTML = montarRelatorioV24(filtrosV24);
+    bg.classList.add("open");
+  }
+
+  async function exportarCSVV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    const f = lerFiltrosV24();
+    const contas = filtrarV24(f);
+
+    if(!contas.length){
+      alert("Nenhum dado para exportar com esses filtros.");
+      return;
+    }
+
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c => [
+        c.descricao || c.conta || "",
+        Number(c.valor || 0).toFixed(2).replace(".", ","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+
+    const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+    const file = new File([blob], "relatorio-dona-flor.csv", {type:"text/csv"});
+
+    try{
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:"Relatório Dona Flor"});
+        return;
+      }
+    }catch(err){}
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.target = "_blank";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      try{ a.remove(); }catch(e){}
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }, 1000);
+  }
+
+  function limparBotoesRelatorioAntigos(){
+    document.querySelectorAll(".df-v221-report-actions").forEach(el => el.remove());
+  }
+
+  function configurarSelectV24(){
+    cssV24();
+    limparBotoesRelatorioAntigos();
+
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+
+    sel.onchange = null;
+    sel.removeAttribute("onchange");
+
+    if(!sel.dataset.df24Bound){
+      sel.dataset.df24Bound = "1";
+      sel.addEventListener("change", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+
+        if(sel.value === "pdf" || sel.value === "csv"){
+          abrirFiltrosV24();
+        }
+
+        sel.value = "";
+      }, true);
+    }
+  }
+
+  // Bloqueia funções antigas de PDF para não imprimirem código.
+  window.df24AbrirFiltros = abrirFiltrosV24;
+  window.df24GerarPdf = abrirPreviewPDFV24;
+  window.df24Csv = exportarCSVV24;
+
+  window.gerarRelatorioFinanceiroDF = abrirFiltrosV24;
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(sel && (sel.value === "pdf" || sel.value === "csv")){
+      abrirFiltrosV24();
+      sel.value = "";
+    }
+  };
+
+  window.df226GerarPDF = abrirPreviewPDFV24;
+  window.df224GerarPDF = abrirPreviewPDFV24;
+  window.df222GerarPDF = abrirPreviewPDFV24;
+  window.df23GerarPDF = abrirPreviewPDFV24;
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", configurarSelectV24, {once:true});
+  }else{
+    configurarSelectV24();
+  }
+
+  setTimeout(configurarSelectV24, 700);
+  setTimeout(configurarSelectV24, 1600);
+  setTimeout(configurarSelectV24, 3200);
+  setTimeout(configurarSelectV24, 5000);
+})();
+</script>
 </body>
 </html>`;
   }
@@ -20226,6 +23866,734 @@ ${montarRelatorioHTML(f)
   setTimeout(iniciar, 800);
   setTimeout(iniciar, 1800);
   setTimeout(iniciar, 3600);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V24 PDF FINAL SEM CÓDIGO
+   Correção definitiva do PDF:
+   - Não usa nova aba
+   - Não usa iframe
+   - Não usa Blob HTML para PDF
+   - Não usa document.write
+   - Não deixa scripts antigos sobrescreverem o botão
+   - PDF imprime APENAS o relatório dentro do app
+   - CSV mantido com integração real
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V24_PDF_FINAL__) return;
+  window.__DONA_FLOR_V24_PDF_FINAL__ = true;
+
+  let contasCacheV24 = [];
+  let filtrosV24 = {};
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function moedaV24(v){
+    try {
+      if (typeof moeda === "function") return moeda(v);
+    } catch(e){}
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function supaURL(){
+    try { if(typeof URL !== "undefined" && String(URL).includes("supabase")) return URL; } catch(e){}
+    try { if(typeof SupabaseURL !== "undefined") return SupabaseURL; } catch(e){}
+    return "";
+  }
+
+  function supaKEY(){
+    try { if(typeof KEY !== "undefined") return KEY; } catch(e){}
+    try { if(typeof SupabaseKey !== "undefined") return SupabaseKey; } catch(e){}
+    return "";
+  }
+
+  async function buscarContasV24(){
+    const url = supaURL();
+    const key = supaKEY();
+
+    try{
+      if(url && key){
+        const r = await fetch(url + "/rest/v1/df_contas?select=*&order=vencimento.asc", {
+          headers:{
+            "apikey": key,
+            "Authorization": "Bearer " + key,
+            "Content-Type": "application/json"
+          }
+        });
+        if(r.ok){
+          const data = await r.json();
+          if(Array.isArray(data)){
+            contasCacheV24 = data.filter(c => !c.deletado);
+            return contasCacheV24;
+          }
+        }
+      }
+    }catch(e){
+      console.warn("V24 relatório: fallback local", e);
+    }
+
+    try{
+      if(typeof visContas === "function"){
+        const data = visContas();
+        if(Array.isArray(data)){
+          contasCacheV24 = data.filter(c => !c.deletado);
+          return contasCacheV24;
+        }
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)){
+        contasCacheV24 = window.contasDados.filter(c => !c.deletado);
+        return contasCacheV24;
+      }
+    }catch(e){}
+
+    contasCacheV24 = [];
+    return contasCacheV24;
+  }
+
+  function centrosV24(){
+    return Array.from(new Set((contasCacheV24 || []).map(c => c.centro || c.centro_custo || c.loja).filter(Boolean))).sort();
+  }
+
+  function lerFiltrosV24(){
+    return {
+      centro: document.getElementById("df24Centro")?.value || "",
+      status: document.getElementById("df24Status")?.value || "",
+      inicio: document.getElementById("df24Inicio")?.value || "",
+      fim: document.getElementById("df24Fim")?.value || "",
+      resumo: document.getElementById("df24Resumo")?.checked !== false,
+      centros: document.getElementById("df24Centros")?.checked !== false,
+      detalhes: document.getElementById("df24Detalhes")?.checked !== false,
+      aberto: document.getElementById("df24Aberto")?.checked || false
+    };
+  }
+
+  function filtrarV24(f){
+    return (contasCacheV24 || []).filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.inicio && data && data < f.inicio) return false;
+      if(f.fim && data && data > f.fim) return false;
+      return true;
+    });
+  }
+
+  function resumoV24(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago: pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV24(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function cssV24(){
+    if(document.getElementById("df-v24-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v24-css";
+    style.textContent = `
+      .df-v221-report-actions,
+      .df-v221-mini-btn,
+      button[onclick*="df221AbrirFiltros"]{
+        display:none !important;
+      }
+
+      .df-v24-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:2147483647 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v24-bg.open{
+        display:flex !important;
+      }
+
+      .df-v24-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v24-top{
+        display:flex !important;
+        align-items:flex-start !important;
+        justify-content:space-between !important;
+        gap:12px !important;
+        border-bottom:1px solid #e2e8f0 !important;
+        padding-bottom:12px !important;
+        margin-bottom:14px !important;
+      }
+
+      .df-v24-title{
+        margin:0 !important;
+        font-size:24px !important;
+        line-height:1.1 !important;
+        font-weight:950 !important;
+        color:#0f766e !important;
+      }
+
+      .df-v24-sub{
+        color:#64748b !important;
+        margin-top:4px !important;
+        font-size:13px !important;
+      }
+
+      .df-v24-actions{
+        display:flex !important;
+        flex-wrap:wrap !important;
+        gap:8px !important;
+        justify-content:flex-end !important;
+      }
+
+      .df-v24-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v24-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v24-grid{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:10px !important;
+      }
+
+      .df-v24-field label{
+        display:block !important;
+        font-size:12px !important;
+        font-weight:900 !important;
+        color:#64748b !important;
+        margin:0 0 4px !important;
+        text-transform:uppercase !important;
+      }
+
+      .df-v24-field input,
+      .df-v24-field select{
+        width:100% !important;
+        min-height:44px !important;
+        border:1px solid #cbd5e1 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        box-sizing:border-box !important;
+        font-size:15px !important;
+        background:#fff !important;
+      }
+
+      .df-v24-checks{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v24-check{
+        border:1px solid #e2e8f0 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+        font-weight:800 !important;
+      }
+
+      .df-v24-report h1{
+        color:#0f766e !important;
+        margin:0 !important;
+        font-size:24px !important;
+      }
+
+      .df-v24-report h2{
+        font-size:18px !important;
+        margin:18px 0 8px !important;
+      }
+
+      .df-v24-report .sub{
+        color:#64748b !important;
+        font-size:12px !important;
+        margin-top:4px !important;
+      }
+
+      .df-v24-report .cards{
+        display:grid !important;
+        grid-template-columns:repeat(4,1fr) !important;
+        gap:8px !important;
+        margin:12px 0 !important;
+      }
+
+      .df-v24-report .card-mini{
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+      }
+
+      .df-v24-report .label{
+        font-size:10px !important;
+        text-transform:uppercase !important;
+        color:#64748b !important;
+        font-weight:bold !important;
+      }
+
+      .df-v24-report .num{
+        font-size:17px !important;
+        font-weight:bold !important;
+        margin-top:3px !important;
+      }
+
+      .df-v24-report .centros{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin:8px 0 14px !important;
+      }
+
+      .df-v24-report .centro{
+        display:flex !important;
+        justify-content:space-between !important;
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:8px !important;
+      }
+
+      .df-v24-report .centro small{
+        display:block !important;
+        color:#64748b !important;
+      }
+
+      .df-v24-report table{
+        width:100% !important;
+        border-collapse:collapse !important;
+        font-size:12px !important;
+      }
+
+      .df-v24-report th{
+        background:#0f766e !important;
+        color:white !important;
+        text-align:left !important;
+        padding:7px !important;
+      }
+
+      .df-v24-report td{
+        border-bottom:1px solid #e2e8f0 !important;
+        padding:7px !important;
+        vertical-align:top !important;
+      }
+
+      .df-v24-report .valor{
+        font-weight:bold !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v24-report .status{
+        border-radius:999px !important;
+        padding:3px 7px !important;
+        font-weight:bold !important;
+        font-size:11px !important;
+        display:inline-block !important;
+      }
+
+      .df-v24-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v24-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v24-box{padding:14px !important;border-radius:16px !important;}
+        .df-v24-top{display:block !important;}
+        .df-v24-actions{justify-content:flex-start !important;margin-top:10px !important;}
+        .df-v24-grid,.df-v24-checks,.df-v24-report .centros{grid-template-columns:1fr !important;}
+        .df-v24-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v24-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        html, body{
+          background:#fff !important;
+          margin:0 !important;
+          padding:0 !important;
+        }
+
+        body > *{
+          display:none !important;
+        }
+
+        #df-v24-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-box{
+          display:block !important;
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-actions{
+          display:none !important;
+        }
+
+        #df-v24-report-content{
+          display:block !important;
+        }
+
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function montarRelatorioV24(f){
+    const contas = filtrarV24(f);
+    const r = resumoV24(contas);
+    const centros = porCentroV24(contas);
+
+    const filtroDesc = [
+      f.centro ? "Centro: " + f.centro : "Todos os centros",
+      f.status ? "Status: " + f.status : "Todos os status",
+      f.inicio ? "De " + dataBR(f.inicio) : "",
+      f.fim ? "Até " + dataBR(f.fim) : "",
+      f.aberto ? "Somente em aberto" : ""
+    ].filter(Boolean).join(" • ");
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV24(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV24(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV24(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centrosHTML = f.centros ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${moedaV24(info.total)}</b>
+          </div>
+        `).join("") : `<div>Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV24(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhes ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div>Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v24-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(filtroDesc)}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  async function abrirFiltrosV24(){
+    cssV24();
+    await buscarContasV24();
+
+    let bg = document.getElementById("df-v24-filter-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-filter-bg";
+      bg.className = "df-v24-bg";
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e => {
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    const centros = centrosV24().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+
+    bg.innerHTML = `
+      <div class="df-v24-box">
+        <div class="df-v24-top">
+          <div>
+            <h1 class="df-v24-title">Filtros do relatório</h1>
+            <div class="df-v24-sub">Base carregada: ${contasCacheV24.length} conta(s).</div>
+          </div>
+          <div class="df-v24-actions">
+            <button type="button" class="light" id="df24FecharFiltros">Fechar</button>
+          </div>
+        </div>
+
+        <div class="df-v24-grid">
+          <div class="df-v24-field"><label>Centro</label><select id="df24Centro"><option value="">Todos</option>${centros}</select></div>
+          <div class="df-v24-field"><label>Status</label><select id="df24Status"><option value="">Todos</option><option>Aberto</option><option>Pago</option></select></div>
+          <div class="df-v24-field"><label>Data inicial</label><input id="df24Inicio" type="date"></div>
+          <div class="df-v24-field"><label>Data final</label><input id="df24Fim" type="date"></div>
+        </div>
+
+        <div class="df-v24-checks">
+          <label class="df-v24-check"><input id="df24Resumo" type="checkbox" checked> Mostrar resumo</label>
+          <label class="df-v24-check"><input id="df24Centros" type="checkbox" checked> Mostrar centros</label>
+          <label class="df-v24-check"><input id="df24Detalhes" type="checkbox" checked> Mostrar detalhes</label>
+          <label class="df-v24-check"><input id="df24Aberto" type="checkbox"> Somente em aberto</label>
+        </div>
+
+        <div class="df-v24-actions" style="margin-top:16px;justify-content:flex-start!important">
+          <button type="button" id="df24GerarPdfBtn">Gerar PDF</button>
+          <button type="button" id="df24CsvBtn">Exportar CSV</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("df24FecharFiltros").addEventListener("click", () => bg.classList.remove("open"));
+    document.getElementById("df24GerarPdfBtn").addEventListener("click", abrirPreviewPDFV24);
+    document.getElementById("df24CsvBtn").addEventListener("click", exportarCSVV24);
+
+    bg.classList.add("open");
+  }
+
+  function abrirPreviewPDFV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    filtrosV24 = lerFiltrosV24();
+
+    const filtro = document.getElementById("df-v24-filter-bg");
+    if(filtro) filtro.classList.remove("open");
+
+    let bg = document.getElementById("df-v24-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-report-bg";
+      bg.className = "df-v24-bg";
+      bg.innerHTML = `
+        <div class="df-v24-box">
+          <div class="df-v24-actions no-print">
+            <button type="button" id="df24PrintBtn">Salvar PDF</button>
+            <button type="button" class="light" id="df24CloseReportBtn">Fechar</button>
+          </div>
+          <div id="df-v24-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", evt => {
+        if(evt.target === bg) bg.classList.remove("open");
+      });
+      document.getElementById("df24PrintBtn").addEventListener("click", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+        setTimeout(() => window.print(), 150);
+      }, true);
+      document.getElementById("df24CloseReportBtn").addEventListener("click", () => bg.classList.remove("open"));
+    }
+
+    document.getElementById("df-v24-report-content").innerHTML = montarRelatorioV24(filtrosV24);
+    bg.classList.add("open");
+  }
+
+  async function exportarCSVV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    const f = lerFiltrosV24();
+    const contas = filtrarV24(f);
+
+    if(!contas.length){
+      alert("Nenhum dado para exportar com esses filtros.");
+      return;
+    }
+
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c => [
+        c.descricao || c.conta || "",
+        Number(c.valor || 0).toFixed(2).replace(".", ","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+
+    const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+    const file = new File([blob], "relatorio-dona-flor.csv", {type:"text/csv"});
+
+    try{
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:"Relatório Dona Flor"});
+        return;
+      }
+    }catch(err){}
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.target = "_blank";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      try{ a.remove(); }catch(e){}
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }, 1000);
+  }
+
+  function limparBotoesRelatorioAntigos(){
+    document.querySelectorAll(".df-v221-report-actions").forEach(el => el.remove());
+  }
+
+  function configurarSelectV24(){
+    cssV24();
+    limparBotoesRelatorioAntigos();
+
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+
+    sel.onchange = null;
+    sel.removeAttribute("onchange");
+
+    if(!sel.dataset.df24Bound){
+      sel.dataset.df24Bound = "1";
+      sel.addEventListener("change", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+
+        if(sel.value === "pdf" || sel.value === "csv"){
+          abrirFiltrosV24();
+        }
+
+        sel.value = "";
+      }, true);
+    }
+  }
+
+  // Bloqueia funções antigas de PDF para não imprimirem código.
+  window.df24AbrirFiltros = abrirFiltrosV24;
+  window.df24GerarPdf = abrirPreviewPDFV24;
+  window.df24Csv = exportarCSVV24;
+
+  window.gerarRelatorioFinanceiroDF = abrirFiltrosV24;
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(sel && (sel.value === "pdf" || sel.value === "csv")){
+      abrirFiltrosV24();
+      sel.value = "";
+    }
+  };
+
+  window.df226GerarPDF = abrirPreviewPDFV24;
+  window.df224GerarPDF = abrirPreviewPDFV24;
+  window.df222GerarPDF = abrirPreviewPDFV24;
+  window.df23GerarPDF = abrirPreviewPDFV24;
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", configurarSelectV24, {once:true});
+  }else{
+    configurarSelectV24();
+  }
+
+  setTimeout(configurarSelectV24, 700);
+  setTimeout(configurarSelectV24, 1600);
+  setTimeout(configurarSelectV24, 3200);
+  setTimeout(configurarSelectV24, 5000);
 })();
 </script>
 </body>
@@ -22692,6 +27060,734 @@ ${montarRelatorioHTML(f)
   setTimeout(iniciar, 3600);
 })();
 </script>
+<script>
+/* ==========================================================
+   DONA FLOR - V24 PDF FINAL SEM CÓDIGO
+   Correção definitiva do PDF:
+   - Não usa nova aba
+   - Não usa iframe
+   - Não usa Blob HTML para PDF
+   - Não usa document.write
+   - Não deixa scripts antigos sobrescreverem o botão
+   - PDF imprime APENAS o relatório dentro do app
+   - CSV mantido com integração real
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V24_PDF_FINAL__) return;
+  window.__DONA_FLOR_V24_PDF_FINAL__ = true;
+
+  let contasCacheV24 = [];
+  let filtrosV24 = {};
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function moedaV24(v){
+    try {
+      if (typeof moeda === "function") return moeda(v);
+    } catch(e){}
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function supaURL(){
+    try { if(typeof URL !== "undefined" && String(URL).includes("supabase")) return URL; } catch(e){}
+    try { if(typeof SupabaseURL !== "undefined") return SupabaseURL; } catch(e){}
+    return "";
+  }
+
+  function supaKEY(){
+    try { if(typeof KEY !== "undefined") return KEY; } catch(e){}
+    try { if(typeof SupabaseKey !== "undefined") return SupabaseKey; } catch(e){}
+    return "";
+  }
+
+  async function buscarContasV24(){
+    const url = supaURL();
+    const key = supaKEY();
+
+    try{
+      if(url && key){
+        const r = await fetch(url + "/rest/v1/df_contas?select=*&order=vencimento.asc", {
+          headers:{
+            "apikey": key,
+            "Authorization": "Bearer " + key,
+            "Content-Type": "application/json"
+          }
+        });
+        if(r.ok){
+          const data = await r.json();
+          if(Array.isArray(data)){
+            contasCacheV24 = data.filter(c => !c.deletado);
+            return contasCacheV24;
+          }
+        }
+      }
+    }catch(e){
+      console.warn("V24 relatório: fallback local", e);
+    }
+
+    try{
+      if(typeof visContas === "function"){
+        const data = visContas();
+        if(Array.isArray(data)){
+          contasCacheV24 = data.filter(c => !c.deletado);
+          return contasCacheV24;
+        }
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)){
+        contasCacheV24 = window.contasDados.filter(c => !c.deletado);
+        return contasCacheV24;
+      }
+    }catch(e){}
+
+    contasCacheV24 = [];
+    return contasCacheV24;
+  }
+
+  function centrosV24(){
+    return Array.from(new Set((contasCacheV24 || []).map(c => c.centro || c.centro_custo || c.loja).filter(Boolean))).sort();
+  }
+
+  function lerFiltrosV24(){
+    return {
+      centro: document.getElementById("df24Centro")?.value || "",
+      status: document.getElementById("df24Status")?.value || "",
+      inicio: document.getElementById("df24Inicio")?.value || "",
+      fim: document.getElementById("df24Fim")?.value || "",
+      resumo: document.getElementById("df24Resumo")?.checked !== false,
+      centros: document.getElementById("df24Centros")?.checked !== false,
+      detalhes: document.getElementById("df24Detalhes")?.checked !== false,
+      aberto: document.getElementById("df24Aberto")?.checked || false
+    };
+  }
+
+  function filtrarV24(f){
+    return (contasCacheV24 || []).filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.inicio && data && data < f.inicio) return false;
+      if(f.fim && data && data > f.fim) return false;
+      return true;
+    });
+  }
+
+  function resumoV24(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago: pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV24(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function cssV24(){
+    if(document.getElementById("df-v24-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v24-css";
+    style.textContent = `
+      .df-v221-report-actions,
+      .df-v221-mini-btn,
+      button[onclick*="df221AbrirFiltros"]{
+        display:none !important;
+      }
+
+      .df-v24-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:2147483647 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v24-bg.open{
+        display:flex !important;
+      }
+
+      .df-v24-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v24-top{
+        display:flex !important;
+        align-items:flex-start !important;
+        justify-content:space-between !important;
+        gap:12px !important;
+        border-bottom:1px solid #e2e8f0 !important;
+        padding-bottom:12px !important;
+        margin-bottom:14px !important;
+      }
+
+      .df-v24-title{
+        margin:0 !important;
+        font-size:24px !important;
+        line-height:1.1 !important;
+        font-weight:950 !important;
+        color:#0f766e !important;
+      }
+
+      .df-v24-sub{
+        color:#64748b !important;
+        margin-top:4px !important;
+        font-size:13px !important;
+      }
+
+      .df-v24-actions{
+        display:flex !important;
+        flex-wrap:wrap !important;
+        gap:8px !important;
+        justify-content:flex-end !important;
+      }
+
+      .df-v24-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v24-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v24-grid{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:10px !important;
+      }
+
+      .df-v24-field label{
+        display:block !important;
+        font-size:12px !important;
+        font-weight:900 !important;
+        color:#64748b !important;
+        margin:0 0 4px !important;
+        text-transform:uppercase !important;
+      }
+
+      .df-v24-field input,
+      .df-v24-field select{
+        width:100% !important;
+        min-height:44px !important;
+        border:1px solid #cbd5e1 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        box-sizing:border-box !important;
+        font-size:15px !important;
+        background:#fff !important;
+      }
+
+      .df-v24-checks{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v24-check{
+        border:1px solid #e2e8f0 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+        font-weight:800 !important;
+      }
+
+      .df-v24-report h1{
+        color:#0f766e !important;
+        margin:0 !important;
+        font-size:24px !important;
+      }
+
+      .df-v24-report h2{
+        font-size:18px !important;
+        margin:18px 0 8px !important;
+      }
+
+      .df-v24-report .sub{
+        color:#64748b !important;
+        font-size:12px !important;
+        margin-top:4px !important;
+      }
+
+      .df-v24-report .cards{
+        display:grid !important;
+        grid-template-columns:repeat(4,1fr) !important;
+        gap:8px !important;
+        margin:12px 0 !important;
+      }
+
+      .df-v24-report .card-mini{
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+      }
+
+      .df-v24-report .label{
+        font-size:10px !important;
+        text-transform:uppercase !important;
+        color:#64748b !important;
+        font-weight:bold !important;
+      }
+
+      .df-v24-report .num{
+        font-size:17px !important;
+        font-weight:bold !important;
+        margin-top:3px !important;
+      }
+
+      .df-v24-report .centros{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin:8px 0 14px !important;
+      }
+
+      .df-v24-report .centro{
+        display:flex !important;
+        justify-content:space-between !important;
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:8px !important;
+      }
+
+      .df-v24-report .centro small{
+        display:block !important;
+        color:#64748b !important;
+      }
+
+      .df-v24-report table{
+        width:100% !important;
+        border-collapse:collapse !important;
+        font-size:12px !important;
+      }
+
+      .df-v24-report th{
+        background:#0f766e !important;
+        color:white !important;
+        text-align:left !important;
+        padding:7px !important;
+      }
+
+      .df-v24-report td{
+        border-bottom:1px solid #e2e8f0 !important;
+        padding:7px !important;
+        vertical-align:top !important;
+      }
+
+      .df-v24-report .valor{
+        font-weight:bold !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v24-report .status{
+        border-radius:999px !important;
+        padding:3px 7px !important;
+        font-weight:bold !important;
+        font-size:11px !important;
+        display:inline-block !important;
+      }
+
+      .df-v24-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v24-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v24-box{padding:14px !important;border-radius:16px !important;}
+        .df-v24-top{display:block !important;}
+        .df-v24-actions{justify-content:flex-start !important;margin-top:10px !important;}
+        .df-v24-grid,.df-v24-checks,.df-v24-report .centros{grid-template-columns:1fr !important;}
+        .df-v24-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v24-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        html, body{
+          background:#fff !important;
+          margin:0 !important;
+          padding:0 !important;
+        }
+
+        body > *{
+          display:none !important;
+        }
+
+        #df-v24-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-box{
+          display:block !important;
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-actions{
+          display:none !important;
+        }
+
+        #df-v24-report-content{
+          display:block !important;
+        }
+
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function montarRelatorioV24(f){
+    const contas = filtrarV24(f);
+    const r = resumoV24(contas);
+    const centros = porCentroV24(contas);
+
+    const filtroDesc = [
+      f.centro ? "Centro: " + f.centro : "Todos os centros",
+      f.status ? "Status: " + f.status : "Todos os status",
+      f.inicio ? "De " + dataBR(f.inicio) : "",
+      f.fim ? "Até " + dataBR(f.fim) : "",
+      f.aberto ? "Somente em aberto" : ""
+    ].filter(Boolean).join(" • ");
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV24(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV24(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV24(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centrosHTML = f.centros ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${moedaV24(info.total)}</b>
+          </div>
+        `).join("") : `<div>Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV24(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhes ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div>Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v24-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(filtroDesc)}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  async function abrirFiltrosV24(){
+    cssV24();
+    await buscarContasV24();
+
+    let bg = document.getElementById("df-v24-filter-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-filter-bg";
+      bg.className = "df-v24-bg";
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e => {
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    const centros = centrosV24().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+
+    bg.innerHTML = `
+      <div class="df-v24-box">
+        <div class="df-v24-top">
+          <div>
+            <h1 class="df-v24-title">Filtros do relatório</h1>
+            <div class="df-v24-sub">Base carregada: ${contasCacheV24.length} conta(s).</div>
+          </div>
+          <div class="df-v24-actions">
+            <button type="button" class="light" id="df24FecharFiltros">Fechar</button>
+          </div>
+        </div>
+
+        <div class="df-v24-grid">
+          <div class="df-v24-field"><label>Centro</label><select id="df24Centro"><option value="">Todos</option>${centros}</select></div>
+          <div class="df-v24-field"><label>Status</label><select id="df24Status"><option value="">Todos</option><option>Aberto</option><option>Pago</option></select></div>
+          <div class="df-v24-field"><label>Data inicial</label><input id="df24Inicio" type="date"></div>
+          <div class="df-v24-field"><label>Data final</label><input id="df24Fim" type="date"></div>
+        </div>
+
+        <div class="df-v24-checks">
+          <label class="df-v24-check"><input id="df24Resumo" type="checkbox" checked> Mostrar resumo</label>
+          <label class="df-v24-check"><input id="df24Centros" type="checkbox" checked> Mostrar centros</label>
+          <label class="df-v24-check"><input id="df24Detalhes" type="checkbox" checked> Mostrar detalhes</label>
+          <label class="df-v24-check"><input id="df24Aberto" type="checkbox"> Somente em aberto</label>
+        </div>
+
+        <div class="df-v24-actions" style="margin-top:16px;justify-content:flex-start!important">
+          <button type="button" id="df24GerarPdfBtn">Gerar PDF</button>
+          <button type="button" id="df24CsvBtn">Exportar CSV</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("df24FecharFiltros").addEventListener("click", () => bg.classList.remove("open"));
+    document.getElementById("df24GerarPdfBtn").addEventListener("click", abrirPreviewPDFV24);
+    document.getElementById("df24CsvBtn").addEventListener("click", exportarCSVV24);
+
+    bg.classList.add("open");
+  }
+
+  function abrirPreviewPDFV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    filtrosV24 = lerFiltrosV24();
+
+    const filtro = document.getElementById("df-v24-filter-bg");
+    if(filtro) filtro.classList.remove("open");
+
+    let bg = document.getElementById("df-v24-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-report-bg";
+      bg.className = "df-v24-bg";
+      bg.innerHTML = `
+        <div class="df-v24-box">
+          <div class="df-v24-actions no-print">
+            <button type="button" id="df24PrintBtn">Salvar PDF</button>
+            <button type="button" class="light" id="df24CloseReportBtn">Fechar</button>
+          </div>
+          <div id="df-v24-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", evt => {
+        if(evt.target === bg) bg.classList.remove("open");
+      });
+      document.getElementById("df24PrintBtn").addEventListener("click", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+        setTimeout(() => window.print(), 150);
+      }, true);
+      document.getElementById("df24CloseReportBtn").addEventListener("click", () => bg.classList.remove("open"));
+    }
+
+    document.getElementById("df-v24-report-content").innerHTML = montarRelatorioV24(filtrosV24);
+    bg.classList.add("open");
+  }
+
+  async function exportarCSVV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    const f = lerFiltrosV24();
+    const contas = filtrarV24(f);
+
+    if(!contas.length){
+      alert("Nenhum dado para exportar com esses filtros.");
+      return;
+    }
+
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c => [
+        c.descricao || c.conta || "",
+        Number(c.valor || 0).toFixed(2).replace(".", ","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+
+    const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+    const file = new File([blob], "relatorio-dona-flor.csv", {type:"text/csv"});
+
+    try{
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:"Relatório Dona Flor"});
+        return;
+      }
+    }catch(err){}
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.target = "_blank";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      try{ a.remove(); }catch(e){}
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }, 1000);
+  }
+
+  function limparBotoesRelatorioAntigos(){
+    document.querySelectorAll(".df-v221-report-actions").forEach(el => el.remove());
+  }
+
+  function configurarSelectV24(){
+    cssV24();
+    limparBotoesRelatorioAntigos();
+
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+
+    sel.onchange = null;
+    sel.removeAttribute("onchange");
+
+    if(!sel.dataset.df24Bound){
+      sel.dataset.df24Bound = "1";
+      sel.addEventListener("change", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+
+        if(sel.value === "pdf" || sel.value === "csv"){
+          abrirFiltrosV24();
+        }
+
+        sel.value = "";
+      }, true);
+    }
+  }
+
+  // Bloqueia funções antigas de PDF para não imprimirem código.
+  window.df24AbrirFiltros = abrirFiltrosV24;
+  window.df24GerarPdf = abrirPreviewPDFV24;
+  window.df24Csv = exportarCSVV24;
+
+  window.gerarRelatorioFinanceiroDF = abrirFiltrosV24;
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(sel && (sel.value === "pdf" || sel.value === "csv")){
+      abrirFiltrosV24();
+      sel.value = "";
+    }
+  };
+
+  window.df226GerarPDF = abrirPreviewPDFV24;
+  window.df224GerarPDF = abrirPreviewPDFV24;
+  window.df222GerarPDF = abrirPreviewPDFV24;
+  window.df23GerarPDF = abrirPreviewPDFV24;
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", configurarSelectV24, {once:true});
+  }else{
+    configurarSelectV24();
+  }
+
+  setTimeout(configurarSelectV24, 700);
+  setTimeout(configurarSelectV24, 1600);
+  setTimeout(configurarSelectV24, 3200);
+  setTimeout(configurarSelectV24, 5000);
+})();
+</script>
 </body>
 </html>`;
   }
@@ -23404,6 +28500,734 @@ ${montarRelatorioHTML(f)
   setTimeout(iniciar, 800);
   setTimeout(iniciar, 1800);
   setTimeout(iniciar, 3600);
+})();
+</script>
+<script>
+/* ==========================================================
+   DONA FLOR - V24 PDF FINAL SEM CÓDIGO
+   Correção definitiva do PDF:
+   - Não usa nova aba
+   - Não usa iframe
+   - Não usa Blob HTML para PDF
+   - Não usa document.write
+   - Não deixa scripts antigos sobrescreverem o botão
+   - PDF imprime APENAS o relatório dentro do app
+   - CSV mantido com integração real
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V24_PDF_FINAL__) return;
+  window.__DONA_FLOR_V24_PDF_FINAL__ = true;
+
+  let contasCacheV24 = [];
+  let filtrosV24 = {};
+
+  function esc(v){
+    return String(v ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function moedaV24(v){
+    try {
+      if (typeof moeda === "function") return moeda(v);
+    } catch(e){}
+    return Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+  }
+
+  function dataBR(v){
+    if(!v) return "-";
+    const s = String(v).slice(0,10);
+    const p = s.split("-");
+    if(p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+    return s;
+  }
+
+  function supaURL(){
+    try { if(typeof URL !== "undefined" && String(URL).includes("supabase")) return URL; } catch(e){}
+    try { if(typeof SupabaseURL !== "undefined") return SupabaseURL; } catch(e){}
+    return "";
+  }
+
+  function supaKEY(){
+    try { if(typeof KEY !== "undefined") return KEY; } catch(e){}
+    try { if(typeof SupabaseKey !== "undefined") return SupabaseKey; } catch(e){}
+    return "";
+  }
+
+  async function buscarContasV24(){
+    const url = supaURL();
+    const key = supaKEY();
+
+    try{
+      if(url && key){
+        const r = await fetch(url + "/rest/v1/df_contas?select=*&order=vencimento.asc", {
+          headers:{
+            "apikey": key,
+            "Authorization": "Bearer " + key,
+            "Content-Type": "application/json"
+          }
+        });
+        if(r.ok){
+          const data = await r.json();
+          if(Array.isArray(data)){
+            contasCacheV24 = data.filter(c => !c.deletado);
+            return contasCacheV24;
+          }
+        }
+      }
+    }catch(e){
+      console.warn("V24 relatório: fallback local", e);
+    }
+
+    try{
+      if(typeof visContas === "function"){
+        const data = visContas();
+        if(Array.isArray(data)){
+          contasCacheV24 = data.filter(c => !c.deletado);
+          return contasCacheV24;
+        }
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window.contasDados)){
+        contasCacheV24 = window.contasDados.filter(c => !c.deletado);
+        return contasCacheV24;
+      }
+    }catch(e){}
+
+    contasCacheV24 = [];
+    return contasCacheV24;
+  }
+
+  function centrosV24(){
+    return Array.from(new Set((contasCacheV24 || []).map(c => c.centro || c.centro_custo || c.loja).filter(Boolean))).sort();
+  }
+
+  function lerFiltrosV24(){
+    return {
+      centro: document.getElementById("df24Centro")?.value || "",
+      status: document.getElementById("df24Status")?.value || "",
+      inicio: document.getElementById("df24Inicio")?.value || "",
+      fim: document.getElementById("df24Fim")?.value || "",
+      resumo: document.getElementById("df24Resumo")?.checked !== false,
+      centros: document.getElementById("df24Centros")?.checked !== false,
+      detalhes: document.getElementById("df24Detalhes")?.checked !== false,
+      aberto: document.getElementById("df24Aberto")?.checked || false
+    };
+  }
+
+  function filtrarV24(f){
+    return (contasCacheV24 || []).filter(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "";
+      const status = c.status || "Aberto";
+      const data = String(c.vencimento || c.data_vencimento || "").slice(0,10);
+
+      if(f.centro && centro !== f.centro) return false;
+      if(f.status && status !== f.status) return false;
+      if(f.aberto && String(status).toLowerCase() === "pago") return false;
+      if(f.inicio && data && data < f.inicio) return false;
+      if(f.fim && data && data > f.fim) return false;
+      return true;
+    });
+  }
+
+  function resumoV24(contas){
+    const hoje = new Date().toISOString().slice(0,10);
+    const abertas = contas.filter(c => String(c.status || "").toLowerCase() !== "pago");
+    const pagas = contas.filter(c => String(c.status || "").toLowerCase() === "pago");
+    const vencidas = abertas.filter(c => String(c.vencimento || c.data_vencimento || "").slice(0,10) < hoje);
+    return {
+      qtd: contas.length,
+      totalAberto: abertas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalPago: pagas.reduce((s,c)=>s+Number(c.valor||0),0),
+      totalVencido: vencidas.reduce((s,c)=>s+Number(c.valor||0),0)
+    };
+  }
+
+  function porCentroV24(contas){
+    const map = {};
+    contas.forEach(c => {
+      const centro = c.centro || c.centro_custo || c.loja || "Sem centro";
+      if(!map[centro]) map[centro] = {qtd:0,total:0};
+      map[centro].qtd++;
+      map[centro].total += Number(c.valor || 0);
+    });
+    return Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  }
+
+  function cssV24(){
+    if(document.getElementById("df-v24-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v24-css";
+    style.textContent = `
+      .df-v221-report-actions,
+      .df-v221-mini-btn,
+      button[onclick*="df221AbrirFiltros"]{
+        display:none !important;
+      }
+
+      .df-v24-bg{
+        position:fixed !important;
+        inset:0 !important;
+        z-index:2147483647 !important;
+        background:rgba(15,23,42,.66) !important;
+        display:none !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:14px !important;
+        box-sizing:border-box !important;
+      }
+
+      .df-v24-bg.open{
+        display:flex !important;
+      }
+
+      .df-v24-box{
+        width:100% !important;
+        max-width:980px !important;
+        max-height:92vh !important;
+        overflow:auto !important;
+        background:#fff !important;
+        border:2px solid #000 !important;
+        border-radius:18px !important;
+        box-shadow:6px 6px 0 #000 !important;
+        padding:18px !important;
+        box-sizing:border-box !important;
+        color:#0f172a !important;
+        font-family:Arial, Helvetica, sans-serif !important;
+      }
+
+      .df-v24-top{
+        display:flex !important;
+        align-items:flex-start !important;
+        justify-content:space-between !important;
+        gap:12px !important;
+        border-bottom:1px solid #e2e8f0 !important;
+        padding-bottom:12px !important;
+        margin-bottom:14px !important;
+      }
+
+      .df-v24-title{
+        margin:0 !important;
+        font-size:24px !important;
+        line-height:1.1 !important;
+        font-weight:950 !important;
+        color:#0f766e !important;
+      }
+
+      .df-v24-sub{
+        color:#64748b !important;
+        margin-top:4px !important;
+        font-size:13px !important;
+      }
+
+      .df-v24-actions{
+        display:flex !important;
+        flex-wrap:wrap !important;
+        gap:8px !important;
+        justify-content:flex-end !important;
+      }
+
+      .df-v24-actions button{
+        min-height:40px !important;
+        border-radius:10px !important;
+        border:2px solid #000 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-weight:900 !important;
+        padding:8px 12px !important;
+        cursor:pointer !important;
+      }
+
+      .df-v24-actions .light{
+        background:#fff !important;
+        color:#000 !important;
+      }
+
+      .df-v24-grid{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:10px !important;
+      }
+
+      .df-v24-field label{
+        display:block !important;
+        font-size:12px !important;
+        font-weight:900 !important;
+        color:#64748b !important;
+        margin:0 0 4px !important;
+        text-transform:uppercase !important;
+      }
+
+      .df-v24-field input,
+      .df-v24-field select{
+        width:100% !important;
+        min-height:44px !important;
+        border:1px solid #cbd5e1 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        box-sizing:border-box !important;
+        font-size:15px !important;
+        background:#fff !important;
+      }
+
+      .df-v24-checks{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin-top:12px !important;
+      }
+
+      .df-v24-check{
+        border:1px solid #e2e8f0 !important;
+        border-radius:12px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+        font-weight:800 !important;
+      }
+
+      .df-v24-report h1{
+        color:#0f766e !important;
+        margin:0 !important;
+        font-size:24px !important;
+      }
+
+      .df-v24-report h2{
+        font-size:18px !important;
+        margin:18px 0 8px !important;
+      }
+
+      .df-v24-report .sub{
+        color:#64748b !important;
+        font-size:12px !important;
+        margin-top:4px !important;
+      }
+
+      .df-v24-report .cards{
+        display:grid !important;
+        grid-template-columns:repeat(4,1fr) !important;
+        gap:8px !important;
+        margin:12px 0 !important;
+      }
+
+      .df-v24-report .card-mini{
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:10px !important;
+        background:#fafaf9 !important;
+      }
+
+      .df-v24-report .label{
+        font-size:10px !important;
+        text-transform:uppercase !important;
+        color:#64748b !important;
+        font-weight:bold !important;
+      }
+
+      .df-v24-report .num{
+        font-size:17px !important;
+        font-weight:bold !important;
+        margin-top:3px !important;
+      }
+
+      .df-v24-report .centros{
+        display:grid !important;
+        grid-template-columns:repeat(2,1fr) !important;
+        gap:8px !important;
+        margin:8px 0 14px !important;
+      }
+
+      .df-v24-report .centro{
+        display:flex !important;
+        justify-content:space-between !important;
+        border:1px solid #e2e8f0 !important;
+        border-radius:10px !important;
+        padding:8px !important;
+      }
+
+      .df-v24-report .centro small{
+        display:block !important;
+        color:#64748b !important;
+      }
+
+      .df-v24-report table{
+        width:100% !important;
+        border-collapse:collapse !important;
+        font-size:12px !important;
+      }
+
+      .df-v24-report th{
+        background:#0f766e !important;
+        color:white !important;
+        text-align:left !important;
+        padding:7px !important;
+      }
+
+      .df-v24-report td{
+        border-bottom:1px solid #e2e8f0 !important;
+        padding:7px !important;
+        vertical-align:top !important;
+      }
+
+      .df-v24-report .valor{
+        font-weight:bold !important;
+        white-space:nowrap !important;
+      }
+
+      .df-v24-report .status{
+        border-radius:999px !important;
+        padding:3px 7px !important;
+        font-weight:bold !important;
+        font-size:11px !important;
+        display:inline-block !important;
+      }
+
+      .df-v24-report .pago{background:#dcfce7 !important;color:#15803d !important;}
+      .df-v24-report .aberto{background:#fef3c7 !important;color:#92400e !important;}
+
+      @media(max-width:760px){
+        .df-v24-box{padding:14px !important;border-radius:16px !important;}
+        .df-v24-top{display:block !important;}
+        .df-v24-actions{justify-content:flex-start !important;margin-top:10px !important;}
+        .df-v24-grid,.df-v24-checks,.df-v24-report .centros{grid-template-columns:1fr !important;}
+        .df-v24-report .cards{grid-template-columns:1fr 1fr !important;}
+        .df-v24-report table{font-size:11px !important;}
+      }
+
+      @media print{
+        html, body{
+          background:#fff !important;
+          margin:0 !important;
+          padding:0 !important;
+        }
+
+        body > *{
+          display:none !important;
+        }
+
+        #df-v24-report-bg{
+          display:block !important;
+          position:static !important;
+          inset:auto !important;
+          background:#fff !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-box{
+          display:block !important;
+          max-height:none !important;
+          overflow:visible !important;
+          box-shadow:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+          max-width:none !important;
+          padding:0 !important;
+          margin:0 !important;
+        }
+
+        #df-v24-report-bg .df-v24-actions{
+          display:none !important;
+        }
+
+        #df-v24-report-content{
+          display:block !important;
+        }
+
+        @page{margin:12mm;}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function montarRelatorioV24(f){
+    const contas = filtrarV24(f);
+    const r = resumoV24(contas);
+    const centros = porCentroV24(contas);
+
+    const filtroDesc = [
+      f.centro ? "Centro: " + f.centro : "Todos os centros",
+      f.status ? "Status: " + f.status : "Todos os status",
+      f.inicio ? "De " + dataBR(f.inicio) : "",
+      f.fim ? "Até " + dataBR(f.fim) : "",
+      f.aberto ? "Somente em aberto" : ""
+    ].filter(Boolean).join(" • ");
+
+    const cards = f.resumo ? `
+      <div class="cards">
+        <div class="card-mini"><div class="label">Quantidade</div><div class="num">${r.qtd}</div></div>
+        <div class="card-mini"><div class="label">Total aberto</div><div class="num">${moedaV24(r.totalAberto)}</div></div>
+        <div class="card-mini"><div class="label">Pago</div><div class="num">${moedaV24(r.totalPago)}</div></div>
+        <div class="card-mini"><div class="label">Vencidas</div><div class="num">${moedaV24(r.totalVencido)}</div></div>
+      </div>
+    ` : "";
+
+    const centrosHTML = f.centros ? `
+      <h2>Resumo por centro</h2>
+      <div class="centros">
+        ${centros.length ? centros.map(([centro,info]) => `
+          <div class="centro">
+            <div><strong>${esc(centro)}</strong><small>${info.qtd} conta(s)</small></div>
+            <b>${moedaV24(info.total)}</b>
+          </div>
+        `).join("") : `<div>Nenhum centro encontrado.</div>`}
+      </div>
+    ` : "";
+
+    const linhas = contas.map(c => {
+      const status = c.status || "Aberto";
+      const pago = String(status).toLowerCase() === "pago";
+      return `
+        <tr>
+          <td><strong>${esc(c.descricao || c.conta || "Sem descrição")}</strong></td>
+          <td>${esc(c.centro || c.centro_custo || c.loja || "-")}</td>
+          <td>${dataBR(c.vencimento || c.data_vencimento)}</td>
+          <td><span class="status ${pago ? "pago" : "aberto"}">${esc(status)}</span></td>
+          <td class="valor">${moedaV24(c.valor)}</td>
+          <td>${esc(c.observacao || "")}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const detalhes = f.detalhes ? `
+      <h2>Detalhamento</h2>
+      ${contas.length ? `
+        <table>
+          <thead><tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Obs.</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      ` : `<div>Nenhuma conta encontrada para os filtros selecionados.</div>`}
+    ` : "";
+
+    return `
+      <div class="df-v24-report">
+        <h1>Dona Flor Gestão Financeira</h1>
+        <div class="sub">Relatório financeiro • ${esc(new Date().toLocaleString("pt-BR"))}</div>
+        <div class="sub">${esc(filtroDesc)}</div>
+        ${cards}
+        ${centrosHTML}
+        ${detalhes}
+      </div>
+    `;
+  }
+
+  async function abrirFiltrosV24(){
+    cssV24();
+    await buscarContasV24();
+
+    let bg = document.getElementById("df-v24-filter-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-filter-bg";
+      bg.className = "df-v24-bg";
+      document.body.appendChild(bg);
+      bg.addEventListener("click", e => {
+        if(e.target === bg) bg.classList.remove("open");
+      });
+    }
+
+    const centros = centrosV24().map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+
+    bg.innerHTML = `
+      <div class="df-v24-box">
+        <div class="df-v24-top">
+          <div>
+            <h1 class="df-v24-title">Filtros do relatório</h1>
+            <div class="df-v24-sub">Base carregada: ${contasCacheV24.length} conta(s).</div>
+          </div>
+          <div class="df-v24-actions">
+            <button type="button" class="light" id="df24FecharFiltros">Fechar</button>
+          </div>
+        </div>
+
+        <div class="df-v24-grid">
+          <div class="df-v24-field"><label>Centro</label><select id="df24Centro"><option value="">Todos</option>${centros}</select></div>
+          <div class="df-v24-field"><label>Status</label><select id="df24Status"><option value="">Todos</option><option>Aberto</option><option>Pago</option></select></div>
+          <div class="df-v24-field"><label>Data inicial</label><input id="df24Inicio" type="date"></div>
+          <div class="df-v24-field"><label>Data final</label><input id="df24Fim" type="date"></div>
+        </div>
+
+        <div class="df-v24-checks">
+          <label class="df-v24-check"><input id="df24Resumo" type="checkbox" checked> Mostrar resumo</label>
+          <label class="df-v24-check"><input id="df24Centros" type="checkbox" checked> Mostrar centros</label>
+          <label class="df-v24-check"><input id="df24Detalhes" type="checkbox" checked> Mostrar detalhes</label>
+          <label class="df-v24-check"><input id="df24Aberto" type="checkbox"> Somente em aberto</label>
+        </div>
+
+        <div class="df-v24-actions" style="margin-top:16px;justify-content:flex-start!important">
+          <button type="button" id="df24GerarPdfBtn">Gerar PDF</button>
+          <button type="button" id="df24CsvBtn">Exportar CSV</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("df24FecharFiltros").addEventListener("click", () => bg.classList.remove("open"));
+    document.getElementById("df24GerarPdfBtn").addEventListener("click", abrirPreviewPDFV24);
+    document.getElementById("df24CsvBtn").addEventListener("click", exportarCSVV24);
+
+    bg.classList.add("open");
+  }
+
+  function abrirPreviewPDFV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    filtrosV24 = lerFiltrosV24();
+
+    const filtro = document.getElementById("df-v24-filter-bg");
+    if(filtro) filtro.classList.remove("open");
+
+    let bg = document.getElementById("df-v24-report-bg");
+    if(!bg){
+      bg = document.createElement("div");
+      bg.id = "df-v24-report-bg";
+      bg.className = "df-v24-bg";
+      bg.innerHTML = `
+        <div class="df-v24-box">
+          <div class="df-v24-actions no-print">
+            <button type="button" id="df24PrintBtn">Salvar PDF</button>
+            <button type="button" class="light" id="df24CloseReportBtn">Fechar</button>
+          </div>
+          <div id="df-v24-report-content"></div>
+        </div>
+      `;
+      document.body.appendChild(bg);
+      bg.addEventListener("click", evt => {
+        if(evt.target === bg) bg.classList.remove("open");
+      });
+      document.getElementById("df24PrintBtn").addEventListener("click", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+        setTimeout(() => window.print(), 150);
+      }, true);
+      document.getElementById("df24CloseReportBtn").addEventListener("click", () => bg.classList.remove("open"));
+    }
+
+    document.getElementById("df-v24-report-content").innerHTML = montarRelatorioV24(filtrosV24);
+    bg.classList.add("open");
+  }
+
+  async function exportarCSVV24(e){
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+
+    const f = lerFiltrosV24();
+    const contas = filtrarV24(f);
+
+    if(!contas.length){
+      alert("Nenhum dado para exportar com esses filtros.");
+      return;
+    }
+
+    const linhas = [
+      ["Descrição","Valor","Vencimento","Centro","Status","Observação"],
+      ...contas.map(c => [
+        c.descricao || c.conta || "",
+        Number(c.valor || 0).toFixed(2).replace(".", ","),
+        dataBR(c.vencimento || c.data_vencimento),
+        c.centro || c.centro_custo || c.loja || "",
+        c.status || "Aberto",
+        c.observacao || ""
+      ])
+    ];
+
+    const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\ufeff" + csv], {type:"text/csv;charset=utf-8"});
+    const file = new File([blob], "relatorio-dona-flor.csv", {type:"text/csv"});
+
+    try{
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title:"Relatório Dona Flor"});
+        return;
+      }
+    }catch(err){}
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio-dona-flor.csv";
+    a.target = "_blank";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      try{ a.remove(); }catch(e){}
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }, 1000);
+  }
+
+  function limparBotoesRelatorioAntigos(){
+    document.querySelectorAll(".df-v221-report-actions").forEach(el => el.remove());
+  }
+
+  function configurarSelectV24(){
+    cssV24();
+    limparBotoesRelatorioAntigos();
+
+    const sel = document.getElementById("acaoRelatorio");
+    if(!sel) return;
+
+    sel.onchange = null;
+    sel.removeAttribute("onchange");
+
+    if(!sel.dataset.df24Bound){
+      sel.dataset.df24Bound = "1";
+      sel.addEventListener("change", function(evt){
+        evt.preventDefault();
+        evt.stopPropagation();
+        evt.stopImmediatePropagation();
+
+        if(sel.value === "pdf" || sel.value === "csv"){
+          abrirFiltrosV24();
+        }
+
+        sel.value = "";
+      }, true);
+    }
+  }
+
+  // Bloqueia funções antigas de PDF para não imprimirem código.
+  window.df24AbrirFiltros = abrirFiltrosV24;
+  window.df24GerarPdf = abrirPreviewPDFV24;
+  window.df24Csv = exportarCSVV24;
+
+  window.gerarRelatorioFinanceiroDF = abrirFiltrosV24;
+  window.executarRelatorio = function(){
+    const sel = document.getElementById("acaoRelatorio");
+    if(sel && (sel.value === "pdf" || sel.value === "csv")){
+      abrirFiltrosV24();
+      sel.value = "";
+    }
+  };
+
+  window.df226GerarPDF = abrirPreviewPDFV24;
+  window.df224GerarPDF = abrirPreviewPDFV24;
+  window.df222GerarPDF = abrirPreviewPDFV24;
+  window.df23GerarPDF = abrirPreviewPDFV24;
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", configurarSelectV24, {once:true});
+  }else{
+    configurarSelectV24();
+  }
+
+  setTimeout(configurarSelectV24, 700);
+  setTimeout(configurarSelectV24, 1600);
+  setTimeout(configurarSelectV24, 3200);
+  setTimeout(configurarSelectV24, 5000);
 })();
 </script>
 </body>

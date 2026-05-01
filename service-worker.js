@@ -1,4 +1,4 @@
-const CACHE_NAME = "dona-flor-v21-3-popup-forms-fix";
+const CACHE_NAME = "dona-flor-v21-5-menu-config";
 const ASSETS = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
@@ -2301,6 +2301,526 @@ self.addEventListener("notificationclick", event => {
   }
 
   fecharDepoisSalvar();
+
+  setTimeout(aplicar, 600);
+  setTimeout(aplicar, 1600);
+  setTimeout(aplicar, 3200);
+})();
+
+
+
+
+/* ==========================================================
+   DONA FLOR - V21.4 POP-UP COM FORMULÁRIO VISÍVEL
+   Correção do bug:
+   - Pop-up abria, mas só aparecia o título/triângulo
+   - Agora força o corpo do formulário a aparecer dentro do pop-up
+   - Remove estado recolhido/collapsed quando abre
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V214_POPUP_BODY_FIX__) return;
+  window.__DONA_FLOR_V214_POPUP_BODY_FIX__ = true;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function css(){
+    if(document.getElementById("df-v214-popup-body-css")) return;
+    const style = document.createElement("style");
+    style.id = "df-v214-popup-body-css";
+    style.textContent = `
+      /* Dentro do pop-up, o formulário NUNCA pode ficar recolhido */
+      .df-v213-body #atalhoLembrete,
+      .df-v213-body #atalhoLancamento,
+      .df-v212-body #atalhoLembrete,
+      .df-v212-body #atalhoLancamento,
+      .df-v21-body #atalhoLembrete,
+      .df-v21-body #atalhoLancamento {
+        display:block !important;
+        visibility:visible !important;
+        opacity:1 !important;
+        background:#fff !important;
+        border:0 !important;
+        box-shadow:none !important;
+        padding:0 !important;
+        margin:0 !important;
+      }
+
+      .df-v213-body #atalhoLembrete .collapsible-body,
+      .df-v213-body #atalhoLancamento .collapsible-body,
+      .df-v212-body #atalhoLembrete .collapsible-body,
+      .df-v212-body #atalhoLancamento .collapsible-body,
+      .df-v21-body #atalhoLembrete .collapsible-body,
+      .df-v21-body #atalhoLancamento .collapsible-body {
+        display:block !important;
+        visibility:visible !important;
+        opacity:1 !important;
+      }
+
+      .df-v213-body #atalhoLembrete h2,
+      .df-v213-body #atalhoLancamento h2,
+      .df-v213-body #atalhoLembrete .section-title-row,
+      .df-v213-body #atalhoLancamento .section-title-row,
+      .df-v212-body #atalhoLembrete h2,
+      .df-v212-body #atalhoLancamento h2,
+      .df-v21-body #atalhoLembrete h2,
+      .df-v21-body #atalhoLancamento h2 {
+        display:none !important;
+      }
+
+      .df-v213-body input,
+      .df-v213-body textarea,
+      .df-v213-body select,
+      .df-v21-body input,
+      .df-v21-body textarea,
+      .df-v21-body select {
+        display:block !important;
+        visibility:visible !important;
+        opacity:1 !important;
+        width:100% !important;
+        min-height:44px !important;
+        box-sizing:border-box !important;
+        margin-bottom:10px !important;
+      }
+
+      .df-v213-body button,
+      .df-v21-body button {
+        display:flex !important;
+        visibility:visible !important;
+        opacity:1 !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function removerOcultos(el){
+    if(!el) return;
+    const all = [el, ...Array.from(el.querySelectorAll("*"))];
+
+    all.forEach(node => {
+      if(node.classList){
+        [
+          "df-v21-hidden",
+          "df-v212-hidden",
+          "df-v213-hidden",
+          "df-v2041-hidden",
+          "df-v2042-hidden",
+          "df-v2044-hidden",
+          "df-hidden-v203",
+          "df-hidden-v204",
+          "df-v206-hidden",
+          "df-v208-hidden",
+          "is-collapsed"
+        ].forEach(c => node.classList.remove(c));
+      }
+
+      if(node.style){
+        if(node.style.display === "none") node.style.display = "";
+        node.style.visibility = "";
+        node.style.opacity = "";
+      }
+    });
+
+    el.querySelectorAll(".collapsible-body").forEach(body => {
+      body.style.display = "block";
+      body.style.visibility = "visible";
+      body.style.opacity = "1";
+    });
+  }
+
+  function corrigirFormDentroPopup(){
+    css();
+
+    ["atalhoLembrete", "atalhoLancamento"].forEach(id => {
+      const form = document.getElementById(id);
+      if(!form) return;
+
+      const dentroPopup = form.closest(".df-v213-body,.df-v212-body,.df-v21-body");
+      if(dentroPopup){
+        removerOcultos(form);
+        form.classList.remove("is-collapsed");
+        form.style.display = "block";
+
+        const body = form.querySelector(".collapsible-body");
+        if(body) body.style.display = "block";
+      }
+    });
+  }
+
+  // Sobrescreve/acompanha abertura de modal sem depender da versão anterior
+  function abrirFormSeguro(tipo, titulo){
+    css();
+
+    const form = document.getElementById(tipo === "nota" ? "atalhoLembrete" : "atalhoLancamento");
+    if(!form){
+      alert(tipo === "nota" ? "Formulário de nota não encontrado." : "Formulário de conta não encontrado.");
+      return;
+    }
+
+    let modal = document.getElementById("df-v214-modal");
+    if(!modal){
+      modal = document.createElement("div");
+      modal.id = "df-v214-modal";
+      modal.className = "df-v213-modal";
+      modal.innerHTML = `
+        <div class="df-v213-box">
+          <div class="df-v213-head">
+            <div class="df-v213-title"></div>
+            <button type="button" class="df-v213-close">×</button>
+          </div>
+          <div class="df-v213-body"></div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.querySelector(".df-v213-close").onclick = () => fecharV214();
+      modal.onclick = (e) => { if(e.target === modal) fecharV214(); };
+    }
+
+    modal.querySelector(".df-v213-title").textContent = titulo;
+    const body = modal.querySelector(".df-v213-body");
+    body.innerHTML = "";
+    body.appendChild(form);
+
+    removerOcultos(form);
+    form.style.display = "block";
+    modal.classList.add("open");
+
+    setTimeout(() => {
+      corrigirFormDentroPopup();
+      const first = form.querySelector("input,textarea,select");
+      if(first) first.focus();
+    }, 120);
+  }
+
+  function fecharV214(){
+    const modal = document.getElementById("df-v214-modal");
+    if(modal) modal.classList.remove("open");
+
+    let parking = document.getElementById("df-v213-parking");
+    if(!parking){
+      parking = document.createElement("div");
+      parking.id = "df-v213-parking";
+      parking.style.display = "none";
+      document.body.appendChild(parking);
+    }
+
+    ["atalhoLembrete","atalhoLancamento"].forEach(id => {
+      const form = document.getElementById(id);
+      if(form && form.closest("#df-v214-modal")){
+        parking.appendChild(form);
+      }
+    });
+  }
+
+  function interceptarBotoesPlus(){
+    document.addEventListener("click", function(e){
+      const btn = e.target.closest("button");
+      if(!btn) return;
+
+      const isPlus = txt(btn) === "+";
+      if(!isPlus) return;
+
+      const blocoNotas = btn.closest(".card,section,article,div")?.innerText?.toLowerCase().includes("bloco de notas");
+      const contasPagar = btn.closest(".card,section,article,div")?.innerText?.toLowerCase().includes("contas a pagar");
+
+      if(blocoNotas || btn.title?.toLowerCase().includes("nota")){
+        e.preventDefault();
+        e.stopPropagation();
+        if(typeof limparCamposNotaDF === "function") {
+          try { limparCamposNotaDF(); } catch(err){}
+        }
+        abrirFormSeguro("nota", "Lançamento de notas");
+      } else if(contasPagar || btn.title?.toLowerCase().includes("conta")){
+        e.preventDefault();
+        e.stopPropagation();
+        if(typeof cancelarEdicaoContaDF === "function") {
+          try { cancelarEdicaoContaDF(); } catch(err){}
+        }
+        abrirFormSeguro("conta", "Lançamento de contas");
+      }
+    }, true);
+  }
+
+  function interceptarEditar(){
+    const oldConta = window.editarContaDF;
+    window.editarContaDF = function(id){
+      try { if(typeof oldConta === "function") oldConta(id); } catch(e){}
+      setTimeout(() => abrirFormSeguro("conta", "Editar conta"), 100);
+    };
+
+    const oldNota = window.editarNotaDF;
+    window.editarNotaDF = function(id){
+      try { if(typeof oldNota === "function") oldNota(id); } catch(e){}
+      setTimeout(() => abrirFormSeguro("nota", "Editar nota"), 100);
+    };
+  }
+
+  function aplicar(){
+    css();
+    corrigirFormDentroPopup();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", aplicar, {once:true});
+  }else{
+    aplicar();
+  }
+
+  interceptarBotoesPlus();
+  interceptarEditar();
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
+  setTimeout(aplicar, 3200);
+})();
+
+
+
+
+/* ==========================================================
+   DONA FLOR - V21.5 MENU + CONFIGURAÇÕES + SUBMENUS
+   Correções:
+   - Ao abrir Configurações, fecha o menu lateral no mobile
+   - Restaura submenus do menu lateral
+   - Mantém pop-up visível da V21.4
+   ========================================================== */
+(function(){
+  if (window.__DONA_FLOR_V215_MENU_CONFIG__) return;
+  window.__DONA_FLOR_V215_MENU_CONFIG__ = true;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function injectCss(){
+    if(document.getElementById("df-v215-menu-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v215-menu-css";
+    style.textContent = `
+      /* Restaura submenus escondidos por versões anteriores */
+      nav .df-hidden-v203,
+      nav .df-hidden-v204,
+      nav .df-v208-hidden,
+      nav .df-v206-hidden,
+      nav .df-v2041-hidden,
+      nav .df-v2042-hidden,
+      nav .df-v2044-hidden,
+      nav .df-v21-hidden,
+      nav .df-v212-hidden,
+      nav .df-v213-hidden,
+      nav .df-v214-hidden,
+      aside .df-hidden-v203,
+      aside .df-hidden-v204,
+      aside .df-v208-hidden,
+      aside .df-v206-hidden,
+      aside .df-v2041-hidden,
+      aside .df-v2042-hidden,
+      aside .df-v2044-hidden,
+      aside .df-v21-hidden,
+      aside .df-v212-hidden,
+      aside .df-v213-hidden,
+      aside .df-v214-hidden,
+      .sidebar .df-hidden-v203,
+      .sidebar .df-hidden-v204,
+      .sidebar .df-v208-hidden,
+      .sidebar .df-v206-hidden,
+      .sidebar .df-v2041-hidden,
+      .sidebar .df-v2042-hidden,
+      .sidebar .df-v2044-hidden,
+      .sidebar .df-v21-hidden,
+      .sidebar .df-v212-hidden,
+      .sidebar .df-v213-hidden,
+      .sidebar .df-v214-hidden,
+      .menu .df-hidden-v203,
+      .menu .df-hidden-v204,
+      .menu .df-v208-hidden,
+      .menu .df-v206-hidden,
+      .menu .df-v2041-hidden,
+      .menu .df-v2042-hidden,
+      .menu .df-v2044-hidden,
+      .menu .df-v21-hidden,
+      .menu .df-v212-hidden,
+      .menu .df-v213-hidden,
+      .menu .df-v214-hidden,
+      [class*="side"] .df-hidden-v203,
+      [class*="side"] .df-hidden-v204,
+      [class*="side"] .df-v208-hidden,
+      [class*="side"] .df-v206-hidden,
+      [class*="side"] .df-v2041-hidden,
+      [class*="side"] .df-v2042-hidden,
+      [class*="side"] .df-v2044-hidden,
+      [class*="side"] .df-v21-hidden,
+      [class*="side"] .df-v212-hidden,
+      [class*="side"] .df-v213-hidden,
+      [class*="side"] .df-v214-hidden {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+
+      /* Mantém os formulários estacionados escondidos */
+      #df-v213-parking,
+      #df-v213-parking #atalhoLancamento,
+      #df-v213-parking #atalhoLembrete {
+        display: none !important;
+      }
+
+      /* Configurações acima de tudo */
+      #configModal,
+      .config-modal-bg,
+      .config-modal {
+        z-index: 1000001 !important;
+      }
+
+      /* Quando configurações abrir, evita menu cobrindo a tela */
+      body.df-config-open .sidebar,
+      body.df-config-open aside,
+      body.df-config-open nav.mobile-menu,
+      body.df-config-open .mobile-menu {
+        transform: translateX(-110%) !important;
+      }
+
+      body.df-config-open .sidebar.open,
+      body.df-config-open .sidebar.active,
+      body.df-config-open aside.open,
+      body.df-config-open aside.active {
+        transform: translateX(-110%) !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function restaurarSubmenus(){
+    const nomes = [
+      "contas a pagar",
+      "lançamento",
+      "lancamento",
+      "lançamento de contas",
+      "lancamento de contas",
+      "lançamento de notas",
+      "lancamento de notas",
+      "lembretes",
+      "notas",
+      "gestão de usuários",
+      "gestao de usuarios",
+      "usuários cadastrados",
+      "usuarios cadastrados",
+      "permissões por loja",
+      "permissoes por loja",
+      "lixeira",
+      "contas excluídas",
+      "contas excluidas",
+      "notas excluídas",
+      "notas excluidas",
+      "configurações",
+      "configuracoes",
+      "notificações",
+      "notificacoes",
+      "configuração de e-mail",
+      "configuracao de e-mail",
+      "geral"
+    ];
+
+    document.querySelectorAll("nav *, aside *, .sidebar *, .menu *, [class*='side'] *").forEach(el => {
+      const t = txt(el).toLowerCase();
+      if(nomes.includes(t)){
+        [
+          "df-hidden-v203","df-hidden-v204","df-v208-hidden","df-v206-hidden",
+          "df-v2041-hidden","df-v2042-hidden","df-v2044-hidden",
+          "df-v21-hidden","df-v212-hidden","df-v213-hidden","df-v214-hidden"
+        ].forEach(c => el.classList.remove(c));
+
+        if(el.style){
+          if(el.style.display === "none") el.style.display = "";
+          el.style.visibility = "";
+          el.style.opacity = "";
+        }
+      }
+    });
+  }
+
+  function fecharMenuMobile(){
+    try{
+      if(typeof fecharMenuMobileDF === "function"){
+        fecharMenuMobileDF();
+      }
+    }catch(e){}
+
+    document.querySelectorAll(".sidebar, aside, nav.mobile-menu, .mobile-menu, .drawer, .side-menu").forEach(el => {
+      el.classList.remove("open","active","show","is-open");
+      if(el.style){
+        // só mexe se estiver em modo mobile / overlay
+        if(window.innerWidth <= 900){
+          el.style.transform = "";
+        }
+      }
+    });
+
+    document.querySelectorAll(".overlay,.menu-overlay,.backdrop").forEach(el => {
+      el.classList.remove("open","active","show");
+      if(window.innerWidth <= 900 && el.style.display === "block") el.style.display = "none";
+    });
+  }
+
+  function marcarConfigAberta(){
+    const modal = document.getElementById("configModal") || document.querySelector(".config-modal-bg");
+    if(!modal) return;
+    const aberto = modal.style.display === "flex" || modal.classList.contains("open") || modal.classList.contains("show") || getComputedStyle(modal).display !== "none";
+    document.body.classList.toggle("df-config-open", aberto);
+  }
+
+  function interceptarConfiguracoes(){
+    const oldAbrir = window.abrirConfiguracoes;
+    window.abrirConfiguracoes = function(){
+      fecharMenuMobile();
+      document.body.classList.add("df-config-open");
+      if(typeof oldAbrir === "function"){
+        return oldAbrir.apply(this, arguments);
+      }
+      const modal = document.getElementById("configModal") || document.querySelector(".config-modal-bg");
+      if(modal) modal.style.display = "flex";
+    };
+
+    const oldFechar = window.fecharConfiguracoes;
+    window.fecharConfiguracoes = function(){
+      document.body.classList.remove("df-config-open");
+      if(typeof oldFechar === "function"){
+        return oldFechar.apply(this, arguments);
+      }
+      const modal = document.getElementById("configModal") || document.querySelector(".config-modal-bg");
+      if(modal) modal.style.display = "none";
+    };
+
+    document.addEventListener("click", function(e){
+      const alvo = e.target.closest("button,a,div,span,li");
+      if(!alvo) return;
+      const t = txt(alvo).toLowerCase();
+
+      if(t === "configurações" || t === "configuracoes" || t.includes("configurações") || t.includes("configuracoes")){
+        setTimeout(function(){
+          fecharMenuMobile();
+          document.body.classList.add("df-config-open");
+          marcarConfigAberta();
+        }, 50);
+      }
+    }, true);
+  }
+
+  function aplicar(){
+    injectCss();
+    restaurarSubmenus();
+    marcarConfigAberta();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", aplicar, {once:true});
+  }else{
+    aplicar();
+  }
+
+  interceptarConfiguracoes();
 
   setTimeout(aplicar, 600);
   setTimeout(aplicar, 1600);

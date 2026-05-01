@@ -1015,3 +1015,187 @@ self.addEventListener("notificationclick", event => {
   setTimeout(aplicar, 1600);
 })();
 
+
+
+
+/* =========================
+   V20.5 - Segurança + UX Mobile
+   - Soft delete: contas/notas vão para lixeira
+   - Modal fecha ao clicar fora
+   - Tipografia moderna
+   - Cards com mais respiro
+   - Botões com touch target melhor no celular
+   ========================= */
+(function(){
+  if (window.__DF_V205_SEG_UX__) return;
+  window.__DF_V205_SEG_UX__ = true;
+
+  function injectCss(){
+    if (document.getElementById("df-v205-seg-ux-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v205-seg-ux-css";
+    style.textContent = `
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif !important;
+        background-color: #F1F5F9 !important;
+        color: #1F2937 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .df-force-white-card,
+      .card,
+      section {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E2E8F0 !important;
+        border-radius: 12px !important;
+        padding: 20px !important;
+        margin-bottom: 15px !important;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.10) !important;
+      }
+
+      .df-btn-small-prioridade,
+      button[onclick*="excluir"],
+      button[onclick*="injetarForm"],
+      button[onclick*="editar"],
+      button[onclick*="alterar"],
+      select,
+      .df-note-actions-v20 button,
+      .df-note-actions-v201 button,
+      .df-note-actions-v21 button,
+      .df-note-actions-v20 select,
+      .df-note-actions-v201 select,
+      .df-note-actions-v21 select {
+        min-height: 40px !important;
+        padding: 8px 12px !important;
+        margin: 4px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+      }
+
+      input, textarea, select {
+        font-family: inherit !important;
+        font-size: 15px !important;
+      }
+
+      button {
+        font-family: inherit !important;
+        touch-action: manipulation !important;
+      }
+
+      @media (max-width: 760px) {
+        .df-force-white-card,
+        .card,
+        section {
+          padding: 16px !important;
+          margin-bottom: 12px !important;
+        }
+
+        button,
+        select {
+          min-height: 42px !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function softDeleteContaFallback(id){
+    if (typeof SupabaseURL === "undefined" || typeof SupabaseKey === "undefined") return null;
+
+    return fetch(SupabaseURL + "/rest/v1/df_contas?id=eq." + id, {
+      method: "PATCH",
+      headers: {
+        "apikey": SupabaseKey,
+        "Authorization": "Bearer " + SupabaseKey,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+      },
+      body: JSON.stringify({
+        deletado: true,
+        data_exclusao: new Date().toISOString()
+      })
+    });
+  }
+
+  function softDeleteNotaFallback(id){
+    if (typeof SupabaseURL === "undefined" || typeof SupabaseKey === "undefined") return null;
+
+    return fetch(SupabaseURL + "/rest/v1/df_notas?id=eq." + id, {
+      method: "PATCH",
+      headers: {
+        "apikey": SupabaseKey,
+        "Authorization": "Bearer " + SupabaseKey,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+      },
+      body: JSON.stringify({
+        deletado: true,
+        data_exclusao: new Date().toISOString()
+      })
+    });
+  }
+
+  // Sobrescreve funções globais antigas se existirem
+  window.excluirConta = async function(id){
+    if (typeof isAdmin === "function" && !isAdmin()) {
+      return alert("Operação restrita a administradores.");
+    }
+
+    if (confirm("Deseja mover esta conta para a Lixeira?")) {
+      if (typeof render_loading === "function") render_loading(true);
+
+      await softDeleteContaFallback(id);
+
+      if (typeof carregar === "function") carregar();
+    }
+  };
+
+  window.excluirNota = async function(id){
+    if (typeof isAdmin === "function" && !isAdmin()) {
+      return alert("Operação restrita a administradores.");
+    }
+
+    if (confirm("Deseja mover esta nota para a Lixeira?")) {
+      if (typeof render_loading === "function") render_loading(true);
+
+      await softDeleteNotaFallback(id);
+
+      if (typeof carregar === "function") carregar();
+    }
+  };
+
+  function fecharModalGenerico(modal){
+    if (!modal) return;
+    modal.classList.remove("open");
+    modal.style.display = "none";
+  }
+
+  document.addEventListener("click", function(event){
+    const modalNotas = document.getElementById("df-modal-notas-v203");
+    const modalConta = document.getElementById("df-modal-conta-v204");
+
+    if (modalNotas && event.target === modalNotas) {
+      fecharModalGenerico(modalNotas);
+      if (typeof fecharModal === "function") {
+        try { fecharModal(); } catch(e){}
+      }
+      if (typeof fecharModalNotas === "function") {
+        try { fecharModalNotas(); } catch(e){}
+      }
+    }
+
+    if (modalConta && event.target === modalConta) {
+      fecharModalGenerico(modalConta);
+      if (typeof fecharModalConta === "function") {
+        try { fecharModalConta(); } catch(e){}
+      }
+    }
+  });
+
+  injectCss();
+})();
+

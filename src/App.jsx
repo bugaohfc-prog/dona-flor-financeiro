@@ -16,6 +16,8 @@ const CENTROS = [
   "Pessoal",
 ];
 
+const USER_STORAGE_KEY = "df_user_v27";
+
 export default function App() {
   const [usuario, setUsuario] = useState(null);
   const [contas, setContas] = useState([]);
@@ -26,41 +28,16 @@ export default function App() {
   const [periodo, setPeriodo] = useState({ inicio: "", fim: "" });
 
   useEffect(() => {
-    async function getUser() {
-      const { data } = await supabase.auth.getUser();
+    const userSalvo = localStorage.getItem(USER_STORAGE_KEY);
 
-      if (data?.user) {
-        setUsuario({
-          id: data.user.id,
-          email: data.user.email,
-          nome: data.user.email,
-          usuario: data.user.email,
-          tipo: "admin",
-          pode_pagar: true,
-        });
-      }
-    }
-
-    getUser();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUsuario({
-          id: session.user.id,
-          email: session.user.email,
-          nome: session.user.email,
-          usuario: session.user.email,
-          tipo: "admin",
-          pode_pagar: true,
-        });
-      } else {
+    if (userSalvo) {
+      try {
+        setUsuario(JSON.parse(userSalvo));
+      } catch {
+        localStorage.removeItem(USER_STORAGE_KEY);
         setUsuario(null);
       }
-    });
-
-    return () => {
-      listener?.subscription?.unsubscribe();
-    };
+    }
   }, []);
 
   const isAdmin = String(usuario?.tipo || "").toLowerCase() === "admin";
@@ -80,21 +57,33 @@ export default function App() {
       supabase.from("df_notas").select("*").order("data_lembrete"),
     ]);
 
-    if (contasRes.error) setErro(contasRes.error.message);
-    if (notasRes.error) setErro(notasRes.error.message);
+    if (contasRes.error) {
+      setErro(contasRes.error.message);
+    }
 
-    setContas((contasRes.data || []).filter((c) => !c.deletado));
-    setNotas((notasRes.data || []).filter((n) => !n.deletado));
+    if (notasRes.error) {
+      setErro(notasRes.error.message);
+    }
+
+    setContas((contasRes.data || []).filter((c) => c.deletado !== true));
+    setNotas((notasRes.data || []).filter((n) => n.deletado !== true));
 
     setLoading(false);
   }
 
   useEffect(() => {
-    if (usuario) carregar();
+    if (usuario) {
+      carregar();
+    }
   }, [usuario]);
 
+  function entrar(user) {
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    setUsuario(user);
+  }
+
   async function sair() {
-    await supabase.auth.signOut();
+    localStorage.removeItem(USER_STORAGE_KEY);
     setUsuario(null);
   }
 
@@ -134,12 +123,20 @@ export default function App() {
     };
 
     const { error } = await supabase.from("df_contas").insert(payload);
-    if (error) return alert(error.message);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
     carregar();
   }
 
   async function alternarPago(conta) {
-    if (!canPay) return alert("Usuário sem permissão para marcar pagamento.");
+    if (!canPay) {
+      alert("Usuário sem permissão para marcar pagamento.");
+      return;
+    }
 
     const novoStatus = conta.status === "Pago" ? "Aberto" : "Pago";
 
@@ -148,7 +145,11 @@ export default function App() {
       .update({ status: novoStatus })
       .eq("id", conta.id);
 
-    if (error) return alert(error.message);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
     carregar();
   }
 
@@ -163,7 +164,11 @@ export default function App() {
       })
       .eq("id", conta.id);
 
-    if (error) return alert(error.message);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
     carregar();
   }
 
@@ -178,7 +183,12 @@ export default function App() {
     };
 
     const { error } = await supabase.from("df_notas").insert(payload);
-    if (error) return alert(error.message);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
     carregar();
   }
 
@@ -193,7 +203,11 @@ export default function App() {
       })
       .eq("id", nota.id);
 
-    if (error) return alert(error.message);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
     carregar();
   }
 
@@ -203,12 +217,16 @@ export default function App() {
       .update({ prioridade })
       .eq("id", nota.id);
 
-    if (error) return alert(error.message);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
     carregar();
   }
 
   if (!usuario) {
-    return <Login />;
+    return <Login onLogin={entrar} />;
   }
 
   return (
@@ -216,8 +234,9 @@ export default function App() {
       <header className="topbar">
         <div>
           <strong>Dona Flor Gestão Financeira</strong>
-          <span>Olá, {usuario?.email}</span>
+          <span>Olá, {usuario?.nome || usuario?.usuario || usuario?.email}</span>
         </div>
+
         <button onClick={sair}>Sair</button>
       </header>
 
@@ -239,9 +258,7 @@ export default function App() {
           <input
             type="date"
             value={periodo.fim}
-            onChange={(e) =>
-              setPeriodo({ ...periodo, fim: e.target.value })
-            }
+            onChange={(e) => setPeriodo({ ...periodo, fim: e.target.value })}
           />
 
           <button onClick={() => setPeriodo({ inicio: "", fim: "" })}>

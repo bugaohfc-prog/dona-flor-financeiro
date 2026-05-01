@@ -2697,7 +2697,7 @@ if(abrirSyncOriginalDF){
     document.querySelectorAll("a,button,li,p,span,div").forEach(el => {
       const t = texto(el);
       if (/^(\+|•|\s)*lançamento de notas$/i.test(t) || /^(\+|•|\s)*lancamento de notas$/i.test(t)) {
-        el.classList.add("df-hidden-v203");
+        el.classList.remove('df-hidden-v203');
       }
     });
   }
@@ -2763,7 +2763,7 @@ if(abrirSyncOriginalDF){
 
     // mantém o form dentro do modal escondido para não voltar a ocupar tela
     if(formNotasOriginal){
-      formNotasOriginal.classList.add("df-hidden-v203");
+      formNotasOriginal.classList.remove('df-hidden-v203');
     }
   }
 
@@ -2777,7 +2777,7 @@ if(abrirSyncOriginalDF){
     formNotasOriginal = formCard;
     formNotasParentOriginal = formCard.parentNode;
     formNotasNextSibling = formCard.nextSibling;
-    formNotasOriginal.classList.add("df-hidden-v203");
+    formNotasOriginal.classList.remove('df-hidden-v203');
   }
 
   function adicionarBotaoNoBlocoNotas(){
@@ -3011,7 +3011,7 @@ if(abrirSyncOriginalDF){
         t === "lançamento de notas" ||
         t === "lancamento de notas"
       ) {
-        el.classList.add("df-hidden-v204");
+        el.classList.remove('df-hidden-v204');
       }
     });
   }
@@ -3058,7 +3058,7 @@ if(abrirSyncOriginalDF){
   function fecharModalConta(){
     const modal = document.getElementById("df-modal-conta-v204");
     if(modal) modal.classList.remove("open");
-    if(formContaOriginal) formContaOriginal.classList.add("df-hidden-v204");
+    if(formContaOriginal) formContaOriginal.classList.remove('df-hidden-v204');
   }
 
   function capturarFormConta(){
@@ -3069,7 +3069,7 @@ if(abrirSyncOriginalDF){
     if(!/descrição|descricao|valor|salvar conta/i.test(t)) return;
 
     formContaOriginal = formCard;
-    formContaOriginal.classList.add("df-hidden-v204");
+    formContaOriginal.classList.remove('df-hidden-v204');
   }
 
   function adicionarBotaoConta(){
@@ -3133,7 +3133,7 @@ if(abrirSyncOriginalDF){
 </script>
 <script>
 /* =========================
-   V20.4.1 - Correção botão + do Bloco de notas
+   V20.4.1 desativado pelo V20.4.2 popup
    Base: V20.4 estável
    - O botão + abre/fecha o formulário de lançamento de notas
    - Sem modal/overlay
@@ -3141,7 +3141,7 @@ if(abrirSyncOriginalDF){
    ========================= */
 (function(){
   if (window.__DF_V2041_PLUS_NOTAS__) return;
-  window.__DF_V2041_PLUS_NOTAS__ = true;
+  window.__DF_V2041_PLUS_NOTAS__ = true; /* desativado */
 
   let formNota = null;
 
@@ -3349,6 +3349,436 @@ if(abrirSyncOriginalDF){
 
   setTimeout(aplicar, 700);
   setTimeout(aplicar, 1600);
+})();
+</script>
+<script>
+/* =========================
+   V20.4.2 - Botão + em POP-UP
+   Base: V20.4.1 estável
+   - O botão + do Bloco de notas abre uma tela pop-up para digitar e salvar
+   - O formulário não fica fixo na tela
+   - Fecha no X ou clicando fora
+   ========================= */
+(function(){
+  if (window.__DF_V2042_PLUS_POPUP__) return;
+  window.__DF_V2042_PLUS_POPUP__ = true;
+
+  let formNota = null;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function injectCss(){
+    if (document.getElementById("df-v2042-popup-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v2042-popup-css";
+    style.textContent = `
+      .df-v2042-hidden {
+        display: none !important;
+      }
+
+      .df-v2042-plus-btn {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        border-radius: 999px !important;
+        border: 2px solid #000 !important;
+        background: #0f766e !important;
+        color: #fff !important;
+        font-size: 24px !important;
+        font-weight: 900 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 4px 4px 0 #000 !important;
+        cursor: pointer !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+      }
+
+      .df-v2042-bloco-head {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 12px !important;
+      }
+
+      .df-v2042-overlay {
+        position: fixed !important;
+        inset: 0 !important;
+        background: rgba(15, 23, 42, 0.58) !important;
+        z-index: 999999 !important;
+        display: none !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 18px !important;
+        box-sizing: border-box !important;
+      }
+
+      .df-v2042-overlay.open {
+        display: flex !important;
+      }
+
+      .df-v2042-popup {
+        width: 100% !important;
+        max-width: 520px !important;
+        background: #ffffff !important;
+        border: 2px solid #000 !important;
+        border-radius: 18px !important;
+        box-shadow: 6px 6px 0 #000 !important;
+        padding: 18px !important;
+        box-sizing: border-box !important;
+        max-height: 88vh !important;
+        overflow: auto !important;
+      }
+
+      .df-v2042-popup-head {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        margin-bottom: 14px !important;
+      }
+
+      .df-v2042-popup-title {
+        font-size: 22px !important;
+        font-weight: 900 !important;
+        color: #0f172a !important;
+      }
+
+      .df-v2042-close {
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 999px !important;
+        border: 2px solid #000 !important;
+        background: #fff !important;
+        color: #000 !important;
+        font-size: 24px !important;
+        font-weight: 900 !important;
+        box-shadow: 3px 3px 0 #000 !important;
+        cursor: pointer !important;
+      }
+
+      .df-v2042-popup-body .df-force-white-card,
+      .df-v2042-popup-body .card,
+      .df-v2042-popup-body section,
+      .df-v2042-popup-body div {
+        background-image: none !important;
+      }
+
+      .df-v2042-popup-body h1,
+      .df-v2042-popup-body h2,
+      .df-v2042-popup-body h3 {
+        display: none !important;
+      }
+
+      .df-v2042-popup-body input,
+      .df-v2042-popup-body textarea,
+      .df-v2042-popup-body select {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        background: #fff !important;
+        min-height: 44px !important;
+      }
+
+      .df-v2042-popup-body textarea {
+        min-height: 110px !important;
+      }
+
+      #df-modal-notas-v203,
+      #df-v206-modal-nota {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function findFormNota(){
+    if (formNota) return formNota;
+
+    const buttons = Array.from(document.querySelectorAll("button,input[type='submit'],input[type='button']"));
+    const salvarBtn = buttons.find(b => /salvar nota/i.test(txt(b) || b.value || ""));
+
+    if (salvarBtn) {
+      let cur = salvarBtn;
+      while (cur && cur !== document.body) {
+        if (cur.querySelectorAll && cur.querySelectorAll("input,textarea,select").length >= 2) {
+          formNota = cur;
+          break;
+        }
+        cur = cur.parentElement;
+      }
+    }
+
+    if (!formNota) {
+      const candidates = Array.from(document.querySelectorAll("section,article,.card,div"))
+        .filter(el => /salvar nota/i.test(txt(el)) && el.querySelectorAll("input,textarea,select").length >= 2)
+        .sort((a,b) => txt(a).length - txt(b).length);
+
+      formNota = candidates[0] || null;
+    }
+
+    if (formNota) {
+      formNota.classList.add("df-v2042-hidden");
+    }
+
+    return formNota;
+  }
+
+  function createPopup(){
+    let overlay = document.getElementById("df-v2042-popup-nota");
+    if (overlay) return overlay;
+
+    overlay = document.createElement("div");
+    overlay.id = "df-v2042-popup-nota";
+    overlay.className = "df-v2042-overlay";
+    overlay.innerHTML = `
+      <div class="df-v2042-popup">
+        <div class="df-v2042-popup-head">
+          <div class="df-v2042-popup-title">Lançamento de notas</div>
+          <button type="button" class="df-v2042-close">×</button>
+        </div>
+        <div class="df-v2042-popup-body"></div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelector(".df-v2042-close").addEventListener("click", fecharPopupNota);
+    overlay.addEventListener("click", function(e){
+      if (e.target === overlay) fecharPopupNota();
+    });
+
+    return overlay;
+  }
+
+  function abrirPopupNota(){
+    injectCss();
+
+    const form = findFormNota();
+    const overlay = createPopup();
+    const body = overlay.querySelector(".df-v2042-popup-body");
+
+    if (!form) {
+      alert("Não encontrei o formulário de lançamento de notas.");
+      return;
+    }
+
+    body.innerHTML = "";
+    body.appendChild(form);
+
+    form.classList.remove("df-v2042-hidden");
+    form.style.display = "";
+    overlay.classList.add("open");
+
+    setTimeout(() => {
+      const first = form.querySelector("input,textarea,select");
+      if (first) first.focus();
+    }, 150);
+  }
+
+  function fecharPopupNota(){
+    const overlay = document.getElementById("df-v2042-popup-nota");
+    if (overlay) overlay.classList.remove("open");
+
+    if (formNota) {
+      formNota.classList.add("df-v2042-hidden");
+    }
+  }
+
+  function findCardByTitle(regex){
+    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"));
+    return candidates
+      .filter(el => regex.test(txt(el)))
+      .sort((a,b) => txt(a).length - txt(b).length)[0] || null;
+  }
+
+  function garantirBotaoPlus(){
+    const bloco = findCardByTitle(/bloco de notas/i);
+    if (!bloco) return;
+
+    let btn = bloco.querySelector(".df-v2042-plus-btn") || bloco.querySelector(".df-v2041-plus-btn") || bloco.querySelector(".df-add-nota-btn-v203");
+
+    const title = Array.from(bloco.querySelectorAll("h1,h2,h3,h4,strong,div"))
+      .find(el => /bloco de notas/i.test(txt(el)) && txt(el).length < 80);
+
+    if (!title) return;
+
+    let wrapper = title.closest(".df-v2042-bloco-head");
+
+    if (!wrapper) {
+      wrapper = document.createElement("div");
+      wrapper.className = "df-v2042-bloco-head";
+      title.parentNode.insertBefore(wrapper, title);
+      wrapper.appendChild(title);
+    }
+
+    if (!btn) {
+      btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = "+";
+      wrapper.appendChild(btn);
+    } else if (!wrapper.contains(btn)) {
+      wrapper.appendChild(btn);
+    }
+
+    btn.className = "df-v2042-plus-btn";
+    btn.title = "Adicionar nota";
+    btn.onclick = function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      abrirPopupNota();
+    };
+  }
+
+  function esconderFormFixo(){
+    const form = findFormNota();
+    if (form && !document.getElementById("df-v2042-popup-nota")?.contains(form)) {
+      form.classList.add("df-v2042-hidden");
+    }
+  }
+
+  function fecharModaisAntigos(){
+    ["df-modal-notas-v203", "df-v206-modal-nota"].forEach(id => {
+      const modal = document.getElementById(id);
+      if (modal) {
+        modal.classList.remove("open");
+        modal.style.display = "none";
+      }
+    });
+  }
+
+  function aplicar(){
+    injectCss();
+    createPopup();
+    esconderFormFixo();
+    garantirBotaoPlus();
+    fecharModaisAntigos();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", aplicar, { once: true });
+  } else {
+    aplicar();
+  }
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
+})();
+</script>
+<script>
+/* =========================
+   V20.4.3 - Correção submenus
+   - Mantém o botão + em pop-up
+   - Restaura submenus que foram escondidos
+   - Garante menu Painel / Gestão / Lixeira / Configurações visível
+   ========================= */
+(function(){
+  if (window.__DF_V2043_SUBMENUS__) return;
+  window.__DF_V2043_SUBMENUS__ = true;
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function injectCss(){
+    if (document.getElementById("df-v2043-submenus-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v2043-submenus-css";
+    style.textContent = `
+      /* Reexibe submenus escondidos por versões anteriores */
+      .df-hidden-v203,
+      .df-hidden-v204,
+      .df-v208-hidden {
+        display: revert !important;
+      }
+
+      /* Mas não reexibe formulários que o botão + controla */
+      .df-v2042-hidden {
+        display: none !important;
+      }
+
+      /* Submenus do menu lateral sempre visíveis quando o menu estiver aberto */
+      nav .df-hidden-v203,
+      nav .df-hidden-v204,
+      nav .df-v208-hidden,
+      aside .df-hidden-v203,
+      aside .df-hidden-v204,
+      aside .df-v208-hidden,
+      .menu .df-hidden-v203,
+      .menu .df-hidden-v204,
+      .menu .df-v208-hidden,
+      [class*="menu"] .df-hidden-v203,
+      [class*="menu"] .df-hidden-v204,
+      [class*="menu"] .df-v208-hidden {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function restaurarSubmenus(){
+    document.querySelectorAll("a,button,li,p,span,div").forEach(el => {
+      const t = txt(el).toLowerCase();
+
+      const ehSubmenu =
+        t === "contas a pagar" ||
+        t === "lançamento" ||
+        t === "lancamento" ||
+        t === "lançamento de contas" ||
+        t === "lancamento de contas" ||
+        t === "lançamento de notas" ||
+        t === "lancamento de notas" ||
+        t === "lembretes" ||
+        t === "notas" ||
+        t === "alertas" ||
+        t === "resumo por centro" ||
+        t === "novo usuário" ||
+        t === "usuarios cadastrados" ||
+        t === "usuários cadastrados" ||
+        t === "permissões por loja" ||
+        t === "permissoes por loja" ||
+        t === "notas excluídas" ||
+        t === "notas excluidas" ||
+        t === "contas excluídas" ||
+        t === "contas excluidas" ||
+        t === "notificações" ||
+        t === "notificacoes" ||
+        t === "configuração de e-mail" ||
+        t === "configuracao de e-mail" ||
+        t === "geral";
+
+      if (ehSubmenu) {
+        el.classList.remove("df-hidden-v203", "df-hidden-v204", "df-v208-hidden", "df-v206-hidden");
+        if (el.style) {
+          if (el.style.display === "none") el.style.display = "";
+          el.style.visibility = "";
+          el.style.opacity = "";
+        }
+      }
+    });
+  }
+
+  function aplicar(){
+    injectCss();
+    restaurarSubmenus();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", aplicar, { once: true });
+  } else {
+    aplicar();
+  }
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
+  setTimeout(aplicar, 3000);
 })();
 </script>
 </body>

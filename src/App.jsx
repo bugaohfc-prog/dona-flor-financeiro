@@ -1,3 +1,4 @@
+import Grafico from "./components/Grafico";
 import { useEffect, useMemo, useState } from "react";
 import { supabase, hasSupabaseKey } from "./lib/supabase";
 import Login from "./components/Login";
@@ -199,6 +200,7 @@ export default function App() {
         {loading && <div className="muted">Carregando...</div>}
 
         <Dashboard contas={contasVisiveis} notas={notasVisiveis} />
+        <Grafico contas={contasVisiveis} />
 
         <Notas
           notas={notasVisiveis}

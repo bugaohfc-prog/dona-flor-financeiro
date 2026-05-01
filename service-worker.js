@@ -399,7 +399,7 @@ self.addEventListener("notificationclick", event => {
     document.querySelectorAll("h1,h2,h3,h4,button,span,a,label,div").forEach(el => {
       if(!el || !el.childNodes || el.childNodes.length !== 1) return;
       const txt = (el.textContent || "").trim();
-      if(txt === "Lançamento de notas" || txt === "Novo lembrete"){
+      if(txt === "Lançamento de notas" || txt === "Lançamento de notas"){
         el.textContent = "Lançamento de notas";
       }
     });
@@ -696,6 +696,313 @@ self.addEventListener("notificationclick", event => {
     capturarFormNotas();
     criarModal();
     adicionarBotaoNoBlocoNotas();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", aplicar, { once:true });
+  } else {
+    aplicar();
+  }
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
+})();
+
+
+
+
+/* =========================
+   V20.4 FINAL - UX limpa
+   - Recolher/expandir só com triângulo, sem bolinha
+   - Contas a pagar com botão + para lançar conta
+   - Esconde formulário fixo "Lançamento de contas"
+   - Remove lançamento de contas do submenu
+   - Mantém notas em modal da V20.3
+   ========================= */
+(function(){
+  if (window.__DF_V204_FINAL__) return;
+  window.__DF_V204_FINAL__ = true;
+
+  let formContaOriginal = null;
+
+  function injectCss(){
+    if (document.getElementById("df-v204-final-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v204-final-css";
+    style.textContent = `
+      /* Expandir/recolher discreto: só triângulo */
+      button, .toggle-btn, .collapse-btn, .expand-btn {
+        transition: all .15s ease;
+      }
+
+      /* alvo principal: botões redondos com apenas ▲/▼ */
+      button:has-text("▲"),
+      button:has-text("▼") {
+        background: transparent !important;
+      }
+
+      .df-toggle-clean-v204{
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+        width: auto !important;
+        height: auto !important;
+        min-width: 24px !important;
+        min-height: 24px !important;
+        padding: 4px !important;
+        border-radius: 0 !important;
+        color: #0f766e !important;
+        font-size: 14px !important;
+        font-weight: 900 !important;
+      }
+
+      .df-hidden-v204{display:none !important;}
+
+      .df-section-head-v204{
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        gap:12px !important;
+      }
+
+      .df-add-btn-v204{
+        width:40px !important;
+        height:40px !important;
+        border-radius:999px !important;
+        border:0 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-size:22px !important;
+        font-weight:900 !important;
+        display:inline-flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        box-shadow:0 8px 22px rgba(15,118,110,.22) !important;
+        cursor:pointer !important;
+        margin-left:auto !important;
+      }
+
+      .df-modal-backdrop-v204{
+        position:fixed !important;
+        inset:0 !important;
+        background:rgba(15,23,42,.55) !important;
+        z-index:999999 !important;
+        display:none;
+        align-items:flex-end !important;
+        justify-content:center !important;
+      }
+
+      .df-modal-backdrop-v204.open{
+        display:flex !important;
+      }
+
+      .df-modal-v204{
+        width:100% !important;
+        max-width:650px !important;
+        background:#ffffff !important;
+        border-radius:24px 24px 0 0 !important;
+        padding:18px !important;
+        max-height:88vh !important;
+        overflow:auto !important;
+        box-shadow:0 -12px 40px rgba(15,23,42,.25) !important;
+        animation:dfV204Up .22s ease-out !important;
+      }
+
+      @keyframes dfV204Up{
+        from{transform:translateY(24px);opacity:.4}
+        to{transform:translateY(0);opacity:1}
+      }
+
+      .df-modal-head-v204{
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        margin-bottom:12px !important;
+      }
+
+      .df-modal-title-v204{
+        font-size:22px !important;
+        font-weight:900 !important;
+        color:#0f172a !important;
+      }
+
+      .df-modal-close-v204{
+        width:38px !important;
+        height:38px !important;
+        border-radius:999px !important;
+        border:0 !important;
+        background:#f1f5f9 !important;
+        color:#0f172a !important;
+        font-size:22px !important;
+        font-weight:900 !important;
+      }
+
+      .df-modal-v204 .df-force-white-card,
+      .df-modal-v204 section,
+      .df-modal-v204 .card{
+        box-shadow:none !important;
+        border:0 !important;
+        padding:0 !important;
+        margin:0 !important;
+        background:#fff !important;
+      }
+
+      .df-modal-v204 h1,
+      .df-modal-v204 h2,
+      .df-modal-v204 h3{
+        display:none !important;
+      }
+
+      .df-modal-v204 input,
+      .df-modal-v204 textarea,
+      .df-modal-v204 select{
+        background:#fff !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function txt(el){
+    return (el?.innerText || el?.textContent || "").trim();
+  }
+
+  function findCardByTitle(regex){
+    const candidates = Array.from(document.querySelectorAll("section,article,.card,div"));
+    return candidates
+      .filter(el => regex.test(txt(el)))
+      .sort((a,b) => txt(a).length - txt(b).length)[0] || null;
+  }
+
+  function limparToggle(){
+    document.querySelectorAll("button,span,div").forEach(el => {
+      const t = txt(el);
+      if (t === "▲" || t === "▼" || t === "▴" || t === "▾") {
+        el.classList.add("df-toggle-clean-v204");
+        el.style.background = "transparent";
+        el.style.boxShadow = "none";
+        el.style.border = "none";
+      }
+    });
+  }
+
+  function esconderSubmenus(){
+    document.querySelectorAll("a,button,li,p,span,div").forEach(el => {
+      const t = txt(el).toLowerCase();
+      if (
+        t === "lançamento de contas" ||
+        t === "lancamento de contas" ||
+        t === "lançamento de notas" ||
+        t === "lancamento de notas"
+      ) {
+        el.classList.add("df-hidden-v204");
+      }
+    });
+  }
+
+  function criarModalConta(){
+    if (document.getElementById("df-modal-conta-v204")) return;
+
+    const backdrop = document.createElement("div");
+    backdrop.id = "df-modal-conta-v204";
+    backdrop.className = "df-modal-backdrop-v204";
+    backdrop.innerHTML = `
+      <div class="df-modal-v204">
+        <div class="df-modal-head-v204">
+          <div class="df-modal-title-v204">Lançamento de contas</div>
+          <button type="button" class="df-modal-close-v204">×</button>
+        </div>
+        <div id="df-modal-conta-body-v204"></div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+
+    backdrop.querySelector(".df-modal-close-v204").addEventListener("click", fecharModalConta);
+    backdrop.addEventListener("click", (e) => {
+      if(e.target === backdrop) fecharModalConta();
+    });
+  }
+
+  function abrirModalConta(){
+    criarModalConta();
+    if(!formContaOriginal) capturarFormConta();
+
+    const body = document.getElementById("df-modal-conta-body-v204");
+    const modal = document.getElementById("df-modal-conta-v204");
+
+    if(formContaOriginal && body && !body.contains(formContaOriginal)){
+      body.appendChild(formContaOriginal);
+      formContaOriginal.classList.remove("df-hidden-v204");
+      formContaOriginal.style.display = "";
+    }
+
+    modal.classList.add("open");
+  }
+
+  function fecharModalConta(){
+    const modal = document.getElementById("df-modal-conta-v204");
+    if(modal) modal.classList.remove("open");
+    if(formContaOriginal) formContaOriginal.classList.add("df-hidden-v204");
+  }
+
+  function capturarFormConta(){
+    const formCard = findCardByTitle(/lançamento de contas|lancamento de contas|salvar conta/i);
+    if(!formCard) return;
+
+    const t = txt(formCard);
+    if(!/descrição|descricao|valor|salvar conta/i.test(t)) return;
+
+    formContaOriginal = formCard;
+    formContaOriginal.classList.add("df-hidden-v204");
+  }
+
+  function adicionarBotaoConta(){
+    const contasCard = findCardByTitle(/contas a pagar/i);
+    if(!contasCard) return;
+
+    if(contasCard.querySelector(".df-add-conta-btn-v204")) return;
+
+    const title = Array.from(contasCard.querySelectorAll("h1,h2,h3,h4,strong,div"))
+      .find(el => /^(\s*📄\s*)?Contas a pagar$/i.test(txt(el)));
+
+    if(!title) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "df-section-head-v204";
+
+    title.parentNode.insertBefore(wrapper, title);
+    wrapper.appendChild(title);
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "df-add-btn-v204 df-add-conta-btn-v204";
+    btn.title = "Adicionar conta";
+    btn.textContent = "+";
+    btn.addEventListener("click", abrirModalConta);
+
+    wrapper.appendChild(btn);
+  }
+
+  function melhorarBotaoNota(){
+    const bloco = findCardByTitle(/bloco de notas/i);
+    if(!bloco) return;
+
+    const btn = bloco.querySelector(".df-add-nota-btn-v203");
+    if(btn){
+      btn.classList.add("df-add-btn-v204");
+      btn.textContent = "+";
+      btn.title = "Adicionar nota";
+    }
+  }
+
+  function aplicar(){
+    injectCss();
+    limparToggle();
+    esconderSubmenus();
+    capturarFormConta();
+    criarModalConta();
+    adicionarBotaoConta();
+    melhorarBotaoNota();
   }
 
   if(document.readyState === "loading"){

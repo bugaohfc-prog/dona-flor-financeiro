@@ -1,4 +1,4 @@
-const CACHE_NAME = "dona-flor-v21-2-edicao-popup";
+const CACHE_NAME = "dona-flor-v21-3-popup-forms-fix";
 const ASSETS = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
@@ -1826,213 +1826,272 @@ self.addEventListener("notificationclick", event => {
 
 
 /* ==========================================================
-   DONA FLOR - V21.2 EDIÇÃO EM POP-UP
-   Correção:
-   - Remove os formulários fixos "Lançamento de notas" e "Lançamento de contas" da tela
-   - Botão + abre pop-up
-   - Botão Editar também abre pop-up
-   - Evita o editar chamar o formulário fixo na tela
+   DONA FLOR - V21.3 CORREÇÃO FORMULÁRIOS + POP-UP
+   - Mantém os formulários no código: atalhoLancamento e atalhoLembrete
+   - Não exclui lançamento de contas/notas
+   - Esconde os formulários fixos da tela principal
+   - Botão + abre pop-up correto
+   - Editar abre pop-up correto
+   - Ao fechar, devolve o formulário para um "estacionamento" oculto
    ========================================================== */
 (function(){
-  if (window.__DONA_FLOR_V212_EDIT_POPUP__) return;
-  window.__DONA_FLOR_V212_EDIT_POPUP__ = true;
+  if (window.__DONA_FLOR_V213_FORMS_POPUP_FIX__) return;
+  window.__DONA_FLOR_V213_FORMS_POPUP_FIX__ = true;
 
-  let formNota = null;
   let formConta = null;
+  let formNota = null;
+  let estacionamento = null;
 
   function txt(el){
     return (el?.innerText || el?.textContent || "").trim();
   }
 
   function injectCss(){
-    if(document.getElementById("df-v212-edit-popup-css")) return;
+    if(document.getElementById("df-v213-css")) return;
 
     const style = document.createElement("style");
-    style.id = "df-v212-edit-popup-css";
+    style.id = "df-v213-css";
     style.textContent = `
-      .df-v212-hidden{display:none!important;}
-
-      /* some da tela principal com os formulários fixos */
-      #atalhoLembrete.df-v212-fixed-hidden,
-      #atalhoLancamento.df-v212-fixed-hidden{
-        display:none!important;
+      #df-v213-parking {
+        display:none !important;
       }
 
-      .df-v212-modal{
-        position:fixed!important;
-        inset:0!important;
-        z-index:1000000!important;
-        background:rgba(15,23,42,.62)!important;
-        display:none!important;
-        align-items:center!important;
-        justify-content:center!important;
-        padding:18px!important;
-        box-sizing:border-box!important;
+      .df-v213-hidden {
+        display:none !important;
       }
 
-      .df-v212-modal.open{display:flex!important;}
-
-      .df-v212-box{
-        width:100%!important;
-        max-width:540px!important;
-        max-height:88vh!important;
-        overflow:auto!important;
-        background:#fff!important;
-        border:2px solid #000!important;
-        border-radius:18px!important;
-        box-shadow:6px 6px 0 #000!important;
-        padding:18px!important;
-        box-sizing:border-box!important;
+      /* Os formulários existem, mas não aparecem fixos na tela principal */
+      body > #atalhoLancamento,
+      body > #atalhoLembrete,
+      #df-v213-parking > #atalhoLancamento,
+      #df-v213-parking > #atalhoLembrete {
+        display:none !important;
       }
 
-      .df-v212-head{
-        display:flex!important;
-        align-items:center!important;
-        justify-content:space-between!important;
-        gap:12px!important;
-        margin-bottom:14px!important;
+      .df-v213-modal {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 1000000 !important;
+        background: rgba(15, 23, 42, .62) !important;
+        display: none !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 18px !important;
+        box-sizing: border-box !important;
       }
 
-      .df-v212-title{
-        font-size:22px!important;
-        font-weight:900!important;
-        color:#0f172a!important;
+      .df-v213-modal.open {
+        display: flex !important;
       }
 
-      .df-v212-close{
-        width:40px!important;
-        height:40px!important;
-        border-radius:999px!important;
-        border:2px solid #000!important;
-        background:#fff!important;
-        color:#000!important;
-        font-size:22px!important;
-        font-weight:900!important;
-        box-shadow:3px 3px 0 #000!important;
-        cursor:pointer!important;
+      .df-v213-box {
+        width: 100% !important;
+        max-width: 540px !important;
+        max-height: 88vh !important;
+        overflow: auto !important;
+        background: #fff !important;
+        border: 2px solid #000 !important;
+        border-radius: 18px !important;
+        box-shadow: 6px 6px 0 #000 !important;
+        padding: 18px !important;
+        box-sizing: border-box !important;
       }
 
-      .df-v212-body #atalhoLembrete,
-      .df-v212-body #atalhoLancamento{
-        display:block!important;
-        background:#fff!important;
-        border:0!important;
-        box-shadow:none!important;
-        padding:0!important;
-        margin:0!important;
+      .df-v213-head {
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        gap:12px !important;
+        margin-bottom:14px !important;
       }
 
-      .df-v212-body #atalhoLembrete h2,
-      .df-v212-body #atalhoLancamento h2{
-        display:none!important;
+      .df-v213-title {
+        font-size:22px !important;
+        font-weight:900 !important;
+        color:#0f172a !important;
       }
 
-      .df-v212-body input,
-      .df-v212-body textarea,
-      .df-v212-body select{
-        width:100%!important;
-        box-sizing:border-box!important;
-        background:#fff!important;
-        min-height:44px!important;
+      .df-v213-close {
+        width:40px !important;
+        height:40px !important;
+        border-radius:999px !important;
+        border:2px solid #000 !important;
+        background:#fff !important;
+        color:#000 !important;
+        font-size:22px !important;
+        font-weight:900 !important;
+        box-shadow:3px 3px 0 #000 !important;
+        cursor:pointer !important;
       }
 
-      .df-v212-body textarea{min-height:110px!important;}
-
-      .df-v212-plus{
-        width:42px!important;
-        height:42px!important;
-        min-width:42px!important;
-        min-height:42px!important;
-        border-radius:999px!important;
-        border:2px solid #000!important;
-        background:#0f766e!important;
-        color:#fff!important;
-        font-size:24px!important;
-        font-weight:900!important;
-        box-shadow:4px 4px 0 #000!important;
-        display:inline-flex!important;
-        align-items:center!important;
-        justify-content:center!important;
-        padding:0!important;
-        margin:0!important;
-        line-height:1!important;
-        cursor:pointer!important;
+      .df-v213-body #atalhoLancamento,
+      .df-v213-body #atalhoLembrete {
+        display:block !important;
+        background:#fff !important;
+        border:0 !important;
+        box-shadow:none !important;
+        padding:0 !important;
+        margin:0 !important;
       }
 
-      .df-v212-section-head{
-        display:flex!important;
-        align-items:center!important;
-        justify-content:space-between!important;
-        gap:12px!important;
-        width:100%!important;
+      .df-v213-body #atalhoLancamento h2,
+      .df-v213-body #atalhoLembrete h2 {
+        display:none !important;
       }
 
-      /* mata botões + antigos */
-      .df-v21-plus,.df-v2044-plus,.df-v2042-plus-btn,.df-v2041-plus-btn,.df-add-nota-btn-v203,.df-add-conta-btn-v204{
-        display:none!important;
+      .df-v213-body input,
+      .df-v213-body textarea,
+      .df-v213-body select {
+        width:100% !important;
+        box-sizing:border-box !important;
+        background:#fff !important;
+        min-height:44px !important;
+        font-family:inherit !important;
+        font-size:15px !important;
+      }
+
+      .df-v213-body textarea {
+        min-height:110px !important;
+      }
+
+      .df-v213-section-head {
+        display:flex !important;
+        align-items:center !important;
+        justify-content:space-between !important;
+        gap:12px !important;
+        width:100% !important;
+      }
+
+      .df-v213-plus {
+        width:42px !important;
+        height:42px !important;
+        min-width:42px !important;
+        min-height:42px !important;
+        border-radius:999px !important;
+        border:2px solid #000 !important;
+        background:#0f766e !important;
+        color:#fff !important;
+        font-size:24px !important;
+        font-weight:900 !important;
+        box-shadow:4px 4px 0 #000 !important;
+        display:inline-flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        line-height:1 !important;
+        padding:0 !important;
+        margin:0 !important;
+        cursor:pointer !important;
+      }
+
+      .df-v213-plus:active {
+        transform: translate(2px, 2px) !important;
+        box-shadow:2px 2px 0 #000 !important;
+      }
+
+      /* Esconde botões + antigos para não duplicar */
+      .df-v21-plus,
+      .df-v212-plus,
+      .df-v2044-plus,
+      .df-v2042-plus-btn,
+      .df-v2041-plus-btn,
+      .df-add-nota-btn-v203,
+      .df-add-conta-btn-v204,
+      .df-add-btn-v204,
+      .df-v206-add-btn {
+        display:none !important;
+      }
+
+      /* Fecha modais antigos conflitantes */
+      #df-v21-modal-nota,
+      #df-v21-modal-conta,
+      #df-v212-modal,
+      #df-v2042-popup-nota,
+      #df-v2044-modal-nota,
+      #df-v2044-modal-conta,
+      #df-modal-notas-v203,
+      #df-modal-conta-v204,
+      #df-v206-modal-nota,
+      #df-v206-modal-conta {
+        display:none !important;
       }
     `;
     document.head.appendChild(style);
   }
 
-  function createModal(id){
-    let modal = document.getElementById(id);
+  function criarEstacionamento(){
+    estacionamento = document.getElementById("df-v213-parking");
+    if(!estacionamento){
+      estacionamento = document.createElement("div");
+      estacionamento.id = "df-v213-parking";
+      document.body.appendChild(estacionamento);
+    }
+    return estacionamento;
+  }
+
+  function capturarForms(){
+    criarEstacionamento();
+
+    formConta = document.getElementById("atalhoLancamento") || formConta;
+    formNota = document.getElementById("atalhoLembrete") || formNota;
+
+    // Se estiverem na tela principal, estaciona oculto.
+    if(formConta && !formConta.closest(".df-v213-body")){
+      estacionamento.appendChild(formConta);
+    }
+
+    if(formNota && !formNota.closest(".df-v213-body")){
+      estacionamento.appendChild(formNota);
+    }
+  }
+
+  function criarModal(){
+    let modal = document.getElementById("df-v213-modal");
     if(modal) return modal;
 
     modal = document.createElement("div");
-    modal.id = id;
-    modal.className = "df-v212-modal";
+    modal.id = "df-v213-modal";
+    modal.className = "df-v213-modal";
     modal.innerHTML = `
-      <div class="df-v212-box">
-        <div class="df-v212-head">
-          <div class="df-v212-title"></div>
-          <button type="button" class="df-v212-close">×</button>
+      <div class="df-v213-box">
+        <div class="df-v213-head">
+          <div class="df-v213-title"></div>
+          <button type="button" class="df-v213-close">×</button>
         </div>
-        <div class="df-v212-body"></div>
+        <div class="df-v213-body"></div>
       </div>
     `;
     document.body.appendChild(modal);
 
-    modal.querySelector(".df-v212-close").addEventListener("click", ()=>fecharModal(modal));
-    modal.addEventListener("click", (e)=> {
-      if(e.target === modal) fecharModal(modal);
+    modal.querySelector(".df-v213-close").addEventListener("click", fecharModal);
+    modal.addEventListener("click", function(e){
+      if(e.target === modal) fecharModal();
     });
 
     return modal;
   }
 
-  function fecharModal(modal){
+  function fecharModal(){
+    const modal = document.getElementById("df-v213-modal");
     if(!modal) return;
+
     modal.classList.remove("open");
 
-    const body = modal.querySelector(".df-v212-body");
-    const form = body?.firstElementChild;
-    if(form){
-      form.classList.add("df-v212-fixed-hidden");
-      document.body.appendChild(form);
-    }
-  }
+    const body = modal.querySelector(".df-v213-body");
+    const child = body?.firstElementChild;
 
-  function capturarForms(){
-    formNota = document.getElementById("atalhoLembrete") || formNota;
-    formConta = document.getElementById("atalhoLancamento") || formConta;
-
-    if(formNota && !document.querySelector(".df-v212-body")?.contains(formNota)){
-      formNota.classList.add("df-v212-fixed-hidden");
-    }
-
-    if(formConta && !document.querySelector(".df-v212-body")?.contains(formConta)){
-      formConta.classList.add("df-v212-fixed-hidden");
+    if(child){
+      criarEstacionamento().appendChild(child);
     }
   }
 
   function abrirForm(tipo, titulo){
+    injectCss();
     capturarForms();
 
     const form = tipo === "nota" ? formNota : formConta;
-    const modal = createModal("df-v212-modal");
-    const title = modal.querySelector(".df-v212-title");
-    const body = modal.querySelector(".df-v212-body");
+    const modal = criarModal();
+    const title = modal.querySelector(".df-v213-title");
+    const body = modal.querySelector(".df-v213-body");
 
     if(!form){
       alert(tipo === "nota" ? "Formulário de nota não encontrado." : "Formulário de conta não encontrado.");
@@ -2042,147 +2101,208 @@ self.addEventListener("notificationclick", event => {
     body.innerHTML = "";
     title.textContent = titulo;
     body.appendChild(form);
-
-    form.classList.remove("df-v212-fixed-hidden");
     form.style.display = "block";
+
     modal.classList.add("open");
 
-    setTimeout(()=>{
+    setTimeout(function(){
       const first = form.querySelector("input,textarea,select");
       if(first) first.focus();
-    },120);
+    }, 150);
   }
 
-  function limparNota(){
+  function limparNovaNota(){
     try{
-      if(typeof limparCamposNotaDF === "function") limparCamposNotaDF();
-      else{
-        const ids = ["ntitulo","ntexto","ndata","nprio","nloja"];
-        ids.forEach(id=>{
-          const el=document.getElementById(id);
-          if(el) el.value = id==="nprio" ? "Normal" : "";
-        });
+      if(typeof limparCamposNotaDF === "function"){
+        limparCamposNotaDF();
+      }else{
+        const campos = {
+          titulo: document.getElementById("ntitulo"),
+          texto: document.getElementById("ntexto"),
+          data: document.getElementById("ndata"),
+          prioridade: document.getElementById("nprio"),
+          loja: document.getElementById("nloja")
+        };
+        if(campos.titulo) campos.titulo.value = "";
+        if(campos.texto) campos.texto.value = "";
+        if(campos.data) campos.data.value = "";
+        if(campos.prioridade) campos.prioridade.value = "Normal";
+        if(campos.loja) campos.loja.value = "";
       }
+      const btn = document.getElementById("btnSalvarNotaDF");
+      if(btn) btn.textContent = "Salvar nota";
     }catch(e){}
   }
 
-  function limparConta(){
+  function limparNovaConta(){
     try{
-      if(typeof cancelarEdicaoContaDF === "function") cancelarEdicaoContaDF();
-      else{
+      if(typeof cancelarEdicaoContaDF === "function"){
+        cancelarEdicaoContaDF();
+      }else{
         ["desc","valor","venc","obs"].forEach(id=>{
-          const el=document.getElementById(id);
-          if(el) el.value="";
+          const el = document.getElementById(id);
+          if(el) el.value = "";
         });
-        const st=document.getElementById("status");
-        if(st) st.value="Aberto";
+        const status = document.getElementById("status");
+        if(status) status.value = "Aberto";
       }
+      const btn = [...document.querySelectorAll("#atalhoLancamento button")].find(b=>txt(b).toLowerCase().includes("salvar"));
+      if(btn) btn.textContent = "Salvar conta";
     }catch(e){}
   }
 
-  function abrirNovaNota(){
-    limparNota();
-    abrirForm("nota", "Lançamento de notas");
-  }
-
-  function abrirNovaConta(){
-    limparConta();
-    abrirForm("conta", "Lançamento de contas");
-  }
-
-  function findSection(titleRegex){
+  function findSection(regex){
     const candidates = Array.from(document.querySelectorAll("section,article,.card,div"))
-      .filter(el => titleRegex.test(txt(el)));
-    return candidates.sort((a,b)=>txt(a).length-txt(b).length)[0] || null;
+      .filter(el => regex.test(txt(el)));
+    return candidates.sort((a,b)=>txt(a).length - txt(b).length)[0] || null;
   }
 
-  function findTitle(section, titleRegex){
+  function findTitle(section, regex){
     if(!section) return null;
     return Array.from(section.querySelectorAll("h1,h2,h3,h4,strong,div"))
-      .find(el => titleRegex.test(txt(el)) && txt(el).length < 90);
+      .find(el => regex.test(txt(el)) && txt(el).length < 90);
+  }
+
+  function removeOldPlus(section){
+    if(!section) return;
+    const old = Array.from(section.querySelectorAll("button"))
+      .filter(b => txt(b) === "+" || /plus|add-nota|add-conta|add-btn/i.test(String(b.className || "")));
+    old.forEach(b => b.remove());
   }
 
   function addPlus(sectionRegex, titleRegex, tipo){
-    const sec = findSection(sectionRegex);
-    if(!sec) return;
+    const section = findSection(sectionRegex);
+    if(!section) return;
 
-    sec.querySelectorAll(".df-v212-plus").forEach(b=>b.remove());
+    removeOldPlus(section);
 
-    const title = findTitle(sec, titleRegex);
+    const title = findTitle(section, titleRegex);
     if(!title) return;
 
-    let head = title.closest(".df-v212-section-head");
+    let head = title.closest(".df-v213-section-head");
     if(!head){
       head = document.createElement("div");
-      head.className = "df-v212-section-head";
+      head.className = "df-v213-section-head";
       title.parentNode.insertBefore(head, title);
       head.appendChild(title);
     }
 
+    if(head.querySelector(".df-v213-plus")) return;
+
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "df-v212-plus";
+    btn.className = "df-v213-plus";
     btn.textContent = "+";
     btn.title = tipo === "nota" ? "Adicionar nota" : "Adicionar conta";
     btn.onclick = function(e){
       e.preventDefault();
       e.stopPropagation();
-      tipo === "nota" ? abrirNovaNota() : abrirNovaConta();
+
+      if(tipo === "nota"){
+        limparNovaNota();
+        abrirForm("nota", "Lançamento de notas");
+      }else{
+        limparNovaConta();
+        abrirForm("conta", "Lançamento de contas");
+      }
     };
 
     head.appendChild(btn);
   }
 
+  function fecharModaisAntigos(){
+    [
+      "df-v21-modal-nota",
+      "df-v21-modal-conta",
+      "df-v212-modal",
+      "df-v2042-popup-nota",
+      "df-v2044-modal-nota",
+      "df-v2044-modal-conta",
+      "df-modal-notas-v203",
+      "df-modal-conta-v204",
+      "df-v206-modal-nota",
+      "df-v206-modal-conta"
+    ].forEach(id=>{
+      const m = document.getElementById(id);
+      if(m){
+        m.classList.remove("open");
+        m.style.display = "none";
+      }
+    });
+  }
+
   function overrideEdicao(){
-    const oldEditarNota = window.editarNotaDF;
-    window.editarNotaDF = function(id){
-      try{
-        if(typeof oldEditarNota === "function") oldEditarNota(id);
-      }catch(e){}
-      abrirForm("nota", "Editar nota");
-    };
+    if(window.__DF_V213_EDIT_OVERRIDE__) return;
+    window.__DF_V213_EDIT_OVERRIDE__ = true;
 
     const oldEditarConta = window.editarContaDF;
     window.editarContaDF = function(id){
+      capturarForms();
+
+      // chama a função antiga para preencher e marcar contaEditandoDF
       try{
         if(typeof oldEditarConta === "function") oldEditarConta(id);
       }catch(e){}
-      abrirForm("conta", "Editar conta");
+
+      // corrige efeito colateral: se a função antiga mostrou na tela, estaciona e abre popup
+      setTimeout(function(){
+        capturarForms();
+        abrirForm("conta", "Editar conta");
+      }, 80);
+    };
+
+    const oldEditarNota = window.editarNotaDF;
+    window.editarNotaDF = function(id){
+      capturarForms();
+
+      // chama a função antiga para preencher e marcar notaEditandoDF
+      try{
+        if(typeof oldEditarNota === "function") oldEditarNota(id);
+      }catch(e){}
+
+      setTimeout(function(){
+        capturarForms();
+        abrirForm("nota", "Editar nota");
+      }, 80);
     };
   }
 
-  function fecharModalAoSalvar(){
-    // fecha quando o usuário clica em qualquer botão salvar dentro do popup
+  function fecharDepoisSalvar(){
+    if(window.__DF_V213_CLOSE_AFTER_SAVE__) return;
+    window.__DF_V213_CLOSE_AFTER_SAVE__ = true;
+
     document.addEventListener("click", function(e){
       const btn = e.target.closest("button");
       if(!btn) return;
+
       const t = txt(btn).toLowerCase();
-      if((t.includes("salvar nota") || t.includes("salvar conta") || t.includes("salvar alteração")) && btn.closest(".df-v212-modal")){
-        setTimeout(()=>{
-          const modal = document.getElementById("df-v212-modal");
-          if(modal) fecharModal(modal);
-        }, 500);
+      if(!btn.closest(".df-v213-modal")) return;
+
+      if(t.includes("salvar conta") || t.includes("salvar nota") || t.includes("salvar alteração")){
+        setTimeout(fecharModal, 700);
       }
     }, true);
   }
 
   function aplicar(){
     injectCss();
+    criarEstacionamento();
+    fecharModaisAntigos();
     capturarForms();
     addPlus(/bloco de notas/i, /bloco de notas/i, "nota");
     addPlus(/contas a pagar/i, /contas a pagar/i, "conta");
+    overrideEdicao();
   }
 
   if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", aplicar, {once:true});
+    document.addEventListener("DOMContentLoaded", aplicar, { once:true });
   }else{
     aplicar();
   }
 
-  overrideEdicao();
-  fecharModalAoSalvar();
+  fecharDepoisSalvar();
 
-  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 600);
   setTimeout(aplicar, 1600);
   setTimeout(aplicar, 3200);
 })();

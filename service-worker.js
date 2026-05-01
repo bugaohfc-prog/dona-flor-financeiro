@@ -147,7 +147,7 @@ self.addEventListener("notificationclick", event => {
     document.querySelectorAll("h1,h2,h3,h4,button,span,a,label,div").forEach(el => {
       if(!el || !el.childNodes || el.childNodes.length !== 1) return;
       const txt = (el.textContent || "").trim();
-      if(txt === "Adicionar lembrete" || txt === "Novo lembrete"){
+      if(txt === "Lançamento de notas" || txt === "Lançamento de notas"){
         el.textContent = "Lançamento de notas";
       }
       if(txt === "Lembretes"){
@@ -264,5 +264,161 @@ self.addEventListener("notificationclick", event => {
 
   // roda uma segunda vez após React renderizar, mas sem loop infinito e sem duplicar
   setTimeout(aplicar, 800);
+})();
+
+
+
+
+/* =========================
+   V20.2 - Correção visual padrão branco
+   Corrige Bloco de notas e Lançamento de notas para o mesmo padrão dos outros cards
+   ========================= */
+(function(){
+  if (window.__DF_V202_PADRAO_BRANCO__) return;
+  window.__DF_V202_PADRAO_BRANCO__ = true;
+
+  function injectCss(){
+    document.getElementById("df-v20-ux-css")?.remove();
+    document.getElementById("df-v201-final-css")?.remove();
+    document.getElementById("df-v21-ux-css")?.remove();
+
+    if (document.getElementById("df-v202-padrao-branco-css")) return;
+
+    const style = document.createElement("style");
+    style.id = "df-v202-padrao-branco-css";
+    style.textContent = `
+      /* força cards principais para padrão branco */
+      .card,
+      section,
+      .nota-card,
+      .note-card,
+      .lembrete-card,
+      [data-nota-id]{
+        background:#ffffff !important;
+      }
+
+      /* remove fundos vermelhos aplicados nos blocos de notas */
+      .df-note-card-v20,
+      .df-note-card-v201,
+      .df-note-card-v21{
+        background:#ffffff !important;
+        background-image:none !important;
+        border:1px solid #e5e7eb !important;
+        border-radius:16px !important;
+        box-shadow:0 8px 22px rgba(15,23,42,.06) !important;
+      }
+
+      /* botões e select das notas mais leves */
+      .df-note-actions-v20,
+      .df-note-actions-v201,
+      .df-note-actions-v21{
+        display:grid !important;
+        grid-template-columns:1fr 1fr !important;
+        gap:8px !important;
+        margin-top:10px !important;
+      }
+
+      .df-note-actions-v20 select,
+      .df-note-actions-v201 select,
+      .df-note-actions-v21 select{
+        grid-column:1 / -1 !important;
+        width:100% !important;
+        height:42px !important;
+        border-radius:12px !important;
+        border:1px solid #d1d5db !important;
+        background:#ffffff !important;
+        color:#111827 !important;
+        font-weight:700 !important;
+      }
+
+      .df-note-actions-v20 button,
+      .df-note-actions-v201 button,
+      .df-note-actions-v21 button{
+        width:100% !important;
+        height:42px !important;
+        border-radius:12px !important;
+        border:0 !important;
+        font-weight:800 !important;
+        margin:0 !important;
+      }
+
+      /* visual padrão para prioridade */
+      .df-prio-badge-v20,
+      .df-prio-badge-v201,
+      .df-note-v21-prio{
+        display:inline-flex !important;
+        width:auto !important;
+        padding:5px 10px !important;
+        border-radius:999px !important;
+        font-size:12px !important;
+        font-weight:900 !important;
+      }
+
+      /* correção específica: qualquer seção que tenha Bloco/Lançamento de notas fica branca */
+      .df-force-white-card{
+        background:#ffffff !important;
+        background-image:none !important;
+        border:1px solid #e5e7eb !important;
+        border-radius:18px !important;
+        box-shadow:0 10px 28px rgba(15,23,42,.06) !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function normalizarSelectPrioridade(){
+    document.querySelectorAll("select").forEach(sel => {
+      const html = (sel.innerHTML || "").toLowerCase();
+      if (html.includes("urgente") || html.includes("normal") || html.includes("prioridade")) {
+        sel.innerHTML = `
+          <option value="Normal">Prioridade: Normal</option>
+          <option value="Alto">Prioridade: Alto</option>
+          <option value="Urgente">Prioridade: Urgente</option>
+        `;
+      }
+    });
+  }
+
+  function corrigirCardsNotas(){
+    document.querySelectorAll("div, section, article").forEach(el => {
+      const txt = (el.innerText || "").toLowerCase();
+      const ehBlocoNotas =
+        txt.includes("bloco de notas") ||
+        txt.includes("lançamento de notas") ||
+        txt.includes("lancamento de notas");
+
+      if (ehBlocoNotas && txt.length < 2500) {
+        el.classList.add("df-force-white-card");
+        el.style.background = "#ffffff";
+        el.style.backgroundImage = "none";
+      }
+    });
+  }
+
+  function renomear(){
+    document.querySelectorAll("h1,h2,h3,h4,button,span,a,label,div").forEach(el => {
+      if(!el || !el.childNodes || el.childNodes.length !== 1) return;
+      const txt = (el.textContent || "").trim();
+      if(txt === "Adicionar lembrete" || txt === "Novo lembrete"){
+        el.textContent = "Lançamento de notas";
+      }
+    });
+  }
+
+  function aplicar(){
+    injectCss();
+    renomear();
+    normalizarSelectPrioridade();
+    corrigirCardsNotas();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", aplicar, { once:true });
+  } else {
+    aplicar();
+  }
+
+  setTimeout(aplicar, 700);
+  setTimeout(aplicar, 1600);
 })();
 

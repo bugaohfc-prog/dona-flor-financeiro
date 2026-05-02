@@ -7,9 +7,11 @@ export default function App() {
 
   const [busca, setBusca] = useState('')
   const [filtro, setFiltro] = useState('todas')
+  const [centroFiltro, setCentroFiltro] = useState('')
   const [loading, setLoading] = useState(true)
 
   const [modalAberto, setModalAberto] = useState(false)
+  const [modalConfig, setModalConfig] = useState(false)
   const [editandoId, setEditandoId] = useState(null)
 
   const [descricao, setDescricao] = useState('')
@@ -17,16 +19,23 @@ export default function App() {
   const [data, setData] = useState('')
   const [centroCustoId, setCentroCustoId] = useState('')
 
+  const [novoCentro, setNovoCentro] = useState('')
+
   useEffect(() => {
     buscarCentros()
     buscarContas()
   }, [])
 
   async function buscarCentros() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('df_centros_custo')
       .select('*')
       .order('nome')
+
+    if (error) {
+      alert(error.message)
+      return
+    }
 
     setCentros(data || [])
   }
@@ -34,12 +43,17 @@ export default function App() {
   async function buscarContas() {
     setLoading(true)
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('df_contas')
       .select('*, df_centros_custo(nome)')
       .order('data_vencimento')
 
-    setContas(data || [])
+    if (error) {
+      alert(error.message)
+    } else {
+      setContas(data || [])
+    }
+
     setLoading(false)
   }
 
@@ -58,6 +72,10 @@ export default function App() {
   function primeiraLetraMaiuscula(texto) {
     if (!texto) return ''
     return texto.charAt(0).toUpperCase() + texto.slice(1)
+  }
+
+  function converterValor(valorDigitado) {
+    return Number(String(valorDigitado).replace(',', '.'))
   }
 
   function estaVencida(data, status) {
@@ -81,33 +99,101 @@ export default function App() {
 
   function abrirEdicao(c) {
     setEditandoId(c.id)
-    setDescricao(c.descricao)
-    setValor(c.valor)
-    setData(c.data_vencimento)
-    setCentroCustoId(c.centro_custo_id)
+    setDescricao(c.descricao || '')
+    setValor(c.valor || '')
+    setData(c.data_vencimento || '')
+    setCentroCustoId(c.centro_custo_id || '')
     setModalAberto(true)
   }
 
   function fecharModal() {
     setModalAberto(false)
     setEditandoId(null)
+    setDescricao('')
+    setValor('')
+    setData('')
+    setCentroCustoId('')
   }
 
   async function salvarConta() {
+    if (!descricao || !valor || !data) {
+      alert('Preencha descrição, valor e vencimento')
+      return
+    }
+
+    const valorConvertido = converterValor(valor)
+
+    if (isNaN(valorConvertido)) {
+      alert('Digite um valor válido')
+      return
+    }
+
     const payload = {
-      descricao: primeiraLetraMaiuscula(descricao),
-      valor: Number(valor),
+      descricao: primeiraLetraMaiuscula(descricao.trim()),
+      valor: valorConvertido,
       data_vencimento: data,
       centro_custo_id: centroCustoId || null
     }
 
+    let error
+
     if (editandoId) {
-      await supabase.from('df_contas').update(payload).eq('id', editandoId)
+      const resposta = await supabase
+        .from('df_contas')
+        .update(payload)
+        .eq('id', editandoId)
+
+      error = resposta.error
     } else {
-      await supabase.from('df_contas').insert([{ ...payload, status: 'pendente' }])
+      const resposta = await supabase
+        .from('df_contas')
+        .insert([{ ...payload, status: 'pendente' }])
+
+      error = resposta.error
+    }
+
+    if (error) {
+      alert(error.message)
+      return
     }
 
     fecharModal()
+    buscarContas()
+  }
+
+  async function salvarCentro() {
+    if (!novoCentro.trim()) {
+      alert('Digite o nome do centro de custo')
+      return
+    }
+
+    const { error } = await supabase
+      .from('df_centros_custo')
+      .insert([{ nome: primeiraLetraMaiuscula(novoCentro.trim()) }])
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    setNovoCentro('')
+    buscarCentros()
+  }
+
+  async function excluirCentro(id) {
+    if (!confirm('Deseja excluir este centro de custo?')) return
+
+    const { error } = await supabase
+      .from('df_centros_custo')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      alert('Não foi possível excluir. Verifique se existem contas usando este centro.')
+      return
+    }
+
+    buscarCentros()
     buscarContas()
   }
 
@@ -133,6 +219,10 @@ export default function App() {
       if (filtro === 'pagas') return c.status === 'pago'
       if (filtro === 'vencidas') return estaVencida(c.data_vencimento, c.status)
       return true
+    })
+    .filter(c => {
+      if (!centroFiltro) return true
+      return c.centro_custo_id === centroFiltro
     })
     .filter(c =>
       c.descricao?.toLowerCase().includes(busca.toLowerCase())
@@ -163,11 +253,30 @@ export default function App() {
       />
 
       <div style={styles.filtros}>
-        <button onClick={() => setFiltro('todas')}>todas</button>
-        <button onClick={() => setFiltro('pendentes')}>pendentes</button>
-        <button onClick={() => setFiltro('pagas')}>pagas</button>
-        <button onClick={() => setFiltro('vencidas')}>vencidas</button>
+        <button style={filtro === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('todas')}>todas</button>
+        <button style={filtro === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('pendentes')}>pendentes</button>
+        <button style={filtro === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('pagas')}>pagas</button>
+        <button style={filtro === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('vencidas')}>vencidas</button>
       </div>
+
+      <div style={styles.linhaFiltroCentro}>
+        <select
+          value={centroFiltro}
+          onChange={(e) => setCentroFiltro(e.target.value)}
+          style={styles.selectCentro}
+        >
+          <option value="">Todos os centros</option>
+          {centros.map(c => (
+            <option key={c.id} value={c.id}>{c.nome}</option>
+          ))}
+        </select>
+
+        <button style={styles.btnConfig} onClick={() => setModalConfig(true)}>
+          ⚙️ Centros
+        </button>
+      </div>
+
+      {loading && <p>Carregando...</p>}
 
       {contasFiltradas.map(c => {
         const vencida = estaVencida(c.data_vencimento, c.status)
@@ -208,17 +317,51 @@ export default function App() {
           <div style={styles.modal}>
             <h3>{editandoId ? 'Editar Conta' : 'Nova Conta'}</h3>
 
-            <input placeholder="Descrição" value={descricao} onChange={e => setDescricao(e.target.value)} />
-            <input placeholder="Valor" value={valor} onChange={e => setValor(e.target.value)} />
-            <input type="date" value={data} onChange={e => setData(e.target.value)} />
+            <input style={styles.inputModal} placeholder="Descrição" value={descricao} onChange={e => setDescricao(primeiraLetraMaiuscula(e.target.value))} />
+            <input style={styles.inputModal} placeholder="Valor. Ex: 150,90" value={valor} onChange={e => setValor(e.target.value)} />
+            <input style={styles.inputModal} type="date" value={data} onChange={e => setData(e.target.value)} />
 
-            <select value={centroCustoId} onChange={e => setCentroCustoId(e.target.value)}>
+            <select style={styles.inputModal} value={centroCustoId} onChange={e => setCentroCustoId(e.target.value)}>
               <option value="">Centro de custo</option>
               {centros.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
             </select>
 
-            <button onClick={salvarConta}>Salvar</button>
-            <button onClick={fecharModal}>Cancelar</button>
+            <button style={styles.btnSalvar} onClick={salvarConta}>Salvar</button>
+            <button style={styles.btnCancelar} onClick={fecharModal}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {modalConfig && (
+        <div style={styles.overlay}>
+          <div style={styles.modal}>
+            <h3>⚙️ Centros de Custo</h3>
+
+            <input
+              style={styles.inputModal}
+              placeholder="Ex: Loja Catanduva"
+              value={novoCentro}
+              onChange={(e) => setNovoCentro(primeiraLetraMaiuscula(e.target.value))}
+            />
+
+            <button style={styles.btnSalvar} onClick={salvarCentro}>
+              Cadastrar centro
+            </button>
+
+            <div style={styles.listaCentros}>
+              {centros.map(c => (
+                <div key={c.id} style={styles.itemCentro}>
+                  <span>{c.nome}</span>
+                  <button style={styles.btnMiniExcluir} onClick={() => excluirCentro(c.id)}>
+                    excluir
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button style={styles.btnCancelar} onClick={() => setModalConfig(false)}>
+              Fechar
+            </button>
           </div>
         </div>
       )}
@@ -227,9 +370,18 @@ export default function App() {
 }
 
 const styles = {
-  page: { padding: 16, maxWidth: 700, margin: 'auto', fontFamily: 'Arial' },
+  page: {
+    padding: 16,
+    maxWidth: 700,
+    margin: 'auto',
+    fontFamily: 'Arial',
+    paddingBottom: 90
+  },
 
-  titulo: { fontSize: 26, marginBottom: 10 },
+  titulo: {
+    fontSize: 26,
+    marginBottom: 10
+  },
 
   resumo: {
     display: 'grid',
@@ -243,9 +395,55 @@ const styles = {
   boxPend: { padding: 8, background: '#ffeeba', borderRadius: 10, fontSize: 13 },
   boxVen: { padding: 8, background: '#f5c6cb', borderRadius: 10, fontSize: 13 },
 
-  input: { width: '100%', padding: 8, marginBottom: 8 },
+  input: {
+    width: '100%',
+    padding: 8,
+    marginBottom: 8,
+    boxSizing: 'border-box'
+  },
 
-  filtros: { display: 'flex', gap: 6, marginBottom: 10 },
+  filtros: {
+    display: 'flex',
+    gap: 6,
+    marginBottom: 8,
+    flexWrap: 'wrap'
+  },
+
+  filtro: {
+    border: '1px solid #ccc',
+    background: '#fff',
+    padding: '6px 10px',
+    borderRadius: 6
+  },
+
+  filtroAtivo: {
+    border: 'none',
+    background: '#0d6efd',
+    color: '#fff',
+    padding: '6px 10px',
+    borderRadius: 6
+  },
+
+  linhaFiltroCentro: {
+    display: 'flex',
+    gap: 6,
+    marginBottom: 10
+  },
+
+  selectCentro: {
+    flex: 1,
+    padding: 8,
+    borderRadius: 8,
+    border: '1px solid #ccc'
+  },
+
+  btnConfig: {
+    background: '#212529',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 8,
+    padding: '8px 10px'
+  },
 
   card: {
     padding: 8,
@@ -262,13 +460,15 @@ const styles = {
 
   small: {
     fontSize: 12,
-    opacity: 0.7
+    opacity: 0.7,
+    marginTop: 2
   },
 
   acoes: {
     marginTop: 6,
     display: 'flex',
-    gap: 5
+    gap: 5,
+    flexWrap: 'wrap'
   },
 
   btnAzul: { background: '#0d6efd', color: '#fff', border: 'none', padding: '5px 8px', fontSize: 12, borderRadius: 6 },
@@ -286,7 +486,8 @@ const styles = {
     background: '#198754',
     color: '#fff',
     fontSize: 28,
-    border: 'none'
+    border: 'none',
+    boxShadow: '0 6px 18px rgba(0,0,0,0.25)'
   },
 
   overlay: {
@@ -295,13 +496,71 @@ const styles = {
     background: 'rgba(0,0,0,0.4)',
     display: 'flex',
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    padding: 16,
+    zIndex: 999
   },
 
   modal: {
     background: '#fff',
     padding: 18,
     borderRadius: 12,
-    width: 300
+    width: '100%',
+    maxWidth: 340
+  },
+
+  inputModal: {
+    width: '100%',
+    padding: 10,
+    marginBottom: 8,
+    boxSizing: 'border-box',
+    borderRadius: 8,
+    border: '1px solid #ccc'
+  },
+
+  btnSalvar: {
+    width: '100%',
+    padding: 10,
+    border: 'none',
+    borderRadius: 8,
+    background: '#198754',
+    color: '#fff',
+    marginBottom: 8
+  },
+
+  btnCancelar: {
+    width: '100%',
+    padding: 10,
+    border: 'none',
+    borderRadius: 8,
+    background: '#6c757d',
+    color: '#fff'
+  },
+
+  listaCentros: {
+    marginTop: 10,
+    marginBottom: 10,
+    maxHeight: 220,
+    overflowY: 'auto'
+  },
+
+  itemCentro: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    background: '#f1f1f1',
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 6,
+    fontSize: 13
+  },
+
+  btnMiniExcluir: {
+    background: '#dc3545',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 6,
+    padding: '4px 7px',
+    fontSize: 11
   }
-}
+                              }

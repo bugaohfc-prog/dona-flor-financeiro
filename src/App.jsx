@@ -12,6 +12,7 @@ export default function App() {
 
   const [modalAberto, setModalAberto] = useState(false)
   const [modalConfig, setModalConfig] = useState(false)
+  const [menuAberto, setMenuAberto] = useState(false)
   const [editandoId, setEditandoId] = useState(null)
 
   const [descricao, setDescricao] = useState('')
@@ -89,12 +90,18 @@ export default function App() {
   }
 
   function abrirNovaConta() {
+    setMenuAberto(false)
     setEditandoId(null)
     setDescricao('')
     setValor('')
     setData('')
     setCentroCustoId('')
     setModalAberto(true)
+  }
+
+  function abrirConfigCentros() {
+    setMenuAberto(false)
+    setModalConfig(true)
   }
 
   function abrirEdicao(c) {
@@ -310,7 +317,21 @@ export default function App() {
         )
       })}
 
-      <button style={styles.fab} onClick={abrirNovaConta}>+</button>
+      {menuAberto && (
+        <div style={styles.menuFab}>
+          <button style={styles.menuItem} onClick={abrirNovaConta}>
+            💰 Nova conta
+          </button>
+
+          <button style={styles.menuItem} onClick={abrirConfigCentros}>
+            🏷️ Novo centro
+          </button>
+        </div>
+      )}
+
+      <button style={styles.fab} onClick={() => setMenuAberto(!menuAberto)}>
+        {menuAberto ? '×' : '+'}
+      </button>
 
       {modalAberto && (
         <div style={styles.overlay}>
@@ -487,7 +508,28 @@ const styles = {
     color: '#fff',
     fontSize: 28,
     border: 'none',
-    boxShadow: '0 6px 18px rgba(0,0,0,0.25)'
+    boxShadow: '0 6px 18px rgba(0,0,0,0.25)',
+    zIndex: 20
+  },
+
+  menuFab: {
+    position: 'fixed',
+    right: 20,
+    bottom: 84,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    zIndex: 19
+  },
+
+  menuItem: {
+    background: '#fff',
+    border: '1px solid #ddd',
+    borderRadius: 10,
+    padding: '10px 12px',
+    fontSize: 14,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    textAlign: 'left'
   },
 
   overlay: {
@@ -563,4 +605,4 @@ const styles = {
     padding: '4px 7px',
     fontSize: 11
   }
-                              }
+  }

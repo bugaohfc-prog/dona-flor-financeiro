@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
 
 export default function App() {
+  // =========================
+  // BLOCO 1 - CONTAS A PAGAR
+  // =========================
   const [contas, setContas] = useState([])
   const [centros, setCentros] = useState([])
 
@@ -10,7 +13,7 @@ export default function App() {
   const [centroFiltro, setCentroFiltro] = useState('')
   const [loading, setLoading] = useState(true)
 
-  const [modalAberto, setModalAberto] = useState(false)
+  const [modalConta, setModalConta] = useState(false)
   const [modalConfig, setModalConfig] = useState(false)
   const [menuAberto, setMenuAberto] = useState(false)
   const [editandoId, setEditandoId] = useState(null)
@@ -22,11 +25,26 @@ export default function App() {
 
   const [novoCentro, setNovoCentro] = useState('')
 
+  // =========================
+  // BLOCO 2 - NOTAS
+  // =========================
+  const [notas, setNotas] = useState([])
+  const [modalNota, setModalNota] = useState(false)
+  const [editandoNotaId, setEditandoNotaId] = useState(null)
+
+  const [tituloNota, setTituloNota] = useState('')
+  const [conteudoNota, setConteudoNota] = useState('')
+  const [buscaNota, setBuscaNota] = useState('')
+
   useEffect(() => {
     buscarCentros()
     buscarContas()
+    buscarNotas()
   }, [])
 
+  // =========================
+  // BLOCO 1 - FUNÇÕES CONTAS
+  // =========================
   async function buscarCentros() {
     const { data, error } = await supabase
       .from('df_centros_custo')
@@ -96,25 +114,20 @@ export default function App() {
     setValor('')
     setData('')
     setCentroCustoId('')
-    setModalAberto(true)
+    setModalConta(true)
   }
 
-  function abrirConfigCentros() {
-    setMenuAberto(false)
-    setModalConfig(true)
-  }
-
-  function abrirEdicao(c) {
+  function abrirEdicaoConta(c) {
     setEditandoId(c.id)
     setDescricao(c.descricao || '')
     setValor(c.valor || '')
     setData(c.data_vencimento || '')
     setCentroCustoId(c.centro_custo_id || '')
-    setModalAberto(true)
+    setModalConta(true)
   }
 
-  function fecharModal() {
-    setModalAberto(false)
+  function fecharModalConta() {
+    setModalConta(false)
     setEditandoId(null)
     setDescricao('')
     setValor('')
@@ -164,7 +177,7 @@ export default function App() {
       return
     }
 
-    fecharModal()
+    fecharModalConta()
     buscarContas()
   }
 
@@ -215,7 +228,7 @@ export default function App() {
   }
 
   async function excluirConta(id) {
-    if (!confirm('Excluir?')) return
+    if (!confirm('Excluir conta?')) return
     await supabase.from('df_contas').delete().eq('id', id)
     buscarContas()
   }
@@ -241,89 +254,239 @@ export default function App() {
   const vencido = contas.filter(c => estaVencida(c.data_vencimento, c.status))
     .reduce((a, c) => a + Number(c.valor || 0), 0)
 
+  // =========================
+  // BLOCO 2 - FUNÇÕES NOTAS
+  // =========================
+  async function buscarNotas() {
+    const { data, error } = await supabase
+      .from('df_notas')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    setNotas(data || [])
+  }
+
+  function abrirNovaNota() {
+    setMenuAberto(false)
+    setEditandoNotaId(null)
+    setTituloNota('')
+    setConteudoNota('')
+    setModalNota(true)
+  }
+
+  function abrirEdicaoNota(nota) {
+    setEditandoNotaId(nota.id)
+    setTituloNota(nota.titulo || '')
+    setConteudoNota(nota.conteudo || '')
+    setModalNota(true)
+  }
+
+  function fecharModalNota() {
+    setModalNota(false)
+    setEditandoNotaId(null)
+    setTituloNota('')
+    setConteudoNota('')
+  }
+
+  async function salvarNota() {
+    if (!tituloNota.trim()) {
+      alert('Digite o título da nota')
+      return
+    }
+
+    const payload = {
+      titulo: primeiraLetraMaiuscula(tituloNota.trim()),
+      conteudo: conteudoNota.trim()
+    }
+
+    let error
+
+    if (editandoNotaId) {
+      const resposta = await supabase
+        .from('df_notas')
+        .update(payload)
+        .eq('id', editandoNotaId)
+
+      error = resposta.error
+    } else {
+      const resposta = await supabase
+        .from('df_notas')
+        .insert([payload])
+
+      error = resposta.error
+    }
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    fecharModalNota()
+    buscarNotas()
+  }
+
+  async function excluirNota(id) {
+    if (!confirm('Excluir nota?')) return
+
+    const { error } = await supabase
+      .from('df_notas')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    buscarNotas()
+  }
+
+  const notasFiltradas = notas.filter(nota =>
+    `${nota.titulo || ''} ${nota.conteudo || ''}`
+      .toLowerCase()
+      .includes(buscaNota.toLowerCase())
+  )
+
   return (
     <div style={styles.page}>
-      <h1 style={styles.titulo}>📊 Contas a Pagar</h1>
+      {/* ========================= */}
+      {/* BLOCO 1 - CONTAS A PAGAR */}
+      {/* ========================= */}
+      <section>
+        <h1 style={styles.titulo}>📊 Contas a Pagar</h1>
 
-      <div style={styles.resumo}>
-        <div style={styles.box}>Total<br /><b>{formatarValor(total)}</b></div>
-        <div style={styles.boxPago}>Pago<br /><b>{formatarValor(pago)}</b></div>
-        <div style={styles.boxPend}>Pend<br /><b>{formatarValor(pendente)}</b></div>
-        <div style={styles.boxVen}>Venc<br /><b>{formatarValor(vencido)}</b></div>
-      </div>
+        <div style={styles.resumo}>
+          <div style={styles.box}>Total<br /><b>{formatarValor(total)}</b></div>
+          <div style={styles.boxPago}>Pago<br /><b>{formatarValor(pago)}</b></div>
+          <div style={styles.boxPend}>Pend<br /><b>{formatarValor(pendente)}</b></div>
+          <div style={styles.boxVen}>Venc<br /><b>{formatarValor(vencido)}</b></div>
+        </div>
 
-      <input
-        placeholder="Buscar..."
-        value={busca}
-        onChange={(e) => setBusca(e.target.value)}
-        style={styles.input}
-      />
+        <input
+          placeholder="Buscar conta..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          style={styles.input}
+        />
 
-      <div style={styles.filtros}>
-        <button style={filtro === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('todas')}>todas</button>
-        <button style={filtro === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('pendentes')}>pendentes</button>
-        <button style={filtro === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('pagas')}>pagas</button>
-        <button style={filtro === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('vencidas')}>vencidas</button>
-      </div>
+        <div style={styles.filtros}>
+          <button style={filtro === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('todas')}>todas</button>
+          <button style={filtro === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('pendentes')}>pendentes</button>
+          <button style={filtro === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('pagas')}>pagas</button>
+          <button style={filtro === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('vencidas')}>vencidas</button>
+        </div>
 
-      <div style={styles.linhaFiltroCentro}>
-        <select
-          value={centroFiltro}
-          onChange={(e) => setCentroFiltro(e.target.value)}
-          style={styles.selectCentro}
-        >
-          <option value="">Todos os centros</option>
-          {centros.map(c => (
-            <option key={c.id} value={c.id}>{c.nome}</option>
-          ))}
-        </select>
+        <div style={styles.linhaFiltroCentro}>
+          <select
+            value={centroFiltro}
+            onChange={(e) => setCentroFiltro(e.target.value)}
+            style={styles.selectCentro}
+          >
+            <option value="">Todos os centros</option>
+            {centros.map(c => (
+              <option key={c.id} value={c.id}>{c.nome}</option>
+            ))}
+          </select>
 
-        <button style={styles.btnConfig} onClick={() => setModalConfig(true)}>
-          ⚙️ Centros
-        </button>
-      </div>
+          <button style={styles.btnConfig} onClick={() => setModalConfig(true)}>
+            ⚙️ Centros
+          </button>
+        </div>
 
-      {loading && <p>Carregando...</p>}
+        {loading && <p>Carregando...</p>}
 
-      {contasFiltradas.map(c => {
-        const vencida = estaVencida(c.data_vencimento, c.status)
+        {contasFiltradas.map(c => {
+          const vencida = estaVencida(c.data_vencimento, c.status)
 
-        return (
-          <div key={c.id} style={{
-            ...styles.card,
-            background: c.status === 'pago'
-              ? '#d4edda'
-              : vencida ? '#ffb3b3' : '#fff3cd'
-          }}>
+          return (
+            <div key={c.id} style={{
+              ...styles.card,
+              background: c.status === 'pago'
+                ? '#d4edda'
+                : vencida ? '#ffb3b3' : '#fff3cd'
+            }}>
+              <div style={styles.topo}>
+                <strong>{c.descricao}</strong>
+                <span>{formatarValor(c.valor)}</span>
+              </div>
+
+              <div style={styles.small}>
+                {formatarData(c.data_vencimento)} • {c.df_centros_custo?.nome || '-'}
+              </div>
+
+              <div style={styles.acoes}>
+                {c.status !== 'pago'
+                  ? <button style={styles.btnAzul} onClick={() => marcarComoPago(c.id)}>Pago</button>
+                  : <button style={styles.btnRoxo} onClick={() => voltarParaPendente(c.id)}>Voltar</button>
+                }
+
+                <button style={styles.btnAmarelo} onClick={() => abrirEdicaoConta(c)}>Editar</button>
+                <button style={styles.btnVermelho} onClick={() => excluirConta(c.id)}>Excluir</button>
+              </div>
+            </div>
+          )
+        })}
+      </section>
+
+      {/* ========================= */}
+      {/* BLOCO 2 - NOTAS */}
+      {/* ========================= */}
+      <section style={styles.blocoNotas}>
+        <h2 style={styles.subtitulo}>📝 Bloco de Notas</h2>
+
+        <input
+          placeholder="Buscar nota..."
+          value={buscaNota}
+          onChange={(e) => setBuscaNota(e.target.value)}
+          style={styles.input}
+        />
+
+        {notasFiltradas.length === 0 && (
+          <p style={styles.mensagemVazia}>Nenhuma nota encontrada.</p>
+        )}
+
+        {notasFiltradas.map(nota => (
+          <div key={nota.id} style={styles.cardNota}>
             <div style={styles.topo}>
-              <strong>{c.descricao}</strong>
-              <span>{formatarValor(c.valor)}</span>
+              <strong>{nota.titulo}</strong>
             </div>
 
-            <div style={styles.small}>
-              {formatarData(c.data_vencimento)} • {c.df_centros_custo?.nome || '-'}
-            </div>
+            {nota.conteudo && (
+              <div style={styles.conteudoNota}>
+                {nota.conteudo}
+              </div>
+            )}
 
             <div style={styles.acoes}>
-              {c.status !== 'pago'
-                ? <button style={styles.btnAzul} onClick={() => marcarComoPago(c.id)}>Pago</button>
-                : <button style={styles.btnRoxo} onClick={() => voltarParaPendente(c.id)}>Voltar</button>
-              }
-
-              <button style={styles.btnAmarelo} onClick={() => abrirEdicao(c)}>Editar</button>
-              <button style={styles.btnVermelho} onClick={() => excluirConta(c.id)}>Excluir</button>
+              <button style={styles.btnAmarelo} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
+              <button style={styles.btnVermelho} onClick={() => excluirNota(nota.id)}>Excluir</button>
             </div>
           </div>
-        )
-      })}
+        ))}
+      </section>
 
+      {/* ========================= */}
+      {/* MENU FLUTUANTE GLOBAL */}
+      {/* ========================= */}
       {menuAberto && (
         <div style={styles.menuFab}>
           <button style={styles.menuItem} onClick={abrirNovaConta}>
             💰 Nova conta
           </button>
 
-          <button style={styles.menuItem} onClick={abrirConfigCentros}>
+          <button style={styles.menuItem} onClick={abrirNovaNota}>
+            📝 Nova nota
+          </button>
+
+          <button style={styles.menuItem} onClick={() => {
+            setMenuAberto(false)
+            setModalConfig(true)
+          }}>
             🏷️ Novo centro
           </button>
         </div>
@@ -333,7 +496,10 @@ export default function App() {
         {menuAberto ? '×' : '+'}
       </button>
 
-      {modalAberto && (
+      {/* ========================= */}
+      {/* MODAL - CONTA */}
+      {/* ========================= */}
+      {modalConta && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
             <h3>{editandoId ? 'Editar Conta' : 'Nova Conta'}</h3>
@@ -348,11 +514,42 @@ export default function App() {
             </select>
 
             <button style={styles.btnSalvar} onClick={salvarConta}>Salvar</button>
-            <button style={styles.btnCancelar} onClick={fecharModal}>Cancelar</button>
+            <button style={styles.btnCancelar} onClick={fecharModalConta}>Cancelar</button>
           </div>
         </div>
       )}
 
+      {/* ========================= */}
+      {/* MODAL - NOTA */}
+      {/* ========================= */}
+      {modalNota && (
+        <div style={styles.overlay}>
+          <div style={styles.modal}>
+            <h3>{editandoNotaId ? 'Editar Nota' : 'Nova Nota'}</h3>
+
+            <input
+              style={styles.inputModal}
+              placeholder="Título"
+              value={tituloNota}
+              onChange={e => setTituloNota(primeiraLetraMaiuscula(e.target.value))}
+            />
+
+            <textarea
+              style={styles.textareaModal}
+              placeholder="Conteúdo da nota..."
+              value={conteudoNota}
+              onChange={e => setConteudoNota(e.target.value)}
+            />
+
+            <button style={styles.btnSalvar} onClick={salvarNota}>Salvar</button>
+            <button style={styles.btnCancelar} onClick={fecharModalNota}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {/* ========================= */}
+      {/* MODAL - CONFIGURAÇÕES */}
+      {/* ========================= */}
       {modalConfig && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
@@ -401,6 +598,12 @@ const styles = {
 
   titulo: {
     fontSize: 26,
+    marginBottom: 10
+  },
+
+  subtitulo: {
+    fontSize: 21,
+    marginTop: 28,
     marginBottom: 10
   },
 
@@ -473,6 +676,18 @@ const styles = {
     boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
   },
 
+  cardNota: {
+    padding: 10,
+    borderRadius: 12,
+    marginBottom: 8,
+    background: '#eef2ff',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
+  },
+
+  blocoNotas: {
+    marginTop: 24
+  },
+
   topo: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -483,6 +698,17 @@ const styles = {
     fontSize: 12,
     opacity: 0.7,
     marginTop: 2
+  },
+
+  conteudoNota: {
+    fontSize: 13,
+    marginTop: 6,
+    whiteSpace: 'pre-wrap'
+  },
+
+  mensagemVazia: {
+    fontSize: 13,
+    opacity: 0.7
   },
 
   acoes: {
@@ -560,6 +786,17 @@ const styles = {
     border: '1px solid #ccc'
   },
 
+  textareaModal: {
+    width: '100%',
+    minHeight: 110,
+    padding: 10,
+    marginBottom: 8,
+    boxSizing: 'border-box',
+    borderRadius: 8,
+    border: '1px solid #ccc',
+    fontFamily: 'Arial'
+  },
+
   btnSalvar: {
     width: '100%',
     padding: 10,
@@ -605,4 +842,4 @@ const styles = {
     padding: '4px 7px',
     fontSize: 11
   }
-  }
+}

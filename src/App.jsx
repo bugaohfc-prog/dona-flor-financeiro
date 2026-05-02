@@ -16,8 +16,8 @@ export default function App() {
   const [modalConta, setModalConta] = useState(false)
   const [modalConfig, setModalConfig] = useState(false)
   const [menuAberto, setMenuAberto] = useState(false)
-  const [editandoId, setEditandoId] = useState(null)
 
+  const [editandoContaId, setEditandoContaId] = useState(null)
   const [descricao, setDescricao] = useState('')
   const [valor, setValor] = useState('')
   const [data, setData] = useState('')
@@ -31,7 +31,6 @@ export default function App() {
   const [notas, setNotas] = useState([])
   const [modalNota, setModalNota] = useState(false)
   const [editandoNotaId, setEditandoNotaId] = useState(null)
-
   const [tituloNota, setTituloNota] = useState('')
   const [conteudoNota, setConteudoNota] = useState('')
   const [buscaNota, setBuscaNota] = useState('')
@@ -41,6 +40,42 @@ export default function App() {
     buscarContas()
     buscarNotas()
   }, [])
+
+  // =========================
+  // FUNÇÕES GERAIS
+  // =========================
+  function primeiraLetraMaiuscula(texto) {
+    if (!texto) return ''
+    return texto.charAt(0).toUpperCase() + texto.slice(1)
+  }
+
+  function formatarValor(valor) {
+    return Number(valor || 0).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    })
+  }
+
+  function formatarData(data) {
+    if (!data) return '-'
+    return new Date(data + 'T00:00:00').toLocaleDateString('pt-BR')
+  }
+
+  function converterValor(valorDigitado) {
+    return Number(String(valorDigitado).replace(',', '.'))
+  }
+
+  function estaVencida(data, status) {
+    if (!data || status === 'pago') return false
+
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+
+    const vencimento = new Date(data + 'T00:00:00')
+    vencimento.setHours(0, 0, 0, 0)
+
+    return vencimento < hoje
+  }
 
   // =========================
   // BLOCO 1 - FUNÇÕES CONTAS
@@ -76,40 +111,9 @@ export default function App() {
     setLoading(false)
   }
 
-  function formatarValor(valor) {
-    return Number(valor || 0).toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    })
-  }
-
-  function formatarData(data) {
-    if (!data) return '-'
-    return new Date(data + 'T00:00:00').toLocaleDateString('pt-BR')
-  }
-
-  function primeiraLetraMaiuscula(texto) {
-    if (!texto) return ''
-    return texto.charAt(0).toUpperCase() + texto.slice(1)
-  }
-
-  function converterValor(valorDigitado) {
-    return Number(String(valorDigitado).replace(',', '.'))
-  }
-
-  function estaVencida(data, status) {
-    if (!data || status === 'pago') return false
-
-    const hoje = new Date()
-    hoje.setHours(0, 0, 0, 0)
-
-    const venc = new Date(data + 'T00:00:00')
-    return venc < hoje
-  }
-
   function abrirNovaConta() {
     setMenuAberto(false)
-    setEditandoId(null)
+    setEditandoContaId(null)
     setDescricao('')
     setValor('')
     setData('')
@@ -117,18 +121,18 @@ export default function App() {
     setModalConta(true)
   }
 
-  function abrirEdicaoConta(c) {
-    setEditandoId(c.id)
-    setDescricao(c.descricao || '')
-    setValor(c.valor || '')
-    setData(c.data_vencimento || '')
-    setCentroCustoId(c.centro_custo_id || '')
+  function abrirEdicaoConta(conta) {
+    setEditandoContaId(conta.id)
+    setDescricao(conta.descricao || '')
+    setValor(conta.valor || '')
+    setData(conta.data_vencimento || '')
+    setCentroCustoId(conta.centro_custo_id || '')
     setModalConta(true)
   }
 
   function fecharModalConta() {
     setModalConta(false)
-    setEditandoId(null)
+    setEditandoContaId(null)
     setDescricao('')
     setValor('')
     setData('')
@@ -157,11 +161,11 @@ export default function App() {
 
     let error
 
-    if (editandoId) {
+    if (editandoContaId) {
       const resposta = await supabase
         .from('df_contas')
         .update(payload)
-        .eq('id', editandoId)
+        .eq('id', editandoContaId)
 
       error = resposta.error
     } else {
@@ -178,6 +182,35 @@ export default function App() {
     }
 
     fecharModalConta()
+    buscarContas()
+  }
+
+  async function marcarComoPago(id) {
+    await supabase
+      .from('df_contas')
+      .update({ status: 'pago' })
+      .eq('id', id)
+
+    buscarContas()
+  }
+
+  async function voltarParaPendente(id) {
+    await supabase
+      .from('df_contas')
+      .update({ status: 'pendente' })
+      .eq('id', id)
+
+    buscarContas()
+  }
+
+  async function excluirConta(id) {
+    if (!confirm('Excluir conta?')) return
+
+    await supabase
+      .from('df_contas')
+      .delete()
+      .eq('id', id)
+
     buscarContas()
   }
 
@@ -201,7 +234,7 @@ export default function App() {
   }
 
   async function excluirCentro(id) {
-    if (!confirm('Deseja excluir este centro de custo?')) return
+    if (!confirm('Excluir centro de custo?')) return
 
     const { error } = await supabase
       .from('df_centros_custo')
@@ -217,42 +250,32 @@ export default function App() {
     buscarContas()
   }
 
-  async function marcarComoPago(id) {
-    await supabase.from('df_contas').update({ status: 'pago' }).eq('id', id)
-    buscarContas()
-  }
-
-  async function voltarParaPendente(id) {
-    await supabase.from('df_contas').update({ status: 'pendente' }).eq('id', id)
-    buscarContas()
-  }
-
-  async function excluirConta(id) {
-    if (!confirm('Excluir conta?')) return
-    await supabase.from('df_contas').delete().eq('id', id)
-    buscarContas()
-  }
-
   const contasFiltradas = contas
-    .filter(c => {
-      if (filtro === 'pendentes') return c.status !== 'pago'
-      if (filtro === 'pagas') return c.status === 'pago'
-      if (filtro === 'vencidas') return estaVencida(c.data_vencimento, c.status)
+    .filter((conta) => {
+      if (filtro === 'pendentes') return conta.status !== 'pago'
+      if (filtro === 'pagas') return conta.status === 'pago'
+      if (filtro === 'vencidas') return estaVencida(conta.data_vencimento, conta.status)
       return true
     })
-    .filter(c => {
+    .filter((conta) => {
       if (!centroFiltro) return true
-      return c.centro_custo_id === centroFiltro
+      return conta.centro_custo_id === centroFiltro
     })
-    .filter(c =>
-      c.descricao?.toLowerCase().includes(busca.toLowerCase())
+    .filter((conta) =>
+      String(conta.descricao || '').toLowerCase().includes(busca.toLowerCase())
     )
 
-  const total = contas.reduce((a, c) => a + Number(c.valor || 0), 0)
-  const pago = contas.filter(c => c.status === 'pago').reduce((a, c) => a + Number(c.valor || 0), 0)
+  const total = contas.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+
+  const pago = contas
+    .filter((conta) => conta.status === 'pago')
+    .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+
   const pendente = total - pago
-  const vencido = contas.filter(c => estaVencida(c.data_vencimento, c.status))
-    .reduce((a, c) => a + Number(c.valor || 0), 0)
+
+  const vencido = contas
+    .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
+    .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
   // =========================
   // BLOCO 2 - FUNÇÕES NOTAS
@@ -333,20 +356,15 @@ export default function App() {
   async function excluirNota(id) {
     if (!confirm('Excluir nota?')) return
 
-    const { error } = await supabase
+    await supabase
       .from('df_notas')
       .delete()
       .eq('id', id)
 
-    if (error) {
-      alert(error.message)
-      return
-    }
-
     buscarNotas()
   }
 
-  const notasFiltradas = notas.filter(nota =>
+  const notasFiltradas = notas.filter((nota) =>
     `${nota.titulo || ''} ${nota.conteudo || ''}`
       .toLowerCase()
       .includes(buscaNota.toLowerCase())
@@ -388,8 +406,10 @@ export default function App() {
             style={styles.selectCentro}
           >
             <option value="">Todos os centros</option>
-            {centros.map(c => (
-              <option key={c.id} value={c.id}>{c.nome}</option>
+            {centros.map((centro) => (
+              <option key={centro.id} value={centro.id}>
+                {centro.nome}
+              </option>
             ))}
           </select>
 
@@ -400,33 +420,48 @@ export default function App() {
 
         {loading && <p>Carregando...</p>}
 
-        {contasFiltradas.map(c => {
-          const vencida = estaVencida(c.data_vencimento, c.status)
+        {contasFiltradas.map((conta) => {
+          const vencida = estaVencida(conta.data_vencimento, conta.status)
 
           return (
-            <div key={c.id} style={{
-              ...styles.card,
-              background: c.status === 'pago'
-                ? '#d4edda'
-                : vencida ? '#ffb3b3' : '#fff3cd'
-            }}>
+            <div
+              key={conta.id}
+              style={{
+                ...styles.card,
+                background: conta.status === 'pago'
+                  ? '#d4edda'
+                  : vencida
+                    ? '#ffb3b3'
+                    : '#fff3cd'
+              }}
+            >
               <div style={styles.topo}>
-                <strong>{c.descricao}</strong>
-                <span>{formatarValor(c.valor)}</span>
+                <strong>{conta.descricao}</strong>
+                <span>{formatarValor(conta.valor)}</span>
               </div>
 
               <div style={styles.small}>
-                {formatarData(c.data_vencimento)} • {c.df_centros_custo?.nome || '-'}
+                {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || '-'}
               </div>
 
               <div style={styles.acoes}>
-                {c.status !== 'pago'
-                  ? <button style={styles.btnAzul} onClick={() => marcarComoPago(c.id)}>Pago</button>
-                  : <button style={styles.btnRoxo} onClick={() => voltarParaPendente(c.id)}>Voltar</button>
-                }
+                {conta.status !== 'pago' ? (
+                  <button style={styles.btnAzul} onClick={() => marcarComoPago(conta.id)}>
+                    Pago
+                  </button>
+                ) : (
+                  <button style={styles.btnRoxo} onClick={() => voltarParaPendente(conta.id)}>
+                    Voltar
+                  </button>
+                )}
 
-                <button style={styles.btnAmarelo} onClick={() => abrirEdicaoConta(c)}>Editar</button>
-                <button style={styles.btnVermelho} onClick={() => excluirConta(c.id)}>Excluir</button>
+                <button style={styles.btnAmarelo} onClick={() => abrirEdicaoConta(conta)}>
+                  Editar
+                </button>
+
+                <button style={styles.btnVermelho} onClick={() => excluirConta(conta.id)}>
+                  Excluir
+                </button>
               </div>
             </div>
           )
@@ -450,7 +485,7 @@ export default function App() {
           <p style={styles.mensagemVazia}>Nenhuma nota encontrada.</p>
         )}
 
-        {notasFiltradas.map(nota => (
+        {notasFiltradas.map((nota) => (
           <div key={nota.id} style={styles.cardNota}>
             <div style={styles.topo}>
               <strong>{nota.titulo}</strong>
@@ -463,8 +498,13 @@ export default function App() {
             )}
 
             <div style={styles.acoes}>
-              <button style={styles.btnAmarelo} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
-              <button style={styles.btnVermelho} onClick={() => excluirNota(nota.id)}>Excluir</button>
+              <button style={styles.btnAmarelo} onClick={() => abrirEdicaoNota(nota)}>
+                Editar
+              </button>
+
+              <button style={styles.btnVermelho} onClick={() => excluirNota(nota.id)}>
+                Excluir
+              </button>
             </div>
           </div>
         ))}
@@ -502,19 +542,49 @@ export default function App() {
       {modalConta && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
-            <h3>{editandoId ? 'Editar Conta' : 'Nova Conta'}</h3>
+            <h3>{editandoContaId ? 'Editar Conta' : 'Nova Conta'}</h3>
 
-            <input style={styles.inputModal} placeholder="Descrição" value={descricao} onChange={e => setDescricao(primeiraLetraMaiuscula(e.target.value))} />
-            <input style={styles.inputModal} placeholder="Valor. Ex: 150,90" value={valor} onChange={e => setValor(e.target.value)} />
-            <input style={styles.inputModal} type="date" value={data} onChange={e => setData(e.target.value)} />
+            <input
+              style={styles.inputModal}
+              placeholder="Descrição"
+              value={descricao}
+              onChange={(e) => setDescricao(primeiraLetraMaiuscula(e.target.value))}
+            />
 
-            <select style={styles.inputModal} value={centroCustoId} onChange={e => setCentroCustoId(e.target.value)}>
+            <input
+              style={styles.inputModal}
+              placeholder="Valor. Ex: 150,90"
+              value={valor}
+              onChange={(e) => setValor(e.target.value)}
+            />
+
+            <input
+              style={styles.inputModal}
+              type="date"
+              value={data}
+              onChange={(e) => setData(e.target.value)}
+            />
+
+            <select
+              style={styles.inputModal}
+              value={centroCustoId}
+              onChange={(e) => setCentroCustoId(e.target.value)}
+            >
               <option value="">Centro de custo</option>
-              {centros.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              {centros.map((centro) => (
+                <option key={centro.id} value={centro.id}>
+                  {centro.nome}
+                </option>
+              ))}
             </select>
 
-            <button style={styles.btnSalvar} onClick={salvarConta}>Salvar</button>
-            <button style={styles.btnCancelar} onClick={fecharModalConta}>Cancelar</button>
+            <button style={styles.btnSalvar} onClick={salvarConta}>
+              Salvar
+            </button>
+
+            <button style={styles.btnCancelar} onClick={fecharModalConta}>
+              Cancelar
+            </button>
           </div>
         </div>
       )}
@@ -531,18 +601,23 @@ export default function App() {
               style={styles.inputModal}
               placeholder="Título"
               value={tituloNota}
-              onChange={e => setTituloNota(primeiraLetraMaiuscula(e.target.value))}
+              onChange={(e) => setTituloNota(primeiraLetraMaiuscula(e.target.value))}
             />
 
             <textarea
               style={styles.textareaModal}
               placeholder="Conteúdo da nota..."
               value={conteudoNota}
-              onChange={e => setConteudoNota(e.target.value)}
+              onChange={(e) => setConteudoNota(e.target.value)}
             />
 
-            <button style={styles.btnSalvar} onClick={salvarNota}>Salvar</button>
-            <button style={styles.btnCancelar} onClick={fecharModalNota}>Cancelar</button>
+            <button style={styles.btnSalvar} onClick={salvarNota}>
+              Salvar
+            </button>
+
+            <button style={styles.btnCancelar} onClick={fecharModalNota}>
+              Cancelar
+            </button>
           </div>
         </div>
       )}
@@ -567,10 +642,11 @@ export default function App() {
             </button>
 
             <div style={styles.listaCentros}>
-              {centros.map(c => (
-                <div key={c.id} style={styles.itemCentro}>
-                  <span>{c.nome}</span>
-                  <button style={styles.btnMiniExcluir} onClick={() => excluirCentro(c.id)}>
+              {centros.map((centro) => (
+                <div key={centro.id} style={styles.itemCentro}>
+                  <span>{centro.nome}</span>
+
+                  <button style={styles.btnMiniExcluir} onClick={() => excluirCentro(centro.id)}>
                     excluir
                   </button>
                 </div>
@@ -614,10 +690,33 @@ const styles = {
     marginBottom: 10
   },
 
-  box: { padding: 8, background: '#eee', borderRadius: 10, fontSize: 13 },
-  boxPago: { padding: 8, background: '#c3e6cb', borderRadius: 10, fontSize: 13 },
-  boxPend: { padding: 8, background: '#ffeeba', borderRadius: 10, fontSize: 13 },
-  boxVen: { padding: 8, background: '#f5c6cb', borderRadius: 10, fontSize: 13 },
+  box: {
+    padding: 8,
+    background: '#eee',
+    borderRadius: 10,
+    fontSize: 13
+  },
+
+  boxPago: {
+    padding: 8,
+    background: '#c3e6cb',
+    borderRadius: 10,
+    fontSize: 13
+  },
+
+  boxPend: {
+    padding: 8,
+    background: '#ffeeba',
+    borderRadius: 10,
+    fontSize: 13
+  },
+
+  boxVen: {
+    padding: 8,
+    background: '#f5c6cb',
+    borderRadius: 10,
+    fontSize: 13
+  },
 
   input: {
     width: '100%',
@@ -697,149 +796,4 @@ const styles = {
   small: {
     fontSize: 12,
     opacity: 0.7,
-    marginTop: 2
-  },
-
-  conteudoNota: {
-    fontSize: 13,
-    marginTop: 6,
-    whiteSpace: 'pre-wrap'
-  },
-
-  mensagemVazia: {
-    fontSize: 13,
-    opacity: 0.7
-  },
-
-  acoes: {
-    marginTop: 6,
-    display: 'flex',
-    gap: 5,
-    flexWrap: 'wrap'
-  },
-
-  btnAzul: { background: '#0d6efd', color: '#fff', border: 'none', padding: '5px 8px', fontSize: 12, borderRadius: 6 },
-  btnRoxo: { background: '#6f42c1', color: '#fff', border: 'none', padding: '5px 8px', fontSize: 12, borderRadius: 6 },
-  btnAmarelo: { background: '#ffc107', border: 'none', padding: '5px 8px', fontSize: 12, borderRadius: 6 },
-  btnVermelho: { background: '#dc3545', color: '#fff', border: 'none', padding: '5px 8px', fontSize: 12, borderRadius: 6 },
-
-  fab: {
-    position: 'fixed',
-    right: 20,
-    bottom: 20,
-    width: 56,
-    height: 56,
-    borderRadius: '50%',
-    background: '#198754',
-    color: '#fff',
-    fontSize: 28,
-    border: 'none',
-    boxShadow: '0 6px 18px rgba(0,0,0,0.25)',
-    zIndex: 20
-  },
-
-  menuFab: {
-    position: 'fixed',
-    right: 20,
-    bottom: 84,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-    zIndex: 19
-  },
-
-  menuItem: {
-    background: '#fff',
-    border: '1px solid #ddd',
-    borderRadius: 10,
-    padding: '10px 12px',
-    fontSize: 14,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    textAlign: 'left'
-  },
-
-  overlay: {
-    position: 'fixed',
-    inset: 0,
-    background: 'rgba(0,0,0,0.4)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-    zIndex: 999
-  },
-
-  modal: {
-    background: '#fff',
-    padding: 18,
-    borderRadius: 12,
-    width: '100%',
-    maxWidth: 340
-  },
-
-  inputModal: {
-    width: '100%',
-    padding: 10,
-    marginBottom: 8,
-    boxSizing: 'border-box',
-    borderRadius: 8,
-    border: '1px solid #ccc'
-  },
-
-  textareaModal: {
-    width: '100%',
-    minHeight: 110,
-    padding: 10,
-    marginBottom: 8,
-    boxSizing: 'border-box',
-    borderRadius: 8,
-    border: '1px solid #ccc',
-    fontFamily: 'Arial'
-  },
-
-  btnSalvar: {
-    width: '100%',
-    padding: 10,
-    border: 'none',
-    borderRadius: 8,
-    background: '#198754',
-    color: '#fff',
-    marginBottom: 8
-  },
-
-  btnCancelar: {
-    width: '100%',
-    padding: 10,
-    border: 'none',
-    borderRadius: 8,
-    background: '#6c757d',
-    color: '#fff'
-  },
-
-  listaCentros: {
-    marginTop: 10,
-    marginBottom: 10,
-    maxHeight: 220,
-    overflowY: 'auto'
-  },
-
-  itemCentro: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    background: '#f1f1f1',
-    padding: 8,
-    borderRadius: 8,
-    marginBottom: 6,
-    fontSize: 13
-  },
-
-  btnMiniExcluir: {
-    background: '#dc3545',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 6,
-    padding: '4px 7px',
-    fontSize: 11
-  }
-}
+    mar

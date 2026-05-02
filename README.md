@@ -1,20 +1,26 @@
-# Dona Flor Financeiro - Correção Deploy Vercel
+# Dona Flor Financeiro
 
-Este pacote foi ajustado para corrigir falhas de instalação/build no Vercel.
+Projeto React + Vite configurado para deploy na Vercel.
 
-## Correções incluídas
+## Correção aplicada
 
-- Node fixado em `20.x`
-- NPM fixado em `10.x`
-- `.nvmrc` criado
-- `.npmrc` criado para evitar auditoria/fund no build
-- `vercel.json` criado com build Vite
-- Estrutura React + Vite mínima validada
-- Supabase preparado via variáveis de ambiente
+- Forçado Node 20 via `.nvmrc` e `engines`
+- Forçado pnpm via `packageManager`
+- Forçado pnpm na Vercel via `vercel.json`
+- Removido lock do npm (`package-lock.json`)
+- Output configurado como `dist`
 
-## Variáveis necessárias na Vercel
+## Vercel
 
-Configure em Project Settings > Environment Variables:
+Depois de subir no Git:
+
+1. Vá em Deployments
+2. Clique em Redeploy
+3. Marque Clear Build Cache
+
+## Variáveis necessárias
+
+Configure no Vercel:
 
 ```text
 VITE_SUPABASE_URL=sua_url_do_supabase
@@ -24,15 +30,7 @@ VITE_SUPABASE_ANON_KEY=sua_anon_key_do_supabase
 ## Comandos locais
 
 ```bash
-npm install
-npm run dev
-npm run build
+corepack enable
+pnpm install
+pnpm run build
 ```
-
-## Importante no Vercel
-
-Ao fazer novo deploy, use:
-
-- Redeploy
-- Clear build cache
-

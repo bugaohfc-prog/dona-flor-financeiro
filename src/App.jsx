@@ -4,9 +4,11 @@ import { supabase } from './supabase'
 export default function App() {
   const [contas, setContas] = useState([])
   const [centros, setCentros] = useState([])
+
   const [busca, setBusca] = useState('')
   const [filtro, setFiltro] = useState('todas')
-  const [centroFiltro, setCentroFiltro] = useState('')
+  const [loading, setLoading] = useState(true)
+
   const [modalAberto, setModalAberto] = useState(false)
   const [editandoId, setEditandoId] = useState(null)
 
@@ -23,18 +25,22 @@ export default function App() {
   async function buscarCentros() {
     const { data } = await supabase
       .from('df_centros_custo')
-      .select('id, nome')
-      .order('nome', { ascending: true })
+      .select('*')
+      .order('nome')
 
     setCentros(data || [])
   }
 
   async function buscarContas() {
+    setLoading(true)
+
     const { data } = await supabase
       .from('df_contas')
-      .select('*, df_centros_custo(id, nome)')
+      .select('*, df_centros_custo(nome)')
+      .order('data_vencimento')
 
     setContas(data || [])
+    setLoading(false)
   }
 
   function formatarValor(valor) {
@@ -54,20 +60,14 @@ export default function App() {
     return texto.charAt(0).toUpperCase() + texto.slice(1)
   }
 
-  function converterValor(valorDigitado) {
-    return Number(String(valorDigitado).replace(',', '.'))
-  }
-
   function estaVencida(data, status) {
     if (!data || status === 'pago') return false
 
     const hoje = new Date()
     hoje.setHours(0, 0, 0, 0)
 
-    const vencimento = new Date(data + 'T00:00:00')
-    vencimento.setHours(0, 0, 0, 0)
-
-    return vencimento < hoje
+    const venc = new Date(data + 'T00:00:00')
+    return venc < hoje
   }
 
   function abrirNovaConta() {
@@ -79,40 +79,24 @@ export default function App() {
     setModalAberto(true)
   }
 
-  function abrirEdicao(conta) {
-    setEditandoId(conta.id)
-    setDescricao(conta.descricao || '')
-    setValor(conta.valor || '')
-    setData(conta.data_vencimento || '')
-    setCentroCustoId(conta.centro_custo_id || '')
+  function abrirEdicao(c) {
+    setEditandoId(c.id)
+    setDescricao(c.descricao)
+    setValor(c.valor)
+    setData(c.data_vencimento)
+    setCentroCustoId(c.centro_custo_id)
     setModalAberto(true)
   }
 
   function fecharModal() {
     setModalAberto(false)
     setEditandoId(null)
-    setDescricao('')
-    setValor('')
-    setData('')
-    setCentroCustoId('')
   }
 
   async function salvarConta() {
-    if (!descricao || !valor || !data) {
-      alert('Preencha descrição, valor e vencimento')
-      return
-    }
-
-    const valorConvertido = converterValor(valor)
-
-    if (isNaN(valorConvertido)) {
-      alert('Digite um valor válido')
-      return
-    }
-
     const payload = {
-      descricao: primeiraLetraMaiuscula(descricao.trim()),
-      valor: valorConvertido,
+      descricao: primeiraLetraMaiuscula(descricao),
+      valor: Number(valor),
       data_vencimento: data,
       centro_custo_id: centroCustoId || null
     }
@@ -138,220 +122,101 @@ export default function App() {
   }
 
   async function excluirConta(id) {
-    if (!confirm('Deseja excluir?')) return
+    if (!confirm('Excluir?')) return
     await supabase.from('df_contas').delete().eq('id', id)
     buscarContas()
   }
 
-  function ordenarContas(lista) {
-    return [...lista].sort((a, b) => {
-      const aVencida = estaVencida(a.data_vencimento, a.status)
-      const bVencida = estaVencida(b.data_vencimento, b.status)
-
-      if (aVencida && !bVencida) return -1
-      if (!aVencida && bVencida) return 1
-
-      if (a.status !== 'pago' && b.status === 'pago') return -1
-      if (a.status === 'pago' && b.status !== 'pago') return 1
-
-      return new Date(a.data_vencimento || '9999-12-31') - new Date(b.data_vencimento || '9999-12-31')
-    })
-  }
-
-  const contasFiltradas = ordenarContas(
-    contas
-      .filter((c) => {
-        if (filtro === 'pendentes') return c.status !== 'pago'
-        if (filtro === 'pagas') return c.status === 'pago'
-        if (filtro === 'vencidas') return estaVencida(c.data_vencimento, c.status)
-        return true
-      })
-      .filter((c) => {
-        if (!centroFiltro) return true
-        return c.centro_custo_id === centroFiltro
-      })
-      .filter((c) =>
-        String(c.descricao || '').toLowerCase().includes(busca.toLowerCase())
-      )
+  const contasFiltradas = contas.filter(c => {
+    if (filtro === 'pendentes') return c.status !== 'pago'
+    if (filtro === 'pagas') return c.status === 'pago'
+    if (filtro === 'vencidas') return estaVencida(c.data_vencimento, c.status)
+    return true
+  }).filter(c =>
+    c.descricao?.toLowerCase().includes(busca.toLowerCase())
   )
 
   const total = contas.reduce((a, c) => a + Number(c.valor || 0), 0)
-
-  const pago = contas
-    .filter((c) => c.status === 'pago')
-    .reduce((a, c) => a + Number(c.valor || 0), 0)
-
+  const pago = contas.filter(c => c.status === 'pago').reduce((a, c) => a + Number(c.valor || 0), 0)
   const pendente = total - pago
-
-  const vencido = contas
-    .filter((c) => estaVencida(c.data_vencimento, c.status))
+  const vencido = contas.filter(c => estaVencida(c.data_vencimento, c.status))
     .reduce((a, c) => a + Number(c.valor || 0), 0)
 
   return (
     <div style={styles.page}>
-      <h1 style={styles.titulo}>📊 Contas a Pagar</h1>
+      <h1>📊 Contas a Pagar</h1>
 
       <div style={styles.resumo}>
-        <div style={styles.boxTotal}>
-          <span>Total</span>
-          <strong>{formatarValor(total)}</strong>
-        </div>
-
-        <div style={styles.boxPago}>
-          <span>Pago</span>
-          <strong>{formatarValor(pago)}</strong>
-        </div>
-
-        <div style={styles.boxPendente}>
-          <span>Pendente</span>
-          <strong>{formatarValor(pendente)}</strong>
-        </div>
-
-        <div style={styles.boxVencido}>
-          <span>Vencido</span>
-          <strong>{formatarValor(vencido)}</strong>
-        </div>
+        <div style={styles.box}>Total<br /><b>{formatarValor(total)}</b></div>
+        <div style={styles.boxPago}>Pago<br /><b>{formatarValor(pago)}</b></div>
+        <div style={styles.boxPend}>Pend<br /><b>{formatarValor(pendente)}</b></div>
+        <div style={styles.boxVen}>Venc<br /><b>{formatarValor(vencido)}</b></div>
       </div>
 
       <input
-        placeholder="Buscar conta..."
+        placeholder="Buscar..."
         value={busca}
         onChange={(e) => setBusca(e.target.value)}
         style={styles.input}
       />
 
       <div style={styles.filtros}>
-        <button style={filtro === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('todas')}>Todas</button>
-        <button style={filtro === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('pendentes')}>Pendentes</button>
-        <button style={filtro === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('pagas')}>Pagas</button>
-        <button style={filtro === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('vencidas')}>Vencidas</button>
+        <button onClick={() => setFiltro('todas')}>todas</button>
+        <button onClick={() => setFiltro('pendentes')}>pendentes</button>
+        <button onClick={() => setFiltro('pagas')}>pagas</button>
+        <button onClick={() => setFiltro('vencidas')}>vencidas</button>
       </div>
 
-      <select
-        value={centroFiltro}
-        onChange={(e) => setCentroFiltro(e.target.value)}
-        style={styles.selectCentro}
-      >
-        <option value="">Todos os centros</option>
-        {centros.map((centro) => (
-          <option key={centro.id} value={centro.id}>
-            {centro.nome}
-          </option>
-        ))}
-      </select>
-
-      {contasFiltradas.map((conta) => {
-        const vencida = estaVencida(conta.data_vencimento, conta.status)
+      {contasFiltradas.map(c => {
+        const vencida = estaVencida(c.data_vencimento, c.status)
 
         return (
-          <div
-            key={conta.id}
-            style={{
-              ...styles.card,
-              background:
-                conta.status === 'pago'
-                  ? '#d4edda'
-                  : vencida
-                  ? '#ff4d4d'
-                  : '#f8d7da',
-              color: vencida ? '#fff' : '#111'
-            }}
-          >
-            <div style={styles.cardTopo}>
-              <h2 style={styles.cardTitulo}>{conta.descricao}</h2>
-              <strong style={styles.cardValor}>{formatarValor(conta.valor)}</strong>
+          <div key={c.id} style={{
+            ...styles.card,
+            background: c.status === 'pago'
+              ? '#d4edda'
+              : vencida ? '#ffb3b3' : '#fff3cd'
+          }}>
+            <div style={styles.topo}>
+              <strong>{c.descricao}</strong>
+              <span>{formatarValor(c.valor)}</span>
             </div>
 
-            <p><b>Vencimento:</b> {formatarData(conta.data_vencimento)}</p>
-            <p><b>Centro:</b> {conta.df_centros_custo?.nome || '—'}</p>
-
-            <p>
-              <b>Status:</b>{' '}
-              {conta.status === 'pago'
-                ? 'pago'
-                : vencida
-                ? 'VENCIDO'
-                : 'pendente'}
-            </p>
+            <small>
+              {formatarData(c.data_vencimento)} • {c.df_centros_custo?.nome || '-'}
+            </small>
 
             <div style={styles.acoes}>
-              {conta.status !== 'pago' && (
-                <button style={styles.btnPago} onClick={() => marcarComoPago(conta.id)}>
-                  Marcar como pago
-                </button>
-              )}
+              {c.status !== 'pago'
+                ? <button style={styles.btnAzul} onClick={() => marcarComoPago(c.id)}>Pago</button>
+                : <button style={styles.btnRoxo} onClick={() => voltarParaPendente(c.id)}>Voltar</button>
+              }
 
-              {conta.status === 'pago' && (
-                <button style={styles.btnVoltar} onClick={() => voltarParaPendente(conta.id)}>
-                  Voltar para pendente
-                </button>
-              )}
-
-              <button style={styles.btnEditar} onClick={() => abrirEdicao(conta)}>
-                Editar
-              </button>
-
-              <button style={styles.btnExcluir} onClick={() => excluirConta(conta.id)}>
-                Excluir
-              </button>
+              <button style={styles.btnAmarelo} onClick={() => abrirEdicao(c)}>Editar</button>
+              <button style={styles.btnVermelho} onClick={() => excluirConta(c.id)}>Excluir</button>
             </div>
           </div>
         )
       })}
 
-      <button onClick={abrirNovaConta} style={styles.botaoFlutuante}>
-        +
-      </button>
+      <button style={styles.fab} onClick={abrirNovaConta}>+</button>
 
       {modalAberto && (
-        <div style={styles.modalOverlay}>
+        <div style={styles.overlay}>
           <div style={styles.modal}>
-            <h2 style={styles.modalTitulo}>
-              {editandoId ? '✏️ Editar Conta' : '➕ Nova Conta'}
-            </h2>
+            <h3>{editandoId ? 'Editar' : 'Nova Conta'}</h3>
 
-            <input
-              placeholder="Descrição"
-              value={descricao}
-              onChange={(e) => setDescricao(primeiraLetraMaiuscula(e.target.value))}
-              style={styles.inputModal}
-            />
+            <input placeholder="Descrição" value={descricao} onChange={e => setDescricao(e.target.value)} />
+            <input placeholder="Valor" value={valor} onChange={e => setValor(e.target.value)} />
+            <input type="date" value={data} onChange={e => setData(e.target.value)} />
 
-            <input
-              type="text"
-              placeholder="Valor. Ex: 150,90"
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              style={styles.inputModal}
-            />
-
-            <input
-              type="date"
-              value={data}
-              onChange={(e) => setData(e.target.value)}
-              style={styles.inputModal}
-            />
-
-            <select
-              value={centroCustoId}
-              onChange={(e) => setCentroCustoId(e.target.value)}
-              style={styles.inputModal}
-            >
-              <option value="">Centro de custo</option>
-              {centros.map((centro) => (
-                <option key={centro.id} value={centro.id}>
-                  {centro.nome}
-                </option>
-              ))}
+            <select value={centroCustoId} onChange={e => setCentroCustoId(e.target.value)}>
+              <option value="">Centro</option>
+              {centros.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
             </select>
 
-            <button onClick={salvarConta} style={styles.botaoSalvar}>
-              {editandoId ? 'Salvar Alteração' : 'Salvar Conta'}
-            </button>
-
-            <button onClick={fecharModal} style={styles.botaoCancelar}>
-              Cancelar
-            </button>
+            <button onClick={salvarConta}>Salvar</button>
+            <button onClick={fecharModal}>Cancelar</button>
           </div>
         </div>
       )}
@@ -360,199 +225,71 @@ export default function App() {
 }
 
 const styles = {
-  page: {
-    padding: 20,
-    paddingBottom: 90,
-    maxWidth: 900,
-    margin: '0 auto',
-    fontFamily: 'Arial, sans-serif',
-    background: '#f4f6f8',
-    minHeight: '100vh'
-  },
-  titulo: {
-    fontSize: 34,
-    marginBottom: 20
-  },
+  page: { padding: 16, maxWidth: 700, margin: 'auto' },
+
   resumo: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: 10,
-    marginBottom: 20
-  },
-  boxTotal: {
-    background: '#fff',
-    padding: 14,
-    borderRadius: 12
-  },
-  boxPago: {
-    background: '#d4edda',
-    padding: 14,
-    borderRadius: 12
-  },
-  boxPendente: {
-    background: '#fff3cd',
-    padding: 14,
-    borderRadius: 12
-  },
-  boxVencido: {
-    background: '#f8d7da',
-    padding: 14,
-    borderRadius: 12
-  },
-  input: {
-    width: '100%',
-    padding: 14,
-    borderRadius: 8,
-    border: '1px solid #ccc',
-    marginBottom: 15,
-    fontSize: 16,
-    boxSizing: 'border-box'
-  },
-  filtros: {
-    display: 'flex',
-    gap: 8,
-    flexWrap: 'wrap',
-    marginBottom: 12
-  },
-  filtro: {
-    padding: '10px 15px',
-    borderRadius: 8,
-    border: '1px solid #ccc',
-    background: '#fff',
-    fontSize: 15
-  },
-  filtroAtivo: {
-    padding: '10px 15px',
-    borderRadius: 8,
-    border: 'none',
-    background: '#0d6efd',
-    color: '#fff',
-    fontSize: 15
-  },
-  selectCentro: {
-    padding: 10,
-    borderRadius: 8,
-    border: '1px solid #ccc',
-    marginBottom: 15,
-    fontSize: 15
-  },
-  card: {
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 16,
-    boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
-  },
-  cardTopo: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 10
-  },
-  cardTitulo: {
-    margin: 0,
-    fontSize: 24
-  },
-  cardValor: {
-    fontSize: 20
-  },
-  acoes: {
-    display: 'flex',
-    gap: 10,
-    flexWrap: 'wrap',
-    marginTop: 14
-  },
-  btnPago: {
-    background: '#0d6efd',
-    color: '#fff',
-    border: 'none',
-    padding: '10px 14px',
-    borderRadius: 8,
-    fontSize: 14
-  },
-  btnVoltar: {
-    background: '#6f42c1',
-    color: '#fff',
-    border: 'none',
-    padding: '10px 14px',
-    borderRadius: 8,
-    fontSize: 14
-  },
-  btnEditar: {
-    background: '#ffc107',
-    color: '#111',
-    border: 'none',
-    padding: '10px 14px',
-    borderRadius: 8,
-    fontSize: 14
-  },
-  btnExcluir: {
-    background: '#dc3545',
-    color: '#fff',
-    border: 'none',
-    padding: '10px 14px',
-    borderRadius: 8,
-    fontSize: 14
-  },
-  botaoFlutuante: {
-    position: 'fixed',
-    right: 24,
-    bottom: 24,
-    width: 64,
-    height: 64,
-    borderRadius: '50%',
-    border: 'none',
-    background: '#198754',
-    color: '#fff',
-    fontSize: 38,
-    fontWeight: 'bold',
-    boxShadow: '0 6px 18px rgba(0,0,0,0.25)'
-  },
-  modalOverlay: {
-    position: 'fixed',
-    inset: 0,
-    background: 'rgba(0,0,0,0.45)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-    zIndex: 999
-  },
-  modal: {
-    width: '100%',
-    maxWidth: 420,
-    background: '#fff',
-    borderRadius: 16,
-    padding: 20
-  },
-  modalTitulo: {
-    marginTop: 0
-  },
-  inputModal: {
-    width: '100%',
-    padding: 12,
-    borderRadius: 8,
-    border: '1px solid #ccc',
-    marginBottom: 10,
-    fontSize: 16,
-    boxSizing: 'border-box'
-  },
-  botaoSalvar: {
-    width: '100%',
-    padding: 12,
-    borderRadius: 8,
-    border: 'none',
-    background: '#198754',
-    color: '#fff',
-    fontSize: 16,
+    gap: 6,
     marginBottom: 10
   },
-  botaoCancelar: {
-    width: '100%',
-    padding: 12,
-    borderRadius: 8,
-    border: 'none',
-    background: '#6c757d',
+
+  box: { padding: 8, background: '#eee', borderRadius: 8, fontSize: 13 },
+  boxPago: { padding: 8, background: '#c3e6cb', borderRadius: 8, fontSize: 13 },
+  boxPend: { padding: 8, background: '#ffeeba', borderRadius: 8, fontSize: 13 },
+  boxVen: { padding: 8, background: '#f5c6cb', borderRadius: 8, fontSize: 13 },
+
+  input: { width: '100%', padding: 8, marginBottom: 8 },
+
+  filtros: { display: 'flex', gap: 6, marginBottom: 10 },
+
+  card: {
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 8
+  },
+
+  topo: {
+    display: 'flex',
+    justifyContent: 'space-between'
+  },
+
+  acoes: {
+    marginTop: 8,
+    display: 'flex',
+    gap: 6
+  },
+
+  btnAzul: { background: '#0d6efd', color: '#fff', border: 'none', padding: 6 },
+  btnRoxo: { background: '#6f42c1', color: '#fff', border: 'none', padding: 6 },
+  btnAmarelo: { background: '#ffc107', border: 'none', padding: 6 },
+  btnVermelho: { background: '#dc3545', color: '#fff', border: 'none', padding: 6 },
+
+  fab: {
+    position: 'fixed',
+    right: 20,
+    bottom: 20,
+    width: 60,
+    height: 60,
+    borderRadius: '50%',
+    background: '#198754',
     color: '#fff',
-    fontSize: 16
+    fontSize: 30
+  },
+
+  overlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.4)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+
+  modal: {
+    background: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    width: 300
   }
-      }
+}

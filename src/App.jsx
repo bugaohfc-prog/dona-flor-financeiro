@@ -2,9 +2,6 @@ import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
 
 export default function App() {
-  // =========================
-  // BLOCO 0 — UTILITÁRIOS
-  // =========================
   function primeiraLetraMaiuscula(texto) {
     if (!texto) return ''
     return texto.charAt(0).toUpperCase() + texto.slice(1)
@@ -40,9 +37,6 @@ export default function App() {
     return String(data).slice(0, 7)
   }
 
-  // =========================
-  // BLOCO 1 — STATES CONTAS
-  // =========================
   const [contas, setContas] = useState([])
   const [busca, setBusca] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('todas')
@@ -59,9 +53,6 @@ export default function App() {
   const [dataVencimento, setDataVencimento] = useState('')
   const [centroCustoId, setCentroCustoId] = useState('')
 
-  // =========================
-  // BLOCO 2 — STATES NOTAS
-  // =========================
   const [notas, setNotas] = useState([])
   const [buscaNota, setBuscaNota] = useState('')
   const [modalNota, setModalNota] = useState(false)
@@ -69,16 +60,10 @@ export default function App() {
   const [tituloNota, setTituloNota] = useState('')
   const [conteudoNota, setConteudoNota] = useState('')
 
-  // =========================
-  // BLOCO 3 — STATES CENTROS
-  // =========================
   const [centros, setCentros] = useState([])
   const [modalCentro, setModalCentro] = useState(false)
   const [novoCentro, setNovoCentro] = useState('')
 
-  // =========================
-  // BLOCO 4 — MENU
-  // =========================
   const [menuAberto, setMenuAberto] = useState(false)
 
   useEffect(() => {
@@ -91,9 +76,6 @@ export default function App() {
     setLoading(false)
   }
 
-  // =========================
-  // BLOCO 5 — BUSCAS SUPABASE
-  // =========================
   async function buscarContas() {
     const { data, error } = await supabase
       .from('df_contas')
@@ -136,9 +118,6 @@ export default function App() {
     setCentros(data || [])
   }
 
-  // =========================
-  // BLOCO 6 — FILTROS / RESUMOS
-  // =========================
   const contasFiltradas = contas
     .filter((conta) => {
       if (filtroStatus === 'pendentes') return conta.status !== 'pago'
@@ -197,9 +176,6 @@ export default function App() {
       .includes(buscaNota.toLowerCase())
   )
 
-  // =========================
-  // BLOCO 7 — AÇÕES CONTAS
-  // =========================
   function abrirNovaConta() {
     setMenuAberto(false)
     setEditandoContaId(null)
@@ -276,9 +252,6 @@ export default function App() {
     buscarContas()
   }
 
-  // =========================
-  // BLOCO 8 — AÇÕES NOTAS
-  // =========================
   function abrirNovaNota() {
     setMenuAberto(false)
     setEditandoNotaId(null)
@@ -337,9 +310,6 @@ export default function App() {
     buscarNotas()
   }
 
-  // =========================
-  // BLOCO 9 — AÇÕES CENTROS
-  // =========================
   async function salvarCentro() {
     if (!novoCentro.trim()) {
       alert('Digite o centro de custo')
@@ -376,9 +346,6 @@ export default function App() {
     buscarContas()
   }
 
-  // =========================
-  // BLOCO 10 — EXPORTAÇÕES
-  // =========================
   function exportarCSV() {
     const cabecalho = ['Descricao', 'Valor', 'Vencimento', 'Status', 'Centro']
     const linhas = contasFiltradas.map((conta) => [
@@ -417,11 +384,62 @@ export default function App() {
     setDataFinal('')
   }
 
-  // =========================
-  // BLOCO 11 — UI
-  // =========================
   return (
     <div style={styles.page}>
+      <style>
+        {`
+          .print-header {
+            display: none;
+          }
+
+          @media print {
+            body {
+              background: #ffffff !important;
+            }
+
+            .no-print {
+              display: none !important;
+            }
+
+            .print-header {
+              display: block !important;
+              text-align: center;
+              margin-bottom: 18px;
+              border-bottom: 1px solid #ddd;
+              padding-bottom: 10px;
+            }
+
+            .print-header h1 {
+              font-size: 22px;
+              margin: 0 0 4px 0;
+            }
+
+            .print-header p {
+              font-size: 12px;
+              margin: 0;
+              color: #555;
+            }
+
+            .print-card {
+              page-break-inside: avoid;
+              break-inside: avoid;
+              box-shadow: none !important;
+              border: 1px solid #ddd;
+            }
+
+            @page {
+              size: A4;
+              margin: 14mm;
+            }
+          }
+        `}
+      </style>
+
+      <div className="print-header">
+        <h1>Relatório Financeiro</h1>
+        <p>Gerado em {new Date().toLocaleDateString('pt-BR')}</p>
+      </div>
+
       <section>
         <h1 style={styles.titulo}>📊 Contas a Pagar</h1>
 
@@ -448,7 +466,7 @@ export default function App() {
         </div>
       </section>
 
-      <section style={styles.filtrosBox}>
+      <section className="no-print" style={styles.filtrosBox}>
         <input
           style={styles.input}
           placeholder="Buscar conta..."
@@ -463,40 +481,18 @@ export default function App() {
           <button style={filtroStatus === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('vencidas')}>Vencidas</button>
         </div>
 
-        <select
-          style={styles.input}
-          value={filtroCentro}
-          onChange={(e) => setFiltroCentro(e.target.value)}
-        >
+        <select style={styles.input} value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)}>
           <option value="">Todos os centros</option>
           {centros.map((centro) => (
-            <option key={centro.id} value={centro.id}>
-              {centro.nome}
-            </option>
+            <option key={centro.id} value={centro.id}>{centro.nome}</option>
           ))}
         </select>
 
-        <input
-          style={styles.input}
-          type="month"
-          value={filtroMes}
-          onChange={(e) => setFiltroMes(e.target.value)}
-        />
+        <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
 
         <div style={styles.datas}>
-          <input
-            style={styles.input}
-            type="date"
-            value={dataInicial}
-            onChange={(e) => setDataInicial(e.target.value)}
-          />
-
-          <input
-            style={styles.input}
-            type="date"
-            value={dataFinal}
-            onChange={(e) => setDataFinal(e.target.value)}
-          />
+          <input style={styles.input} type="date" value={dataInicial} onChange={(e) => setDataInicial(e.target.value)} />
+          <input style={styles.input} type="date" value={dataFinal} onChange={(e) => setDataFinal(e.target.value)} />
         </div>
 
         <div style={styles.acoes}>
@@ -514,6 +510,7 @@ export default function App() {
 
           return (
             <div
+              className="print-card"
               key={conta.id}
               style={{
                 ...styles.cardConta,
@@ -534,24 +531,15 @@ export default function App() {
                 {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || '-'} • {vencida ? 'VENCIDO' : conta.status}
               </div>
 
-              <div style={styles.acoes}>
+              <div className="no-print" style={styles.acoes}>
                 {conta.status !== 'pago' ? (
-                  <button style={styles.btnPago} onClick={() => marcarComoPago(conta.id)}>
-                    Pago
-                  </button>
+                  <button style={styles.btnPago} onClick={() => marcarComoPago(conta.id)}>Pago</button>
                 ) : (
-                  <button style={styles.btnVoltar} onClick={() => voltarParaPendente(conta.id)}>
-                    Voltar
-                  </button>
+                  <button style={styles.btnVoltar} onClick={() => voltarParaPendente(conta.id)}>Voltar</button>
                 )}
 
-                <button style={styles.btnEditar} onClick={() => abrirEdicaoConta(conta)}>
-                  Editar
-                </button>
-
-                <button style={styles.btnExcluir} onClick={() => excluirConta(conta.id)}>
-                  Excluir
-                </button>
+                <button style={styles.btnEditar} onClick={() => abrirEdicaoConta(conta)}>Editar</button>
+                <button style={styles.btnExcluir} onClick={() => excluirConta(conta.id)}>Excluir</button>
               </div>
             </div>
           )
@@ -566,7 +554,7 @@ export default function App() {
         )}
 
         {resumoPorCentro.map((centro) => (
-          <div key={centro.id} style={styles.cardDashboard}>
+          <div className="print-card" key={centro.id} style={styles.cardDashboard}>
             <strong>{centro.nome}</strong>
 
             <div style={styles.dashboardGrid}>
@@ -579,15 +567,10 @@ export default function App() {
         ))}
       </section>
 
-      <section style={styles.bloco}>
+      <section className="no-print" style={styles.bloco}>
         <h2 style={styles.subtitulo}>📝 Bloco de Notas</h2>
 
-        <input
-          style={styles.input}
-          placeholder="Buscar nota..."
-          value={buscaNota}
-          onChange={(e) => setBuscaNota(e.target.value)}
-        />
+        <input style={styles.input} placeholder="Buscar nota..." value={buscaNota} onChange={(e) => setBuscaNota(e.target.value)} />
 
         {notasFiltradas.length === 0 && (
           <p style={styles.mensagemVazia}>Nenhuma nota encontrada.</p>
@@ -597,25 +580,18 @@ export default function App() {
           <div key={nota.id} style={styles.cardNota}>
             <strong>{nota.titulo}</strong>
 
-            {nota.conteudo && (
-              <p style={styles.textoNota}>{nota.conteudo}</p>
-            )}
+            {nota.conteudo && <p style={styles.textoNota}>{nota.conteudo}</p>}
 
             <div style={styles.acoes}>
-              <button style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>
-                Editar
-              </button>
-
-              <button style={styles.btnExcluir} onClick={() => excluirNota(nota.id)}>
-                Excluir
-              </button>
+              <button style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
+              <button style={styles.btnExcluir} onClick={() => excluirNota(nota.id)}>Excluir</button>
             </div>
           </div>
         ))}
       </section>
 
       {menuAberto && (
-        <div style={styles.menuFab}>
+        <div className="no-print" style={styles.menuFab}>
           <button style={styles.menuItem} onClick={abrirNovaConta}>💰 Nova conta</button>
           <button style={styles.menuItem} onClick={abrirNovaNota}>📝 Nova nota</button>
           <button
@@ -630,12 +606,12 @@ export default function App() {
         </div>
       )}
 
-      <button style={styles.fab} onClick={() => setMenuAberto(!menuAberto)}>
+      <button className="no-print" style={styles.fab} onClick={() => setMenuAberto(!menuAberto)}>
         {menuAberto ? '×' : '+'}
       </button>
 
       {modalConta && (
-        <div style={styles.overlay}>
+        <div className="no-print" style={styles.overlay}>
           <div style={styles.modal}>
             <h3>{editandoContaId ? 'Editar Conta' : 'Nova Conta'}</h3>
 
@@ -657,332 +633,11 @@ export default function App() {
       )}
 
       {modalNota && (
-        <div style={styles.overlay}>
+        <div className="no-print" style={styles.overlay}>
           <div style={styles.modal}>
             <h3>{editandoNotaId ? 'Editar Nota' : 'Nova Nota'}</h3>
 
             <input style={styles.inputModal} placeholder="Título" value={tituloNota} onChange={(e) => setTituloNota(primeiraLetraMaiuscula(e.target.value))} />
             <textarea style={styles.textareaModal} placeholder="Conteúdo..." value={conteudoNota} onChange={(e) => setConteudoNota(e.target.value)} />
 
-            <button style={styles.btnSalvar} onClick={salvarNota}>Salvar</button>
-            <button style={styles.btnCancelar} onClick={fecharNota}>Cancelar</button>
-          </div>
-        </div>
-      )}
-
-      {modalCentro && (
-        <div style={styles.overlay}>
-          <div style={styles.modal}>
-            <h3>Centros de Custo</h3>
-
-            <input style={styles.inputModal} placeholder="Novo centro" value={novoCentro} onChange={(e) => setNovoCentro(primeiraLetraMaiuscula(e.target.value))} />
-            <button style={styles.btnSalvar} onClick={salvarCentro}>Salvar Centro</button>
-
-            {centros.map((centro) => (
-              <div key={centro.id} style={styles.itemCentro}>
-                <span>{centro.nome}</span>
-                <button style={styles.btnMiniExcluir} onClick={() => excluirCentro(centro.id)}>excluir</button>
-              </div>
-            ))}
-
-            <button style={styles.btnCancelar} onClick={() => setModalCentro(false)}>Fechar</button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// =========================
-// BLOCO 12 — STYLES
-// =========================
-const styles = {
-  page: {
-    padding: 16,
-    maxWidth: 700,
-    margin: 'auto',
-    fontFamily: 'Arial',
-    background: '#f8f9fa',
-    minHeight: '100vh',
-    paddingBottom: 100
-  },
-  titulo: { fontSize: 28, marginBottom: 12 },
-  subtitulo: { fontSize: 22, marginBottom: 12 },
-  bloco: { marginTop: 24 },
-  resumo: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 8,
-    marginBottom: 12
-  },
-  boxTotal: {
-    background: '#fff',
-    padding: 12,
-    borderRadius: 14,
-    display: 'flex',
-    flexDirection: 'column',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-  },
-  boxPago: {
-    background: '#d4edda',
-    padding: 12,
-    borderRadius: 14,
-    display: 'flex',
-    flexDirection: 'column'
-  },
-  boxPendente: {
-    background: '#fff3cd',
-    padding: 12,
-    borderRadius: 14,
-    display: 'flex',
-    flexDirection: 'column'
-  },
-  boxVencido: {
-    background: '#f8d7da',
-    padding: 12,
-    borderRadius: 14,
-    display: 'flex',
-    flexDirection: 'column'
-  },
-  filtrosBox: {
-    background: '#fff',
-    padding: 12,
-    borderRadius: 14,
-    marginBottom: 12,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-  },
-  input: {
-    width: '100%',
-    padding: 10,
-    borderRadius: 8,
-    border: '1px solid #ccc',
-    marginBottom: 8,
-    boxSizing: 'border-box'
-  },
-  datas: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 8
-  },
-  filtros: {
-    display: 'flex',
-    gap: 6,
-    flexWrap: 'wrap',
-    marginBottom: 8
-  },
-  filtro: {
-    border: '1px solid #ccc',
-    background: '#fff',
-    padding: '7px 11px',
-    borderRadius: 8
-  },
-  filtroAtivo: {
-    border: 'none',
-    background: '#0d6efd',
-    color: '#fff',
-    padding: '7px 11px',
-    borderRadius: 8
-  },
-  cardConta: {
-    padding: 12,
-    borderRadius: 14,
-    marginBottom: 10,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-  },
-  cardTopo: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    fontSize: 18,
-    marginBottom: 4
-  },
-  cardInfo: {
-    fontSize: 13,
-    opacity: 0.75
-  },
-  cardDashboard: {
-    background: '#fff',
-    padding: 12,
-    borderRadius: 14,
-    marginBottom: 8,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-  },
-  dashboardGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 5,
-    marginTop: 6,
-    fontSize: 13
-  },
-  cardNota: {
-    background: '#eef2ff',
-    padding: 12,
-    borderRadius: 14,
-    marginBottom: 10,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-  },
-  textoNota: {
-    fontSize: 14,
-    whiteSpace: 'pre-wrap'
-  },
-  acoes: {
-    display: 'flex',
-    gap: 6,
-    flexWrap: 'wrap',
-    marginTop: 8
-  },
-  mensagemVazia: {
-    fontSize: 13,
-    opacity: 0.7
-  },
-  btnPago: {
-    background: '#0d6efd',
-    color: '#fff',
-    border: 'none',
-    padding: '6px 10px',
-    borderRadius: 8
-  },
-  btnVoltar: {
-    background: '#6f42c1',
-    color: '#fff',
-    border: 'none',
-    padding: '6px 10px',
-    borderRadius: 8
-  },
-  btnEditar: {
-    background: '#ffc107',
-    color: '#111',
-    border: 'none',
-    padding: '6px 10px',
-    borderRadius: 8
-  },
-  btnExcluir: {
-    background: '#dc3545',
-    color: '#fff',
-    border: 'none',
-    padding: '6px 10px',
-    borderRadius: 8
-  },
-  btnCinza: {
-    background: '#6c757d',
-    color: '#fff',
-    border: 'none',
-    padding: '7px 10px',
-    borderRadius: 8
-  },
-  btnRoxo: {
-    background: '#6f42c1',
-    color: '#fff',
-    border: 'none',
-    padding: '7px 10px',
-    borderRadius: 8
-  },
-  btnVerde: {
-    background: '#198754',
-    color: '#fff',
-    border: 'none',
-    padding: '7px 10px',
-    borderRadius: 8
-  },
-  fab: {
-    position: 'fixed',
-    right: 20,
-    bottom: 20,
-    width: 58,
-    height: 58,
-    borderRadius: '50%',
-    background: '#198754',
-    color: '#fff',
-    border: 'none',
-    fontSize: 30,
-    boxShadow: '0 6px 18px rgba(0,0,0,0.25)',
-    zIndex: 20
-  },
-  menuFab: {
-    position: 'fixed',
-    right: 20,
-    bottom: 86,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-    zIndex: 19
-  },
-  menuItem: {
-    background: '#fff',
-    border: '1px solid #ddd',
-    borderRadius: 10,
-    padding: '10px 12px',
-    fontSize: 14,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    textAlign: 'left'
-  },
-  overlay: {
-    position: 'fixed',
-    inset: 0,
-    background: 'rgba(0,0,0,0.45)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-    zIndex: 999
-  },
-  modal: {
-    background: '#fff',
-    padding: 18,
-    borderRadius: 14,
-    width: '100%',
-    maxWidth: 360
-  },
-  inputModal: {
-    width: '100%',
-    padding: 10,
-    marginBottom: 8,
-    borderRadius: 8,
-    border: '1px solid #ccc',
-    boxSizing: 'border-box'
-  },
-  textareaModal: {
-    width: '100%',
-    minHeight: 110,
-    padding: 10,
-    marginBottom: 8,
-    borderRadius: 8,
-    border: '1px solid #ccc',
-    boxSizing: 'border-box',
-    fontFamily: 'Arial'
-  },
-  btnSalvar: {
-    width: '100%',
-    padding: 10,
-    border: 'none',
-    borderRadius: 8,
-    background: '#198754',
-    color: '#fff',
-    marginBottom: 8
-  },
-  btnCancelar: {
-    width: '100%',
-    padding: 10,
-    border: 'none',
-    borderRadius: 8,
-    background: '#6c757d',
-    color: '#fff'
-  },
-  itemCentro: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    background: '#f1f1f1',
-    padding: 8,
-    borderRadius: 8,
-    marginBottom: 6,
-    fontSize: 13
-  },
-  btnMiniExcluir: {
-    background: '#dc3545',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 6,
-    padding: '4px 7px',
-    fontSize: 11
-  }
-}
+            <but

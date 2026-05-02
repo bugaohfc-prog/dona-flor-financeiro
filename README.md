@@ -1,36 +1,37 @@
 # Dona Flor Financeiro
 
-Projeto React + Vite configurado para deploy na Vercel.
+Correção aplicada para estabilizar deploy na Vercel.
 
-## Correção aplicada
+## Importante
 
-- Forçado Node 20 via `.nvmrc` e `engines`
-- Forçado pnpm via `packageManager`
-- Forçado pnpm na Vercel via `vercel.json`
-- Removido lock do npm (`package-lock.json`)
-- Output configurado como `dist`
+Este pacote remove a tentativa de forçar pnpm, porque o Vercel apresentou erro:
 
-## Vercel
+- ERR_INVALID_THIS
+- ERR_PNPM_META_FETCH_FAIL
 
-Depois de subir no Git:
+Agora o projeto volta para o fluxo padrão com npm, Node 18 e `.npmrc` com retries.
 
-1. Vá em Deployments
-2. Clique em Redeploy
-3. Marque Clear Build Cache
+## Configuração na Vercel
 
-## Variáveis necessárias
+Em Project Settings:
 
-Configure no Vercel:
+- Framework Preset: Vite
+- Build Command: npm run build
+- Output Directory: dist
+- Node.js Version: 18.x
 
-```text
-VITE_SUPABASE_URL=sua_url_do_supabase
-VITE_SUPABASE_ANON_KEY=sua_anon_key_do_supabase
-```
+Depois faça:
 
-## Comandos locais
+- Deployments
+- Redeploy
+- Marcar Clear Build Cache
 
-```bash
-corepack enable
-pnpm install
-pnpm run build
-```
+## Arquivos que NÃO devem voltar
+
+Não suba:
+
+- vercel.json
+- package-lock.json
+- pnpm-lock.yaml
+- node_modules
+- dist

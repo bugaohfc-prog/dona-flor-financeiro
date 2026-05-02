@@ -61,6 +61,11 @@ export default function App() {
     buscarContas()
   }
 
+  async function voltarParaPendente(id) {
+    await supabase.from('df_contas').update({ status: 'pendente' }).eq('id', id)
+    buscarContas()
+  }
+
   async function excluirConta(id) {
     if (!confirm('Deseja excluir?')) return
     await supabase.from('df_contas').delete().eq('id', id)
@@ -180,6 +185,12 @@ export default function App() {
               {conta.status !== 'pago' && (
                 <button onClick={() => marcarComoPago(conta.id)}>
                   Pago
+                </button>
+              )}
+
+              {conta.status === 'pago' && (
+                <button onClick={() => voltarParaPendente(conta.id)}>
+                  Voltar
                 </button>
               )}
 

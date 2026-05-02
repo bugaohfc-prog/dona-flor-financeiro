@@ -1,557 +1,314 @@
-import { useEffect, useState } from 'react'
-import { supabase } from './supabase'
+import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  "https://vyhjjtzdvofoqoericak.supabase.co",
+  "sb_publishable_lC1mtt21iCdk-e6Kdf-3nw_5pdCPIcw"
+);
 
 export default function App() {
-  const [contas, setContas] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [contas, setContas] = useState([]);
+  const [centros, setCentros] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editando, setEditando] = useState(null);
+  const [filtro, setFiltro] = useState("todas");
+  const [busca, setBusca] = useState("");
 
-  const [descricao, setDescricao] = useState('')
-  const [valor, setValor] = useState('')
-  const [dataVencimento, setDataVencimento] = useState('')
-
-  const [filtro, setFiltro] = useState('todas')
-  const [busca, setBusca] = useState('')
-
-  const [modalAberto, setModalAberto] = useState(false)
-  const [editandoId, setEditandoId] = useState(null)
+  const [form, setForm] = useState({
+    descricao: "",
+    valor: "",
+    data_vencimento: "",
+    centro_custo_id: ""
+  });
 
   useEffect(() => {
-    buscarContas()
-  }, [])
+    carregarContas();
+    carregarCentros();
+  }, []);
 
-  async function buscarContas() {
-    setLoading(true)
+  async function carregarCentros() {
+    const { data } = await supabase
+      .from("df_centros_custo")
+      .select("*")
+      .order("nome");
+    setCentros(data || []);
+  }
 
-    const { data, error } = await supabase
-      .from('df_contas')
-      .select('*')
+  async function carregarContas() {
+    const { data } = await supabase
+      .from("df_contas")
+      .select("*, df_centros_custo(nome)")
+      .order("data_vencimento", { ascending: true });
 
-    if (error) {
-      alert('Erro ao buscar contas: ' + error.message)
+    setContas(data || []);
+  }
+
+  function abrirModal(conta = null) {
+    if (conta) {
+      setEditando(conta);
+      setForm({
+        descricao: conta.descricao,
+        valor: conta.valor,
+        data_vencimento: conta.data_vencimento,
+        centro_custo_id: conta.centro_custo_id || ""
+      });
     } else {
-      setContas(data || [])
+      setEditando(null);
+      setForm({
+        descricao: "",
+        valor: "",
+        data_vencimento: "",
+        centro_custo_id: ""
+      });
     }
 
-    setLoading(false)
-  }
-
-  function primeiraLetraMaiuscula(texto) {
-    if (!texto) return ''
-    return texto.charAt(0).toUpperCase() + texto.slice(1)
-  }
-
-  function abrirNovaConta() {
-    limparFormulario()
-    setModalAberto(true)
-  }
-
-  function abrirEdicao(conta) {
-    setEditandoId(conta.id)
-    setDescricao(conta.descricao || '')
-    setValor(conta.valor || '')
-    setDataVencimento(conta.data_vencimento || '')
-    setModalAberto(true)
+    setModalOpen(true);
   }
 
   function fecharModal() {
-    limparFormulario()
-    setModalAberto(false)
-  }
-
-  function limparFormulario() {
-    setEditandoId(null)
-    setDescricao('')
-    setValor('')
-    setDataVencimento('')
+    setModalOpen(false);
+    setEditando(null);
   }
 
   async function salvarConta() {
-    if (!descricao || !valor || !dataVencimento) {
-      alert('Preencha descrição, valor e vencimento')
-      return
-    }
+    if (!form.descricao || !form.valor) return;
 
-    const descricaoFormatada = primeiraLetraMaiuscula(descricao.trim())
+    const payload = {
+      ...form,
+      descricao:
+        form.descricao.charAt(0).toLowerCase() + form.descricao.slice(1)
+    };
 
-    if (editandoId) {
-      const { error } = await supabase
-        .from('df_contas')
-        .update({
-          descricao: descricaoFormatada,
-          valor: Number(valor),
-          data_vencimento: dataVencimento
-        })
-        .eq('id', editandoId)
-
-      if (error) {
-        alert('Erro ao editar conta: ' + error.message)
-        return
-      }
+    if (editando) {
+      await supabase.from("df_contas").update(payload).eq("id", editando.id);
     } else {
-      const { error } = await supabase.from('df_contas').insert([
-        {
-          descricao: descricaoFormatada,
-          valor: Number(valor),
-          data_vencimento: dataVencimento,
-          status: 'pendente'
-        }
-      ])
-
-      if (error) {
-        alert('Erro ao salvar conta: ' + error.message)
-        return
-      }
+      await supabase.from("df_contas").insert(payload);
     }
 
-    fecharModal()
-    buscarContas()
+    fecharModal();
+    carregarContas();
   }
 
-  async function marcarComoPago(id) {
-    const { error } = await supabase
-      .from('df_contas')
-      .update({ status: 'pago' })
-      .eq('id', id)
+  async function marcarPago(conta) {
+    await supabase
+      .from("df_contas")
+      .update({ status: "pago" })
+      .eq("id", conta.id);
 
-    if (error) {
-      alert('Erro ao marcar como pago: ' + error.message)
-      return
-    }
+    carregarContas();
+  }
 
-    buscarContas()
+  async function voltarPendente(conta) {
+    await supabase
+      .from("df_contas")
+      .update({ status: "pendente" })
+      .eq("id", conta.id);
+
+    carregarContas();
   }
 
   async function excluirConta(id) {
-    const confirmar = confirm('Deseja excluir esta conta?')
-    if (!confirmar) return
-
-    const { error } = await supabase
-      .from('df_contas')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      alert('Erro ao excluir conta: ' + error.message)
-      return
-    }
-
-    buscarContas()
+    await supabase.from("df_contas").delete().eq("id", id);
+    carregarContas();
   }
 
-  function formatarValor(valor) {
-    return Number(valor || 0).toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    })
+  function isVencido(conta) {
+    if (conta.status === "pago") return false;
+    if (!conta.data_vencimento) return false;
+    return new Date(conta.data_vencimento) < new Date();
   }
 
-  function formatarData(data) {
-    if (!data) return '—'
-    return new Date(data + 'T00:00:00').toLocaleDateString('pt-BR')
+  const contasFiltradas = contas.filter((c) => {
+    const matchBusca = c.descricao
+      .toLowerCase()
+      .includes(busca.toLowerCase());
+
+    if (!matchBusca) return false;
+
+    if (filtro === "pendentes") return c.status !== "pago" && !isVencido(c);
+    if (filtro === "pagas") return c.status === "pago";
+    if (filtro === "vencidas") return isVencido(c);
+
+    return true;
+  });
+
+  function formatar(valor) {
+    return Number(valor || 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    });
   }
 
-  function estaVencida(data, status) {
-    if (!data || status === 'pago') return false
-
-    const hoje = new Date()
-    hoje.setHours(0, 0, 0, 0)
-
-    const vencimento = new Date(data + 'T00:00:00')
-    vencimento.setHours(0, 0, 0, 0)
-
-    return vencimento < hoje
-  }
-
-  function ordenarContas(lista) {
-    return [...lista].sort((a, b) => {
-      const aVencida = estaVencida(a.data_vencimento, a.status)
-      const bVencida = estaVencida(b.data_vencimento, b.status)
-
-      if (aVencida && !bVencida) return -1
-      if (!aVencida && bVencida) return 1
-
-      if (a.status !== 'pago' && b.status === 'pago') return -1
-      if (a.status === 'pago' && b.status !== 'pago') return 1
-
-      return new Date(a.data_vencimento || '9999-12-31') - new Date(b.data_vencimento || '9999-12-31')
-    })
-  }
-
-  const contasFiltradas = ordenarContas(
-    contas
-      .filter((conta) => {
-        if (filtro === 'pendentes') return conta.status !== 'pago'
-        if (filtro === 'pagas') return conta.status === 'pago'
-        if (filtro === 'vencidas') return estaVencida(conta.data_vencimento, conta.status)
-        return true
-      })
-      .filter((conta) =>
-        String(conta.descricao || '').toLowerCase().includes(busca.toLowerCase())
-      )
-  )
-
-  const total = contas.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
-
-  const totalPago = contas
-    .filter((conta) => conta.status === 'pago')
-    .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
-
-  const totalPendente = total - totalPago
-
-  const totalVencido = contas
-    .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
-    .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+  const total = contas.reduce((acc, c) => acc + Number(c.valor), 0);
+  const pago = contas
+    .filter((c) => c.status === "pago")
+    .reduce((acc, c) => acc + Number(c.valor), 0);
+  const pendente = total - pago;
+  const vencido = contas
+    .filter((c) => isVencido(c))
+    .reduce((acc, c) => acc + Number(c.valor), 0);
 
   return (
-    <div style={styles.page}>
-      <div style={styles.container}>
-        <h1 style={styles.title}>📊 Contas a Pagar</h1>
+    <div style={{ padding: 20 }}>
+      <h1>📊 Contas a Pagar</h1>
 
-        <div style={styles.resumoGrid}>
-          <div style={styles.resumoCard}>
-            <span style={styles.resumoLabel}>Total</span>
-            <strong>{formatarValor(total)}</strong>
-          </div>
-
-          <div style={styles.resumoCardPago}>
-            <span style={styles.resumoLabel}>Pago</span>
-            <strong>{formatarValor(totalPago)}</strong>
-          </div>
-
-          <div style={styles.resumoCardPendente}>
-            <span style={styles.resumoLabel}>Pendente</span>
-            <strong>{formatarValor(totalPendente)}</strong>
-          </div>
-
-          <div style={styles.resumoCardVencido}>
-            <span style={styles.resumoLabel}>Vencido</span>
-            <strong>{formatarValor(totalVencido)}</strong>
-          </div>
-        </div>
-
-        <input
-          placeholder="Buscar conta..."
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          style={styles.inputBusca}
-        />
-
-        <div style={styles.filtros}>
-          <button style={filtro === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('todas')}>Todas</button>
-          <button style={filtro === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('pendentes')}>Pendentes</button>
-          <button style={filtro === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('pagas')}>Pagas</button>
-          <button style={filtro === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('vencidas')}>Vencidas</button>
-        </div>
-
-        {loading && <p>Carregando...</p>}
-
-        {!loading && contasFiltradas.length === 0 && (
-          <p style={styles.vazio}>Nenhuma conta encontrada.</p>
-        )}
-
-        {contasFiltradas.map((conta) => {
-          const vencida = estaVencida(conta.data_vencimento, conta.status)
-
-          return (
-            <div
-              key={conta.id}
-              style={{
-                ...styles.cardConta,
-                backgroundColor:
-                  conta.status === 'pago'
-                    ? '#d4edda'
-                    : vencida
-                    ? '#ff4d4d'
-                    : '#f8d7da',
-                color: vencida ? '#fff' : '#111'
-              }}
-            >
-              <div style={styles.cardTopo}>
-                <h3 style={styles.cardTitulo}>{conta.descricao}</h3>
-                <span style={styles.valor}>{formatarValor(conta.valor)}</span>
-              </div>
-
-              <p><b>Vencimento:</b> {formatarData(conta.data_vencimento)}</p>
-
-              <p>
-                <b>Status:</b>{' '}
-                {conta.status === 'pago'
-                  ? 'pago'
-                  : vencida
-                  ? 'VENCIDO'
-                  : 'pendente'}
-              </p>
-
-              <div style={styles.acoes}>
-                {conta.status !== 'pago' && (
-                  <button onClick={() => marcarComoPago(conta.id)} style={styles.botaoPago}>
-                    Marcar como pago
-                  </button>
-                )}
-
-                <button onClick={() => abrirEdicao(conta)} style={styles.botaoEditar}>
-                  Editar
-                </button>
-
-                <button onClick={() => excluirConta(conta.id)} style={styles.botaoExcluir}>
-                  Excluir
-                </button>
-              </div>
-            </div>
-          )
-        })}
+      {/* RESUMO */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div>Total: {formatar(total)}</div>
+        <div>Pago: {formatar(pago)}</div>
+        <div>Pendente: {formatar(pendente)}</div>
+        <div>Vencido: {formatar(vencido)}</div>
       </div>
 
-      <button onClick={abrirNovaConta} style={styles.botaoFlutuante}>
+      {/* BUSCA */}
+      <input
+        placeholder="Buscar..."
+        value={busca}
+        onChange={(e) => setBusca(e.target.value)}
+        style={{ width: "100%", marginTop: 10 }}
+      />
+
+      {/* FILTROS */}
+      <div style={{ marginTop: 10 }}>
+        {["todas", "pendentes", "pagas", "vencidas"].map((f) => (
+          <button key={f} onClick={() => setFiltro(f)}>
+            {f}
+          </button>
+        ))}
+      </div>
+
+      {/* LISTA */}
+      {contasFiltradas.map((c) => (
+        <div
+          key={c.id}
+          style={{
+            background:
+              c.status === "pago"
+                ? "#c8e6c9"
+                : isVencido(c)
+                ? "#ff5252"
+                : "#ffcdd2",
+            padding: 15,
+            marginTop: 10,
+            borderRadius: 10
+          }}
+        >
+          <h3>
+            {c.descricao} — {formatar(c.valor)}
+          </h3>
+
+          <p>Vencimento: {c.data_vencimento || "-"}</p>
+          <p>Status: {isVencido(c) ? "vencido" : c.status}</p>
+          <p>Centro: {c.df_centros_custo?.nome || "-"}</p>
+
+          {c.status !== "pago" && (
+            <button onClick={() => marcarPago(c)}>
+              Marcar como pago
+            </button>
+          )}
+
+          {c.status === "pago" && (
+            <button onClick={() => voltarPendente(c)}>
+              Voltar para pendente
+            </button>
+          )}
+
+          <button onClick={() => abrirModal(c)}>Editar</button>
+          <button onClick={() => excluirConta(c.id)}>Excluir</button>
+        </div>
+      ))}
+
+      {/* BOTÃO + */}
+      <button
+        onClick={() => abrirModal()}
+        style={{
+          position: "fixed",
+          bottom: 20,
+          right: 20,
+          width: 60,
+          height: 60,
+          borderRadius: "50%",
+          fontSize: 30
+        }}
+      >
         +
       </button>
 
-      {modalAberto && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <h2 style={styles.subTitle}>
-              {editandoId ? '✏️ Editar Conta' : '➕ Nova Conta'}
-            </h2>
+      {/* MODAL */}
+      {modalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "#00000088"
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              padding: 20,
+              margin: "100px auto",
+              width: "90%",
+              borderRadius: 10
+            }}
+          >
+            <h2>{editando ? "Editar Conta" : "Nova Conta"}</h2>
 
             <input
               placeholder="Descrição"
-              value={descricao}
-              onChange={(e) => setDescricao(primeiraLetraMaiuscula(e.target.value))}
-              style={styles.input}
+              value={form.descricao}
+              onChange={(e) =>
+                setForm({ ...form, descricao: e.target.value })
+              }
             />
 
             <input
-              type="number"
               placeholder="Valor"
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              style={styles.input}
+              value={form.valor}
+              onChange={(e) =>
+                setForm({ ...form, valor: e.target.value })
+              }
             />
 
             <input
               type="date"
-              value={dataVencimento}
-              onChange={(e) => setDataVencimento(e.target.value)}
-              style={styles.input}
+              value={form.data_vencimento}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  data_vencimento: e.target.value
+                })
+              }
             />
 
-            <button onClick={salvarConta} style={styles.botaoSalvar}>
-              {editandoId ? 'Salvar Alteração' : 'Salvar Conta'}
+            <select
+              value={form.centro_custo_id}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  centro_custo_id: e.target.value
+                })
+              }
+            >
+              <option value="">Centro de custo</option>
+              {centros.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nome}
+                </option>
+              ))}
+            </select>
+
+            <button onClick={salvarConta}>
+              {editando ? "Salvar Alteração" : "Salvar"}
             </button>
 
-            <button onClick={fecharModal} style={styles.botaoCancelar}>
-              Cancelar
-            </button>
+            <button onClick={fecharModal}>Cancelar</button>
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    background: '#f4f6f8',
-    padding: 16,
-    paddingBottom: 90
-  },
-  container: {
-    maxWidth: 720,
-    margin: '0 auto',
-    fontFamily: 'Arial, sans-serif'
-  },
-  title: {
-    fontSize: 34,
-    marginBottom: 20
-  },
-  subTitle: {
-    marginTop: 0,
-    marginBottom: 16
-  },
-  resumoGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 10,
-    marginBottom: 20
-  },
-  resumoCard: {
-    background: '#fff',
-    padding: 14,
-    borderRadius: 12,
-    border: '1px solid #ddd'
-  },
-  resumoCardPago: {
-    background: '#d4edda',
-    padding: 14,
-    borderRadius: 12,
-    border: '1px solid #b8dfc2'
-  },
-  resumoCardPendente: {
-    background: '#fff3cd',
-    padding: 14,
-    borderRadius: 12,
-    border: '1px solid #ffe08a'
-  },
-  resumoCardVencido: {
-    background: '#f8d7da',
-    padding: 14,
-    borderRadius: 12,
-    border: '1px solid #f1b0b7'
-  },
-  resumoLabel: {
-    display: 'block',
-    fontSize: 13,
-    marginBottom: 6,
-    color: '#555'
-  },
-  inputBusca: {
-    width: '100%',
-    padding: 12,
-    borderRadius: 8,
-    border: '1px solid #ccc',
-    marginBottom: 15,
-    fontSize: 16,
-    boxSizing: 'border-box'
-  },
-  filtros: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 20
-  },
-  filtro: {
-    padding: '8px 12px',
-    borderRadius: 8,
-    border: '1px solid #bbb',
-    background: '#fff',
-    cursor: 'pointer'
-  },
-  filtroAtivo: {
-    padding: '8px 12px',
-    borderRadius: 8,
-    border: '1px solid #007bff',
-    background: '#007bff',
-    color: '#fff',
-    cursor: 'pointer'
-  },
-  vazio: {
-    background: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    border: '1px solid #ddd'
-  },
-  cardConta: {
-    border: '1px solid #ccc',
-    padding: 16,
-    marginBottom: 15,
-    borderRadius: 14
-  },
-  cardTopo: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: 10,
-    alignItems: 'center'
-  },
-  cardTitulo: {
-    margin: 0,
-    fontSize: 22
-  },
-  valor: {
-    fontWeight: 'bold',
-    fontSize: 18
-  },
-  acoes: {
-    display: 'flex',
-    gap: 10,
-    flexWrap: 'wrap',
-    marginTop: 12
-  },
-  botaoPago: {
-    padding: '9px 12px',
-    borderRadius: 8,
-    border: 'none',
-    background: '#007bff',
-    color: '#fff',
-    cursor: 'pointer'
-  },
-  botaoEditar: {
-    padding: '9px 12px',
-    borderRadius: 8,
-    border: 'none',
-    background: '#ffc107',
-    color: '#111',
-    cursor: 'pointer'
-  },
-  botaoExcluir: {
-    padding: '9px 12px',
-    borderRadius: 8,
-    border: 'none',
-    background: '#dc3545',
-    color: '#fff',
-    cursor: 'pointer'
-  },
-  botaoFlutuante: {
-    position: 'fixed',
-    right: 20,
-    bottom: 20,
-    width: 62,
-    height: 62,
-    borderRadius: '50%',
-    border: 'none',
-    background: '#198754',
-    color: '#fff',
-    fontSize: 38,
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    boxShadow: '0 6px 18px rgba(0,0,0,0.25)'
-  },
-  modalOverlay: {
-    position: 'fixed',
-    inset: 0,
-    background: 'rgba(0,0,0,0.45)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-    zIndex: 999
-  },
-  modal: {
-    width: '100%',
-    maxWidth: 420,
-    background: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    boxShadow: '0 10px 30px rgba(0,0,0,0.25)'
-  },
-  input: {
-    width: '100%',
-    padding: 12,
-    borderRadius: 8,
-    border: '1px solid #ccc',
-    marginBottom: 10,
-    fontSize: 16,
-    boxSizing: 'border-box'
-  },
-  botaoSalvar: {
-    width: '100%',
-    padding: 12,
-    borderRadius: 8,
-    border: 'none',
-    background: '#198754',
-    color: '#fff',
-    fontSize: 16,
-    cursor: 'pointer',
-    marginBottom: 10
-  },
-  botaoCancelar: {
-    width: '100%',
-    padding: 12,
-    borderRadius: 8,
-    border: 'none',
-    background: '#6c757d',
-    color: '#fff',
-    fontSize: 16,
-    cursor: 'pointer'
-  }
-                  }

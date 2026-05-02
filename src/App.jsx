@@ -127,14 +127,16 @@ export default function App() {
     buscarContas()
   }
 
-  const contasFiltradas = contas.filter(c => {
-    if (filtro === 'pendentes') return c.status !== 'pago'
-    if (filtro === 'pagas') return c.status === 'pago'
-    if (filtro === 'vencidas') return estaVencida(c.data_vencimento, c.status)
-    return true
-  }).filter(c =>
-    c.descricao?.toLowerCase().includes(busca.toLowerCase())
-  )
+  const contasFiltradas = contas
+    .filter(c => {
+      if (filtro === 'pendentes') return c.status !== 'pago'
+      if (filtro === 'pagas') return c.status === 'pago'
+      if (filtro === 'vencidas') return estaVencida(c.data_vencimento, c.status)
+      return true
+    })
+    .filter(c =>
+      c.descricao?.toLowerCase().includes(busca.toLowerCase())
+    )
 
   const total = contas.reduce((a, c) => a + Number(c.valor || 0), 0)
   const pago = contas.filter(c => c.status === 'pago').reduce((a, c) => a + Number(c.valor || 0), 0)
@@ -144,7 +146,7 @@ export default function App() {
 
   return (
     <div style={styles.page}>
-      <h1>📊 Contas a Pagar</h1>
+      <h1 style={styles.titulo}>📊 Contas a Pagar</h1>
 
       <div style={styles.resumo}>
         <div style={styles.box}>Total<br /><b>{formatarValor(total)}</b></div>
@@ -182,9 +184,9 @@ export default function App() {
               <span>{formatarValor(c.valor)}</span>
             </div>
 
-            <small>
+            <div style={styles.small}>
               {formatarData(c.data_vencimento)} • {c.df_centros_custo?.nome || '-'}
-            </small>
+            </div>
 
             <div style={styles.acoes}>
               {c.status !== 'pago'
@@ -204,14 +206,14 @@ export default function App() {
       {modalAberto && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
-            <h3>{editandoId ? 'Editar' : 'Nova Conta'}</h3>
+            <h3>{editandoId ? 'Editar Conta' : 'Nova Conta'}</h3>
 
             <input placeholder="Descrição" value={descricao} onChange={e => setDescricao(e.target.value)} />
             <input placeholder="Valor" value={valor} onChange={e => setValor(e.target.value)} />
             <input type="date" value={data} onChange={e => setData(e.target.value)} />
 
             <select value={centroCustoId} onChange={e => setCentroCustoId(e.target.value)}>
-              <option value="">Centro</option>
+              <option value="">Centro de custo</option>
               {centros.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
             </select>
 
@@ -225,7 +227,9 @@ export default function App() {
 }
 
 const styles = {
-  page: { padding: 16, maxWidth: 700, margin: 'auto' },
+  page: { padding: 16, maxWidth: 700, margin: 'auto', fontFamily: 'Arial' },
+
+  titulo: { fontSize: 26, marginBottom: 10 },
 
   resumo: {
     display: 'grid',
@@ -234,47 +238,55 @@ const styles = {
     marginBottom: 10
   },
 
-  box: { padding: 8, background: '#eee', borderRadius: 8, fontSize: 13 },
-  boxPago: { padding: 8, background: '#c3e6cb', borderRadius: 8, fontSize: 13 },
-  boxPend: { padding: 8, background: '#ffeeba', borderRadius: 8, fontSize: 13 },
-  boxVen: { padding: 8, background: '#f5c6cb', borderRadius: 8, fontSize: 13 },
+  box: { padding: 8, background: '#eee', borderRadius: 10, fontSize: 13 },
+  boxPago: { padding: 8, background: '#c3e6cb', borderRadius: 10, fontSize: 13 },
+  boxPend: { padding: 8, background: '#ffeeba', borderRadius: 10, fontSize: 13 },
+  boxVen: { padding: 8, background: '#f5c6cb', borderRadius: 10, fontSize: 13 },
 
   input: { width: '100%', padding: 8, marginBottom: 8 },
 
   filtros: { display: 'flex', gap: 6, marginBottom: 10 },
 
   card: {
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 8
+    padding: 8,
+    borderRadius: 12,
+    marginBottom: 8,
+    boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
   },
 
   topo: {
     display: 'flex',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    fontSize: 15
+  },
+
+  small: {
+    fontSize: 12,
+    opacity: 0.7
   },
 
   acoes: {
-    marginTop: 8,
+    marginTop: 6,
     display: 'flex',
-    gap: 6
+    gap: 5
   },
 
-  btnAzul: { background: '#0d6efd', color: '#fff', border: 'none', padding: 6 },
-  btnRoxo: { background: '#6f42c1', color: '#fff', border: 'none', padding: 6 },
-  btnAmarelo: { background: '#ffc107', border: 'none', padding: 6 },
-  btnVermelho: { background: '#dc3545', color: '#fff', border: 'none', padding: 6 },
+  btnAzul: { background: '#0d6efd', color: '#fff', border: 'none', padding: '5px 8px', fontSize: 12, borderRadius: 6 },
+  btnRoxo: { background: '#6f42c1', color: '#fff', border: 'none', padding: '5px 8px', fontSize: 12, borderRadius: 6 },
+  btnAmarelo: { background: '#ffc107', border: 'none', padding: '5px 8px', fontSize: 12, borderRadius: 6 },
+  btnVermelho: { background: '#dc3545', color: '#fff', border: 'none', padding: '5px 8px', fontSize: 12, borderRadius: 6 },
 
   fab: {
     position: 'fixed',
     right: 20,
     bottom: 20,
-    width: 60,
-    height: 60,
+    width: 56,
+    height: 56,
     borderRadius: '50%',
     background: '#198754',
     color: '#fff',
-    fontSize: 30
+    fontSize: 28,
+    border: 'none'
   },
 
   overlay: {
@@ -288,8 +300,8 @@ const styles = {
 
   modal: {
     background: '#fff',
-    padding: 20,
-    borderRadius: 10,
+    padding: 18,
+    borderRadius: 12,
     width: 300
   }
 }

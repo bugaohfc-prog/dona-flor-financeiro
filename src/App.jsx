@@ -13,11 +13,12 @@ export default function App() {
     const { data, error } = await supabase
       .from('df_contas')
       .select('*')
-      .order('data_vencimento', { ascending: true })
 
     if (error) {
+      alert('Erro Supabase: ' + error.message)
       console.error('Erro ao buscar:', error)
     } else {
+      console.log('DADOS:', data)
       setContas(data || [])
     }
 
@@ -31,15 +32,11 @@ export default function App() {
       .eq('id', id)
 
     if (error) {
-      console.error('Erro ao atualizar:', error)
+      alert('Erro ao atualizar: ' + error.message)
+      console.error(error)
     } else {
       buscarContas()
     }
-  }
-
-  function formatarData(data) {
-    if (!data) return '—'
-    return new Date(data).toLocaleDateString('pt-BR')
   }
 
   return (
@@ -66,7 +63,6 @@ export default function App() {
         >
           <p><b>Descrição:</b> {conta.descricao}</p>
           <p><b>Valor:</b> R$ {conta.valor}</p>
-          <p><b>Vencimento:</b> {formatarData(conta.data_vencimento)}</p>
           <p><b>Status:</b> {conta.status || 'pendente'}</p>
 
           {conta.status !== 'pago' && (

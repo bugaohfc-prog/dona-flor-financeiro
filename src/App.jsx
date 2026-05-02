@@ -5,6 +5,11 @@ export default function App() {
   const [contas, setContas] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // NOVA CONTA
+  const [descricao, setDescricao] = useState('')
+  const [valor, setValor] = useState('')
+  const [dataVencimento, setDataVencimento] = useState('')
+
   useEffect(() => {
     buscarContas()
   }, [])
@@ -17,12 +22,36 @@ export default function App() {
 
     if (error) {
       alert('Erro Supabase: ' + error.message)
-      console.error(error)
     } else {
       setContas(data || [])
     }
 
     setLoading(false)
+  }
+
+  async function adicionarConta() {
+    if (!descricao || !valor || !dataVencimento) {
+      alert('Preencha todos os campos')
+      return
+    }
+
+    const { error } = await supabase.from('df_contas').insert([
+      {
+        descricao,
+        valor: Number(valor),
+        data_vencimento: dataVencimento,
+        status: 'pendente'
+      }
+    ])
+
+    if (error) {
+      alert('Erro ao inserir: ' + error.message)
+    } else {
+      setDescricao('')
+      setValor('')
+      setDataVencimento('')
+      buscarContas()
+    }
   }
 
   async function marcarComoPago(id) {
@@ -31,11 +60,7 @@ export default function App() {
       .update({ status: 'pago' })
       .eq('id', id)
 
-    if (error) {
-      alert('Erro ao atualizar: ' + error.message)
-    } else {
-      buscarContas()
-    }
+    if (!error) buscarContas()
   }
 
   function formatarData(data) {
@@ -53,6 +78,52 @@ export default function App() {
   return (
     <div style={{ padding: 20, fontFamily: 'Arial' }}>
       <h1>📊 Contas a Pagar</h1>
+
+      {/* FORMULÁRIO */}
+      <div style={{
+        marginBottom: 30,
+        padding: 15,
+        border: '1px solid #ccc',
+        borderRadius: 10
+      }}>
+        <h2>➕ Nova Conta</h2>
+
+        <input
+          placeholder="Descrição"
+          value={descricao}
+          onChange={(e) => setDescricao(e.target.value)}
+          style={{ display: 'block', marginBottom: 10, padding: 8, width: '100%' }}
+        />
+
+        <input
+          placeholder="Valor"
+          type="number"
+          value={valor}
+          onChange={(e) => setValor(e.target.value)}
+          style={{ display: 'block', marginBottom: 10, padding: 8, width: '100%' }}
+        />
+
+        <input
+          type="date"
+          value={dataVencimento}
+          onChange={(e) => setDataVencimento(e.target.value)}
+          style={{ display: 'block', marginBottom: 10, padding: 8 }}
+        />
+
+        <button
+          onClick={adicionarConta}
+          style={{
+            padding: '10px 15px',
+            backgroundColor: 'green',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 6,
+            cursor: 'pointer'
+          }}
+        >
+          Salvar Conta
+        </button>
+      </div>
 
       {loading && <p>Carregando...</p>}
 
@@ -113,4 +184,4 @@ export default function App() {
       })}
     </div>
   )
-}
+                  }

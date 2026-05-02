@@ -21,7 +21,7 @@ export default function App() {
 
     const { data, error } = await supabase
       .from('df_contas')
-      .select('*')
+      .select('*, df_centros_custo(nome)')
 
     if (error) {
       alert(error.message)
@@ -74,9 +74,9 @@ export default function App() {
 
   function iniciarEdicao(conta) {
     setEditandoId(conta.id)
-    setDescricao(conta.descricao)
-    setValor(conta.valor)
-    setData(conta.data_vencimento)
+    setDescricao(conta.descricao || '')
+    setValor(conta.valor || '')
+    setData(conta.data_vencimento || '')
   }
 
   async function salvarEdicao() {
@@ -100,16 +100,33 @@ export default function App() {
     setData('')
   }
 
-  const contasFiltradas = contas
-    .filter((c) => {
-      if (filtro === 'pendentes') return c.status !== 'pago'
-      if (filtro === 'pagas') return c.status === 'pago'
-      if (filtro === 'vencidas') return estaVencida(c.data_vencimento, c.status)
-      return true
+  function ordenarContas(lista) {
+    return [...lista].sort((a, b) => {
+      const aVencida = estaVencida(a.data_vencimento, a.status)
+      const bVencida = estaVencida(b.data_vencimento, b.status)
+
+      if (aVencida && !bVencida) return -1
+      if (!aVencida && bVencida) return 1
+
+      if (a.status !== 'pago' && b.status === 'pago') return -1
+      if (a.status === 'pago' && b.status !== 'pago') return 1
+
+      return new Date(a.data_vencimento || '9999-12-31') - new Date(b.data_vencimento || '9999-12-31')
     })
-    .filter((c) =>
-      String(c.descricao || '').toLowerCase().includes(busca.toLowerCase())
-    )
+  }
+
+  const contasFiltradas = ordenarContas(
+    contas
+      .filter((c) => {
+        if (filtro === 'pendentes') return c.status !== 'pago'
+        if (filtro === 'pagas') return c.status === 'pago'
+        if (filtro === 'vencidas') return estaVencida(c.data_vencimento, c.status)
+        return true
+      })
+      .filter((c) =>
+        String(c.descricao || '').toLowerCase().includes(busca.toLowerCase())
+      )
+  )
 
   const total = contas.reduce((a, c) => a + Number(c.valor || 0), 0)
 
@@ -125,13 +142,13 @@ export default function App() {
 
   return (
     <div style={styles.page}>
-      <h1>Contas a Pagar</h1>
+      <h1 style={styles.titulo}>Contas a Pagar</h1>
 
       <div style={styles.resumo}>
-        <div style={styles.box}>Total {formatarValor(total)}</div>
-        <div style={styles.boxPago}>Pago {formatarValor(pago)}</div>
-        <div style={styles.boxPendente}>Pendente {formatarValor(pendente)}</div>
-        <div style={styles.boxVencido}>Vencido {formatarValor(vencido)}</div>
+        <div style={styles.box}>Total<br /><b>{formatarValor(total)}</b></div>
+        <div style={styles.boxPago}>Pago<br /><b>{formatarValor(pago)}</b></div>
+        <div style={styles.boxPendente}>Pendente<br /><b>{formatarValor(pendente)}</b></div>
+        <div style={styles.boxVencido}>Vencido<br /><b>{formatarValor(vencido)}</b></div>
       </div>
 
       <input
@@ -148,18 +165,37 @@ export default function App() {
         <button onClick={() => setFiltro('vencidas')}>vencidas</button>
       </div>
 
+      {loading && <p>Carregando...</p>}
+
       {contasFiltradas.map((conta) => {
         const vencida = estaVencida(conta.data_vencimento, conta.status)
 
         if (editandoId === conta.id) {
           return (
-            <div key={conta.id} style={styles.card}>
-              <input value={descricao} onChange={(e) => setDescricao(e.target.value)} />
-              <input value={valor} onChange={(e) => setValor(e.target.value)} />
-              <input type="date" value={data} onChange={(e) => setData(e.target.value)} />
+            <div key={conta.id} style={styles.linhaEdicao}>
+              <input
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+                style={styles.inputEdicao}
+              />
 
-              <button onClick={salvarEdicao}>Salvar</button>
-              <button onClick={cancelarEdicao}>Cancelar</button>
+              <input
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+                style={styles.inputEdicao}
+              />
+
+              <input
+                type="date"
+                value={data}
+                onChange={(e) => setData(e.target.value)}
+                style={styles.inputEdicao}
+              />
+
+              <div style={styles.acoes}>
+                <button onClick={salvarEdicao}>Salvar</button>
+                <button onClick={cancelarEdicao}>Cancelar</button>
+              </div>
             </div>
           )
         }
@@ -168,20 +204,27 @@ export default function App() {
           <div
             key={conta.id}
             style={{
-              ...styles.card,
+              ...styles.linhaConta,
               background:
                 conta.status === 'pago'
                   ? '#d4edda'
                   : vencida
-                  ? '#ff4d4d'
+                  ? '#ffb3b3'
                   : '#f8d7da'
             }}
           >
-            <h3>{conta.descricao}</h3>
-            <p>{formatarValor(conta.valor)}</p>
-            <p>{formatarData(conta.data_vencimento)}</p>
+            <div style={styles.infoPrincipal}>
+              <strong>{conta.descricao}</strong>
+              <span>{formatarValor(conta.valor)}</span>
+            </div>
 
-            <div>
+            <div style={styles.infoSecundaria}>
+              <span>Venc.: {formatarData(conta.data_vencimento)}</span>
+              <span>Centro: {conta.df_centros_custo?.nome || '—'}</span>
+              <span>Status: {vencida ? 'vencido' : conta.status}</span>
+            </div>
+
+            <div style={styles.acoes}>
               {conta.status !== 'pago' && (
                 <button onClick={() => marcarComoPago(conta.id)}>
                   Pago
@@ -210,18 +253,93 @@ export default function App() {
 }
 
 const styles = {
-  page: { padding: 20 },
+  page: {
+    padding: 20,
+    maxWidth: 900,
+    margin: '0 auto',
+    fontFamily: 'Arial, sans-serif'
+  },
+  titulo: {
+    marginBottom: 16
+  },
   resumo: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: 10,
-    marginBottom: 20
+    gap: 8,
+    marginBottom: 16
   },
-  box: { background: '#eee', padding: 10, borderRadius: 8 },
-  boxPago: { background: '#c3e6cb', padding: 10, borderRadius: 8 },
-  boxPendente: { background: '#ffeeba', padding: 10, borderRadius: 8 },
-  boxVencido: { background: '#f5c6cb', padding: 10, borderRadius: 8 },
-  input: { width: '100%', padding: 10, marginBottom: 10 },
-  filtros: { display: 'flex', gap: 10, marginBottom: 20 },
-  card: { padding: 15, marginBottom: 10, borderRadius: 10 }
-}
+  box: {
+    background: '#eee',
+    padding: 8,
+    borderRadius: 8,
+    fontSize: 14
+  },
+  boxPago: {
+    background: '#c3e6cb',
+    padding: 8,
+    borderRadius: 8,
+    fontSize: 14
+  },
+  boxPendente: {
+    background: '#ffeeba',
+    padding: 8,
+    borderRadius: 8,
+    fontSize: 14
+  },
+  boxVencido: {
+    background: '#f5c6cb',
+    padding: 8,
+    borderRadius: 8,
+    fontSize: 14
+  },
+  input: {
+    width: '100%',
+    padding: 10,
+    marginBottom: 10,
+    boxSizing: 'border-box'
+  },
+  filtros: {
+    display: 'flex',
+    gap: 8,
+    marginBottom: 14,
+    flexWrap: 'wrap'
+  },
+  linhaConta: {
+    border: '1px solid #ccc',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8
+  },
+  infoPrincipal: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 10,
+    fontSize: 17,
+    marginBottom: 6
+  },
+  infoSecundaria: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    gap: 6,
+    fontSize: 13,
+    marginBottom: 8
+  },
+  acoes: {
+    display: 'flex',
+    gap: 6,
+    flexWrap: 'wrap'
+  },
+  linhaEdicao: {
+    border: '1px solid #ccc',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+    background: '#fff'
+  },
+  inputEdicao: {
+    width: '100%',
+    padding: 8,
+    marginBottom: 6,
+    boxSizing: 'border-box'
+  }
+    }

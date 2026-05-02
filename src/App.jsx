@@ -12,6 +12,7 @@ export default function App() {
   const [filtro, setFiltro] = useState('todas')
   const [busca, setBusca] = useState('')
 
+  const [modalAberto, setModalAberto] = useState(false)
   const [editandoId, setEditandoId] = useState(null)
 
   useEffect(() => {
@@ -34,17 +35,49 @@ export default function App() {
     setLoading(false)
   }
 
+  function primeiraLetraMaiuscula(texto) {
+    if (!texto) return ''
+    return texto.charAt(0).toUpperCase() + texto.slice(1)
+  }
+
+  function abrirNovaConta() {
+    limparFormulario()
+    setModalAberto(true)
+  }
+
+  function abrirEdicao(conta) {
+    setEditandoId(conta.id)
+    setDescricao(conta.descricao || '')
+    setValor(conta.valor || '')
+    setDataVencimento(conta.data_vencimento || '')
+    setModalAberto(true)
+  }
+
+  function fecharModal() {
+    limparFormulario()
+    setModalAberto(false)
+  }
+
+  function limparFormulario() {
+    setEditandoId(null)
+    setDescricao('')
+    setValor('')
+    setDataVencimento('')
+  }
+
   async function salvarConta() {
     if (!descricao || !valor || !dataVencimento) {
       alert('Preencha descrição, valor e vencimento')
       return
     }
 
+    const descricaoFormatada = primeiraLetraMaiuscula(descricao.trim())
+
     if (editandoId) {
       const { error } = await supabase
         .from('df_contas')
         .update({
-          descricao,
+          descricao: descricaoFormatada,
           valor: Number(valor),
           data_vencimento: dataVencimento
         })
@@ -57,7 +90,7 @@ export default function App() {
     } else {
       const { error } = await supabase.from('df_contas').insert([
         {
-          descricao,
+          descricao: descricaoFormatada,
           valor: Number(valor),
           data_vencimento: dataVencimento,
           status: 'pendente'
@@ -70,27 +103,8 @@ export default function App() {
       }
     }
 
-    limparFormulario()
+    fecharModal()
     buscarContas()
-  }
-
-  function editarConta(conta) {
-    setEditandoId(conta.id)
-    setDescricao(conta.descricao || '')
-    setValor(conta.valor || '')
-    setDataVencimento(conta.data_vencimento || '')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  function cancelarEdicao() {
-    limparFormulario()
-  }
-
-  function limparFormulario() {
-    setEditandoId(null)
-    setDescricao('')
-    setValor('')
-    setDataVencimento('')
   }
 
   async function marcarComoPago(id) {
@@ -229,44 +243,6 @@ export default function App() {
           <button style={filtro === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltro('vencidas')}>Vencidas</button>
         </div>
 
-        <div style={styles.formCard}>
-          <h2 style={styles.subTitle}>
-            {editandoId ? '✏️ Editar Conta' : '➕ Nova Conta'}
-          </h2>
-
-          <input
-            placeholder="Descrição"
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value)}
-            style={styles.input}
-          />
-
-          <input
-            type="number"
-            placeholder="Valor"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
-            style={styles.input}
-          />
-
-          <input
-            type="date"
-            value={dataVencimento}
-            onChange={(e) => setDataVencimento(e.target.value)}
-            style={styles.input}
-          />
-
-          <button onClick={salvarConta} style={styles.botaoSalvar}>
-            {editandoId ? 'Salvar Alteração' : 'Salvar Conta'}
-          </button>
-
-          {editandoId && (
-            <button onClick={cancelarEdicao} style={styles.botaoCancelar}>
-              Cancelar Edição
-            </button>
-          )}
-        </div>
-
         {loading && <p>Carregando...</p>}
 
         {!loading && contasFiltradas.length === 0 && (
@@ -313,7 +289,7 @@ export default function App() {
                   </button>
                 )}
 
-                <button onClick={() => editarConta(conta)} style={styles.botaoEditar}>
+                <button onClick={() => abrirEdicao(conta)} style={styles.botaoEditar}>
                   Editar
                 </button>
 
@@ -325,6 +301,50 @@ export default function App() {
           )
         })}
       </div>
+
+      <button onClick={abrirNovaConta} style={styles.botaoFlutuante}>
+        +
+      </button>
+
+      {modalAberto && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            <h2 style={styles.subTitle}>
+              {editandoId ? '✏️ Editar Conta' : '➕ Nova Conta'}
+            </h2>
+
+            <input
+              placeholder="Descrição"
+              value={descricao}
+              onChange={(e) => setDescricao(primeiraLetraMaiuscula(e.target.value))}
+              style={styles.input}
+            />
+
+            <input
+              type="number"
+              placeholder="Valor"
+              value={valor}
+              onChange={(e) => setValor(e.target.value)}
+              style={styles.input}
+            />
+
+            <input
+              type="date"
+              value={dataVencimento}
+              onChange={(e) => setDataVencimento(e.target.value)}
+              style={styles.input}
+            />
+
+            <button onClick={salvarConta} style={styles.botaoSalvar}>
+              {editandoId ? 'Salvar Alteração' : 'Salvar Conta'}
+            </button>
+
+            <button onClick={fecharModal} style={styles.botaoCancelar}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -333,7 +353,8 @@ const styles = {
   page: {
     minHeight: '100vh',
     background: '#f4f6f8',
-    padding: 16
+    padding: 16,
+    paddingBottom: 90
   },
   container: {
     maxWidth: 720,
@@ -345,7 +366,8 @@ const styles = {
     marginBottom: 20
   },
   subTitle: {
-    marginTop: 0
+    marginTop: 0,
+    marginBottom: 16
   },
   resumoGrid: {
     display: 'grid',
@@ -413,43 +435,6 @@ const styles = {
     color: '#fff',
     cursor: 'pointer'
   },
-  formCard: {
-    background: '#fff',
-    border: '1px solid #ddd',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 25
-  },
-  input: {
-    width: '100%',
-    padding: 12,
-    borderRadius: 8,
-    border: '1px solid #ccc',
-    marginBottom: 10,
-    fontSize: 16,
-    boxSizing: 'border-box'
-  },
-  botaoSalvar: {
-    width: '100%',
-    padding: 12,
-    borderRadius: 8,
-    border: 'none',
-    background: '#198754',
-    color: '#fff',
-    fontSize: 16,
-    cursor: 'pointer',
-    marginBottom: 10
-  },
-  botaoCancelar: {
-    width: '100%',
-    padding: 12,
-    borderRadius: 8,
-    border: 'none',
-    background: '#6c757d',
-    color: '#fff',
-    fontSize: 16,
-    cursor: 'pointer'
-  },
   vazio: {
     background: '#fff',
     padding: 16,
@@ -505,5 +490,68 @@ const styles = {
     background: '#dc3545',
     color: '#fff',
     cursor: 'pointer'
+  },
+  botaoFlutuante: {
+    position: 'fixed',
+    right: 20,
+    bottom: 20,
+    width: 62,
+    height: 62,
+    borderRadius: '50%',
+    border: 'none',
+    background: '#198754',
+    color: '#fff',
+    fontSize: 38,
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    boxShadow: '0 6px 18px rgba(0,0,0,0.25)'
+  },
+  modalOverlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.45)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+    zIndex: 999
+  },
+  modal: {
+    width: '100%',
+    maxWidth: 420,
+    background: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    boxShadow: '0 10px 30px rgba(0,0,0,0.25)'
+  },
+  input: {
+    width: '100%',
+    padding: 12,
+    borderRadius: 8,
+    border: '1px solid #ccc',
+    marginBottom: 10,
+    fontSize: 16,
+    boxSizing: 'border-box'
+  },
+  botaoSalvar: {
+    width: '100%',
+    padding: 12,
+    borderRadius: 8,
+    border: 'none',
+    background: '#198754',
+    color: '#fff',
+    fontSize: 16,
+    cursor: 'pointer',
+    marginBottom: 10
+  },
+  botaoCancelar: {
+    width: '100%',
+    padding: 12,
+    borderRadius: 8,
+    border: 'none',
+    background: '#6c757d',
+    color: '#fff',
+    fontSize: 16,
+    cursor: 'pointer'
   }
-                }
+                  }

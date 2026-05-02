@@ -18,7 +18,6 @@ export default function App() {
       alert('Erro Supabase: ' + error.message)
       console.error('Erro ao buscar:', error)
     } else {
-      console.log('DADOS:', data)
       setContas(data || [])
     }
 
@@ -37,6 +36,13 @@ export default function App() {
     } else {
       buscarContas()
     }
+  }
+
+  function formatarData(data) {
+    if (!data) return '—'
+
+    const dataCorrigida = new Date(data + 'T00:00:00')
+    return dataCorrigida.toLocaleDateString('pt-BR')
   }
 
   return (
@@ -63,6 +69,7 @@ export default function App() {
         >
           <p><b>Descrição:</b> {conta.descricao}</p>
           <p><b>Valor:</b> R$ {conta.valor}</p>
+          <p><b>Vencimento:</b> {formatarData(conta.data_vencimento)}</p>
           <p><b>Status:</b> {conta.status || 'pendente'}</p>
 
           {conta.status !== 'pago' && (

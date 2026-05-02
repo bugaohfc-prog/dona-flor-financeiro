@@ -18,15 +18,20 @@ export default function App() {
   const [centroCustoId, setCentroCustoId] = useState('')
 
   useEffect(() => {
-    buscarContas()
     buscarCentros()
+    buscarContas()
   }, [])
 
   async function buscarCentros() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('df_centros_custo')
-      .select('*')
+      .select('id, nome')
       .order('nome', { ascending: true })
+
+    if (error) {
+      alert(error.message)
+      return
+    }
 
     setCentros(data || [])
   }
@@ -36,7 +41,14 @@ export default function App() {
 
     const { data, error } = await supabase
       .from('df_contas')
-      .select('*, df_centros_custo(nome)')
+      .select(`
+        *,
+        df_centros_custo (
+          id,
+          nome
+        )
+      `)
+      .order('data_vencimento', { ascending: true })
 
     if (error) {
       alert(error.message)
@@ -62,6 +74,10 @@ export default function App() {
   function primeiraLetraMaiuscula(texto) {
     if (!texto) return ''
     return texto.charAt(0).toUpperCase() + texto.slice(1)
+  }
+
+  function converterValor(valorDigitado) {
+    return Number(String(valorDigitado).replace(',', '.'))
   }
 
   function estaVencida(data, status) {
@@ -109,22 +125,40 @@ export default function App() {
       return
     }
 
+    const valorConvertido = converterValor(valor)
+
+    if (isNaN(valorConvertido)) {
+      alert('Digite um valor válido')
+      return
+    }
+
     const payload = {
       descricao: primeiraLetraMaiuscula(descricao.trim()),
-      valor: Number(valor),
+      valor: valorConvertido,
       data_vencimento: data,
       centro_custo_id: centroCustoId || null
     }
 
+    let error
+
     if (editandoId) {
-      await supabase
+      const resposta = await supabase
         .from('df_contas')
         .update(payload)
         .eq('id', editandoId)
+
+      error = resposta.error
     } else {
-      await supabase
+      const resposta = await supabase
         .from('df_contas')
         .insert([{ ...payload, status: 'pendente' }])
+
+      error = resposta.error
+    }
+
+    if (error) {
+      alert(error.message)
+      return
     }
 
     fecharModal()
@@ -132,18 +166,46 @@ export default function App() {
   }
 
   async function marcarComoPago(id) {
-    await supabase.from('df_contas').update({ status: 'pago' }).eq('id', id)
+    const { error } = await supabase
+      .from('df_contas')
+      .update({ status: 'pago' })
+      .eq('id', id)
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
     buscarContas()
   }
 
   async function voltarParaPendente(id) {
-    await supabase.from('df_contas').update({ status: 'pendente' }).eq('id', id)
+    const { error } = await supabase
+      .from('df_contas')
+      .update({ status: 'pendente' })
+      .eq('id', id)
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
     buscarContas()
   }
 
   async function excluirConta(id) {
     if (!confirm('Deseja excluir?')) return
-    await supabase.from('df_contas').delete().eq('id', id)
+
+    const { error } = await supabase
+      .from('df_contas')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
     buscarContas()
   }
 
@@ -227,7 +289,7 @@ export default function App() {
                   ? '#d4edda'
                   : vencida
                   ? '#ffb3b3'
-                  : '#f8d7da'
+                  : '#fff3cd'
             }}
           >
             <div style={styles.infoPrincipal}>
@@ -285,8 +347,8 @@ export default function App() {
             />
 
             <input
-              type="number"
-              placeholder="Valor"
+              type="text"
+              placeholder="Valor. Ex: 150,90"
               value={valor}
               onChange={(e) => setValor(e.target.value)}
               style={styles.inputModal}
@@ -471,4 +533,4 @@ const styles = {
     fontSize: 16,
     cursor: 'pointer'
   }
-                                                      }
+            }

@@ -66,9 +66,9 @@ export default function App() {
 
   function editarConta(conta) {
     setEditingConta(conta);
-    setDescricao(conta.descricao);
-    setValor(conta.valor);
-    setDataVencimento(conta.data_vencimento);
+    setDescricao(conta.descricao || "");
+    setValor(String(conta.valor || ""));
+    setDataVencimento(conta.data_vencimento || "");
   }
 
   async function excluirConta(id) {
@@ -89,7 +89,6 @@ export default function App() {
 
   function filtrarContas() {
     let lista = [...contas];
-
     const hoje = new Date();
 
     lista = lista.map((c) => ({
@@ -137,15 +136,16 @@ export default function App() {
     const hoje = new Date();
 
     contas.forEach((c) => {
-      total += Number(c.valor);
+      const v = Number(c.valor);
+      total += v;
 
       if (c.status === "pago") {
-        pago += Number(c.valor);
+        pago += v;
       } else {
         if (new Date(c.data_vencimento) < hoje) {
-          vencido += Number(c.valor);
+          vencido += v;
         } else {
-          pendente += Number(c.valor);
+          pendente += v;
         }
       }
     });
@@ -157,21 +157,23 @@ export default function App() {
   const r = resumo();
 
   return (
-    <div style={{ padding: 20 }}>
+    <div style={{ padding: 20, maxWidth: 500, margin: "0 auto" }}>
       <h2>Contas a Pagar</h2>
 
-      <form onSubmit={salvarConta}>
+      <form onSubmit={salvarConta} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <input
           placeholder="Descrição"
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
         />
+
         <input
           type="number"
           placeholder="Valor"
           value={valor}
           onChange={(e) => setValor(e.target.value)}
         />
+
         <input
           type="date"
           value={dataVencimento}
@@ -184,7 +186,7 @@ export default function App() {
 
         {editingConta && (
           <button type="button" onClick={limparFormulario}>
-            Cancelar
+            Cancelar edição
           </button>
         )}
       </form>
@@ -197,7 +199,7 @@ export default function App() {
         onChange={(e) => setBusca(e.target.value)}
       />
 
-      <div>
+      <div style={{ marginTop: 10 }}>
         <button onClick={() => setFiltro("todas")}>Todas</button>
         <button onClick={() => setFiltro("pendentes")}>Pendentes</button>
         <button onClick={() => setFiltro("pagas")}>Pagas</button>
@@ -247,4 +249,4 @@ export default function App() {
       ))}
     </div>
   );
-          }
+}

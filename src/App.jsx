@@ -135,6 +135,7 @@ export default function App() {
   const [tituloNota, setTituloNota] = useState('')
   const [conteudoNota, setConteudoNota] = useState('')
   const [prioridadeNota, setPrioridadeNota] = useState('normal')
+  const [dataEventoNota, setDataEventoNota] = useState('')
 
   // =========================
   // BLOCO 3 — STATES CENTROS
@@ -510,7 +511,12 @@ export default function App() {
       const concluidaA = a.concluida ? 1 : 0
       const concluidaB = b.concluida ? 1 : 0
       if (concluidaA !== concluidaB) return concluidaA - concluidaB
-      return (pesoPrioridadeNota[a.prioridade || 'normal'] ?? 2) - (pesoPrioridadeNota[b.prioridade || 'normal'] ?? 2)
+      const pesoA = (pesoPrioridadeNota[a.prioridade || 'normal'] ?? 2)
+      const pesoB = (pesoPrioridadeNota[b.prioridade || 'normal'] ?? 2)
+      if (pesoA !== pesoB) return pesoA - pesoB
+      const dataA = a.data_evento || '9999-12-31'
+      const dataB = b.data_evento || '9999-12-31'
+      return String(dataA).localeCompare(String(dataB))
     })
 
   const notasPendentes = notasFiltradas.filter((nota) => !nota.concluida)
@@ -522,6 +528,8 @@ export default function App() {
   // =========================
   function abrirNovaConta() {
     setMenuAberto(false)
+    setMenuNavegacaoAberto(false)
+    setTelaAtualState('contas')
     setEditandoContaId(null)
     setDescricao('')
     setValor('')
@@ -644,10 +652,13 @@ export default function App() {
   // =========================
   function abrirNovaNota() {
     setMenuAberto(false)
+    setMenuNavegacaoAberto(false)
+    setTelaAtualState('contas')
     setEditandoNotaId(null)
     setTituloNota('')
     setConteudoNota('')
     setPrioridadeNota('normal')
+    setDataEventoNota('')
     setModalNota(true)
   }
 
@@ -656,6 +667,7 @@ export default function App() {
     setTituloNota(nota.titulo || '')
     setConteudoNota(nota.conteudo || '')
     setPrioridadeNota(nota.prioridade || 'normal')
+    setDataEventoNota(nota.data_evento || '')
     setModalNota(true)
   }
 
@@ -665,6 +677,7 @@ export default function App() {
     setTituloNota('')
     setConteudoNota('')
     setPrioridadeNota('normal')
+    setDataEventoNota('')
   }
 
   async function salvarNota() {
@@ -682,6 +695,7 @@ export default function App() {
       titulo: primeiraLetraMaiuscula(tituloNota.trim()),
       conteudo: conteudoNota.trim(),
       prioridade: prioridadeNota || 'normal',
+      data_evento: dataEventoNota || null,
       concluida: false,
       empresa_id: empresaId
     }
@@ -1333,7 +1347,7 @@ export default function App() {
             </nav>
           </details>
 
-          <details className="sidebar-group" open>
+          <details className="sidebar-group">
             <summary>Gestão</summary>
             <nav className="desktop-sidebar-nav">
               <button onClick={abrirNovaConta}>💰 Nova conta</button>
@@ -1342,17 +1356,18 @@ export default function App() {
             </nav>
           </details>
 
-          <details className="sidebar-group" open>
+          <details className="sidebar-group">
             <summary>Análise</summary>
             <nav className="desktop-sidebar-nav">
               <button className={telaAtual === 'relatorios' ? 'active' : ''} onClick={() => navegarPara('relatorios')}>📊 Relatórios</button>
             </nav>
           </details>
 
-          <details className="sidebar-group" open>
+          <details className="sidebar-group">
             <summary>Sistema</summary>
             <nav className="desktop-sidebar-nav">
               <button className={telaAtual === 'lixeira' ? 'active' : ''} onClick={() => navegarPara('lixeira')}>🗑️ Lixeira</button>
+              <button className={telaAtual === 'usuarios' ? 'active' : ''} onClick={() => navegarPara('usuarios')}>👥 Usuários</button>
               <button className={telaAtual === 'configuracoes' ? 'active' : ''} onClick={() => navegarPara('configuracoes')}>⚙️ Configurações</button>
             </nav>
           </details>
@@ -1400,6 +1415,7 @@ export default function App() {
           <details className="mobile-menu-group" open>
             <summary>Sistema</summary>
             <button style={styles.menuNavItem} onClick={() => navegarPara('lixeira')}><span>🗑️</span><div><strong>Lixeira</strong><small>Restaurar ou excluir definitivo</small></div></button>
+            <button style={styles.menuNavItem} onClick={() => navegarPara('usuarios')}><span>👥</span><div><strong>Gestão de usuários</strong><small>Perfis, acessos e senhas</small></div></button>
             <button style={styles.menuNavItem} onClick={() => navegarPara('configuracoes')}><span>⚙️</span><div><strong>Configurações</strong><small>Preferências da empresa</small></div></button>
             <button style={styles.menuSairItem} onClick={sairDoSistema}><span>🚪</span><div><strong>Sair</strong><small>Encerrar sessão</small></div></button>
           </details>
@@ -2282,10 +2298,6 @@ export default function App() {
             <small>{perfilUsuario || 'usuário'}</small>
           </div>
 
-          <div className="desktop-quick-actions">
-            <button className="primary" onClick={abrirNovaConta}>+ Nova conta</button>
-            <button className="secondary" onClick={abrirNovaNota}>+ Nova nota</button>
-          </div>
 
           <button className="mobile-menu-trigger" style={styles.btnMenuTopo} onClick={() => setMenuNavegacaoAberto(!menuNavegacaoAberto)}>
             ☰
@@ -2445,6 +2457,12 @@ export default function App() {
       </section>
 
       <section className="no-print notes-block notes-panel" style={styles.blocoNotasPainel}>
+        <div className="quick-actions-card">
+          <strong>⚡ Ações rápidas</strong>
+          <button onClick={abrirNovaConta}>+ Nova conta</button>
+          <button onClick={abrirNovaNota}>+ Nova nota</button>
+        </div>
+
         <div style={styles.notasHeaderNovo}>
           <div>
             <strong>📝 Bloco de Notas</strong>
@@ -2475,6 +2493,8 @@ export default function App() {
                     {prioridade === 'critico' ? 'Crítico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
                   </span>
                 </div>
+
+                {nota.data_evento && <small className="note-event-date">📅 {formatarData(nota.data_evento)}</small>}
 
                 {nota.conteudo && <p style={styles.textoNota}>{nota.conteudo}</p>}
 
@@ -2577,6 +2597,7 @@ export default function App() {
               <option value="urgente">Urgente</option>
               <option value="critico">Crítico</option>
             </select>
+            <input style={styles.inputModal} type="date" value={dataEventoNota} onChange={(e) => setDataEventoNota(e.target.value)} />
             <textarea style={styles.textareaModal} placeholder="Conteúdo..." value={conteudoNota} onChange={(e) => setConteudoNota(e.target.value)} />
 
             <button style={styles.btnSalvar} onClick={salvarNota}>Salvar</button>

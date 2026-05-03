@@ -248,3 +248,136 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
     margin-top: 14px !important;
   }
 }
+
+/* ===== AJUSTES FINOS MENU, NOTAS E DESKTOP - DONA FLOR ===== */
+@media (min-width: 980px) {
+  .desktop-sidebar {
+    width: 226px !important;
+    left: 18px !important;
+    top: 18px !important;
+    bottom: 18px !important;
+    padding: 14px !important;
+    border-radius: 22px !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+  }
+  .desktop-sidebar-scroll {
+    overflow-y: auto !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    display: grid !important;
+    gap: 8px !important;
+    padding-right: 0 !important;
+  }
+  .desktop-sidebar-scroll::-webkit-scrollbar { display: none !important; }
+  .desktop-sidebar-brand img { width: 42px !important; height: 42px !important; }
+  .desktop-sidebar-brand strong { font-size: 15px !important; }
+  .desktop-sidebar-brand small { font-size: 11px !important; }
+  .sidebar-group { padding: 5px !important; border-radius: 15px !important; }
+  .sidebar-group summary { padding: 6px 8px !important; }
+  .desktop-sidebar-nav button {
+    min-height: 34px !important;
+    padding: 8px 9px !important;
+    font-size: 12.5px !important;
+    border-radius: 11px !important;
+  }
+  .desktop-sidebar-user {
+    padding: 8px !important;
+    border-radius: 14px !important;
+    margin-top: 4px !important;
+  }
+  .desktop-sidebar-user strong { font-size: 12px !important; }
+  .desktop-sidebar-user small { font-size: 10px !important; }
+  .sidebar-exit button { min-height: 34px !important; }
+
+  .app-page,
+  .app-frame {
+    padding-left: 270px !important;
+    padding-right: 22px !important;
+  }
+
+  .top-shell .desktop-quick-actions { display: none !important; }
+  .usuarioAcoes .desktop-quick-actions { display: none !important; }
+
+  .notes-panel {
+    width: 340px !important;
+    right: 22px !important;
+    top: 130px !important;
+    max-height: calc(100vh - 154px) !important;
+    padding: 18px !important;
+  }
+  .dashboard-title-row,
+  .agenda-card-polished,
+  .filters-desktop,
+  .result-summary,
+  .content-block {
+    margin-right: 370px !important;
+  }
+  .summary-grid {
+    grid-template-columns: repeat(4, minmax(140px, 1fr)) !important;
+    gap: 12px !important;
+  }
+  .summary-grid > div {
+    min-height: 86px !important;
+    padding: 14px !important;
+  }
+}
+
+.quick-actions-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 12px;
+  background: linear-gradient(135deg, #ecfeff, #f0fdfa);
+  border: 1px solid #bdeee5;
+  border-radius: 18px;
+}
+.quick-actions-card strong {
+  grid-column: 1 / -1;
+  color: #0f766e;
+  font-size: 14px;
+}
+.quick-actions-card button {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px;
+  font-weight: 900;
+  background: #0f766e;
+  color: #fff;
+  cursor: pointer;
+}
+.quick-actions-card button:last-child { background: #0f172a; }
+
+.notes-panel input { margin-top: 10px !important; }
+.notes-panel [style*="notasHeaderNovo"], .notes-panel > div:nth-child(2) {
+  gap: 8px !important;
+}
+.note-event-date {
+  display: inline-flex;
+  margin: 8px 0 2px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #eefbf8;
+  color: #0f766e;
+  font-weight: 800;
+}
+.notes-panel button {
+  white-space: nowrap;
+}
+
+@media (max-width: 979px) {
+  .top-shell .desktop-quick-actions,
+  .usuarioAcoes .desktop-quick-actions { display: none !important; }
+  .mobile-menu-panel {
+    max-height: calc(100vh - 32px) !important;
+    overflow: auto !important;
+  }
+  .mobile-menu-group button {
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+  .notes-panel {
+    order: -1;
+  }
+}

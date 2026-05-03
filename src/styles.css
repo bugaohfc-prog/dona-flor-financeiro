@@ -63,3 +63,188 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
   .printActions{display:none!important}
   @page{margin:12mm}
 }
+
+/* ===== DONA FLOR - POLIMENTO FINAL DE LAYOUT ===== */
+@media (min-width: 980px) {
+  .desktop-sidebar {
+    width: 236px !important;
+    padding: 16px !important;
+    gap: 10px !important;
+    overflow: hidden !important;
+  }
+  .desktop-sidebar-scroll {
+    overflow-y: auto !important;
+    padding-right: 4px !important;
+    display: grid !important;
+    gap: 8px !important;
+    min-height: 0 !important;
+  }
+  .desktop-sidebar-spacer { display: none !important; }
+  .desktop-sidebar-brand {
+    flex-shrink: 0 !important;
+    padding-bottom: 12px !important;
+    margin-bottom: 2px !important;
+  }
+  .desktop-sidebar-brand img,
+  .logoMarca img,
+  .menuPerfil img {
+    object-fit: cover !important;
+  }
+  .sidebar-group {
+    border: 1px solid rgba(255,255,255,.12) !important;
+    border-radius: 16px !important;
+    padding: 6px !important;
+    background: rgba(255,255,255,.06) !important;
+  }
+  .sidebar-group summary {
+    list-style: none !important;
+    cursor: pointer !important;
+    padding: 6px 8px !important;
+    color: rgba(255,255,255,.72) !important;
+    font-size: 10px !important;
+    text-transform: uppercase !important;
+    letter-spacing: .8px !important;
+    font-weight: 900 !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+  }
+  .sidebar-group summary::-webkit-details-marker { display: none !important; }
+  .sidebar-group summary::after { content: '⌄'; font-size: 13px; opacity: .9; }
+  .sidebar-group:not([open]) summary::after { content: '›'; }
+  .desktop-sidebar-nav { gap: 6px !important; }
+  .desktop-sidebar-nav button {
+    min-height: 38px !important;
+    padding: 9px 10px !important;
+    border-radius: 12px !important;
+    font-size: 13px !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+  }
+  .desktop-sidebar-user {
+    flex-shrink: 0 !important;
+    padding: 10px !important;
+    margin-top: 6px !important;
+  }
+  .sidebar-exit { flex-shrink: 0 !important; }
+
+  .dashboard-title-row {
+    display: block !important;
+    margin: 0 360px 18px 0 !important;
+    width: auto !important;
+  }
+  .dashboard-title-row .main-title {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    font-size: 32px !important;
+    line-height: 1.1 !important;
+    margin: 0 0 14px 0 !important;
+    white-space: normal !important;
+  }
+  .summary-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(155px, 1fr)) !important;
+    gap: 14px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+  .summary-grid > div {
+    min-width: 0 !important;
+    min-height: 92px !important;
+    padding: 16px !important;
+    border-radius: 18px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    overflow: hidden !important;
+  }
+  .summary-grid span,
+  .summary-grid strong {
+    display:block !important;
+    width:100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .summary-grid strong { font-size: 22px !important; }
+
+  .notes-panel {
+    position: fixed !important;
+    right: 28px !important;
+    top: 152px !important;
+    width: 320px !important;
+    max-height: calc(100vh - 184px) !important;
+    overflow: auto !important;
+    background: #ffffff !important;
+    border-radius: 22px !important;
+    padding: 16px !important;
+    box-shadow: 0 18px 44px rgba(15,23,42,.08) !important;
+    border: 1px solid rgba(15,118,110,.10) !important;
+    z-index: 20 !important;
+  }
+  .agenda-card-polished,
+  .filters-desktop,
+  .result-summary,
+  .content-block {
+    margin-left: 0 !important;
+    margin-right: 360px !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+}
+
+@media (min-width: 980px) and (max-width: 1220px) {
+  .dashboard-title-row,
+  .agenda-card-polished,
+  .filters-desktop,
+  .result-summary,
+  .content-block {
+    margin-right: 0 !important;
+  }
+  .notes-panel {
+    position: static !important;
+    width: auto !important;
+    max-height: none !important;
+    margin: 18px 0 !important;
+  }
+}
+
+@media (max-width: 979px) {
+  .mobile-menu-panel {
+    gap: 12px !important;
+    padding: 16px !important;
+  }
+  .mobile-menu-group {
+    display: grid !important;
+    gap: 9px !important;
+    border: 1px solid #e5f3ef !important;
+    border-radius: 18px !important;
+    padding: 10px !important;
+    background: #fbfffd !important;
+  }
+  .mobile-menu-group summary {
+    list-style: none !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    text-transform: uppercase !important;
+    letter-spacing: .8px !important;
+    font-weight: 900 !important;
+    color: #0f766e !important;
+    display:flex !important;
+    justify-content:space-between !important;
+    padding: 2px 2px 6px !important;
+  }
+  .mobile-menu-group summary::-webkit-details-marker { display:none !important; }
+  .mobile-menu-group summary::after { content:'⌄'; }
+  .mobile-menu-group:not([open]) summary::after { content:'›'; }
+  .mobile-menu-group button {
+    margin: 0 !important;
+    min-height: 58px !important;
+  }
+  .notes-panel {
+    margin-top: 14px !important;
+  }
+}

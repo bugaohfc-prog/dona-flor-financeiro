@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import Relatorios from './pages/Relatorios.jsx'
 import Login from './pages/Login.jsx'
+import './styles.css'
 
 export default function App() {
   // =========================
@@ -1227,6 +1228,36 @@ export default function App() {
     return primeiraLetraMaiuscula(email.split('@')[0])
   }
 
+  function renderConfirmacaoGlobal() {
+    if (!confirmacao.aberto) return null
+
+    return (
+      <div style={styles.overlayConfirmacao}>
+        <div style={styles.modalConfirmacao}>
+          <div style={styles.confirmacaoIcone}>
+            {confirmacao.tipo === 'perigo' ? '⚠️' : confirmacao.tipo === 'sucesso' ? '✅' : 'ℹ️'}
+          </div>
+
+          <h3 style={styles.confirmacaoTitulo}>{confirmacao.titulo}</h3>
+          <p style={styles.confirmacaoTexto}>{confirmacao.mensagem}</p>
+
+          <div style={styles.confirmacaoAcoes}>
+            <button style={styles.btnConfirmarCancelar} onClick={fecharConfirmacao}>Cancelar</button>
+            <button
+              style={{
+                ...styles.btnConfirmarAcao,
+                background: confirmacao.tipo === 'perigo' ? '#dc3545' : confirmacao.tipo === 'sucesso' ? '#14b8a6' : '#0d6efd'
+              }}
+              onClick={executarConfirmacao}
+            >
+              {confirmacao.textoConfirmar}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   function AppFrame({ children }) {
     return (
       <div className="app-page app-frame" style={styles.page}>
@@ -1277,6 +1308,7 @@ export default function App() {
         {renderMobileMenu()}
 
         <main className="app-frame-content">{children}</main>
+        {renderConfirmacaoGlobal()}
       </div>
     )
   }
@@ -1284,18 +1316,55 @@ export default function App() {
   function renderSidebar() {
     return (
       <aside className="desktop-sidebar no-print">
-        <div className="desktop-sidebar-brand"><img src="/icon-192.png" alt="Dona Flor" /><div><strong>Dona Flor</strong><small>Gestão Financeira</small></div></div>
-        <div className="desktop-sidebar-section-label">Principal</div>
-        <nav className="desktop-sidebar-nav"><button className={telaAtual === 'contas' ? 'active' : ''} onClick={() => navegarPara('contas')}>🏠 Painel</button><button className={telaAtual === 'agenda' ? 'active' : ''} onClick={() => navegarPara('agenda')}>📅 Agenda</button></nav>
-        <div className="desktop-sidebar-section-label">Gestão</div>
-        <nav className="desktop-sidebar-nav"><button onClick={abrirNovaConta}>💰 Nova conta</button><button onClick={abrirNovaNota}>📝 Nova nota</button><button className={telaAtual === 'importar' ? 'active' : ''} onClick={() => navegarPara('importar')}>📥 Importar CSV</button></nav>
-        <div className="desktop-sidebar-section-label">Análise</div>
-        <nav className="desktop-sidebar-nav"><button className={telaAtual === 'relatorios' ? 'active' : ''} onClick={() => navegarPara('relatorios')}>📊 Relatórios</button></nav>
-        <div className="desktop-sidebar-section-label">Sistema</div>
-        <nav className="desktop-sidebar-nav"><button className={telaAtual === 'lixeira' ? 'active' : ''} onClick={() => navegarPara('lixeira')}>🗑️ Lixeira</button><button className={telaAtual === 'configuracoes' ? 'active' : ''} onClick={() => navegarPara('configuracoes')}>⚙️ Configurações</button></nav>
-        <div className="desktop-sidebar-spacer" />
-        <div className="desktop-sidebar-user"><strong>Olá, {nomeUsuario()}</strong><small>{perfilUsuario || 'usuário'}</small></div>
-        <nav className="desktop-sidebar-nav"><button onClick={sairDoSistema}>🚪 Sair</button></nav>
+        <div className="desktop-sidebar-brand">
+          <img src="/icon-192.png" alt="Dona Flor" />
+          <div>
+            <strong>Dona Flor</strong>
+            <small>Gestão Financeira</small>
+          </div>
+        </div>
+
+        <div className="desktop-sidebar-scroll">
+          <details className="sidebar-group" open>
+            <summary>Principal</summary>
+            <nav className="desktop-sidebar-nav">
+              <button className={telaAtual === 'contas' ? 'active' : ''} onClick={() => navegarPara('contas')}>🏠 Painel</button>
+              <button className={telaAtual === 'agenda' ? 'active' : ''} onClick={() => navegarPara('agenda')}>📅 Agenda financeira</button>
+            </nav>
+          </details>
+
+          <details className="sidebar-group" open>
+            <summary>Gestão</summary>
+            <nav className="desktop-sidebar-nav">
+              <button onClick={abrirNovaConta}>💰 Nova conta</button>
+              <button onClick={abrirNovaNota}>📝 Nova nota</button>
+              <button className={telaAtual === 'importar' ? 'active' : ''} onClick={() => navegarPara('importar')}>📥 Importar CSV</button>
+            </nav>
+          </details>
+
+          <details className="sidebar-group" open>
+            <summary>Análise</summary>
+            <nav className="desktop-sidebar-nav">
+              <button className={telaAtual === 'relatorios' ? 'active' : ''} onClick={() => navegarPara('relatorios')}>📊 Relatórios</button>
+            </nav>
+          </details>
+
+          <details className="sidebar-group" open>
+            <summary>Sistema</summary>
+            <nav className="desktop-sidebar-nav">
+              <button className={telaAtual === 'lixeira' ? 'active' : ''} onClick={() => navegarPara('lixeira')}>🗑️ Lixeira</button>
+              <button className={telaAtual === 'configuracoes' ? 'active' : ''} onClick={() => navegarPara('configuracoes')}>⚙️ Configurações</button>
+            </nav>
+          </details>
+        </div>
+
+        <div className="desktop-sidebar-user">
+          <strong>Olá, {nomeUsuario()}</strong>
+          <small>{perfilUsuario || 'usuário'}</small>
+        </div>
+        <nav className="desktop-sidebar-nav sidebar-exit">
+          <button onClick={sairDoSistema}>🚪 Sair</button>
+        </nav>
       </aside>
     )
   }
@@ -1304,17 +1373,36 @@ export default function App() {
     if (!menuNavegacaoAberto) return null
     return (
       <div className="no-print" style={styles.menuBackdrop} onClick={() => setMenuNavegacaoAberto(false)}>
-        <div style={styles.menuNavegacao} onClick={(e) => e.stopPropagation()}>
-          <div style={styles.menuPerfil}><img src="/icon-192.png" alt="Dona Flor" style={styles.menuPerfilIcone} /><div><strong>Olá, {nomeUsuario()}</strong><small>{perfilUsuario || 'usuário'}</small></div></div>
-          <div style={styles.menuSecaoTitulo}>Navegação</div>
-          <button style={styles.menuNavItem} onClick={() => navegarPara('contas')}><span>🏠</span><div><strong>Painel</strong><small>Resumo das contas</small></div></button>
-          <button style={styles.menuNavItem} onClick={() => navegarPara('agenda')}><span>📅</span><div><strong>Agenda financeira</strong><small>Vencimentos e previsões</small></div></button>
-          <button style={styles.menuNavItem} onClick={() => navegarPara('relatorios')}><span>📊</span><div><strong>Relatórios PRO+</strong><small>Análises e indicadores</small></div></button>
-          <button style={styles.menuNavItem} onClick={() => navegarPara('importar')}><span>📥</span><div><strong>Importar CSV</strong><small>Trazer histórico do Excel</small></div></button>
-          <div style={styles.menuSecaoTitulo}>Sistema</div>
-          <button style={styles.menuNavItem} onClick={() => navegarPara('lixeira')}><span>🗑️</span><div><strong>Lixeira</strong><small>Restaurar ou excluir definitivo</small></div></button>
-          <button style={styles.menuNavItem} onClick={() => navegarPara('configuracoes')}><span>⚙️</span><div><strong>Configurações</strong><small>Preferências da empresa</small></div></button>
-          <button style={styles.menuSairItem} onClick={sairDoSistema}><span>🚪</span><div><strong>Sair</strong><small>Encerrar sessão</small></div></button>
+        <div className="mobile-menu-panel" style={styles.menuNavegacao} onClick={(e) => e.stopPropagation()}>
+          <div style={styles.menuPerfil}>
+            <img src="/icon-192.png" alt="Dona Flor" style={styles.menuPerfilIcone} />
+            <div><strong>Olá, {nomeUsuario()}</strong><small>{perfilUsuario || 'usuário'}</small></div>
+          </div>
+
+          <details className="mobile-menu-group" open>
+            <summary>Principal</summary>
+            <button style={styles.menuNavItem} onClick={() => navegarPara('contas')}><span>🏠</span><div><strong>Painel</strong><small>Resumo das contas</small></div></button>
+            <button style={styles.menuNavItem} onClick={() => navegarPara('agenda')}><span>📅</span><div><strong>Agenda financeira</strong><small>Vencimentos e previsões</small></div></button>
+          </details>
+
+          <details className="mobile-menu-group" open>
+            <summary>Gestão</summary>
+            <button style={styles.menuNavItem} onClick={abrirNovaConta}><span>💰</span><div><strong>Nova conta</strong><small>Cadastrar pagamento</small></div></button>
+            <button style={styles.menuNavItem} onClick={abrirNovaNota}><span>📝</span><div><strong>Nova nota</strong><small>Lembrete rápido</small></div></button>
+            <button style={styles.menuNavItem} onClick={() => navegarPara('importar')}><span>📥</span><div><strong>Importar CSV</strong><small>Trazer histórico do Excel</small></div></button>
+          </details>
+
+          <details className="mobile-menu-group" open>
+            <summary>Análise</summary>
+            <button style={styles.menuNavItem} onClick={() => navegarPara('relatorios')}><span>📊</span><div><strong>Relatórios PRO+</strong><small>Análises e indicadores</small></div></button>
+          </details>
+
+          <details className="mobile-menu-group" open>
+            <summary>Sistema</summary>
+            <button style={styles.menuNavItem} onClick={() => navegarPara('lixeira')}><span>🗑️</span><div><strong>Lixeira</strong><small>Restaurar ou excluir definitivo</small></div></button>
+            <button style={styles.menuNavItem} onClick={() => navegarPara('configuracoes')}><span>⚙️</span><div><strong>Configurações</strong><small>Preferências da empresa</small></div></button>
+            <button style={styles.menuSairItem} onClick={sairDoSistema}><span>🚪</span><div><strong>Sair</strong><small>Encerrar sessão</small></div></button>
+          </details>
         </div>
       </div>
     )
@@ -2205,82 +2293,9 @@ export default function App() {
         </div>
       </section>
 
-      <aside className="desktop-sidebar no-print">
-        <div className="desktop-sidebar-brand">
-          <img src="/icon-192.png" alt="Dona Flor" />
-          <div>
-            <strong>Dona Flor</strong>
-            <small>Gestão Financeira</small>
-          </div>
-        </div>
-        <div className="desktop-sidebar-section-label">Principal</div>
-        <nav className="desktop-sidebar-nav">
-          <button className={telaAtual === 'contas' ? 'active' : ''} onClick={() => navegarPara('contas')}>🏠 Painel</button>
-          <button className={telaAtual === 'agenda' ? 'active' : ''} onClick={() => navegarPara('agenda')}>📅 Agenda</button>
-        </nav>
-        <div className="desktop-sidebar-section-label">Gestão</div>
-        <nav className="desktop-sidebar-nav">
-          <button onClick={abrirNovaConta}>💰 Nova conta</button>
-          <button onClick={abrirNovaNota}>📝 Nova nota</button>
-          <button className={telaAtual === 'importar' ? 'active' : ''} onClick={() => navegarPara('importar')}>📥 Importar CSV</button>
-        </nav>
-        <div className="desktop-sidebar-section-label">Análise</div>
-        <nav className="desktop-sidebar-nav">
-          <button className={telaAtual === 'relatorios' ? 'active' : ''} onClick={() => navegarPara('relatorios')}>📊 Relatórios</button>
-        </nav>
-        <div className="desktop-sidebar-section-label">Sistema</div>
-        <nav className="desktop-sidebar-nav">
-          <button className={telaAtual === 'lixeira' ? 'active' : ''} onClick={() => navegarPara('lixeira')}>🗑️ Lixeira</button>
-          <button className={telaAtual === 'configuracoes' ? 'active' : ''} onClick={() => navegarPara('configuracoes')}>⚙️ Configurações</button>
-        </nav>
-        <div className="desktop-sidebar-spacer" />
-        <div className="desktop-sidebar-user">
-          <strong>Olá, {nomeUsuario()}</strong>
-          <small>{perfilUsuario || 'usuário'}</small>
-        </div>
-        <nav className="desktop-sidebar-nav">
-          <button onClick={sairDoSistema}>🚪 Sair</button>
-        </nav>
-      </aside>
+      {renderSidebar()}
 
-      {menuNavegacaoAberto && (
-        <div className="no-print" style={styles.menuBackdrop} onClick={() => setMenuNavegacaoAberto(false)}>
-          <div style={styles.menuNavegacao} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.menuPerfil}>
-              <img src="/icon-192.png" alt="Dona Flor" style={styles.menuPerfilIcone} />
-              <div>
-                <strong>Olá, {nomeUsuario()}</strong>
-                <small>{perfilUsuario || 'usuário'}</small>
-              </div>
-            </div>
-
-            <div style={styles.menuSecaoTitulo}>Navegação</div>
-            <button style={styles.menuNavItem} onClick={() => navegarPara('contas')}>
-              <span>🏠</span><div><strong>Painel</strong><small>Resumo das contas</small></div>
-            </button>
-            <button style={styles.menuNavItem} onClick={() => navegarPara('agenda')}>
-              <span>📅</span><div><strong>Agenda financeira</strong><small>Vencimentos e previsões</small></div>
-            </button>
-            <button style={styles.menuNavItem} onClick={() => navegarPara('relatorios')}>
-              <span>📊</span><div><strong>Relatórios PRO+</strong><small>Análises e indicadores</small></div>
-            </button>
-            <button style={styles.menuNavItem} onClick={() => navegarPara('importar')}>
-              <span>📥</span><div><strong>Importar CSV</strong><small>Trazer histórico do Excel</small></div>
-            </button>
-
-            <div style={styles.menuSecaoTitulo}>Sistema</div>
-            <button style={styles.menuNavItem} onClick={() => navegarPara('lixeira')}>
-              <span>🗑️</span><div><strong>Lixeira</strong><small>Restaurar ou excluir definitivo</small></div>
-            </button>
-            <button style={styles.menuNavItem} onClick={() => navegarPara('configuracoes')}>
-              <span>⚙️</span><div><strong>Configurações</strong><small>Preferências da empresa</small></div>
-            </button>
-            <button style={styles.menuSairItem} onClick={sairDoSistema}>
-              <span>🚪</span><div><strong>Sair</strong><small>Encerrar sessão</small></div>
-            </button>
-          </div>
-        </div>
-      )}
+      {renderMobileMenu()}
 
       <section className="dashboard-title-row">
         <h1 className="main-title" style={styles.titulo}>📊 Contas a Pagar</h1>

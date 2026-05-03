@@ -645,11 +645,6 @@ export default function App() {
   }
 
   async function excluirContaDefinitivo(conta) {
-    if (!podeExcluirDefinitivo(conta.excluido_em)) {
-      alert('Essa conta ainda está em quarentena. Só pode excluir definitivamente após 60 dias.')
-      return
-    }
-
     const { error } = await supabase
       .from('df_contas')
       .delete()
@@ -664,11 +659,6 @@ export default function App() {
   }
 
   async function excluirNotaDefinitivo(nota) {
-    if (!podeExcluirDefinitivo(nota.excluido_em)) {
-      alert('Essa nota ainda está em quarentena. Só pode excluir definitivamente após 60 dias.')
-      return
-    }
-
     const { error } = await supabase
       .from('df_notas')
       .delete()
@@ -1138,9 +1128,7 @@ export default function App() {
                 </div>
 
                 <small style={liberada ? styles.textoLiberado : styles.textoQuarentena}>
-                  {liberada
-                    ? 'Liberada para exclusão definitiva'
-                    : `Quarentena: faltam ${60 - dias} dia(s)`}
+                  Excluída há {dias} dia(s). Pode restaurar ou excluir definitivamente.
                 </small>
 
                 <div style={styles.acoes}>
@@ -1177,9 +1165,7 @@ export default function App() {
                 )}
 
                 <small style={liberada ? styles.textoLiberado : styles.textoQuarentena}>
-                  {liberada
-                    ? 'Liberada para exclusão definitiva'
-                    : `Quarentena: faltam ${60 - dias} dia(s)`}
+                  Excluída há {dias} dia(s). Pode restaurar ou excluir definitivamente.
                 </small>
 
                 <div style={styles.acoes}>

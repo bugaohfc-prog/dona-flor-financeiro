@@ -43,6 +43,12 @@ export default function App() {
     return valor
   }
 
+
+  function pegarNomeCentroSelecionado(idCentro) {
+    const centroEncontrado = centros.find((centro) => String(centro.id) === String(idCentro))
+    return centroEncontrado?.nome || 'Sem centro'
+  }
+
   function estaVencida(data, status) {
     if (!data || status === 'pago') return false
     const hoje = new Date()
@@ -256,7 +262,8 @@ export default function App() {
       descricao: primeiraLetraMaiuscula(descricao.trim()),
       valor: converterValor(valor),
       vencimento: formatarDataParaBanco(dataVencimento),
-      centro_custo_id: centroCustoId || null
+      centro_custo_id: centroCustoId || null,
+      centro: pegarNomeCentroSelecionado(centroCustoId)
     }
 
     let error

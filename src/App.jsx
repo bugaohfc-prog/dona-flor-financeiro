@@ -141,11 +141,6 @@ export default function App() {
   // =========================
   const [menuAberto, setMenuAberto] = useState(false)
   const [telaAtual, setTelaAtual] = useState('contas')
-  const [secoesAbertas, setSecoesAbertas] = useState({
-    filtros: true,
-    contas: true,
-    notas: false
-  })
 
   useEffect(() => {
     carregarTudo()
@@ -237,14 +232,14 @@ export default function App() {
     .filter((conta) => {
       if (filtroStatus === 'pendentes') return conta.status !== 'pago'
       if (filtroStatus === 'pagas') return conta.status === 'pago'
-      if (filtroStatus === 'vencidas') return estaVencida(conta.data_vencimento, conta.status)
+      if (filtroStatus === 'vencidas') return estaVencida((conta.vencimento || conta.data_vencimento), conta.status)
       return true
     })
     .filter((conta) => !filtroCentro || conta.centro_custo_id === filtroCentro)
-    .filter((conta) => !filtroMes || pegarMes(conta.data_vencimento) === filtroMes)
+    .filter((conta) => !filtroMes || pegarMes((conta.vencimento || conta.data_vencimento)) === filtroMes)
     .filter((conta) => {
-      if (dataInicial && conta.data_vencimento < dataInicial) return false
-      if (dataFinal && conta.data_vencimento > dataFinal) return false
+      if (dataInicial && (conta.vencimento || conta.data_vencimento) < dataInicial) return false
+      if (dataFinal && (conta.vencimento || conta.data_vencimento) > dataFinal) return false
       return true
     })
     .filter((conta) =>
@@ -258,7 +253,7 @@ export default function App() {
     .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
   const vencido = contasFiltradas
-    .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
+    .filter((conta) => estaVencida((conta.vencimento || conta.data_vencimento), conta.status))
     .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
   const pendente = total - pago
@@ -271,7 +266,7 @@ export default function App() {
         .filter((conta) => conta.status === 'pago')
         .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
       const vencidoCentro = lista
-        .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
+        .filter((conta) => estaVencida((conta.vencimento || conta.data_vencimento), conta.status))
         .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
       return {
@@ -308,7 +303,7 @@ export default function App() {
     setEditandoContaId(conta.id)
     setDescricao(conta.descricao || '')
     setValor(conta.valor || '')
-    setDataVencimento(conta.data_vencimento || '')
+    setDataVencimento((conta.vencimento || conta.data_vencimento) || '')
     setCentroCustoId(conta.centro_custo_id || '')
     setModalConta(true)
   }
@@ -588,8 +583,8 @@ export default function App() {
     const linhas = contasFiltradas.map((conta) => [
       conta.descricao || '',
       Number(conta.valor || 0).toFixed(2).replace('.', ','),
-      formatarData(conta.data_vencimento),
-      estaVencida(conta.data_vencimento, conta.status) ? 'vencido' : conta.status,
+      formatarData((conta.vencimento || conta.data_vencimento)),
+      estaVencida((conta.vencimento || conta.data_vencimento), conta.status) ? 'vencido' : conta.status,
       conta.df_centros_custo?.nome || ''
     ])
 
@@ -619,42 +614,6 @@ export default function App() {
     setFiltroMes('')
     setDataInicial('')
     setDataFinal('')
-  }
-
-
-  function alternarSecao(chave) {
-    setSecoesAbertas((atual) => ({
-      ...atual,
-      [chave]: atual[chave] === false
-    }))
-  }
-
-  function SecaoRecolhivel({ id, titulo, detalhe, children }) {
-    const aberta = secoesAbertas[id] !== false
-
-    return (
-      <section style={styles.secaoRecolhivel}>
-        <button
-          type="button"
-          className="no-print"
-          style={styles.cabecalhoSecao}
-          onClick={() => alternarSecao(id)}
-        >
-          <div style={styles.cabecalhoSecaoTexto}>
-            <strong>{titulo}</strong>
-            {detalhe && <small>{detalhe}</small>}
-          </div>
-
-          <span style={styles.indicadorSecao}>{aberta ? '−' : '+'}</span>
-        </button>
-
-        {aberta && (
-          <div>
-            {children}
-          </div>
-        )}
-      </section>
-    )
   }
 
   if (telaAtual === 'relatorios') {
@@ -895,25 +854,6 @@ export default function App() {
     <div className="app-page" style={styles.page}>
       <style>
         {`
-
-          @media (max-width: 480px) {
-            .app-page {
-              padding: 12px !important;
-            }
-          }
-
-          @media (min-width: 768px) {
-            .app-page {
-              max-width: 920px !important;
-            }
-          }
-
-          @media (min-width: 1100px) {
-            .app-page {
-              max-width: 1120px !important;
-            }
-          }
-
           .print-header,
           .print-footer {
             display: none;
@@ -1023,12 +963,7 @@ export default function App() {
         </div>
       </section>
 
-      <SecaoRecolhivel
-        id="filtros"
-        titulo="🔎 Filtros e exportação"
-        detalhe="Busca, período, centro e arquivos"
-      >
-        <div className="no-print" style={styles.filtrosBox}>
+      <section className="no-print" style={styles.filtrosBox}>
         <input
           style={styles.input}
           placeholder="Buscar conta..."
@@ -1084,8 +1019,7 @@ export default function App() {
           <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
           <button style={styles.btnVerde} onClick={exportarCSV}>CSV/Editável</button>
         </div>
-        </div>
-      </SecaoRecolhivel>
+      </section>
 
       <section style={styles.resumoFiltro}>
         <strong>Resultado filtrado</strong>
@@ -1097,16 +1031,11 @@ export default function App() {
         </small>
       </section>
 
-      <SecaoRecolhivel
-        id="contas"
-        titulo={`💰 Contas (${contasFiltradas.length})`}
-        detalhe={`Total ${formatarValor(total)}`}
-      >
-        <div style={styles.bloco}>
-          {loading && <p>Carregando...</p>}
+      <section style={styles.bloco}>
+        {loading && <p>Carregando...</p>}
 
         {contasFiltradas.map((conta) => {
-          const vencida = estaVencida(conta.data_vencimento, conta.status)
+          const vencida = estaVencida((conta.vencimento || conta.data_vencimento), conta.status)
 
           return (
             <div
@@ -1128,7 +1057,7 @@ export default function App() {
               </div>
 
               <div style={styles.cardInfo}>
-                {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || '-'} • {vencida ? 'VENCIDO' : conta.status}
+                {formatarData((conta.vencimento || conta.data_vencimento))} • {conta.df_centros_custo?.nome || '-'} • {vencida ? 'VENCIDO' : conta.status}
               </div>
 
               <div style={styles.acoes}>
@@ -1153,16 +1082,10 @@ export default function App() {
             </div>
           )
         })}
-        </div>
-      </SecaoRecolhivel>
+      </section>
 
-      <SecaoRecolhivel
-        id="notas"
-        titulo={`📝 Bloco de Notas (${notasFiltradas.length})`}
-        detalhe="Anotações internas"
-      >
-        <div className="no-print" style={styles.bloco}>
-          <h2 style={styles.subtitulo}>📝 Bloco de Notas</h2>
+      <section className="no-print" style={styles.bloco}>
+        <h2 style={styles.subtitulo}>📝 Bloco de Notas</h2>
 
         <input
           style={styles.input}
@@ -1194,8 +1117,7 @@ export default function App() {
             </div>
           </div>
         ))}
-        </div>
-      </SecaoRecolhivel>
+      </section>
 
       {menuAberto && (
         <div style={styles.menuFab}>
@@ -1209,6 +1131,26 @@ export default function App() {
             }}
           >
             📊 Relatórios
+          </button>
+
+          <button
+            style={styles.menuItem}
+            onClick={() => {
+              setMenuAberto(false)
+              setTelaAtual('agenda')
+            }}
+          >
+            📅 Agenda
+          </button>
+
+          <button
+            style={styles.menuItem}
+            onClick={() => {
+              setMenuAberto(false)
+              setTelaAtual('lixeira')
+            }}
+          >
+            🗑️ Lixeira
           </button>
 
           <button
@@ -1290,47 +1232,9 @@ export default function App() {
 // BLOCO 12 — STYLES
 // =========================
 const styles = {
-  secaoRecolhivel: {
-    marginTop: 14,
-    marginBottom: 12
-  },
-  cabecalhoSecao: {
-    width: '100%',
-    background: '#fff',
-    border: '1px solid #e5e7eb',
-    borderRadius: 14,
-    padding: 12,
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 10,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-    cursor: 'pointer',
-    textAlign: 'left',
-    marginBottom: 8
-  },
-  cabecalhoSecaoTexto: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 3,
-    fontSize: 15
-  },
-  indicadorSecao: {
-    width: 30,
-    height: 30,
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: '#f1f3f5',
-    color: '#111',
-    fontSize: 22,
-    fontWeight: 'bold',
-    flexShrink: 0
-  },
   page: {
     padding: 16,
-    maxWidth: 760,
+    maxWidth: 700,
     margin: 'auto',
     fontFamily: 'Arial',
     background: '#f8f9fa',

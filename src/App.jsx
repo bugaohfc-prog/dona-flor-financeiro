@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import Relatorios from './pages/Relatorios.jsx'
+import Login from './pages/Login.jsx'
 
 export default function App() {
   // =========================

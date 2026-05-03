@@ -1,3 +1,65 @@
-body {
-  font-family: Arial, sans-serif;
+*{box-sizing:border-box}
+body{margin:0;background:#f8fafc;color:#0f172a;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+button,input,select,textarea{font:inherit}
+button{border:0;border-radius:12px;background:#0f766e;color:white;font-weight:900;padding:12px 14px;cursor:pointer}
+button.outline{background:white;color:#0f172a;border:1px solid #cbd5e1}
+button.danger{background:#b91c1c}
+input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:12px;margin:6px 0;background:white}
+textarea{min-height:92px}
+.loginPage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(180deg,#ecfeff,#f8fafc)}
+.loginCard{width:100%;max-width:420px;background:white;border-radius:28px;padding:28px;box-shadow:0 20px 60px rgba(15,23,42,.12);text-align:center}
+.loginCard img{width:110px;height:110px;border-radius:24px;object-fit:cover}
+.loginCard button{width:100%;margin-top:10px}
+.topbar{position:sticky;top:0;z-index:20;background:#0f766e;color:white;padding:14px 18px;box-shadow:0 8px 24px rgba(15,23,42,.14)}
+.topbar div{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.topbar span{font-size:13px;opacity:.9}
+.topbar button{background:rgba(255,255,255,.14)}
+.container{max-width:1120px;margin:0 auto;padding:14px}
+.card,.alertCard{background:white;border:1px solid #e2e8f0;border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 10px 28px rgba(15,23,42,.06)}
+.alertCard{border-left:6px solid #b91c1c;background:#fff7ed}
+.alert{background:#fee2e2;color:#991b1b;padding:12px;border-radius:12px;margin:10px 0}
+.muted{color:#64748b}
+.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+.metrics div{background:white;border:1px solid #e2e8f0;border-radius:16px;padding:14px;box-shadow:0 8px 20px rgba(15,23,42,.04)}
+.metrics span{display:block;color:#64748b;font-size:12px;text-transform:uppercase;font-weight:900}
+.metrics strong{font-size:22px}
+.miniGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.sectionHeader{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sectionHeader h2{margin:0}
+.plus{width:54px;height:54px;border-radius:999px;font-size:28px;box-shadow:4px 4px 0 #000}
+.filters{display:grid;grid-template-columns:1fr;gap:8px;margin:10px 0}
+.noteCard,.accountCard{background:white;border:1px solid #e2e8f0;border-radius:16px;padding:14px;margin:12px 0}
+.noteTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.noteTop p,.accountCard p{color:#475569;margin:6px 0}
+.noteTop small,.accountCard small{color:#64748b}
+.badge,.status{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;font-weight:900;font-size:13px}
+.normal{background:#e0f2fe;color:#075985}
+.urgente{background:#fee2e2;color:#b91c1c}
+.critico{background:#7f1d1d;color:white}
+.status.aberto{background:#fef3c7;color:#92400e}
+.status.pago{background:#dcfce7;color:#15803d}
+.prioritySelect{margin:12px 0}
+.accountCard{display:grid;grid-template-columns:1fr;gap:10px}
+.accountCard b{color:#0f766e;font-size:20px}
+.modalOverlay{position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,.64);display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:white;border-radius:22px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.24);position:relative}
+.modal .close{position:absolute;right:14px;top:14px;width:42px;height:42px;border-radius:999px;background:#f1f5f9;color:#0f172a;font-size:26px}
+.reportModal{max-width:980px}
+.printActions{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+.reportContent h1{color:#0f766e}
+.reportMetrics{grid-template-columns:repeat(3,1fr)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#0f766e;color:white;text-align:left;padding:8px}
+td{border-bottom:1px solid #e2e8f0;padding:8px}
+@media(min-width:800px){
+  .metrics{grid-template-columns:repeat(6,1fr)}
+  .filters{grid-template-columns:1fr 1fr}
+  .accountCard{grid-template-columns:1fr auto auto;align-items:center}
+}
+@media print{
+  body>*{display:none!important}
+  #printArea{display:block!important;position:static!important;background:white!important;padding:0!important}
+  #printArea .modal{display:block!important;max-width:none!important;max-height:none!important;box-shadow:none!important;border-radius:0!important;overflow:visible!important;padding:0!important}
+  .printActions{display:none!important}
+  @page{margin:12mm}
 }

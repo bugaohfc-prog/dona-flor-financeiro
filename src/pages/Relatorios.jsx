@@ -424,8 +424,10 @@ export default function Relatorios({ voltar }) {
           }
 
           @media print {
-            body {
+            html, body {
               background: #fff !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
 
             .no-print {
@@ -436,14 +438,42 @@ export default function Relatorios({ voltar }) {
               background: #fff !important;
               padding: 0 !important;
               color: #111 !important;
+              max-width: none !important;
+              font-size: 11px !important;
+            }
+
+            .relatorios-page h1 {
+              font-size: 20px !important;
+              margin: 0 0 4px 0 !important;
+            }
+
+            .relatorios-page h2 {
+              font-size: 15px !important;
+              margin: 14px 0 8px 0 !important;
+            }
+
+            .relatorios-page p {
+              margin: 4px 0 !important;
+              line-height: 1.35 !important;
             }
 
             .relatorio-print-header {
               display: block !important;
               text-align: center;
               border-bottom: 1px solid #ddd;
-              margin-bottom: 16px;
+              margin-bottom: 12px;
               padding-bottom: 8px;
+            }
+
+            .relatorio-print-header h1 {
+              font-size: 18px !important;
+              margin-bottom: 4px !important;
+            }
+
+            .relatorio-print-header p {
+              font-size: 10px !important;
+              color: #555 !important;
+              margin: 2px 0 !important;
             }
 
             .relatorio-print-footer {
@@ -453,10 +483,10 @@ export default function Relatorios({ voltar }) {
               left: 0;
               right: 0;
               text-align: center;
-              font-size: 10px;
+              font-size: 9px;
               color: #666;
               border-top: 1px solid #ddd;
-              padding-top: 6px;
+              padding-top: 5px;
               background: #fff;
             }
 
@@ -468,12 +498,24 @@ export default function Relatorios({ voltar }) {
               page-break-inside: avoid;
               break-inside: avoid;
               box-shadow: none !important;
-              border: 1px solid #ddd;
+              border: 1px solid #ddd !important;
+              margin-bottom: 8px !important;
+              padding: 8px !important;
+            }
+
+            .print-keep {
+              page-break-inside: avoid;
+              break-inside: avoid;
+            }
+
+            section {
+              page-break-inside: avoid;
+              break-inside: avoid;
             }
 
             @page {
               size: A4;
-              margin: 12mm 12mm 18mm 12mm;
+              margin: 10mm 10mm 16mm 10mm;
             }
           }
         `}
@@ -481,6 +523,7 @@ export default function Relatorios({ voltar }) {
 
       <div className="relatorio-print-header">
         <h1>Relatório Financeiro Gerencial</h1>
+        <p>Empresa: Dona Flor</p>
         <p>Gerado em {new Date().toLocaleDateString('pt-BR')}</p>
         <p>
           Centro: {filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos'} •

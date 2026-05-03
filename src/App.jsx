@@ -160,6 +160,14 @@ export default function App() {
   const [nomeEmpresa, setNomeEmpresa] = useState('')
   const [whatsappPadrao, setWhatsappPadrao] = useState('')
   const [emailPadrao, setEmailPadrao] = useState('')
+  const [confirmacao, setConfirmacao] = useState({
+    aberto: false,
+    titulo: '',
+    mensagem: '',
+    textoConfirmar: 'Confirmar',
+    tipo: 'padrao',
+    acao: null
+  })
 
   useEffect(() => {
     carregarTudo()
@@ -457,8 +465,6 @@ export default function App() {
   }
 
   async function excluirConta(id) {
-    if (!confirm('Mover conta para a lixeira? Ela ficará em quarentena por 60 dias.')) return
-
     const { error } = await supabase
       .from('df_contas')
       .update({
@@ -532,8 +538,6 @@ export default function App() {
   }
 
   async function excluirNota(id) {
-    if (!confirm('Mover nota para a lixeira? Ela ficará em quarentena por 60 dias.')) return
-
     const { error } = await supabase
       .from('df_notas')
       .update({
@@ -646,8 +650,6 @@ export default function App() {
       return
     }
 
-    if (!confirm('Excluir conta definitivamente? Essa ação não poderá ser desfeita.')) return
-
     const { error } = await supabase
       .from('df_contas')
       .delete()
@@ -666,8 +668,6 @@ export default function App() {
       alert('Essa nota ainda está em quarentena. Só pode excluir definitivamente após 60 dias.')
       return
     }
-
-    if (!confirm('Excluir nota definitivamente? Essa ação não poderá ser desfeita.')) return
 
     const { error } = await supabase
       .from('df_notas')
@@ -705,8 +705,6 @@ export default function App() {
   }
 
   async function excluirCentro(id) {
-    if (!confirm('Excluir centro?')) return
-
     const { error } = await supabase
       .from('df_centros_custo')
       .delete()
@@ -762,6 +760,37 @@ export default function App() {
     setDataFinal('')
   }
 
+
+
+  function abrirConfirmacao({ titulo, mensagem, textoConfirmar = 'Confirmar', tipo = 'padrao', acao }) {
+    setConfirmacao({
+      aberto: true,
+      titulo,
+      mensagem,
+      textoConfirmar,
+      tipo,
+      acao
+    })
+  }
+
+  function fecharConfirmacao() {
+    setConfirmacao({
+      aberto: false,
+      titulo: '',
+      mensagem: '',
+      textoConfirmar: 'Confirmar',
+      tipo: 'padrao',
+      acao: null
+    })
+  }
+
+  async function executarConfirmacao() {
+    if (typeof confirmacao.acao === 'function') {
+      await confirmacao.acao()
+    }
+
+    fecharConfirmacao()
+  }
 
   function HeaderExpansivel({ titulo, aberto, onClick }) {
     return (
@@ -1003,7 +1032,7 @@ export default function App() {
                 <div style={styles.agendaDireita}>
                   <strong>{formatarValor(conta.valor)}</strong>
 
-                  <button style={styles.btnPago} onClick={() => marcarComoPago(conta.id)}>
+                  <button style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>
                     Pago
                   </button>
                 </div>
@@ -1119,7 +1148,7 @@ export default function App() {
                     Restaurar
                   </button>
 
-                  <button style={styles.btnExcluir} onClick={() => excluirContaDefinitivo(conta)}>
+                  <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir definitivamente', mensagem: `Excluir definitivamente a conta ${conta.descricao}? Essa ação não poderá ser desfeita.`, textoConfirmar: 'Excluir definitivo', tipo: 'perigo', acao: () => excluirContaDefinitivo(conta) })}>
                     Excluir definitivo
                   </button>
                 </div>
@@ -1158,7 +1187,7 @@ export default function App() {
                     Restaurar
                   </button>
 
-                  <button style={styles.btnExcluir} onClick={() => excluirNotaDefinitivo(nota)}>
+                  <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir definitivamente', mensagem: `Excluir definitivamente a nota ${nota.titulo}? Essa ação não poderá ser desfeita.`, textoConfirmar: 'Excluir definitivo', tipo: 'perigo', acao: () => excluirNotaDefinitivo(nota) })}>
                     Excluir definitivo
                   </button>
                 </div>
@@ -1391,11 +1420,11 @@ export default function App() {
 
               <div style={styles.acoes}>
                 {conta.status !== 'pago' ? (
-                  <button style={styles.btnPago} onClick={() => marcarComoPago(conta.id)}>
+                  <button style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>
                     Pago
                   </button>
                 ) : (
-                  <button style={styles.btnVoltar} onClick={() => voltarParaPendente(conta.id)}>
+                  <button style={styles.btnVoltar} onClick={() => abrirConfirmacao({ titulo: 'Voltar para pendente', mensagem: `Deseja voltar a conta ${conta.descricao} para pendente?`, textoConfirmar: 'Voltar', tipo: 'aviso', acao: () => voltarParaPendente(conta.id) })}>
                     Voltar
                   </button>
                 )}
@@ -1404,7 +1433,7 @@ export default function App() {
                   Editar
                 </button>
 
-                <button style={styles.btnExcluir} onClick={() => excluirConta(conta.id)}>
+                <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
                   Excluir
                 </button>
               </div>
@@ -1447,7 +1476,7 @@ export default function App() {
                 Editar
               </button>
 
-              <button style={styles.btnExcluir} onClick={() => excluirNota(nota.id)}>
+              <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>
                 Excluir
               </button>
             </div>
@@ -1590,11 +1619,41 @@ export default function App() {
             {centros.map((centro) => (
               <div key={centro.id} style={styles.itemCentro}>
                 <span>{centro.nome}</span>
-                <button style={styles.btnMiniExcluir} onClick={() => excluirCentro(centro.id)}>excluir</button>
+                <button style={styles.btnMiniExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir centro de custo', mensagem: `Deseja excluir o centro ${centro.nome}?`, textoConfirmar: 'Excluir', tipo: 'perigo', acao: () => excluirCentro(centro.id) })}>excluir</button>
               </div>
             ))}
 
             <button style={styles.btnCancelar} onClick={() => setModalCentro(false)}>Fechar</button>
+          </div>
+        </div>
+      )}
+
+
+      {confirmacao.aberto && (
+        <div style={styles.overlayConfirmacao}>
+          <div style={styles.modalConfirmacao}>
+            <div style={styles.confirmacaoIcone}>
+              {confirmacao.tipo === 'perigo' ? '⚠️' : confirmacao.tipo === 'sucesso' ? '✅' : 'ℹ️'}
+            </div>
+
+            <h3 style={styles.confirmacaoTitulo}>{confirmacao.titulo}</h3>
+            <p style={styles.confirmacaoTexto}>{confirmacao.mensagem}</p>
+
+            <div style={styles.confirmacaoAcoes}>
+              <button style={styles.btnConfirmarCancelar} onClick={fecharConfirmacao}>
+                Cancelar
+              </button>
+
+              <button
+                style={{
+                  ...styles.btnConfirmarAcao,
+                  background: confirmacao.tipo === 'perigo' ? '#dc3545' : confirmacao.tipo === 'sucesso' ? '#198754' : '#0d6efd'
+                }}
+                onClick={executarConfirmacao}
+              >
+                {confirmacao.textoConfirmar}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1606,6 +1665,58 @@ export default function App() {
 // BLOCO 12 — STYLES
 // =========================
 const styles = {
+  overlayConfirmacao: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.55)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 18,
+    zIndex: 3000
+  },
+  modalConfirmacao: {
+    background: '#fff',
+    borderRadius: 18,
+    padding: 18,
+    width: '100%',
+    maxWidth: 360,
+    boxShadow: '0 12px 30px rgba(0,0,0,0.25)',
+    textAlign: 'center'
+  },
+  confirmacaoIcone: {
+    fontSize: 38,
+    marginBottom: 8
+  },
+  confirmacaoTitulo: {
+    margin: '4px 0 8px',
+    fontSize: 20
+  },
+  confirmacaoTexto: {
+    margin: '0 0 16px',
+    color: '#444',
+    lineHeight: 1.4
+  },
+  confirmacaoAcoes: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 10
+  },
+  btnConfirmarCancelar: {
+    border: 'none',
+    borderRadius: 10,
+    padding: 11,
+    background: '#6c757d',
+    color: '#fff',
+    fontWeight: 'bold'
+  },
+  btnConfirmarAcao: {
+    border: 'none',
+    borderRadius: 10,
+    padding: 11,
+    color: '#fff',
+    fontWeight: 'bold'
+  },
   headerExpansivel: {
     width: '100%',
     background: '#fff',

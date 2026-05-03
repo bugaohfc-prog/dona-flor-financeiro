@@ -1992,6 +1992,112 @@ export default function App() {
             .notes-panel { position: fixed; right: 32px; top: 180px; width: 320px; max-height: calc(100vh - 220px); overflow: auto; z-index: 20; }
             .filters-desktop, .agenda-card-polished, .dashboard-title-row, .summary-grid, .result-summary, .content-block { max-width: calc(1280px - 360px) !important; margin-left: auto !important; margin-right: 360px !important; }
 
+
+
+            /* ===== CORRECAO FINAL DESKTOP DASHBOARD ===== */
+            .dashboard-title-row {
+              max-width: none !important;
+              margin: 0 360px 20px 0 !important;
+              display: block !important;
+            }
+
+            .dashboard-title-row .main-title {
+              display: block !important;
+              width: 100% !important;
+              max-width: none !important;
+              line-height: 1.1 !important;
+              margin: 0 0 18px 0 !important;
+              white-space: normal !important;
+            }
+
+            .dashboard-title-row .summary-grid,
+            .summary-grid {
+              display: grid !important;
+              grid-template-columns: repeat(4, minmax(150px, 1fr)) !important;
+              gap: 14px !important;
+              width: 100% !important;
+              max-width: none !important;
+              margin: 0 !important;
+            }
+
+            .summary-grid > div {
+              min-width: 0 !important;
+              min-height: 92px !important;
+              padding: 16px !important;
+              border-radius: 18px !important;
+              box-sizing: border-box !important;
+              display: flex !important;
+              flex-direction: column !important;
+              justify-content: center !important;
+              align-items: flex-start !important;
+              overflow: hidden !important;
+            }
+
+            .summary-grid span {
+              display: block !important;
+              width: 100% !important;
+              font-size: 13px !important;
+              line-height: 1.2 !important;
+              margin: 0 0 4px 0 !important;
+              white-space: nowrap !important;
+            }
+
+            .summary-grid strong {
+              display: block !important;
+              width: 100% !important;
+              font-size: 22px !important;
+              line-height: 1.1 !important;
+              margin: 0 !important;
+              white-space: nowrap !important;
+            }
+
+            .agenda-card-polished,
+            .filters-desktop,
+            .result-summary,
+            .content-block {
+              max-width: none !important;
+              margin-left: 0 !important;
+              margin-right: 360px !important;
+              width: auto !important;
+            }
+
+            .notes-panel {
+              position: fixed !important;
+              right: 32px !important;
+              top: 150px !important;
+              width: 320px !important;
+              max-height: calc(100vh - 180px) !important;
+              overflow: auto !important;
+              z-index: 20 !important;
+              background: #ffffff !important;
+              border-radius: 22px !important;
+              padding: 16px !important;
+              box-shadow: 0 18px 44px rgba(15,23,42,.08) !important;
+              border: 1px solid rgba(15,118,110,.10) !important;
+            }
+
+            .top-shell {
+              max-width: none !important;
+              margin: 0 0 28px 0 !important;
+            }
+
+            @media (min-width: 980px) and (max-width: 1220px) {
+              .dashboard-title-row,
+              .agenda-card-polished,
+              .filters-desktop,
+              .result-summary,
+              .content-block {
+                margin-right: 0 !important;
+              }
+
+              .notes-panel {
+                position: static !important;
+                width: auto !important;
+                max-height: none !important;
+                margin: 18px 0 !important;
+              }
+            }
+
             .mobile-fab, .mobile-fab-menu { display: none !important; }
           }
 

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import Relatorios from './pages/Relatorios.jsx'
-import Login from './pages/Login.jsx'
 
 export default function App() {
   // =========================
@@ -71,7 +70,7 @@ export default function App() {
   }
 
   function podeExcluirDefinitivo(dataExclusao) {
-    return diasNaLixeira(dataExclusao) >= 60
+    return true
   }
 
   function dataLocal(data) {
@@ -148,7 +147,10 @@ export default function App() {
   const [telaAtual, setTelaAtual] = useState('contas')
   const [usuarioLogado, setUsuarioLogado] = useState(null)
   const [carregandoAuth, setCarregandoAuth] = useState(true)
-  const [mostrarFiltros, setMostrarFiltros] = useState(true)
+  const [empresaId, setEmpresaId] = useState(null)
+  const [perfilUsuario, setPerfilUsuario] = useState('')
+  const [erroEmpresa, setErroEmpresa] = useState('')
+  const [mostrarFiltros, setMostrarFiltros] = useState(false)
   const [mostrarContas, setMostrarContas] = useState(true)
   const [mostrarNotas, setMostrarNotas] = useState(true)
   const [mostrarConfigNegocio, setMostrarConfigNegocio] = useState(true)
@@ -195,6 +197,9 @@ export default function App() {
         setCentros([])
         setContasLixeira([])
         setNotasLixeira([])
+        setEmpresaId(null)
+        setPerfilUsuario('')
+        setErroEmpresa('')
       }
     })
 
@@ -210,22 +215,61 @@ export default function App() {
       return
     }
 
-    carregarTudo()
+    carregarEmpresaDoUsuario(usuarioLogado.id)
   }, [usuarioLogado])
 
-  async function carregarTudo() {
+  async function carregarEmpresaDoUsuario(userId) {
     setLoading(true)
-    await Promise.all([buscarContas(), buscarNotas(), buscarCentros(), buscarLixeira(), buscarConfiguracoes()])
+    setErroEmpresa('')
+
+    const { data, error } = await supabase
+      .from('df_usuarios_empresas')
+      .select('empresa_id, perfil')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (error) {
+      setLoading(false)
+      alert(error.message)
+      return
+    }
+
+    if (!data?.empresa_id) {
+      setEmpresaId(null)
+      setPerfilUsuario('')
+      setLoading(false)
+      setErroEmpresa('Usuário sem empresa vinculada. Vincule este usuário em df_usuarios_empresas antes de continuar.')
+      return
+    }
+
+    setEmpresaId(data.empresa_id)
+    setPerfilUsuario(data.perfil || 'usuario')
+    await carregarTudo(data.empresa_id)
     setLoading(false)
+  }
+
+  async function carregarTudo(empresaAtual = empresaId) {
+    if (!empresaAtual) return
+
+    await Promise.all([
+      buscarContas(empresaAtual),
+      buscarNotas(empresaAtual),
+      buscarCentros(empresaAtual),
+      buscarLixeira(empresaAtual),
+      buscarConfiguracoes(empresaAtual)
+    ])
   }
 
   // =========================
   // BLOCO 5 — BUSCAS SUPABASE
   // =========================
-  async function buscarContas() {
+  async function buscarContas(empresaAtual = empresaId) {
+    if (!empresaAtual) return
+
     const { data, error } = await supabase
       .from('df_contas')
       .select('*, df_centros_custo(nome)')
+      .eq('empresa_id', empresaAtual)
       .eq('excluido', false)
       .order('data_vencimento')
 
@@ -237,10 +281,13 @@ export default function App() {
     setContas(data || [])
   }
 
-  async function buscarNotas() {
+  async function buscarNotas(empresaAtual = empresaId) {
+    if (!empresaAtual) return
+
     const { data, error } = await supabase
       .from('df_notas')
       .select('*')
+      .eq('empresa_id', empresaAtual)
       .eq('excluido', false)
       .order('created_at', { ascending: false })
 
@@ -254,10 +301,13 @@ export default function App() {
 
 
 
-  async function buscarConfiguracoes() {
+  async function buscarConfiguracoes(empresaAtual = empresaId) {
+    if (!empresaAtual) return
+
     const { data, error } = await supabase
       .from('df_configuracoes')
       .select('*')
+      .eq('empresa_id', empresaAtual)
       .limit(1)
       .maybeSingle()
 
@@ -287,7 +337,8 @@ export default function App() {
         enviar_email: true,
         enviar_push: false,
         dias_aviso_padrao: 1,
-        nome_empresa: 'Dona Flor Financeiro'
+        nome_empresa: 'Dona Flor Financeiro',
+        empresa_id: empresaAtual
       }])
       .select()
       .single()
@@ -308,16 +359,20 @@ export default function App() {
     setEmailPadrao(novaConfig.email_padrao || '')
   }
 
-  async function buscarLixeira() {
+  async function buscarLixeira(empresaAtual = empresaId) {
+    if (!empresaAtual) return
+
     const { data: contasExcluidas, error: erroContas } = await supabase
       .from('df_contas')
       .select('*, df_centros_custo(nome)')
+      .eq('empresa_id', empresaAtual)
       .eq('excluido', true)
       .order('excluido_em', { ascending: false })
 
     const { data: notasExcluidas, error: erroNotas } = await supabase
       .from('df_notas')
       .select('*')
+      .eq('empresa_id', empresaAtual)
       .eq('excluido', true)
       .order('excluido_em', { ascending: false })
 
@@ -333,10 +388,13 @@ export default function App() {
     setNotasLixeira(notasExcluidas || [])
   }
 
-  async function buscarCentros() {
+  async function buscarCentros(empresaAtual = empresaId) {
+    if (!empresaAtual) return
+
     const { data, error } = await supabase
       .from('df_centros_custo')
       .select('*')
+      .eq('empresa_id', empresaAtual)
       .order('nome')
 
     if (error) {
@@ -452,6 +510,11 @@ export default function App() {
   }
 
   async function salvarConta() {
+    if (!empresaId) {
+      alert('Usuário sem empresa vinculada.')
+      return
+    }
+
     if (!descricao || !valor || !dataVencimento) {
       alert('Preencha descrição, valor e vencimento')
       return
@@ -472,13 +535,14 @@ export default function App() {
       enviar_whatsapp: contaWhatsapp,
       enviar_email: contaEmail,
       enviar_push: contaPush,
-      dias_aviso: diasAvisoConta
+      dias_aviso: diasAvisoConta,
+      empresa_id: empresaId
     }
 
     let error
 
     if (editandoContaId) {
-      const resposta = await supabase.from('df_contas').update(payload).eq('id', editandoContaId)
+      const resposta = await supabase.from('df_contas').update(payload).eq('id', editandoContaId).eq('empresa_id', empresaId)
       error = resposta.error
     } else {
       const resposta = await supabase.from('df_contas').insert([{ ...payload, status: 'pendente' }])
@@ -495,12 +559,12 @@ export default function App() {
   }
 
   async function marcarComoPago(id) {
-    await supabase.from('df_contas').update({ status: 'pago' }).eq('id', id)
+    await supabase.from('df_contas').update({ status: 'pago' }).eq('id', id).eq('empresa_id', empresaId)
     buscarContas()
   }
 
   async function voltarParaPendente(id) {
-    await supabase.from('df_contas').update({ status: 'pendente' }).eq('id', id)
+    await supabase.from('df_contas').update({ status: 'pendente' }).eq('id', id).eq('empresa_id', empresaId)
     buscarContas()
   }
 
@@ -512,6 +576,7 @@ export default function App() {
         excluido_em: new Date().toISOString()
       })
       .eq('id', id)
+      .eq('empresa_id', empresaId)
 
     if (error) {
       alert(error.message)
@@ -548,6 +613,11 @@ export default function App() {
   }
 
   async function salvarNota() {
+    if (!empresaId) {
+      alert('Usuário sem empresa vinculada.')
+      return
+    }
+
     if (!tituloNota.trim()) {
       alert('Digite o título da nota')
       return
@@ -555,13 +625,14 @@ export default function App() {
 
     const payload = {
       titulo: primeiraLetraMaiuscula(tituloNota.trim()),
-      conteudo: conteudoNota.trim()
+      conteudo: conteudoNota.trim(),
+      empresa_id: empresaId
     }
 
     let error
 
     if (editandoNotaId) {
-      const resposta = await supabase.from('df_notas').update(payload).eq('id', editandoNotaId)
+      const resposta = await supabase.from('df_notas').update(payload).eq('id', editandoNotaId).eq('empresa_id', empresaId)
       error = resposta.error
     } else {
       const resposta = await supabase.from('df_notas').insert([payload])
@@ -585,6 +656,7 @@ export default function App() {
         excluido_em: new Date().toISOString()
       })
       .eq('id', id)
+      .eq('empresa_id', empresaId)
 
     if (error) {
       alert(error.message)
@@ -601,6 +673,11 @@ export default function App() {
   // BLOCO — AÇÕES CONFIGURAÇÕES
   // =========================
   async function salvarConfiguracoes() {
+    if (!empresaId) {
+      alert('Usuário sem empresa vinculada.')
+      return
+    }
+
     const dias = Number(diasAvisoPadrao)
 
     if (isNaN(dias) || dias < 0) {
@@ -616,7 +693,8 @@ export default function App() {
       dias_aviso_padrao: dias,
       nome_empresa: nomeEmpresa.trim() || null,
       whatsapp_padrao: whatsappPadrao.trim() || null,
-      email_padrao: emailPadrao.trim() || null
+      email_padrao: emailPadrao.trim() || null,
+      empresa_id: empresaId
     }
 
     let resposta
@@ -626,6 +704,7 @@ export default function App() {
         .from('df_configuracoes')
         .update(payload)
         .eq('id', configuracoes.id)
+        .eq('empresa_id', empresaId)
         .select()
         .single()
     } else {
@@ -656,6 +735,7 @@ export default function App() {
         excluido_em: null
       })
       .eq('id', id)
+      .eq('empresa_id', empresaId)
 
     if (error) {
       alert(error.message)
@@ -674,6 +754,7 @@ export default function App() {
         excluido_em: null
       })
       .eq('id', id)
+      .eq('empresa_id', empresaId)
 
     if (error) {
       alert(error.message)
@@ -689,6 +770,7 @@ export default function App() {
       .from('df_contas')
       .delete()
       .eq('id', conta.id)
+      .eq('empresa_id', empresaId)
 
     if (error) {
       alert(error.message)
@@ -703,6 +785,7 @@ export default function App() {
       .from('df_notas')
       .delete()
       .eq('id', nota.id)
+      .eq('empresa_id', empresaId)
 
     if (error) {
       alert(error.message)
@@ -716,6 +799,11 @@ export default function App() {
   // BLOCO 10 — AÇÕES CENTROS
   // =========================
   async function salvarCentro() {
+    if (!empresaId) {
+      alert('Usuário sem empresa vinculada.')
+      return
+    }
+
     if (!novoCentro.trim()) {
       alert('Digite o centro de custo')
       return
@@ -723,7 +811,7 @@ export default function App() {
 
     const { error } = await supabase
       .from('df_centros_custo')
-      .insert([{ nome: primeiraLetraMaiuscula(novoCentro.trim()) }])
+      .insert([{ nome: primeiraLetraMaiuscula(novoCentro.trim()), empresa_id: empresaId }])
 
     if (error) {
       alert(error.message)
@@ -739,6 +827,7 @@ export default function App() {
       .from('df_centros_custo')
       .delete()
       .eq('id', id)
+      .eq('empresa_id', empresaId)
 
     if (error) {
       alert('Não foi possível excluir. Verifique se existem contas usando este centro.')
@@ -826,6 +915,9 @@ export default function App() {
   async function sairDoSistema() {
     await supabase.auth.signOut()
     setUsuarioLogado(null)
+    setEmpresaId(null)
+    setPerfilUsuario('')
+    setErroEmpresa('')
     setTelaAtual('contas')
   }
 
@@ -850,9 +942,19 @@ export default function App() {
     return <Login onLogin={setUsuarioLogado} />
   }
 
+  if (erroEmpresa) {
+    return (
+      <div style={styles.page}>
+        <h2>⚠️ Empresa não vinculada</h2>
+        <p>{erroEmpresa}</p>
+        <button style={styles.btnSair} onClick={sairDoSistema}>Sair</button>
+      </div>
+    )
+  }
+
   if (telaAtual === 'relatorios') {
     return (
-      <Relatorios voltar={() => setTelaAtual('contas')} />
+      <Relatorios voltar={() => setTelaAtual('contas')} empresaId={empresaId} usuario={usuarioLogado} />
     )
   }
 
@@ -1337,7 +1439,7 @@ export default function App() {
       <section className="no-print" style={styles.usuarioTopo}>
         <div>
           <strong>Dona Flor Financeiro</strong>
-          <small>{usuarioLogado?.email}</small>
+          <small>{usuarioLogado?.email} {perfilUsuario ? `• ${perfilUsuario}` : ''}</small>
         </div>
 
         <button style={styles.btnSair} onClick={sairDoSistema}>
@@ -1489,7 +1591,7 @@ export default function App() {
                   Editar
                 </button>
 
-                <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Você poderá restaurar pela lixeira.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
+                <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
                   Excluir
                 </button>
               </div>
@@ -1532,7 +1634,7 @@ export default function App() {
                 Editar
               </button>
 
-              <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Você poderá restaurar pela lixeira.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>
+              <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>
                 Excluir
               </button>
             </div>

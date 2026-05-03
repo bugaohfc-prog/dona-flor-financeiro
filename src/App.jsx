@@ -141,6 +141,11 @@ export default function App() {
   // =========================
   const [menuAberto, setMenuAberto] = useState(false)
   const [telaAtual, setTelaAtual] = useState('contas')
+  const [secoesAbertas, setSecoesAbertas] = useState({
+    filtros: true,
+    contas: true,
+    notas: false
+  })
 
   useEffect(() => {
     carregarTudo()
@@ -616,6 +621,42 @@ export default function App() {
     setDataFinal('')
   }
 
+
+  function alternarSecao(chave) {
+    setSecoesAbertas((atual) => ({
+      ...atual,
+      [chave]: atual[chave] === false
+    }))
+  }
+
+  function SecaoRecolhivel({ id, titulo, detalhe, children }) {
+    const aberta = secoesAbertas[id] !== false
+
+    return (
+      <section style={styles.secaoRecolhivel}>
+        <button
+          type="button"
+          className="no-print"
+          style={styles.cabecalhoSecao}
+          onClick={() => alternarSecao(id)}
+        >
+          <div style={styles.cabecalhoSecaoTexto}>
+            <strong>{titulo}</strong>
+            {detalhe && <small>{detalhe}</small>}
+          </div>
+
+          <span style={styles.indicadorSecao}>{aberta ? '−' : '+'}</span>
+        </button>
+
+        {aberta && (
+          <div>
+            {children}
+          </div>
+        )}
+      </section>
+    )
+  }
+
   if (telaAtual === 'relatorios') {
     return (
       <Relatorios voltar={() => setTelaAtual('contas')} />
@@ -854,6 +895,25 @@ export default function App() {
     <div className="app-page" style={styles.page}>
       <style>
         {`
+
+          @media (max-width: 480px) {
+            .app-page {
+              padding: 12px !important;
+            }
+          }
+
+          @media (min-width: 768px) {
+            .app-page {
+              max-width: 920px !important;
+            }
+          }
+
+          @media (min-width: 1100px) {
+            .app-page {
+              max-width: 1120px !important;
+            }
+          }
+
           .print-header,
           .print-footer {
             display: none;
@@ -963,7 +1023,12 @@ export default function App() {
         </div>
       </section>
 
-      <section className="no-print" style={styles.filtrosBox}>
+      <SecaoRecolhivel
+        id="filtros"
+        titulo="🔎 Filtros e exportação"
+        detalhe="Busca, período, centro e arquivos"
+      >
+        <div className="no-print" style={styles.filtrosBox}>
         <input
           style={styles.input}
           placeholder="Buscar conta..."
@@ -1019,7 +1084,8 @@ export default function App() {
           <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
           <button style={styles.btnVerde} onClick={exportarCSV}>CSV/Editável</button>
         </div>
-      </section>
+        </div>
+      </SecaoRecolhivel>
 
       <section style={styles.resumoFiltro}>
         <strong>Resultado filtrado</strong>
@@ -1031,8 +1097,13 @@ export default function App() {
         </small>
       </section>
 
-      <section style={styles.bloco}>
-        {loading && <p>Carregando...</p>}
+      <SecaoRecolhivel
+        id="contas"
+        titulo={`💰 Contas (${contasFiltradas.length})`}
+        detalhe={`Total ${formatarValor(total)}`}
+      >
+        <div style={styles.bloco}>
+          {loading && <p>Carregando...</p>}
 
         {contasFiltradas.map((conta) => {
           const vencida = estaVencida(conta.data_vencimento, conta.status)
@@ -1082,10 +1153,16 @@ export default function App() {
             </div>
           )
         })}
-      </section>
+        </div>
+      </SecaoRecolhivel>
 
-      <section className="no-print" style={styles.bloco}>
-        <h2 style={styles.subtitulo}>📝 Bloco de Notas</h2>
+      <SecaoRecolhivel
+        id="notas"
+        titulo={`📝 Bloco de Notas (${notasFiltradas.length})`}
+        detalhe="Anotações internas"
+      >
+        <div className="no-print" style={styles.bloco}>
+          <h2 style={styles.subtitulo}>📝 Bloco de Notas</h2>
 
         <input
           style={styles.input}
@@ -1117,7 +1194,8 @@ export default function App() {
             </div>
           </div>
         ))}
-      </section>
+        </div>
+      </SecaoRecolhivel>
 
       {menuAberto && (
         <div style={styles.menuFab}>
@@ -1212,9 +1290,47 @@ export default function App() {
 // BLOCO 12 — STYLES
 // =========================
 const styles = {
+  secaoRecolhivel: {
+    marginTop: 14,
+    marginBottom: 12
+  },
+  cabecalhoSecao: {
+    width: '100%',
+    background: '#fff',
+    border: '1px solid #e5e7eb',
+    borderRadius: 14,
+    padding: 12,
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 10,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    cursor: 'pointer',
+    textAlign: 'left',
+    marginBottom: 8
+  },
+  cabecalhoSecaoTexto: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3,
+    fontSize: 15
+  },
+  indicadorSecao: {
+    width: 30,
+    height: 30,
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: '#f1f3f5',
+    color: '#111',
+    fontSize: 22,
+    fontWeight: 'bold',
+    flexShrink: 0
+  },
   page: {
     padding: 16,
-    maxWidth: 700,
+    maxWidth: 760,
     margin: 'auto',
     fontFamily: 'Arial',
     background: '#f8f9fa',

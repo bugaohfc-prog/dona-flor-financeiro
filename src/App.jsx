@@ -1745,22 +1745,31 @@ export default function App() {
             .desktop-sidebar-brand strong { display: block; font-size: 17px; }
             .desktop-sidebar-brand small { color: rgba(255,255,255,.78); }
 
-            .desktop-sidebar-nav { display: grid; gap: 8px; margin-top: 6px; }
+            .desktop-sidebar-section-label {
+              margin: 12px 4px 4px;
+              font-size: 10px;
+              letter-spacing: .9px;
+              text-transform: uppercase;
+              color: rgba(255,255,255,.62);
+              font-weight: 900;
+            }
+            .desktop-sidebar-nav { display: grid; gap: 6px; margin-top: 2px; }
             .desktop-sidebar-nav button {
               display: flex;
               align-items: center;
               gap: 10px;
               width: 100%;
-              border: 1px solid rgba(255,255,255,.14);
-              background: rgba(255,255,255,.10);
-              color: white;
+              border: 1px solid transparent;
+              background: transparent;
+              color: rgba(255,255,255,.92);
               border-radius: 14px;
               padding: 11px 12px;
               text-align: left;
-              font-weight: 700;
+              font-weight: 800;
               cursor: pointer;
             }
-            .desktop-sidebar-nav button:hover { background: rgba(255,255,255,.20); }
+            .desktop-sidebar-nav button:hover { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.12); }
+            .desktop-sidebar-nav button.active { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.18); box-shadow: inset 3px 0 0 rgba(255,255,255,.8); }
             .desktop-sidebar-spacer { flex: 1; }
             .desktop-sidebar-user {
               border-radius: 18px;
@@ -1827,28 +1836,37 @@ export default function App() {
             .agenda-card-polished {
               max-width: 1280px;
               margin: 0 auto 18px auto !important;
-              grid-template-columns: 1.1fr 1.4fr auto !important;
+              grid-template-columns: 1fr auto auto !important;
               align-items: center !important;
-              padding: 18px !important;
+              padding: 18px 20px !important;
               border-radius: 22px !important;
+              background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%) !important;
             }
             .agenda-card-polished > div:first-child strong { display:block; font-size: 18px; }
             .agenda-card-polished > div:first-child small { display:block; margin-top: 3px; color:#64748b; }
-            .agenda-card-polished button { min-width: 190px; height: 42px; }
+            .agenda-card-polished button { min-width: 170px; height: 42px; }
+            .agenda-compact-items { display:flex !important; gap: 10px; align-items:center; }
+            .agenda-pill { min-width: 112px; padding: 9px 12px; border-radius: 14px; background: rgba(255,255,255,.86); border:1px solid #ccfbf1; }
+            .agenda-pill small { display:block; font-size:11px; color:#64748b; font-weight:800; }
+            .agenda-pill strong { display:block; margin-top:2px; color:#0f172a; }
 
             .filters-desktop {
               max-width: 1280px;
               margin: 0 auto 16px auto !important;
               display: grid !important;
-              grid-template-columns: 1.4fr .9fr .8fr 1fr auto !important;
-              align-items: start;
+              grid-template-columns: 1fr auto auto !important;
+              align-items: center;
               gap: 10px !important;
-              padding: 16px !important;
+              padding: 14px !important;
               border-radius: 22px !important;
             }
             .filters-desktop input, .filters-desktop select { height: 42px !important; margin-bottom: 0 !important; }
-            .filters-desktop .status-tabs { grid-column: 1 / -1; }
+            .filters-desktop .status-tabs { grid-column: 1 / -1; display:none !important; }
+            .filters-desktop .advanced-filters { grid-column: 1 / -1; display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding-top: 4px; }
             .filters-desktop .export-actions { justify-content: flex-end; margin-top: 0 !important; }
+            .filter-toggle-button { height:42px; border:none; border-radius:12px; padding:0 14px; font-weight:900; background:#ecfeff; color:#0f766e; border:1px solid #99f6e4; cursor:pointer; }
+            .export-dropdown { position: relative; }
+            .export-dropdown > button { height:42px; border:none; border-radius:12px; padding:0 14px; font-weight:900; background:#111827; color:white; cursor:pointer; }
 
             .result-summary, .content-block {
               max-width: 1280px;
@@ -1988,13 +2006,25 @@ export default function App() {
             <small>Gestão Financeira</small>
           </div>
         </div>
+        <div className="desktop-sidebar-section-label">Principal</div>
         <nav className="desktop-sidebar-nav">
-          <button onClick={() => navegarPara('contas')}>🏠 Painel</button>
-          <button onClick={() => navegarPara('agenda')}>📅 Agenda financeira</button>
-          <button onClick={() => navegarPara('relatorios')}>📊 Relatórios PRO+</button>
-          <button onClick={() => navegarPara('importar')}>📥 Importar CSV</button>
-          <button onClick={() => navegarPara('lixeira')}>🗑️ Lixeira</button>
-          <button onClick={() => navegarPara('configuracoes')}>⚙️ Configurações</button>
+          <button className={telaAtual === 'contas' ? 'active' : ''} onClick={() => navegarPara('contas')}>🏠 Painel</button>
+          <button className={telaAtual === 'agenda' ? 'active' : ''} onClick={() => navegarPara('agenda')}>📅 Agenda</button>
+        </nav>
+        <div className="desktop-sidebar-section-label">Gestão</div>
+        <nav className="desktop-sidebar-nav">
+          <button onClick={abrirNovaConta}>💰 Nova conta</button>
+          <button onClick={abrirNovaNota}>📝 Nova nota</button>
+          <button className={telaAtual === 'importar' ? 'active' : ''} onClick={() => navegarPara('importar')}>📥 Importar CSV</button>
+        </nav>
+        <div className="desktop-sidebar-section-label">Análise</div>
+        <nav className="desktop-sidebar-nav">
+          <button className={telaAtual === 'relatorios' ? 'active' : ''} onClick={() => navegarPara('relatorios')}>📊 Relatórios</button>
+        </nav>
+        <div className="desktop-sidebar-section-label">Sistema</div>
+        <nav className="desktop-sidebar-nav">
+          <button className={telaAtual === 'lixeira' ? 'active' : ''} onClick={() => navegarPara('lixeira')}>🗑️ Lixeira</button>
+          <button className={telaAtual === 'configuracoes' ? 'active' : ''} onClick={() => navegarPara('configuracoes')}>⚙️ Configurações</button>
         </nav>
         <div className="desktop-sidebar-spacer" />
         <div className="desktop-sidebar-user">
@@ -2073,73 +2103,54 @@ export default function App() {
 
       <section className="no-print agenda-card-polished" style={styles.agendaResumoCard}>
         <div>
-          <strong>📅 Agenda financeira</strong>
-          <small>Resumo rápido dos próximos vencimentos</small>
+          <strong>📅 Próximos vencimentos</strong>
+          <small>Resumo compacto da agenda financeira</small>
         </div>
-        <div style={styles.agendaResumoGrid}>
-          <span>Vencidas: <strong>{formatarValor(contas.filter((conta) => conta.status !== 'pago' && diferencaDias(conta.data_vencimento) < 0).reduce((acc, conta) => acc + Number(conta.valor || 0), 0))}</strong></span>
-          <span>Hoje: <strong>{formatarValor(contas.filter((conta) => conta.status !== 'pago' && diferencaDias(conta.data_vencimento) === 0).reduce((acc, conta) => acc + Number(conta.valor || 0), 0))}</strong></span>
-          <span>7 dias: <strong>{formatarValor(contas.filter((conta) => { const dias = diferencaDias(conta.data_vencimento); return conta.status !== 'pago' && dias > 0 && dias <= 7 }).reduce((acc, conta) => acc + Number(conta.valor || 0), 0))}</strong></span>
+        <div className="agenda-compact-items" style={styles.agendaResumoGrid}>
+          <div className="agenda-pill"><small>Hoje</small><strong>{formatarValor(contas.filter((conta) => conta.status !== 'pago' && diferencaDias(conta.data_vencimento) === 0).reduce((acc, conta) => acc + Number(conta.valor || 0), 0))}</strong></div>
+          <div className="agenda-pill"><small>7 dias</small><strong>{formatarValor(contas.filter((conta) => { const dias = diferencaDias(conta.data_vencimento); return conta.status !== 'pago' && dias > 0 && dias <= 7 }).reduce((acc, conta) => acc + Number(conta.valor || 0), 0))}</strong></div>
         </div>
-        <button style={styles.btnAgendaCompleta} onClick={() => navegarPara('agenda')}>Ver agenda completa</button>
+        <button style={styles.btnAgendaCompleta} onClick={() => navegarPara('agenda')}>Abrir agenda</button>
       </section>
 
       <section className="no-print filters-desktop" style={styles.filtrosBox}>
         <input
           style={styles.input}
-          placeholder="Buscar conta..."
+          placeholder="Buscar por conta, centro ou status..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
         />
 
-        <div className="status-tabs" style={styles.filtros}>
-          <button style={filtroStatus === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('todas')}>Todas</button>
-          <button style={filtroStatus === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pendentes')}>Pendentes</button>
-          <button style={filtroStatus === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pagas')}>Pagas</button>
-          <button style={filtroStatus === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('vencidas')}>Vencidas</button>
-        </div>
-
-        <select
-          style={styles.input}
-          value={filtroCentro}
-          onChange={(e) => setFiltroCentro(e.target.value)}
-        >
-          <option value="">Todos os centros</option>
-          {centros.map((centro) => (
-            <option key={centro.id} value={centro.id}>
-              {centro.nome}
-            </option>
-          ))}
-        </select>
-
-        <input
-          style={styles.input}
-          type="month"
-          value={filtroMes}
-          onChange={(e) => setFiltroMes(e.target.value)}
-        />
-
-        <div style={styles.datas}>
-          <input
-            style={styles.input}
-            type="date"
-            value={dataInicial}
-            onChange={(e) => setDataInicial(e.target.value)}
-          />
-
-          <input
-            style={styles.input}
-            type="date"
-            value={dataFinal}
-            onChange={(e) => setDataFinal(e.target.value)}
-          />
-        </div>
+        <button className="filter-toggle-button" onClick={() => setMostrarFiltros(!mostrarFiltros)}>
+          {mostrarFiltros ? 'Ocultar filtros' : 'Filtros'}
+        </button>
 
         <div className="export-actions" style={styles.acoes}>
           <button style={styles.btnCinza} onClick={limparFiltros}>Limpar</button>
           <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
-          <button style={styles.btnVerde} onClick={exportarCSV}>CSV/Editável</button>
+          <button style={styles.btnVerde} onClick={exportarCSV}>CSV</button>
         </div>
+
+        {mostrarFiltros && (
+          <div className="advanced-filters">
+            <div className="status-tabs" style={styles.filtros}>
+              <button style={filtroStatus === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('todas')}>Todas</button>
+              <button style={filtroStatus === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pendentes')}>Pendentes</button>
+              <button style={filtroStatus === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pagas')}>Pagas</button>
+              <button style={filtroStatus === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('vencidas')}>Vencidas</button>
+            </div>
+
+            <select style={styles.input} value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)}>
+              <option value="">Todos os centros</option>
+              {centros.map((centro) => (<option key={centro.id} value={centro.id}>{centro.nome}</option>))}
+            </select>
+
+            <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
+
+            <input style={styles.input} type="date" value={dataInicial} onChange={(e) => setDataInicial(e.target.value)} />
+            <input style={styles.input} type="date" value={dataFinal} onChange={(e) => setDataFinal(e.target.value)} />
+          </div>
+        )}
       </section>
 
       <section className="result-summary" style={styles.resumoFiltro}>

@@ -133,6 +133,7 @@ export default function App() {
   const [editandoNotaId, setEditandoNotaId] = useState(null)
   const [tituloNota, setTituloNota] = useState('')
   const [conteudoNota, setConteudoNota] = useState('')
+  const [prioridadeNota, setPrioridadeNota] = useState('normal')
 
   // =========================
   // BLOCO 3 — STATES CENTROS
@@ -496,11 +497,24 @@ export default function App() {
     })
     .filter((centro) => centro.total > 0 || centro.pago > 0 || centro.pendente > 0 || centro.vencido > 0)
 
-  const notasFiltradas = notas.filter((nota) =>
-    `${nota.titulo || ''} ${nota.conteudo || ''}`
-      .toLowerCase()
-      .includes(buscaNota.toLowerCase())
-  )
+  const pesoPrioridadeNota = { critico: 0, urgente: 1, normal: 2 }
+
+  const notasFiltradas = notas
+    .filter((nota) =>
+      `${nota.titulo || ''} ${nota.conteudo || ''}`
+        .toLowerCase()
+        .includes(buscaNota.toLowerCase())
+    )
+    .sort((a, b) => {
+      const concluidaA = a.concluida ? 1 : 0
+      const concluidaB = b.concluida ? 1 : 0
+      if (concluidaA !== concluidaB) return concluidaA - concluidaB
+      return (pesoPrioridadeNota[a.prioridade || 'normal'] ?? 2) - (pesoPrioridadeNota[b.prioridade || 'normal'] ?? 2)
+    })
+
+  const notasPendentes = notasFiltradas.filter((nota) => !nota.concluida)
+  const notasCriticas = notasPendentes.filter((nota) => nota.prioridade === 'critico').length
+  const notasUrgentes = notasPendentes.filter((nota) => nota.prioridade === 'urgente').length
 
   // =========================
   // BLOCO 7 — AÇÕES CONTAS
@@ -632,6 +646,7 @@ export default function App() {
     setEditandoNotaId(null)
     setTituloNota('')
     setConteudoNota('')
+    setPrioridadeNota('normal')
     setModalNota(true)
   }
 
@@ -639,6 +654,7 @@ export default function App() {
     setEditandoNotaId(nota.id)
     setTituloNota(nota.titulo || '')
     setConteudoNota(nota.conteudo || '')
+    setPrioridadeNota(nota.prioridade || 'normal')
     setModalNota(true)
   }
 
@@ -647,6 +663,7 @@ export default function App() {
     setEditandoNotaId(null)
     setTituloNota('')
     setConteudoNota('')
+    setPrioridadeNota('normal')
   }
 
   async function salvarNota() {
@@ -663,6 +680,8 @@ export default function App() {
     const payload = {
       titulo: primeiraLetraMaiuscula(tituloNota.trim()),
       conteudo: conteudoNota.trim(),
+      prioridade: prioridadeNota || 'normal',
+      concluida: false,
       empresa_id: empresaId
     }
 
@@ -702,6 +721,22 @@ export default function App() {
 
     buscarNotas()
     buscarLixeira()
+  }
+
+
+  async function alternarNotaConcluida(nota) {
+    const { error } = await supabase
+      .from('df_notas')
+      .update({ concluida: !nota.concluida })
+      .eq('id', nota.id)
+      .eq('empresa_id', empresaId)
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    buscarNotas()
   }
 
 
@@ -1192,6 +1227,99 @@ export default function App() {
     return primeiraLetraMaiuscula(email.split('@')[0])
   }
 
+  function AppFrame({ children }) {
+    return (
+      <div className="app-page app-frame" style={styles.page}>
+        <style>{`
+          .desktop-sidebar { display: none; }
+          @media (min-width: 980px) {
+            body { background: #eef7f5 !important; }
+            .app-frame { max-width: none !important; width: 100% !important; min-height: 100vh !important; margin: 0 !important; padding: 24px 32px 80px 300px !important; box-sizing: border-box !important; background: linear-gradient(180deg, #f8fafc 0%, #eef7f5 100%) !important; }
+            .app-frame-content { max-width: 1280px; margin: 0 auto; }
+            .app-frame-content > h1 { font-size: 34px !important; margin: 0 0 16px 0 !important; }
+            .app-frame-content > section { border-radius: 22px !important; box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07) !important; }
+            .relatorios-page { max-width: 1280px !important; width: 100% !important; padding: 0 !important; margin: 0 !important; background: transparent !important; }
+            .relatorios-page [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+            .desktop-sidebar { display: flex !important; position: fixed; left: 24px; top: 24px; bottom: 24px; width: 244px; padding: 18px; border-radius: 24px; background: linear-gradient(180deg, #064e3b 0%, #0f766e 48%, #14b8a6 100%); color: white; box-shadow: 0 24px 60px rgba(15, 118, 110, 0.28); z-index: 60; flex-direction: column; gap: 14px; box-sizing: border-box; }
+            .desktop-sidebar-brand { display:flex; align-items:center; gap:12px; padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,.18); }
+            .desktop-sidebar-brand img { width:48px; height:48px; border-radius:16px; background:white; }
+            .desktop-sidebar-brand strong { display:block; font-size:17px; }
+            .desktop-sidebar-brand small { color:rgba(255,255,255,.78); }
+            .desktop-sidebar-section-label { margin:12px 4px 4px; font-size:10px; letter-spacing:.9px; text-transform:uppercase; color:rgba(255,255,255,.62); font-weight:900; }
+            .desktop-sidebar-nav { display:grid; gap:6px; margin-top:2px; }
+            .desktop-sidebar-nav button { display:flex; align-items:center; gap:10px; width:100%; border:1px solid transparent; background:transparent; color:rgba(255,255,255,.92); border-radius:14px; padding:11px 12px; text-align:left; font-weight:800; cursor:pointer; }
+            .desktop-sidebar-nav button:hover { background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.12); }
+            .desktop-sidebar-nav button.active { background:rgba(255,255,255,.22); border-color:rgba(255,255,255,.18); box-shadow:inset 3px 0 0 rgba(255,255,255,.8); }
+            .desktop-sidebar-spacer { flex:1; }
+            .desktop-sidebar-user { border-radius:18px; padding:12px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.16); }
+            .desktop-sidebar-user strong { display:block; }
+            .desktop-sidebar-user small { color:rgba(255,255,255,.8); }
+            .top-shell { max-width:1280px; margin:0 auto 22px auto !important; padding:16px 18px !important; border-radius:24px !important; }
+            .mobile-menu-trigger { display:none !important; }
+            .agenda-page-grid { display:grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:16px; }
+          }
+          @media (max-width: 979px) { .app-frame { max-width: 430px; margin:auto; } }
+          .note-card-action { transition:.2s; }
+        `}</style>
+
+        <section className="no-print top-shell" style={styles.usuarioTopo}>
+          <button style={styles.logoMarca} onClick={() => navegarPara('contas')}>
+            <img src="/icon-192.png" alt="Dona Flor" style={styles.logoImagem} />
+            <span><strong>Dona Flor</strong><small>Gestão Financeira</small></span>
+          </button>
+          <div style={styles.usuarioAcoes}>
+            <div style={styles.usuarioTexto}><strong>Olá, {nomeUsuario()}</strong><small>{perfilUsuario || 'usuário'}</small></div>
+            <button className="mobile-menu-trigger" style={styles.btnMenuTopo} onClick={() => setMenuNavegacaoAberto(!menuNavegacaoAberto)}>☰</button>
+          </div>
+        </section>
+
+        {renderSidebar()}
+        {renderMobileMenu()}
+
+        <main className="app-frame-content">{children}</main>
+      </div>
+    )
+  }
+
+  function renderSidebar() {
+    return (
+      <aside className="desktop-sidebar no-print">
+        <div className="desktop-sidebar-brand"><img src="/icon-192.png" alt="Dona Flor" /><div><strong>Dona Flor</strong><small>Gestão Financeira</small></div></div>
+        <div className="desktop-sidebar-section-label">Principal</div>
+        <nav className="desktop-sidebar-nav"><button className={telaAtual === 'contas' ? 'active' : ''} onClick={() => navegarPara('contas')}>🏠 Painel</button><button className={telaAtual === 'agenda' ? 'active' : ''} onClick={() => navegarPara('agenda')}>📅 Agenda</button></nav>
+        <div className="desktop-sidebar-section-label">Gestão</div>
+        <nav className="desktop-sidebar-nav"><button onClick={abrirNovaConta}>💰 Nova conta</button><button onClick={abrirNovaNota}>📝 Nova nota</button><button className={telaAtual === 'importar' ? 'active' : ''} onClick={() => navegarPara('importar')}>📥 Importar CSV</button></nav>
+        <div className="desktop-sidebar-section-label">Análise</div>
+        <nav className="desktop-sidebar-nav"><button className={telaAtual === 'relatorios' ? 'active' : ''} onClick={() => navegarPara('relatorios')}>📊 Relatórios</button></nav>
+        <div className="desktop-sidebar-section-label">Sistema</div>
+        <nav className="desktop-sidebar-nav"><button className={telaAtual === 'lixeira' ? 'active' : ''} onClick={() => navegarPara('lixeira')}>🗑️ Lixeira</button><button className={telaAtual === 'configuracoes' ? 'active' : ''} onClick={() => navegarPara('configuracoes')}>⚙️ Configurações</button></nav>
+        <div className="desktop-sidebar-spacer" />
+        <div className="desktop-sidebar-user"><strong>Olá, {nomeUsuario()}</strong><small>{perfilUsuario || 'usuário'}</small></div>
+        <nav className="desktop-sidebar-nav"><button onClick={sairDoSistema}>🚪 Sair</button></nav>
+      </aside>
+    )
+  }
+
+  function renderMobileMenu() {
+    if (!menuNavegacaoAberto) return null
+    return (
+      <div className="no-print" style={styles.menuBackdrop} onClick={() => setMenuNavegacaoAberto(false)}>
+        <div style={styles.menuNavegacao} onClick={(e) => e.stopPropagation()}>
+          <div style={styles.menuPerfil}><img src="/icon-192.png" alt="Dona Flor" style={styles.menuPerfilIcone} /><div><strong>Olá, {nomeUsuario()}</strong><small>{perfilUsuario || 'usuário'}</small></div></div>
+          <div style={styles.menuSecaoTitulo}>Navegação</div>
+          <button style={styles.menuNavItem} onClick={() => navegarPara('contas')}><span>🏠</span><div><strong>Painel</strong><small>Resumo das contas</small></div></button>
+          <button style={styles.menuNavItem} onClick={() => navegarPara('agenda')}><span>📅</span><div><strong>Agenda financeira</strong><small>Vencimentos e previsões</small></div></button>
+          <button style={styles.menuNavItem} onClick={() => navegarPara('relatorios')}><span>📊</span><div><strong>Relatórios PRO+</strong><small>Análises e indicadores</small></div></button>
+          <button style={styles.menuNavItem} onClick={() => navegarPara('importar')}><span>📥</span><div><strong>Importar CSV</strong><small>Trazer histórico do Excel</small></div></button>
+          <div style={styles.menuSecaoTitulo}>Sistema</div>
+          <button style={styles.menuNavItem} onClick={() => navegarPara('lixeira')}><span>🗑️</span><div><strong>Lixeira</strong><small>Restaurar ou excluir definitivo</small></div></button>
+          <button style={styles.menuNavItem} onClick={() => navegarPara('configuracoes')}><span>⚙️</span><div><strong>Configurações</strong><small>Preferências da empresa</small></div></button>
+          <button style={styles.menuSairItem} onClick={sairDoSistema}><span>🚪</span><div><strong>Sair</strong><small>Encerrar sessão</small></div></button>
+        </div>
+      </div>
+    )
+  }
+
   if (carregandoAuth) {
     return (
       <div style={styles.page}>
@@ -1216,7 +1344,9 @@ export default function App() {
 
   if (telaAtual === 'relatorios') {
     return (
-      <Relatorios voltar={() => navegarPara('contas')} empresaId={empresaId} usuario={usuarioLogado} />
+      <AppFrame>
+        <Relatorios voltar={() => navegarPara('contas')} empresaId={empresaId} usuario={usuarioLogado} />
+      </AppFrame>
     )
   }
 
@@ -1225,17 +1355,7 @@ export default function App() {
 
   if (telaAtual === 'importar') {
     return (
-      <div style={styles.page}>
-        <section style={styles.usuarioTopo}>
-          <button style={styles.logoMarca} onClick={() => navegarPara('contas')}>
-            <img src="/icon-192.png" alt="Dona Flor" style={styles.logoImagem} />
-            <span style={styles.logoTexto}>
-              <strong>Dona Flor</strong>
-              <small>Gestão Financeira</small>
-            </span>
-          </button>
-        </section>
-
+      <AppFrame>
         <h1 style={styles.titulo}>📥 Importar planilha</h1>
 
         <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
@@ -1290,7 +1410,7 @@ export default function App() {
             </button>
           </section>
         )}
-      </div>
+      </AppFrame>
     )
   }
 
@@ -1298,7 +1418,7 @@ export default function App() {
 
   if (telaAtual === 'configuracoes') {
     return (
-      <div style={styles.page}>
+      <AppFrame>
         <h1 style={styles.titulo}>⚙️ Configurações</h1>
 
         <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
@@ -1458,7 +1578,7 @@ export default function App() {
         <button style={styles.btnSalvar} onClick={salvarConfiguracoes}>
           Salvar configurações
         </button>
-      </div>
+      </AppFrame>
     )
   }
 
@@ -1530,7 +1650,7 @@ export default function App() {
     }
 
     return (
-      <div style={styles.page}>
+      <AppFrame>
         <h1 style={styles.titulo}>📅 Agenda Financeira</h1>
 
         <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
@@ -1559,40 +1679,19 @@ export default function App() {
           </div>
         </section>
 
-        <CardAgenda
-          titulo="🚨 Vencidas"
-          total={totalVencidasAgenda}
-          lista={contasVencidas}
-          cor="#dc3545"
-        />
-
-        <CardAgenda
-          titulo="📌 Vencem hoje"
-          total={totalHojeAgenda}
-          lista={contasHoje}
-          cor="#ffc107"
-        />
-
-        <CardAgenda
-          titulo="🗓️ Próximos 7 dias"
-          total={totalSemanaAgenda}
-          lista={contasSemana}
-          cor="#0d6efd"
-        />
-
-        <CardAgenda
-          titulo="📆 Restante do mês"
-          total={totalMesAgenda}
-          lista={contasMes}
-          cor="#14b8a6"
-        />
-      </div>
+        <div className="agenda-page-grid">
+          <CardAgenda titulo="🚨 Vencidas" total={totalVencidasAgenda} lista={contasVencidas} cor="#dc3545" />
+          <CardAgenda titulo="📌 Vencem hoje" total={totalHojeAgenda} lista={contasHoje} cor="#ffc107" />
+          <CardAgenda titulo="🗓️ Próximos 7 dias" total={totalSemanaAgenda} lista={contasSemana} cor="#0d6efd" />
+          <CardAgenda titulo="📆 Restante do mês" total={totalMesAgenda} lista={contasMes} cor="#14b8a6" />
+        </div>
+      </AppFrame>
     )
   }
 
   if (telaAtual === 'lixeira') {
     return (
-      <div style={styles.page}>
+      <AppFrame>
         <h1 style={styles.titulo}>🗑️ Lixeira</h1>
 
         <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
@@ -1677,7 +1776,7 @@ export default function App() {
             )
           })}
         </section>
-      </div>
+      </AppFrame>
     )
   }
 
@@ -1890,6 +1989,8 @@ export default function App() {
             .account-card-desktop .account-actions { justify-content: flex-end; margin-top: 0 !important; }
 
             .notes-block { max-width: 1280px; margin-left: auto !important; margin-right: auto !important; }
+            .notes-panel { position: fixed; right: 32px; top: 180px; width: 320px; max-height: calc(100vh - 220px); overflow: auto; z-index: 20; }
+            .filters-desktop, .agenda-card-polished, .dashboard-title-row, .summary-grid, .result-summary, .content-block { max-width: calc(1280px - 360px) !important; margin-left: auto !important; margin-right: 360px !important; }
 
             .mobile-fab, .mobile-fab-menu { display: none !important; }
           }
@@ -2222,15 +2323,14 @@ export default function App() {
         })}
       </section>
 
-      <section className="no-print notes-block" style={styles.bloco}>
-        <HeaderExpansivel
-          titulo="📝 Bloco de Notas"
-          aberto={mostrarNotas}
-          onClick={() => setMostrarNotas(!mostrarNotas)}
-        />
-
-        {mostrarNotas && (
-          <>
+      <section className="no-print notes-block notes-panel" style={styles.blocoNotasPainel}>
+        <div style={styles.notasHeaderNovo}>
+          <div>
+            <strong>📝 Bloco de Notas</strong>
+            <small>{notasPendentes.length} pendente(s) • {notasCriticas} crítica(s) • {notasUrgentes} urgente(s)</small>
+          </div>
+          <button style={styles.btnMiniVerde} onClick={abrirNovaNota}>+ Nota</button>
+        </div>
 
         <input
           style={styles.input}
@@ -2243,27 +2343,29 @@ export default function App() {
           <p style={styles.mensagemVazia}>Nenhuma nota encontrada.</p>
         )}
 
-        {notasFiltradas.map((nota) => (
-          <div key={nota.id} style={styles.cardNota}>
-            <strong>{nota.titulo}</strong>
+        <div style={styles.notasListaNova}>
+          {notasFiltradas.slice(0, 8).map((nota) => {
+            const prioridade = nota.prioridade || 'normal'
+            return (
+              <div key={nota.id} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
+                <div style={styles.cardTopo}>
+                  <strong style={{ textDecoration: nota.concluida ? 'line-through' : 'none' }}>{nota.titulo}</strong>
+                  <span style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
+                    {prioridade === 'critico' ? 'Crítico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
+                  </span>
+                </div>
 
-            {nota.conteudo && (
-              <p style={styles.textoNota}>{nota.conteudo}</p>
-            )}
+                {nota.conteudo && <p style={styles.textoNota}>{nota.conteudo}</p>}
 
-            <div style={styles.acoes}>
-              <button style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>
-                Editar
-              </button>
-
-              <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>
-                Excluir
-              </button>
-            </div>
-          </div>
-        ))}
-          </>
-        )}
+                <div style={styles.acoes}>
+                  <button style={styles.btnPago} onClick={() => alternarNotaConcluida(nota)}>{nota.concluida ? 'Reabrir' : 'Concluir'}</button>
+                  <button style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
+                  <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>Excluir</button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </section>
 
       {menuAberto && (
@@ -2349,6 +2451,11 @@ export default function App() {
             <h3>{editandoNotaId ? 'Editar Nota' : 'Nova Nota'}</h3>
 
             <input style={styles.inputModal} placeholder="Título" value={tituloNota} onChange={(e) => setTituloNota(primeiraLetraMaiuscula(e.target.value))} />
+            <select style={styles.inputModal} value={prioridadeNota} onChange={(e) => setPrioridadeNota(e.target.value)}>
+              <option value="normal">Prioridade normal</option>
+              <option value="urgente">Urgente</option>
+              <option value="critico">Crítico</option>
+            </select>
             <textarea style={styles.textareaModal} placeholder="Conteúdo..." value={conteudoNota} onChange={(e) => setConteudoNota(e.target.value)} />
 
             <button style={styles.btnSalvar} onClick={salvarNota}>Salvar</button>

@@ -145,7 +145,8 @@ export default function App() {
   // BLOCO 4 — MENU
   // =========================
   const [menuAberto, setMenuAberto] = useState(false)
-  const [telaAtual, setTelaAtual] = useState('contas')
+  const [menuNavegacaoAberto, setMenuNavegacaoAberto] = useState(false)
+  const [telaAtual, setTelaAtualState] = useState('contas')
   const [usuarioLogado, setUsuarioLogado] = useState(null)
   const [carregandoAuth, setCarregandoAuth] = useState(true)
   const [empresaId, setEmpresaId] = useState(null)
@@ -218,6 +219,21 @@ export default function App() {
 
     carregarEmpresaDoUsuario(usuarioLogado.id)
   }, [usuarioLogado])
+
+
+  useEffect(() => {
+    window.history.replaceState({ tela: telaAtual }, '', window.location.href)
+
+    function aoVoltar(event) {
+      const proximaTela = event.state?.tela || 'contas'
+      setMenuAberto(false)
+      setMenuNavegacaoAberto(false)
+      setTelaAtualState(proximaTela)
+    }
+
+    window.addEventListener('popstate', aoVoltar)
+    return () => window.removeEventListener('popstate', aoVoltar)
+  }, [])
 
   async function carregarEmpresaDoUsuario(userId) {
     setLoading(true)
@@ -536,6 +552,7 @@ export default function App() {
       descricao: primeiraLetraMaiuscula(descricao.trim()),
       valor: converterValor(valor),
       data_vencimento: formatarDataParaBanco(dataVencimento),
+      vencimento: formatarDataParaBanco(dataVencimento),
       centro_custo_id: centroCustoId || null,
       enviar_whatsapp: contaWhatsapp,
       enviar_email: contaEmail,
@@ -922,7 +939,7 @@ export default function App() {
     setEmpresaId(null)
     setPerfilUsuario('')
     setErroEmpresa('')
-    setTelaAtual('contas')
+    setTelaAtualState('contas')
   }
 
   function HeaderExpansivel({ titulo, aberto, onClick }) {
@@ -932,6 +949,25 @@ export default function App() {
         <strong>{aberto ? '−' : '+'}</strong>
       </button>
     )
+  }
+
+
+  function navegarPara(tela) {
+    setMenuAberto(false)
+    setMenuNavegacaoAberto(false)
+    setTelaAtualState(tela)
+    if (window.history.state?.tela !== tela) {
+      window.history.pushState({ tela }, '', window.location.href)
+    }
+  }
+
+  function voltarPainel() {
+    navegarPara('contas')
+  }
+
+  function nomeUsuario() {
+    const email = usuarioLogado?.email || 'usuário'
+    return email.split('@')[0]
   }
 
   if (carregandoAuth) {
@@ -958,7 +994,7 @@ export default function App() {
 
   if (telaAtual === 'relatorios') {
     return (
-      <Relatorios voltar={() => setTelaAtual('contas')} empresaId={empresaId} usuario={usuarioLogado} />
+      <Relatorios voltar={() => navegarPara('contas')} empresaId={empresaId} usuario={usuarioLogado} />
     )
   }
 
@@ -970,7 +1006,7 @@ export default function App() {
       <div style={styles.page}>
         <h1 style={styles.titulo}>⚙️ Configurações</h1>
 
-        <button style={styles.btnCinza} onClick={() => setTelaAtual('contas')}>
+        <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
           ← Voltar
         </button>
 
@@ -1202,7 +1238,7 @@ export default function App() {
       <div style={styles.page}>
         <h1 style={styles.titulo}>📅 Agenda Financeira</h1>
 
-        <button style={styles.btnCinza} onClick={() => setTelaAtual('contas')}>
+        <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
           ← Voltar
         </button>
 
@@ -1264,7 +1300,7 @@ export default function App() {
       <div style={styles.page}>
         <h1 style={styles.titulo}>🗑️ Lixeira</h1>
 
-        <button style={styles.btnCinza} onClick={() => setTelaAtual('contas')}>
+        <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
           ← Voltar
         </button>
 
@@ -1441,15 +1477,36 @@ export default function App() {
       </div>
 
       <section className="no-print" style={styles.usuarioTopo}>
-        <div>
-          <strong>Dona Flor Financeiro</strong>
-          <small>{usuarioLogado?.email} {perfilUsuario ? `• ${perfilUsuario}` : ''}</small>
-        </div>
-
-        <button style={styles.btnSair} onClick={sairDoSistema}>
-          Sair
+        <button style={styles.logoMarca} onClick={() => navegarPara('contas')}>
+          <span style={styles.logoIcone}>🌸</span>
+          <span>
+            <strong>Dona Flor</strong>
+            <small>Gestão Financeira</small>
+          </span>
         </button>
+
+        <div style={styles.usuarioAcoes}>
+          <div style={styles.usuarioTexto}>
+            <strong>Olá, {nomeUsuario()}</strong>
+            <small>{perfilUsuario || 'usuário'}</small>
+          </div>
+
+          <button style={styles.btnMenuTopo} onClick={() => setMenuNavegacaoAberto(!menuNavegacaoAberto)}>
+            ☰
+          </button>
+        </div>
       </section>
+
+      {menuNavegacaoAberto && (
+        <div className="no-print" style={styles.menuNavegacao}>
+          <button style={styles.menuNavItem} onClick={() => navegarPara('contas')}>🏠 Painel</button>
+          <button style={styles.menuNavItem} onClick={() => navegarPara('agenda')}>📅 Agenda financeira</button>
+          <button style={styles.menuNavItem} onClick={() => navegarPara('relatorios')}>📊 Relatórios PRO+</button>
+          <button style={styles.menuNavItem} onClick={() => navegarPara('lixeira')}>🗑️ Lixeira</button>
+          <button style={styles.menuNavItem} onClick={() => navegarPara('configuracoes')}>⚙️ Configurações</button>
+          <button style={{ ...styles.menuNavItem, color: '#dc3545', fontWeight: 'bold' }} onClick={sairDoSistema}>🚪 Sair</button>
+        </div>
+      )}
 
       <section>
         <h1 style={styles.titulo}>📊 Contas a Pagar</h1>
@@ -1475,6 +1532,19 @@ export default function App() {
             <strong>{formatarValor(vencido)}</strong>
           </div>
         </div>
+      </section>
+
+      <section className="no-print" style={styles.agendaResumoCard}>
+        <div>
+          <strong>📅 Agenda financeira</strong>
+          <small>Resumo rápido dos próximos vencimentos</small>
+        </div>
+        <div style={styles.agendaResumoGrid}>
+          <span>Vencidas: <strong>{formatarValor(contas.filter((conta) => conta.status !== 'pago' && diferencaDias(conta.data_vencimento) < 0).reduce((acc, conta) => acc + Number(conta.valor || 0), 0))}</strong></span>
+          <span>Hoje: <strong>{formatarValor(contas.filter((conta) => conta.status !== 'pago' && diferencaDias(conta.data_vencimento) === 0).reduce((acc, conta) => acc + Number(conta.valor || 0), 0))}</strong></span>
+          <span>7 dias: <strong>{formatarValor(contas.filter((conta) => { const dias = diferencaDias(conta.data_vencimento); return conta.status !== 'pago' && dias > 0 && dias <= 7 }).reduce((acc, conta) => acc + Number(conta.valor || 0), 0))}</strong></span>
+        </div>
+        <button style={styles.btnAgendaCompleta} onClick={() => navegarPara('agenda')}>Ver agenda completa</button>
       </section>
 
       <section className="no-print" style={styles.filtrosBox}>
@@ -1652,47 +1722,6 @@ export default function App() {
         <div style={styles.menuFab}>
           <button style={styles.menuItem} onClick={abrirNovaConta}>💰 Nova conta</button>
           <button style={styles.menuItem} onClick={abrirNovaNota}>📝 Nova nota</button>
-          <button
-            style={styles.menuItem}
-            onClick={() => {
-              setMenuAberto(false)
-              setTelaAtual('relatorios')
-            }}
-          >
-            📊 Relatórios
-          </button>
-
-          <button
-            style={styles.menuItem}
-            onClick={() => {
-              setMenuAberto(false)
-              setTelaAtual('agenda')
-            }}
-          >
-            📅 Agenda
-          </button>
-
-          <button
-            style={styles.menuItem}
-            onClick={() => {
-              setMenuAberto(false)
-              setTelaAtual('lixeira')
-            }}
-          >
-            🗑️ Lixeira
-          </button>
-
-          <button
-            style={styles.menuItem}
-            onClick={() => {
-              setMenuAberto(false)
-              setTelaAtual('configuracoes')
-            }}
-          >
-            ⚙️ Configurações
-          </button>
-
-
         </div>
       )}
 
@@ -1848,6 +1877,95 @@ const styles = {
     alignItems: 'center',
     gap: 12,
     boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+  },
+  logoMarca: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    background: 'transparent',
+    border: 'none',
+    padding: 0,
+    textAlign: 'left',
+    color: '#123524'
+  },
+  logoIcone: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    background: '#e8f5ee',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 24,
+    boxShadow: 'inset 0 0 0 1px #cfe8da'
+  },
+  usuarioAcoes: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8
+  },
+  usuarioTexto: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    fontSize: 13,
+    color: '#1f2937'
+  },
+  btnMenuTopo: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    border: '1px solid #d8e8dd',
+    background: '#198754',
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold'
+  },
+  menuNavegacao: {
+    background: '#fff',
+    border: '1px solid #dfe7e2',
+    borderRadius: 16,
+    padding: 10,
+    marginBottom: 14,
+    display: 'grid',
+    gap: 8,
+    boxShadow: '0 10px 28px rgba(0,0,0,0.12)'
+  },
+  menuNavItem: {
+    width: '100%',
+    textAlign: 'left',
+    background: '#f8faf9',
+    border: '1px solid #edf1ef',
+    borderRadius: 12,
+    padding: '12px 14px',
+    fontSize: 15,
+    color: '#123524'
+  },
+  agendaResumoCard: {
+    background: '#ffffff',
+    border: '1px solid #dfe7e2',
+    borderLeft: '5px solid #198754',
+    padding: 14,
+    borderRadius: 16,
+    marginBottom: 12,
+    boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+    display: 'grid',
+    gap: 10
+  },
+  agendaResumoGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    gap: 6,
+    fontSize: 12,
+    color: '#374151'
+  },
+  btnAgendaCompleta: {
+    border: 'none',
+    borderRadius: 10,
+    background: '#198754',
+    color: '#fff',
+    padding: '10px 12px',
+    fontWeight: 'bold'
   },
   btnSair: {
     background: '#dc3545',

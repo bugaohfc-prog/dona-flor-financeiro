@@ -1,31 +1,48 @@
-import { useState } from "react";
-import supabase from "../lib/supabase";
+import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 
 export default function Login({ onLogin }) {
-  const [usuario, setUsuario] = useState("");
-  const [senha, setSenha] = useState("");
+  const [email, setEmail] = useState('')
+  const [senha, setSenha] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleLogin = async () => {
-    const { data } = await supabase
-      .from("df_usuarios")
-      .select("*")
-      .eq("usuario", usuario)
-      .eq("senha", senha)
-      .single();
+  async function handleLogin(e) {
+    e.preventDefault()
+    setLoading(true)
 
-    if (data) {
-      onLogin(data);
-    } else {
-      alert("Usuário ou senha inválidos");
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: senha
+    })
+
+    setLoading(false)
+
+    if (error) {
+      alert('Erro no login')
+      return
     }
-  };
+
+    onLogin(data.user)
+  }
 
   return (
-    <div>
-      <h2>Login</h2>
-      <input placeholder="Usuário" onChange={(e) => setUsuario(e.target.value)} />
-      <input type="password" placeholder="Senha" onChange={(e) => setSenha(e.target.value)} />
-      <button onClick={handleLogin}>Entrar</button>
-    </div>
-  );
+    <form onSubmit={handleLogin}>
+      <input
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+
+      <input
+        type="password"
+        placeholder="Senha"
+        value={senha}
+        onChange={(e) => setSenha(e.target.value)}
+      />
+
+      <button disabled={loading}>
+        {loading ? 'Entrando...' : 'Entrar'}
+      </button>
+    </form>
+  )
 }

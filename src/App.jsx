@@ -141,6 +141,15 @@ export default function App() {
   // =========================
   const [menuAberto, setMenuAberto] = useState(false)
   const [telaAtual, setTelaAtual] = useState('contas')
+  const [configuracoes, setConfiguracoes] = useState(null)
+  const [notificacoesAtivas, setNotificacoesAtivas] = useState(true)
+  const [configWhatsapp, setConfigWhatsapp] = useState(true)
+  const [configEmail, setConfigEmail] = useState(true)
+  const [configPush, setConfigPush] = useState(false)
+  const [diasAvisoPadrao, setDiasAvisoPadrao] = useState('1')
+  const [nomeEmpresa, setNomeEmpresa] = useState('')
+  const [whatsappPadrao, setWhatsappPadrao] = useState('')
+  const [emailPadrao, setEmailPadrao] = useState('')
 
   useEffect(() => {
     carregarTudo()
@@ -148,7 +157,7 @@ export default function App() {
 
   async function carregarTudo() {
     setLoading(true)
-    await Promise.all([buscarContas(), buscarNotas(), buscarCentros(), buscarLixeira()])
+    await Promise.all([buscarContas(), buscarNotas(), buscarCentros(), buscarLixeira(), buscarConfiguracoes()])
     setLoading(false)
   }
 
@@ -185,6 +194,61 @@ export default function App() {
     setNotas(data || [])
   }
 
+
+
+  async function buscarConfiguracoes() {
+    const { data, error } = await supabase
+      .from('df_configuracoes')
+      .select('*')
+      .limit(1)
+      .maybeSingle()
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    if (data) {
+      setConfiguracoes(data)
+      setNotificacoesAtivas(data.notificacoes_ativas ?? true)
+      setConfigWhatsapp(data.enviar_whatsapp ?? true)
+      setConfigEmail(data.enviar_email ?? true)
+      setConfigPush(data.enviar_push ?? false)
+      setDiasAvisoPadrao(String(data.dias_aviso_padrao ?? 1))
+      setNomeEmpresa(data.nome_empresa || '')
+      setWhatsappPadrao(data.whatsapp_padrao || '')
+      setEmailPadrao(data.email_padrao || '')
+      return
+    }
+
+    const { data: novaConfig, error: erroInsert } = await supabase
+      .from('df_configuracoes')
+      .insert([{
+        notificacoes_ativas: true,
+        enviar_whatsapp: true,
+        enviar_email: true,
+        enviar_push: false,
+        dias_aviso_padrao: 1,
+        nome_empresa: 'Dona Flor Financeiro'
+      }])
+      .select()
+      .single()
+
+    if (erroInsert) {
+      alert(erroInsert.message)
+      return
+    }
+
+    setConfiguracoes(novaConfig)
+    setNotificacoesAtivas(novaConfig.notificacoes_ativas ?? true)
+    setConfigWhatsapp(novaConfig.enviar_whatsapp ?? true)
+    setConfigEmail(novaConfig.enviar_email ?? true)
+    setConfigPush(novaConfig.enviar_push ?? false)
+    setDiasAvisoPadrao(String(novaConfig.dias_aviso_padrao ?? 1))
+    setNomeEmpresa(novaConfig.nome_empresa || '')
+    setWhatsappPadrao(novaConfig.whatsapp_padrao || '')
+    setEmailPadrao(novaConfig.email_padrao || '')
+  }
 
   async function buscarLixeira() {
     const { data: contasExcluidas, error: erroContas } = await supabase
@@ -455,6 +519,55 @@ export default function App() {
   }
 
 
+
+  // =========================
+  // BLOCO — AÇÕES CONFIGURAÇÕES
+  // =========================
+  async function salvarConfiguracoes() {
+    const dias = Number(diasAvisoPadrao)
+
+    if (isNaN(dias) || dias < 0) {
+      alert('Informe uma quantidade válida de dias de aviso.')
+      return
+    }
+
+    const payload = {
+      notificacoes_ativas: notificacoesAtivas,
+      enviar_whatsapp: configWhatsapp,
+      enviar_email: configEmail,
+      enviar_push: configPush,
+      dias_aviso_padrao: dias,
+      nome_empresa: nomeEmpresa.trim() || null,
+      whatsapp_padrao: whatsappPadrao.trim() || null,
+      email_padrao: emailPadrao.trim() || null
+    }
+
+    let resposta
+
+    if (configuracoes?.id) {
+      resposta = await supabase
+        .from('df_configuracoes')
+        .update(payload)
+        .eq('id', configuracoes.id)
+        .select()
+        .single()
+    } else {
+      resposta = await supabase
+        .from('df_configuracoes')
+        .insert([payload])
+        .select()
+        .single()
+    }
+
+    if (resposta.error) {
+      alert(resposta.error.message)
+      return
+    }
+
+    setConfiguracoes(resposta.data)
+    alert('Configurações salvas com sucesso!')
+  }
+
   // =========================
   // BLOCO 9 — AÇÕES LIXEIRA
   // =========================
@@ -623,6 +736,129 @@ export default function App() {
   }
 
 
+
+
+  if (telaAtual === 'configuracoes') {
+    return (
+      <div style={styles.page}>
+        <h1 style={styles.titulo}>⚙️ Configurações</h1>
+
+        <button style={styles.btnCinza} onClick={() => setTelaAtual('contas')}>
+          ← Voltar
+        </button>
+
+        <section style={styles.cardConfiguracao}>
+          <h2 style={styles.subtitulo}>🔔 Notificações</h2>
+
+          <label style={styles.switchLinha}>
+            <div>
+              <strong>Notificações ativas</strong>
+              <small>Controle geral dos disparos automáticos.</small>
+            </div>
+
+            <input
+              type="checkbox"
+              checked={notificacoesAtivas}
+              onChange={(e) => setNotificacoesAtivas(e.target.checked)}
+            />
+          </label>
+
+          <label style={styles.switchLinha}>
+            <div>
+              <strong>WhatsApp</strong>
+              <small>Permitir disparos por WhatsApp.</small>
+            </div>
+
+            <input
+              type="checkbox"
+              checked={configWhatsapp}
+              onChange={(e) => setConfigWhatsapp(e.target.checked)}
+            />
+          </label>
+
+          <label style={styles.switchLinha}>
+            <div>
+              <strong>E-mail</strong>
+              <small>Permitir disparos por e-mail.</small>
+            </div>
+
+            <input
+              type="checkbox"
+              checked={configEmail}
+              onChange={(e) => setConfigEmail(e.target.checked)}
+            />
+          </label>
+
+          <label style={styles.switchLinha}>
+            <div>
+              <strong>Push mobile</strong>
+              <small>Preparado para notificação web/PWA.</small>
+            </div>
+
+            <input
+              type="checkbox"
+              checked={configPush}
+              onChange={(e) => setConfigPush(e.target.checked)}
+            />
+          </label>
+
+          <input
+            style={styles.input}
+            type="number"
+            min="0"
+            placeholder="Dias padrão de aviso"
+            value={diasAvisoPadrao}
+            onChange={(e) => setDiasAvisoPadrao(e.target.value)}
+          />
+        </section>
+
+        <section style={styles.cardConfiguracao}>
+          <h2 style={styles.subtitulo}>🏢 Dados do negócio</h2>
+
+          <input
+            style={styles.input}
+            placeholder="Nome da empresa"
+            value={nomeEmpresa}
+            onChange={(e) => setNomeEmpresa(e.target.value)}
+          />
+
+          <input
+            style={styles.input}
+            placeholder="WhatsApp padrão. Ex: 5511999999999"
+            value={whatsappPadrao}
+            onChange={(e) => setWhatsappPadrao(e.target.value)}
+          />
+
+          <input
+            style={styles.input}
+            placeholder="E-mail padrão"
+            value={emailPadrao}
+            onChange={(e) => setEmailPadrao(e.target.value)}
+          />
+        </section>
+
+        <section style={styles.cardConfiguracao}>
+          <h2 style={styles.subtitulo}>🧠 Como o sistema vai usar</h2>
+
+          <p style={styles.textoNota}>
+            O envio automático só acontecerá quando a configuração global estiver ativa
+            e a conta também estiver marcada para receber aviso.
+          </p>
+
+          <div style={styles.configResumo}>
+            <span>Geral: {notificacoesAtivas ? 'Ligado' : 'Desligado'}</span>
+            <span>WhatsApp: {configWhatsapp ? 'Ligado' : 'Desligado'}</span>
+            <span>E-mail: {configEmail ? 'Ligado' : 'Desligado'}</span>
+            <span>Push: {configPush ? 'Ligado' : 'Desligado'}</span>
+          </div>
+        </section>
+
+        <button style={styles.btnSalvar} onClick={salvarConfiguracoes}>
+          Salvar configurações
+        </button>
+      </div>
+    )
+  }
 
   if (telaAtual === 'agenda') {
     const contasAgenda = [...contas]
@@ -1358,6 +1594,32 @@ const styles = {
     gap: 5,
     marginTop: 6,
     fontSize: 13
+  },
+  cardConfiguracao: {
+    background: '#fff',
+    padding: 14,
+    borderRadius: 14,
+    marginTop: 14,
+    marginBottom: 10,
+    border: '1px solid #ddd',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+  },
+  switchLinha: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+    padding: '10px 0',
+    borderBottom: '1px solid #eee'
+  },
+  configResumo: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 8,
+    fontSize: 13,
+    background: '#f8f9fa',
+    padding: 10,
+    borderRadius: 10
   },
   cardAgenda: {
     background: '#fff',

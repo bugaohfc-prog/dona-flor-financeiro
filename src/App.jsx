@@ -531,7 +531,6 @@ export default function App() {
   function abrirNovaConta() {
     setMenuAberto(false)
     setMenuNavegacaoAberto(false)
-    setTelaAtualState('contas')
     setEditandoContaId(null)
     setDescricao('')
     setValor('')
@@ -655,7 +654,6 @@ export default function App() {
   function abrirNovaNota() {
     setMenuAberto(false)
     setMenuNavegacaoAberto(false)
-    setTelaAtualState('contas')
     setEditandoNotaId(null)
     setTituloNota('')
     setConteudoNota('')
@@ -1274,6 +1272,92 @@ export default function App() {
     )
   }
 
+
+  function renderModaisGlobais() {
+    return (
+      <>
+        {modalConta && (
+          <div style={styles.overlay}>
+            <div style={styles.modal}>
+              <h3>{editandoContaId ? 'Editar Conta' : 'Nova Conta'}</h3>
+
+              <input style={styles.inputModal} placeholder="Descrição" value={descricao} onChange={(e) => setDescricao(primeiraLetraMaiuscula(e.target.value))} />
+              <input style={styles.inputModal} placeholder="Valor. Ex: 150,90" value={valor} onChange={(e) => setValor(e.target.value)} />
+              <input style={styles.inputModal} type="date" value={dataVencimento} onChange={(e) => setDataVencimento(e.target.value)} />
+
+              <select style={styles.inputModal} value={centroCustoId} onChange={(e) => setCentroCustoId(e.target.value)}>
+                <option value="">Centro de custo</option>
+                {centros.map((centro) => (
+                  <option key={centro.id} value={centro.id}>{centro.nome}</option>
+                ))}
+              </select>
+
+              <div style={styles.blocoNotificacaoConta}>
+                <strong>🔔 Notificações desta conta</strong>
+
+                <label style={styles.switchLinhaCompacta}>
+                  <span>WhatsApp</span>
+                  <input type="checkbox" checked={contaWhatsapp} onChange={(e) => setContaWhatsapp(e.target.checked)} />
+                </label>
+
+                <label style={styles.switchLinhaCompacta}>
+                  <span>E-mail</span>
+                  <input type="checkbox" checked={contaEmail} onChange={(e) => setContaEmail(e.target.checked)} />
+                </label>
+
+                <label style={styles.switchLinhaCompacta}>
+                  <span>Push mobile</span>
+                  <input type="checkbox" checked={contaPush} onChange={(e) => setContaPush(e.target.checked)} />
+                </label>
+
+                <input style={styles.inputModal} type="number" min="0" placeholder="Dias antes do vencimento" value={contaDiasAviso} onChange={(e) => setContaDiasAviso(e.target.value)} />
+                <small style={styles.textoAjuda}>Exemplo: 1 = avisar 1 dia antes. 0 = avisar no dia do vencimento.</small>
+              </div>
+
+              <button style={styles.btnSalvar} onClick={salvarConta}>Salvar</button>
+              <button style={styles.btnCancelar} onClick={fecharConta}>Cancelar</button>
+            </div>
+          </div>
+        )}
+
+        {modalNota && (
+          <div style={styles.overlay}>
+            <div style={styles.modal}>
+              <h3>{editandoNotaId ? 'Editar Nota' : 'Nova Nota'}</h3>
+              <input style={styles.inputModal} placeholder="Título" value={tituloNota} onChange={(e) => setTituloNota(primeiraLetraMaiuscula(e.target.value))} />
+              <select style={styles.inputModal} value={prioridadeNota} onChange={(e) => setPrioridadeNota(e.target.value)}>
+                <option value="normal">Prioridade normal</option>
+                <option value="urgente">Urgente</option>
+                <option value="critico">Crítico</option>
+              </select>
+              <input style={styles.inputModal} type="date" value={dataEventoNota} onChange={(e) => setDataEventoNota(e.target.value)} />
+              <textarea style={styles.textareaModal} placeholder="Conteúdo..." value={conteudoNota} onChange={(e) => setConteudoNota(e.target.value)} />
+              <button style={styles.btnSalvar} onClick={salvarNota}>Salvar</button>
+              <button style={styles.btnCancelar} onClick={fecharNota}>Cancelar</button>
+            </div>
+          </div>
+        )}
+
+        {modalCentro && (
+          <div style={styles.overlay}>
+            <div style={styles.modal}>
+              <h3>Centros de Custo</h3>
+              <input style={styles.inputModal} placeholder="Novo centro" value={novoCentro} onChange={(e) => setNovoCentro(primeiraLetraMaiuscula(e.target.value))} />
+              <button style={styles.btnSalvar} onClick={salvarCentro}>Salvar Centro</button>
+              {centros.map((centro) => (
+                <div key={centro.id} style={styles.itemCentro}>
+                  <span>{centro.nome}</span>
+                  <button style={styles.btnMiniExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir centro de custo', mensagem: `Deseja excluir o centro ${centro.nome}?`, textoConfirmar: 'Excluir', tipo: 'perigo', acao: () => excluirCentro(centro.id) })}>excluir</button>
+                </div>
+              ))}
+              <button style={styles.btnCancelar} onClick={() => setModalCentro(false)}>Fechar</button>
+            </div>
+          </div>
+        )}
+      </>
+    )
+  }
+
   function AppFrame({ children }) {
     return (
       <div className="app-page app-frame" style={styles.page}>
@@ -1419,6 +1503,7 @@ export default function App() {
 
         <main className="app-frame-content">{children}</main>
         {renderConfirmacaoGlobal()}
+        {renderModaisGlobais()}
       </div>
     )
   }
@@ -1460,8 +1545,8 @@ export default function App() {
           <img src="/icon-192.png" alt="DF Gestão Financeira" />
           {!sidebarCompacta && (
             <div>
-              <strong>DF</strong>
-              <small>Gestão Financeira</small>
+              <strong>DF Gestão</strong>
+              <small>Financeira</small>
             </div>
           )}
         </div>
@@ -2744,7 +2829,7 @@ export default function App() {
         {menuAberto ? '×' : '+'}
       </button>
 
-      {modalConta && (
+      {false && modalConta && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
             <h3>{editandoContaId ? 'Editar Conta' : 'Nova Conta'}</h3>
@@ -2810,7 +2895,7 @@ export default function App() {
         </div>
       )}
 
-      {modalNota && (
+      {false && modalNota && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
             <h3>{editandoNotaId ? 'Editar Nota' : 'Nova Nota'}</h3>
@@ -2830,7 +2915,7 @@ export default function App() {
         </div>
       )}
 
-      {modalCentro && (
+      {false && modalCentro && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
             <h3>Centros de Custo</h3>

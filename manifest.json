@@ -1,6 +1,6 @@
 {
-  "name": "Dona Flor Gestão Financeira",
-  "short_name": "Dona Flor",
+  "name": "DF Gestão Financeira",
+  "short_name": "DF Gestão",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -28,5 +28,5 @@
       "type": "image/png"
     }
   ],
-  "description": "Gestão financeira com alertas de contas a pagar."
+  "description": "Dashboard para gestão financeira, contas a pagar, agenda e relatórios."
 }

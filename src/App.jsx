@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
+import Relatorios from './pages/Relatorios'
 
 export default function App() {
   // =========================
@@ -30,12 +31,10 @@ export default function App() {
   function formatarDataParaBanco(valor) {
     if (!valor) return null
 
-    // Formato correto do banco: 2026-05-02
     if (/^\d{4}-\d{2}-\d{2}$/.test(valor)) {
       return valor
     }
 
-    // Formato brasileiro: 02/05/2026
     if (/^\d{2}\/\d{2}\/\d{4}$/.test(valor)) {
       const [dia, mes, ano] = valor.split('/')
       return `${ano}-${mes}-${dia}`
@@ -98,6 +97,7 @@ export default function App() {
   // BLOCO 4 — MENU
   // =========================
   const [menuAberto, setMenuAberto] = useState(false)
+  const [telaAtual, setTelaAtual] = useState('contas')
 
   useEffect(() => {
     carregarTudo()
@@ -435,6 +435,12 @@ export default function App() {
     setDataFinal('')
   }
 
+  if (telaAtual === 'relatorios') {
+    return (
+      <Relatorios voltar={() => setTelaAtual('contas')} />
+    )
+  }
+
   // =========================
   // BLOCO 11 — UI
   // =========================
@@ -711,6 +717,16 @@ export default function App() {
         <div style={styles.menuFab}>
           <button style={styles.menuItem} onClick={abrirNovaConta}>💰 Nova conta</button>
           <button style={styles.menuItem} onClick={abrirNovaNota}>📝 Nova nota</button>
+          <button
+            style={styles.menuItem}
+            onClick={() => {
+              setMenuAberto(false)
+              setTelaAtual('relatorios')
+            }}
+          >
+            📊 Relatórios
+          </button>
+
           <button
             style={styles.menuItem}
             onClick={() => {

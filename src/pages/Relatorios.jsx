@@ -1,98 +1,1384 @@
-// 🚀 RELATÓRIOS PRO — VERSÃO AVANÇADA
-// Arquivo completo
+import { useEffect, useMemo, useState } from 'react'
+import { supabase } from '../supabase'
 
-import React from 'react'
-
-export default function Relatorios() {
-
+export default function Relatorios({ voltar }) {
   // =========================
-  // BLOCO 1 — MOCK (substitui depois pelo seu estado real)
+  // BLOCO 0 — UTILITÁRIOS
   // =========================
-  const total = 456
-  const pago = 0
-  const pendente = 456
-  const vencido = 0
-
-  const crescimento = 28.1
-
-  // =========================
-  // BLOCO 2 — SCORE INTELIGENTE
-  // =========================
-  let score = 100
-
-  if (pendente > 0) score -= 20
-  if (crescimento > 20) score -= 20
-
-  let nivel = 'Saudável'
-  let cor = '#198754'
-
-  if (score < 70) {
-    nivel = 'Atenção'
-    cor = '#ffc107'
+  function formatarValor(valor) {
+    return Number(valor || 0).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    })
   }
 
-  if (score < 50) {
-    nivel = 'Crítico'
-    cor = '#dc3545'
+  function formatarPercentual(valor) {
+    return `${Number(valor || 0).toFixed(1)}%`
+  }
+
+  function formatarData(data) {
+    if (!data) return '-'
+    return new Date(data + 'T00:00:00').toLocaleDateString('pt-BR')
+  }
+
+  function estaVencida(data, status) {
+    if (!data || status === 'pago') return false
+
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+
+    const vencimento = new Date(data + 'T00:00:00')
+    vencimento.setHours(0, 0, 0, 0)
+
+    return vencimento < hoje
+  }
+
+  function pegarMes(data) {
+    if (!data) return ''
+    return String(data).slice(0, 7)
+  }
+
+  function mesAtualPadrao() {
+    const hoje = new Date()
+    return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`
+  }
+
+  function mesAnterior(mes) {
+    if (!mes) return ''
+    const [ano, mesNumero] = mes.split('-').map(Number)
+    const data = new Date(ano, mesNumero - 2, 1)
+
+    return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`
+  }
+
+  function nomeMes(mes) {
+    if (!mes) return 'Todos'
+    const [ano, mesNumero] = mes.split('-').map(Number)
+
+    return new Date(ano, mesNumero - 1, 1).toLocaleDateString('pt-BR', {
+      month: 'long',
+      year: 'numeric'
+    })
+  }
+
+  function corPorPercentual(percentual) {
+    if (percentual >= 50) return '#dc3545'
+    if (percentual >= 20) return '#ffc107'
+    return '#198754'
+  }
+
+  function emojiInsight(tipo) {
+    if (tipo === 'critico') return '🚨'
+    if (tipo === 'risco') return '🚨'
+    if (tipo === 'queda') return '✅'
+    if (tipo === 'alta') return '📈'
+    if (tipo === 'ação') return '🎯'
+    if (tipo === 'previsao') return '🔮'
+    if (tipo === 'centro') return '📊'
+    return 'ℹ️'
   }
 
   // =========================
-  // BLOCO 3 — RESUMO EXECUTIVO
+  // BLOCO 1 — STATES
   // =========================
-  function resumo() {
-    if (pendente > 0) {
-      return 'Existem valores pendentes. Priorize pagamentos para manter o controle financeiro.'
+  const [contas, setContas] = useState([])
+  const [centros, setCentros] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const [filtroMes, setFiltroMes] = useState(mesAtualPadrao())
+  const [filtroStatus, setFiltroStatus] = useState('todas')
+  const [filtroCentro, setFiltroCentro] = useState('')
+
+  useEffect(() => {
+    buscarDados()
+  }, [])
+
+  // =========================
+  // BLOCO 2 — BUSCAS
+  // =========================
+  async function buscarDados() {
+    setLoading(true)
+
+    const { data: contasData, error: contasError } = await supabase
+      .from('df_contas')
+      .select('*, df_centros_custo(nome)')
+      .order('data_vencimento')
+
+    const { data: centrosData, error: centrosError } = await supabase
+      .from('df_centros_custo')
+      .select('*')
+      .order('nome')
+
+    if (contasError) {
+      alert(contasError.message)
     }
 
-    if (crescimento > 20) {
-      return 'Os custos estão crescendo acima do esperado. Monitorar tendência.'
+    if (centrosError) {
+      alert(centrosError.message)
     }
 
-    return 'Situação financeira controlada.'
+    setContas(contasData || [])
+    setCentros(centrosData || [])
+    setLoading(false)
   }
 
+  // =========================
+  // BLOCO 3 — FILTROS
+  // =========================
+  const contasFiltradas = useMemo(() => {
+    return contas
+      .filter((conta) => {
+        if (filtroStatus === 'pendentes') return conta.status !== 'pago'
+        if (filtroStatus === 'pagas') return conta.status === 'pago'
+        if (filtroStatus === 'vencidas') return estaVencida(conta.data_vencimento, conta.status)
+        return true
+      })
+      .filter((conta) => {
+        if (!filtroMes) return true
+        return pegarMes(conta.data_vencimento) === filtroMes
+      })
+      .filter((conta) => {
+        if (!filtroCentro) return true
+        return conta.centro_custo_id === filtroCentro
+      })
+  }, [contas, filtroMes, filtroStatus, filtroCentro])
+
+  const contasMesAnterior = useMemo(() => {
+    const mesBase = filtroMes ? mesAnterior(filtroMes) : mesAnterior(mesAtualPadrao())
+
+    return contas
+      .filter((conta) => pegarMes(conta.data_vencimento) === mesBase)
+      .filter((conta) => {
+        if (!filtroCentro) return true
+        return conta.centro_custo_id === filtroCentro
+      })
+  }, [contas, filtroMes, filtroCentro])
+
+  // =========================
+  // BLOCO 4 — CÁLCULOS GERAIS
+  // =========================
+  const totalGeral = contasFiltradas.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+
+  const totalPago = contasFiltradas
+    .filter((conta) => conta.status === 'pago')
+    .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+
+  const totalVencido = contasFiltradas
+    .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
+    .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+
+  const totalPendente = totalGeral - totalPago
+  const totalMesAnterior = contasMesAnterior.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+  const diferencaMes = totalGeral - totalMesAnterior
+
+  const percentualMes = totalMesAnterior
+    ? (diferencaMes / totalMesAnterior) * 100
+    : 0
+
+  const previsaoProximoMes = totalMesAnterior
+    ? Math.max(totalGeral + diferencaMes, 0)
+    : totalGeral
+
+  // =========================
+  // BLOCO 5 — RANKING POR CENTRO
+  // =========================
+  const centrosComContas = contasFiltradas.reduce((acc, conta) => {
+    const chave = conta.centro_custo_id || 'sem-centro'
+
+    if (!acc[chave]) {
+      acc[chave] = []
+    }
+
+    acc[chave].push(conta)
+    return acc
+  }, {})
+
+  const ranking = Object.keys(centrosComContas)
+    .map((centroId) => {
+      const lista = centrosComContas[centroId]
+      const centro = centros.find((c) => c.id === centroId)
+
+      const total = lista.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+
+      const pago = lista
+        .filter((conta) => conta.status === 'pago')
+        .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+
+      const vencido = lista
+        .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
+        .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+
+      return {
+        id: centroId,
+        nome: centro?.nome || 'Sem centro',
+        total,
+        pago,
+        pendente: total - pago,
+        vencido,
+        percentual: totalGeral ? (total / totalGeral) * 100 : 0
+      }
+    })
+    .sort((a, b) => b.total - a.total)
+
+  const maiorValor = ranking[0]?.total || 0
+  const principalCentro = ranking[0] || null
+  const quantidadeVencidas = contasFiltradas.filter((conta) => estaVencida(conta.data_vencimento, conta.status)).length
+  const centroSelecionado = centros.find((centro) => centro.id === filtroCentro)
+
+  const resumoCentro = contasFiltradas.reduce((acc, conta) => {
+    const valorConta = Number(conta.valor || 0)
+
+    acc.total += valorConta
+
+    if (conta.status === 'pago') {
+      acc.pago += valorConta
+    }
+
+    if (estaVencida(conta.data_vencimento, conta.status)) {
+      acc.vencido += valorConta
+    }
+
+    return acc
+  }, {
+    total: 0,
+    pago: 0,
+    vencido: 0
+  })
+
+  resumoCentro.pendente = resumoCentro.total - resumoCentro.pago
+
+  const temSemCentro = ranking.some((item) => item.id === 'sem-centro')
+  const semCentro = ranking.find((item) => item.id === 'sem-centro')
+  const mostrarAcaoPrioritaria = Boolean(semCentro && semCentro.total > 0)
+
+  const contasComCentro = contasFiltradas.filter((conta) => conta.centro_custo_id).length
+  const contasSemCentro = contasFiltradas.filter((conta) => !conta.centro_custo_id).length
+
+  const percentualClassificacao = contasFiltradas.length
+    ? (contasComCentro / contasFiltradas.length) * 100
+    : 0
+
+  let qualidadeDados = {
+    titulo: 'Qualidade dos dados boa',
+    emoji: '✅',
+    cor: '#198754',
+    descricao: 'A maioria das contas está classificada por centro de custo.'
+  }
+
+  if (percentualClassificacao < 80 && percentualClassificacao >= 40) {
+    qualidadeDados = {
+      titulo: 'Qualidade dos dados em atenção',
+      emoji: '⚠️',
+      cor: '#ffc107',
+      descricao: 'Parte das contas ainda está sem centro de custo. A análise pode ficar parcialmente limitada.'
+    }
+  }
+
+  if (percentualClassificacao < 40) {
+    qualidadeDados = {
+      titulo: 'Qualidade dos dados crítica',
+      emoji: '🚨',
+      cor: '#dc3545',
+      descricao: 'Grande parte das contas está sem centro de custo. Classifique as despesas para liberar análises mais confiáveis.'
+    }
+  }
+
+  // =========================
+  // BLOCO 6 — SAÚDE FINANCEIRA E INSIGHTS
+  // =========================
+  let scoreSaude = 100
+
+  if (totalVencido > 0) scoreSaude -= 35
+  if (principalCentro?.percentual >= 50) scoreSaude -= 25
+  if (diferencaMes > 0 && percentualMes >= 20) scoreSaude -= 20
+  if (totalPendente > totalPago && totalGeral > 0) scoreSaude -= 10
+  if (temSemCentro) scoreSaude -= 10
+  if (semCentro?.percentual >= 80) scoreSaude -= 10
+  if (percentualClassificacao < 40 && contasFiltradas.length > 0) scoreSaude -= 10
+
+  scoreSaude = Math.max(scoreSaude, 0)
+
+  let statusSaude = {
+    titulo: 'Saúde financeira boa',
+    etiqueta: '🟢 Saudável',
+    emoji: '✅',
+    cor: '#198754',
+    descricao: 'Os indicadores estão equilibrados para o filtro atual.'
+  }
+
+  if (scoreSaude < 75 && scoreSaude >= 45) {
+    statusSaude = {
+      titulo: 'Saúde financeira em atenção',
+      etiqueta: '🟡 Atenção',
+      emoji: '⚠️',
+      cor: '#ffc107',
+      descricao: 'Existem pontos que merecem acompanhamento, principalmente concentração, variação mensal e classificação dos custos.'
+    }
+  }
+
+  if (scoreSaude < 45) {
+    statusSaude = {
+      titulo: 'Saúde financeira crítica',
+      etiqueta: '🔴 Crítico',
+      emoji: '🚨',
+      cor: '#dc3545',
+      descricao: 'Há sinais relevantes de risco. Priorize vencidos, concentração de custos, aumento mensal e contas sem centro.'
+    }
+  }
+
+  const insights = []
+
+  if (percentualClassificacao < 40 && contasFiltradas.length > 0) {
+    insights.push({
+      tipo: 'critico',
+      texto: 'Todas ou quase todas as despesas estão sem classificação. O sistema não consegue identificar com segurança onde o dinheiro está sendo gasto.'
+    })
+  } else if (percentualClassificacao < 80 && contasFiltradas.length > 0) {
+    insights.push({
+      tipo: 'ação',
+      texto: `${contasSemCentro} conta(s) ainda estão sem centro. Classificar melhora sua análise financeira.`
+    })
+  }
+
+  if (!filtroCentro && principalCentro && principalCentro.id !== 'sem-centro' && principalCentro.percentual >= 50) {
+    insights.push({
+      tipo: 'risco',
+      texto: `${principalCentro.nome} concentra ${formatarPercentual(principalCentro.percentual)} do total. Isso indica alta dependência ou concentração de custo.`
+    })
+  } else if (!filtroCentro && principalCentro && principalCentro.id !== 'sem-centro' && principalCentro.percentual >= 30) {
+    insights.push({
+      tipo: 'atenção',
+      texto: `${principalCentro.nome} é o maior centro do período, representando ${formatarPercentual(principalCentro.percentual)} do total.`
+    })
+  }
+
+  if (filtroCentro && resumoCentro.total > 0) {
+    insights.push({
+      tipo: 'centro',
+      texto: `${centroSelecionado?.nome || 'Centro selecionado'} possui ${formatarValor(resumoCentro.total)} no período filtrado.`
+    })
+  }
+
+  if (totalVencido > 0) {
+    insights.push({
+      tipo: 'risco',
+      texto: `Contas vencidas detectadas: ${quantidadeVencidas} conta(s), somando ${formatarValor(totalVencido)}. Priorize pagamento para evitar juros e perda de controle.`
+    })
+  }
+
+  if (!filtroCentro && principalCentro?.percentual >= 60 && principalCentro.id !== 'sem-centro') {
+    insights.push({
+      tipo: 'risco',
+      texto: `Alto risco de concentração: ${principalCentro.nome} representa ${formatarPercentual(principalCentro.percentual)} dos custos filtrados. Avalie se esse peso está dentro do esperado.`
+    })
+  }
+
+  if (filtroMes) {
+    if (totalMesAnterior === 0 && totalGeral > 0) {
+      insights.push({
+        tipo: 'info',
+        texto: `${nomeMes(filtroMes)} tem ${formatarValor(totalGeral)} em contas. Não há base no mês anterior para comparação.`
+      })
+    } else if (diferencaMes > 0) {
+      insights.push({
+        tipo: percentualMes >= 20 ? 'risco' : 'alta',
+        texto: `Crescimento de ${formatarValor(diferencaMes)} em relação a ${nomeMes(mesAnterior(filtroMes))}, variação de ${formatarPercentual(percentualMes)}.`
+      })
+    } else if (diferencaMes < 0) {
+      insights.push({
+        tipo: 'queda',
+        texto: `Redução de ${formatarValor(Math.abs(diferencaMes))} em relação a ${nomeMes(mesAnterior(filtroMes))}, queda de ${formatarPercentual(Math.abs(percentualMes))}.`
+      })
+    } else if (totalGeral > 0) {
+      insights.push({
+        tipo: 'ok',
+        texto: 'O total ficou estável em relação ao mês anterior.'
+      })
+    }
+
+    if (totalGeral > 0) {
+      insights.push({
+        tipo: 'previsao',
+        texto: `Se o padrão continuar, o próximo mês pode fechar próximo de ${formatarValor(previsaoProximoMes)}. Tendência de crescimento exige atenção nos custos.`
+      })
+    }
+  }
+
+  if (insights.length === 0) {
+    insights.push({
+      tipo: 'ok',
+      texto: 'Nenhum alerta relevante encontrado para os filtros selecionados.'
+    })
+  }
+
+
+  const topDespesas = [...contasFiltradas]
+    .sort((a, b) => Number(b.valor || 0) - Number(a.valor || 0))
+    .slice(0, 3)
+
+  // =========================
+  // BLOCO 7 — GRÁFICO DE DISTRIBUIÇÃO
+  // =========================
+  const topGrafico = ranking.slice(0, 5)
+  const totalGrafico = topGrafico.reduce((acc, item) => acc + item.total, 0)
+
+  // =========================
+  // BLOCO 8 — EXPORTAÇÃO
+  // =========================
+  function imprimirPDF() {
+    window.print()
+  }
+
+  function exportarCSV() {
+    const cabecalho = ['Centro', 'Total', 'Pago', 'Pendente', 'Vencido', 'Percentual']
+    const linhas = ranking.map((item) => [
+      item.nome,
+      Number(item.total || 0).toFixed(2).replace('.', ','),
+      Number(item.pago || 0).toFixed(2).replace('.', ','),
+      Number(item.pendente || 0).toFixed(2).replace('.', ','),
+      Number(item.vencido || 0).toFixed(2).replace('.', ','),
+      `${item.percentual.toFixed(1)}%`
+    ])
+
+    const csv = [cabecalho, ...linhas]
+      .map((linha) => linha.map((campo) => `"${String(campo).replaceAll('"', '""')}"`).join(';'))
+      .join('\n')
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = 'relatorio-centros.csv'
+    link.click()
+
+    URL.revokeObjectURL(url)
+  }
+
+  function limparFiltros() {
+    setFiltroMes('')
+    setFiltroStatus('todas')
+    setFiltroCentro('')
+  }
+
+  // =========================
+  // BLOCO 9 — UI
+  // =========================
   return (
-    <div style={{ padding: 20 }}>
+    <div className="relatorios-page" style={styles.page}>
+      <style>
+        {`
+          .relatorio-print-header,
+          .relatorio-print-footer {
+            display: none;
+          }
 
-      <h2>📊 Relatórios PRO</h2>
+          @media print {
+            body {
+              background: #fff !important;
+            }
 
-      {/* SCORE */}
-      <div style={{ background: '#fff', padding: 12, borderRadius: 10 }}>
-        <strong>Saúde financeira: {nivel}</strong>
-        <div style={{ height: 8, background: '#eee', marginTop: 8 }}>
-          <div style={{ width: score + '%', background: cor, height: 8 }} />
-        </div>
-        <small>{score}/100</small>
-      </div>
+            .no-print {
+              display: none !important;
+            }
 
-      {/* RESUMO */}
-      <div style={{ marginTop: 12, background: '#fff', padding: 12, borderRadius: 10 }}>
-        <strong>Resumo executivo</strong>
-        <p>{resumo()}</p>
-      </div>
+            .relatorios-page {
+              background: #fff !important;
+              padding: 0 !important;
+            }
 
-      {/* CARDS */}
-      <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
-        <div>Total: R$ {total}</div>
-        <div>Pago: R$ {pago}</div>
-        <div>Pendente: R$ {pendente}</div>
-        <div>Vencido: R$ {vencido}</div>
-      </div>
+            .relatorio-print-header {
+              display: block !important;
+              text-align: center;
+              border-bottom: 1px solid #ddd;
+              margin-bottom: 16px;
+              padding-bottom: 8px;
+            }
 
-      {/* PREVISÃO */}
-      <div style={{ marginTop: 12, background: '#fff', padding: 12 }}>
-        <strong>📈 Previsão</strong>
+            .relatorio-print-footer {
+              display: block !important;
+              position: fixed;
+              bottom: 0;
+              left: 0;
+              right: 0;
+              text-align: center;
+              font-size: 10px;
+              color: #666;
+              border-top: 1px solid #ddd;
+              padding-top: 6px;
+              background: #fff;
+            }
+
+            .relatorio-print-footer::after {
+              content: " • Página " counter(page);
+            }
+
+            .print-card {
+              page-break-inside: avoid;
+              break-inside: avoid;
+              box-shadow: none !important;
+              border: 1px solid #ddd;
+            }
+
+            @page {
+              size: A4;
+              margin: 12mm 12mm 18mm 12mm;
+            }
+          }
+        `}
+      </style>
+
+      <div className="relatorio-print-header">
+        <h1>Relatório Financeiro Gerencial</h1>
+        <p>Gerado em {new Date().toLocaleDateString('pt-BR')}</p>
         <p>
-          Mantendo o ritmo atual, o próximo mês pode chegar em R$ {Math.round(total * 1.28)}
+          Filtros aplicados: Centro {filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos'} •
+          Mês {filtroMes || 'Todos'} •
+          Status {filtroStatus}
         </p>
       </div>
 
-      {/* ALERTAS */}
-      <div style={{ marginTop: 12 }}>
-        {pendente > 0 && <p>⚠️ Existem contas pendentes</p>}
-        {crescimento > 20 && <p>🚨 Crescimento acima do normal</p>}
+      <div className="relatorio-print-footer">
+        Relatório gerado pelo Sistema Dona Flor Financeiro
       </div>
 
+      <div className="no-print" style={styles.topo}>
+        <button style={styles.btnVoltar} onClick={voltar}>
+          ← Voltar
+        </button>
+
+        <button style={styles.btnPDF} onClick={imprimirPDF}>
+          PDF
+        </button>
+
+        <button style={styles.btnCSV} onClick={exportarCSV}>
+          CSV
+        </button>
+      </div>
+
+      <h1 style={styles.titulo}>📊 Relatórios Inteligentes</h1>
+      <p style={styles.descricaoTela}>Visão estratégica dos seus custos por centro, mês e status.</p>
+
+      <section style={styles.resumo}>
+        <div style={styles.boxTotal}>
+          <span>Total</span>
+          <strong>{formatarValor(totalGeral)}</strong>
+        </div>
+
+        <div style={styles.boxPago}>
+          <span>Pago</span>
+          <strong>{formatarValor(totalPago)}</strong>
+        </div>
+
+        <div style={styles.boxPendente}>
+          <span>Pendente</span>
+          <strong>{formatarValor(totalPendente)}</strong>
+          {totalGeral > 0 && (
+            <small style={styles.boxContexto}>
+              {formatarPercentual((totalPendente / totalGeral) * 100)} das despesas
+            </small>
+          )}
+        </div>
+
+        <div style={styles.boxVencido}>
+          <span>Vencido</span>
+          <strong>{formatarValor(totalVencido)}</strong>
+        </div>
+      </section>
+
+      <section className="print-card" style={styles.cardExecutivo}>
+        <strong>📊 Resumo executivo</strong>
+
+        <p>
+          {percentualClassificacao < 40
+            ? 'A análise gerencial está limitada porque a maior parte das despesas está sem centro de custo. O primeiro passo recomendado é classificar os lançamentos.'
+            : totalVencido > 0
+              ? 'Existem contas vencidas no período filtrado. A prioridade é regularizar pendências para reduzir risco financeiro.'
+              : diferencaMes > 0
+                ? 'O período apresenta crescimento de custos em relação ao mês anterior. Acompanhe os maiores centros e despesas.'
+                : 'Os dados filtrados indicam uma situação controlada para o período analisado.'}
+        </p>
+      </section>
+
+
+      <section className="print-card" style={styles.cardSaude}>
+        <div style={styles.saudeTopo}>
+          <strong>{statusSaude.emoji} {statusSaude.titulo}</strong>
+          <span style={{ ...styles.statusBadge, borderColor: statusSaude.cor, color: statusSaude.cor }}>
+            {statusSaude.etiqueta}
+          </span>
+        </div>
+
+        <p>{statusSaude.descricao}</p>
+
+        <div style={styles.saudeLinha}>
+          <div style={styles.saudeFundo}>
+            <div style={{ ...styles.saudeBarra, width: `${Math.max(scoreSaude, 5)}%`, background: statusSaude.cor }} />
+          </div>
+          <span>{scoreSaude}/100</span>
+        </div>
+
+        <small style={styles.scoreDetalhe}>
+          Score impactado por: concentração de custo, ausência de classificação, contas vencidas e variação mensal.
+        </small>
+      </section>
+
+      <section className="print-card" style={styles.cardQualidadeDados}>
+        <div style={styles.saudeTopo}>
+          <strong>{qualidadeDados.emoji} {qualidadeDados.titulo}</strong>
+          <span style={{ ...styles.statusBadge, borderColor: qualidadeDados.cor, color: qualidadeDados.cor }}>
+            {formatarPercentual(percentualClassificacao)}
+          </span>
+        </div>
+
+        <p>{qualidadeDados.descricao}</p>
+
+        <div style={styles.qualidadeGrid}>
+          <div>
+            <strong>{contasFiltradas.length}</strong>
+            <small>Total de contas</small>
+          </div>
+
+          <div>
+            <strong>{contasComCentro}</strong>
+            <small>Com centro</small>
+          </div>
+
+          <div>
+            <strong>{contasSemCentro}</strong>
+            <small>Sem centro</small>
+          </div>
+        </div>
+
+        <div style={styles.saudeLinha}>
+          <div style={styles.saudeFundo}>
+            <div
+              style={{
+                ...styles.saudeBarra,
+                width: `${Math.max(percentualClassificacao, 3)}%`,
+                background: qualidadeDados.cor
+              }}
+            />
+          </div>
+          <span>{formatarPercentual(percentualClassificacao)}</span>
+        </div>
+      </section>
+
+      {mostrarAcaoPrioritaria && (
+        <section className="print-card" style={styles.cardAlertaPrincipal}>
+          <strong>🚨 Ação prioritária</strong>
+
+          <p>
+            {formatarPercentual(semCentro.percentual)} das despesas filtradas estão sem centro de custo.
+            Na prática, isso significa que o sistema ainda não consegue mostrar exatamente onde o dinheiro está sendo consumido.
+          </p>
+
+          <button className="no-print" style={styles.btnAcao} onClick={voltar}>
+            Ir para contas e classificar
+          </button>
+
+          <small>
+            Sugestão: volte em Contas, edite as contas sem centro e classifique cada lançamento.
+          </small>
+        </section>
+      )}
+
+      <section className="print-card" style={styles.cardComparativo}>
+        <strong>📅 Comparativo mensal</strong>
+
+        <div style={styles.comparativoGrid}>
+          <div style={styles.comparativoItem}>
+            <span>Mês atual</span>
+            <strong>{formatarValor(totalGeral)}</strong>
+            <small>{nomeMes(filtroMes || mesAtualPadrao())}</small>
+          </div>
+
+          <div style={styles.comparativoItem}>
+            <span>Mês anterior</span>
+            <strong>{formatarValor(totalMesAnterior)}</strong>
+            <small>{nomeMes(mesAnterior(filtroMes || mesAtualPadrao()))}</small>
+          </div>
+
+          <div style={styles.comparativoItem}>
+            <span>Variação</span>
+            <strong style={{ color: diferencaMes > 0 ? '#dc3545' : diferencaMes < 0 ? '#198754' : '#333' }}>
+              {diferencaMes > 0 ? '↑ +' : diferencaMes < 0 ? '↓ ' : ''}{formatarValor(diferencaMes)}
+            </strong>
+            <small>{formatarPercentual(percentualMes)}</small>
+          </div>
+
+          <div style={styles.comparativoItem}>
+            <span>Previsão</span>
+            <strong>{formatarValor(previsaoProximoMes)}</strong>
+            <small>
+              {diferencaMes > 0
+                ? `Mantendo o crescimento atual, pode ultrapassar ${formatarValor(previsaoProximoMes)}`
+                : 'projeção para o próximo mês'}
+            </small>
+          </div>
+        </div>
+      </section>
+
+      <section className="print-card" style={styles.cardInsights}>
+        <strong>💡 Insights automáticos</strong>
+
+        {insights.map((insight, index) => (
+          <div key={index} style={styles.insightItem}>
+            <span>{emojiInsight(insight.tipo)}</span>
+            <p>{insight.texto}</p>
+          </div>
+        ))}
+      </section>
+
+      {!filtroCentro && ranking.length > 0 && (
+        <section className="print-card" style={styles.cardGrafico}>
+          <strong>📊 Distribuição por centro</strong>
+
+          <div style={styles.graficoLista}>
+            {topGrafico.map((item) => {
+              const percentualGrafico = totalGrafico ? (item.total / totalGrafico) * 100 : 0
+
+              return (
+                <div key={item.id} style={styles.graficoItem}>
+                  <div style={styles.graficoLinha}>
+                    <span>{item.nome}</span>
+                    <strong>{formatarPercentual(percentualGrafico)}</strong>
+                  </div>
+
+                  <div style={styles.barraFundo}>
+                    <div
+                      style={{
+                        ...styles.barraValor,
+                        width: `${Math.max(percentualGrafico, 4)}%`,
+                        background: corPorPercentual(percentualGrafico)
+                      }}
+                    />
+                  </div>
+
+                  <small>{formatarValor(item.total)}</small>
+
+                  {item.id === 'sem-centro' && (
+                    <>
+                      <small style={styles.alertaTexto}>
+                        ⚠️ Classifique para análise real
+                      </small>
+                      <small style={styles.alertaTexto}>
+                        Análise comprometida — dados incompletos
+                      </small>
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+
+      {topDespesas.length > 0 && (
+        <section className="print-card" style={styles.cardTopDespesas}>
+          <strong>🔥 Top 3 despesas</strong>
+
+          {topDespesas.map((conta, index) => (
+            <div key={conta.id} style={styles.topDespesaItem}>
+              <div>
+                <strong>{index + 1}. {conta.descricao}</strong>
+                <small>
+                  {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'}
+                </small>
+              </div>
+
+              <strong>{formatarValor(conta.valor)}</strong>
+            </div>
+          ))}
+        </section>
+      )}
+
+      <section className="no-print" style={styles.filtrosBox}>
+        <select style={styles.input} value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)}>
+          <option value="">Todos os centros</option>
+          {centros.map((centro) => (
+            <option key={centro.id} value={centro.id}>
+              {centro.nome}
+            </option>
+          ))}
+        </select>
+
+        <input
+          style={styles.input}
+          type="month"
+          value={filtroMes}
+          onChange={(e) => setFiltroMes(e.target.value)}
+        />
+
+        <div style={styles.filtros}>
+          <button style={filtroStatus === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('todas')}>Todas</button>
+          <button style={filtroStatus === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pendentes')}>Pendentes</button>
+          <button style={filtroStatus === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pagas')}>Pagas</button>
+          <button style={filtroStatus === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('vencidas')}>Vencidas</button>
+        </div>
+
+        <button style={styles.btnLimpar} onClick={limparFiltros}>
+          Limpar filtros
+        </button>
+      </section>
+
+      <section style={styles.infoFiltro}>
+        <strong>Resultado</strong>
+        <span>{ranking.length} centro(s) • {contasFiltradas.length} conta(s)</span>
+        <small>
+          Centro: {filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos'} •
+          Status: {filtroStatus} •
+          Mês: {filtroMes || 'Todos'}
+        </small>
+
+        {principalCentro && (
+          <small>
+            Centro dominante: {principalCentro.nome} ({formatarPercentual(principalCentro.percentual)})
+          </small>
+        )}
+
+        {percentualClassificacao < 80 && contasFiltradas.length > 0 && (
+          <small style={styles.alertaTexto}>
+            ⚠️ Análise limitada: existem contas sem centro de custo.
+          </small>
+        )}
+      </section>
+
+      {loading && <p>Carregando...</p>}
+
+      {!filtroCentro && (
+        <section style={styles.bloco}>
+          <h2 style={styles.subtitulo}>🏆 Ranking por Centro</h2>
+
+          {percentualClassificacao < 80 && contasFiltradas.length > 0 && (
+            <p style={styles.avisoRanking}>
+              📌 Este ranking considera contas classificadas e também contas sem centro. Classifique para uma leitura mais real.
+            </p>
+          )}
+
+          {ranking.length === 0 && (
+            <p style={styles.vazio}>Nenhum dado encontrado para os filtros selecionados.</p>
+          )}
+
+          {ranking.map((item, index) => {
+            const largura = maiorValor ? `${Math.max((item.total / maiorValor) * 100, 4)}%` : '0%'
+            const cor = corPorPercentual(item.percentual)
+
+            return (
+              <div className="print-card" key={item.id} style={styles.cardRanking}>
+                <div style={styles.rankingTopo}>
+                  <div>
+                    <strong>{index + 1}. {item.nome}{item.id === 'sem-centro' ? ' ⚠️' : ''}</strong>
+
+                    {index === 0 && (
+                      <span style={styles.maiorCusto}>
+                        🔝 Maior custo
+                      </span>
+                    )}
+
+                    <div style={styles.textoSecundario}>
+                      {formatarPercentual(item.percentual)} do total
+                    </div>
+
+                    {item.id === 'sem-centro' && (
+                      <small style={styles.alertaTexto}>
+                        ⚠️ Sem classificação — não representa área real do negócio
+                      </small>
+                    )}
+                  </div>
+
+                  <strong>{formatarValor(item.total)}</strong>
+                </div>
+
+                <div style={styles.barraFundo}>
+                  <div style={{ ...styles.barraValor, width: largura, background: cor }} />
+                </div>
+
+                <div style={styles.gridValores}>
+                  <span>Pago: {formatarValor(item.pago)}</span>
+                  <span>Pend: {formatarValor(item.pendente)}</span>
+                  <span>Venc: {formatarValor(item.vencido)}</span>
+                </div>
+              </div>
+            )
+          })}
+        </section>
+      )}
+
+      {filtroCentro && (
+        <section style={styles.bloco}>
+          <h2 style={styles.subtitulo}>📊 Resumo do Centro</h2>
+
+          <div className="print-card" style={styles.cardRanking}>
+            <div style={styles.rankingTopo}>
+              <strong>{centroSelecionado?.nome || 'Centro selecionado'}</strong>
+              <strong>{formatarValor(resumoCentro.total)}</strong>
+            </div>
+
+            <div style={styles.gridValores}>
+              <span>Pago: {formatarValor(resumoCentro.pago)}</span>
+              <span>Pend: {formatarValor(resumoCentro.pendente)}</span>
+              <span>Venc: {formatarValor(resumoCentro.vencido)}</span>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section style={styles.bloco}>
+        <h2 style={styles.subtitulo}>📄 Contas do relatório</h2>
+
+        {contasFiltradas.map((conta) => {
+          const vencida = estaVencida(conta.data_vencimento, conta.status)
+
+          return (
+            <div className="print-card" key={conta.id} style={styles.cardConta}>
+              <div style={styles.cardTopo}>
+                <strong>{conta.descricao}</strong>
+                <span>{formatarValor(conta.valor)}</span>
+              </div>
+
+              <div style={styles.textoSecundario}>
+                {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || '-'} • {vencida ? 'VENCIDO' : conta.status}
+              </div>
+            </div>
+          )
+        })}
+      </section>
     </div>
   )
+}
+
+// =========================
+// BLOCO 10 — STYLES
+// =========================
+const styles = {
+  page: {
+    padding: 16,
+    maxWidth: 760,
+    margin: 'auto',
+    fontFamily: 'Arial',
+    background: '#f8f9fa',
+    minHeight: '100vh',
+    paddingBottom: 80
+  },
+
+  topo: {
+    display: 'flex',
+    gap: 8,
+    marginBottom: 12,
+    flexWrap: 'wrap'
+  },
+
+  titulo: {
+    fontSize: 28,
+    marginBottom: 4
+  },
+
+  descricaoTela: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 0,
+    marginBottom: 12
+  },
+
+  subtitulo: {
+    fontSize: 22,
+    marginBottom: 12
+  },
+
+  bloco: {
+    marginTop: 24
+  },
+
+  resumo: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 8,
+    marginBottom: 12
+  },
+
+  boxTotal: {
+    background: '#fff',
+    padding: 12,
+    borderRadius: 14,
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+  },
+
+  boxPago: {
+    background: '#d4edda',
+    padding: 12,
+    borderRadius: 14,
+    display: 'flex',
+    flexDirection: 'column'
+  },
+
+  boxPendente: {
+    background: '#fff3cd',
+    padding: 12,
+    borderRadius: 14,
+    display: 'flex',
+    flexDirection: 'column'
+  },
+
+  boxVencido: {
+    background: '#f8d7da',
+    padding: 12,
+    borderRadius: 14,
+    display: 'flex',
+    flexDirection: 'column'
+  },
+
+  boxContexto: {
+    fontSize: 11,
+    color: '#555',
+    marginTop: 4
+  },
+
+  cardExecutivo: {
+    background: '#fff',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+  },
+
+  cardSaude: {
+    background: '#fff',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+  },
+
+  saudeTopo: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 8,
+    alignItems: 'center',
+    flexWrap: 'wrap'
+  },
+
+  statusBadge: {
+    border: '1px solid',
+    borderRadius: 999,
+    padding: '4px 8px',
+    fontSize: 12,
+    fontWeight: 'bold',
+    background: '#fff'
+  },
+
+  saudeLinha: {
+    display: 'flex',
+    gap: 8,
+    alignItems: 'center',
+    marginTop: 8
+  },
+
+  saudeFundo: {
+    flex: 1,
+    height: 10,
+    background: '#e9ecef',
+    borderRadius: 99,
+    overflow: 'hidden'
+  },
+
+  saudeBarra: {
+    height: '100%',
+    borderRadius: 99
+  },
+
+  scoreDetalhe: {
+    display: 'block',
+    marginTop: 8,
+    color: '#666',
+    fontSize: 11
+  },
+
+  cardQualidadeDados: {
+    background: '#fff',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+  },
+
+  qualidadeGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    gap: 8,
+    marginTop: 10,
+    marginBottom: 8
+  },
+
+  cardAlertaPrincipal: {
+    background: '#fff5f5',
+    border: '1px solid #f5c2c7',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+  },
+
+  btnAcao: {
+    background: '#dc3545',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 8,
+    padding: '8px 10px',
+    marginBottom: 8
+  },
+
+  cardComparativo: {
+    background: '#fff',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+  },
+
+  comparativoGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr',
+    gap: 8,
+    marginTop: 10
+  },
+
+  comparativoItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    background: '#f8f9fa',
+    padding: 10,
+    borderRadius: 10
+  },
+
+  cardInsights: {
+    background: '#fff',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+  },
+
+  insightItem: {
+    display: 'flex',
+    gap: 8,
+    alignItems: 'flex-start',
+    marginTop: 8,
+    fontSize: 14
+  },
+
+  cardGrafico: {
+    background: '#fff',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+  },
+
+  graficoLista: {
+    marginTop: 10,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10
+  },
+
+  graficoItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 5
+  },
+
+  graficoLinha: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 8,
+    fontSize: 13
+  },
+
+  cardTopDespesas: {
+    background: '#fff',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+  },
+
+  topDespesaItem: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 8,
+    alignItems: 'flex-start',
+    padding: '8px 0',
+    borderBottom: '1px solid #eee'
+  },
+
+  filtrosBox: {
+    background: '#fff',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+  },
+
+  input: {
+    width: '100%',
+    padding: 10,
+    borderRadius: 8,
+    border: '1px solid #ccc',
+    marginBottom: 8,
+    boxSizing: 'border-box'
+  },
+
+  filtros: {
+    display: 'flex',
+    gap: 6,
+    flexWrap: 'wrap',
+    marginBottom: 8
+  },
+
+  filtro: {
+    border: '1px solid #ccc',
+    background: '#fff',
+    padding: '7px 11px',
+    borderRadius: 8
+  },
+
+  filtroAtivo: {
+    border: 'none',
+    background: '#0d6efd',
+    color: '#fff',
+    padding: '7px 11px',
+    borderRadius: 8
+  },
+
+  infoFiltro: {
+    background: '#fff',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 12,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    fontSize: 14
+  },
+
+  cardRanking: {
+    background: '#fff',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 10,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+  },
+
+  rankingTopo: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 8
+  },
+
+  maiorCusto: {
+    display: 'block',
+    fontSize: 12,
+    color: '#198754',
+    marginTop: 3,
+    fontWeight: 'bold'
+  },
+
+  alertaTexto: {
+    color: '#dc3545',
+    fontWeight: 'bold'
+  },
+
+  barraFundo: {
+    height: 10,
+    background: '#e9ecef',
+    borderRadius: 99,
+    overflow: 'hidden',
+    marginBottom: 8
+  },
+
+  barraValor: {
+    height: '100%',
+    borderRadius: 99
+  },
+
+  gridValores: {
+    display: 'grid',
+    gridTemplateColumns: '1fr',
+    gap: 6,
+    fontSize: 12,
+    color: '#444'
+  },
+
+  cardConta: {
+    background: '#fff',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 8,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+  },
+
+  cardTopo: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 4
+  },
+
+  textoSecundario: {
+    fontSize: 12,
+    color: '#666'
+  },
+
+  vazio: {
+    opacity: 0.7,
+    fontSize: 14
+  },
+
+  avisoRanking: {
+    background: '#fff3cd',
+    border: '1px solid #ffe69c',
+    padding: 10,
+    borderRadius: 10,
+    fontSize: 12,
+    color: '#664d03'
+  },
+
+  btnVoltar: {
+    background: '#6c757d',
+    color: '#fff',
+    border: 'none',
+    padding: '8px 12px',
+    borderRadius: 8
+  },
+
+  btnPDF: {
+    background: '#6f42c1',
+    color: '#fff',
+    border: 'none',
+    padding: '8px 12px',
+    borderRadius: 8
+  },
+
+  btnCSV: {
+    background: '#198754',
+    color: '#fff',
+    border: 'none',
+    padding: '8px 12px',
+    borderRadius: 8
+  },
+
+  btnLimpar: {
+    background: '#6c757d',
+    color: '#fff',
+    border: 'none',
+    padding: '8px 12px',
+    borderRadius: 8
+  }
 }

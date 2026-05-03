@@ -141,6 +141,12 @@ export default function App() {
   // =========================
   const [menuAberto, setMenuAberto] = useState(false)
   const [telaAtual, setTelaAtual] = useState('contas')
+  const [mostrarFiltros, setMostrarFiltros] = useState(true)
+  const [mostrarContas, setMostrarContas] = useState(true)
+  const [mostrarNotas, setMostrarNotas] = useState(true)
+  const [mostrarConfigNegocio, setMostrarConfigNegocio] = useState(true)
+  const [mostrarConfigNotificacoes, setMostrarConfigNotificacoes] = useState(true)
+  const [mostrarConfigCentros, setMostrarConfigCentros] = useState(true)
   const [configuracoes, setConfiguracoes] = useState(null)
   const [notificacoesAtivas, setNotificacoesAtivas] = useState(true)
   const [configWhatsapp, setConfigWhatsapp] = useState(true)
@@ -729,6 +735,16 @@ export default function App() {
     setDataFinal('')
   }
 
+
+  function HeaderExpansivel({ titulo, aberto, onClick }) {
+    return (
+      <button style={styles.headerExpansivel} onClick={onClick}>
+        <span>{titulo}</span>
+        <strong>{aberto ? '−' : '+'}</strong>
+      </button>
+    )
+  }
+
   if (telaAtual === 'relatorios') {
     return (
       <Relatorios voltar={() => setTelaAtual('contas')} />
@@ -748,7 +764,14 @@ export default function App() {
         </button>
 
         <section style={styles.cardConfiguracao}>
-          <h2 style={styles.subtitulo}>🔔 Notificações</h2>
+          <HeaderExpansivel
+            titulo="🔔 Notificações"
+            aberto={mostrarConfigNotificacoes}
+            onClick={() => setMostrarConfigNotificacoes(!mostrarConfigNotificacoes)}
+          />
+
+          {mostrarConfigNotificacoes && (
+            <>
 
           <label style={styles.switchLinha}>
             <div>
@@ -810,10 +833,19 @@ export default function App() {
             value={diasAvisoPadrao}
             onChange={(e) => setDiasAvisoPadrao(e.target.value)}
           />
+            </>
+          )}
         </section>
 
         <section style={styles.cardConfiguracao}>
-          <h2 style={styles.subtitulo}>🏢 Dados do negócio</h2>
+          <HeaderExpansivel
+            titulo="🏢 Dados do negócio"
+            aberto={mostrarConfigNegocio}
+            onClick={() => setMostrarConfigNegocio(!mostrarConfigNegocio)}
+          />
+
+          {mostrarConfigNegocio && (
+            <>
 
           <input
             style={styles.input}
@@ -835,6 +867,8 @@ export default function App() {
             value={emailPadrao}
             onChange={(e) => setEmailPadrao(e.target.value)}
           />
+            </>
+          )}
         </section>
 
         <section style={styles.cardConfiguracao}>
@@ -851,6 +885,32 @@ export default function App() {
             <span>E-mail: {configEmail ? 'Ligado' : 'Desligado'}</span>
             <span>Push: {configPush ? 'Ligado' : 'Desligado'}</span>
           </div>
+        </section>
+
+
+        <section style={styles.cardConfiguracao}>
+          <HeaderExpansivel
+            titulo="🏷 Centros de custo"
+            aberto={mostrarConfigCentros}
+            onClick={() => setMostrarConfigCentros(!mostrarConfigCentros)}
+          />
+
+          {mostrarConfigCentros && (
+            <>
+              <p style={styles.textoNota}>
+                Cadastre e gerencie os centros usados nas contas e nos relatórios.
+              </p>
+
+              <div style={styles.configResumo}>
+                <span>Total de centros: {centros.length}</span>
+                <span>Uso nos filtros e relatórios</span>
+              </div>
+
+              <button style={styles.btnSalvar} onClick={() => setModalCentro(true)}>
+                Gerenciar centros
+              </button>
+            </>
+          )}
         </section>
 
         <button style={styles.btnSalvar} onClick={salvarConfiguracoes}>
@@ -1270,7 +1330,13 @@ export default function App() {
       <section style={styles.bloco}>
         {loading && <p>Carregando...</p>}
 
-        {contasFiltradas.map((conta) => {
+        <HeaderExpansivel
+          titulo="💰 Contas"
+          aberto={mostrarContas}
+          onClick={() => setMostrarContas(!mostrarContas)}
+        />
+
+        {mostrarContas && contasFiltradas.map((conta) => {
           const vencida = estaVencida((conta.vencimento || conta.data_vencimento), conta.status)
 
           return (
@@ -1321,7 +1387,14 @@ export default function App() {
       </section>
 
       <section className="no-print" style={styles.bloco}>
-        <h2 style={styles.subtitulo}>📝 Bloco de Notas</h2>
+        <HeaderExpansivel
+          titulo="📝 Bloco de Notas"
+          aberto={mostrarNotas}
+          onClick={() => setMostrarNotas(!mostrarNotas)}
+        />
+
+        {mostrarNotas && (
+          <>
 
         <input
           style={styles.input}
@@ -1354,6 +1427,9 @@ export default function App() {
           </div>
         ))}
       </section>
+
+          </>
+        )}
 
       {menuAberto && (
         <div style={styles.menuFab}>
@@ -1389,15 +1465,7 @@ export default function App() {
             🗑️ Lixeira
           </button>
 
-          <button
-            style={styles.menuItem}
-            onClick={() => {
-              setMenuAberto(false)
-              setModalCentro(true)
-            }}
-          >
-            🏷 Centro
-          </button>
+
         </div>
       )}
 
@@ -1468,6 +1536,20 @@ export default function App() {
 // BLOCO 12 — STYLES
 // =========================
 const styles = {
+  headerExpansivel: {
+    width: '100%',
+    background: '#fff',
+    border: '1px solid #e5e5e5',
+    borderRadius: 14,
+    padding: '12px 14px',
+    margin: '12px 0',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontSize: 20,
+    fontWeight: 'bold',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+  },
   page: {
     padding: 16,
     maxWidth: 700,

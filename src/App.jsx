@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
+import * as XLSX from 'xlsx'
 import Relatorios from './pages/Relatorios.jsx'
 import Login from './pages/Login.jsx'
 
@@ -151,6 +152,7 @@ export default function App() {
   const [carregandoAuth, setCarregandoAuth] = useState(true)
   const [empresaId, setEmpresaId] = useState(null)
   const [perfilUsuario, setPerfilUsuario] = useState('')
+  const [nomeUsuarioPerfil, setNomeUsuarioPerfil] = useState('')
   const [erroEmpresa, setErroEmpresa] = useState('')
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
   const [mostrarContas, setMostrarContas] = useState(true)
@@ -175,6 +177,9 @@ export default function App() {
     tipo: 'padrao',
     acao: null
   })
+  const [arquivoImportacao, setArquivoImportacao] = useState(null)
+  const [linhasImportacao, setLinhasImportacao] = useState([])
+  const [statusImportacao, setStatusImportacao] = useState('')
 
   useEffect(() => {
     let ativo = true
@@ -201,6 +206,7 @@ export default function App() {
         setNotasLixeira([])
         setEmpresaId(null)
         setPerfilUsuario('')
+        setNomeUsuarioPerfil('')
         setErroEmpresa('')
       }
     })
@@ -256,13 +262,23 @@ export default function App() {
     if (!vinculo?.empresa_id) {
       setEmpresaId(null)
       setPerfilUsuario('')
+      setNomeUsuarioPerfil('')
       setLoading(false)
       setErroEmpresa('Usuário sem empresa vinculada. Vincule este usuário em df_usuarios_empresas antes de continuar.')
       return
     }
 
+    const { data: perfilData } = await supabase
+      .from('profiles')
+      .select('name')
+      .eq('id', userId)
+      .limit(1)
+
+    const perfilEncontrado = Array.isArray(perfilData) ? perfilData[0] : perfilData
+
     setEmpresaId(vinculo.empresa_id)
     setPerfilUsuario(vinculo.perfil || 'usuario')
+    setNomeUsuarioPerfil(perfilEncontrado?.name || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name || '')
     await carregarTudo(vinculo.empresa_id)
     setLoading(false)
   }
@@ -933,11 +949,159 @@ export default function App() {
   }
 
 
+
+  function normalizarChaveExcel(chave) {
+    return String(chave || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+  }
+
+  function obterCampoExcel(linha, nomesPossiveis) {
+    const entradas = Object.entries(linha || {})
+    for (const nome of nomesPossiveis) {
+      const alvo = normalizarChaveExcel(nome)
+      const encontrado = entradas.find(([chave]) => normalizarChaveExcel(chave) === alvo)
+      if (encontrado) return encontrado[1]
+    }
+    return ''
+  }
+
+  function converterDataExcel(valor) {
+    if (!valor) return null
+
+    if (typeof valor === 'number') {
+      const data = XLSX.SSF.parse_date_code(valor)
+      if (!data) return null
+      return `${data.y}-${String(data.m).padStart(2, '0')}-${String(data.d).padStart(2, '0')}`
+    }
+
+    const texto = String(valor).trim()
+    if (!texto) return null
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) return texto
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(texto)) {
+      const [dia, mes, ano] = texto.split('/')
+      return `${ano}-${mes}-${dia}`
+    }
+
+    return formatarDataParaBanco(texto)
+  }
+
+  function converterValorExcel(valor) {
+    if (typeof valor === 'number') return valor
+    const texto = String(valor || '')
+      .replace(/R\$/gi, '')
+      .replace(/\./g, '')
+      .replace(',', '.')
+      .trim()
+    return Number(texto || 0)
+  }
+
+  async function lerArquivoExcel(event) {
+    const file = event.target.files?.[0]
+    setArquivoImportacao(file || null)
+    setLinhasImportacao([])
+    setStatusImportacao('')
+
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const dados = new Uint8Array(e.target.result)
+      const workbook = XLSX.read(dados, { type: 'array' })
+      const sheet = workbook.Sheets[workbook.SheetNames[0]]
+      const linhas = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+
+      const preparadas = linhas.map((linha, index) => {
+        const descricaoExcel = obterCampoExcel(linha, ['descricao', 'descrição', 'conta', 'nome', 'fornecedor'])
+        const valorExcel = obterCampoExcel(linha, ['valor', 'valor pago', 'total'])
+        const vencimentoExcel = obterCampoExcel(linha, ['vencimento', 'data vencimento', 'data_vencimento', 'data'])
+        const statusExcel = String(obterCampoExcel(linha, ['status', 'situacao', 'situação']) || 'pendente').toLowerCase()
+        const centroExcel = obterCampoExcel(linha, ['centro', 'centro de custo', 'categoria', 'setor'])
+
+        return {
+          linha: index + 2,
+          descricao: primeiraLetraMaiuscula(String(descricaoExcel || '').trim()),
+          valor: converterValorExcel(valorExcel),
+          data_vencimento: converterDataExcel(vencimentoExcel),
+          status: statusExcel.includes('pag') ? 'pago' : 'pendente',
+          centro: String(centroExcel || '').trim()
+        }
+      }).filter((linha) => linha.descricao || linha.valor || linha.data_vencimento)
+
+      setLinhasImportacao(preparadas)
+      setStatusImportacao(`${preparadas.length} linha(s) preparada(s) para revisão.`)
+    }
+
+    reader.readAsArrayBuffer(file)
+  }
+
+  async function importarExcelParaContas() {
+    if (!empresaId) {
+      alert('Usuário sem empresa vinculada.')
+      return
+    }
+
+    const invalidas = linhasImportacao.filter((linha) => !linha.descricao || !linha.valor || !linha.data_vencimento)
+    if (invalidas.length > 0) {
+      alert(`Existem ${invalidas.length} linha(s) sem descrição, valor ou vencimento. Corrija a planilha e importe novamente.`)
+      return
+    }
+
+    const centrosCriados = { ...Object.fromEntries(centros.map((centro) => [centro.nome.toLowerCase(), centro.id])) }
+
+    for (const linha of linhasImportacao) {
+      if (linha.centro && !centrosCriados[linha.centro.toLowerCase()]) {
+        const { data, error } = await supabase
+          .from('df_centros_custo')
+          .insert([{ nome: primeiraLetraMaiuscula(linha.centro), empresa_id: empresaId }])
+          .select()
+
+        if (error) {
+          alert(error.message)
+          return
+        }
+
+        const centroNovo = Array.isArray(data) ? data[0] : data
+        centrosCriados[linha.centro.toLowerCase()] = centroNovo?.id
+      }
+    }
+
+    const payload = linhasImportacao.map((linha) => ({
+      descricao: linha.descricao,
+      valor: linha.valor,
+      data_vencimento: linha.data_vencimento,
+      vencimento: linha.data_vencimento,
+      status: linha.status,
+      centro_custo_id: linha.centro ? centrosCriados[linha.centro.toLowerCase()] || null : null,
+      enviar_whatsapp: configWhatsapp,
+      enviar_email: configEmail,
+      enviar_push: configPush,
+      dias_aviso: Number(diasAvisoPadrao || 1),
+      empresa_id: empresaId
+    }))
+
+    const { error } = await supabase.from('df_contas').insert(payload)
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    setStatusImportacao(`${payload.length} conta(s) importada(s) com sucesso.`)
+    setArquivoImportacao(null)
+    setLinhasImportacao([])
+    await carregarTudo(empresaId)
+    navegarPara('contas')
+  }
+
   async function sairDoSistema() {
     await supabase.auth.signOut()
     setUsuarioLogado(null)
     setEmpresaId(null)
     setPerfilUsuario('')
+    setNomeUsuarioPerfil('')
     setErroEmpresa('')
     setTelaAtualState('contas')
   }
@@ -966,8 +1130,11 @@ export default function App() {
   }
 
   function nomeUsuario() {
+    const nome = nomeUsuarioPerfil || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name
+    if (nome) return String(nome).split(' ')[0]
+
     const email = usuarioLogado?.email || 'usuário'
-    return email.split('@')[0]
+    return primeiraLetraMaiuscula(email.split('@')[0])
   }
 
   if (carregandoAuth) {
@@ -998,6 +1165,79 @@ export default function App() {
     )
   }
 
+
+
+
+  if (telaAtual === 'importar') {
+    return (
+      <div style={styles.page}>
+        <section style={styles.usuarioTopo}>
+          <button style={styles.logoMarca} onClick={() => navegarPara('contas')}>
+            <img src="/icon-192.png" alt="Dona Flor" style={styles.logoImagem} />
+            <span>
+              <strong>Dona Flor</strong>
+              <small>Gestão Financeira</small>
+            </span>
+          </button>
+        </section>
+
+        <h1 style={styles.titulo}>📥 Importar do Excel</h1>
+
+        <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
+          ← Voltar
+        </button>
+
+        <section style={styles.cardConfiguracao}>
+          <h2 style={styles.subtitulo}>1. Enviar arquivo</h2>
+          <p style={styles.textoNota}>
+            Importe sua planilha do ano para alimentar o histórico e liberar os relatórios do app.
+          </p>
+
+          <label style={styles.uploadExcelBox}>
+            <strong>📊 Selecionar arquivo Excel</strong>
+            <small>Formatos aceitos: .xlsx, .xls</small>
+            <input type="file" accept=".xlsx,.xls" onChange={lerArquivoExcel} style={{ display: 'none' }} />
+          </label>
+
+          {arquivoImportacao && <p style={styles.textoNota}>Arquivo: <strong>{arquivoImportacao.name}</strong></p>}
+          {statusImportacao && <p style={styles.alertaSucesso}>{statusImportacao}</p>}
+        </section>
+
+        <section style={styles.cardConfiguracao}>
+          <h2 style={styles.subtitulo}>2. Colunas esperadas</h2>
+          <div style={styles.importDicasGrid}>
+            <span>Descrição</span>
+            <span>Valor</span>
+            <span>Vencimento</span>
+            <span>Status</span>
+            <span>Centro de custo</span>
+          </div>
+          <p style={styles.textoAjuda}>
+            O app também aceita nomes parecidos, como Conta, Data, Categoria e Situação.
+          </p>
+        </section>
+
+        {linhasImportacao.length > 0 && (
+          <section style={styles.cardConfiguracao}>
+            <h2 style={styles.subtitulo}>3. Revisar dados</h2>
+            <div style={styles.previewImportacao}>
+              {linhasImportacao.slice(0, 8).map((linha) => (
+                <div key={linha.linha} style={styles.previewLinha}>
+                  <strong>{linha.descricao || `Linha ${linha.linha}`}</strong>
+                  <small>{formatarData(linha.data_vencimento)} • {formatarValor(linha.valor)} • {linha.status} • {linha.centro || 'Sem centro'}</small>
+                </div>
+              ))}
+            </div>
+            {linhasImportacao.length > 8 && <small style={styles.textoAjuda}>Mostrando 8 de {linhasImportacao.length} linhas.</small>}
+
+            <button style={styles.btnSalvar} onClick={importarExcelParaContas}>
+              Importar {linhasImportacao.length} conta(s)
+            </button>
+          </section>
+        )}
+      </div>
+    )
+  }
 
 
 
@@ -1289,7 +1529,7 @@ export default function App() {
           titulo="📆 Restante do mês"
           total={totalMesAgenda}
           lista={contasMes}
-          cor="#198754"
+          cor="#14b8a6"
         />
       </div>
     )
@@ -1478,7 +1718,7 @@ export default function App() {
 
       <section className="no-print" style={styles.usuarioTopo}>
         <button style={styles.logoMarca} onClick={() => navegarPara('contas')}>
-          <span style={styles.logoIcone}>🌸</span>
+          <img src="/icon-192.png" alt="Dona Flor" style={styles.logoImagem} />
           <span>
             <strong>Dona Flor</strong>
             <small>Gestão Financeira</small>
@@ -1502,6 +1742,7 @@ export default function App() {
           <button style={styles.menuNavItem} onClick={() => navegarPara('contas')}>🏠 Painel</button>
           <button style={styles.menuNavItem} onClick={() => navegarPara('agenda')}>📅 Agenda financeira</button>
           <button style={styles.menuNavItem} onClick={() => navegarPara('relatorios')}>📊 Relatórios PRO+</button>
+          <button style={styles.menuNavItem} onClick={() => navegarPara('importar')}>📥 Importar Excel</button>
           <button style={styles.menuNavItem} onClick={() => navegarPara('lixeira')}>🗑️ Lixeira</button>
           <button style={styles.menuNavItem} onClick={() => navegarPara('configuracoes')}>⚙️ Configurações</button>
           <button style={{ ...styles.menuNavItem, color: '#dc3545', fontWeight: 'bold' }} onClick={sairDoSistema}>🚪 Sair</button>
@@ -1848,7 +2089,7 @@ export default function App() {
               <button
                 style={{
                   ...styles.btnConfirmarAcao,
-                  background: confirmacao.tipo === 'perigo' ? '#dc3545' : confirmacao.tipo === 'sucesso' ? '#198754' : '#0d6efd'
+                  background: confirmacao.tipo === 'perigo' ? '#dc3545' : confirmacao.tipo === 'sucesso' ? '#14b8a6' : '#0d6efd'
                 }}
                 onClick={executarConfirmacao}
               >
@@ -1886,7 +2127,7 @@ const styles = {
     border: 'none',
     padding: 0,
     textAlign: 'left',
-    color: '#123524'
+    color: '#064e3b'
   },
   logoIcone: {
     width: 42,
@@ -1898,6 +2139,13 @@ const styles = {
     justifyContent: 'center',
     fontSize: 24,
     boxShadow: 'inset 0 0 0 1px #cfe8da'
+  },
+  logoImagem: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    objectFit: 'cover',
+    boxShadow: '0 6px 16px rgba(20,184,166,0.25)'
   },
   usuarioAcoes: {
     display: 'flex',
@@ -1916,7 +2164,7 @@ const styles = {
     height: 42,
     borderRadius: 12,
     border: '1px solid #d8e8dd',
-    background: '#198754',
+    background: '#14b8a6',
     color: '#fff',
     fontSize: 22,
     fontWeight: 'bold'
@@ -1939,12 +2187,12 @@ const styles = {
     borderRadius: 12,
     padding: '12px 14px',
     fontSize: 15,
-    color: '#123524'
+    color: '#064e3b'
   },
   agendaResumoCard: {
     background: '#ffffff',
     border: '1px solid #dfe7e2',
-    borderLeft: '5px solid #198754',
+    borderLeft: '5px solid #14b8a6',
     padding: 14,
     borderRadius: 16,
     marginBottom: 12,
@@ -1962,9 +2210,47 @@ const styles = {
   btnAgendaCompleta: {
     border: 'none',
     borderRadius: 10,
-    background: '#198754',
+    background: '#14b8a6',
     color: '#fff',
     padding: '10px 12px',
+    fontWeight: 'bold'
+  },
+  uploadExcelBox: {
+    border: '2px dashed #99f6e4',
+    background: '#f0fdfa',
+    borderRadius: 16,
+    padding: 24,
+    textAlign: 'center',
+    display: 'grid',
+    gap: 6,
+    color: '#0f766e',
+    cursor: 'pointer'
+  },
+  importDicasGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 8,
+    margin: '12px 0'
+  },
+  previewImportacao: {
+    display: 'grid',
+    gap: 8,
+    marginBottom: 12
+  },
+  previewLinha: {
+    background: '#f8fafc',
+    border: '1px solid #e5e7eb',
+    borderRadius: 12,
+    padding: 10,
+    display: 'grid',
+    gap: 4
+  },
+  alertaSucesso: {
+    background: '#ecfdf5',
+    border: '1px solid #a7f3d0',
+    color: '#047857',
+    borderRadius: 12,
+    padding: 10,
     fontWeight: 'bold'
   },
   btnSair: {
@@ -2046,7 +2332,7 @@ const styles = {
     maxWidth: 700,
     margin: 'auto',
     fontFamily: 'Arial',
-    background: '#f8f9fa',
+    background: '#f8fafc',
     minHeight: '100vh',
     paddingBottom: 100
   },
@@ -2190,7 +2476,7 @@ const styles = {
     gridTemplateColumns: '1fr 1fr',
     gap: 8,
     fontSize: 13,
-    background: '#f8f9fa',
+    background: '#f8fafc',
     padding: 10,
     borderRadius: 10
   },
@@ -2204,7 +2490,7 @@ const styles = {
     boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
   },
   itemAgenda: {
-    background: '#f8f9fa',
+    background: '#f8fafc',
     padding: 10,
     borderRadius: 10,
     marginTop: 8,
@@ -2248,7 +2534,7 @@ const styles = {
   textoLiberado: {
     display: 'block',
     marginTop: 8,
-    color: '#198754',
+    color: '#14b8a6',
     fontWeight: 'bold'
   },
   cardNota: {
@@ -2315,7 +2601,7 @@ const styles = {
     borderRadius: 8
   },
   btnVerde: {
-    background: '#198754',
+    background: '#14b8a6',
     color: '#fff',
     border: 'none',
     padding: '7px 10px',
@@ -2328,7 +2614,7 @@ const styles = {
     width: 58,
     height: 58,
     borderRadius: '50%',
-    background: '#198754',
+    background: '#14b8a6',
     color: '#fff',
     border: 'none',
     fontSize: 30,
@@ -2364,7 +2650,7 @@ const styles = {
     zIndex: 999
   },
   blocoNotificacaoConta: {
-    background: '#f8f9fa',
+    background: '#f8fafc',
     border: '1px solid #e5e5e5',
     borderRadius: 12,
     padding: 10,
@@ -2429,7 +2715,7 @@ const styles = {
     padding: 10,
     border: 'none',
     borderRadius: 8,
-    background: '#198754',
+    background: '#14b8a6',
     color: '#fff',
     marginBottom: 8
   },

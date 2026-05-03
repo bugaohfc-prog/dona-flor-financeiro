@@ -4,9 +4,19 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#F1F5F9",
+  "background_color": "#F8FAFC",
   "theme_color": "#0F766E",
   "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",

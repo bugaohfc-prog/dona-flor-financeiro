@@ -1693,6 +1693,189 @@ export default function App() {
             display: none;
           }
 
+          .desktop-sidebar { display: none; }
+          .desktop-quick-actions { display: none; }
+
+          @media (min-width: 980px) {
+            body { background: #eef7f5 !important; }
+
+            .app-page {
+              max-width: none !important;
+              width: 100% !important;
+              min-height: 100vh !important;
+              margin: 0 !important;
+              padding: 24px 32px 80px 300px !important;
+              box-sizing: border-box !important;
+              background: linear-gradient(180deg, #f8fafc 0%, #eef7f5 100%) !important;
+            }
+
+            .desktop-sidebar {
+              display: flex !important;
+              position: fixed;
+              left: 24px;
+              top: 24px;
+              bottom: 24px;
+              width: 244px;
+              padding: 18px;
+              border-radius: 24px;
+              background: linear-gradient(180deg, #064e3b 0%, #0f766e 48%, #14b8a6 100%);
+              color: white;
+              box-shadow: 0 24px 60px rgba(15, 118, 110, 0.28);
+              z-index: 60;
+              flex-direction: column;
+              gap: 14px;
+              box-sizing: border-box;
+            }
+
+            .desktop-sidebar-brand {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              padding-bottom: 14px;
+              border-bottom: 1px solid rgba(255,255,255,.18);
+            }
+
+            .desktop-sidebar-brand img {
+              width: 48px;
+              height: 48px;
+              border-radius: 16px;
+              background: white;
+            }
+
+            .desktop-sidebar-brand strong { display: block; font-size: 17px; }
+            .desktop-sidebar-brand small { color: rgba(255,255,255,.78); }
+
+            .desktop-sidebar-nav { display: grid; gap: 8px; margin-top: 6px; }
+            .desktop-sidebar-nav button {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              width: 100%;
+              border: 1px solid rgba(255,255,255,.14);
+              background: rgba(255,255,255,.10);
+              color: white;
+              border-radius: 14px;
+              padding: 11px 12px;
+              text-align: left;
+              font-weight: 700;
+              cursor: pointer;
+            }
+            .desktop-sidebar-nav button:hover { background: rgba(255,255,255,.20); }
+            .desktop-sidebar-spacer { flex: 1; }
+            .desktop-sidebar-user {
+              border-radius: 18px;
+              padding: 12px;
+              background: rgba(255,255,255,.12);
+              border: 1px solid rgba(255,255,255,.16);
+            }
+            .desktop-sidebar-user strong { display:block; }
+            .desktop-sidebar-user small { color: rgba(255,255,255,.8); }
+
+            .top-shell {
+              max-width: 1280px;
+              margin: 0 auto 22px auto !important;
+              padding: 16px 18px !important;
+              border-radius: 24px !important;
+            }
+
+            .mobile-menu-trigger { display: none !important; }
+
+            .desktop-quick-actions {
+              display: flex !important;
+              gap: 10px;
+              align-items: center;
+            }
+
+            .desktop-quick-actions button {
+              border: none;
+              border-radius: 13px;
+              padding: 10px 14px;
+              color: white;
+              font-weight: 800;
+              cursor: pointer;
+              box-shadow: 0 10px 22px rgba(20,184,166,.22);
+            }
+
+            .desktop-quick-actions .primary { background: linear-gradient(135deg, #14b8a6, #0f766e); }
+            .desktop-quick-actions .secondary { background: #111827; }
+
+            .dashboard-title-row {
+              max-width: 1280px;
+              margin: 0 auto !important;
+              display: flex;
+              align-items: end;
+              justify-content: space-between;
+              gap: 20px;
+            }
+
+            .main-title { font-size: 34px !important; margin: 0 0 16px 0 !important; }
+
+            .summary-grid {
+              max-width: 1280px;
+              margin: 0 auto 18px auto !important;
+              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+              gap: 14px !important;
+            }
+            .summary-grid > div {
+              min-height: 96px;
+              border: 1px solid rgba(15, 118, 110, 0.08);
+              box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07) !important;
+            }
+            .summary-grid span { font-size: 13px; color: #475569; }
+            .summary-grid strong { font-size: 25px; margin-top: 6px; }
+
+            .agenda-card-polished {
+              max-width: 1280px;
+              margin: 0 auto 18px auto !important;
+              grid-template-columns: 1.1fr 1.4fr auto !important;
+              align-items: center !important;
+              padding: 18px !important;
+              border-radius: 22px !important;
+            }
+            .agenda-card-polished > div:first-child strong { display:block; font-size: 18px; }
+            .agenda-card-polished > div:first-child small { display:block; margin-top: 3px; color:#64748b; }
+            .agenda-card-polished button { min-width: 190px; height: 42px; }
+
+            .filters-desktop {
+              max-width: 1280px;
+              margin: 0 auto 16px auto !important;
+              display: grid !important;
+              grid-template-columns: 1.4fr .9fr .8fr 1fr auto !important;
+              align-items: start;
+              gap: 10px !important;
+              padding: 16px !important;
+              border-radius: 22px !important;
+            }
+            .filters-desktop input, .filters-desktop select { height: 42px !important; margin-bottom: 0 !important; }
+            .filters-desktop .status-tabs { grid-column: 1 / -1; }
+            .filters-desktop .export-actions { justify-content: flex-end; margin-top: 0 !important; }
+
+            .result-summary, .content-block {
+              max-width: 1280px;
+              margin-left: auto !important;
+              margin-right: auto !important;
+            }
+
+            .content-block {
+              margin-top: 18px !important;
+            }
+
+            .account-card-desktop {
+              display: grid !important;
+              grid-template-columns: minmax(240px, 1.5fr) 180px 1fr auto;
+              align-items: center;
+              gap: 14px;
+              padding: 16px !important;
+              border-radius: 18px !important;
+            }
+            .account-card-desktop > div { margin: 0 !important; }
+            .account-card-desktop .account-actions { justify-content: flex-end; margin-top: 0 !important; }
+
+            .notes-block { max-width: 1280px; margin-left: auto !important; margin-right: auto !important; }
+
+            .mobile-fab, .mobile-fab-menu { display: none !important; }
+          }
+
           @media print {
             html,
             body {
@@ -1771,7 +1954,7 @@ export default function App() {
         Relatório gerado pelo Sistema Dona Flor Financeiro
       </div>
 
-      <section className="no-print" style={styles.usuarioTopo}>
+      <section className="no-print top-shell" style={styles.usuarioTopo}>
         <button style={styles.logoMarca} onClick={() => navegarPara('contas')}>
           <img src="/icon-192.png" alt="Dona Flor" style={styles.logoImagem} />
           <span>
@@ -1786,11 +1969,42 @@ export default function App() {
             <small>{perfilUsuario || 'usuário'}</small>
           </div>
 
-          <button style={styles.btnMenuTopo} onClick={() => setMenuNavegacaoAberto(!menuNavegacaoAberto)}>
+          <div className="desktop-quick-actions">
+            <button className="primary" onClick={abrirNovaConta}>+ Nova conta</button>
+            <button className="secondary" onClick={abrirNovaNota}>+ Nova nota</button>
+          </div>
+
+          <button className="mobile-menu-trigger" style={styles.btnMenuTopo} onClick={() => setMenuNavegacaoAberto(!menuNavegacaoAberto)}>
             ☰
           </button>
         </div>
       </section>
+
+      <aside className="desktop-sidebar no-print">
+        <div className="desktop-sidebar-brand">
+          <img src="/icon-192.png" alt="Dona Flor" />
+          <div>
+            <strong>Dona Flor</strong>
+            <small>Gestão Financeira</small>
+          </div>
+        </div>
+        <nav className="desktop-sidebar-nav">
+          <button onClick={() => navegarPara('contas')}>🏠 Painel</button>
+          <button onClick={() => navegarPara('agenda')}>📅 Agenda financeira</button>
+          <button onClick={() => navegarPara('relatorios')}>📊 Relatórios PRO+</button>
+          <button onClick={() => navegarPara('importar')}>📥 Importar CSV</button>
+          <button onClick={() => navegarPara('lixeira')}>🗑️ Lixeira</button>
+          <button onClick={() => navegarPara('configuracoes')}>⚙️ Configurações</button>
+        </nav>
+        <div className="desktop-sidebar-spacer" />
+        <div className="desktop-sidebar-user">
+          <strong>Olá, {nomeUsuario()}</strong>
+          <small>{perfilUsuario || 'usuário'}</small>
+        </div>
+        <nav className="desktop-sidebar-nav">
+          <button onClick={sairDoSistema}>🚪 Sair</button>
+        </nav>
+      </aside>
 
       {menuNavegacaoAberto && (
         <div className="no-print" style={styles.menuBackdrop} onClick={() => setMenuNavegacaoAberto(false)}>
@@ -1831,10 +2045,10 @@ export default function App() {
         </div>
       )}
 
-      <section>
-        <h1 style={styles.titulo}>📊 Contas a Pagar</h1>
+      <section className="dashboard-title-row">
+        <h1 className="main-title" style={styles.titulo}>📊 Contas a Pagar</h1>
 
-        <div style={styles.resumo}>
+        <div className="summary-grid" style={styles.resumo}>
           <div style={styles.boxTotal}>
             <span>Total</span>
             <strong>{formatarValor(total)}</strong>
@@ -1857,7 +2071,7 @@ export default function App() {
         </div>
       </section>
 
-      <section className="no-print" style={styles.agendaResumoCard}>
+      <section className="no-print agenda-card-polished" style={styles.agendaResumoCard}>
         <div>
           <strong>📅 Agenda financeira</strong>
           <small>Resumo rápido dos próximos vencimentos</small>
@@ -1870,7 +2084,7 @@ export default function App() {
         <button style={styles.btnAgendaCompleta} onClick={() => navegarPara('agenda')}>Ver agenda completa</button>
       </section>
 
-      <section className="no-print" style={styles.filtrosBox}>
+      <section className="no-print filters-desktop" style={styles.filtrosBox}>
         <input
           style={styles.input}
           placeholder="Buscar conta..."
@@ -1878,7 +2092,7 @@ export default function App() {
           onChange={(e) => setBusca(e.target.value)}
         />
 
-        <div style={styles.filtros}>
+        <div className="status-tabs" style={styles.filtros}>
           <button style={filtroStatus === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('todas')}>Todas</button>
           <button style={filtroStatus === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pendentes')}>Pendentes</button>
           <button style={filtroStatus === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pagas')}>Pagas</button>
@@ -1921,14 +2135,14 @@ export default function App() {
           />
         </div>
 
-        <div style={styles.acoes}>
+        <div className="export-actions" style={styles.acoes}>
           <button style={styles.btnCinza} onClick={limparFiltros}>Limpar</button>
           <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
           <button style={styles.btnVerde} onClick={exportarCSV}>CSV/Editável</button>
         </div>
       </section>
 
-      <section style={styles.resumoFiltro}>
+      <section className="result-summary" style={styles.resumoFiltro}>
         <strong>Resultado filtrado</strong>
         <span>{contasFiltradas.length} conta(s) • Total {formatarValor(total)}</span>
         <small>
@@ -1938,7 +2152,7 @@ export default function App() {
         </small>
       </section>
 
-      <section style={styles.bloco}>
+      <section className="content-block" style={styles.bloco}>
         {loading && <p>Carregando...</p>}
 
         <HeaderExpansivel
@@ -1952,7 +2166,7 @@ export default function App() {
 
           return (
             <div
-              className="print-card"
+              className="print-card account-card-desktop"
               key={conta.id}
               style={{
                 ...styles.cardConta,
@@ -1973,7 +2187,7 @@ export default function App() {
                 {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || '-'} • {vencida ? 'VENCIDO' : conta.status}
               </div>
 
-              <div style={styles.acoes}>
+              <div className="account-actions" style={styles.acoes}>
                 {conta.status !== 'pago' ? (
                   <button style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>
                     Pago
@@ -1997,7 +2211,7 @@ export default function App() {
         })}
       </section>
 
-      <section className="no-print" style={styles.bloco}>
+      <section className="no-print notes-block" style={styles.bloco}>
         <HeaderExpansivel
           titulo="📝 Bloco de Notas"
           aberto={mostrarNotas}
@@ -2042,13 +2256,13 @@ export default function App() {
       </section>
 
       {menuAberto && (
-        <div style={styles.menuFab}>
+        <div className="mobile-fab-menu" style={styles.menuFab}>
           <button style={styles.menuItem} onClick={abrirNovaConta}>💰 Nova conta</button>
           <button style={styles.menuItem} onClick={abrirNovaNota}>📝 Nova nota</button>
         </div>
       )}
 
-      <button style={styles.fab} onClick={() => setMenuAberto(!menuAberto)}>
+      <button className="mobile-fab" style={styles.fab} onClick={() => setMenuAberto(!menuAberto)}>
         {menuAberto ? '×' : '+'}
       </button>
 

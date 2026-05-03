@@ -1419,7 +1419,7 @@ export default function App() {
                   Editar
                 </button>
 
-                <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
+                <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Essa ação pode ser restaurada pela lixeira.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
                   Excluir
                 </button>
               </div>
@@ -1462,7 +1462,7 @@ export default function App() {
                 Editar
               </button>
 
-              <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>
+              <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Essa ação pode ser restaurada pela lixeira.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>
                 Excluir
               </button>
             </div>
@@ -1474,8 +1474,20 @@ export default function App() {
 
       {menuAberto && (
         <div style={styles.menuFab}>
-          <button style={styles.menuItem} onClick={abrirNovaConta}>💰 Nova conta</button>
-          <button style={styles.menuItem} onClick={abrirNovaNota}>📝 Nova nota</button>
+          <div style={styles.menuSecao}>⚡ AÇÕES RÁPIDAS</div>
+
+          <button style={styles.menuItem} onClick={abrirNovaConta}>
+            💰 Nova conta
+          </button>
+
+          <button style={styles.menuItem} onClick={abrirNovaNota}>
+            📝 Nova nota
+          </button>
+
+          <div style={styles.menuSeparador} />
+
+          <div style={styles.menuSecao}>📊 GESTÃO</div>
+
           <button
             style={styles.menuItem}
             onClick={() => {
@@ -1506,8 +1518,12 @@ export default function App() {
             🗑️ Lixeira
           </button>
 
+          <div style={styles.menuSeparador} />
+
+          <div style={styles.menuSecao}>⚙️ SISTEMA</div>
+
           <button
-            style={styles.menuItem}
+            style={{ ...styles.menuItem, ...styles.menuItemDestaque }}
             onClick={() => {
               setMenuAberto(false)
               setTelaAtual('configuracoes')
@@ -1515,8 +1531,6 @@ export default function App() {
           >
             ⚙️ Configurações
           </button>
-
-
         </div>
       )}
 
@@ -2023,21 +2037,46 @@ const styles = {
   },
   menuFab: {
     position: 'fixed',
-    right: 20,
+    right: 16,
     bottom: 86,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-    zIndex: 19
+    width: 260,
+    maxWidth: 'calc(100vw - 32px)',
+    maxHeight: '70vh',
+    overflowY: 'auto',
+    background: '#fff',
+    border: '1px solid #e5e5e5',
+    borderRadius: 18,
+    padding: 12,
+    boxShadow: '0 12px 32px rgba(0,0,0,0.22)',
+    zIndex: 1200
+  },
+  menuSecao: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#6c757d',
+    letterSpacing: 0.5,
+    margin: '4px 4px 8px'
+  },
+  menuSeparador: {
+    height: 1,
+    background: '#eee',
+    margin: '10px 0'
   },
   menuItem: {
+    width: '100%',
     background: '#fff',
-    border: '1px solid #ddd',
-    borderRadius: 10,
-    padding: '10px 12px',
-    fontSize: 14,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    textAlign: 'left'
+    border: '1px solid #eee',
+    borderRadius: 12,
+    padding: '11px 12px',
+    fontSize: 15,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    textAlign: 'left',
+    marginBottom: 8
+  },
+  menuItemDestaque: {
+    background: '#f3f4f6',
+    border: '1px solid #d7dce2',
+    fontWeight: 'bold'
   },
   overlay: {
     position: 'fixed',

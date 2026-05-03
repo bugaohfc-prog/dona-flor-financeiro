@@ -1506,6 +1506,16 @@ export default function App() {
             🗑️ Lixeira
           </button>
 
+          <button
+            style={styles.menuItem}
+            onClick={() => {
+              setMenuAberto(false)
+              setTelaAtual('configuracoes')
+            }}
+          >
+            ⚙️ Configurações
+          </button>
+
 
         </div>
       )}

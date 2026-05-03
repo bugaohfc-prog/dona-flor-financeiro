@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import Relatorios from './pages/Relatorios.jsx'
+import Login from './pages/Login.jsx'
 
 export default function App() {
   // =========================
@@ -145,7 +146,9 @@ export default function App() {
   // =========================
   const [menuAberto, setMenuAberto] = useState(false)
   const [telaAtual, setTelaAtual] = useState('contas')
-  const [mostrarFiltros, setMostrarFiltros] = useState(false)
+  const [usuarioLogado, setUsuarioLogado] = useState(null)
+  const [carregandoAuth, setCarregandoAuth] = useState(true)
+  const [mostrarFiltros, setMostrarFiltros] = useState(true)
   const [mostrarContas, setMostrarContas] = useState(true)
   const [mostrarNotas, setMostrarNotas] = useState(true)
   const [mostrarConfigNegocio, setMostrarConfigNegocio] = useState(true)
@@ -170,8 +173,45 @@ export default function App() {
   })
 
   useEffect(() => {
-    carregarTudo()
+    let ativo = true
+
+    async function verificarSessao() {
+      const { data } = await supabase.auth.getSession()
+
+      if (!ativo) return
+
+      setUsuarioLogado(data.session?.user || null)
+      setCarregandoAuth(false)
+    }
+
+    verificarSessao()
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUsuarioLogado(session?.user || null)
+
+      if (!session) {
+        setContas([])
+        setNotas([])
+        setCentros([])
+        setContasLixeira([])
+        setNotasLixeira([])
+      }
+    })
+
+    return () => {
+      ativo = false
+      listener.subscription.unsubscribe()
+    }
   }, [])
+
+  useEffect(() => {
+    if (!usuarioLogado) {
+      setLoading(false)
+      return
+    }
+
+    carregarTudo()
+  }, [usuarioLogado])
 
   async function carregarTudo() {
     setLoading(true)
@@ -752,34 +792,6 @@ export default function App() {
 
 
 
-
-  function textoMesFiltro(mes) {
-    if (!mes) return 'Todos'
-    const [ano, mesNumero] = String(mes).split('-').map(Number)
-    if (!ano || !mesNumero) return 'Todos'
-    return new Date(ano, mesNumero - 1, 1).toLocaleDateString('pt-BR', {
-      month: 'short',
-      year: 'numeric'
-    })
-  }
-
-  function nomeCentroFiltro(id) {
-    if (!id) return 'Todos'
-    const centro = centros.find((item) => String(item.id) === String(id))
-    return centro?.nome || 'Selecionado'
-  }
-
-  function quantidadeFiltrosAtivos() {
-    let total = 0
-    if (busca) total += 1
-    if (filtroStatus !== 'todas') total += 1
-    if (filtroCentro) total += 1
-    if (filtroMes) total += 1
-    if (dataInicial) total += 1
-    if (dataFinal) total += 1
-    return total
-  }
-
   function abrirConfirmacao({ titulo, mensagem, textoConfirmar = 'Confirmar', tipo = 'padrao', acao }) {
     setConfirmacao({
       aberto: true,
@@ -810,6 +822,13 @@ export default function App() {
     fecharConfirmacao()
   }
 
+
+  async function sairDoSistema() {
+    await supabase.auth.signOut()
+    setUsuarioLogado(null)
+    setTelaAtual('contas')
+  }
+
   function HeaderExpansivel({ titulo, aberto, onClick }) {
     return (
       <button style={styles.headerExpansivel} onClick={onClick}>
@@ -817,6 +836,18 @@ export default function App() {
         <strong>{aberto ? '−' : '+'}</strong>
       </button>
     )
+  }
+
+  if (carregandoAuth) {
+    return (
+      <div style={styles.page}>
+        <h2>Carregando...</h2>
+      </div>
+    )
+  }
+
+  if (!usuarioLogado) {
+    return <Login onLogin={setUsuarioLogado} />
   }
 
   if (telaAtual === 'relatorios') {
@@ -1164,7 +1195,7 @@ export default function App() {
                     Restaurar
                   </button>
 
-                  <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir definitivamente', mensagem: `Excluir definitivamente a conta ${conta.descricao}? Essa ação é irreversível e não poderá ser desfeita.`, textoConfirmar: 'Excluir definitivo', tipo: 'perigo', acao: () => excluirContaDefinitivo(conta) })}>
+                  <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir definitivamente', mensagem: `Excluir definitivamente a conta ${conta.descricao}? Essa ação não poderá ser desfeita.`, textoConfirmar: 'Excluir definitivo', tipo: 'perigo', acao: () => excluirContaDefinitivo(conta) })}>
                     Excluir definitivo
                   </button>
                 </div>
@@ -1201,7 +1232,7 @@ export default function App() {
                     Restaurar
                   </button>
 
-                  <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir definitivamente', mensagem: `Excluir definitivamente a nota ${nota.titulo}? Essa ação é irreversível e não poderá ser desfeita.`, textoConfirmar: 'Excluir definitivo', tipo: 'perigo', acao: () => excluirNotaDefinitivo(nota) })}>
+                  <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir definitivamente', mensagem: `Excluir definitivamente a nota ${nota.titulo}? Essa ação não poderá ser desfeita.`, textoConfirmar: 'Excluir definitivo', tipo: 'perigo', acao: () => excluirNotaDefinitivo(nota) })}>
                     Excluir definitivo
                   </button>
                 </div>
@@ -1303,6 +1334,17 @@ export default function App() {
         Relatório gerado pelo Sistema Dona Flor Financeiro
       </div>
 
+      <section className="no-print" style={styles.usuarioTopo}>
+        <div>
+          <strong>Dona Flor Financeiro</strong>
+          <small>{usuarioLogado?.email}</small>
+        </div>
+
+        <button style={styles.btnSair} onClick={sairDoSistema}>
+          Sair
+        </button>
+      </section>
+
       <section>
         <h1 style={styles.titulo}>📊 Contas a Pagar</h1>
 
@@ -1329,111 +1371,62 @@ export default function App() {
         </div>
       </section>
 
-      <section className="no-print" style={styles.atalhosTopo}>
-        <button style={styles.atalhoBotao} onClick={() => setTelaAtual('relatorios')}>
-          📊 Relatórios
-        </button>
+      <section className="no-print" style={styles.filtrosBox}>
+        <input
+          style={styles.input}
+          placeholder="Buscar conta..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+        />
 
-        <button style={styles.atalhoBotao} onClick={() => setTelaAtual('agenda')}>
-          📅 Agenda
-        </button>
-
-        <button style={styles.atalhoBotao} onClick={() => setTelaAtual('lixeira')}>
-          🗑️ Lixeira
-        </button>
-
-        <button style={styles.atalhoBotaoDestaque} onClick={() => setTelaAtual('configuracoes')}>
-          ⚙️ Config.
-        </button>
-      </section>
-
-      <section className="no-print" style={styles.filtrosBoxPro}>
-        <button
-          style={styles.filtroHeaderPro}
-          onClick={() => setMostrarFiltros(!mostrarFiltros)}
-        >
-          <div>
-            <strong>🔎 Filtros</strong>
-            <small>
-              {quantidadeFiltrosAtivos() > 0
-                ? `${quantidadeFiltrosAtivos()} filtro(s) ativo(s)`
-                : 'Toque para refinar a busca'}
-            </small>
-          </div>
-
-          <span>{mostrarFiltros ? '−' : '+'}</span>
-        </button>
-
-        <div style={styles.chipsFiltros}>
-          <span style={styles.chipFiltro}>Centro: {nomeCentroFiltro(filtroCentro)}</span>
-          <span style={styles.chipFiltro}>Status: {filtroStatus}</span>
-          <span style={styles.chipFiltro}>Mês: {textoMesFiltro(filtroMes)}</span>
+        <div style={styles.filtros}>
+          <button style={filtroStatus === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('todas')}>Todas</button>
+          <button style={filtroStatus === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pendentes')}>Pendentes</button>
+          <button style={filtroStatus === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pagas')}>Pagas</button>
+          <button style={filtroStatus === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('vencidas')}>Vencidas</button>
         </div>
 
-        {mostrarFiltros && (
-          <div style={styles.filtroConteudoPro}>
-            <label style={styles.labelFiltro}>Buscar conta</label>
-            <input
-              style={styles.inputFiltroPro}
-              placeholder="Digite o nome da conta..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-            />
+        <select
+          style={styles.input}
+          value={filtroCentro}
+          onChange={(e) => setFiltroCentro(e.target.value)}
+        >
+          <option value="">Todos os centros</option>
+          {centros.map((centro) => (
+            <option key={centro.id} value={centro.id}>
+              {centro.nome}
+            </option>
+          ))}
+        </select>
 
-            <label style={styles.labelFiltro}>Status</label>
-            <div style={styles.statusGridPro}>
-              <button style={filtroStatus === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('todas')}>Todas</button>
-              <button style={filtroStatus === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pendentes')}>Pendentes</button>
-              <button style={filtroStatus === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pagas')}>Pagas</button>
-              <button style={filtroStatus === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('vencidas')}>Vencidas</button>
-            </div>
+        <input
+          style={styles.input}
+          type="month"
+          value={filtroMes}
+          onChange={(e) => setFiltroMes(e.target.value)}
+        />
 
-            <label style={styles.labelFiltro}>Centro de custo</label>
-            <select
-              style={styles.inputFiltroPro}
-              value={filtroCentro}
-              onChange={(e) => setFiltroCentro(e.target.value)}
-            >
-              <option value="">Todos os centros</option>
-              {centros.map((centro) => (
-                <option key={centro.id} value={centro.id}>
-                  {centro.nome}
-                </option>
-              ))}
-            </select>
+        <div style={styles.datas}>
+          <input
+            style={styles.input}
+            type="date"
+            value={dataInicial}
+            onChange={(e) => setDataInicial(e.target.value)}
+          />
 
-            <label style={styles.labelFiltro}>Mês</label>
-            <input
-              style={styles.inputFiltroPro}
-              type="month"
-              value={filtroMes}
-              onChange={(e) => setFiltroMes(e.target.value)}
-            />
+          <input
+            style={styles.input}
+            type="date"
+            value={dataFinal}
+            onChange={(e) => setDataFinal(e.target.value)}
+          />
+        </div>
 
-            <label style={styles.labelFiltro}>Período</label>
-            <div style={styles.datas}>
-              <input
-                style={styles.inputFiltroPro}
-                type="date"
-                value={dataInicial}
-                onChange={(e) => setDataInicial(e.target.value)}
-              />
-
-              <input
-                style={styles.inputFiltroPro}
-                type="date"
-                value={dataFinal}
-                onChange={(e) => setDataFinal(e.target.value)}
-              />
-            </div>
-
-            <div style={styles.botoesFiltroPro}>
-              <button style={styles.btnCinza} onClick={limparFiltros}>Limpar</button>
-              <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
-              <button style={styles.btnVerde} onClick={exportarCSV}>CSV</button>
-            </div>
-          </div>
-        )}
+        <div style={styles.acoes}>
+          <button style={styles.btnCinza} onClick={limparFiltros}>Limpar</button>
+          <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
+          <button style={styles.btnVerde} onClick={exportarCSV}>CSV/Editável</button>
+        </div>
       </section>
 
       <section style={styles.resumoFiltro}>
@@ -1551,13 +1544,49 @@ export default function App() {
 
       {menuAberto && (
         <div style={styles.menuFab}>
-          <button style={styles.menuItem} onClick={abrirNovaConta}>
-            💰 Nova conta
+          <button style={styles.menuItem} onClick={abrirNovaConta}>💰 Nova conta</button>
+          <button style={styles.menuItem} onClick={abrirNovaNota}>📝 Nova nota</button>
+          <button
+            style={styles.menuItem}
+            onClick={() => {
+              setMenuAberto(false)
+              setTelaAtual('relatorios')
+            }}
+          >
+            📊 Relatórios
           </button>
 
-          <button style={styles.menuItem} onClick={abrirNovaNota}>
-            📝 Nova nota
+          <button
+            style={styles.menuItem}
+            onClick={() => {
+              setMenuAberto(false)
+              setTelaAtual('agenda')
+            }}
+          >
+            📅 Agenda
           </button>
+
+          <button
+            style={styles.menuItem}
+            onClick={() => {
+              setMenuAberto(false)
+              setTelaAtual('lixeira')
+            }}
+          >
+            🗑️ Lixeira
+          </button>
+
+          <button
+            style={styles.menuItem}
+            onClick={() => {
+              setMenuAberto(false)
+              setTelaAtual('configuracoes')
+            }}
+          >
+            ⚙️ Configurações
+          </button>
+
+
         </div>
       )}
 
@@ -1702,100 +1731,25 @@ export default function App() {
 // BLOCO 12 — STYLES
 // =========================
 const styles = {
-
-  atalhosTopo: {
-    display: 'flex',
-    gap: 8,
-    overflowX: 'auto',
-    padding: '2px 0 10px',
-    marginBottom: 8
-  },
-  atalhoBotao: {
+  usuarioTopo: {
+    background: '#fff',
     border: '1px solid #e5e5e5',
-    background: '#fff',
-    padding: '9px 11px',
-    borderRadius: 999,
-    whiteSpace: 'nowrap',
-    fontWeight: 'bold',
-    fontSize: 13,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-  },
-  atalhoBotaoDestaque: {
-    border: '1px solid #d5d5d5',
-    background: '#f3f4f6',
-    padding: '9px 11px',
-    borderRadius: 999,
-    whiteSpace: 'nowrap',
-    fontWeight: 'bold',
-    fontSize: 13,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-  },
-  filtrosBoxPro: {
-    background: '#fff',
-    padding: 12,
-    borderRadius: 18,
-    marginBottom: 12,
-    boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
-    border: '1px solid #f0f0f0'
-  },
-  filtroHeaderPro: {
-    width: '100%',
-    border: 'none',
-    background: '#f8f9fa',
     borderRadius: 14,
-    padding: '12px 14px',
+    padding: 12,
+    marginBottom: 12,
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    textAlign: 'left',
-    fontSize: 16
+    gap: 12,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
   },
-  filtroConteudoPro: {
-    marginTop: 12,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8
-  },
-  inputFiltroPro: {
-    width: '100%',
-    padding: 12,
-    borderRadius: 12,
-    border: '1px solid #d5d5d5',
-    fontSize: 15,
-    boxSizing: 'border-box',
-    background: '#f8f9fa'
-  },
-  labelFiltro: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#555',
-    marginTop: 4
-  },
-  statusGridPro: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 8
-  },
-  chipsFiltros: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 8
-  },
-  chipFiltro: {
-    background: '#eef6ff',
-    color: '#0d6efd',
-    border: '1px solid #b6d4fe',
-    borderRadius: 999,
-    padding: '5px 8px',
-    fontSize: 11,
+  btnSair: {
+    background: '#dc3545',
+    color: '#fff',
+    border: 'none',
+    padding: '8px 12px',
+    borderRadius: 8,
     fontWeight: 'bold'
-  },
-  botoesFiltroPro: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    gap: 8,
-    marginTop: 8
   },
   overlayConfirmacao: {
     position: 'fixed',
@@ -2164,23 +2118,16 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: 8,
-    zIndex: 1000,
-    background: 'rgba(255,255,255,0.96)',
-    padding: 10,
-    borderRadius: 16,
-    boxShadow: '0 10px 28px rgba(0,0,0,0.20)',
-    backdropFilter: 'blur(8px)'
+    zIndex: 19
   },
   menuItem: {
     background: '#fff',
-    border: '1px solid #e5e5e5',
-    borderRadius: 12,
-    padding: '13px 16px',
-    fontSize: 16,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.10)',
-    textAlign: 'left',
-    minWidth: 180,
-    fontWeight: 'bold'
+    border: '1px solid #ddd',
+    borderRadius: 10,
+    padding: '10px 12px',
+    fontSize: 14,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    textAlign: 'left'
   },
   overlay: {
     position: 'fixed',

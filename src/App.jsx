@@ -73,6 +73,31 @@ export default function App() {
     return diasNaLixeira(dataExclusao) >= 60
   }
 
+  function dataLocal(data) {
+    if (!data) return null
+    const valor = String(data).slice(0, 10)
+    return new Date(valor + 'T00:00:00')
+  }
+
+  function diferencaDias(data) {
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+
+    const alvo = dataLocal(data)
+    if (!alvo) return 999999
+
+    const diff = alvo - hoje
+    return Math.round(diff / (1000 * 60 * 60 * 24))
+  }
+
+  function mesmoMesAtual(data) {
+    const alvo = dataLocal(data)
+    if (!alvo) return false
+
+    const hoje = new Date()
+    return alvo.getMonth() === hoje.getMonth() && alvo.getFullYear() === hoje.getFullYear()
+  }
+
   // =========================
   // BLOCO 1 — STATES CONTAS
   // =========================
@@ -597,6 +622,135 @@ export default function App() {
     )
   }
 
+
+
+  if (telaAtual === 'agenda') {
+    const contasAgenda = [...contas]
+      .filter((conta) => conta.status !== 'pago')
+      .sort((a, b) => dataLocal(a.data_vencimento) - dataLocal(b.data_vencimento))
+
+    const contasVencidas = contasAgenda.filter((conta) => diferencaDias(conta.data_vencimento) < 0)
+    const contasHoje = contasAgenda.filter((conta) => diferencaDias(conta.data_vencimento) === 0)
+    const contasSemana = contasAgenda.filter((conta) => {
+      const dias = diferencaDias(conta.data_vencimento)
+      return dias > 0 && dias <= 7
+    })
+    const contasMes = contasAgenda.filter((conta) => {
+      const dias = diferencaDias(conta.data_vencimento)
+      return dias > 7 && mesmoMesAtual(conta.data_vencimento)
+    })
+
+    const totalVencidasAgenda = contasVencidas.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+    const totalHojeAgenda = contasHoje.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+    const totalSemanaAgenda = contasSemana.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+    const totalMesAgenda = contasMes.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+
+    function CardAgenda({ titulo, total, lista, cor }) {
+      return (
+        <section style={styles.cardAgenda}>
+          <div style={styles.cardTopo}>
+            <strong>{titulo}</strong>
+            <span>{formatarValor(total)}</span>
+          </div>
+
+          {lista.length === 0 && (
+            <p style={styles.mensagemVazia}>Nenhuma conta nesta agenda.</p>
+          )}
+
+          {lista.map((conta) => {
+            const dias = diferencaDias(conta.data_vencimento)
+
+            return (
+              <div key={conta.id} style={{ ...styles.itemAgenda, borderLeft: `5px solid ${cor}` }}>
+                <div>
+                  <strong>{conta.descricao}</strong>
+                  <div style={styles.cardInfo}>
+                    {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'}
+                  </div>
+
+                  <small style={dias < 0 ? styles.textoVencidoAgenda : styles.textoAgenda}>
+                    {dias < 0
+                      ? `Vencida há ${Math.abs(dias)} dia(s)`
+                      : dias === 0
+                        ? 'Vence hoje'
+                        : `Vence em ${dias} dia(s)`}
+                  </small>
+                </div>
+
+                <div style={styles.agendaDireita}>
+                  <strong>{formatarValor(conta.valor)}</strong>
+
+                  <button style={styles.btnPago} onClick={() => marcarComoPago(conta.id)}>
+                    Pago
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </section>
+      )
+    }
+
+    return (
+      <div style={styles.page}>
+        <h1 style={styles.titulo}>📅 Agenda Financeira</h1>
+
+        <button style={styles.btnCinza} onClick={() => setTelaAtual('contas')}>
+          ← Voltar
+        </button>
+
+        <section style={styles.resumo}>
+          <div style={styles.boxVencido}>
+            <span>Vencidas</span>
+            <strong>{formatarValor(totalVencidasAgenda)}</strong>
+          </div>
+
+          <div style={styles.boxPendente}>
+            <span>Hoje</span>
+            <strong>{formatarValor(totalHojeAgenda)}</strong>
+          </div>
+
+          <div style={styles.boxTotal}>
+            <span>7 dias</span>
+            <strong>{formatarValor(totalSemanaAgenda)}</strong>
+          </div>
+
+          <div style={styles.boxPago}>
+            <span>Mês</span>
+            <strong>{formatarValor(totalMesAgenda)}</strong>
+          </div>
+        </section>
+
+        <CardAgenda
+          titulo="🚨 Vencidas"
+          total={totalVencidasAgenda}
+          lista={contasVencidas}
+          cor="#dc3545"
+        />
+
+        <CardAgenda
+          titulo="📌 Vencem hoje"
+          total={totalHojeAgenda}
+          lista={contasHoje}
+          cor="#ffc107"
+        />
+
+        <CardAgenda
+          titulo="🗓️ Próximos 7 dias"
+          total={totalSemanaAgenda}
+          lista={contasSemana}
+          cor="#0d6efd"
+        />
+
+        <CardAgenda
+          titulo="📆 Restante do mês"
+          total={totalMesAgenda}
+          lista={contasMes}
+          cor="#198754"
+        />
+      </div>
+    )
+  }
 
   if (telaAtual === 'lixeira') {
     return (
@@ -1184,6 +1338,43 @@ const styles = {
     gap: 5,
     marginTop: 6,
     fontSize: 13
+  },
+  cardAgenda: {
+    background: '#fff',
+    padding: 12,
+    borderRadius: 14,
+    marginTop: 14,
+    marginBottom: 10,
+    border: '1px solid #ddd',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+  },
+  itemAgenda: {
+    background: '#f8f9fa',
+    padding: 10,
+    borderRadius: 10,
+    marginTop: 8,
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 10,
+    alignItems: 'center'
+  },
+  agendaDireita: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 6
+  },
+  textoAgenda: {
+    display: 'block',
+    marginTop: 5,
+    color: '#444',
+    fontWeight: 'bold'
+  },
+  textoVencidoAgenda: {
+    display: 'block',
+    marginTop: 5,
+    color: '#dc3545',
+    fontWeight: 'bold'
   },
   cardLixeira: {
     background: '#fff',

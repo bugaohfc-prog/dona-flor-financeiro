@@ -227,7 +227,7 @@ export default function App() {
       .from('df_usuarios_empresas')
       .select('empresa_id, perfil')
       .eq('user_id', userId)
-      .maybeSingle()
+      .limit(1)
 
     if (error) {
       setLoading(false)
@@ -235,7 +235,9 @@ export default function App() {
       return
     }
 
-    if (!data?.empresa_id) {
+    const vinculo = Array.isArray(data) ? data[0] : data
+
+    if (!vinculo?.empresa_id) {
       setEmpresaId(null)
       setPerfilUsuario('')
       setLoading(false)
@@ -243,9 +245,9 @@ export default function App() {
       return
     }
 
-    setEmpresaId(data.empresa_id)
-    setPerfilUsuario(data.perfil || 'usuario')
-    await carregarTudo(data.empresa_id)
+    setEmpresaId(vinculo.empresa_id)
+    setPerfilUsuario(vinculo.perfil || 'usuario')
+    await carregarTudo(vinculo.empresa_id)
     setLoading(false)
   }
 
@@ -310,23 +312,24 @@ export default function App() {
       .select('*')
       .eq('empresa_id', empresaAtual)
       .limit(1)
-      .maybeSingle()
 
     if (error) {
       alert(error.message)
       return
     }
 
-    if (data) {
-      setConfiguracoes(data)
-      setNotificacoesAtivas(data.notificacoes_ativas ?? true)
-      setConfigWhatsapp(data.enviar_whatsapp ?? true)
-      setConfigEmail(data.enviar_email ?? true)
-      setConfigPush(data.enviar_push ?? false)
-      setDiasAvisoPadrao(String(data.dias_aviso_padrao ?? 1))
-      setNomeEmpresa(data.nome_empresa || '')
-      setWhatsappPadrao(data.whatsapp_padrao || '')
-      setEmailPadrao(data.email_padrao || '')
+    const configEncontrada = Array.isArray(data) ? data[0] : data
+
+    if (configEncontrada) {
+      setConfiguracoes(configEncontrada)
+      setNotificacoesAtivas(configEncontrada.notificacoes_ativas ?? true)
+      setConfigWhatsapp(configEncontrada.enviar_whatsapp ?? true)
+      setConfigEmail(configEncontrada.enviar_email ?? true)
+      setConfigPush(configEncontrada.enviar_push ?? false)
+      setDiasAvisoPadrao(String(configEncontrada.dias_aviso_padrao ?? 1))
+      setNomeEmpresa(configEncontrada.nome_empresa || '')
+      setWhatsappPadrao(configEncontrada.whatsapp_padrao || '')
+      setEmailPadrao(configEncontrada.email_padrao || '')
       return
     }
 
@@ -342,22 +345,23 @@ export default function App() {
         empresa_id: empresaAtual
       }])
       .select()
-      .single()
 
     if (erroInsert) {
       alert(erroInsert.message)
       return
     }
 
-    setConfiguracoes(novaConfig)
-    setNotificacoesAtivas(novaConfig.notificacoes_ativas ?? true)
-    setConfigWhatsapp(novaConfig.enviar_whatsapp ?? true)
-    setConfigEmail(novaConfig.enviar_email ?? true)
-    setConfigPush(novaConfig.enviar_push ?? false)
-    setDiasAvisoPadrao(String(novaConfig.dias_aviso_padrao ?? 1))
-    setNomeEmpresa(novaConfig.nome_empresa || '')
-    setWhatsappPadrao(novaConfig.whatsapp_padrao || '')
-    setEmailPadrao(novaConfig.email_padrao || '')
+    const configCriada = Array.isArray(novaConfig) ? novaConfig[0] : novaConfig
+
+    setConfiguracoes(configCriada)
+    setNotificacoesAtivas(configCriada?.notificacoes_ativas ?? true)
+    setConfigWhatsapp(configCriada?.enviar_whatsapp ?? true)
+    setConfigEmail(configCriada?.enviar_email ?? true)
+    setConfigPush(configCriada?.enviar_push ?? false)
+    setDiasAvisoPadrao(String(configCriada?.dias_aviso_padrao ?? 1))
+    setNomeEmpresa(configCriada?.nome_empresa || '')
+    setWhatsappPadrao(configCriada?.whatsapp_padrao || '')
+    setEmailPadrao(configCriada?.email_padrao || '')
   }
 
   async function buscarLixeira(empresaAtual = empresaId) {
@@ -707,13 +711,11 @@ export default function App() {
         .eq('id', configuracoes.id)
         .eq('empresa_id', empresaId)
         .select()
-        .single()
     } else {
       resposta = await supabase
         .from('df_configuracoes')
         .insert([payload])
         .select()
-        .single()
     }
 
     if (resposta.error) {
@@ -721,7 +723,8 @@ export default function App() {
       return
     }
 
-    setConfiguracoes(resposta.data)
+    const configSalva = Array.isArray(resposta.data) ? resposta.data[0] : resposta.data
+    setConfiguracoes(configSalva)
     alert('Configurações salvas com sucesso!')
   }
 

@@ -232,14 +232,14 @@ export default function App() {
     .filter((conta) => {
       if (filtroStatus === 'pendentes') return conta.status !== 'pago'
       if (filtroStatus === 'pagas') return conta.status === 'pago'
-      if (filtroStatus === 'vencidas') return estaVencida((conta.vencimento || conta.data_vencimento), conta.status)
+      if (filtroStatus === 'vencidas') return estaVencida(conta.data_vencimento, conta.status)
       return true
     })
     .filter((conta) => !filtroCentro || conta.centro_custo_id === filtroCentro)
-    .filter((conta) => !filtroMes || pegarMes((conta.vencimento || conta.data_vencimento)) === filtroMes)
+    .filter((conta) => !filtroMes || pegarMes(conta.data_vencimento) === filtroMes)
     .filter((conta) => {
-      if (dataInicial && (conta.vencimento || conta.data_vencimento) < dataInicial) return false
-      if (dataFinal && (conta.vencimento || conta.data_vencimento) > dataFinal) return false
+      if (dataInicial && conta.data_vencimento < dataInicial) return false
+      if (dataFinal && conta.data_vencimento > dataFinal) return false
       return true
     })
     .filter((conta) =>
@@ -253,7 +253,7 @@ export default function App() {
     .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
   const vencido = contasFiltradas
-    .filter((conta) => estaVencida((conta.vencimento || conta.data_vencimento), conta.status))
+    .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
     .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
   const pendente = total - pago
@@ -266,7 +266,7 @@ export default function App() {
         .filter((conta) => conta.status === 'pago')
         .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
       const vencidoCentro = lista
-        .filter((conta) => estaVencida((conta.vencimento || conta.data_vencimento), conta.status))
+        .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
         .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
       return {
@@ -303,7 +303,7 @@ export default function App() {
     setEditandoContaId(conta.id)
     setDescricao(conta.descricao || '')
     setValor(conta.valor || '')
-    setDataVencimento((conta.vencimento || conta.data_vencimento) || '')
+    setDataVencimento(conta.data_vencimento || '')
     setCentroCustoId(conta.centro_custo_id || '')
     setModalConta(true)
   }
@@ -583,8 +583,8 @@ export default function App() {
     const linhas = contasFiltradas.map((conta) => [
       conta.descricao || '',
       Number(conta.valor || 0).toFixed(2).replace('.', ','),
-      formatarData((conta.vencimento || conta.data_vencimento)),
-      estaVencida((conta.vencimento || conta.data_vencimento), conta.status) ? 'vencido' : conta.status,
+      formatarData(conta.data_vencimento),
+      estaVencida(conta.data_vencimento, conta.status) ? 'vencido' : conta.status,
       conta.df_centros_custo?.nome || ''
     ])
 
@@ -1035,7 +1035,7 @@ export default function App() {
         {loading && <p>Carregando...</p>}
 
         {contasFiltradas.map((conta) => {
-          const vencida = estaVencida((conta.vencimento || conta.data_vencimento), conta.status)
+          const vencida = estaVencida(conta.data_vencimento, conta.status)
 
           return (
             <div
@@ -1057,7 +1057,7 @@ export default function App() {
               </div>
 
               <div style={styles.cardInfo}>
-                {formatarData((conta.vencimento || conta.data_vencimento))} • {conta.df_centros_custo?.nome || '-'} • {vencida ? 'VENCIDO' : conta.status}
+                {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || '-'} • {vencida ? 'VENCIDO' : conta.status}
               </div>
 
               <div style={styles.acoes}>

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
-import Relatorios from './pages/Relatorios'
 
 export default function App() {
   // =========================
@@ -25,6 +24,24 @@ export default function App() {
 
   function converterValor(valorDigitado) {
     return Number(String(valorDigitado).replace(',', '.'))
+  }
+
+
+  function formatarDataParaBanco(valor) {
+    if (!valor) return null
+
+    // Formato correto do banco: 2026-05-02
+    if (/^\d{4}-\d{2}-\d{2}$/.test(valor)) {
+      return valor
+    }
+
+    // Formato brasileiro: 02/05/2026
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(valor)) {
+      const [dia, mes, ano] = valor.split('/')
+      return `${ano}-${mes}-${dia}`
+    }
+
+    return valor
   }
 
   function estaVencida(data, status) {
@@ -81,7 +98,6 @@ export default function App() {
   // BLOCO 4 — MENU
   // =========================
   const [menuAberto, setMenuAberto] = useState(false)
-  const [telaAtual, setTelaAtual] = useState('contas')
 
   useEffect(() => {
     carregarTudo()
@@ -100,7 +116,7 @@ export default function App() {
     const { data, error } = await supabase
       .from('df_contas')
       .select('*, df_centros_custo(nome)')
-      .order('data_vencimento')
+      .order('vencimento')
 
     if (error) {
       alert(error.message)
@@ -145,14 +161,14 @@ export default function App() {
     .filter((conta) => {
       if (filtroStatus === 'pendentes') return conta.status !== 'pago'
       if (filtroStatus === 'pagas') return conta.status === 'pago'
-      if (filtroStatus === 'vencidas') return estaVencida(conta.data_vencimento, conta.status)
+      if (filtroStatus === 'vencidas') return estaVencida((conta.vencimento || cont(a.vencimento || a.data_vencimento)), conta.status)
       return true
     })
     .filter((conta) => !filtroCentro || conta.centro_custo_id === filtroCentro)
-    .filter((conta) => !filtroMes || pegarMes(conta.data_vencimento) === filtroMes)
+    .filter((conta) => !filtroMes || pegarMes((conta.vencimento || cont(a.vencimento || a.data_vencimento))) === filtroMes)
     .filter((conta) => {
-      if (dataInicial && conta.data_vencimento < dataInicial) return false
-      if (dataFinal && conta.data_vencimento > dataFinal) return false
+      if (dataInicial && (conta.vencimento || cont(a.vencimento || a.data_vencimento)) < dataInicial) return false
+      if (dataFinal && (conta.vencimento || cont(a.vencimento || a.data_vencimento)) > dataFinal) return false
       return true
     })
     .filter((conta) =>
@@ -166,7 +182,7 @@ export default function App() {
     .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
   const vencido = contasFiltradas
-    .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
+    .filter((conta) => estaVencida((conta.vencimento || cont(a.vencimento || a.data_vencimento)), conta.status))
     .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
   const pendente = total - pago
@@ -179,7 +195,7 @@ export default function App() {
         .filter((conta) => conta.status === 'pago')
         .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
       const vencidoCentro = lista
-        .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
+        .filter((conta) => estaVencida((conta.vencimento || cont(a.vencimento || a.data_vencimento)), conta.status))
         .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
       return {
@@ -216,7 +232,7 @@ export default function App() {
     setEditandoContaId(conta.id)
     setDescricao(conta.descricao || '')
     setValor(conta.valor || '')
-    setDataVencimento(conta.data_vencimento || '')
+    setDataVencimento((conta.vencimento || cont(a.vencimento || a.data_vencimento)) || '')
     setCentroCustoId(conta.centro_custo_id || '')
     setModalConta(true)
   }
@@ -239,7 +255,7 @@ export default function App() {
     const payload = {
       descricao: primeiraLetraMaiuscula(descricao.trim()),
       valor: converterValor(valor),
-      data_vencimento: dataVencimento,
+      vencimento: formatarDataParaBanco(dataVencimento),
       centro_custo_id: centroCustoId || null
     }
 
@@ -386,8 +402,8 @@ export default function App() {
     const linhas = contasFiltradas.map((conta) => [
       conta.descricao || '',
       Number(conta.valor || 0).toFixed(2).replace('.', ','),
-      formatarData(conta.data_vencimento),
-      estaVencida(conta.data_vencimento, conta.status) ? 'vencido' : conta.status,
+      formatarData((conta.vencimento || cont(a.vencimento || a.data_vencimento))),
+      estaVencida((conta.vencimento || cont(a.vencimento || a.data_vencimento)), conta.status) ? 'vencido' : conta.status,
       conta.df_centros_custo?.nome || ''
     ])
 
@@ -417,12 +433,6 @@ export default function App() {
     setFiltroMes('')
     setDataInicial('')
     setDataFinal('')
-  }
-
-  if (telaAtual === 'relatorios') {
-    return (
-      <Relatorios voltar={() => setTelaAtual('contas')} />
-    )
   }
 
   // =========================
@@ -613,7 +623,7 @@ export default function App() {
         {loading && <p>Carregando...</p>}
 
         {contasFiltradas.map((conta) => {
-          const vencida = estaVencida(conta.data_vencimento, conta.status)
+          const vencida = estaVencida((conta.vencimento || cont(a.vencimento || a.data_vencimento)), conta.status)
 
           return (
             <div
@@ -635,7 +645,7 @@ export default function App() {
               </div>
 
               <div style={styles.cardInfo}>
-                {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || '-'} • {vencida ? 'VENCIDO' : conta.status}
+                {formatarData((conta.vencimento || cont(a.vencimento || a.data_vencimento)))} • {conta.df_centros_custo?.nome || '-'} • {vencida ? 'VENCIDO' : conta.status}
               </div>
 
               <div style={styles.acoes}>
@@ -701,16 +711,6 @@ export default function App() {
         <div style={styles.menuFab}>
           <button style={styles.menuItem} onClick={abrirNovaConta}>💰 Nova conta</button>
           <button style={styles.menuItem} onClick={abrirNovaNota}>📝 Nova nota</button>
-          <button
-            style={styles.menuItem}
-            onClick={() => {
-              setMenuAberto(false)
-              setTelaAtual('relatorios')
-            }}
-          >
-            📊 Relatórios
-          </button>
-
           <button
             style={styles.menuItem}
             onClick={() => {

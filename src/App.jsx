@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
-import * as XLSX from 'xlsx'
 import Relatorios from './pages/Relatorios.jsx'
 import Login from './pages/Login.jsx'
 
@@ -972,9 +971,9 @@ export default function App() {
     if (!valor) return null
 
     if (typeof valor === 'number') {
-      const data = XLSX.SSF.parse_date_code(valor)
-      if (!data) return null
-      return `${data.y}-${String(data.m).padStart(2, '0')}-${String(data.d).padStart(2, '0')}`
+      const base = new Date(Date.UTC(1899, 11, 30))
+      base.setUTCDate(base.getUTCDate() + valor)
+      return base.toISOString().slice(0, 10)
     }
 
     const texto = String(valor).trim()
@@ -999,6 +998,58 @@ export default function App() {
     return Number(texto || 0)
   }
 
+  function separarLinhaCsv(linha) {
+    const resultado = []
+    let atual = ''
+    let dentroDeAspas = false
+
+    for (let i = 0; i < linha.length; i += 1) {
+      const char = linha[i]
+      const proximo = linha[i + 1]
+
+      if (char === '"' && proximo === '"') {
+        atual += '"'
+        i += 1
+        continue
+      }
+
+      if (char === '"') {
+        dentroDeAspas = !dentroDeAspas
+        continue
+      }
+
+      if ((char === ';' || char === ',') && !dentroDeAspas) {
+        resultado.push(atual.trim())
+        atual = ''
+        continue
+      }
+
+      atual += char
+    }
+
+    resultado.push(atual.trim())
+    return resultado
+  }
+
+  function csvParaJson(texto) {
+    const linhas = String(texto || '')
+      .replace(/^﻿/, '')
+      .split(/\r?\n/)
+      .filter((linha) => linha.trim())
+
+    if (linhas.length < 2) return []
+
+    const cabecalho = separarLinhaCsv(linhas[0])
+
+    return linhas.slice(1).map((linha) => {
+      const valores = separarLinhaCsv(linha)
+      return cabecalho.reduce((obj, chave, index) => {
+        obj[chave] = valores[index] || ''
+        return obj
+      }, {})
+    })
+  }
+
   async function lerArquivoExcel(event) {
     const file = event.target.files?.[0]
     setArquivoImportacao(file || null)
@@ -1007,12 +1058,16 @@ export default function App() {
 
     if (!file) return
 
+    const extensao = file.name.split('.').pop()?.toLowerCase()
+
+    if (extensao !== 'csv') {
+      setStatusImportacao('Para evitar erro no deploy, esta versão importa CSV. No Excel, use: Arquivo > Salvar como > CSV UTF-8.')
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = (e) => {
-      const dados = new Uint8Array(e.target.result)
-      const workbook = XLSX.read(dados, { type: 'array' })
-      const sheet = workbook.Sheets[workbook.SheetNames[0]]
-      const linhas = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+      const linhas = csvParaJson(e.target.result)
 
       const preparadas = linhas.map((linha, index) => {
         const descricaoExcel = obterCampoExcel(linha, ['descricao', 'descrição', 'conta', 'nome', 'fornecedor'])
@@ -1035,7 +1090,7 @@ export default function App() {
       setStatusImportacao(`${preparadas.length} linha(s) preparada(s) para revisão.`)
     }
 
-    reader.readAsArrayBuffer(file)
+    reader.readAsText(file, 'UTF-8')
   }
 
   async function importarExcelParaContas() {
@@ -1181,7 +1236,7 @@ export default function App() {
           </button>
         </section>
 
-        <h1 style={styles.titulo}>📥 Importar do Excel</h1>
+        <h1 style={styles.titulo}>📥 Importar planilha</h1>
 
         <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
           ← Voltar
@@ -1190,13 +1245,13 @@ export default function App() {
         <section style={styles.cardConfiguracao}>
           <h2 style={styles.subtitulo}>1. Enviar arquivo</h2>
           <p style={styles.textoNota}>
-            Importe sua planilha do ano para alimentar o histórico e liberar os relatórios do app.
+            Importe sua planilha do ano em CSV para alimentar o histórico e liberar os relatórios do app.
           </p>
 
           <label style={styles.uploadExcelBox}>
-            <strong>📊 Selecionar arquivo Excel</strong>
-            <small>Formatos aceitos: .xlsx, .xls</small>
-            <input type="file" accept=".xlsx,.xls" onChange={lerArquivoExcel} style={{ display: 'none' }} />
+            <strong>📊 Selecionar arquivo CSV</strong>
+            <small>No Excel: Arquivo &gt; Salvar como &gt; CSV UTF-8</small>
+            <input type="file" accept=".csv" onChange={lerArquivoExcel} style={{ display: 'none' }} />
           </label>
 
           {arquivoImportacao && <p style={styles.textoNota}>Arquivo: <strong>{arquivoImportacao.name}</strong></p>}
@@ -1742,7 +1797,7 @@ export default function App() {
           <button style={styles.menuNavItem} onClick={() => navegarPara('contas')}>🏠 Painel</button>
           <button style={styles.menuNavItem} onClick={() => navegarPara('agenda')}>📅 Agenda financeira</button>
           <button style={styles.menuNavItem} onClick={() => navegarPara('relatorios')}>📊 Relatórios PRO+</button>
-          <button style={styles.menuNavItem} onClick={() => navegarPara('importar')}>📥 Importar Excel</button>
+          <button style={styles.menuNavItem} onClick={() => navegarPara('importar')}>📥 Importar planilha</button>
           <button style={styles.menuNavItem} onClick={() => navegarPara('lixeira')}>🗑️ Lixeira</button>
           <button style={styles.menuNavItem} onClick={() => navegarPara('configuracoes')}>⚙️ Configurações</button>
           <button style={{ ...styles.menuNavItem, color: '#dc3545', fontWeight: 'bold' }} onClick={sairDoSistema}>🚪 Sair</button>

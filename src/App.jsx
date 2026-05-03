@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from './supabase'
+import { supabase } from './lib/supabase'
 import Relatorios from './pages/Relatorios.jsx'
 import Login from './pages/Login.jsx'
 import './styles.css'
@@ -149,6 +149,8 @@ export default function App() {
   // =========================
   const [menuAberto, setMenuAberto] = useState(false)
   const [menuNavegacaoAberto, setMenuNavegacaoAberto] = useState(false)
+  const [sidebarCompacta, setSidebarCompacta] = useState(false)
+  const [gruposMenu, setGruposMenu] = useState({ principal: true, gestao: true, analise: true, sistema: true })
   const [telaAtual, setTelaAtualState] = useState('contas')
   const [usuarioLogado, setUsuarioLogado] = useState(null)
   const [carregandoAuth, setCarregandoAuth] = useState(true)
@@ -375,7 +377,7 @@ export default function App() {
         enviar_email: true,
         enviar_push: false,
         dias_aviso_padrao: 1,
-        nome_empresa: 'Dona Flor Financeiro',
+        nome_empresa: 'DF Gestão Financeira',
         empresa_id: empresaAtual
       }])
       .select()
@@ -1305,12 +1307,106 @@ export default function App() {
           }
           @media (max-width: 979px) { .app-frame { max-width: 430px; margin:auto; } }
           .note-card-action { transition:.2s; }
+
+          /* ===== DF GESTAO — LAYOUT LIMPO E BLINDADO ===== */
+          @media (min-width: 980px) {
+            .app-page, .app-frame {
+              padding-left: 300px !important;
+              transition: padding-left .25s ease !important;
+            }
+            body:has(.desktop-sidebar.compacta) .app-page,
+            body:has(.desktop-sidebar.compacta) .app-frame {
+              padding-left: 112px !important;
+            }
+            .desktop-sidebar {
+              width: 244px !important;
+              overflow: hidden !important;
+              gap: 10px !important;
+            }
+            .desktop-sidebar.compacta {
+              width: 72px !important;
+              padding: 14px 10px !important;
+              align-items: center !important;
+            }
+            .desktop-sidebar.compacta .desktop-sidebar-brand {
+              justify-content: center !important;
+              padding-bottom: 10px !important;
+            }
+            .desktop-sidebar.compacta .desktop-sidebar-brand img {
+              width: 44px !important;
+              height: 44px !important;
+            }
+            .sidebar-collapse-btn {
+              display:flex; align-items:center; justify-content:center; gap:8px;
+              width:100%; border:1px solid rgba(255,255,255,.16); border-radius:14px;
+              background:rgba(255,255,255,.10); color:white; font-weight:900;
+              padding:9px 10px; cursor:pointer;
+            }
+            .desktop-sidebar-scroll {
+              width: 100%; overflow-y: auto; overflow-x: hidden; padding-right: 2px;
+              display: grid; gap: 8px;
+            }
+            .desktop-sidebar-scroll::-webkit-scrollbar { width: 4px; }
+            .desktop-sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.28); border-radius: 999px; }
+            .sidebar-group-clean { display:grid; gap:5px; width:100%; }
+            .sidebar-group-toggle {
+              display:flex; align-items:center; justify-content:space-between;
+              width:100%; border:0; background:transparent; color:rgba(255,255,255,.70);
+              text-transform:uppercase; letter-spacing:.7px; font-size:10px; font-weight:900;
+              padding:8px 8px 2px; cursor:pointer;
+            }
+            .desktop-sidebar.compacta .sidebar-group-toggle { justify-content:center; padding:6px 0; }
+            .desktop-sidebar-nav button {
+              min-height: 42px !important; padding:10px 11px !important; border-radius:14px !important;
+              white-space: nowrap !important;
+            }
+            .desktop-sidebar.compacta .desktop-sidebar-nav button { justify-content:center !important; padding:10px 0 !important; }
+            .menu-icon { width:22px; text-align:center; flex:0 0 22px; }
+            .desktop-sidebar.compacta .menu-icon { width:auto; flex:auto; }
+            .desktop-sidebar.compacta .desktop-sidebar-user { width:44px !important; height:44px !important; border-radius:16px !important; padding:0 !important; display:flex; align-items:center; justify-content:center; }
+            .desktop-sidebar.compacta .sidebar-exit { width:100%; }
+            .top-shell { background:#ffffff !important; }
+            .top-shell strong, .desktop-sidebar-brand strong { letter-spacing:.1px; }
+            .dashboard-title-row { margin-right: 360px !important; }
+            body:has(.desktop-sidebar.compacta) .dashboard-title-row,
+            body:has(.desktop-sidebar.compacta) .summary-grid,
+            body:has(.desktop-sidebar.compacta) .agenda-card-polished,
+            body:has(.desktop-sidebar.compacta) .filters-desktop,
+            body:has(.desktop-sidebar.compacta) .result-summary,
+            body:has(.desktop-sidebar.compacta) .content-block { margin-right: 360px !important; }
+            .notes-panel {
+              right: 28px !important; top: 158px !important; width: 330px !important;
+              padding: 18px !important; border-radius: 24px !important;
+              box-shadow: 0 18px 40px rgba(15,23,42,.08) !important;
+            }
+            .quick-actions-card {
+              display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px; border-radius:18px;
+              background:linear-gradient(135deg,#f8fafc,#ecfeff); border:1px solid #ccfbf1; margin-bottom:14px;
+            }
+            .quick-actions-card strong { grid-column:1/-1; font-size:15px; }
+            .quick-actions-card button { border:0; border-radius:12px; padding:11px 10px; color:white; font-weight:900; cursor:pointer; }
+            .quick-actions-card button:nth-of-type(1) { background:linear-gradient(135deg,#14b8a6,#0f766e); }
+            .quick-actions-card button:nth-of-type(2) { background:#111827; }
+            .account-card-desktop .account-actions { display:flex !important; gap:8px !important; flex-wrap:nowrap !important; }
+            .account-card-desktop .account-actions button { min-width:74px !important; margin:0 !important; }
+            .note-event-date { display:inline-flex; margin:6px 0; padding:4px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-weight:800; font-size:12px; }
+          }
+
+          @media (max-width: 979px) {
+            .mobile-menu-panel { padding-bottom: 24px !important; }
+            .mobile-menu-group { margin-top: 12px !important; }
+            .mobile-menu-group summary { padding: 10px 4px !important; font-weight:900; color:#0f766e; }
+            .mobile-fab-menu { display:grid !important; gap:10px !important; }
+            .notes-panel { position: static !important; width:auto !important; max-height:none !important; overflow:visible !important; }
+            .quick-actions-card { display:none !important; }
+          }
+
         `}</style>
 
         <section className="no-print top-shell" style={styles.usuarioTopo}>
           <button style={styles.logoMarca} onClick={() => navegarPara('contas')}>
-            <img src="/icon-192.png" alt="Dona Flor" style={styles.logoImagem} />
-            <span><strong>Dona Flor</strong><small>Gestão Financeira</small></span>
+            <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.logoImagem} />
+            <span><strong>DF</strong><small>Gestão Financeira</small></span>
           </button>
           <div style={styles.usuarioAcoes}>
             <div style={styles.usuarioTexto}><strong>Olá, {nomeUsuario()}</strong><small>{perfilUsuario || 'usuário'}</small></div>
@@ -1327,58 +1423,84 @@ export default function App() {
     )
   }
 
+  function toggleGrupoMenu(grupo) {
+    setGruposMenu((atual) => ({ ...atual, [grupo]: !atual[grupo] }))
+  }
+
+  function ItemMenu({ tela, icon, label, onClick }) {
+    const ativo = tela && telaAtual === tela
+    return (
+      <button
+        className={ativo ? 'active' : ''}
+        title={label}
+        onClick={onClick || (() => navegarPara(tela))}
+      >
+        <span className="menu-icon">{icon}</span>
+        {!sidebarCompacta && <span className="menu-text">{label}</span>}
+      </button>
+    )
+  }
+
+  function GrupoMenu({ id, titulo, children }) {
+    return (
+      <div className="sidebar-group-clean">
+        <button className="sidebar-group-toggle" onClick={() => toggleGrupoMenu(id)} title={titulo}>
+          <span>{!sidebarCompacta ? titulo : '•'}</span>
+          {!sidebarCompacta && <strong>{gruposMenu[id] ? '−' : '+'}</strong>}
+        </button>
+        {(sidebarCompacta || gruposMenu[id]) && <nav className="desktop-sidebar-nav">{children}</nav>}
+      </div>
+    )
+  }
+
   function renderSidebar() {
     return (
-      <aside className="desktop-sidebar no-print">
+      <aside className={`desktop-sidebar no-print ${sidebarCompacta ? 'compacta' : ''}`}>
         <div className="desktop-sidebar-brand">
-          <img src="/icon-192.png" alt="Dona Flor" />
-          <div>
-            <strong>Dona Flor</strong>
-            <small>Gestão Financeira</small>
-          </div>
+          <img src="/icon-192.png" alt="DF Gestão Financeira" />
+          {!sidebarCompacta && (
+            <div>
+              <strong>DF</strong>
+              <small>Gestão Financeira</small>
+            </div>
+          )}
         </div>
+
+        <button className="sidebar-collapse-btn" onClick={() => setSidebarCompacta(!sidebarCompacta)} title={sidebarCompacta ? 'Expandir menu' : 'Recolher menu'}>
+          {sidebarCompacta ? '›' : '‹'}
+          {!sidebarCompacta && <span>Recolher</span>}
+        </button>
 
         <div className="desktop-sidebar-scroll">
-          <details className="sidebar-group" open>
-            <summary>Principal</summary>
-            <nav className="desktop-sidebar-nav">
-              <button className={telaAtual === 'contas' ? 'active' : ''} onClick={() => navegarPara('contas')}>🏠 Painel</button>
-              <button className={telaAtual === 'agenda' ? 'active' : ''} onClick={() => navegarPara('agenda')}>📅 Agenda financeira</button>
-            </nav>
-          </details>
+          <GrupoMenu id="principal" titulo="Principal">
+            <ItemMenu tela="contas" icon="🏠" label="Dashboard" />
+            <ItemMenu tela="agenda" icon="📅" label="Agenda" />
+          </GrupoMenu>
 
-          <details className="sidebar-group">
-            <summary>Gestão</summary>
-            <nav className="desktop-sidebar-nav">
-              <button onClick={abrirNovaConta}>💰 Nova conta</button>
-              <button onClick={abrirNovaNota}>📝 Nova nota</button>
-              <button className={telaAtual === 'importar' ? 'active' : ''} onClick={() => navegarPara('importar')}>📥 Importar CSV</button>
-            </nav>
-          </details>
+          <GrupoMenu id="gestao" titulo="Gestão">
+            <ItemMenu icon="💰" label="Nova conta" onClick={abrirNovaConta} />
+            <ItemMenu icon="📝" label="Nova nota" onClick={abrirNovaNota} />
+            <ItemMenu tela="importar" icon="📥" label="Importar CSV" />
+          </GrupoMenu>
 
-          <details className="sidebar-group">
-            <summary>Análise</summary>
-            <nav className="desktop-sidebar-nav">
-              <button className={telaAtual === 'relatorios' ? 'active' : ''} onClick={() => navegarPara('relatorios')}>📊 Relatórios</button>
-            </nav>
-          </details>
+          <GrupoMenu id="analise" titulo="Análise">
+            <ItemMenu tela="relatorios" icon="📊" label="Relatórios" />
+          </GrupoMenu>
 
-          <details className="sidebar-group">
-            <summary>Sistema</summary>
-            <nav className="desktop-sidebar-nav">
-              <button className={telaAtual === 'lixeira' ? 'active' : ''} onClick={() => navegarPara('lixeira')}>🗑️ Lixeira</button>
-              <button className={telaAtual === 'usuarios' ? 'active' : ''} onClick={() => navegarPara('usuarios')}>👥 Usuários</button>
-              <button className={telaAtual === 'configuracoes' ? 'active' : ''} onClick={() => navegarPara('configuracoes')}>⚙️ Configurações</button>
-            </nav>
-          </details>
+          <GrupoMenu id="sistema" titulo="Sistema">
+            <ItemMenu tela="usuarios" icon="👥" label="Usuários" />
+            <ItemMenu tela="configuracoes" icon="⚙️" label="Configurações" />
+            <ItemMenu tela="lixeira" icon="🗑️" label="Lixeira" />
+          </GrupoMenu>
         </div>
 
-        <div className="desktop-sidebar-user">
-          <strong>Olá, {nomeUsuario()}</strong>
-          <small>{perfilUsuario || 'usuário'}</small>
+        <div className="desktop-sidebar-spacer" />
+        <div className="desktop-sidebar-user" title={`${nomeUsuario()} • ${perfilUsuario || 'usuário'}`}>
+          <strong>{sidebarCompacta ? nomeUsuario().slice(0, 1).toUpperCase() : `Olá, ${nomeUsuario()}`}</strong>
+          {!sidebarCompacta && <small>{perfilUsuario || 'usuário'}</small>}
         </div>
         <nav className="desktop-sidebar-nav sidebar-exit">
-          <button onClick={sairDoSistema}>🚪 Sair</button>
+          <button onClick={sairDoSistema} title="Sair"><span className="menu-icon">🚪</span>{!sidebarCompacta && <span>Sair</span>}</button>
         </nav>
       </aside>
     )
@@ -1386,37 +1508,44 @@ export default function App() {
 
   function renderMobileMenu() {
     if (!menuNavegacaoAberto) return null
+    const item = (icon, titulo, desc, acao) => (
+      <button style={styles.menuNavItem} onClick={acao}>
+        <span>{icon}</span>
+        <div><strong>{titulo}</strong><small>{desc}</small></div>
+      </button>
+    )
+
     return (
       <div className="no-print" style={styles.menuBackdrop} onClick={() => setMenuNavegacaoAberto(false)}>
         <div className="mobile-menu-panel" style={styles.menuNavegacao} onClick={(e) => e.stopPropagation()}>
           <div style={styles.menuPerfil}>
-            <img src="/icon-192.png" alt="Dona Flor" style={styles.menuPerfilIcone} />
-            <div><strong>Olá, {nomeUsuario()}</strong><small>{perfilUsuario || 'usuário'}</small></div>
+            <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.menuPerfilIcone} />
+            <div><strong>DF Gestão Financeira</strong><small>Olá, {nomeUsuario()} • {perfilUsuario || 'usuário'}</small></div>
           </div>
 
           <details className="mobile-menu-group" open>
             <summary>Principal</summary>
-            <button style={styles.menuNavItem} onClick={() => navegarPara('contas')}><span>🏠</span><div><strong>Painel</strong><small>Resumo das contas</small></div></button>
-            <button style={styles.menuNavItem} onClick={() => navegarPara('agenda')}><span>📅</span><div><strong>Agenda financeira</strong><small>Vencimentos e previsões</small></div></button>
+            {item('🏠', 'Dashboard', 'Resumo financeiro', () => navegarPara('contas'))}
+            {item('📅', 'Agenda', 'Vencimentos e previsões', () => navegarPara('agenda'))}
           </details>
 
           <details className="mobile-menu-group" open>
             <summary>Gestão</summary>
-            <button style={styles.menuNavItem} onClick={abrirNovaConta}><span>💰</span><div><strong>Nova conta</strong><small>Cadastrar pagamento</small></div></button>
-            <button style={styles.menuNavItem} onClick={abrirNovaNota}><span>📝</span><div><strong>Nova nota</strong><small>Lembrete rápido</small></div></button>
-            <button style={styles.menuNavItem} onClick={() => navegarPara('importar')}><span>📥</span><div><strong>Importar CSV</strong><small>Trazer histórico do Excel</small></div></button>
+            {item('💰', 'Nova conta', 'Cadastrar pagamento', abrirNovaConta)}
+            {item('📝', 'Nova nota', 'Lembrete rápido', abrirNovaNota)}
+            {item('📥', 'Importar CSV', 'Trazer histórico do Excel', () => navegarPara('importar'))}
           </details>
 
-          <details className="mobile-menu-group" open>
+          <details className="mobile-menu-group">
             <summary>Análise</summary>
-            <button style={styles.menuNavItem} onClick={() => navegarPara('relatorios')}><span>📊</span><div><strong>Relatórios PRO+</strong><small>Análises e indicadores</small></div></button>
+            {item('📊', 'Relatórios PRO+', 'Análises e indicadores', () => navegarPara('relatorios'))}
           </details>
 
-          <details className="mobile-menu-group" open>
+          <details className="mobile-menu-group">
             <summary>Sistema</summary>
-            <button style={styles.menuNavItem} onClick={() => navegarPara('lixeira')}><span>🗑️</span><div><strong>Lixeira</strong><small>Restaurar ou excluir definitivo</small></div></button>
-            <button style={styles.menuNavItem} onClick={() => navegarPara('usuarios')}><span>👥</span><div><strong>Gestão de usuários</strong><small>Perfis, acessos e senhas</small></div></button>
-            <button style={styles.menuNavItem} onClick={() => navegarPara('configuracoes')}><span>⚙️</span><div><strong>Configurações</strong><small>Preferências da empresa</small></div></button>
+            {item('👥', 'Gestão de usuários', 'Perfis, acessos e senhas', () => navegarPara('usuarios'))}
+            {item('⚙️', 'Configurações', 'Preferências da empresa', () => navegarPara('configuracoes'))}
+            {item('🗑️', 'Lixeira', 'Restaurar ou excluir definitivo', () => navegarPara('lixeira'))}
             <button style={styles.menuSairItem} onClick={sairDoSistema}><span>🚪</span><div><strong>Sair</strong><small>Encerrar sessão</small></div></button>
           </details>
         </div>
@@ -2205,6 +2334,101 @@ export default function App() {
             .mobile-fab, .mobile-fab-menu { display: none !important; }
           }
 
+
+
+          /* ===== DF GESTAO — LAYOUT LIMPO E BLINDADO ===== */
+          @media (min-width: 980px) {
+            .app-page, .app-frame {
+              padding-left: 300px !important;
+              transition: padding-left .25s ease !important;
+            }
+            body:has(.desktop-sidebar.compacta) .app-page,
+            body:has(.desktop-sidebar.compacta) .app-frame {
+              padding-left: 112px !important;
+            }
+            .desktop-sidebar {
+              width: 244px !important;
+              overflow: hidden !important;
+              gap: 10px !important;
+            }
+            .desktop-sidebar.compacta {
+              width: 72px !important;
+              padding: 14px 10px !important;
+              align-items: center !important;
+            }
+            .desktop-sidebar.compacta .desktop-sidebar-brand {
+              justify-content: center !important;
+              padding-bottom: 10px !important;
+            }
+            .desktop-sidebar.compacta .desktop-sidebar-brand img {
+              width: 44px !important;
+              height: 44px !important;
+            }
+            .sidebar-collapse-btn {
+              display:flex; align-items:center; justify-content:center; gap:8px;
+              width:100%; border:1px solid rgba(255,255,255,.16); border-radius:14px;
+              background:rgba(255,255,255,.10); color:white; font-weight:900;
+              padding:9px 10px; cursor:pointer;
+            }
+            .desktop-sidebar-scroll {
+              width: 100%; overflow-y: auto; overflow-x: hidden; padding-right: 2px;
+              display: grid; gap: 8px;
+            }
+            .desktop-sidebar-scroll::-webkit-scrollbar { width: 4px; }
+            .desktop-sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.28); border-radius: 999px; }
+            .sidebar-group-clean { display:grid; gap:5px; width:100%; }
+            .sidebar-group-toggle {
+              display:flex; align-items:center; justify-content:space-between;
+              width:100%; border:0; background:transparent; color:rgba(255,255,255,.70);
+              text-transform:uppercase; letter-spacing:.7px; font-size:10px; font-weight:900;
+              padding:8px 8px 2px; cursor:pointer;
+            }
+            .desktop-sidebar.compacta .sidebar-group-toggle { justify-content:center; padding:6px 0; }
+            .desktop-sidebar-nav button {
+              min-height: 42px !important; padding:10px 11px !important; border-radius:14px !important;
+              white-space: nowrap !important;
+            }
+            .desktop-sidebar.compacta .desktop-sidebar-nav button { justify-content:center !important; padding:10px 0 !important; }
+            .menu-icon { width:22px; text-align:center; flex:0 0 22px; }
+            .desktop-sidebar.compacta .menu-icon { width:auto; flex:auto; }
+            .desktop-sidebar.compacta .desktop-sidebar-user { width:44px !important; height:44px !important; border-radius:16px !important; padding:0 !important; display:flex; align-items:center; justify-content:center; }
+            .desktop-sidebar.compacta .sidebar-exit { width:100%; }
+            .top-shell { background:#ffffff !important; }
+            .top-shell strong, .desktop-sidebar-brand strong { letter-spacing:.1px; }
+            .dashboard-title-row { margin-right: 360px !important; }
+            body:has(.desktop-sidebar.compacta) .dashboard-title-row,
+            body:has(.desktop-sidebar.compacta) .summary-grid,
+            body:has(.desktop-sidebar.compacta) .agenda-card-polished,
+            body:has(.desktop-sidebar.compacta) .filters-desktop,
+            body:has(.desktop-sidebar.compacta) .result-summary,
+            body:has(.desktop-sidebar.compacta) .content-block { margin-right: 360px !important; }
+            .notes-panel {
+              right: 28px !important; top: 158px !important; width: 330px !important;
+              padding: 18px !important; border-radius: 24px !important;
+              box-shadow: 0 18px 40px rgba(15,23,42,.08) !important;
+            }
+            .quick-actions-card {
+              display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px; border-radius:18px;
+              background:linear-gradient(135deg,#f8fafc,#ecfeff); border:1px solid #ccfbf1; margin-bottom:14px;
+            }
+            .quick-actions-card strong { grid-column:1/-1; font-size:15px; }
+            .quick-actions-card button { border:0; border-radius:12px; padding:11px 10px; color:white; font-weight:900; cursor:pointer; }
+            .quick-actions-card button:nth-of-type(1) { background:linear-gradient(135deg,#14b8a6,#0f766e); }
+            .quick-actions-card button:nth-of-type(2) { background:#111827; }
+            .account-card-desktop .account-actions { display:flex !important; gap:8px !important; flex-wrap:nowrap !important; }
+            .account-card-desktop .account-actions button { min-width:74px !important; margin:0 !important; }
+            .note-event-date { display:inline-flex; margin:6px 0; padding:4px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-weight:800; font-size:12px; }
+          }
+
+          @media (max-width: 979px) {
+            .mobile-menu-panel { padding-bottom: 24px !important; }
+            .mobile-menu-group { margin-top: 12px !important; }
+            .mobile-menu-group summary { padding: 10px 4px !important; font-weight:900; color:#0f766e; }
+            .mobile-fab-menu { display:grid !important; gap:10px !important; }
+            .notes-panel { position: static !important; width:auto !important; max-height:none !important; overflow:visible !important; }
+            .quick-actions-card { display:none !important; }
+          }
+
           @media print {
             html,
             body {
@@ -2280,14 +2504,14 @@ export default function App() {
       </div>
 
       <div className="print-footer">
-        Relatório gerado pelo Sistema Dona Flor Financeiro
+        Relatório gerado pelo Sistema DF Gestão Financeira
       </div>
 
       <section className="no-print top-shell" style={styles.usuarioTopo}>
         <button style={styles.logoMarca} onClick={() => navegarPara('contas')}>
-          <img src="/icon-192.png" alt="Dona Flor" style={styles.logoImagem} />
+          <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.logoImagem} />
           <span>
-            <strong>Dona Flor</strong>
+            <strong>DF</strong>
             <small>Gestão Financeira</small>
           </span>
         </button>
@@ -2310,7 +2534,7 @@ export default function App() {
       {renderMobileMenu()}
 
       <section className="dashboard-title-row">
-        <h1 className="main-title" style={styles.titulo}>📊 Contas a Pagar</h1>
+        <h1 className="main-title" style={styles.titulo}>📊 Dashboard Financeiro</h1>
 
         <div className="summary-grid" style={styles.resumo}>
           <div style={styles.boxTotal}>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
-import Relatorios from './pages/Relatorios'
+import Relatorios from './pages/Relatorios.jsx'
 
 export default function App() {
   // =========================
@@ -1453,10 +1453,9 @@ export default function App() {
             </div>
           </div>
         ))}
-      </section>
-
           </>
         )}
+      </section>
 
       {menuAberto && (
         <div style={styles.menuFab}>

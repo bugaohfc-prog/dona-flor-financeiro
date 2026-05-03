@@ -1229,7 +1229,7 @@ export default function App() {
         <section style={styles.usuarioTopo}>
           <button style={styles.logoMarca} onClick={() => navegarPara('contas')}>
             <img src="/icon-192.png" alt="Dona Flor" style={styles.logoImagem} />
-            <span>
+            <span style={styles.logoTexto}>
               <strong>Dona Flor</strong>
               <small>Gestão Financeira</small>
             </span>
@@ -1793,14 +1793,41 @@ export default function App() {
       </section>
 
       {menuNavegacaoAberto && (
-        <div className="no-print" style={styles.menuNavegacao}>
-          <button style={styles.menuNavItem} onClick={() => navegarPara('contas')}>🏠 Painel</button>
-          <button style={styles.menuNavItem} onClick={() => navegarPara('agenda')}>📅 Agenda financeira</button>
-          <button style={styles.menuNavItem} onClick={() => navegarPara('relatorios')}>📊 Relatórios PRO+</button>
-          <button style={styles.menuNavItem} onClick={() => navegarPara('importar')}>📥 Importar planilha</button>
-          <button style={styles.menuNavItem} onClick={() => navegarPara('lixeira')}>🗑️ Lixeira</button>
-          <button style={styles.menuNavItem} onClick={() => navegarPara('configuracoes')}>⚙️ Configurações</button>
-          <button style={{ ...styles.menuNavItem, color: '#dc3545', fontWeight: 'bold' }} onClick={sairDoSistema}>🚪 Sair</button>
+        <div className="no-print" style={styles.menuBackdrop} onClick={() => setMenuNavegacaoAberto(false)}>
+          <div style={styles.menuNavegacao} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.menuPerfil}>
+              <img src="/icon-192.png" alt="Dona Flor" style={styles.menuPerfilIcone} />
+              <div>
+                <strong>Olá, {nomeUsuario()}</strong>
+                <small>{perfilUsuario || 'usuário'}</small>
+              </div>
+            </div>
+
+            <div style={styles.menuSecaoTitulo}>Navegação</div>
+            <button style={styles.menuNavItem} onClick={() => navegarPara('contas')}>
+              <span>🏠</span><div><strong>Painel</strong><small>Resumo das contas</small></div>
+            </button>
+            <button style={styles.menuNavItem} onClick={() => navegarPara('agenda')}>
+              <span>📅</span><div><strong>Agenda financeira</strong><small>Vencimentos e previsões</small></div>
+            </button>
+            <button style={styles.menuNavItem} onClick={() => navegarPara('relatorios')}>
+              <span>📊</span><div><strong>Relatórios PRO+</strong><small>Análises e indicadores</small></div>
+            </button>
+            <button style={styles.menuNavItem} onClick={() => navegarPara('importar')}>
+              <span>📥</span><div><strong>Importar CSV</strong><small>Trazer histórico do Excel</small></div>
+            </button>
+
+            <div style={styles.menuSecaoTitulo}>Sistema</div>
+            <button style={styles.menuNavItem} onClick={() => navegarPara('lixeira')}>
+              <span>🗑️</span><div><strong>Lixeira</strong><small>Restaurar ou excluir definitivo</small></div>
+            </button>
+            <button style={styles.menuNavItem} onClick={() => navegarPara('configuracoes')}>
+              <span>⚙️</span><div><strong>Configurações</strong><small>Preferências da empresa</small></div>
+            </button>
+            <button style={styles.menuSairItem} onClick={sairDoSistema}>
+              <span>🚪</span><div><strong>Sair</strong><small>Encerrar sessão</small></div>
+            </button>
+          </div>
         </div>
       )}
 
@@ -2163,16 +2190,18 @@ export default function App() {
 // =========================
 const styles = {
   usuarioTopo: {
-    background: '#fff',
-    border: '1px solid #e5e5e5',
-    borderRadius: 14,
+    background: 'linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%)',
+    border: '1px solid #d8eee9',
+    borderRadius: 18,
     padding: 12,
-    marginBottom: 12,
+    marginBottom: 16,
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+    boxShadow: '0 10px 24px rgba(15,118,110,0.10)',
+    position: 'relative',
+    zIndex: 20
   },
   logoMarca: {
     display: 'flex',
@@ -2196,11 +2225,18 @@ const styles = {
     boxShadow: 'inset 0 0 0 1px #cfe8da'
   },
   logoImagem: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     objectFit: 'cover',
-    boxShadow: '0 6px 16px rgba(20,184,166,0.25)'
+    background: '#0f766e',
+    boxShadow: '0 8px 18px rgba(20,184,166,0.28)'
+  },
+  logoTexto: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    lineHeight: 1.05
   },
   usuarioAcoes: {
     display: 'flex',
@@ -2215,34 +2251,89 @@ const styles = {
     color: '#1f2937'
   },
   btnMenuTopo: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    border: '1px solid #d8e8dd',
-    background: '#14b8a6',
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    border: 'none',
+    background: 'linear-gradient(135deg, #14b8a6, #0f766e)',
     color: '#fff',
     fontSize: 22,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    boxShadow: '0 8px 18px rgba(20,184,166,0.28)'
+  },
+  menuBackdrop: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(15, 23, 42, 0.22)',
+    zIndex: 999,
+    display: 'flex',
+    justifyContent: 'flex-end',
+    alignItems: 'flex-start',
+    padding: '88px 14px 14px 14px'
   },
   menuNavegacao: {
-    background: '#fff',
-    border: '1px solid #dfe7e2',
-    borderRadius: 16,
-    padding: 10,
-    marginBottom: 14,
+    width: 'min(360px, 94vw)',
+    maxHeight: 'calc(100vh - 110px)',
+    overflowY: 'auto',
+    background: '#ffffff',
+    border: '1px solid #d8eee9',
+    borderRadius: 22,
+    padding: 14,
     display: 'grid',
     gap: 8,
-    boxShadow: '0 10px 28px rgba(0,0,0,0.12)'
+    boxShadow: '0 24px 60px rgba(15,23,42,0.25)'
+  },
+  menuPerfil: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    borderRadius: 18,
+    background: 'linear-gradient(135deg, #ecfdf5, #f0fdfa)',
+    color: '#064e3b',
+    marginBottom: 4
+  },
+  menuPerfilIcone: {
+    width: 46,
+    height: 46,
+    borderRadius: 16,
+    objectFit: 'cover',
+    background: '#0f766e'
+  },
+  menuSecaoTitulo: {
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    fontWeight: 800,
+    color: '#6b7280',
+    padding: '10px 8px 2px'
   },
   menuNavItem: {
     width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
     textAlign: 'left',
     background: '#f8faf9',
     border: '1px solid #edf1ef',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: '12px 14px',
     fontSize: 15,
     color: '#064e3b'
+  },
+  menuSairItem: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    textAlign: 'left',
+    background: '#fff1f2',
+    border: '1px solid #fecdd3',
+    borderRadius: 16,
+    padding: '12px 14px',
+    fontSize: 15,
+    color: '#be123c',
+    fontWeight: 700
   },
   agendaResumoCard: {
     background: '#ffffff',

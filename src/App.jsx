@@ -117,6 +117,10 @@ export default function App() {
   const [valor, setValor] = useState('')
   const [dataVencimento, setDataVencimento] = useState('')
   const [centroCustoId, setCentroCustoId] = useState('')
+  const [contaWhatsapp, setContaWhatsapp] = useState(false)
+  const [contaEmail, setContaEmail] = useState(false)
+  const [contaPush, setContaPush] = useState(false)
+  const [contaDiasAviso, setContaDiasAviso] = useState('1')
 
   // =========================
   // BLOCO 2 — STATES NOTAS
@@ -302,14 +306,14 @@ export default function App() {
     .filter((conta) => {
       if (filtroStatus === 'pendentes') return conta.status !== 'pago'
       if (filtroStatus === 'pagas') return conta.status === 'pago'
-      if (filtroStatus === 'vencidas') return estaVencida((conta.vencimento || conta.data_vencimento), conta.status)
+      if (filtroStatus === 'vencidas') return estaVencida(conta.data_vencimento, conta.status)
       return true
     })
     .filter((conta) => !filtroCentro || conta.centro_custo_id === filtroCentro)
-    .filter((conta) => !filtroMes || pegarMes((conta.vencimento || conta.data_vencimento)) === filtroMes)
+    .filter((conta) => !filtroMes || pegarMes(conta.data_vencimento) === filtroMes)
     .filter((conta) => {
-      if (dataInicial && (conta.vencimento || conta.data_vencimento) < dataInicial) return false
-      if (dataFinal && (conta.vencimento || conta.data_vencimento) > dataFinal) return false
+      if (dataInicial && conta.data_vencimento < dataInicial) return false
+      if (dataFinal && conta.data_vencimento > dataFinal) return false
       return true
     })
     .filter((conta) =>
@@ -323,7 +327,7 @@ export default function App() {
     .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
   const vencido = contasFiltradas
-    .filter((conta) => estaVencida((conta.vencimento || conta.data_vencimento), conta.status))
+    .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
     .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
   const pendente = total - pago
@@ -336,7 +340,7 @@ export default function App() {
         .filter((conta) => conta.status === 'pago')
         .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
       const vencidoCentro = lista
-        .filter((conta) => estaVencida((conta.vencimento || conta.data_vencimento), conta.status))
+        .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
         .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
       return {
@@ -366,6 +370,10 @@ export default function App() {
     setValor('')
     setDataVencimento('')
     setCentroCustoId('')
+    setContaWhatsapp(configWhatsapp)
+    setContaEmail(configEmail)
+    setContaPush(configPush)
+    setContaDiasAviso(String(diasAvisoPadrao || 1))
     setModalConta(true)
   }
 
@@ -373,8 +381,12 @@ export default function App() {
     setEditandoContaId(conta.id)
     setDescricao(conta.descricao || '')
     setValor(conta.valor || '')
-    setDataVencimento((conta.vencimento || conta.data_vencimento) || '')
+    setDataVencimento(conta.data_vencimento || '')
     setCentroCustoId(conta.centro_custo_id || '')
+    setContaWhatsapp(conta.enviar_whatsapp ?? false)
+    setContaEmail(conta.enviar_email ?? false)
+    setContaPush(conta.enviar_push ?? false)
+    setContaDiasAviso(String(conta.dias_aviso ?? diasAvisoPadrao ?? 1))
     setModalConta(true)
   }
 
@@ -385,6 +397,10 @@ export default function App() {
     setValor('')
     setDataVencimento('')
     setCentroCustoId('')
+    setContaWhatsapp(false)
+    setContaEmail(false)
+    setContaPush(false)
+    setContaDiasAviso('1')
   }
 
   async function salvarConta() {
@@ -393,11 +409,22 @@ export default function App() {
       return
     }
 
+    const diasAvisoConta = Number(contaDiasAviso)
+
+    if (isNaN(diasAvisoConta) || diasAvisoConta < 0) {
+      alert('Informe uma quantidade válida de dias de aviso.')
+      return
+    }
+
     const payload = {
       descricao: primeiraLetraMaiuscula(descricao.trim()),
       valor: converterValor(valor),
       data_vencimento: formatarDataParaBanco(dataVencimento),
-      centro_custo_id: centroCustoId || null
+      centro_custo_id: centroCustoId || null,
+      enviar_whatsapp: contaWhatsapp,
+      enviar_email: contaEmail,
+      enviar_push: contaPush,
+      dias_aviso: diasAvisoConta
     }
 
     let error
@@ -702,8 +729,8 @@ export default function App() {
     const linhas = contasFiltradas.map((conta) => [
       conta.descricao || '',
       Number(conta.valor || 0).toFixed(2).replace('.', ','),
-      formatarData((conta.vencimento || conta.data_vencimento)),
-      estaVencida((conta.vencimento || conta.data_vencimento), conta.status) ? 'vencido' : conta.status,
+      formatarData(conta.data_vencimento),
+      estaVencida(conta.data_vencimento, conta.status) ? 'vencido' : conta.status,
       conta.df_centros_custo?.nome || ''
     ])
 
@@ -1337,7 +1364,7 @@ export default function App() {
         />
 
         {mostrarContas && contasFiltradas.map((conta) => {
-          const vencida = estaVencida((conta.vencimento || conta.data_vencimento), conta.status)
+          const vencida = estaVencida(conta.data_vencimento, conta.status)
 
           return (
             <div
@@ -1359,7 +1386,7 @@ export default function App() {
               </div>
 
               <div style={styles.cardInfo}>
-                {formatarData((conta.vencimento || conta.data_vencimento))} • {conta.df_centros_custo?.nome || '-'} • {vencida ? 'VENCIDO' : conta.status}
+                {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || '-'} • {vencida ? 'VENCIDO' : conta.status}
               </div>
 
               <div style={styles.acoes}>
@@ -1488,6 +1515,50 @@ export default function App() {
                 <option key={centro.id} value={centro.id}>{centro.nome}</option>
               ))}
             </select>
+
+            <div style={styles.blocoNotificacaoConta}>
+              <strong>🔔 Notificações desta conta</strong>
+
+              <label style={styles.switchLinhaCompacta}>
+                <span>WhatsApp</span>
+                <input
+                  type="checkbox"
+                  checked={contaWhatsapp}
+                  onChange={(e) => setContaWhatsapp(e.target.checked)}
+                />
+              </label>
+
+              <label style={styles.switchLinhaCompacta}>
+                <span>E-mail</span>
+                <input
+                  type="checkbox"
+                  checked={contaEmail}
+                  onChange={(e) => setContaEmail(e.target.checked)}
+                />
+              </label>
+
+              <label style={styles.switchLinhaCompacta}>
+                <span>Push mobile</span>
+                <input
+                  type="checkbox"
+                  checked={contaPush}
+                  onChange={(e) => setContaPush(e.target.checked)}
+                />
+              </label>
+
+              <input
+                style={styles.inputModal}
+                type="number"
+                min="0"
+                placeholder="Dias antes do vencimento"
+                value={contaDiasAviso}
+                onChange={(e) => setContaDiasAviso(e.target.value)}
+              />
+
+              <small style={styles.textoAjuda}>
+                Exemplo: 1 = avisar 1 dia antes. 0 = avisar no dia do vencimento.
+              </small>
+            </div>
 
             <button style={styles.btnSalvar} onClick={salvarConta}>Salvar</button>
             <button style={styles.btnCancelar} onClick={fecharConta}>Cancelar</button>
@@ -1871,6 +1942,42 @@ const styles = {
     alignItems: 'center',
     padding: 16,
     zIndex: 999
+  },
+  blocoNotificacaoConta: {
+    background: '#f8f9fa',
+    border: '1px solid #e5e5e5',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 10
+  },
+  switchLinhaCompacta: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 0',
+    borderBottom: '1px solid #e5e5e5',
+    fontSize: 14
+  },
+  textoAjuda: {
+    display: 'block',
+    color: '#666',
+    fontSize: 11,
+    marginTop: 4
+  },
+  notificacaoChips: {
+    display: 'flex',
+    gap: 6,
+    flexWrap: 'wrap',
+    marginTop: 6
+  },
+  chipNotif: {
+    background: '#eef6ff',
+    color: '#0d6efd',
+    border: '1px solid #b6d4fe',
+    borderRadius: 999,
+    padding: '3px 7px',
+    fontSize: 11,
+    fontWeight: 'bold'
   },
   modal: {
     background: '#fff',

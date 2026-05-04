@@ -2726,10 +2726,14 @@ export default function App() {
           <button onClick={abrirNovaNota}>+ Nova nota</button>
         </div>
 
-        <div style={styles.notasHeaderNovo}>
-          <div>
-            <strong>📝 Bloco de Notas</strong>
-            <small>{notasPendentes.length} pendente(s) • {notasCriticas} crítica(s) • {notasUrgentes} urgente(s)</small>
+        <div style={styles.notasHeaderNovo} className="notes-header-clean">
+          <div className="notes-title-wrap">
+            <strong className="notes-title">📝 Bloco de Notas</strong>
+            <div className="notes-stats-row">
+              <span className="note-stat note-stat-pendente">{notasPendentes.length} pendente(s)</span>
+              <span className="note-stat note-stat-critico">{notasCriticas} crítica(s)</span>
+              <span className="note-stat note-stat-urgente">{notasUrgentes} urgente(s)</span>
+            </div>
           </div>
           <button className="note-add-small" style={styles.btnMiniVerde} onClick={abrirNovaNota} title="Nova nota">+</button>
         </div>
@@ -2854,8 +2858,14 @@ export default function App() {
                 <span>{formatarValor(conta.valor)}</span>
               </div>
 
-              <div style={styles.cardInfo}>
-                {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || '-'} • {vencida ? 'VENCIDO' : conta.status}
+              <div style={styles.cardInfo} className="account-meta-line">
+                <span>{formatarData(conta.data_vencimento)}</span>
+                <span>•</span>
+                <span>{conta.df_centros_custo?.nome || '-'}</span>
+                <span>•</span>
+                <span className={`status-pill ${vencida ? 'status-vencido' : conta.status === 'pago' ? 'status-pago' : 'status-pendente'}`}>
+                  {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}
+                </span>
               </div>
 
               <div className="account-actions" style={styles.acoes}>

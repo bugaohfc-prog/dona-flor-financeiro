@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import {
   adicionarUsuarioEmpresa as adicionarUsuarioEmpresaService,
   atualizarPerfilUsuarioEmpresa as atualizarPerfilUsuarioEmpresaService,
+  enviarAcessoUsuarioEmpresa as enviarAcessoUsuarioEmpresaService,
   listarUsuariosEmpresa,
   normalizarPerfilUsuario,
   removerUsuarioEmpresa as removerUsuarioEmpresaService
@@ -201,7 +202,7 @@ export default function App() {
   const [menuAberto, setMenuAberto] = useState(false)
   const [menuNavegacaoAberto, setMenuNavegacaoAberto] = useState(false)
   const [sidebarCompacta, setSidebarCompacta] = useState(false)
-  const [gruposMenu, setGruposMenu] = useState({ principal: true, gestao: true, analise: true, sistema: true })
+  const [gruposMenu, setGruposMenu] = useState({ principal: true, financeiro: true, notas: true, analise: true, sistema: true })
   const [telaAtual, setTelaAtualState] = useState('contas')
   const [usuarioLogado, setUsuarioLogado] = useState(null)
   const [carregandoAuth, setCarregandoAuth] = useState(true)
@@ -524,7 +525,47 @@ export default function App() {
     setNomeConviteUsuario('')
     setPerfilConviteUsuario('operador')
     await buscarUsuariosEmpresa()
-    alert('Usuário pré-cadastrado. Quando ele criar login com este e-mail, vincule o user_id no Supabase ou use o gatilho SQL de vínculo automático.')
+
+    abrirConfirmacao({
+      titulo: 'Usuário cadastrado',
+      mensagem: 'O usuário foi adicionado à empresa. Deseja enviar agora o link de acesso/redefinição de senha para este e-mail?',
+      textoConfirmar: 'Enviar acesso',
+      tipo: 'sucesso',
+      acao: async () => {
+        try {
+          const resultado = await enviarAcessoUsuarioEmpresaService({
+            usuario: { email, nome: nomeConviteUsuario }
+          })
+          alert(resultado.mensagem)
+        } catch (error) {
+          alert(error.message)
+        }
+      }
+    })
+  }
+
+  async function enviarAcessoUsuarioEmpresa(usuario) {
+    if (!podeAdministrarUsuarios()) {
+      alert('Apenas administradores podem enviar acesso ou reset de senha.')
+      return
+    }
+
+    const nome = usuario.nome || usuario.email || 'este usuário'
+
+    abrirConfirmacao({
+      titulo: 'Enviar acesso',
+      mensagem: `Deseja enviar um link de acesso/redefinição de senha para ${nome}?`,
+      textoConfirmar: 'Enviar link',
+      tipo: 'padrao',
+      acao: async () => {
+        try {
+          const resultado = await enviarAcessoUsuarioEmpresaService({ usuario })
+          alert(resultado.mensagem)
+        } catch (error) {
+          alert(error.message)
+        }
+      }
+    })
   }
 
   async function atualizarPerfilUsuarioEmpresa(usuario, novoPerfil) {
@@ -1882,6 +1923,34 @@ export default function App() {
     )
   }
 
+
+  function renderTopShell() {
+    return (
+      <section className="no-print top-shell top-shell-clean" style={styles.usuarioTopo}>
+        <div className="top-shell-context">
+          <button className="top-shell-logo" style={styles.logoMarca} onClick={() => navegarPara('contas')} title="Ir para o painel">
+            <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.logoImagem} />
+            <span>
+              <strong>{nomeEmpresa || 'Dona Flor'}</strong>
+              <small>Gestão Financeira</small>
+            </span>
+          </button>
+        </div>
+
+        <div className="top-shell-actions" style={styles.usuarioAcoes}>
+          <button className="top-action-button" onClick={() => navegarPara('notas')} title="Abrir notas">📝 Notas</button>
+          <button className="top-action-button" onClick={() => navegarPara('configuracoes')} title="Configurações">⚙️</button>
+          <div className="top-user-chip" style={styles.usuarioTexto} title={`${nomeUsuario()} • ${perfilUsuario || 'usuário'}`}>
+            <strong>{nomeUsuario()}</strong>
+            <small>{normalizarPerfil(perfilUsuario || 'usuário')}</small>
+          </div>
+          <button className="top-exit-button" onClick={sairDoSistema} title="Sair">Sair</button>
+          <button className="mobile-menu-trigger" style={styles.btnMenuTopo} onClick={() => setMenuNavegacaoAberto(!menuNavegacaoAberto)}>☰</button>
+        </div>
+      </section>
+    )
+  }
+
   function renderAppFrame(children) {
     return (
       <div className="app-page app-frame" style={styles.page}>
@@ -2036,17 +2105,7 @@ export default function App() {
           }
 
         `}</style>
-
-        <section className="no-print top-shell" style={styles.usuarioTopo}>
-          <button style={styles.logoMarca} onClick={() => navegarPara('contas')}>
-            <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.logoImagem} />
-            <span><strong>DF</strong><small>Gestão Financeira</small></span>
-          </button>
-          <div style={styles.usuarioAcoes}>
-            <div style={styles.usuarioTexto}><strong>Olá, {nomeUsuario()}</strong><small>{perfilUsuario || 'usuário'}</small></div>
-            <button className="mobile-menu-trigger" style={styles.btnMenuTopo} onClick={() => setMenuNavegacaoAberto(!menuNavegacaoAberto)}>☰</button>
-          </div>
-        </section>
+      {renderTopShell()}
 
         {renderSidebar()}
         {renderMobileMenu()}
@@ -2213,17 +2272,7 @@ export default function App() {
           }
 
         `}</style>
-
-        <section className="no-print top-shell" style={styles.usuarioTopo}>
-          <button style={styles.logoMarca} onClick={() => navegarPara('contas')}>
-            <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.logoImagem} />
-            <span><strong>DF</strong><small>Gestão Financeira</small></span>
-          </button>
-          <div style={styles.usuarioAcoes}>
-            <div style={styles.usuarioTexto}><strong>Olá, {nomeUsuario()}</strong><small>{perfilUsuario || 'usuário'}</small></div>
-            <button className="mobile-menu-trigger" style={styles.btnMenuTopo} onClick={() => setMenuNavegacaoAberto(!menuNavegacaoAberto)}>☰</button>
-          </div>
-        </section>
+      {renderTopShell()}
 
         {renderSidebar()}
         {renderMobileMenu()}
@@ -2268,12 +2317,12 @@ export default function App() {
   function renderSidebar() {
     return (
       <aside className={`desktop-sidebar no-print ${sidebarCompacta ? 'compacta' : ''}`}>
-        <div className="desktop-sidebar-brand">
+        <div className="desktop-sidebar-brand sidebar-brand-clean" title="DF Gestão Financeira">
           <img src="/icon-192.png" alt="DF Gestão Financeira" />
           {!sidebarCompacta && (
             <div>
-              <strong>DF Gestão</strong>
-              <small>Financeira</small>
+              <strong>Menu</strong>
+              <small>Navegação</small>
             </div>
           )}
         </div>
@@ -2285,14 +2334,18 @@ export default function App() {
 
         <div className="desktop-sidebar-scroll">
           <GrupoMenu id="principal" titulo="Principal">
-            <ItemMenu tela="contas" icon="🏠" label="Dashboard" />
+            <ItemMenu tela="contas" icon="🏠" label="Painel" />
             <ItemMenu tela="agenda" icon="📅" label="Agenda" />
           </GrupoMenu>
 
-          <GrupoMenu id="gestao" titulo="Gestão">
+          <GrupoMenu id="financeiro" titulo="Financeiro">
             <ItemMenu icon="💰" label="Nova conta" onClick={abrirNovaConta} />
-            <ItemMenu icon="📝" label="Nova nota" onClick={abrirNovaNota} />
             <ItemMenu tela="importar" icon="📥" label="Importar CSV" />
+          </GrupoMenu>
+
+          <GrupoMenu id="notas" titulo="Notas">
+            <ItemMenu tela="notas" icon="📝" label="Todas as notas" />
+            <ItemMenu icon="➕" label="Nova nota" onClick={abrirNovaNota} />
           </GrupoMenu>
 
           <GrupoMenu id="analise" titulo="Análise">
@@ -2307,12 +2360,8 @@ export default function App() {
         </div>
 
         <div className="desktop-sidebar-spacer" />
-        <div className="desktop-sidebar-user" title={`${nomeUsuario()} • ${perfilUsuario || 'usuário'}`}>
-          <strong>{sidebarCompacta ? nomeUsuario().slice(0, 1).toUpperCase() : `Olá, ${nomeUsuario()}`}</strong>
-          {!sidebarCompacta && <small>{perfilUsuario || 'usuário'}</small>}
-        </div>
         <nav className="desktop-sidebar-nav sidebar-exit">
-          <button onClick={sairDoSistema} title="Sair"><span className="menu-icon">🚪</span>{!sidebarCompacta && <span>Sair</span>}</button>
+          <button onClick={() => navegarPara('configuracoes')} title="Configurações"><span className="menu-icon">⚙️</span>{!sidebarCompacta && <span>Preferências</span>}</button>
         </nav>
       </aside>
     )
@@ -2342,10 +2391,15 @@ export default function App() {
           </details>
 
           <details className="mobile-menu-group" open>
-            <summary>Gestão</summary>
+            <summary>Financeiro</summary>
             {item('💰', 'Nova conta', 'Cadastrar pagamento', abrirNovaConta)}
-            {item('📝', 'Nova nota', 'Lembrete rápido', abrirNovaNota)}
             {item('📥', 'Importar CSV', 'Trazer histórico do Excel', () => navegarPara('importar'))}
+          </details>
+
+          <details className="mobile-menu-group" open>
+            <summary>Notas</summary>
+            {item('📝', 'Todas as notas', 'Consultar, buscar e organizar', () => navegarPara('notas'))}
+            {item('➕', 'Nova nota', 'Criar lembrete rápido', abrirNovaNota)}
           </details>
 
           <details className="mobile-menu-group">
@@ -2396,6 +2450,75 @@ export default function App() {
   }
 
 
+
+  if (telaAtual === 'notas') {
+    return renderAppFrame(
+      <>
+        <div className="page-title-actions">
+          <div>
+            <h1 style={styles.titulo}>📝 Notas</h1>
+            <p style={styles.textoNota}>Central de notas e lembretes da empresa, separada do painel financeiro para reduzir poluição visual.</p>
+          </div>
+          <div className="page-actions-row">
+            <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>← Painel</button>
+            <button style={styles.btnSalvar} onClick={abrirNovaNota}>+ Nova nota</button>
+          </div>
+        </div>
+
+        <section style={styles.cardConfiguracao} className="notes-page-section">
+          <div className="notes-page-header">
+            <div>
+              <h2 style={styles.subtitulo}>Todas as notas</h2>
+              <p style={styles.textoNota}>{notasFiltradas.length} nota(s) encontrada(s) • {notasPendentes.length} pendente(s)</p>
+            </div>
+            <div className="notes-page-stats">
+              <span className="note-stat note-stat-pendente">{notasPendentes.length} pendente(s)</span>
+              <span className="note-stat note-stat-critico">{notasCriticas} crítica(s)</span>
+              <span className="note-stat note-stat-urgente">{notasUrgentes} urgente(s)</span>
+            </div>
+          </div>
+
+          <div className="notes-toolbar">
+            <input
+              style={styles.input}
+              placeholder="Buscar por título, conteúdo ou prioridade..."
+              value={buscaNota}
+              onChange={(e) => setBuscaNota(e.target.value)}
+            />
+          </div>
+
+          {notasFiltradas.length === 0 && (
+            <p style={styles.mensagemVazia}>Nenhuma nota encontrada.</p>
+          )}
+
+          <div className="notes-page-grid">
+            {notasFiltradas.map((nota) => {
+              const prioridade = nota.prioridade || 'normal'
+              return (
+                <div key={nota.id} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
+                  <div style={styles.cardTopo}>
+                    <strong style={{ textDecoration: nota.concluida ? 'line-through' : 'none' }}>{nota.titulo}</strong>
+                    <span style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
+                      {prioridade === 'critico' ? 'Crítico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
+                    </span>
+                  </div>
+
+                  {nota.data_evento && <small className="note-event-date">📅 {formatarData(nota.data_evento)}</small>}
+                  {nota.conteudo && <p style={styles.textoNota}>{nota.conteudo}</p>}
+
+                  <div style={styles.acoes}>
+                    <button style={styles.btnPago} onClick={() => alternarNotaConcluida(nota)}>{nota.concluida ? 'Reabrir' : 'Concluir'}</button>
+                    <button style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
+                    <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>Excluir</button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      </>
+    )
+  }
 
 
   if (telaAtual === 'importar') {
@@ -2603,13 +2726,23 @@ export default function App() {
                   </select>
 
                   {podeAdministrarUsuarios() && (
-                    <button
-                      style={styles.btnExcluir}
-                      disabled={atual}
-                      onClick={() => removerUsuarioEmpresa(usuario)}
-                    >
-                      Remover
-                    </button>
+                    <div className="user-actions">
+                      <button
+                        style={styles.btnSecundario}
+                        onClick={() => enviarAcessoUsuarioEmpresa(usuario)}
+                      >
+                        Enviar acesso
+                      </button>
+
+                      <button
+                        style={styles.btnExcluir}
+                        disabled={atual}
+                        onClick={() => removerUsuarioEmpresa(usuario)}
+                        title={atual ? 'Você não pode remover o próprio acesso.' : 'Remover usuário'}
+                      >
+                        Remover
+                      </button>
+                    </div>
                   )}
                 </div>
               )
@@ -3487,28 +3620,7 @@ export default function App() {
       <div className="print-footer">
         Relatório gerado pelo Sistema DF Gestão Financeira
       </div>
-
-      <section className="no-print top-shell" style={styles.usuarioTopo}>
-        <button style={styles.logoMarca} onClick={() => navegarPara('contas')}>
-          <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.logoImagem} />
-          <span>
-            <strong>DF</strong>
-            <small>Gestão Financeira</small>
-          </span>
-        </button>
-
-        <div style={styles.usuarioAcoes}>
-          <div style={styles.usuarioTexto}>
-            <strong>Olá, {nomeUsuario()}</strong>
-            <small>{perfilUsuario || 'usuário'}</small>
-          </div>
-
-
-          <button className="mobile-menu-trigger" style={styles.btnMenuTopo} onClick={() => setMenuNavegacaoAberto(!menuNavegacaoAberto)}>
-            ☰
-          </button>
-        </div>
-      </section>
+      {renderTopShell()}
 
       {renderSidebar()}
 
@@ -3583,7 +3695,7 @@ export default function App() {
         )}
 
         <div style={styles.notasListaNova}>
-          {notasFiltradas.slice(0, 8).map((nota) => {
+          {notasFiltradas.slice(0, 4).map((nota) => {
             const prioridade = nota.prioridade || 'normal'
             return (
               <div key={nota.id} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
@@ -3607,6 +3719,8 @@ export default function App() {
             )
           })}
         </div>
+
+        <button className="notes-see-all" style={styles.btnCinza} onClick={() => navegarPara('notas')}>Ver todas as notas</button>
       </section>
 
 
@@ -4426,7 +4540,17 @@ const styles = {
     color: '#fff',
     border: 'none',
     padding: '6px 10px',
-    borderRadius: 8
+    borderRadius: 8,
+    cursor: 'pointer'
+  },
+  btnSecundario: {
+    background: '#f8fafc',
+    color: '#0f766e',
+    border: '1px solid #99f6e4',
+    padding: '6px 10px',
+    borderRadius: 8,
+    fontWeight: 800,
+    cursor: 'pointer'
   },
   btnCinza: {
     background: '#6c757d',

@@ -21,11 +21,38 @@ export async function listarUsuariosEmpresa(empresaId) {
 
   if (error) throw error
 
-  return (data || []).map((usuario) => ({
+  const usuariosNormalizados = (data || []).map((usuario) => ({
     ...usuario,
+    email: String(usuario.email || '').trim().toLowerCase(),
     perfil: normalizarPerfilUsuario(usuario.perfil)
   }))
+
+  const mapa = new Map()
+
+  for (const usuario of usuariosNormalizados) {
+    const chave = usuario.user_id || usuario.email || usuario.id
+    const existente = mapa.get(chave)
+
+    if (!existente) {
+      mapa.set(chave, usuario)
+      continue
+    }
+
+    mapa.set(chave, {
+      ...existente,
+      ...usuario,
+      id: existente.id || usuario.id,
+      nome: existente.nome || usuario.nome,
+      email: existente.email || usuario.email,
+      user_id: existente.user_id || usuario.user_id,
+      perfil: existente.perfil === 'admin' ? existente.perfil : usuario.perfil,
+      created_at: existente.created_at || usuario.created_at
+    })
+  }
+
+  return Array.from(mapa.values())
 }
+
 
 export async function adicionarUsuarioEmpresa({ empresaId, email, nome, perfil }) {
   const emailNormalizado = String(email || '').trim().toLowerCase()
@@ -98,4 +125,41 @@ export async function removerUsuarioEmpresa({ empresaId, usuario }) {
 
   const { error } = await consulta
   if (error) throw error
+}
+
+
+export async function enviarAcessoUsuarioEmpresa({ usuario }) {
+  const email = String(usuario?.email || '').trim().toLowerCase()
+
+  if (!email || !email.includes('@')) {
+    throw new Error('Este usuário não possui e-mail válido para envio de acesso.')
+  }
+
+  const redirectTo = `${window.location.origin}/reset-password`
+
+  const { data: conviteData, error: conviteError } = await supabase.functions.invoke('convidar-usuario', {
+    body: {
+      email,
+      nome: usuario.nome || '',
+      redirectTo
+    }
+  })
+
+  if (!conviteError) {
+    return {
+      tipo: 'convite',
+      mensagem: conviteData?.message || 'Convite enviado para o e-mail do usuário.'
+    }
+  }
+
+  const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo
+  })
+
+  if (resetError) throw resetError
+
+  return {
+    tipo: 'reset',
+    mensagem: 'Envio solicitado. Se este e-mail já existir no Auth, o usuário receberá o link para criar/redefinir a senha.'
+  }
 }

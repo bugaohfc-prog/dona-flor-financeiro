@@ -1209,6 +1209,13 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
   align-items: center;
 }
 
+.user-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
 .user-main-info {
   display: grid;
   gap: 4px;
@@ -1253,6 +1260,14 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
 
   .users-header-row {
     display: grid;
+  }
+
+  .user-actions {
+    justify-content: stretch;
+  }
+
+  .user-actions button {
+    width: 100%;
   }
 }
 
@@ -1361,5 +1376,263 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
     min-width: 0 !important;
     padding: 8px 7px !important;
     font-size: 13px !important;
+  }
+}
+
+/* ===== DF SaaS — Layout desktop profissional / menu modular / notas ===== */
+@media (min-width: 980px) {
+  body { background: #f4f7f8 !important; }
+
+  .desktop-sidebar {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  .desktop-sidebar-brand {
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  .desktop-sidebar-brand img {
+    background: #ecfeff !important;
+    box-shadow: 0 8px 22px rgba(20, 184, 166, 0.14) !important;
+  }
+
+  .desktop-sidebar-brand strong,
+  .desktop-sidebar-user strong {
+    color: #0f172a !important;
+  }
+
+  .desktop-sidebar-brand small,
+  .desktop-sidebar-user small {
+    color: #64748b !important;
+  }
+
+  .sidebar-collapse-btn {
+    background: #f8fafc !important;
+    color: #0f766e !important;
+    border: 1px solid #ccfbf1 !important;
+  }
+
+  .sidebar-group-toggle {
+    color: #64748b !important;
+  }
+
+  .desktop-sidebar-nav button {
+    color: #334155 !important;
+  }
+
+  .desktop-sidebar-nav button:hover {
+    background: #f0fdfa !important;
+    border-color: #ccfbf1 !important;
+    color: #0f766e !important;
+  }
+
+  .desktop-sidebar-nav button.active {
+    background: #ecfeff !important;
+    border-color: #99f6e4 !important;
+    color: #0f766e !important;
+    box-shadow: inset 3px 0 0 #14b8a6 !important;
+  }
+
+  .desktop-sidebar-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1 !important;
+  }
+
+  .top-shell-clean {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06) !important;
+    min-height: 64px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .top-shell-logo {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .top-shell-logo span strong {
+    color: #0f172a !important;
+  }
+
+  .top-shell-logo span small {
+    color: #64748b !important;
+  }
+
+  .top-shell-actions {
+    gap: 10px !important;
+  }
+
+  .top-action-button,
+  .top-exit-button {
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #334155;
+    font-weight: 900;
+    padding: 0 14px;
+    cursor: pointer;
+  }
+
+  .top-action-button:hover {
+    border-color: #99f6e4;
+    background: #ecfeff;
+    color: #0f766e;
+  }
+
+  .top-exit-button {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+  }
+
+  .top-user-chip {
+    min-width: 128px;
+    padding: 8px 12px !important;
+    border-radius: 999px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    text-align: left;
+  }
+
+  .top-user-chip strong {
+    display: block;
+    color: #0f172a !important;
+    line-height: 1;
+  }
+
+  .top-user-chip small {
+    color: #64748b !important;
+    text-transform: capitalize;
+  }
+
+  .notes-panel {
+    position: static !important;
+    width: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 0 18px 0 !important;
+  }
+
+  .dashboard-title-row,
+  .agenda-card-polished,
+  .filters-desktop,
+  .result-summary,
+  .content-block,
+  .notes-block {
+    margin-right: 0 !important;
+    max-width: none !important;
+    width: auto !important;
+  }
+
+  .notes-block {
+    display: grid !important;
+    grid-template-columns: minmax(220px, 300px) 1fr auto !important;
+    align-items: start !important;
+    gap: 16px !important;
+  }
+
+  .notes-block .quick-actions-card {
+    margin-bottom: 0 !important;
+  }
+
+  .notes-block .notes-header-clean,
+  .notes-block > input,
+  .notes-block .notes-see-all {
+    grid-column: auto !important;
+  }
+
+  .notes-block > input {
+    min-width: 280px !important;
+  }
+
+  .notes-block .notes-see-all {
+    height: 42px !important;
+    white-space: nowrap !important;
+  }
+
+  .notes-block .notas-lista,
+  .notes-block [style*="grid"] {
+    grid-column: 1 / -1 !important;
+  }
+
+  .notes-page-section {
+    padding: 20px !important;
+  }
+
+  .page-title-actions,
+  .notes-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 16px;
+  }
+
+  .page-actions-row,
+  .notes-page-stats {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .notes-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    margin-bottom: 16px;
+  }
+
+  .notes-page-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+
+@media (min-width: 980px) and (max-width: 1220px) {
+  .notes-page-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .notes-block {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 979px) {
+  .top-action-button,
+  .top-exit-button {
+    display: none !important;
+  }
+
+  .top-shell-clean {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .top-user-chip {
+    display: none !important;
+  }
+
+  .notes-page-grid {
+    display: grid;
+    gap: 12px;
+  }
+
+  .page-title-actions,
+  .notes-page-header,
+  .page-actions-row,
+  .notes-page-stats {
+    display: grid;
+    gap: 10px;
   }
 }

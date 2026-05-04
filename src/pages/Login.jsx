@@ -28,6 +28,11 @@ export default function Login({ onLogin }) {
       return
     }
 
+    const { error: erroVinculo } = await supabase.rpc('vincular_usuario_logado')
+    if (erroVinculo) {
+      console.warn('Não foi possível executar vínculo automático:', erroVinculo.message)
+    }
+
     onLogin(data.user)
   }
 

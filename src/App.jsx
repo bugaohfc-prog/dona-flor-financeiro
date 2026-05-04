@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 import {
   adicionarUsuarioEmpresa as adicionarUsuarioEmpresaService,
@@ -11,7 +11,29 @@ import Relatorios from './pages/Relatorios.jsx'
 import Login from './pages/Login.jsx'
 import './styles.css'
 
+const SESSAO_STORAGE_KEY = 'df_sessao_segura'
+const OITO_HORAS_MS = 8 * 60 * 60 * 1000
+const TRINTA_MINUTOS_MS = 30 * 60 * 1000
+const VINTE_CINCO_MINUTOS_MS = 25 * 60 * 1000
+
+function lerSessaoSegura() {
+  try {
+    return JSON.parse(localStorage.getItem(SESSAO_STORAGE_KEY) || '{}')
+  } catch {
+    return {}
+  }
+}
+
+function salvarSessaoSegura(dados) {
+  localStorage.setItem(SESSAO_STORAGE_KEY, JSON.stringify(dados))
+}
+
+function limparSessaoSegura() {
+  localStorage.removeItem(SESSAO_STORAGE_KEY)
+}
+
 export default function App() {
+  const avisoSessaoMostradoRef = useRef(false)
   // =========================
   // BLOCO 0 — UTILITÁRIOS
   // =========================
@@ -249,6 +271,7 @@ export default function App() {
         setPerfilUsuario('')
         setNomeUsuarioPerfil('')
         setErroEmpresa('')
+        limparSessaoSegura()
       }
     })
 
@@ -257,6 +280,73 @@ export default function App() {
       listener.subscription.unsubscribe()
     }
   }, [])
+
+  useEffect(() => {
+    if (!usuarioLogado) return
+
+    const agora = Date.now()
+    const sessaoAtual = lerSessaoSegura()
+
+    salvarSessaoSegura({
+      inicio: sessaoAtual.inicio || agora,
+      ultimaAtividade: agora
+    })
+
+    function registrarAtividade() {
+      const sessao = lerSessaoSegura()
+      salvarSessaoSegura({
+        inicio: sessao.inicio || Date.now(),
+        ultimaAtividade: Date.now()
+      })
+      avisoSessaoMostradoRef.current = false
+    }
+
+    async function encerrarPorSeguranca(mensagem) {
+      limparSessaoSegura()
+      await supabase.auth.signOut()
+      alert(mensagem)
+    }
+
+    function verificarExpiracao() {
+      const sessao = lerSessaoSegura()
+      const inicio = Number(sessao.inicio || Date.now())
+      const ultimaAtividade = Number(sessao.ultimaAtividade || Date.now())
+      const agoraVerificacao = Date.now()
+      const tempoTotal = agoraVerificacao - inicio
+      const tempoInativo = agoraVerificacao - ultimaAtividade
+
+      if (tempoTotal >= OITO_HORAS_MS) {
+        encerrarPorSeguranca('Sua sessão expirou por segurança. Faça login novamente.')
+        return
+      }
+
+      if (tempoInativo >= TRINTA_MINUTOS_MS) {
+        encerrarPorSeguranca('Sua sessão foi encerrada por inatividade. Faça login novamente.')
+        return
+      }
+
+      if (tempoInativo >= VINTE_CINCO_MINUTOS_MS && !avisoSessaoMostradoRef.current) {
+        avisoSessaoMostradoRef.current = true
+        abrirConfirmacao({
+          titulo: 'Sessão quase expirada',
+          mensagem: 'Sua sessão vai expirar por segurança. Deseja continuar conectado?',
+          textoConfirmar: 'Continuar conectado',
+          tipo: 'padrao',
+          acao: async () => registrarAtividade()
+        })
+      }
+    }
+
+    const eventos = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart']
+    eventos.forEach((evento) => window.addEventListener(evento, registrarAtividade, { passive: true }))
+
+    const intervalo = window.setInterval(verificarExpiracao, 60 * 1000)
+
+    return () => {
+      eventos.forEach((evento) => window.removeEventListener(evento, registrarAtividade))
+      window.clearInterval(intervalo)
+    }
+  }, [usuarioLogado])
 
   useEffect(() => {
     if (!usuarioLogado) {
@@ -312,6 +402,11 @@ export default function App() {
   async function carregarEmpresaDoUsuario(userId) {
     setLoading(true)
     setErroEmpresa('')
+
+    const { error: erroVinculo } = await supabase.rpc('vincular_usuario_logado')
+    if (erroVinculo) {
+      console.warn('Não foi possível executar vínculo automático:', erroVinculo.message)
+    }
 
     const { data, error } = await supabase
       .from('df_usuarios_empresas')
@@ -449,14 +544,27 @@ export default function App() {
       }
     }
 
-    try {
-      await atualizarPerfilUsuarioEmpresaService({ empresaId, usuario, perfil })
-    } catch (error) {
-      alert(error.message)
-      return
-    }
+    if (perfil === normalizarPerfil(usuario.perfil)) return
 
-    await buscarUsuariosEmpresa()
+    const nome = usuario.nome || usuario.email || 'este usuário'
+    const perfilLabel = primeiraLetraMaiuscula(perfil)
+
+    abrirConfirmacao({
+      titulo: 'Alterar perfil',
+      mensagem: `Deseja alterar o perfil de ${nome} para ${perfilLabel}?`,
+      textoConfirmar: 'Confirmar alteração',
+      tipo: perfil === 'admin' ? 'perigo' : 'padrao',
+      acao: async () => {
+        try {
+          await atualizarPerfilUsuarioEmpresaService({ empresaId, usuario, perfil })
+        } catch (error) {
+          alert(error.message)
+          return
+        }
+
+        await buscarUsuariosEmpresa()
+      }
+    })
   }
 
   async function removerUsuarioEmpresa(usuario) {
@@ -470,6 +578,14 @@ export default function App() {
     if (usuarioAtual) {
       alert('Você não pode remover o próprio acesso por aqui.')
       return
+    }
+
+    if (normalizarPerfil(usuario.perfil) === 'admin') {
+      const adminsAtivos = usuariosEmpresa.filter((u) => normalizarPerfil(u.perfil) === 'admin')
+      if (adminsAtivos.length <= 1) {
+        alert('Você não pode remover o último administrador da empresa.')
+        return
+      }
     }
 
     abrirConfirmacao({
@@ -1544,6 +1660,7 @@ export default function App() {
   }
 
   async function sairDoSistema() {
+    limparSessaoSegura()
     await supabase.auth.signOut()
     setUsuarioLogado(null)
     setEmpresaId(null)

@@ -100,6 +100,25 @@ export default function App() {
     return alvo.getMonth() === hoje.getMonth() && alvo.getFullYear() === hoje.getFullYear()
   }
 
+  function montarDataRecorrente(ano, mes, dia) {
+    const ultimoDiaMes = new Date(ano, mes, 0).getDate()
+    const diaSeguro = Math.min(Number(dia || 1), ultimoDiaMes)
+    return `${ano}-${String(mes).padStart(2, '0')}-${String(diaSeguro).padStart(2, '0')}`
+  }
+
+  function deveGerarRecorrenciaNoMes(recorrencia, ano, mes) {
+    if (!recorrencia?.ativo) return false
+    if ((recorrencia.tipo_recorrencia || 'mensal') !== 'mensal') return false
+
+    const inicio = recorrencia.data_inicio ? dataLocal(recorrencia.data_inicio) : null
+    if (!inicio) return true
+
+    const primeiroDiaMes = new Date(ano, mes - 1, 1)
+    const ultimoDiaMes = new Date(ano, mes, 0)
+
+    return inicio <= ultimoDiaMes && primeiroDiaMes >= new Date(inicio.getFullYear(), inicio.getMonth(), 1)
+  }
+
   // =========================
   // BLOCO 1 — STATES CONTAS
   // =========================
@@ -123,6 +142,9 @@ export default function App() {
   const [contaEmail, setContaEmail] = useState(false)
   const [contaPush, setContaPush] = useState(false)
   const [contaDiasAviso, setContaDiasAviso] = useState('1')
+  const [contaRecorrente, setContaRecorrente] = useState(false)
+  const [tipoRecorrencia, setTipoRecorrencia] = useState('mensal')
+  const [diaVencimentoRecorrencia, setDiaVencimentoRecorrencia] = useState('')
 
   // =========================
   // BLOCO 2 — STATES NOTAS
@@ -338,7 +360,72 @@ export default function App() {
       return
     }
 
-    setContas(data || [])
+    const contasAtuais = data || []
+    const contasComRecorrencias = await garantirContasRecorrentesDoMes(empresaAtual, contasAtuais)
+    setContas(contasComRecorrencias)
+  }
+
+  async function garantirContasRecorrentesDoMes(empresaAtual, contasAtuais) {
+    const hoje = new Date()
+    const ano = hoje.getFullYear()
+    const mes = hoje.getMonth() + 1
+
+    const { data: recorrentes, error } = await supabase
+      .from('df_contas_recorrentes')
+      .select('*')
+      .eq('empresa_id', empresaAtual)
+      .eq('ativo', true)
+
+    if (error) {
+      console.warn('Não foi possível carregar contas recorrentes:', error.message)
+      return contasAtuais
+    }
+
+    const novasContas = []
+
+    ;(recorrentes || []).forEach((recorrencia) => {
+      if (!deveGerarRecorrenciaNoMes(recorrencia, ano, mes)) return
+
+      const dataGerada = montarDataRecorrente(ano, mes, recorrencia.dia_vencimento)
+
+      const jaExiste = contasAtuais.some((conta) =>
+        String(conta.descricao || '').trim().toLowerCase() === String(recorrencia.descricao || '').trim().toLowerCase()
+        && conta.data_vencimento === dataGerada
+      )
+
+      if (jaExiste) return
+
+      novasContas.push({
+        empresa_id: empresaAtual,
+        descricao: recorrencia.descricao,
+        valor: Number(recorrencia.valor || 0),
+        data_vencimento: dataGerada,
+        vencimento: dataGerada,
+        centro_custo_id: recorrencia.centro_custo_id || null,
+        status: 'pendente',
+        excluido: false,
+        enviar_whatsapp: recorrencia.enviar_whatsapp ?? false,
+        enviar_email: recorrencia.enviar_email ?? false,
+        enviar_push: recorrencia.enviar_push ?? false,
+        dias_aviso: recorrencia.dias_aviso ?? 1
+      })
+    })
+
+    if (novasContas.length === 0) return contasAtuais
+
+    const { data: contasCriadas, error: erroInsert } = await supabase
+      .from('df_contas')
+      .insert(novasContas)
+      .select('*, df_centros_custo(nome)')
+
+    if (erroInsert) {
+      console.warn('Não foi possível gerar contas recorrentes:', erroInsert.message)
+      return contasAtuais
+    }
+
+    return [...contasAtuais, ...(contasCriadas || [])].sort((a, b) =>
+      String(a.data_vencimento || '').localeCompare(String(b.data_vencimento || ''))
+    )
   }
 
   async function buscarNotas(empresaAtual = empresaId) {
@@ -561,6 +648,9 @@ export default function App() {
     setContaEmail(configEmail)
     setContaPush(configPush)
     setContaDiasAviso(String(diasAvisoPadrao || 1))
+    setContaRecorrente(false)
+    setTipoRecorrencia('mensal')
+    setDiaVencimentoRecorrencia('')
     setModalConta(true)
   }
 
@@ -574,6 +664,9 @@ export default function App() {
     setContaEmail(conta.enviar_email ?? false)
     setContaPush(conta.enviar_push ?? false)
     setContaDiasAviso(String(conta.dias_aviso ?? diasAvisoPadrao ?? 1))
+    setContaRecorrente(false)
+    setTipoRecorrencia('mensal')
+    setDiaVencimentoRecorrencia(conta.data_vencimento ? String(Number(conta.data_vencimento.slice(8, 10))) : '')
     setModalConta(true)
   }
 
@@ -588,6 +681,9 @@ export default function App() {
     setContaEmail(false)
     setContaPush(false)
     setContaDiasAviso('1')
+    setContaRecorrente(false)
+    setTipoRecorrencia('mensal')
+    setDiaVencimentoRecorrencia('')
   }
 
   async function salvarConta() {
@@ -627,8 +723,39 @@ export default function App() {
       const resposta = await supabase.from('df_contas').update(payload).eq('id', editandoContaId).eq('empresa_id', empresaId)
       error = resposta.error
     } else {
-      const resposta = await supabase.from('df_contas').insert([{ ...payload, status: 'pendente' }])
+      const resposta = await supabase.from('df_contas').insert([{ ...payload, status: 'pendente', excluido: false }])
       error = resposta.error
+
+      if (!error && contaRecorrente) {
+        const dataBanco = formatarDataParaBanco(dataVencimento)
+        const diaRecorrencia = Number(diaVencimentoRecorrencia || String(dataBanco).slice(8, 10))
+
+        if (!diaRecorrencia || diaRecorrencia < 1 || diaRecorrencia > 31) {
+          alert('Informe um dia válido para a recorrência.')
+          return
+        }
+
+        const { error: erroRecorrencia } = await supabase
+          .from('df_contas_recorrentes')
+          .insert([{
+            empresa_id: empresaId,
+            descricao: primeiraLetraMaiuscula(descricao.trim()),
+            valor: converterValor(valor),
+            centro_custo_id: centroCustoId || null,
+            tipo_recorrencia: tipoRecorrencia,
+            dia_vencimento: diaRecorrencia,
+            data_inicio: dataBanco,
+            ativo: true,
+            enviar_whatsapp: contaWhatsapp,
+            enviar_email: contaEmail,
+            enviar_push: contaPush,
+            dias_aviso: diasAvisoConta
+          }])
+
+        if (erroRecorrencia) {
+          alert('A conta foi criada, mas a recorrência não foi salva: ' + erroRecorrencia.message)
+        }
+      }
     }
 
     if (error) {
@@ -1329,6 +1456,50 @@ export default function App() {
                 ))}
               </select>
 
+              {!editandoContaId && (
+                <div className="recurrence-box" style={styles.blocoRecorrenciaConta}>
+                  <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
+                    <span>
+                      <strong>🔁 Conta recorrente</strong>
+                      <small style={styles.textoAjuda}>Ideal para aluguel, internet, sistema, mensalidades e contas fixas.</small>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={contaRecorrente}
+                      onChange={(e) => {
+                        const marcado = e.target.checked
+                        setContaRecorrente(marcado)
+                        if (marcado && dataVencimento) {
+                          setDiaVencimentoRecorrencia(String(Number(formatarDataParaBanco(dataVencimento).slice(8, 10))))
+                        }
+                      }}
+                    />
+                  </label>
+
+                  {contaRecorrente && (
+                    <div className="recurrence-fields">
+                      <select style={styles.inputModal} value={tipoRecorrencia} onChange={(e) => setTipoRecorrencia(e.target.value)}>
+                        <option value="mensal">Mensal</option>
+                      </select>
+
+                      <input
+                        style={styles.inputModal}
+                        type="number"
+                        min="1"
+                        max="31"
+                        placeholder="Dia de vencimento mensal. Ex: 5"
+                        value={diaVencimentoRecorrencia || (dataVencimento ? String(Number(formatarDataParaBanco(dataVencimento).slice(8, 10))) : '')}
+                        onChange={(e) => setDiaVencimentoRecorrencia(e.target.value)}
+                      />
+
+                      <small style={styles.textoAjuda}>
+                        O sistema criará automaticamente essa conta no mês vigente quando ela ainda não existir.
+                      </small>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div style={styles.blocoNotificacaoConta}>
                 <strong>🔔 Notificações desta conta</strong>
 
@@ -1379,7 +1550,7 @@ export default function App() {
           <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
             <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
               <h3>Centros de Custo</h3>
-              <input style={styles.inputModal} placeholder="Novo centro" value={novoCentro} onChange={(e) => setNovoCentro(primeiraLetraMaiuscula(e.target.value))} />
+              <input style={styles.inputModal} placeholder="Novo centro" value={novoCentro} onChange={(e) => setNovoCentro(e.target.value)} autoFocus />
               <button style={styles.btnSalvar} onClick={salvarCentro}>Salvar Centro</button>
               {centros.map((centro) => (
                 <div key={centro.id} style={styles.itemCentro}>
@@ -1394,6 +1565,183 @@ export default function App() {
       </>
     )
   }
+
+  function renderAppFrame(children) {
+    return (
+      <div className="app-page app-frame" style={styles.page}>
+        <style>{`
+          .desktop-sidebar { display: none; }
+          @media (min-width: 980px) {
+            body { background: #eef7f5 !important; }
+            .app-frame { max-width: none !important; width: 100% !important; min-height: 100vh !important; margin: 0 !important; padding: 24px 32px 80px 300px !important; box-sizing: border-box !important; background: linear-gradient(180deg, #f8fafc 0%, #eef7f5 100%) !important; }
+            .app-frame-content { max-width: 1280px; margin: 0 auto; }
+            .app-frame-content > h1 { font-size: 34px !important; margin: 0 0 16px 0 !important; }
+            .app-frame-content > section { border-radius: 22px !important; box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07) !important; }
+            .relatorios-page { max-width: 1280px !important; width: 100% !important; padding: 0 !important; margin: 0 !important; background: transparent !important; }
+            .relatorios-page [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+            .desktop-sidebar { display: flex !important; position: fixed; left: 24px; top: 24px; bottom: 24px; width: 244px; padding: 18px; border-radius: 24px; background: linear-gradient(180deg, #064e3b 0%, #0f766e 48%, #14b8a6 100%); color: white; box-shadow: 0 24px 60px rgba(15, 118, 110, 0.28); z-index: 60; flex-direction: column; gap: 14px; box-sizing: border-box; }
+            .desktop-sidebar-brand { display:flex; align-items:center; gap:12px; padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,.18); }
+            .desktop-sidebar-brand img { width:48px; height:48px; border-radius:16px; background:white; }
+            .desktop-sidebar-brand strong { display:block; font-size:17px; }
+            .desktop-sidebar-brand small { color:rgba(255,255,255,.78); }
+            .desktop-sidebar-section-label { margin:12px 4px 4px; font-size:10px; letter-spacing:.9px; text-transform:uppercase; color:rgba(255,255,255,.62); font-weight:900; }
+            .desktop-sidebar-nav { display:grid; gap:6px; margin-top:2px; }
+            .desktop-sidebar-nav button { display:flex; align-items:center; gap:10px; width:100%; border:1px solid transparent; background:transparent; color:rgba(255,255,255,.92); border-radius:14px; padding:11px 12px; text-align:left; font-weight:800; cursor:pointer; }
+            .desktop-sidebar-nav button:hover { background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.12); }
+            .desktop-sidebar-nav button.active { background:rgba(255,255,255,.22); border-color:rgba(255,255,255,.18); box-shadow:inset 3px 0 0 rgba(255,255,255,.8); }
+            .desktop-sidebar-spacer { flex:1; }
+            .desktop-sidebar-user { border-radius:18px; padding:12px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.16); }
+            .desktop-sidebar-user strong { display:block; }
+            .desktop-sidebar-user small { color:rgba(255,255,255,.8); }
+            .top-shell { max-width:1280px; margin:0 auto 22px auto !important; padding:16px 18px !important; border-radius:24px !important; }
+            .mobile-menu-trigger { display:none !important; }
+            .agenda-page-grid { display:grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:16px; }
+          }
+          @media (max-width: 979px) { .app-frame { max-width: 430px; margin:auto; } }
+          .note-card-action { transition:.2s; }
+
+          /* ===== DF GESTAO — LAYOUT LIMPO E BLINDADO ===== */
+          @media (min-width: 980px) {
+            .app-page, .app-frame {
+              padding-left: 300px !important;
+              transition: padding-left .25s ease !important;
+            }
+            body:has(.desktop-sidebar.compacta) .app-page,
+            body:has(.desktop-sidebar.compacta) .app-frame {
+              padding-left: 112px !important;
+            }
+            .desktop-sidebar {
+              width: 244px !important;
+              overflow: hidden !important;
+              gap: 10px !important;
+            }
+            .desktop-sidebar.compacta {
+              width: 72px !important;
+              padding: 14px 10px !important;
+              align-items: center !important;
+            }
+            .desktop-sidebar.compacta .desktop-sidebar-brand {
+              justify-content: center !important;
+              padding-bottom: 10px !important;
+            }
+            .desktop-sidebar.compacta .desktop-sidebar-brand img {
+              width: 44px !important;
+              height: 44px !important;
+            }
+            .sidebar-collapse-btn {
+              display:flex; align-items:center; justify-content:center; gap:8px;
+              width:100%; border:1px solid rgba(255,255,255,.16); border-radius:14px;
+              background:rgba(255,255,255,.10); color:white; font-weight:900;
+              padding:9px 10px; cursor:pointer;
+            }
+            .desktop-sidebar-scroll {
+              width: 100%; overflow-y: auto; overflow-x: hidden; padding-right: 2px;
+              display: grid; gap: 8px;
+            }
+            .desktop-sidebar-scroll::-webkit-scrollbar { width: 4px; }
+            .desktop-sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.28); border-radius: 999px; }
+            .sidebar-group-clean { display:grid; gap:5px; width:100%; }
+            .sidebar-group-toggle {
+              display:flex; align-items:center; justify-content:space-between;
+              width:100%; border:0; background:transparent; color:rgba(255,255,255,.70);
+              text-transform:uppercase; letter-spacing:.7px; font-size:10px; font-weight:900;
+              padding:8px 8px 2px; cursor:pointer;
+            }
+            .desktop-sidebar.compacta .sidebar-group-toggle { justify-content:center; padding:6px 0; }
+            .desktop-sidebar-nav button {
+              min-height: 42px !important; padding:10px 11px !important; border-radius:14px !important;
+              white-space: nowrap !important;
+            }
+            .desktop-sidebar.compacta .desktop-sidebar-nav button { justify-content:center !important; padding:10px 0 !important; }
+            .menu-icon { width:22px; text-align:center; flex:0 0 22px; }
+            .desktop-sidebar.compacta .menu-icon { width:auto; flex:auto; }
+            .desktop-sidebar.compacta .desktop-sidebar-user { width:44px !important; height:44px !important; border-radius:16px !important; padding:0 !important; display:flex; align-items:center; justify-content:center; }
+            .desktop-sidebar.compacta .sidebar-exit { width:100%; }
+            .top-shell { background:#ffffff !important; }
+            .top-shell strong, .desktop-sidebar-brand strong { letter-spacing:.1px; }
+            .dashboard-title-row { margin-right: 360px !important; }
+            body:has(.desktop-sidebar.compacta) .dashboard-title-row,
+            body:has(.desktop-sidebar.compacta) .summary-grid,
+            body:has(.desktop-sidebar.compacta) .agenda-card-polished,
+            body:has(.desktop-sidebar.compacta) .filters-desktop,
+            body:has(.desktop-sidebar.compacta) .result-summary,
+            body:has(.desktop-sidebar.compacta) .content-block { margin-right: 360px !important; }
+            .notes-panel {
+              right: 28px !important; top: 158px !important; width: 330px !important;
+              padding: 18px !important; border-radius: 24px !important;
+              box-shadow: 0 18px 40px rgba(15,23,42,.08) !important;
+            }
+            .quick-actions-card {
+              display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px; border-radius:18px;
+              background:linear-gradient(135deg,#f8fafc,#ecfeff); border:1px solid #ccfbf1; margin-bottom:14px;
+            }
+            .quick-actions-card strong { grid-column:1/-1; font-size:15px; }
+            .quick-actions-card button { border:0; border-radius:12px; padding:11px 10px; color:white; font-weight:900; cursor:pointer; }
+            .quick-actions-card button:nth-of-type(1) { background:linear-gradient(135deg,#14b8a6,#0f766e); }
+            .quick-actions-card button:nth-of-type(2) { background:#111827; }
+            .account-card-desktop .account-actions { display:flex !important; gap:8px !important; flex-wrap:nowrap !important; }
+            .account-card-desktop .account-actions button { min-width:74px !important; margin:0 !important; }
+            .note-event-date { display:inline-flex; margin:6px 0; padding:4px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-weight:800; font-size:12px; }
+          }
+
+          @media (max-width: 979px) {
+            .mobile-menu-panel { padding-bottom: 24px !important; }
+            .mobile-menu-group { margin-top: 12px !important; }
+            .mobile-menu-group summary { padding: 10px 4px !important; font-weight:900; color:#0f766e; }
+            .mobile-fab-menu { display:grid !important; gap:10px !important; }
+            .notes-panel { position: static !important; width:auto !important; max-height:none !important; overflow:visible !important; }
+            .quick-actions-card { display:none !important; }
+          }
+
+
+          /* MOBILE: bloco de notas visível e FAB funcional */
+          @media (max-width: 979px) {
+            .notes-panel {
+              position: static !important;
+              width: auto !important;
+              max-height: none !important;
+              overflow: visible !important;
+              margin: 14px 0 18px !important;
+              padding: 16px !important;
+              border-radius: 22px !important;
+              background: #ffffff !important;
+              border: 1px solid #e5e7eb !important;
+              box-shadow: 0 12px 28px rgba(15,23,42,.08) !important;
+            }
+            .note-add-small {
+              width: 38px !important;
+              height: 38px !important;
+              display: inline-flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+            }
+            .mobile-fab, .mobile-fab-menu { z-index: 3000 !important; }
+            .mobile-fab-menu button { touch-action: manipulation !important; }
+          }
+
+        `}</style>
+
+        <section className="no-print top-shell" style={styles.usuarioTopo}>
+          <button style={styles.logoMarca} onClick={() => navegarPara('contas')}>
+            <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.logoImagem} />
+            <span><strong>DF</strong><small>Gestão Financeira</small></span>
+          </button>
+          <div style={styles.usuarioAcoes}>
+            <div style={styles.usuarioTexto}><strong>Olá, {nomeUsuario()}</strong><small>{perfilUsuario || 'usuário'}</small></div>
+            <button className="mobile-menu-trigger" style={styles.btnMenuTopo} onClick={() => setMenuNavegacaoAberto(!menuNavegacaoAberto)}>☰</button>
+          </div>
+        </section>
+
+        {renderSidebar()}
+        {renderMobileMenu()}
+
+        <main className="app-frame-content">{children}</main>
+        {renderConfirmacaoGlobal()}
+        {renderModaisGlobais()}
+      </div>
+    )
+  }
+
 
   function AppFrame({ children }) {
     return (
@@ -1798,8 +2146,8 @@ export default function App() {
 
 
   if (telaAtual === 'configuracoes') {
-    return (
-      <AppFrame>
+    return renderAppFrame(
+      <>
         <h1 style={styles.titulo}>⚙️ Configurações</h1>
 
         <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
@@ -1815,67 +2163,66 @@ export default function App() {
 
           {mostrarConfigNotificacoes && (
             <>
+              <label className="checkbox-row-fix" style={styles.switchLinha}>
+                <div>
+                  <strong>Notificações ativas</strong>
+                  <small>Controle geral dos disparos automáticos.</small>
+                </div>
 
-          <label className="checkbox-row-fix" style={styles.switchLinha}>
-            <div>
-              <strong>Notificações ativas</strong>
-              <small>Controle geral dos disparos automáticos.</small>
-            </div>
+                <input
+                  type="checkbox"
+                  checked={notificacoesAtivas}
+                  onChange={(e) => setNotificacoesAtivas(e.target.checked)}
+                />
+              </label>
 
-            <input
-              type="checkbox"
-              checked={notificacoesAtivas}
-              onChange={(e) => setNotificacoesAtivas(e.target.checked)}
-            />
-          </label>
+              <label className="checkbox-row-fix" style={styles.switchLinha}>
+                <div>
+                  <strong>WhatsApp</strong>
+                  <small>Permitir disparos por WhatsApp.</small>
+                </div>
 
-          <label className="checkbox-row-fix" style={styles.switchLinha}>
-            <div>
-              <strong>WhatsApp</strong>
-              <small>Permitir disparos por WhatsApp.</small>
-            </div>
+                <input
+                  type="checkbox"
+                  checked={configWhatsapp}
+                  onChange={(e) => setConfigWhatsapp(e.target.checked)}
+                />
+              </label>
 
-            <input
-              type="checkbox"
-              checked={configWhatsapp}
-              onChange={(e) => setConfigWhatsapp(e.target.checked)}
-            />
-          </label>
+              <label className="checkbox-row-fix" style={styles.switchLinha}>
+                <div>
+                  <strong>E-mail</strong>
+                  <small>Permitir disparos por e-mail.</small>
+                </div>
 
-          <label className="checkbox-row-fix" style={styles.switchLinha}>
-            <div>
-              <strong>E-mail</strong>
-              <small>Permitir disparos por e-mail.</small>
-            </div>
+                <input
+                  type="checkbox"
+                  checked={configEmail}
+                  onChange={(e) => setConfigEmail(e.target.checked)}
+                />
+              </label>
 
-            <input
-              type="checkbox"
-              checked={configEmail}
-              onChange={(e) => setConfigEmail(e.target.checked)}
-            />
-          </label>
+              <label className="checkbox-row-fix" style={styles.switchLinha}>
+                <div>
+                  <strong>Push mobile</strong>
+                  <small>Preparado para notificação web/PWA.</small>
+                </div>
 
-          <label className="checkbox-row-fix" style={styles.switchLinha}>
-            <div>
-              <strong>Push mobile</strong>
-              <small>Preparado para notificação web/PWA.</small>
-            </div>
+                <input
+                  type="checkbox"
+                  checked={configPush}
+                  onChange={(e) => setConfigPush(e.target.checked)}
+                />
+              </label>
 
-            <input
-              type="checkbox"
-              checked={configPush}
-              onChange={(e) => setConfigPush(e.target.checked)}
-            />
-          </label>
-
-          <input
-            style={styles.input}
-            type="number"
-            min="0"
-            placeholder="Dias padrão de aviso"
-            value={diasAvisoPadrao}
-            onChange={(e) => setDiasAvisoPadrao(e.target.value)}
-          />
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                placeholder="Dias padrão de aviso"
+                value={diasAvisoPadrao}
+                onChange={(e) => setDiasAvisoPadrao(e.target.value)}
+              />
             </>
           )}
         </section>
@@ -1889,47 +2236,29 @@ export default function App() {
 
           {mostrarConfigNegocio && (
             <>
+              <input
+                style={styles.input}
+                placeholder="Nome da empresa"
+                value={nomeEmpresa}
+                onChange={(e) => setNomeEmpresa(e.target.value)}
+              />
 
-          <input
-            style={styles.input}
-            placeholder="Nome da empresa"
-            value={nomeEmpresa}
-            onChange={(e) => setNomeEmpresa(e.target.value)}
-          />
+              <input
+                style={styles.input}
+                placeholder="WhatsApp padrão. Ex: 5511999999999"
+                value={whatsappPadrao}
+                onChange={(e) => setWhatsappPadrao(e.target.value)}
+              />
 
-          <input
-            style={styles.input}
-            placeholder="WhatsApp padrão. Ex: 5511999999999"
-            value={whatsappPadrao}
-            onChange={(e) => setWhatsappPadrao(e.target.value)}
-          />
-
-          <input
-            style={styles.input}
-            placeholder="E-mail padrão"
-            value={emailPadrao}
-            onChange={(e) => setEmailPadrao(e.target.value)}
-          />
+              <input
+                style={styles.input}
+                placeholder="E-mail padrão"
+                value={emailPadrao}
+                onChange={(e) => setEmailPadrao(e.target.value)}
+              />
             </>
           )}
         </section>
-
-        <section style={styles.cardConfiguracao}>
-          <h2 style={styles.subtitulo}>🧠 Como o sistema vai usar</h2>
-
-          <p style={styles.textoNota}>
-            O envio automático só acontecerá quando a configuração global estiver ativa
-            e a conta também estiver marcada para receber aviso.
-          </p>
-
-          <div style={styles.configResumo}>
-            <span>Geral: {notificacoesAtivas ? 'Ligado' : 'Desligado'}</span>
-            <span>WhatsApp: {configWhatsapp ? 'Ligado' : 'Desligado'}</span>
-            <span>E-mail: {configEmail ? 'Ligado' : 'Desligado'}</span>
-            <span>Push: {configPush ? 'Ligado' : 'Desligado'}</span>
-          </div>
-        </section>
-
 
         <section style={styles.cardConfiguracao}>
           <HeaderExpansivel
@@ -1956,10 +2285,26 @@ export default function App() {
           )}
         </section>
 
+        <section style={styles.cardConfiguracao}>
+          <h2 style={styles.subtitulo}>🧠 Como o sistema vai usar</h2>
+
+          <p style={styles.textoNota}>
+            O envio automático só acontecerá quando a configuração global estiver ativa
+            e a conta também estiver marcada para receber aviso.
+          </p>
+
+          <div style={styles.configResumo}>
+            <span>Geral: {notificacoesAtivas ? 'Ligado' : 'Desligado'}</span>
+            <span>WhatsApp: {configWhatsapp ? 'Ligado' : 'Desligado'}</span>
+            <span>E-mail: {configEmail ? 'Ligado' : 'Desligado'}</span>
+            <span>Push: {configPush ? 'Ligado' : 'Desligado'}</span>
+          </div>
+        </section>
+
         <button style={styles.btnSalvar} onClick={salvarConfiguracoes}>
           Salvar configurações
         </button>
-      </AppFrame>
+      </>
     )
   }
 
@@ -3687,6 +4032,13 @@ const styles = {
   blocoNotificacaoConta: {
     background: '#f8fafc',
     border: '1px solid #e5e5e5',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 10
+  },
+  blocoRecorrenciaConta: {
+    background: '#f0fdfa',
+    border: '1px solid #99f6e4',
     borderRadius: 12,
     padding: 10,
     marginBottom: 10

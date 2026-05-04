@@ -1078,3 +1078,72 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
     padding: 5px 8px;
   }
 }
+
+/* =========================================================
+   Conta recorrente — modal Nova Conta
+   ========================================================= */
+.recurrence-box {
+  display: grid;
+  gap: 8px;
+}
+
+.recurrence-box .checkbox-row-fix {
+  border-bottom: 0 !important;
+}
+
+.recurrence-fields {
+  display: grid;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+@media (min-width: 980px) {
+  .recurrence-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .recurrence-fields small {
+    grid-column: 1 / -1;
+  }
+}
+
+/* =========================================================
+   Ajuste Configurações: ordem, foco dos campos e checkboxes
+   ========================================================= */
+@media (min-width: 980px) {
+  .checkbox-row-fix {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .checkbox-row-fix > div,
+  .checkbox-row-fix > span {
+    min-width: 0 !important;
+    display: grid !important;
+    gap: 3px !important;
+  }
+
+  .checkbox-row-fix strong {
+    display: block !important;
+    color: #0f172a !important;
+    line-height: 1.15 !important;
+  }
+
+  .checkbox-row-fix small {
+    display: block !important;
+    color: #64748b !important;
+    line-height: 1.25 !important;
+  }
+
+  .checkbox-row-fix input[type="checkbox"] {
+    width: 18px !important;
+    height: 18px !important;
+    margin: 0 !important;
+    justify-self: end !important;
+    flex: 0 0 auto !important;
+  }
+}

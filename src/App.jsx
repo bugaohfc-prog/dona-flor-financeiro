@@ -2899,7 +2899,7 @@ export default function App() {
         {menuAberto ? '×' : '+'}
       </button>
 
-      {false && modalConta && (
+      {modalConta && (
         <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3>{editandoContaId ? 'Editar Conta' : 'Nova Conta'}</h3>
@@ -2965,7 +2965,7 @@ export default function App() {
         </div>
       )}
 
-      {false && modalNota && (
+      {modalNota && (
         <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3>{editandoNotaId ? 'Editar Nota' : 'Nova Nota'}</h3>
@@ -2985,7 +2985,7 @@ export default function App() {
         </div>
       )}
 
-      {false && modalCentro && (
+      {modalCentro && (
         <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3>Centros de Custo</h3>

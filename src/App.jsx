@@ -1298,8 +1298,8 @@ export default function App() {
     return (
       <>
         {modalConta && (
-          <div style={styles.overlay} onClick={fecharConta}>
-            <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div style={styles.overlay}>
+            <div style={styles.modal}>
               <h3>{editandoContaId ? 'Editar Conta' : 'Nova Conta'}</h3>
 
               <input style={styles.inputModal} placeholder="Descrição" value={descricao} onChange={(e) => setDescricao(primeiraLetraMaiuscula(e.target.value))} />
@@ -1342,8 +1342,8 @@ export default function App() {
         )}
 
         {modalNota && (
-          <div style={styles.overlay} onClick={fecharNota}>
-            <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div style={styles.overlay}>
+            <div style={styles.modal}>
               <h3>{editandoNotaId ? 'Editar Nota' : 'Nova Nota'}</h3>
               <input style={styles.inputModal} placeholder="Título" value={tituloNota} onChange={(e) => setTituloNota(primeiraLetraMaiuscula(e.target.value))} />
               <select style={styles.inputModal} value={prioridadeNota} onChange={(e) => setPrioridadeNota(e.target.value)}>
@@ -1360,8 +1360,8 @@ export default function App() {
         )}
 
         {modalCentro && (
-          <div style={styles.overlay} onClick={() => setModalCentro(false)}>
-            <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div style={styles.overlay}>
+            <div style={styles.modal}>
               <h3>Centros de Custo</h3>
               <input style={styles.inputModal} placeholder="Novo centro" value={novoCentro} onChange={(e) => setNovoCentro(primeiraLetraMaiuscula(e.target.value))} />
               <button style={styles.btnSalvar} onClick={salvarCentro}>Salvar Centro</button>
@@ -2535,34 +2535,6 @@ export default function App() {
             .quick-actions-card { display:none !important; }
           }
 
-          /* ===== MOBILE FIX REAL: FAB, MODAIS E ORDEM ===== */
-          @media (max-width: 979px) {
-            .mobile-fab {
-              bottom: 86px !important;
-              right: 18px !important;
-              z-index: 1000 !important;
-            }
-            .mobile-fab-menu {
-              bottom: 154px !important;
-              right: 18px !important;
-              z-index: 1001 !important;
-            }
-            .mobile-menu-trigger {
-              transform: translateY(-4px) !important;
-            }
-            .notes-panel {
-              margin: 14px 0 !important;
-            }
-            .account-actions {
-              display: flex !important;
-              flex-wrap: wrap !important;
-              gap: 8px !important;
-            }
-            .account-actions button {
-              margin: 0 !important;
-            }
-          }
-
           @media print {
             html,
             body {
@@ -2705,59 +2677,6 @@ export default function App() {
         <button style={styles.btnAgendaCompleta} onClick={() => navegarPara('agenda')}>Abrir agenda</button>
       </section>
 
-      <section className="no-print notes-block notes-panel" style={styles.blocoNotasPainel}>
-        <div className="quick-actions-card">
-          <strong>⚡ Ações rápidas</strong>
-          <button onClick={abrirNovaConta}>+ Nova conta</button>
-          <button onClick={abrirNovaNota}>+ Nova nota</button>
-        </div>
-
-        <div style={styles.notasHeaderNovo}>
-          <div>
-            <strong>📝 Bloco de Notas</strong>
-            <small>{notasPendentes.length} pendente(s) • {notasCriticas} crítica(s) • {notasUrgentes} urgente(s)</small>
-          </div>
-          <button className="note-add-small" style={styles.btnMiniVerde} onClick={abrirNovaNota} title="Nova nota">+</button>
-        </div>
-
-        <input
-          style={styles.input}
-          placeholder="Buscar nota..."
-          value={buscaNota}
-          onChange={(e) => setBuscaNota(e.target.value)}
-        />
-
-        {notasFiltradas.length === 0 && (
-          <p style={styles.mensagemVazia}>Nenhuma nota encontrada.</p>
-        )}
-
-        <div style={styles.notasListaNova}>
-          {notasFiltradas.slice(0, 8).map((nota) => {
-            const prioridade = nota.prioridade || 'normal'
-            return (
-              <div key={nota.id} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
-                <div style={styles.cardTopo}>
-                  <strong style={{ textDecoration: nota.concluida ? 'line-through' : 'none' }}>{nota.titulo}</strong>
-                  <span style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
-                    {prioridade === 'critico' ? 'Crítico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
-                  </span>
-                </div>
-
-                {nota.data_evento && <small className="note-event-date">📅 {formatarData(nota.data_evento)}</small>}
-
-                {nota.conteudo && <p style={styles.textoNota}>{nota.conteudo}</p>}
-
-                <div style={styles.acoes}>
-                  <button style={styles.btnPago} onClick={() => alternarNotaConcluida(nota)}>{nota.concluida ? 'Reabrir' : 'Concluir'}</button>
-                  <button style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
-                  <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>Excluir</button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </section>
-
       <section className="no-print filters-desktop" style={styles.filtrosBox}>
         <input
           style={styles.input}
@@ -2867,12 +2786,69 @@ export default function App() {
         })}
       </section>
 
+      <section className="no-print notes-block notes-panel" style={styles.blocoNotasPainel}>
+        <div className="quick-actions-card">
+          <strong>⚡ Ações rápidas</strong>
+          <button onClick={abrirNovaConta}>+ Nova conta</button>
+          <button onClick={abrirNovaNota}>+ Nova nota</button>
+        </div>
 
+        <div style={styles.notasHeaderNovo}>
+          <div>
+            <strong>📝 Bloco de Notas</strong>
+            <small>{notasPendentes.length} pendente(s) • {notasCriticas} crítica(s) • {notasUrgentes} urgente(s)</small>
+          </div>
+          <button className="note-add-small" style={styles.btnMiniVerde} onClick={abrirNovaNota} title="Nova nota">+</button>
+        </div>
+
+        <input
+          style={styles.input}
+          placeholder="Buscar nota..."
+          value={buscaNota}
+          onChange={(e) => setBuscaNota(e.target.value)}
+        />
+
+        {notasFiltradas.length === 0 && (
+          <p style={styles.mensagemVazia}>Nenhuma nota encontrada.</p>
+        )}
+
+        <div style={styles.notasListaNova}>
+          {notasFiltradas.slice(0, 8).map((nota) => {
+            const prioridade = nota.prioridade || 'normal'
+            return (
+              <div key={nota.id} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
+                <div style={styles.cardTopo}>
+                  <strong style={{ textDecoration: nota.concluida ? 'line-through' : 'none' }}>{nota.titulo}</strong>
+                  <span style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
+                    {prioridade === 'critico' ? 'Crítico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
+                  </span>
+                </div>
+
+                {nota.data_evento && <small className="note-event-date">📅 {formatarData(nota.data_evento)}</small>}
+
+                {nota.conteudo && <p style={styles.textoNota}>{nota.conteudo}</p>}
+
+                <div style={styles.acoes}>
+                  <button style={styles.btnPago} onClick={() => alternarNotaConcluida(nota)}>{nota.concluida ? 'Reabrir' : 'Concluir'}</button>
+                  <button style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
+                  <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>Excluir</button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </section>
 
       {menuAberto && (
         <div className="mobile-fab-menu" style={styles.menuFab}>
-          <button style={styles.menuItem} onClick={abrirNovaConta}>💰 Nova conta</button>
-          <button style={styles.menuItem} onClick={abrirNovaNota}>📝 Nova nota</button>
+          <button style={styles.menuItem} onClick={abrirNovaConta} aria-label="Nova conta">
+            <span style={styles.menuItemIcone}>💰</span>
+            <span style={styles.menuItemTexto}>Nova conta</span>
+          </button>
+          <button style={styles.menuItem} onClick={abrirNovaNota} aria-label="Nova nota">
+            <span style={styles.menuItemIcone}>📝</span>
+            <span style={styles.menuItemTexto}>Nova nota</span>
+          </button>
         </div>
       )}
 
@@ -2880,7 +2856,7 @@ export default function App() {
         {menuAberto ? '×' : '+'}
       </button>
 
-      {modalConta && (
+      {false && modalConta && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
             <h3>{editandoContaId ? 'Editar Conta' : 'Nova Conta'}</h3>
@@ -2946,7 +2922,7 @@ export default function App() {
         </div>
       )}
 
-      {modalNota && (
+      {false && modalNota && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
             <h3>{editandoNotaId ? 'Editar Nota' : 'Nova Nota'}</h3>
@@ -2966,7 +2942,7 @@ export default function App() {
         </div>
       )}
 
-      {modalCentro && (
+      {false && modalCentro && (
         <div style={styles.overlay}>
           <div style={styles.modal}>
             <h3>Centros de Custo</h3>
@@ -3064,8 +3040,7 @@ const styles = {
     borderRadius: 16,
     objectFit: 'cover',
     background: '#0f766e',
-    boxShadow: '0 8px 18px rgba(20,184,166,0.28)',
-    transform: 'translateY(-4px)'
+    boxShadow: '0 8px 18px rgba(20,184,166,0.28)'
   },
   logoTexto: {
     display: 'flex',
@@ -3094,8 +3069,7 @@ const styles = {
     color: '#fff',
     fontSize: 22,
     fontWeight: 'bold',
-    boxShadow: '0 8px 18px rgba(20,184,166,0.28)',
-    transform: 'translateY(-4px)'
+    boxShadow: '0 8px 18px rgba(20,184,166,0.28)'
   },
   menuBackdrop: {
     position: 'fixed',
@@ -3592,7 +3566,7 @@ const styles = {
   fab: {
     position: 'fixed',
     right: 20,
-    bottom: 86,
+    bottom: 20,
     width: 58,
     height: 58,
     borderRadius: '50%',
@@ -3606,7 +3580,7 @@ const styles = {
   menuFab: {
     position: 'fixed',
     right: 20,
-    bottom: 154,
+    bottom: 86,
     display: 'flex',
     flexDirection: 'column',
     gap: 8,
@@ -3614,12 +3588,38 @@ const styles = {
   },
   menuItem: {
     background: '#fff',
-    border: '1px solid #ddd',
-    borderRadius: 10,
-    padding: '10px 12px',
-    fontSize: 14,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    textAlign: 'left'
+    border: '1px solid rgba(15,118,110,0.18)',
+    borderRadius: 18,
+    padding: '0 18px',
+    minWidth: 210,
+    width: 210,
+    height: 56,
+    fontSize: 17,
+    fontWeight: 900,
+    boxShadow: '0 10px 24px rgba(15,23,42,0.18)',
+    textAlign: 'left',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 12,
+    color: '#0f172a',
+    whiteSpace: 'nowrap',
+    overflow: 'visible'
+  },
+  menuItemIcone: {
+    display: 'inline-flex',
+    width: 26,
+    minWidth: 26,
+    justifyContent: 'center',
+    fontSize: 22,
+    lineHeight: 1
+  },
+  menuItemTexto: {
+    display: 'inline-block',
+    color: '#0f172a',
+    fontSize: 17,
+    fontWeight: 900,
+    lineHeight: 1
   },
   overlay: {
     position: 'fixed',
@@ -3629,7 +3629,7 @@ const styles = {
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
-    zIndex: 9999
+    zIndex: 999
   },
   blocoNotificacaoConta: {
     background: '#f8fafc',
@@ -3672,9 +3672,7 @@ const styles = {
     padding: 18,
     borderRadius: 14,
     width: '100%',
-    maxWidth: 420,
-    maxHeight: '88vh',
-    overflowY: 'auto'
+    maxWidth: 360
   },
   inputModal: {
     width: '100%',

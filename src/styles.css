@@ -585,3 +585,49 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
     height: 40px !important;
   }
 }
+
+/* MOBILE FIX FINAL — rótulos visíveis no menu do botão + */
+@media (max-width: 979px) {
+  .mobile-fab-menu {
+    right: 24px !important;
+    bottom: 164px !important;
+    z-index: 10000 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    min-width: 210px !important;
+    width: 210px !important;
+  }
+
+  .mobile-fab-menu button {
+    width: 100% !important;
+    min-width: 210px !important;
+    height: 56px !important;
+    padding: 0 18px !important;
+    border-radius: 18px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 17px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-indent: 0 !important;
+    letter-spacing: -0.2px !important;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18) !important;
+    border: 1px solid rgba(15, 118, 110, 0.16) !important;
+  }
+
+  .mobile-fab-menu button:first-child::after {
+    content: '' !important;
+  }
+
+  .mobile-fab-menu button:active {
+    transform: scale(0.98) !important;
+  }
+}

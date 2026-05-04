@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
+import {
+  adicionarUsuarioEmpresa as adicionarUsuarioEmpresaService,
+  atualizarPerfilUsuarioEmpresa as atualizarPerfilUsuarioEmpresaService,
+  listarUsuariosEmpresa,
+  normalizarPerfilUsuario,
+  removerUsuarioEmpresa as removerUsuarioEmpresaService
+} from './services/usuariosService'
 import Relatorios from './pages/Relatorios.jsx'
 import Login from './pages/Login.jsx'
 import './styles.css'
@@ -358,13 +365,7 @@ export default function App() {
   }
 
   function normalizarPerfil(perfil) {
-    const valor = String(perfil || '').toLowerCase().trim()
-
-    if (['admin', 'adm', 'administrador', 'master', 'owner'].includes(valor)) return 'admin'
-    if (['gerente', 'gerencia', 'gestor', 'manager'].includes(valor)) return 'gerente'
-    if (['operador', 'usuario', 'usuário', 'user', 'atendente'].includes(valor)) return 'operador'
-
-    return 'operador'
+    return normalizarPerfilUsuario(perfil)
   }
 
   function temPermissao(perfisPermitidos = []) {
@@ -383,22 +384,13 @@ export default function App() {
   async function buscarUsuariosEmpresa(empresaAtual = empresaId) {
     if (!empresaAtual) return
 
-    const { data, error } = await supabase
-      .from('df_usuarios_empresas')
-      .select('*')
-      .eq('empresa_id', empresaAtual)
-      .order('created_at', { ascending: true })
-
-    if (error) {
+    try {
+      const usuarios = await listarUsuariosEmpresa(empresaAtual)
+      setUsuariosEmpresa(usuarios)
+    } catch (error) {
       console.warn('Não foi possível carregar usuários:', error.message)
       setUsuariosEmpresa([])
-      return
     }
-
-    setUsuariosEmpresa((data || []).map((usuario) => ({
-      ...usuario,
-      perfil: normalizarPerfil(usuario.perfil)
-    })))
   }
 
   async function adicionarUsuarioEmpresa() {
@@ -421,17 +413,14 @@ export default function App() {
 
     const perfil = normalizarPerfil(perfilConviteUsuario)
 
-    const { error } = await supabase
-      .from('df_usuarios_empresas')
-      .insert([{
-        empresa_id: empresaId,
-        user_id: null,
+    try {
+      await adicionarUsuarioEmpresaService({
+        empresaId,
         email,
-        nome: nomeConviteUsuario.trim() || email.split('@')[0],
+        nome: nomeConviteUsuario,
         perfil
-      }])
-
-    if (error) {
+      })
+    } catch (error) {
       alert(error.message)
       return
     }
@@ -460,22 +449,9 @@ export default function App() {
       }
     }
 
-    let consulta = supabase
-      .from('df_usuarios_empresas')
-      .update({ perfil })
-      .eq('empresa_id', empresaId)
-
-    if (usuario.id) {
-      consulta = consulta.eq('id', usuario.id)
-    } else if (usuario.user_id) {
-      consulta = consulta.eq('user_id', usuario.user_id)
-    } else {
-      consulta = consulta.eq('email', usuario.email)
-    }
-
-    const { error } = await consulta
-
-    if (error) {
+    try {
+      await atualizarPerfilUsuarioEmpresaService({ empresaId, usuario, perfil })
+    } catch (error) {
       alert(error.message)
       return
     }
@@ -502,22 +478,9 @@ export default function App() {
       textoConfirmar: 'Remover',
       tipo: 'perigo',
       acao: async () => {
-        let consulta = supabase
-          .from('df_usuarios_empresas')
-          .delete()
-          .eq('empresa_id', empresaId)
-
-        if (usuario.id) {
-          consulta = consulta.eq('id', usuario.id)
-        } else if (usuario.user_id) {
-          consulta = consulta.eq('user_id', usuario.user_id)
-        } else {
-          consulta = consulta.eq('email', usuario.email)
-        }
-
-        const { error } = await consulta
-
-        if (error) {
+        try {
+          await removerUsuarioEmpresaService({ empresaId, usuario })
+        } catch (error) {
           alert(error.message)
           return
         }
@@ -535,7 +498,10 @@ export default function App() {
       return
     }
 
-    const { error } = await supabase.auth.updateUser({ email })
+    const { error } = await supabase.auth.updateUser(
+      { email },
+      { emailRedirectTo: window.location.origin }
+    )
 
     if (error) {
       alert(error.message)

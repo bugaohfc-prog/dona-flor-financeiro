@@ -640,10 +640,11 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
   }
 }
 
-
 /* =========================================================
-   DF Gestão Financeira — Correção Desktop Dashboard
-   Foco: desktop apenas, sem alterar mobile.
+   DF Gestão Financeira — Desktop final
+   Escopo: somente telas >= 980px.
+   Objetivo: manter o mobile validado e corrigir a área de contas
+   para não invadir o bloco lateral de notas.
    ========================================================= */
 @media (min-width: 980px) {
   body {
@@ -656,7 +657,7 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
     width: 100% !important;
     margin: 0 !important;
     padding-left: 292px !important;
-    padding-right: 28px !important;
+    padding-right: 32px !important;
     box-sizing: border-box !important;
   }
 
@@ -749,7 +750,7 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
     max-width: none !important;
     width: auto !important;
     margin-left: 0 !important;
-    margin-right: 380px !important;
+    margin-right: 420px !important;
     box-sizing: border-box !important;
   }
 
@@ -759,7 +760,7 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
   body:has(.desktop-sidebar.compacta) .filters-desktop,
   body:has(.desktop-sidebar.compacta) .result-summary,
   body:has(.desktop-sidebar.compacta) .content-block {
-    margin-right: 380px !important;
+    margin-right: 420px !important;
   }
 
   .dashboard-title-row {
@@ -841,20 +842,26 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
 
   .content-block {
     margin-top: 14px !important;
+    overflow: visible !important;
   }
 
   .account-card-desktop {
     display: grid !important;
-    grid-template-columns: minmax(260px, 1.4fr) minmax(220px, 1fr) auto !important;
+    grid-template-columns: minmax(160px, 1fr) minmax(170px, .8fr) minmax(230px, auto) !important;
     align-items: center !important;
     gap: 14px !important;
     padding: 16px !important;
     border-radius: 20px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
   }
 
   .account-card-desktop > div {
     margin: 0 !important;
     min-width: 0 !important;
+    max-width: 100% !important;
   }
 
   .account-card-desktop .account-actions {
@@ -863,20 +870,24 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
     align-items: center !important;
     gap: 8px !important;
     flex-wrap: nowrap !important;
-    min-width: 240px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
   }
 
   .account-card-desktop .account-actions button {
     margin: 0 !important;
-    min-width: 74px !important;
+    min-width: 70px !important;
+    max-width: 92px !important;
     white-space: nowrap !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
   }
 
   .notes-panel {
     position: fixed !important;
     right: 28px !important;
     top: 150px !important;
-    width: 336px !important;
+    width: 352px !important;
     max-height: calc(100vh - 180px) !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;

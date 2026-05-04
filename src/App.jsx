@@ -1298,8 +1298,8 @@ export default function App() {
     return (
       <>
         {modalConta && (
-          <div style={styles.overlay}>
-            <div style={styles.modal}>
+          <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
+            <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
               <h3>{editandoContaId ? 'Editar Conta' : 'Nova Conta'}</h3>
 
               <input style={styles.inputModal} placeholder="Descrição" value={descricao} onChange={(e) => setDescricao(primeiraLetraMaiuscula(e.target.value))} />
@@ -1342,8 +1342,8 @@ export default function App() {
         )}
 
         {modalNota && (
-          <div style={styles.overlay}>
-            <div style={styles.modal}>
+          <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
+            <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
               <h3>{editandoNotaId ? 'Editar Nota' : 'Nova Nota'}</h3>
               <input style={styles.inputModal} placeholder="Título" value={tituloNota} onChange={(e) => setTituloNota(primeiraLetraMaiuscula(e.target.value))} />
               <select style={styles.inputModal} value={prioridadeNota} onChange={(e) => setPrioridadeNota(e.target.value)}>
@@ -1360,8 +1360,8 @@ export default function App() {
         )}
 
         {modalCentro && (
-          <div style={styles.overlay}>
-            <div style={styles.modal}>
+          <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
+            <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
               <h3>Centros de Custo</h3>
               <input style={styles.inputModal} placeholder="Novo centro" value={novoCentro} onChange={(e) => setNovoCentro(primeiraLetraMaiuscula(e.target.value))} />
               <button style={styles.btnSalvar} onClick={salvarCentro}>Salvar Centro</button>
@@ -1504,6 +1504,32 @@ export default function App() {
             .mobile-fab-menu { display:grid !important; gap:10px !important; }
             .notes-panel { position: static !important; width:auto !important; max-height:none !important; overflow:visible !important; }
             .quick-actions-card { display:none !important; }
+          }
+
+
+          /* MOBILE: bloco de notas visível e FAB funcional */
+          @media (max-width: 979px) {
+            .notes-panel {
+              position: static !important;
+              width: auto !important;
+              max-height: none !important;
+              overflow: visible !important;
+              margin: 14px 0 18px !important;
+              padding: 16px !important;
+              border-radius: 22px !important;
+              background: #ffffff !important;
+              border: 1px solid #e5e7eb !important;
+              box-shadow: 0 12px 28px rgba(15,23,42,.08) !important;
+            }
+            .note-add-small {
+              width: 38px !important;
+              height: 38px !important;
+              display: inline-flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+            }
+            .mobile-fab, .mobile-fab-menu { z-index: 3000 !important; }
+            .mobile-fab-menu button { touch-action: manipulation !important; }
           }
 
         `}</style>
@@ -2677,6 +2703,60 @@ export default function App() {
         <button style={styles.btnAgendaCompleta} onClick={() => navegarPara('agenda')}>Abrir agenda</button>
       </section>
 
+      <section className="no-print notes-block notes-panel" style={styles.blocoNotasPainel}>
+        <div className="quick-actions-card">
+          <strong>⚡ Ações rápidas</strong>
+          <button onClick={abrirNovaConta}>+ Nova conta</button>
+          <button onClick={abrirNovaNota}>+ Nova nota</button>
+        </div>
+
+        <div style={styles.notasHeaderNovo}>
+          <div>
+            <strong>📝 Bloco de Notas</strong>
+            <small>{notasPendentes.length} pendente(s) • {notasCriticas} crítica(s) • {notasUrgentes} urgente(s)</small>
+          </div>
+          <button className="note-add-small" style={styles.btnMiniVerde} onClick={abrirNovaNota} title="Nova nota">+</button>
+        </div>
+
+        <input
+          style={styles.input}
+          placeholder="Buscar nota..."
+          value={buscaNota}
+          onChange={(e) => setBuscaNota(e.target.value)}
+        />
+
+        {notasFiltradas.length === 0 && (
+          <p style={styles.mensagemVazia}>Nenhuma nota encontrada.</p>
+        )}
+
+        <div style={styles.notasListaNova}>
+          {notasFiltradas.slice(0, 8).map((nota) => {
+            const prioridade = nota.prioridade || 'normal'
+            return (
+              <div key={nota.id} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
+                <div style={styles.cardTopo}>
+                  <strong style={{ textDecoration: nota.concluida ? 'line-through' : 'none' }}>{nota.titulo}</strong>
+                  <span style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
+                    {prioridade === 'critico' ? 'Crítico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
+                  </span>
+                </div>
+
+                {nota.data_evento && <small className="note-event-date">📅 {formatarData(nota.data_evento)}</small>}
+
+                {nota.conteudo && <p style={styles.textoNota}>{nota.conteudo}</p>}
+
+                <div style={styles.acoes}>
+                  <button style={styles.btnPago} onClick={() => alternarNotaConcluida(nota)}>{nota.concluida ? 'Reabrir' : 'Concluir'}</button>
+                  <button style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
+                  <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>Excluir</button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
+
       <section className="no-print filters-desktop" style={styles.filtrosBox}>
         <input
           style={styles.input}
@@ -2786,66 +2866,13 @@ export default function App() {
         })}
       </section>
 
-      <section className="no-print notes-block notes-panel" style={styles.blocoNotasPainel}>
-        <div className="quick-actions-card">
-          <strong>⚡ Ações rápidas</strong>
-          <button onClick={abrirNovaConta}>+ Nova conta</button>
-          <button onClick={abrirNovaNota}>+ Nova nota</button>
-        </div>
-
-        <div style={styles.notasHeaderNovo}>
-          <div>
-            <strong>📝 Bloco de Notas</strong>
-            <small>{notasPendentes.length} pendente(s) • {notasCriticas} crítica(s) • {notasUrgentes} urgente(s)</small>
-          </div>
-          <button className="note-add-small" style={styles.btnMiniVerde} onClick={abrirNovaNota} title="Nova nota">+</button>
-        </div>
-
-        <input
-          style={styles.input}
-          placeholder="Buscar nota..."
-          value={buscaNota}
-          onChange={(e) => setBuscaNota(e.target.value)}
-        />
-
-        {notasFiltradas.length === 0 && (
-          <p style={styles.mensagemVazia}>Nenhuma nota encontrada.</p>
-        )}
-
-        <div style={styles.notasListaNova}>
-          {notasFiltradas.slice(0, 8).map((nota) => {
-            const prioridade = nota.prioridade || 'normal'
-            return (
-              <div key={nota.id} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
-                <div style={styles.cardTopo}>
-                  <strong style={{ textDecoration: nota.concluida ? 'line-through' : 'none' }}>{nota.titulo}</strong>
-                  <span style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
-                    {prioridade === 'critico' ? 'Crítico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
-                  </span>
-                </div>
-
-                {nota.data_evento && <small className="note-event-date">📅 {formatarData(nota.data_evento)}</small>}
-
-                {nota.conteudo && <p style={styles.textoNota}>{nota.conteudo}</p>}
-
-                <div style={styles.acoes}>
-                  <button style={styles.btnPago} onClick={() => alternarNotaConcluida(nota)}>{nota.concluida ? 'Reabrir' : 'Concluir'}</button>
-                  <button style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
-                  <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>Excluir</button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </section>
-
       {menuAberto && (
         <div className="mobile-fab-menu" style={styles.menuFab}>
-          <button style={styles.menuItem} onClick={abrirNovaConta} aria-label="Nova conta">
+          <button style={styles.menuItem} onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaConta() }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaConta() }} aria-label="Nova conta">
             <span style={styles.menuItemIcone}>💰</span>
             <span style={styles.menuItemTexto}>Nova conta</span>
           </button>
-          <button style={styles.menuItem} onClick={abrirNovaNota} aria-label="Nova nota">
+          <button style={styles.menuItem} onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaNota() }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaNota() }} aria-label="Nova nota">
             <span style={styles.menuItemIcone}>📝</span>
             <span style={styles.menuItemTexto}>Nova nota</span>
           </button>
@@ -2857,8 +2884,8 @@ export default function App() {
       </button>
 
       {false && modalConta && (
-        <div style={styles.overlay}>
-          <div style={styles.modal}>
+        <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3>{editandoContaId ? 'Editar Conta' : 'Nova Conta'}</h3>
 
             <input style={styles.inputModal} placeholder="Descrição" value={descricao} onChange={(e) => setDescricao(primeiraLetraMaiuscula(e.target.value))} />
@@ -2923,8 +2950,8 @@ export default function App() {
       )}
 
       {false && modalNota && (
-        <div style={styles.overlay}>
-          <div style={styles.modal}>
+        <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3>{editandoNotaId ? 'Editar Nota' : 'Nova Nota'}</h3>
 
             <input style={styles.inputModal} placeholder="Título" value={tituloNota} onChange={(e) => setTituloNota(primeiraLetraMaiuscula(e.target.value))} />
@@ -2943,8 +2970,8 @@ export default function App() {
       )}
 
       {false && modalCentro && (
-        <div style={styles.overlay}>
-          <div style={styles.modal}>
+        <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3>Centros de Custo</h3>
 
             <input style={styles.inputModal} placeholder="Novo centro" value={novoCentro} onChange={(e) => setNovoCentro(primeiraLetraMaiuscula(e.target.value))} />
@@ -3575,7 +3602,7 @@ const styles = {
     border: 'none',
     fontSize: 30,
     boxShadow: '0 6px 18px rgba(0,0,0,0.25)',
-    zIndex: 20
+    zIndex: 3000
   },
   menuFab: {
     position: 'fixed',
@@ -3584,7 +3611,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: 8,
-    zIndex: 19
+    zIndex: 3001
   },
   menuItem: {
     background: '#fff',
@@ -3726,5 +3753,64 @@ const styles = {
     borderRadius: 6,
     padding: '4px 7px',
     fontSize: 11
+  },
+  notasHeaderNovo: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 10
+  },
+  btnMiniVerde: {
+    background: '#0f766e',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 12,
+    padding: '6px 11px',
+    fontWeight: '900',
+    fontSize: 18,
+    lineHeight: 1
+  },
+  notasListaNova: {
+    display: 'grid',
+    gap: 10
+  },
+  cardNotaAcao: {
+    padding: 12,
+    borderRadius: 16,
+    marginBottom: 10,
+    border: '1px solid #e5e7eb',
+    boxShadow: '0 8px 20px rgba(15,23,42,0.06)'
+  },
+  cardNotaNormal: {
+    background: '#dcfce7',
+    borderColor: '#86efac'
+  },
+  cardNotaUrgente: {
+    background: '#fef3c7',
+    borderColor: '#facc15'
+  },
+  cardNotaCritico: {
+    background: '#fee2e2',
+    borderColor: '#f87171'
+  },
+  badgePrioridade: {
+    borderRadius: 999,
+    padding: '4px 8px',
+    fontSize: 12,
+    fontWeight: '900'
+  },
+  badgeNormal: {
+    background: '#bbf7d0',
+    color: '#166534'
+  },
+  badgeUrgente: {
+    background: '#fde68a',
+    color: '#92400e'
+  },
+  badgeCritico: {
+    background: '#fecaca',
+    color: '#991b1b'
   }
+
 }

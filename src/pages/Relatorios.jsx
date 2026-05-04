@@ -645,11 +645,11 @@ export default function Relatorios({ voltar }) {
 
         <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
 
-        <div style={styles.filtros}>
-          <button style={filtroStatus === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('todas')}>Todas</button>
-          <button style={filtroStatus === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pendentes')}>Pendentes</button>
-          <button style={filtroStatus === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pagas')}>Pagas</button>
-          <button style={filtroStatus === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('vencidas')}>Vencidas</button>
+        <div className="report-status-tabs" style={styles.filtros}>
+          <button className={filtroStatus === 'todas' ? 'report-filter-active' : 'report-filter'} style={filtroStatus === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('todas')}>Todas</button>
+          <button className={filtroStatus === 'pendentes' ? 'report-filter-active' : 'report-filter'} style={filtroStatus === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pendentes')}>Pendentes</button>
+          <button className={filtroStatus === 'pagas' ? 'report-filter-active' : 'report-filter'} style={filtroStatus === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pagas')}>Pagas</button>
+          <button className={filtroStatus === 'vencidas' ? 'report-filter-active' : 'report-filter'} style={filtroStatus === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('vencidas')}>Vencidas</button>
         </div>
 
         <button style={styles.btnLimpar} onClick={limparFiltros}>Limpar filtros</button>

@@ -245,6 +245,27 @@ export default function App() {
     return () => window.removeEventListener('popstate', aoVoltar)
   }, [])
 
+
+  useEffect(() => {
+    function fecharComEsc(event) {
+      if (event.key !== 'Escape') return
+
+      if (confirmacao.aberto) {
+        fecharConfirmacao()
+        return
+      }
+
+      if (modalConta) fecharConta()
+      if (modalNota) fecharNota()
+      if (modalCentro) setModalCentro(false)
+      if (menuAberto) setMenuAberto(false)
+      if (menuNavegacaoAberto) setMenuNavegacaoAberto(false)
+    }
+
+    window.addEventListener('keydown', fecharComEsc)
+    return () => window.removeEventListener('keydown', fecharComEsc)
+  }, [confirmacao.aberto, modalConta, modalNota, modalCentro, menuAberto, menuNavegacaoAberto])
+
   async function carregarEmpresaDoUsuario(userId) {
     setLoading(true)
     setErroEmpresa('')
@@ -1295,17 +1316,17 @@ export default function App() {
               <div style={styles.blocoNotificacaoConta}>
                 <strong>🔔 Notificações desta conta</strong>
 
-                <label style={styles.switchLinhaCompacta}>
+                <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
                   <span>WhatsApp</span>
                   <input type="checkbox" checked={contaWhatsapp} onChange={(e) => setContaWhatsapp(e.target.checked)} />
                 </label>
 
-                <label style={styles.switchLinhaCompacta}>
+                <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
                   <span>E-mail</span>
                   <input type="checkbox" checked={contaEmail} onChange={(e) => setContaEmail(e.target.checked)} />
                 </label>
 
-                <label style={styles.switchLinhaCompacta}>
+                <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
                   <span>Push mobile</span>
                   <input type="checkbox" checked={contaPush} onChange={(e) => setContaPush(e.target.checked)} />
                 </label>
@@ -1753,7 +1774,7 @@ export default function App() {
           {mostrarConfigNotificacoes && (
             <>
 
-          <label style={styles.switchLinha}>
+          <label className="checkbox-row-fix" style={styles.switchLinha}>
             <div>
               <strong>Notificações ativas</strong>
               <small>Controle geral dos disparos automáticos.</small>
@@ -1766,7 +1787,7 @@ export default function App() {
             />
           </label>
 
-          <label style={styles.switchLinha}>
+          <label className="checkbox-row-fix" style={styles.switchLinha}>
             <div>
               <strong>WhatsApp</strong>
               <small>Permitir disparos por WhatsApp.</small>
@@ -1779,7 +1800,7 @@ export default function App() {
             />
           </label>
 
-          <label style={styles.switchLinha}>
+          <label className="checkbox-row-fix" style={styles.switchLinha}>
             <div>
               <strong>E-mail</strong>
               <small>Permitir disparos por e-mail.</small>
@@ -1792,7 +1813,7 @@ export default function App() {
             />
           </label>
 
-          <label style={styles.switchLinha}>
+          <label className="checkbox-row-fix" style={styles.switchLinha}>
             <div>
               <strong>Push mobile</strong>
               <small>Preparado para notificação web/PWA.</small>
@@ -1971,11 +1992,11 @@ export default function App() {
       <AppFrame>
         <h1 style={styles.titulo}>📅 Agenda Financeira</h1>
 
-        <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
+        <button className="btn-back-page" style={styles.btnCinza} onClick={() => navegarPara('contas')}>
           ← Voltar
         </button>
 
-        <section style={styles.resumo}>
+        <section className="agenda-summary-grid" style={styles.resumo}>
           <div style={styles.boxVencido}>
             <span>Vencidas</span>
             <strong>{formatarValor(totalVencidasAgenda)}</strong>
@@ -2012,7 +2033,7 @@ export default function App() {
       <AppFrame>
         <h1 style={styles.titulo}>🗑️ Lixeira</h1>
 
-        <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
+        <button className="btn-back-page" style={styles.btnCinza} onClick={() => navegarPara('contas')}>
           ← Voltar
         </button>
 
@@ -2676,7 +2697,7 @@ export default function App() {
 
         {mostrarFiltros && (
           <div className="advanced-filters">
-            <div className="status-tabs" style={styles.filtros}>
+            <div className="status-tabs filter-tabs-fixed" style={styles.filtros}>
               <button style={filtroStatus === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('todas')}>Todas</button>
               <button style={filtroStatus === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pendentes')}>Pendentes</button>
               <button style={filtroStatus === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pagas')}>Pagas</button>
@@ -2777,7 +2798,7 @@ export default function App() {
             <strong>📝 Bloco de Notas</strong>
             <small>{notasPendentes.length} pendente(s) • {notasCriticas} crítica(s) • {notasUrgentes} urgente(s)</small>
           </div>
-          <button style={styles.btnMiniVerde} onClick={abrirNovaNota}>+ Nota</button>
+          <button className="note-add-small" style={styles.btnMiniVerde} onClick={abrirNovaNota} title="Nova nota">+</button>
         </div>
 
         <input
@@ -2848,7 +2869,7 @@ export default function App() {
             <div style={styles.blocoNotificacaoConta}>
               <strong>🔔 Notificações desta conta</strong>
 
-              <label style={styles.switchLinhaCompacta}>
+              <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
                 <span>WhatsApp</span>
                 <input
                   type="checkbox"
@@ -2857,7 +2878,7 @@ export default function App() {
                 />
               </label>
 
-              <label style={styles.switchLinhaCompacta}>
+              <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
                 <span>E-mail</span>
                 <input
                   type="checkbox"
@@ -2866,7 +2887,7 @@ export default function App() {
                 />
               </label>
 
-              <label style={styles.switchLinhaCompacta}>
+              <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
                 <span>Push mobile</span>
                 <input
                   type="checkbox"

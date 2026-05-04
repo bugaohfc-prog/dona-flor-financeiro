@@ -381,3 +381,207 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
     order: -1;
   }
 }
+
+/* ===== DF GESTAO FINANCEIRA — POLIMENTO REAL 2026-05 ===== */
+.checkbox-row-fix {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-height: 44px !important;
+}
+.checkbox-row-fix span {
+  display: block !important;
+  line-height: 1.25 !important;
+  word-break: normal !important;
+}
+.checkbox-row-fix input[type="checkbox"] {
+  width: 20px !important;
+  height: 20px !important;
+  margin: 0 !important;
+  justify-self: end !important;
+  flex: 0 0 auto !important;
+}
+
+.report-status-tabs,
+.filter-tabs-fixed {
+  display: flex !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+}
+.report-status-tabs button,
+.filter-tabs-fixed button {
+  color: #0f172a !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  font-weight: 900 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+.report-status-tabs .report-filter-active,
+.report-status-tabs button[style*="background: rgb(13, 110, 253)"],
+.filter-tabs-fixed button[style*="background: rgb(13, 110, 253)"] {
+  color: #ffffff !important;
+  background: #0f766e !important;
+  border-color: #0f766e !important;
+}
+
+.note-add-small {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+}
+
+.btn-back-page {
+  margin-bottom: 22px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.agenda-summary-grid {
+  margin-top: 0 !important;
+  margin-bottom: 22px !important;
+}
+
+@media (min-width: 980px) {
+  .content-block {
+    position: relative !important;
+    z-index: 1 !important;
+    overflow: visible !important;
+  }
+  .account-card-desktop {
+    display: grid !important;
+    grid-template-columns: minmax(220px, 1.6fr) minmax(160px, 1fr) auto !important;
+    gap: 18px !important;
+    align-items: center !important;
+    padding: 18px !important;
+    min-height: 88px !important;
+    overflow: visible !important;
+  }
+  .account-card-desktop .account-actions {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    flex-wrap: nowrap !important;
+    min-width: 260px !important;
+    position: relative !important;
+    z-index: 3 !important;
+  }
+  .account-card-desktop .account-actions button {
+    min-width: 78px !important;
+    height: 38px !important;
+    padding: 8px 12px !important;
+    white-space: nowrap !important;
+  }
+  .notes-panel {
+    z-index: 2 !important;
+  }
+  .notes-panel .quick-actions-card {
+    margin-bottom: 16px !important;
+  }
+  .notes-panel input {
+    height: 42px !important;
+  }
+  .notes-panel [style*="font-size: 18px"] {
+    line-height: 1.2 !important;
+  }
+  .top-shell span strong,
+  .desktop-sidebar-brand strong {
+    margin-right: 4px !important;
+  }
+  .top-shell span small,
+  .desktop-sidebar-brand small {
+    display: block !important;
+    margin-top: 2px !important;
+  }
+}
+
+@media (max-width: 979px) {
+  .mobile-fab {
+    right: 24px !important;
+    bottom: 88px !important;
+    z-index: 120 !important;
+  }
+  .mobile-fab-menu {
+    right: 24px !important;
+    bottom: 164px !important;
+    z-index: 119 !important;
+    gap: 12px !important;
+  }
+  .mobile-fab-menu button {
+    min-width: 150px !important;
+    min-height: 52px !important;
+    border-radius: 16px !important;
+    font-weight: 900 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+  .mobile-menu-group button {
+    display: grid !important;
+    grid-template-columns: 34px 1fr !important;
+    column-gap: 12px !important;
+    row-gap: 2px !important;
+    align-items: center !important;
+    text-align: left !important;
+    min-height: 66px !important;
+    padding: 14px !important;
+  }
+  .mobile-menu-group button strong,
+  .mobile-menu-group button b {
+    display: block !important;
+    line-height: 1.15 !important;
+  }
+  .mobile-menu-group button small,
+  .mobile-menu-group button span:last-child {
+    display: block !important;
+    font-size: 12px !important;
+    color: #64748b !important;
+    line-height: 1.2 !important;
+    margin-top: 3px !important;
+  }
+  .agenda-card-polished strong,
+  .agenda-card-polished small,
+  .agenda-pill small,
+  .agenda-pill strong {
+    margin-right: 4px !important;
+  }
+  .content-block {
+    padding-bottom: 34px !important;
+  }
+  .account-card-desktop {
+    margin-bottom: 14px !important;
+    overflow: visible !important;
+  }
+  .account-card-desktop .account-actions {
+    display: flex !important;
+    gap: 10px !important;
+    flex-wrap: wrap !important;
+    margin-top: 14px !important;
+  }
+  .account-card-desktop .account-actions button {
+    min-width: 90px !important;
+    min-height: 46px !important;
+  }
+  .notes-panel {
+    margin-top: 18px !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+  }
+  .notes-panel input {
+    height: 46px !important;
+  }
+  .notes-panel .note-add-small {
+    width: 40px !important;
+    height: 40px !important;
+  }
+}

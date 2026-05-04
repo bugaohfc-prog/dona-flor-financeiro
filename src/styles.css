@@ -1,10 +1,587 @@
-body{margin:0;font-family:sans-serif}
-.header{display:flex;align-items:center;gap:12px;padding:12px;background:#fff}
-.page{padding:16px}
-.mobile-stack{display:flex;flex-direction:column;gap:12px}
-.card{background:#fff;padding:12px;border-radius:10px}
-.fab{position:fixed;bottom:80px;right:16px;width:56px;height:56px;border-radius:50%;background:#0f766e;color:#fff;font-size:24px;border:none}
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:flex-end}
-.sheet{background:#fff;width:100%;padding:16px;border-radius:16px 16px 0 0}
-.modal{background:#fff;width:100%;padding:16px;border-radius:16px 16px 0 0}
-.menu-item{display:flex;flex-direction:column;gap:4px;padding:10px 0}
+*{box-sizing:border-box}
+body{margin:0;background:#f8fafc;color:#0f172a;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+button,input,select,textarea{font:inherit}
+button{border:0;border-radius:12px;background:#0f766e;color:white;font-weight:900;padding:12px 14px;cursor:pointer}
+button.outline{background:white;color:#0f172a;border:1px solid #cbd5e1}
+button.danger{background:#b91c1c}
+input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:12px;margin:6px 0;background:white}
+textarea{min-height:92px}
+.loginPage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(180deg,#ecfeff,#f8fafc)}
+.loginCard{width:100%;max-width:420px;background:white;border-radius:28px;padding:28px;box-shadow:0 20px 60px rgba(15,23,42,.12);text-align:center}
+.loginCard img{width:110px;height:110px;border-radius:24px;object-fit:cover}
+.loginCard button{width:100%;margin-top:10px}
+.topbar{position:sticky;top:0;z-index:20;background:#0f766e;color:white;padding:14px 18px;box-shadow:0 8px 24px rgba(15,23,42,.14)}
+.topbar div{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.topbar span{font-size:13px;opacity:.9}
+.topbar button{background:rgba(255,255,255,.14)}
+.container{max-width:1120px;margin:0 auto;padding:14px}
+.card,.alertCard{background:white;border:1px solid #e2e8f0;border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 10px 28px rgba(15,23,42,.06)}
+.alertCard{border-left:6px solid #b91c1c;background:#fff7ed}
+.alert{background:#fee2e2;color:#991b1b;padding:12px;border-radius:12px;margin:10px 0}
+.muted{color:#64748b}
+.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+.metrics div{background:white;border:1px solid #e2e8f0;border-radius:16px;padding:14px;box-shadow:0 8px 20px rgba(15,23,42,.04)}
+.metrics span{display:block;color:#64748b;font-size:12px;text-transform:uppercase;font-weight:900}
+.metrics strong{font-size:22px}
+.miniGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.sectionHeader{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sectionHeader h2{margin:0}
+.plus{width:54px;height:54px;border-radius:999px;font-size:28px;box-shadow:4px 4px 0 #000}
+.filters{display:grid;grid-template-columns:1fr;gap:8px;margin:10px 0}
+.noteCard,.accountCard{background:white;border:1px solid #e2e8f0;border-radius:16px;padding:14px;margin:12px 0}
+.noteTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.noteTop p,.accountCard p{color:#475569;margin:6px 0}
+.noteTop small,.accountCard small{color:#64748b}
+.badge,.status{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;font-weight:900;font-size:13px}
+.normal{background:#e0f2fe;color:#075985}
+.urgente{background:#fee2e2;color:#b91c1c}
+.critico{background:#7f1d1d;color:white}
+.status.aberto{background:#fef3c7;color:#92400e}
+.status.pago{background:#dcfce7;color:#15803d}
+.prioritySelect{margin:12px 0}
+.accountCard{display:grid;grid-template-columns:1fr;gap:10px}
+.accountCard b{color:#0f766e;font-size:20px}
+.modalOverlay{position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,.64);display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:white;border-radius:22px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.24);position:relative}
+.modal .close{position:absolute;right:14px;top:14px;width:42px;height:42px;border-radius:999px;background:#f1f5f9;color:#0f172a;font-size:26px}
+.reportModal{max-width:980px}
+.printActions{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+.reportContent h1{color:#0f766e}
+.reportMetrics{grid-template-columns:repeat(3,1fr)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#0f766e;color:white;text-align:left;padding:8px}
+td{border-bottom:1px solid #e2e8f0;padding:8px}
+@media(min-width:800px){
+  .metrics{grid-template-columns:repeat(6,1fr)}
+  .filters{grid-template-columns:1fr 1fr}
+  .accountCard{grid-template-columns:1fr auto auto;align-items:center}
+}
+@media print{
+  body>*{display:none!important}
+  #printArea{display:block!important;position:static!important;background:white!important;padding:0!important}
+  #printArea .modal{display:block!important;max-width:none!important;max-height:none!important;box-shadow:none!important;border-radius:0!important;overflow:visible!important;padding:0!important}
+  .printActions{display:none!important}
+  @page{margin:12mm}
+}
+
+/* ===== DONA FLOR - POLIMENTO FINAL DE LAYOUT ===== */
+@media (min-width: 980px) {
+  .desktop-sidebar {
+    width: 236px !important;
+    padding: 16px !important;
+    gap: 10px !important;
+    overflow: hidden !important;
+  }
+  .desktop-sidebar-scroll {
+    overflow-y: auto !important;
+    padding-right: 4px !important;
+    display: grid !important;
+    gap: 8px !important;
+    min-height: 0 !important;
+  }
+  .desktop-sidebar-spacer { display: none !important; }
+  .desktop-sidebar-brand {
+    flex-shrink: 0 !important;
+    padding-bottom: 12px !important;
+    margin-bottom: 2px !important;
+  }
+  .desktop-sidebar-brand img,
+  .logoMarca img,
+  .menuPerfil img {
+    object-fit: cover !important;
+  }
+  .sidebar-group {
+    border: 1px solid rgba(255,255,255,.12) !important;
+    border-radius: 16px !important;
+    padding: 6px !important;
+    background: rgba(255,255,255,.06) !important;
+  }
+  .sidebar-group summary {
+    list-style: none !important;
+    cursor: pointer !important;
+    padding: 6px 8px !important;
+    color: rgba(255,255,255,.72) !important;
+    font-size: 10px !important;
+    text-transform: uppercase !important;
+    letter-spacing: .8px !important;
+    font-weight: 900 !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+  }
+  .sidebar-group summary::-webkit-details-marker { display: none !important; }
+  .sidebar-group summary::after { content: '⌄'; font-size: 13px; opacity: .9; }
+  .sidebar-group:not([open]) summary::after { content: '›'; }
+  .desktop-sidebar-nav { gap: 6px !important; }
+  .desktop-sidebar-nav button {
+    min-height: 38px !important;
+    padding: 9px 10px !important;
+    border-radius: 12px !important;
+    font-size: 13px !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+  }
+  .desktop-sidebar-user {
+    flex-shrink: 0 !important;
+    padding: 10px !important;
+    margin-top: 6px !important;
+  }
+  .sidebar-exit { flex-shrink: 0 !important; }
+
+  .dashboard-title-row {
+    display: block !important;
+    margin: 0 360px 18px 0 !important;
+    width: auto !important;
+  }
+  .dashboard-title-row .main-title {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    font-size: 32px !important;
+    line-height: 1.1 !important;
+    margin: 0 0 14px 0 !important;
+    white-space: normal !important;
+  }
+  .summary-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(155px, 1fr)) !important;
+    gap: 14px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+  }
+  .summary-grid > div {
+    min-width: 0 !important;
+    min-height: 92px !important;
+    padding: 16px !important;
+    border-radius: 18px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    overflow: hidden !important;
+  }
+  .summary-grid span,
+  .summary-grid strong {
+    display:block !important;
+    width:100% !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .summary-grid strong { font-size: 22px !important; }
+
+  .notes-panel {
+    position: fixed !important;
+    right: 28px !important;
+    top: 152px !important;
+    width: 320px !important;
+    max-height: calc(100vh - 184px) !important;
+    overflow: auto !important;
+    background: #ffffff !important;
+    border-radius: 22px !important;
+    padding: 16px !important;
+    box-shadow: 0 18px 44px rgba(15,23,42,.08) !important;
+    border: 1px solid rgba(15,118,110,.10) !important;
+    z-index: 20 !important;
+  }
+  .agenda-card-polished,
+  .filters-desktop,
+  .result-summary,
+  .content-block {
+    margin-left: 0 !important;
+    margin-right: 360px !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+}
+
+@media (min-width: 980px) and (max-width: 1220px) {
+  .dashboard-title-row,
+  .agenda-card-polished,
+  .filters-desktop,
+  .result-summary,
+  .content-block {
+    margin-right: 0 !important;
+  }
+  .notes-panel {
+    position: static !important;
+    width: auto !important;
+    max-height: none !important;
+    margin: 18px 0 !important;
+  }
+}
+
+@media (max-width: 979px) {
+  .mobile-menu-panel {
+    gap: 12px !important;
+    padding: 16px !important;
+  }
+  .mobile-menu-group {
+    display: grid !important;
+    gap: 9px !important;
+    border: 1px solid #e5f3ef !important;
+    border-radius: 18px !important;
+    padding: 10px !important;
+    background: #fbfffd !important;
+  }
+  .mobile-menu-group summary {
+    list-style: none !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    text-transform: uppercase !important;
+    letter-spacing: .8px !important;
+    font-weight: 900 !important;
+    color: #0f766e !important;
+    display:flex !important;
+    justify-content:space-between !important;
+    padding: 2px 2px 6px !important;
+  }
+  .mobile-menu-group summary::-webkit-details-marker { display:none !important; }
+  .mobile-menu-group summary::after { content:'⌄'; }
+  .mobile-menu-group:not([open]) summary::after { content:'›'; }
+  .mobile-menu-group button {
+    margin: 0 !important;
+    min-height: 58px !important;
+  }
+  .notes-panel {
+    margin-top: 14px !important;
+  }
+}
+
+/* ===== AJUSTES FINOS MENU, NOTAS E DESKTOP - DONA FLOR ===== */
+@media (min-width: 980px) {
+  .desktop-sidebar {
+    width: 226px !important;
+    left: 18px !important;
+    top: 18px !important;
+    bottom: 18px !important;
+    padding: 14px !important;
+    border-radius: 22px !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+  }
+  .desktop-sidebar-scroll {
+    overflow-y: auto !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    display: grid !important;
+    gap: 8px !important;
+    padding-right: 0 !important;
+  }
+  .desktop-sidebar-scroll::-webkit-scrollbar { display: none !important; }
+  .desktop-sidebar-brand img { width: 42px !important; height: 42px !important; }
+  .desktop-sidebar-brand strong { font-size: 15px !important; }
+  .desktop-sidebar-brand small { font-size: 11px !important; }
+  .sidebar-group { padding: 5px !important; border-radius: 15px !important; }
+  .sidebar-group summary { padding: 6px 8px !important; }
+  .desktop-sidebar-nav button {
+    min-height: 34px !important;
+    padding: 8px 9px !important;
+    font-size: 12.5px !important;
+    border-radius: 11px !important;
+  }
+  .desktop-sidebar-user {
+    padding: 8px !important;
+    border-radius: 14px !important;
+    margin-top: 4px !important;
+  }
+  .desktop-sidebar-user strong { font-size: 12px !important; }
+  .desktop-sidebar-user small { font-size: 10px !important; }
+  .sidebar-exit button { min-height: 34px !important; }
+
+  .app-page,
+  .app-frame {
+    padding-left: 270px !important;
+    padding-right: 22px !important;
+  }
+
+  .top-shell .desktop-quick-actions { display: none !important; }
+  .usuarioAcoes .desktop-quick-actions { display: none !important; }
+
+  .notes-panel {
+    width: 340px !important;
+    right: 22px !important;
+    top: 130px !important;
+    max-height: calc(100vh - 154px) !important;
+    padding: 18px !important;
+  }
+  .dashboard-title-row,
+  .agenda-card-polished,
+  .filters-desktop,
+  .result-summary,
+  .content-block {
+    margin-right: 370px !important;
+  }
+  .summary-grid {
+    grid-template-columns: repeat(4, minmax(140px, 1fr)) !important;
+    gap: 12px !important;
+  }
+  .summary-grid > div {
+    min-height: 86px !important;
+    padding: 14px !important;
+  }
+}
+
+.quick-actions-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 12px;
+  background: linear-gradient(135deg, #ecfeff, #f0fdfa);
+  border: 1px solid #bdeee5;
+  border-radius: 18px;
+}
+.quick-actions-card strong {
+  grid-column: 1 / -1;
+  color: #0f766e;
+  font-size: 14px;
+}
+.quick-actions-card button {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px;
+  font-weight: 900;
+  background: #0f766e;
+  color: #fff;
+  cursor: pointer;
+}
+.quick-actions-card button:last-child { background: #0f172a; }
+
+.notes-panel input { margin-top: 10px !important; }
+.notes-panel [style*="notasHeaderNovo"], .notes-panel > div:nth-child(2) {
+  gap: 8px !important;
+}
+.note-event-date {
+  display: inline-flex;
+  margin: 8px 0 2px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #eefbf8;
+  color: #0f766e;
+  font-weight: 800;
+}
+.notes-panel button {
+  white-space: nowrap;
+}
+
+@media (max-width: 979px) {
+  .top-shell .desktop-quick-actions,
+  .usuarioAcoes .desktop-quick-actions { display: none !important; }
+  .mobile-menu-panel {
+    max-height: calc(100vh - 32px) !important;
+    overflow: auto !important;
+  }
+  .mobile-menu-group button {
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+  .notes-panel {
+    order: -1;
+  }
+}
+
+/* ===== DF GESTAO FINANCEIRA — POLIMENTO REAL 2026-05 ===== */
+.checkbox-row-fix {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-height: 44px !important;
+}
+.checkbox-row-fix span {
+  display: block !important;
+  line-height: 1.25 !important;
+  word-break: normal !important;
+}
+.checkbox-row-fix input[type="checkbox"] {
+  width: 20px !important;
+  height: 20px !important;
+  margin: 0 !important;
+  justify-self: end !important;
+  flex: 0 0 auto !important;
+}
+
+.report-status-tabs,
+.filter-tabs-fixed {
+  display: flex !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+}
+.report-status-tabs button,
+.filter-tabs-fixed button {
+  color: #0f172a !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  font-weight: 900 !important;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+.report-status-tabs .report-filter-active,
+.report-status-tabs button[style*="background: rgb(13, 110, 253)"],
+.filter-tabs-fixed button[style*="background: rgb(13, 110, 253)"] {
+  color: #ffffff !important;
+  background: #0f766e !important;
+  border-color: #0f766e !important;
+}
+
+.note-add-small {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+}
+
+.btn-back-page {
+  margin-bottom: 22px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.agenda-summary-grid {
+  margin-top: 0 !important;
+  margin-bottom: 22px !important;
+}
+
+@media (min-width: 980px) {
+  .content-block {
+    position: relative !important;
+    z-index: 1 !important;
+    overflow: visible !important;
+  }
+  .account-card-desktop {
+    display: grid !important;
+    grid-template-columns: minmax(220px, 1.6fr) minmax(160px, 1fr) auto !important;
+    gap: 18px !important;
+    align-items: center !important;
+    padding: 18px !important;
+    min-height: 88px !important;
+    overflow: visible !important;
+  }
+  .account-card-desktop .account-actions {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    flex-wrap: nowrap !important;
+    min-width: 260px !important;
+    position: relative !important;
+    z-index: 3 !important;
+  }
+  .account-card-desktop .account-actions button {
+    min-width: 78px !important;
+    height: 38px !important;
+    padding: 8px 12px !important;
+    white-space: nowrap !important;
+  }
+  .notes-panel {
+    z-index: 2 !important;
+  }
+  .notes-panel .quick-actions-card {
+    margin-bottom: 16px !important;
+  }
+  .notes-panel input {
+    height: 42px !important;
+  }
+  .notes-panel [style*="font-size: 18px"] {
+    line-height: 1.2 !important;
+  }
+  .top-shell span strong,
+  .desktop-sidebar-brand strong {
+    margin-right: 4px !important;
+  }
+  .top-shell span small,
+  .desktop-sidebar-brand small {
+    display: block !important;
+    margin-top: 2px !important;
+  }
+}
+
+@media (max-width: 979px) {
+  .mobile-fab {
+    right: 24px !important;
+    bottom: 88px !important;
+    z-index: 120 !important;
+  }
+  .mobile-fab-menu {
+    right: 24px !important;
+    bottom: 164px !important;
+    z-index: 119 !important;
+    gap: 12px !important;
+  }
+  .mobile-fab-menu button {
+    min-width: 150px !important;
+    min-height: 52px !important;
+    border-radius: 16px !important;
+    font-weight: 900 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+  .mobile-menu-group button {
+    display: grid !important;
+    grid-template-columns: 34px 1fr !important;
+    column-gap: 12px !important;
+    row-gap: 2px !important;
+    align-items: center !important;
+    text-align: left !important;
+    min-height: 66px !important;
+    padding: 14px !important;
+  }
+  .mobile-menu-group button strong,
+  .mobile-menu-group button b {
+    display: block !important;
+    line-height: 1.15 !important;
+  }
+  .mobile-menu-group button small,
+  .mobile-menu-group button span:last-child {
+    display: block !important;
+    font-size: 12px !important;
+    color: #64748b !important;
+    line-height: 1.2 !important;
+    margin-top: 3px !important;
+  }
+  .agenda-card-polished strong,
+  .agenda-card-polished small,
+  .agenda-pill small,
+  .agenda-pill strong {
+    margin-right: 4px !important;
+  }
+  .content-block {
+    padding-bottom: 34px !important;
+  }
+  .account-card-desktop {
+    margin-bottom: 14px !important;
+    overflow: visible !important;
+  }
+  .account-card-desktop .account-actions {
+    display: flex !important;
+    gap: 10px !important;
+    flex-wrap: wrap !important;
+    margin-top: 14px !important;
+  }
+  .account-card-desktop .account-actions button {
+    min-width: 90px !important;
+    min-height: 46px !important;
+  }
+  .notes-panel {
+    margin-top: 18px !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+  }
+  .notes-panel input {
+    height: 46px !important;
+  }
+  .notes-panel .note-add-small {
+    width: 40px !important;
+    height: 40px !important;
+  }
+}

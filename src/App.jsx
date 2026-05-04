@@ -1,14 +1,13 @@
+import { useState, useEffect } from 'react'
+import './styles.css'
 
-import React, { useEffect, useState } from 'react'
-
-function App() {
+export default function App() {
   const [view, setView] = useState('dashboard')
   const [modal, setModal] = useState(null)
 
   const abrir = (m) => setModal(m)
   const fechar = () => setModal(null)
 
-  // ESC to close modals
   useEffect(() => {
     const onEsc = (e) => {
       if (e.key === 'Escape') fechar()
@@ -27,28 +26,26 @@ function App() {
       <main className="page">
         {view === 'dashboard' && (
           <div className="mobile-stack">
-            <section className="agenda">Agenda Financeira</section>
-            <section className="notas">Notas (com data)</section>
-            <section className="contas">Contas</section>
+            <div className="card">Agenda Financeira</div>
+            <div className="card">Notas (com data)</div>
+            <div className="card">Contas</div>
           </div>
         )}
       </main>
 
-      {/* FAB */}
-      <button className="fab" onClick={() => abrir('fabMenu')}>+</button>
+      <button className="fab" onClick={() => abrir('fab')}>
+        +
+      </button>
 
-      {/* FAB MENU */}
-      {modal === 'fabMenu' && (
+      {modal === 'fab' && (
         <div className="overlay" onClick={fechar}>
-          <div className="fab-menu" onClick={(e)=>e.stopPropagation()}>
-            <button onClick={() => setModal('novaConta')}>Nova conta</button>
-            <button onClick={() => setModal('novaNota')}>Nova nota</button>
-            <button onClick={fechar}>Fechar</button>
+          <div className="sheet" onClick={(e)=>e.stopPropagation()}>
+            <button onClick={() => abrir('novaConta')}>Nova Conta</button>
+            <button onClick={() => abrir('novaNota')}>Nova Nota</button>
           </div>
         </div>
       )}
 
-      {/* MODALS */}
       {modal === 'novaConta' && (
         <div className="overlay" onClick={fechar}>
           <div className="modal" onClick={(e)=>e.stopPropagation()}>
@@ -68,10 +65,9 @@ function App() {
         </div>
       )}
 
-      {/* MOBILE MENU */}
       {modal === 'menu' && (
         <div className="overlay" onClick={fechar}>
-          <nav className="menu-mobile" onClick={(e)=>e.stopPropagation()}>
+          <div className="sheet" onClick={(e)=>e.stopPropagation()}>
             <div className="menu-item">
               <strong>Dashboard</strong>
               <span>Resumo financeiro</span>
@@ -80,16 +76,9 @@ function App() {
               <strong>Agenda</strong>
               <span>Vencimentos</span>
             </div>
-            <div className="menu-item">
-              <strong>Relatórios</strong>
-              <span>Análises</span>
-            </div>
-            <button onClick={fechar}>Fechar</button>
-          </nav>
+          </div>
         </div>
       )}
     </div>
   )
 }
-
-export default App

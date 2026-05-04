@@ -180,6 +180,13 @@ export default function App() {
   const [perfilUsuario, setPerfilUsuario] = useState('')
   const [nomeUsuarioPerfil, setNomeUsuarioPerfil] = useState('')
   const [erroEmpresa, setErroEmpresa] = useState('')
+  const [usuariosEmpresa, setUsuariosEmpresa] = useState([])
+  const [emailConviteUsuario, setEmailConviteUsuario] = useState('')
+  const [nomeConviteUsuario, setNomeConviteUsuario] = useState('')
+  const [perfilConviteUsuario, setPerfilConviteUsuario] = useState('operador')
+  const [novoEmailUsuario, setNovoEmailUsuario] = useState('')
+  const [novaSenhaUsuario, setNovaSenhaUsuario] = useState('')
+  const [confirmarNovaSenhaUsuario, setConfirmarNovaSenhaUsuario] = useState('')
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
   const [mostrarContas, setMostrarContas] = useState(true)
   const [mostrarNotas, setMostrarNotas] = useState(true)
@@ -230,6 +237,7 @@ export default function App() {
         setCentros([])
         setContasLixeira([])
         setNotasLixeira([])
+        setUsuariosEmpresa([])
         setEmpresaId(null)
         setPerfilUsuario('')
         setNomeUsuarioPerfil('')
@@ -267,6 +275,12 @@ export default function App() {
     return () => window.removeEventListener('popstate', aoVoltar)
   }, [])
 
+
+  useEffect(() => {
+    if (telaAtual === 'usuarios' && empresaId) {
+      buscarUsuariosEmpresa(empresaId)
+    }
+  }, [telaAtual, empresaId])
 
   useEffect(() => {
     function fecharComEsc(event) {
@@ -338,9 +352,223 @@ export default function App() {
       buscarNotas(empresaAtual),
       buscarCentros(empresaAtual),
       buscarLixeira(empresaAtual),
-      buscarConfiguracoes(empresaAtual)
+      buscarConfiguracoes(empresaAtual),
+      buscarUsuariosEmpresa(empresaAtual)
     ])
   }
+
+  function normalizarPerfil(perfil) {
+    const valor = String(perfil || '').toLowerCase().trim()
+
+    if (['admin', 'adm', 'administrador', 'master', 'owner'].includes(valor)) return 'admin'
+    if (['gerente', 'gerencia', 'gestor', 'manager'].includes(valor)) return 'gerente'
+    if (['operador', 'usuario', 'usuário', 'user', 'atendente'].includes(valor)) return 'operador'
+
+    return 'operador'
+  }
+
+  function temPermissao(perfisPermitidos = []) {
+    const perfilAtual = normalizarPerfil(perfilUsuario)
+    return perfisPermitidos.includes(perfilAtual)
+  }
+
+  function podeAdministrarUsuarios() {
+    return temPermissao(['admin'])
+  }
+
+  function podeAcessarConfiguracoes() {
+    return temPermissao(['admin', 'gerente'])
+  }
+
+  async function buscarUsuariosEmpresa(empresaAtual = empresaId) {
+    if (!empresaAtual) return
+
+    const { data, error } = await supabase
+      .from('df_usuarios_empresas')
+      .select('*')
+      .eq('empresa_id', empresaAtual)
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      console.warn('Não foi possível carregar usuários:', error.message)
+      setUsuariosEmpresa([])
+      return
+    }
+
+    setUsuariosEmpresa((data || []).map((usuario) => ({
+      ...usuario,
+      perfil: normalizarPerfil(usuario.perfil)
+    })))
+  }
+
+  async function adicionarUsuarioEmpresa() {
+    if (!empresaId) {
+      alert('Empresa não identificada.')
+      return
+    }
+
+    if (!podeAdministrarUsuarios()) {
+      alert('Apenas administradores podem adicionar usuários.')
+      return
+    }
+
+    const email = emailConviteUsuario.trim().toLowerCase()
+
+    if (!email || !email.includes('@')) {
+      alert('Informe um e-mail válido.')
+      return
+    }
+
+    const perfil = normalizarPerfil(perfilConviteUsuario)
+
+    const { error } = await supabase
+      .from('df_usuarios_empresas')
+      .insert([{
+        empresa_id: empresaId,
+        user_id: null,
+        email,
+        nome: nomeConviteUsuario.trim() || email.split('@')[0],
+        perfil
+      }])
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    setEmailConviteUsuario('')
+    setNomeConviteUsuario('')
+    setPerfilConviteUsuario('operador')
+    await buscarUsuariosEmpresa()
+    alert('Usuário pré-cadastrado. Quando ele criar login com este e-mail, vincule o user_id no Supabase ou use o gatilho SQL de vínculo automático.')
+  }
+
+  async function atualizarPerfilUsuarioEmpresa(usuario, novoPerfil) {
+    if (!podeAdministrarUsuarios()) {
+      alert('Apenas administradores podem alterar perfis.')
+      return
+    }
+
+    const perfil = normalizarPerfil(novoPerfil)
+    const usuarioAtual = usuario.user_id && usuarioLogado?.id && usuario.user_id === usuarioLogado.id
+
+    if (usuarioAtual && perfil !== 'admin') {
+      const admins = usuariosEmpresa.filter((u) => normalizarPerfil(u.perfil) === 'admin')
+      if (admins.length <= 1) {
+        alert('Você não pode remover o último administrador da empresa.')
+        return
+      }
+    }
+
+    let consulta = supabase
+      .from('df_usuarios_empresas')
+      .update({ perfil })
+      .eq('empresa_id', empresaId)
+
+    if (usuario.id) {
+      consulta = consulta.eq('id', usuario.id)
+    } else if (usuario.user_id) {
+      consulta = consulta.eq('user_id', usuario.user_id)
+    } else {
+      consulta = consulta.eq('email', usuario.email)
+    }
+
+    const { error } = await consulta
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    await buscarUsuariosEmpresa()
+  }
+
+  async function removerUsuarioEmpresa(usuario) {
+    if (!podeAdministrarUsuarios()) {
+      alert('Apenas administradores podem remover usuários.')
+      return
+    }
+
+    const usuarioAtual = usuario.user_id && usuarioLogado?.id && usuario.user_id === usuarioLogado.id
+
+    if (usuarioAtual) {
+      alert('Você não pode remover o próprio acesso por aqui.')
+      return
+    }
+
+    abrirConfirmacao({
+      titulo: 'Remover usuário',
+      mensagem: `Deseja remover ${usuario.nome || usuario.email || 'este usuário'} desta empresa?`,
+      textoConfirmar: 'Remover',
+      tipo: 'perigo',
+      acao: async () => {
+        let consulta = supabase
+          .from('df_usuarios_empresas')
+          .delete()
+          .eq('empresa_id', empresaId)
+
+        if (usuario.id) {
+          consulta = consulta.eq('id', usuario.id)
+        } else if (usuario.user_id) {
+          consulta = consulta.eq('user_id', usuario.user_id)
+        } else {
+          consulta = consulta.eq('email', usuario.email)
+        }
+
+        const { error } = await consulta
+
+        if (error) {
+          alert(error.message)
+          return
+        }
+
+        await buscarUsuariosEmpresa()
+      }
+    })
+  }
+
+  async function salvarMeuEmail() {
+    const email = novoEmailUsuario.trim().toLowerCase()
+
+    if (!email || !email.includes('@')) {
+      alert('Informe um e-mail válido.')
+      return
+    }
+
+    const { error } = await supabase.auth.updateUser({ email })
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    setNovoEmailUsuario('')
+    alert('Solicitação enviada. Confirme o novo e-mail conforme orientação do Supabase.')
+  }
+
+  async function salvarMinhaSenha() {
+    if (!novaSenhaUsuario || novaSenhaUsuario.length < 6) {
+      alert('A senha precisa ter pelo menos 6 caracteres.')
+      return
+    }
+
+    if (novaSenhaUsuario !== confirmarNovaSenhaUsuario) {
+      alert('As senhas não conferem.')
+      return
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: novaSenhaUsuario })
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    setNovaSenhaUsuario('')
+    setConfirmarNovaSenhaUsuario('')
+    alert('Senha atualizada com sucesso.')
+  }
+
 
   // =========================
   // BLOCO 5 — BUSCAS SUPABASE
@@ -1389,6 +1617,11 @@ export default function App() {
     setMenuAberto(false)
     setMenuNavegacaoAberto(false)
     setTelaAtualState(tela)
+
+    if (tela === 'usuarios') {
+      buscarUsuariosEmpresa()
+    }
+
     if (window.history.state?.tela !== tela) {
       window.history.pushState({ tela }, '', window.location.href)
     }
@@ -1984,7 +2217,7 @@ export default function App() {
           </GrupoMenu>
 
           <GrupoMenu id="sistema" titulo="Sistema">
-            <ItemMenu tela="usuarios" icon="👥" label="Usuários" />
+            <ItemMenu tela="usuarios" icon="👥" label="Usuários" onClick={() => navegarPara('usuarios')} />
             <ItemMenu tela="configuracoes" icon="⚙️" label="Configurações" />
             <ItemMenu tela="lixeira" icon="🗑️" label="Lixeira" />
           </GrupoMenu>
@@ -2145,7 +2378,179 @@ export default function App() {
 
 
 
+  if (telaAtual === 'usuarios') {
+    if (!podeAcessarConfiguracoes()) {
+      return renderAppFrame(
+        <>
+          <h1 style={styles.titulo}>👥 Usuários</h1>
+          <section style={styles.cardConfiguracao}>
+            <h2 style={styles.subtitulo}>Acesso restrito</h2>
+            <p style={styles.textoNota}>Seu perfil atual não permite acessar a gestão de usuários.</p>
+            <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>← Voltar</button>
+          </section>
+        </>
+      )
+    }
+
+    const usuarioAtualEmail = usuarioLogado?.email || ''
+
+    return renderAppFrame(
+      <>
+        <h1 style={styles.titulo}>👥 Gestão de usuários</h1>
+
+        <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
+          ← Voltar
+        </button>
+
+        <section style={styles.cardConfiguracao} className="users-page-section">
+          <h2 style={styles.subtitulo}>Minha conta</h2>
+          <p style={styles.textoNota}>
+            Usuário conectado: <strong>{usuarioAtualEmail}</strong> • Perfil: <strong>{normalizarPerfil(perfilUsuario)}</strong>
+          </p>
+
+          <div className="users-account-grid">
+            <div className="users-form-card">
+              <strong>Alterar e-mail</strong>
+              <input
+                style={styles.input}
+                type="email"
+                placeholder="Novo e-mail"
+                value={novoEmailUsuario}
+                onChange={(e) => setNovoEmailUsuario(e.target.value)}
+              />
+              <button style={styles.btnSalvar} onClick={salvarMeuEmail}>Atualizar e-mail</button>
+              <small style={styles.textoAjuda}>Pode ser necessário confirmar o novo e-mail.</small>
+            </div>
+
+            <div className="users-form-card">
+              <strong>Alterar senha</strong>
+              <input
+                style={styles.input}
+                type="password"
+                placeholder="Nova senha"
+                value={novaSenhaUsuario}
+                onChange={(e) => setNovaSenhaUsuario(e.target.value)}
+              />
+              <input
+                style={styles.input}
+                type="password"
+                placeholder="Confirmar nova senha"
+                value={confirmarNovaSenhaUsuario}
+                onChange={(e) => setConfirmarNovaSenhaUsuario(e.target.value)}
+              />
+              <button style={styles.btnSalvar} onClick={salvarMinhaSenha}>Atualizar senha</button>
+            </div>
+          </div>
+        </section>
+
+        <section style={styles.cardConfiguracao} className="users-page-section">
+          <div className="users-header-row">
+            <div>
+              <h2 style={styles.subtitulo}>Usuários da empresa</h2>
+              <p style={styles.textoNota}>Defina o nível de acesso: admin, gerente ou operador.</p>
+            </div>
+            <button style={styles.btnCinza} onClick={() => buscarUsuariosEmpresa()}>Atualizar</button>
+          </div>
+
+          <div className="users-permission-guide">
+            <span><strong>Admin:</strong> acesso total</span>
+            <span><strong>Gerente:</strong> contas, notas, relatórios e configurações operacionais</span>
+            <span><strong>Operador:</strong> contas e notas</span>
+          </div>
+
+          {podeAdministrarUsuarios() && (
+            <div className="users-add-card">
+              <input
+                style={styles.input}
+                type="text"
+                placeholder="Nome do usuário"
+                value={nomeConviteUsuario}
+                onChange={(e) => setNomeConviteUsuario(e.target.value)}
+              />
+
+              <input
+                style={styles.input}
+                type="email"
+                placeholder="E-mail do usuário"
+                value={emailConviteUsuario}
+                onChange={(e) => setEmailConviteUsuario(e.target.value)}
+              />
+
+              <select
+                style={styles.input}
+                value={perfilConviteUsuario}
+                onChange={(e) => setPerfilConviteUsuario(e.target.value)}
+              >
+                <option value="operador">Operador</option>
+                <option value="gerente">Gerente</option>
+                <option value="admin">Admin</option>
+              </select>
+
+              <button style={styles.btnSalvar} onClick={adicionarUsuarioEmpresa}>Adicionar usuário</button>
+            </div>
+          )}
+
+          <div className="users-list">
+            {usuariosEmpresa.length === 0 && (
+              <p style={styles.mensagemVazia}>Nenhum usuário cadastrado para esta empresa.</p>
+            )}
+
+            {usuariosEmpresa.map((usuario) => {
+              const atual = usuario.user_id && usuarioLogado?.id && usuario.user_id === usuarioLogado.id
+              const pendente = !usuario.user_id
+
+              return (
+                <div key={usuario.id || usuario.user_id || usuario.email} className="user-card">
+                  <div className="user-main-info">
+                    <strong>{usuario.nome || usuario.email || 'Usuário sem nome'}</strong>
+                    <small>{usuario.email || usuario.user_id || 'Sem e-mail vinculado'}</small>
+                    {atual && <span className="user-badge user-badge-self">Você</span>}
+                    {pendente && <span className="user-badge user-badge-pending">Pendente de vínculo</span>}
+                  </div>
+
+                  <select
+                    style={styles.input}
+                    value={normalizarPerfil(usuario.perfil)}
+                    disabled={!podeAdministrarUsuarios()}
+                    onChange={(e) => atualizarPerfilUsuarioEmpresa(usuario, e.target.value)}
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="gerente">Gerente</option>
+                    <option value="operador">Operador</option>
+                  </select>
+
+                  {podeAdministrarUsuarios() && (
+                    <button
+                      style={styles.btnExcluir}
+                      disabled={atual}
+                      onClick={() => removerUsuarioEmpresa(usuario)}
+                    >
+                      Remover
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      </>
+    )
+  }
+
   if (telaAtual === 'configuracoes') {
+    if (!podeAcessarConfiguracoes()) {
+      return renderAppFrame(
+        <>
+          <h1 style={styles.titulo}>⚙️ Configurações</h1>
+          <section style={styles.cardConfiguracao}>
+            <h2 style={styles.subtitulo}>Acesso restrito</h2>
+            <p style={styles.textoNota}>Seu perfil atual não permite acessar configurações.</p>
+            <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>← Voltar</button>
+          </section>
+        </>
+      )
+    }
+
     return renderAppFrame(
       <>
         <h1 style={styles.titulo}>⚙️ Configurações</h1>

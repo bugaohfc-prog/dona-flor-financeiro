@@ -639,3 +639,332 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
     color: #0f172a !important;
   }
 }
+
+
+/* =========================================================
+   DF Gestão Financeira — Correção Desktop Dashboard
+   Foco: desktop apenas, sem alterar mobile.
+   ========================================================= */
+@media (min-width: 980px) {
+  body {
+    background: #f8fafc;
+  }
+
+  .app-page,
+  .app-frame {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding-left: 292px !important;
+    padding-right: 28px !important;
+    box-sizing: border-box !important;
+  }
+
+  body:has(.desktop-sidebar.compacta) .app-page,
+  body:has(.desktop-sidebar.compacta) .app-frame {
+    padding-left: 112px !important;
+  }
+
+  .desktop-sidebar {
+    width: 248px !important;
+    max-width: 248px !important;
+    height: calc(100vh - 24px) !important;
+    top: 12px !important;
+    left: 12px !important;
+    border-radius: 26px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .desktop-sidebar.compacta {
+    width: 74px !important;
+    max-width: 74px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .desktop-sidebar-scroll {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-right: 4px !important;
+    display: grid !important;
+    gap: 8px !important;
+  }
+
+  .desktop-sidebar-nav button {
+    min-height: 42px !important;
+    padding: 10px 12px !important;
+    border-radius: 14px !important;
+    white-space: nowrap !important;
+  }
+
+  .desktop-sidebar.compacta .desktop-sidebar-nav button {
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .desktop-sidebar.compacta .sidebar-text,
+  .desktop-sidebar.compacta .sidebar-group-toggle span:not(.menu-icon),
+  .desktop-sidebar.compacta .desktop-sidebar-brand span,
+  .desktop-sidebar.compacta .desktop-sidebar-user div,
+  .desktop-sidebar.compacta .sidebar-exit span:not(.menu-icon) {
+    display: none !important;
+  }
+
+  .top-shell {
+    margin: 0 0 22px 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    border-radius: 22px !important;
+    box-sizing: border-box !important;
+  }
+
+  .top-shell button,
+  .top-shell span {
+    white-space: nowrap !important;
+  }
+
+  .top-shell button span {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    line-height: 1.05 !important;
+  }
+
+  .mobile-menu-trigger,
+  .mobile-fab,
+  .mobile-fab-menu {
+    display: none !important;
+  }
+
+  .dashboard-title-row,
+  .summary-grid,
+  .agenda-card-polished,
+  .filters-desktop,
+  .result-summary,
+  .content-block {
+    max-width: none !important;
+    width: auto !important;
+    margin-left: 0 !important;
+    margin-right: 380px !important;
+    box-sizing: border-box !important;
+  }
+
+  body:has(.desktop-sidebar.compacta) .dashboard-title-row,
+  body:has(.desktop-sidebar.compacta) .summary-grid,
+  body:has(.desktop-sidebar.compacta) .agenda-card-polished,
+  body:has(.desktop-sidebar.compacta) .filters-desktop,
+  body:has(.desktop-sidebar.compacta) .result-summary,
+  body:has(.desktop-sidebar.compacta) .content-block {
+    margin-right: 380px !important;
+  }
+
+  .dashboard-title-row {
+    display: block !important;
+    margin-bottom: 18px !important;
+  }
+
+  .dashboard-title-row .main-title {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 0 18px 0 !important;
+    white-space: normal !important;
+  }
+
+  .summary-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+
+  .summary-grid > div {
+    min-width: 0 !important;
+    border-radius: 20px !important;
+    padding: 18px !important;
+  }
+
+  .agenda-card-polished {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto auto !important;
+    align-items: center !important;
+    gap: 14px !important;
+    margin-bottom: 18px !important;
+  }
+
+  .agenda-compact-items {
+    display: flex !important;
+    gap: 10px !important;
+    align-items: center !important;
+  }
+
+  .agenda-pill {
+    min-width: 118px !important;
+    border-radius: 16px !important;
+    padding: 10px 12px !important;
+  }
+
+  .filters-desktop {
+    display: grid !important;
+    grid-template-columns: minmax(260px, 1fr) auto auto !important;
+    gap: 12px !important;
+    align-items: start !important;
+  }
+
+  .advanced-filters {
+    grid-column: 1 / -1 !important;
+    display: grid !important;
+    grid-template-columns: 1.3fr 1fr 1fr 1fr 1fr !important;
+    gap: 10px !important;
+    align-items: center !important;
+  }
+
+  .filter-tabs-fixed {
+    display: flex !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .filter-tabs-fixed button {
+    color: #0f172a !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    font-weight: 900 !important;
+  }
+
+  .result-summary {
+    margin-top: 14px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .content-block {
+    margin-top: 14px !important;
+  }
+
+  .account-card-desktop {
+    display: grid !important;
+    grid-template-columns: minmax(260px, 1.4fr) minmax(220px, 1fr) auto !important;
+    align-items: center !important;
+    gap: 14px !important;
+    padding: 16px !important;
+    border-radius: 20px !important;
+  }
+
+  .account-card-desktop > div {
+    margin: 0 !important;
+    min-width: 0 !important;
+  }
+
+  .account-card-desktop .account-actions {
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
+    min-width: 240px !important;
+  }
+
+  .account-card-desktop .account-actions button {
+    margin: 0 !important;
+    min-width: 74px !important;
+    white-space: nowrap !important;
+  }
+
+  .notes-panel {
+    position: fixed !important;
+    right: 28px !important;
+    top: 150px !important;
+    width: 336px !important;
+    max-height: calc(100vh - 180px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    z-index: 30 !important;
+    padding: 18px !important;
+    border-radius: 24px !important;
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 18px 44px rgba(15, 23, 42, 0.10) !important;
+  }
+
+  .quick-actions-card {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+    background: linear-gradient(135deg, #f8fafc, #ecfeff) !important;
+    border: 1px solid #ccfbf1 !important;
+    margin-bottom: 14px !important;
+  }
+
+  .quick-actions-card strong {
+    grid-column: 1 / -1 !important;
+    font-size: 15px !important;
+  }
+
+  .quick-actions-card button {
+    border: 0 !important;
+    border-radius: 12px !important;
+    padding: 11px 10px !important;
+    color: white !important;
+    font-weight: 900 !important;
+    cursor: pointer !important;
+  }
+
+  .quick-actions-card button:nth-of-type(1) {
+    background: linear-gradient(135deg, #14b8a6, #0f766e) !important;
+  }
+
+  .quick-actions-card button:nth-of-type(2) {
+    background: #111827 !important;
+  }
+
+  .notes-panel .note-add-small {
+    width: 36px !important;
+    height: 36px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .note-event-date {
+    display: inline-flex !important;
+    margin: 6px 0 !important;
+    padding: 4px 8px !important;
+    border-radius: 999px !important;
+    background: #ecfeff !important;
+    color: #0f766e !important;
+    font-weight: 900 !important;
+    font-size: 12px !important;
+  }
+}
+
+@media (min-width: 980px) and (max-width: 1220px) {
+  .dashboard-title-row,
+  .summary-grid,
+  .agenda-card-polished,
+  .filters-desktop,
+  .result-summary,
+  .content-block {
+    margin-right: 0 !important;
+  }
+
+  .notes-panel {
+    position: static !important;
+    width: auto !important;
+    max-height: none !important;
+    margin-top: 18px !important;
+  }
+
+  .account-card-desktop {
+    grid-template-columns: 1fr !important;
+  }
+
+  .account-card-desktop .account-actions {
+    justify-content: flex-start !important;
+    min-width: 0 !important;
+    flex-wrap: wrap !important;
+  }
+}

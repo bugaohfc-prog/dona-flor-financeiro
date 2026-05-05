@@ -14,8 +14,8 @@ import './styles.css'
 
 const SESSAO_STORAGE_KEY = 'df_sessao_segura'
 const OITO_HORAS_MS = 8 * 60 * 60 * 1000
-const TRINTA_MINUTOS_MS = 30 * 60 * 1000
-const VINTE_CINCO_MINUTOS_MS = 25 * 60 * 1000
+const QUINZE_MINUTOS_MS = 15 * 60 * 1000
+const DOZE_MINUTOS_MS = 12 * 60 * 1000
 
 function lerSessaoSegura() {
   try {
@@ -244,35 +244,53 @@ export default function App() {
   const [linhasImportacao, setLinhasImportacao] = useState([])
   const [statusImportacao, setStatusImportacao] = useState('')
 
+  function limparEstadoAutenticacao() {
+    setUsuarioLogado(null)
+    setContas([])
+    setNotas([])
+    setCentros([])
+    setContasLixeira([])
+    setNotasLixeira([])
+    setUsuariosEmpresa([])
+    setEmpresaId(null)
+    setPerfilUsuario('')
+    setNomeUsuarioPerfil('')
+    setErroEmpresa('')
+    setLoading(false)
+    limparSessaoSegura()
+  }
+
   useEffect(() => {
     let ativo = true
 
     async function verificarSessao() {
-      const { data } = await supabase.auth.getSession()
+      try {
+        const { data, error } = await supabase.auth.getSession()
+        if (error) throw error
 
-      if (!ativo) return
+        if (!ativo) return
 
-      setUsuarioLogado(data.session?.user || null)
-      setCarregandoAuth(false)
+        setUsuarioLogado(data.session?.user || null)
+        if (!data.session) {
+          limparEstadoAutenticacao()
+        }
+      } catch (error) {
+        console.warn('Sessão inválida ou expirada:', error?.message || error)
+        await supabase.auth.signOut()
+        if (ativo) limparEstadoAutenticacao()
+      } finally {
+        if (ativo) setCarregandoAuth(false)
+      }
     }
 
     verificarSessao()
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCarregandoAuth(false)
       setUsuarioLogado(session?.user || null)
 
       if (!session) {
-        setContas([])
-        setNotas([])
-        setCentros([])
-        setContasLixeira([])
-        setNotasLixeira([])
-        setUsuariosEmpresa([])
-        setEmpresaId(null)
-        setPerfilUsuario('')
-        setNomeUsuarioPerfil('')
-        setErroEmpresa('')
-        limparSessaoSegura()
+        limparEstadoAutenticacao()
       }
     })
 
@@ -305,6 +323,8 @@ export default function App() {
     async function encerrarPorSeguranca(mensagem) {
       limparSessaoSegura()
       await supabase.auth.signOut()
+      limparEstadoAutenticacao()
+      setCarregandoAuth(false)
       alert(mensagem)
     }
 
@@ -321,12 +341,12 @@ export default function App() {
         return
       }
 
-      if (tempoInativo >= TRINTA_MINUTOS_MS) {
+      if (tempoInativo >= QUINZE_MINUTOS_MS) {
         encerrarPorSeguranca('Sua sessão foi encerrada por inatividade. Faça login novamente.')
         return
       }
 
-      if (tempoInativo >= VINTE_CINCO_MINUTOS_MS && !avisoSessaoMostradoRef.current) {
+      if (tempoInativo >= DOZE_MINUTOS_MS && !avisoSessaoMostradoRef.current) {
         avisoSessaoMostradoRef.current = true
         abrirConfirmacao({
           titulo: 'Sessão quase expirada',
@@ -1703,11 +1723,7 @@ export default function App() {
   async function sairDoSistema() {
     limparSessaoSegura()
     await supabase.auth.signOut()
-    setUsuarioLogado(null)
-    setEmpresaId(null)
-    setPerfilUsuario('')
-    setNomeUsuarioPerfil('')
-    setErroEmpresa('')
+    limparEstadoAutenticacao()
     setTelaAtualState('contas')
   }
 

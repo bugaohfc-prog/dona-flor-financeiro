@@ -2343,6 +2343,8 @@ export default function App() {
           <GrupoMenu id="principal" titulo="Principal">
             <ItemMenu tela="contas" icon="🏠" label="Painel" />
             <ItemMenu tela="agenda" icon="📅" label="Agenda" />
+            <ItemMenu tela="notas" icon="📝" label="Bloco de Notas" />
+            <ItemMenu icon="➕" label="Nova nota" onClick={abrirNovaNota} />
           </GrupoMenu>
 
           <GrupoMenu id="financeiro" titulo="Financeiro">
@@ -2350,10 +2352,6 @@ export default function App() {
             <ItemMenu tela="importar" icon="📥" label="Importar CSV" />
           </GrupoMenu>
 
-          <GrupoMenu id="notas" titulo="Notas">
-            <ItemMenu tela="notas" icon="📝" label="Todas as notas" />
-            <ItemMenu icon="➕" label="Nova nota" onClick={abrirNovaNota} />
-          </GrupoMenu>
 
           <GrupoMenu id="analise" titulo="Análise">
             <ItemMenu tela="relatorios" icon="📊" label="Relatórios" />
@@ -2395,6 +2393,8 @@ export default function App() {
             <summary>Principal</summary>
             {item('🏠', 'Dashboard', 'Resumo financeiro', () => navegarPara('contas'))}
             {item('📅', 'Agenda', 'Vencimentos e previsões', () => navegarPara('agenda'))}
+            {item('📝', 'Bloco de Notas', 'Pendências e histórico de notas', () => navegarPara('notas'))}
+            {item('➕', 'Nova nota', 'Criar lembrete rápido', abrirNovaNota)}
           </details>
 
           <details className="mobile-menu-group" open>
@@ -2403,11 +2403,6 @@ export default function App() {
             {item('📥', 'Importar CSV', 'Trazer histórico do Excel', () => navegarPara('importar'))}
           </details>
 
-          <details className="mobile-menu-group" open>
-            <summary>Notas</summary>
-            {item('📝', 'Todas as notas', 'Consultar, buscar e organizar', () => navegarPara('notas'))}
-            {item('➕', 'Nova nota', 'Criar lembrete rápido', abrirNovaNota)}
-          </details>
 
           <details className="mobile-menu-group">
             <summary>Análise</summary>
@@ -3550,6 +3545,112 @@ export default function App() {
             .quick-actions-card { display:none !important; }
           }
 
+
+
+          /* ===== AJUSTE LIMPO: NOTAS NO FLUXO DO DASHBOARD ===== */
+          @media (min-width: 980px) {
+            .dashboard-title-row,
+            .agenda-card-polished,
+            .filters-desktop,
+            .result-summary,
+            .content-block,
+            .dashboard-notes-card {
+              max-width: 1280px !important;
+              width: 100% !important;
+              margin-left: auto !important;
+              margin-right: auto !important;
+              box-sizing: border-box !important;
+            }
+
+            body:has(.desktop-sidebar.compacta) .dashboard-title-row,
+            body:has(.desktop-sidebar.compacta) .summary-grid,
+            body:has(.desktop-sidebar.compacta) .agenda-card-polished,
+            body:has(.desktop-sidebar.compacta) .filters-desktop,
+            body:has(.desktop-sidebar.compacta) .result-summary,
+            body:has(.desktop-sidebar.compacta) .content-block {
+              margin-right: auto !important;
+            }
+
+            .dashboard-notes-card {
+              position: static !important;
+              display: grid !important;
+              grid-template-columns: minmax(240px, 320px) minmax(0, 1fr) !important;
+              gap: 16px !important;
+              padding: 18px !important;
+              margin-top: 18px !important;
+              margin-bottom: 18px !important;
+              border-radius: 24px !important;
+              background: #ffffff !important;
+              border: 1px solid #e5e7eb !important;
+              box-shadow: 0 18px 44px rgba(15,23,42,.08) !important;
+              overflow: visible !important;
+              white-space: normal !important;
+              z-index: auto !important;
+            }
+
+            .dashboard-notes-card .quick-actions-card {
+              margin: 0 !important;
+              align-self: start !important;
+            }
+
+            .dashboard-notes-card .notes-header-clean,
+            .dashboard-notes-card .notes-list-dashboard,
+            .dashboard-notes-card .notes-see-all,
+            .dashboard-notes-card > p {
+              grid-column: 2 !important;
+              min-width: 0 !important;
+            }
+
+            .dashboard-notes-card .notes-header-clean {
+              display: flex !important;
+              align-items: flex-start !important;
+              justify-content: space-between !important;
+              flex-wrap: wrap !important;
+              gap: 12px !important;
+              margin-bottom: 10px !important;
+            }
+
+            .dashboard-notes-card .notes-stats-row {
+              display: flex !important;
+              flex-wrap: wrap !important;
+              gap: 8px !important;
+              margin-top: 8px !important;
+            }
+
+            .dashboard-notes-card .notes-list-dashboard {
+              display: grid !important;
+              grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
+              gap: 12px !important;
+            }
+
+            .dashboard-notes-card .notes-list-dashboard > div {
+              margin: 0 !important;
+              min-width: 0 !important;
+              overflow: hidden !important;
+            }
+
+            .dashboard-notes-card .notes-see-all {
+              justify-self: start !important;
+              margin-top: 4px !important;
+            }
+          }
+
+          @media (max-width: 979px) {
+            .dashboard-notes-card {
+              position: static !important;
+              width: auto !important;
+              max-height: none !important;
+              overflow: visible !important;
+              margin: 14px 0 18px !important;
+              padding: 16px !important;
+              border-radius: 22px !important;
+              background: #ffffff !important;
+              border: 1px solid #e5e7eb !important;
+              box-shadow: 0 12px 28px rgba(15,23,42,.08) !important;
+              white-space: normal !important;
+            }
+          }
+
           @media print {
             html,
             body {
@@ -3633,6 +3734,177 @@ export default function App() {
 
       {renderMobileMenu()}
 
+      <style>{`
+        /* ===== CORRECAO ESTRUTURAL DEFINITIVA: DASHBOARD + NOTAS ===== */
+        @media (min-width: 980px) {
+          html, body, #root {
+            max-width: 100%;
+            overflow-x: hidden !important;
+          }
+
+          .app-page,
+          .app-frame {
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+          }
+
+          .app-frame-content {
+            width: 100% !important;
+            max-width: 1280px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            overflow-x: hidden !important;
+          }
+
+          .dashboard-title-row,
+          .agenda-card-polished,
+          .filters-desktop,
+          .result-summary,
+          .content-block,
+          .dashboard-notes-card {
+            max-width: 1280px !important;
+            width: 100% !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            box-sizing: border-box !important;
+          }
+
+          body:has(.desktop-sidebar.compacta) .dashboard-title-row,
+          body:has(.desktop-sidebar.compacta) .summary-grid,
+          body:has(.desktop-sidebar.compacta) .agenda-card-polished,
+          body:has(.desktop-sidebar.compacta) .filters-desktop,
+          body:has(.desktop-sidebar.compacta) .result-summary,
+          body:has(.desktop-sidebar.compacta) .content-block,
+          body:has(.desktop-sidebar.compacta) .dashboard-notes-card {
+            margin-left: auto !important;
+            margin-right: auto !important;
+          }
+
+          .dashboard-title-row {
+            display: block !important;
+            margin-top: 0 !important;
+            margin-bottom: 18px !important;
+          }
+
+          .dashboard-title-row .main-title {
+            width: 100% !important;
+            margin: 0 0 16px 0 !important;
+            white-space: normal !important;
+          }
+
+          .dashboard-title-row .summary-grid,
+          .summary-grid {
+            display: grid !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 14px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+          }
+
+          .summary-grid > div {
+            min-width: 0 !important;
+            overflow: hidden !important;
+          }
+
+          .dashboard-notes-card,
+          .notes-panel {
+            position: static !important;
+            inset: auto !important;
+            right: auto !important;
+            top: auto !important;
+            left: auto !important;
+            bottom: auto !important;
+            width: 100% !important;
+            max-width: 1280px !important;
+            max-height: none !important;
+            overflow: hidden !important;
+            z-index: auto !important;
+          }
+
+          .dashboard-notes-card {
+            display: grid !important;
+            grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) !important;
+            gap: 16px !important;
+            align-items: start !important;
+            padding: 18px !important;
+            margin-top: 18px !important;
+            margin-bottom: 18px !important;
+            border-radius: 24px !important;
+            background: #ffffff !important;
+            border: 1px solid #e5e7eb !important;
+            box-shadow: 0 18px 44px rgba(15,23,42,.08) !important;
+            box-sizing: border-box !important;
+          }
+
+          .dashboard-notes-card .quick-actions-card {
+            grid-column: 1 !important;
+            grid-row: 1 / span 4 !important;
+            margin: 0 !important;
+            min-width: 0 !important;
+          }
+
+          .dashboard-notes-card .notes-header-clean,
+          .dashboard-notes-card .notes-list-dashboard,
+          .dashboard-notes-card .notes-see-all,
+          .dashboard-notes-card > p {
+            grid-column: 2 !important;
+            min-width: 0 !important;
+          }
+
+          .dashboard-notes-card .notes-list-dashboard {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
+            gap: 12px !important;
+            overflow: hidden !important;
+          }
+
+          .dashboard-notes-card .notes-list-dashboard > div,
+          .dashboard-notes-card .notes-header-clean,
+          .dashboard-notes-card .notes-title-wrap {
+            min-width: 0 !important;
+            max-width: 100% !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .dashboard-notes-card .notes-see-all {
+            justify-self: start !important;
+          }
+        }
+
+        @media (min-width: 980px) and (max-width: 1180px) {
+          .dashboard-title-row .summary-grid,
+          .summary-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .dashboard-notes-card {
+            grid-template-columns: 1fr !important;
+          }
+
+          .dashboard-notes-card .quick-actions-card,
+          .dashboard-notes-card .notes-header-clean,
+          .dashboard-notes-card .notes-list-dashboard,
+          .dashboard-notes-card .notes-see-all,
+          .dashboard-notes-card > p {
+            grid-column: 1 !important;
+            grid-row: auto !important;
+          }
+        }
+
+        @media (max-width: 979px) {
+          .dashboard-notes-card,
+          .notes-panel {
+            position: static !important;
+            width: auto !important;
+            max-width: 100% !important;
+            max-height: none !important;
+            overflow: visible !important;
+          }
+        }
+      `}</style>
+
       <section className="dashboard-title-row">
         <h1 className="main-title" style={styles.titulo}>📊 Dashboard Financeiro</h1>
 
@@ -3671,14 +3943,14 @@ export default function App() {
         <button style={styles.btnAgendaCompleta} onClick={() => navegarPara('agenda')}>Abrir agenda</button>
       </section>
 
-      <section className="no-print notes-block notes-panel" style={styles.blocoNotasPainel}>
+      <section className="no-print dashboard-notes-card">
         <div className="quick-actions-card">
           <strong>⚡ Ações rápidas</strong>
           <button onClick={abrirNovaConta}>+ Nova conta</button>
           <button onClick={abrirNovaNota}>+ Nova nota</button>
         </div>
 
-        <div style={styles.notasHeaderNovo} className="notes-header-clean">
+        <div style={styles.notasHeaderNovo} className="notes-header-clean dashboard-notes-content">
           <div className="notes-title-wrap">
             <strong className="notes-title">📝 Bloco de Notas</strong>
             <div className="notes-stats-row">
@@ -3694,7 +3966,7 @@ export default function App() {
           <p style={styles.mensagemVazia}>Nenhuma nota pendente no momento.</p>
         )}
 
-        <div style={styles.notasListaNova}>
+        <div style={styles.notasListaNova} className="notes-list-dashboard">
           {notasPendentes.slice(0, 4).map((nota) => {
             const prioridade = nota.prioridade || 'normal'
             return (
@@ -3720,7 +3992,7 @@ export default function App() {
           })}
         </div>
 
-        <button className="notes-see-all" style={styles.btnCinza} onClick={() => navegarPara('notas')}>Ver histórico de notas</button>
+        <button className="notes-see-all" style={styles.btnCinza} onClick={() => navegarPara('notas')}>Ver todas as notas</button>
       </section>
 
 

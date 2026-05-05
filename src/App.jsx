@@ -14,8 +14,8 @@ import './styles.css'
 
 const SESSAO_STORAGE_KEY = 'df_sessao_segura'
 const OITO_HORAS_MS = 8 * 60 * 60 * 1000
-const QUINZE_MINUTOS_MS = 15 * 60 * 1000
-const DOZE_MINUTOS_MS = 12 * 60 * 1000
+const TRINTA_MINUTOS_MS = 30 * 60 * 1000
+const VINTE_CINCO_MINUTOS_MS = 25 * 60 * 1000
 
 function lerSessaoSegura() {
   try {
@@ -245,7 +245,6 @@ export default function App() {
   const [statusImportacao, setStatusImportacao] = useState('')
 
   function limparEstadoAutenticacao() {
-    setUsuarioLogado(null)
     setContas([])
     setNotas([])
     setCentros([])
@@ -265,19 +264,29 @@ export default function App() {
 
     async function verificarSessao() {
       try {
-        const { data, error } = await supabase.auth.getSession()
-        if (error) throw error
+        const timeoutSessao = new Promise((resolve) => {
+          window.setTimeout(() => resolve({ data: { session: null }, error: new Error('Timeout ao validar sessão') }), 8000)
+        })
+
+        const { data, error } = await Promise.race([
+          supabase.auth.getSession(),
+          timeoutSessao
+        ])
 
         if (!ativo) return
 
-        setUsuarioLogado(data.session?.user || null)
-        if (!data.session) {
+        if (error || !data?.session) {
           limparEstadoAutenticacao()
+          setUsuarioLogado(null)
+          return
         }
+
+        setUsuarioLogado(data.session.user)
       } catch (error) {
-        console.warn('Sessão inválida ou expirada:', error?.message || error)
-        await supabase.auth.signOut()
-        if (ativo) limparEstadoAutenticacao()
+        if (!ativo) return
+        console.warn('Falha ao validar sessão:', error?.message || error)
+        limparEstadoAutenticacao()
+        setUsuarioLogado(null)
       } finally {
         if (ativo) setCarregandoAuth(false)
       }
@@ -321,10 +330,11 @@ export default function App() {
     }
 
     async function encerrarPorSeguranca(mensagem) {
-      limparSessaoSegura()
-      await supabase.auth.signOut()
       limparEstadoAutenticacao()
+      setUsuarioLogado(null)
+      setTelaAtualState('contas')
       setCarregandoAuth(false)
+      await supabase.auth.signOut()
       alert(mensagem)
     }
 
@@ -341,12 +351,12 @@ export default function App() {
         return
       }
 
-      if (tempoInativo >= QUINZE_MINUTOS_MS) {
+      if (tempoInativo >= TRINTA_MINUTOS_MS) {
         encerrarPorSeguranca('Sua sessão foi encerrada por inatividade. Faça login novamente.')
         return
       }
 
-      if (tempoInativo >= DOZE_MINUTOS_MS && !avisoSessaoMostradoRef.current) {
+      if (tempoInativo >= VINTE_CINCO_MINUTOS_MS && !avisoSessaoMostradoRef.current) {
         avisoSessaoMostradoRef.current = true
         abrirConfirmacao({
           titulo: 'Sessão quase expirada',
@@ -1721,10 +1731,11 @@ export default function App() {
   }
 
   async function sairDoSistema() {
-    limparSessaoSegura()
-    await supabase.auth.signOut()
     limparEstadoAutenticacao()
+    setUsuarioLogado(null)
+    setCarregandoAuth(false)
     setTelaAtualState('contas')
+    await supabase.auth.signOut()
   }
 
   function HeaderExpansivel({ titulo, aberto, onClick }) {
@@ -3959,13 +3970,7 @@ export default function App() {
         <button style={styles.btnAgendaCompleta} onClick={() => navegarPara('agenda')}>Abrir agenda</button>
       </section>
 
-      <section className="no-print dashboard-notes-card">
-        <div className="quick-actions-card">
-          <strong>⚡ Ações rápidas</strong>
-          <button onClick={abrirNovaConta}>+ Nova conta</button>
-          <button onClick={abrirNovaNota}>+ Nova nota</button>
-        </div>
-
+      <section className={`no-print dashboard-notes-card ${mostrarNotas ? 'notes-expanded' : 'notes-collapsed'}`}>
         <div style={styles.notasHeaderNovo} className="notes-header-clean dashboard-notes-content">
           <div className="notes-title-wrap">
             <strong className="notes-title">📝 Bloco de Notas</strong>
@@ -3975,15 +3980,21 @@ export default function App() {
               <span className="note-stat note-stat-urgente">{notasUrgentes} urgente(s)</span>
             </div>
           </div>
-          <button className="note-add-small" style={styles.btnMiniVerde} onClick={abrirNovaNota} title="Nova nota">+</button>
+          <div className="notes-header-actions">
+            <button className="note-toggle-small" onClick={() => setMostrarNotas(!mostrarNotas)} title={mostrarNotas ? 'Recolher bloco de notas' : 'Expandir bloco de notas'}>
+              {mostrarNotas ? 'Recolher' : 'Expandir'}
+            </button>
+            <button className="note-add-small" style={styles.btnMiniVerde} onClick={abrirNovaNota} title="Nova nota">+</button>
+          </div>
         </div>
 
         {notasPendentes.length === 0 && (
           <p style={styles.mensagemVazia}>Nenhuma nota pendente no momento.</p>
         )}
 
+        {mostrarNotas && (
         <div style={styles.notasListaNova} className="notes-list-dashboard">
-          {notasPendentes.slice(0, 4).map((nota) => {
+          {notasPendentes.slice(0, 6).map((nota) => {
             const prioridade = nota.prioridade || 'normal'
             return (
               <div key={nota.id} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
@@ -4007,6 +4018,7 @@ export default function App() {
             )
           })}
         </div>
+        )}
 
         <button className="notes-see-all" style={styles.btnCinza} onClick={() => navegarPara('notas')}>Ver todas as notas</button>
       </section>

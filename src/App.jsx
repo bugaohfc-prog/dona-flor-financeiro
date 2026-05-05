@@ -202,7 +202,7 @@ export default function App() {
   const [menuAberto, setMenuAberto] = useState(false)
   const [menuNavegacaoAberto, setMenuNavegacaoAberto] = useState(false)
   const [sidebarCompacta, setSidebarCompacta] = useState(false)
-  const [gruposMenu, setGruposMenu] = useState({ principal: true, financeiro: true, notas: true, analise: true, sistema: true })
+  const [gruposMenu, setGruposMenu] = useState({ principal: true, financeiro: true, analise: true, sistema: true })
   const [telaAtual, setTelaAtualState] = useState('contas')
   const [usuarioLogado, setUsuarioLogado] = useState(null)
   const [carregandoAuth, setCarregandoAuth] = useState(true)
@@ -2371,12 +2371,10 @@ export default function App() {
             <ItemMenu tela="contas" icon="🏠" label="Painel" />
             <ItemMenu tela="agenda" icon="📅" label="Agenda" />
             <ItemMenu tela="notas" icon="📝" label="Bloco de Notas" />
-            <ItemMenu icon="➕" label="Nova nota" onClick={abrirNovaNota} />
           </GrupoMenu>
 
           <GrupoMenu id="financeiro" titulo="Financeiro">
-            <ItemMenu icon="💰" label="Nova conta" onClick={abrirNovaConta} />
-            <ItemMenu tela="importar" icon="📥" label="Importar CSV" />
+            <ItemMenu tela="contas" icon="💳" label="Contas" />
           </GrupoMenu>
 
 
@@ -2387,6 +2385,7 @@ export default function App() {
           <GrupoMenu id="sistema" titulo="Sistema">
             <ItemMenu tela="usuarios" icon="👥" label="Usuários" onClick={() => navegarPara('usuarios')} />
             <ItemMenu tela="configuracoes" icon="⚙️" label="Configurações" />
+            <ItemMenu tela="importar" icon="📥" label="Importar CSV" />
             <ItemMenu tela="lixeira" icon="🗑️" label="Lixeira" />
           </GrupoMenu>
         </div>
@@ -2490,7 +2489,7 @@ export default function App() {
           </div>
           <div className="page-actions-row">
             <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>← Painel</button>
-            <button style={styles.btnSalvar} onClick={abrirNovaNota}>+ Nova nota</button>
+            <button className="btn-action-ghost" style={styles.btnGhostAction} onClick={abrirNovaNota} title="Criar nova nota">+ Nova</button>
           </div>
         </div>
 
@@ -2700,7 +2699,7 @@ export default function App() {
                 type="text"
                 placeholder="Nome do usuário"
                 value={nomeConviteUsuario}
-                onChange={(e) => setNomeConviteUsuario(e.target.value)}
+                onChange={(e) => setNomeConviteUsuario(primeiraLetraMaiuscula(e.target.value))}
               />
 
               <input
@@ -2890,7 +2889,7 @@ export default function App() {
                 style={styles.input}
                 placeholder="Nome da empresa"
                 value={nomeEmpresa}
-                onChange={(e) => setNomeEmpresa(e.target.value)}
+                onChange={(e) => setNomeEmpresa(primeiraLetraMaiuscula(e.target.value))}
               />
 
               <input
@@ -3930,10 +3929,103 @@ export default function App() {
             overflow: visible !important;
           }
         }
+
+
+        /* ===== REFINAMENTO PRODUTO: BOTOES, MENU E NOTAS ===== */
+        @media (min-width: 980px) {
+          .dashboard-heading-actions {
+            display:flex !important;
+            align-items:flex-start !important;
+            justify-content:space-between !important;
+            gap:14px !important;
+            width:100% !important;
+            margin-bottom:16px !important;
+          }
+          .dashboard-heading-actions .main-title { margin:0 !important; }
+          .btn-dashboard-primary,
+          .btn-action-ghost,
+          .note-add-small,
+          .note-toggle-small,
+          .notes-see-all {
+            border:1px solid #d1d5db !important;
+            background:#ffffff !important;
+            color:#374151 !important;
+            border-radius:999px !important;
+            padding:7px 12px !important;
+            font-size:13px !important;
+            font-weight:800 !important;
+            line-height:1 !important;
+            box-shadow:none !important;
+            width:auto !important;
+            min-width:auto !important;
+            cursor:pointer !important;
+            transition:background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease !important;
+          }
+          .btn-dashboard-primary:hover,
+          .btn-action-ghost:hover,
+          .note-add-small:hover,
+          .note-toggle-small:hover,
+          .notes-see-all:hover {
+            background:#f9fafb !important;
+            border-color:#9ca3af !important;
+            color:#111827 !important;
+            transform:translateY(-1px) !important;
+          }
+          .sidebar-collapse-btn {
+            background:transparent !important;
+            border:1px solid rgba(255,255,255,.10) !important;
+            color:rgba(255,255,255,.82) !important;
+            opacity:.72 !important;
+            min-height:34px !important;
+            padding:6px 8px !important;
+          }
+          .sidebar-collapse-btn small { font-size:11px !important; color:rgba(255,255,255,.68) !important; }
+          .sidebar-collapse-btn:hover { opacity:1 !important; background:rgba(255,255,255,.08) !important; }
+          .dashboard-notes-card {
+            display:block !important;
+            grid-template-columns:1fr !important;
+            padding:18px !important;
+          }
+          .dashboard-notes-card .notes-header-clean,
+          .dashboard-notes-card .notes-list-dashboard,
+          .dashboard-notes-card .notes-see-all,
+          .dashboard-notes-card > p {
+            grid-column:auto !important;
+          }
+          .notes-header-actions { display:flex !important; align-items:center !important; gap:8px !important; flex-wrap:wrap !important; }
+          .notes-page-grid .btn-action-ghost { justify-self:start; }
+          .account-actions button,
+          .notes-page-grid button,
+          .content-block button {
+            font-weight:800 !important;
+            border-radius:10px !important;
+            cursor:pointer !important;
+          }
+        }
+        @media (max-width: 979px) {
+          .dashboard-heading-actions { display:grid !important; gap:10px !important; }
+          .btn-dashboard-primary,
+          .btn-action-ghost,
+          .note-add-small,
+          .note-toggle-small,
+          .notes-see-all {
+            width:auto !important;
+            border:1px solid #d1d5db !important;
+            background:#ffffff !important;
+            color:#374151 !important;
+            border-radius:999px !important;
+            padding:7px 12px !important;
+            font-size:13px !important;
+            font-weight:800 !important;
+          }
+        }
       `}</style>
 
       <section className="dashboard-title-row">
-        <h1 className="main-title" style={styles.titulo}>📊 Dashboard Financeiro</h1>
+        <div className="dashboard-heading-actions">
+          <h1 className="main-title" style={styles.titulo}>📊 Dashboard Financeiro</h1>
+          <button className="btn-dashboard-primary" style={styles.btnGhostAction} onClick={abrirNovaConta} title="Cadastrar nova conta">+ Nova conta</button>
+        </div>
 
         <div className="summary-grid" style={styles.resumo}>
           <div style={styles.boxTotal}>
@@ -3982,9 +4074,9 @@ export default function App() {
           </div>
           <div className="notes-header-actions">
             <button className="note-toggle-small" onClick={() => setMostrarNotas(!mostrarNotas)} title={mostrarNotas ? 'Recolher bloco de notas' : 'Expandir bloco de notas'}>
-              {mostrarNotas ? 'Recolher' : 'Expandir'}
+              {mostrarNotas ? 'Ocultar' : 'Mostrar'}
             </button>
-            <button className="note-add-small" style={styles.btnMiniVerde} onClick={abrirNovaNota} title="Nova nota">+</button>
+            <button className="note-add-small" style={styles.btnGhostAction} onClick={abrirNovaNota} title="Criar nova nota">+ Nova</button>
           </div>
         </div>
 
@@ -4660,7 +4752,9 @@ const styles = {
     border: '1px solid #ccc',
     background: '#fff',
     padding: '7px 11px',
-    borderRadius: 8
+    borderRadius: 10,
+    fontWeight: 800,
+    cursor: 'pointer'
   },
   filtroAtivo: {
     border: 'none',
@@ -4815,7 +4909,7 @@ const styles = {
     opacity: 0.7
   },
   btnPago: {
-    background: '#0d6efd',
+    background: '#0f766e',
     color: '#fff',
     border: 'none',
     padding: '6px 10px',
@@ -4829,14 +4923,14 @@ const styles = {
     borderRadius: 8
   },
   btnEditar: {
-    background: '#ffc107',
+    background: '#f59e0b',
     color: '#111',
     border: 'none',
     padding: '6px 10px',
     borderRadius: 8
   },
   btnExcluir: {
-    background: '#dc3545',
+    background: '#e11d48',
     color: '#fff',
     border: 'none',
     padding: '6px 10px',
@@ -4853,7 +4947,7 @@ const styles = {
     cursor: 'pointer'
   },
   btnCinza: {
-    background: '#6c757d',
+    background: '#64748b',
     color: '#fff',
     border: 'none',
     padding: '7px 10px',
@@ -5008,6 +5102,18 @@ const styles = {
     border: '1px solid #ccc',
     boxSizing: 'border-box',
     fontFamily: 'Arial'
+  },
+  btnGhostAction: {
+    width: 'auto',
+    background: '#fff',
+    color: '#374151',
+    border: '1px solid #d1d5db',
+    padding: '7px 12px',
+    borderRadius: 999,
+    fontSize: 13,
+    fontWeight: 800,
+    cursor: 'pointer',
+    marginBottom: 0
   },
   btnSalvar: {
     width: '100%',

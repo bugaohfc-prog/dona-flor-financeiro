@@ -1938,13 +1938,6 @@ export default function App() {
         </div>
 
         <div className="top-shell-actions" style={styles.usuarioAcoes}>
-          <button className="top-action-button" onClick={() => navegarPara('notas')} title="Abrir notas">📝 Notas</button>
-          <button className="top-action-button" onClick={() => navegarPara('configuracoes')} title="Configurações">⚙️</button>
-          <div className="top-user-chip" style={styles.usuarioTexto} title={`${nomeUsuario()} • ${perfilUsuario || 'usuário'}`}>
-            <strong>{nomeUsuario()}</strong>
-            <small>{normalizarPerfil(perfilUsuario || 'usuário')}</small>
-          </div>
-          <button className="top-exit-button" onClick={sairDoSistema} title="Sair">Sair</button>
           <button className="mobile-menu-trigger" style={styles.btnMenuTopo} onClick={() => setMenuNavegacaoAberto(!menuNavegacaoAberto)}>☰</button>
         </div>
       </section>
@@ -2015,10 +2008,14 @@ export default function App() {
             }
             .sidebar-collapse-btn {
               display:flex; align-items:center; justify-content:center; gap:8px;
-              width:100%; border:1px solid rgba(255,255,255,.16); border-radius:14px;
-              background:rgba(255,255,255,.10); color:white; font-weight:900;
-              padding:9px 10px; cursor:pointer;
+              width:100%; border:1px solid rgba(255,255,255,.14); border-radius:14px;
+              background:rgba(255,255,255,.08); color:white; font-weight:900;
+              padding:8px 10px; cursor:pointer; opacity:.88;
             }
+            .sidebar-collapse-btn:hover { opacity:1; background:rgba(255,255,255,.14); }
+            .sidebar-collapse-btn small { font-size:12px; color:rgba(255,255,255,.78); font-weight:800; }
+            .sidebar-user-clean { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.14) !important; }
+            .sidebar-user-avatar { width:34px; height:34px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:#ffffff; color:#0f766e; font-weight:900; flex:0 0 34px; }
             .desktop-sidebar-scroll {
               width: 100%; overflow-y: auto; overflow-x: hidden; padding-right: 2px;
               display: grid; gap: 8px;
@@ -2327,9 +2324,19 @@ export default function App() {
           )}
         </div>
 
-        <button className="sidebar-collapse-btn" onClick={() => setSidebarCompacta(!sidebarCompacta)} title={sidebarCompacta ? 'Expandir menu' : 'Recolher menu'}>
-          {sidebarCompacta ? '›' : '‹'}
-          {!sidebarCompacta && <span>Recolher</span>}
+        <div className="desktop-sidebar-user sidebar-user-clean" title={`${nomeUsuario()} • ${normalizarPerfil(perfilUsuario || 'usuário')}`}>
+          <span className="sidebar-user-avatar">{String(nomeUsuario() || 'U').slice(0, 1).toUpperCase()}</span>
+          {!sidebarCompacta && (
+            <div>
+              <strong>{nomeUsuario()}</strong>
+              <small>{normalizarPerfil(perfilUsuario || 'usuário')}</small>
+            </div>
+          )}
+        </div>
+
+        <button className="sidebar-collapse-btn sidebar-collapse-icon" onClick={() => setSidebarCompacta(!sidebarCompacta)} title={sidebarCompacta ? 'Expandir menu' : 'Recolher menu'}>
+          <span>{sidebarCompacta ? '›' : '‹'}</span>
+          {!sidebarCompacta && <small>Recolher menu</small>}
         </button>
 
         <div className="desktop-sidebar-scroll">
@@ -2361,7 +2368,7 @@ export default function App() {
 
         <div className="desktop-sidebar-spacer" />
         <nav className="desktop-sidebar-nav sidebar-exit">
-          <button onClick={() => navegarPara('configuracoes')} title="Configurações"><span className="menu-icon">⚙️</span>{!sidebarCompacta && <span>Preferências</span>}</button>
+          <button onClick={sairDoSistema} title="Sair"><span className="menu-icon">🚪</span>{!sidebarCompacta && <span>Sair</span>}</button>
         </nav>
       </aside>
     )
@@ -2381,7 +2388,7 @@ export default function App() {
         <div className="mobile-menu-panel" style={styles.menuNavegacao} onClick={(e) => e.stopPropagation()}>
           <div style={styles.menuPerfil}>
             <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.menuPerfilIcone} />
-            <div><strong>DF Gestão Financeira</strong><small>Olá, {nomeUsuario()} • {perfilUsuario || 'usuário'}</small></div>
+            <div><strong>{nomeUsuario()}</strong><small>{normalizarPerfil(perfilUsuario || 'usuário')}</small></div>
           </div>
 
           <details className="mobile-menu-group" open>
@@ -3683,19 +3690,12 @@ export default function App() {
           <button className="note-add-small" style={styles.btnMiniVerde} onClick={abrirNovaNota} title="Nova nota">+</button>
         </div>
 
-        <input
-          style={styles.input}
-          placeholder="Buscar nota..."
-          value={buscaNota}
-          onChange={(e) => setBuscaNota(e.target.value)}
-        />
-
-        {notasFiltradas.length === 0 && (
-          <p style={styles.mensagemVazia}>Nenhuma nota encontrada.</p>
+        {notasPendentes.length === 0 && (
+          <p style={styles.mensagemVazia}>Nenhuma nota pendente no momento.</p>
         )}
 
         <div style={styles.notasListaNova}>
-          {notasFiltradas.slice(0, 4).map((nota) => {
+          {notasPendentes.slice(0, 4).map((nota) => {
             const prioridade = nota.prioridade || 'normal'
             return (
               <div key={nota.id} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
@@ -3720,7 +3720,7 @@ export default function App() {
           })}
         </div>
 
-        <button className="notes-see-all" style={styles.btnCinza} onClick={() => navegarPara('notas')}>Ver todas as notas</button>
+        <button className="notes-see-all" style={styles.btnCinza} onClick={() => navegarPara('notas')}>Ver histórico de notas</button>
       </section>
 
 

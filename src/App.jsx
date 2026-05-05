@@ -2422,9 +2422,9 @@ export default function App() {
             {item('📝', 'Bloco de Notas', 'Pendências e histórico de notas', () => navegarPara('notas'))}
           </details>
 
-          <details className="mobile-menu-group" open>
+          <details className="mobile-menu-group">
             <summary>Financeiro</summary>
-            {item('📥', 'Importar CSV', 'Trazer histórico do Excel', () => navegarPara('importar'))}
+            {item('💳', 'Contas', 'Contas a pagar e filtros', () => navegarPara('contas'))}
           </details>
 
 
@@ -2437,6 +2437,7 @@ export default function App() {
             <summary>Sistema</summary>
             {item('👥', 'Gestão de usuários', 'Perfis, acessos e senhas', () => navegarPara('usuarios'))}
             {item('⚙️', 'Configurações', 'Preferências da empresa', () => navegarPara('configuracoes'))}
+            {item('📥', 'Importar CSV', 'Trazer histórico do Excel', () => navegarPara('importar'))}
             {item('🗑️', 'Lixeira', 'Restaurar ou excluir definitivo', () => navegarPara('lixeira'))}
             <button style={styles.menuSairItem} onClick={sairDoSistema}><span>🚪</span><div><strong>Sair</strong><small>Encerrar sessão</small></div></button>
           </details>
@@ -4015,6 +4016,231 @@ export default function App() {
             font-size:13px !important;
             font-weight:800 !important;
           }
+        }
+        @media (max-width: 979px) {
+          html, body, #root {
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+          }
+
+          .app-page,
+          .app-frame {
+            width: 100% !important;
+            max-width: 430px !important;
+            margin: 0 auto !important;
+            overflow-x: hidden !important;
+            box-sizing: border-box !important;
+          }
+
+          .top-shell {
+            margin: 0 0 14px 0 !important;
+            padding: 12px !important;
+            border-radius: 18px !important;
+            box-shadow: 0 10px 24px rgba(15,23,42,.06) !important;
+          }
+
+          .mobile-menu-trigger {
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 14px !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            border: 1px solid #e5e7eb !important;
+            box-shadow: 0 6px 16px rgba(15,23,42,.08) !important;
+          }
+
+          .mobile-menu-panel {
+            width: min(92vw, 360px) !important;
+            max-height: calc(100vh - 28px) !important;
+            overflow-y: auto !important;
+            border-radius: 24px !important;
+            padding: 16px !important;
+            box-sizing: border-box !important;
+          }
+
+          .mobile-menu-group {
+            margin-top: 12px !important;
+          }
+
+          .mobile-menu-group summary {
+            list-style: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            padding: 8px 2px !important;
+            color: #0f766e !important;
+            font-size: 12px !important;
+            font-weight: 900 !important;
+            letter-spacing: .05em !important;
+            text-transform: uppercase !important;
+          }
+
+          .mobile-menu-group summary::-webkit-details-marker { display: none !important; }
+
+          .mobile-menu-group button,
+          .mobile-menu-panel button {
+            border-radius: 16px !important;
+            background: #ffffff !important;
+            border: 1px solid #e5e7eb !important;
+            color: #0f172a !important;
+            box-shadow: none !important;
+          }
+
+          .mobile-menu-group button span:first-child {
+            width: 34px !important;
+            height: 34px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 12px !important;
+            background: #f0fdfa !important;
+          }
+
+          .dashboard-title-row,
+          .summary-grid,
+          .agenda-card-polished,
+          .filters-desktop,
+          .result-summary,
+          .content-block,
+          .dashboard-notes-card {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            box-sizing: border-box !important;
+          }
+
+          .summary-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+          }
+
+          .summary-grid > div,
+          .agenda-card-polished,
+          .result-summary,
+          .content-block,
+          .dashboard-notes-card {
+            border-radius: 18px !important;
+          }
+
+          .agenda-card-polished,
+          .filters-desktop {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+
+          .agenda-compact-items,
+          .export-actions,
+          .account-actions,
+          .notes-list-dashboard .account-actions {
+            display: flex !important;
+            gap: 8px !important;
+            flex-wrap: wrap !important;
+          }
+
+          .advanced-filters {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 10px !important;
+          }
+
+          .dashboard-notes-card {
+            padding: 14px !important;
+            overflow: visible !important;
+          }
+
+          .notes-header-clean {
+            align-items: flex-start !important;
+            gap: 12px !important;
+          }
+
+          .notes-list-dashboard {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 10px !important;
+          }
+
+          .global-fab {
+            right: 18px !important;
+            bottom: max(20px, env(safe-area-inset-bottom)) !important;
+            width: 50px !important;
+            height: 50px !important;
+            border-radius: 18px !important;
+            font-size: 26px !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            border: 1px solid #e5e7eb !important;
+            box-shadow: 0 12px 30px rgba(15,23,42,.16) !important;
+            z-index: 5000 !important;
+          }
+
+          .global-fab-menu {
+            right: 18px !important;
+            bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+            z-index: 5001 !important;
+          }
+
+          .global-fab-menu button {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            border: 1px solid #e5e7eb !important;
+            box-shadow: 0 10px 26px rgba(15,23,42,.14) !important;
+          }
+
+          .content-block {
+            padding-bottom: 84px !important;
+          }
+        }
+
+        /* Identidade visual única para botões do produto */
+        .filter-toggle-button,
+        .export-actions button,
+        .account-actions button,
+        .notes-list-dashboard button,
+        .notes-page-section button,
+        .users-page-section button,
+        .btn-back-page,
+        .agenda-card-polished button,
+        .notes-see-all,
+        .note-toggle-small {
+          border-radius: 999px !important;
+          padding: 8px 12px !important;
+          min-height: 36px !important;
+          font-size: 13px !important;
+          font-weight: 800 !important;
+          border: 1px solid #d1d5db !important;
+          background: #ffffff !important;
+          color: #374151 !important;
+          box-shadow: none !important;
+        }
+
+        .account-actions button:hover,
+        .notes-list-dashboard button:hover,
+        .export-actions button:hover,
+        .filter-toggle-button:hover,
+        .notes-see-all:hover,
+        .note-toggle-small:hover {
+          background: #f8fafc !important;
+          border-color: #94a3b8 !important;
+          color: #0f172a !important;
+        }
+
+        .account-actions button:first-child,
+        .notes-list-dashboard button:first-child,
+        .agenda-card-polished button {
+          border-color: #99f6e4 !important;
+          background: #f0fdfa !important;
+          color: #0f766e !important;
+        }
+
+        .account-actions button:last-child,
+        .notes-list-dashboard button:last-child,
+        .users-page-section button[title*="Remover"] {
+          border-color: #fecaca !important;
+          background: #fff1f2 !important;
+          color: #be123c !important;
         }
       `}</style>
 

@@ -1636,3 +1636,43 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
     gap: 10px;
   }
 }
+
+/* =========================================================
+   DF Produto — limpeza visual mobile validada
+   ========================================================= */
+@media (max-width: 979px) {
+  html, body, #root {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .app-page,
+  .app-frame,
+  .app-frame-content {
+    width: 100% !important;
+    max-width: 430px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .global-fab {
+    right: 18px !important;
+    bottom: max(20px, env(safe-area-inset-bottom)) !important;
+    width: 50px !important;
+    height: 50px !important;
+    border-radius: 18px !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 12px 30px rgba(15,23,42,.16) !important;
+    z-index: 5000 !important;
+  }
+
+  .global-fab-menu {
+    right: 18px !important;
+    bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+    z-index: 5001 !important;
+  }
+}

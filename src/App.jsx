@@ -2420,12 +2420,10 @@ export default function App() {
             {item('🏠', 'Dashboard', 'Resumo financeiro', () => navegarPara('contas'))}
             {item('📅', 'Agenda', 'Vencimentos e previsões', () => navegarPara('agenda'))}
             {item('📝', 'Bloco de Notas', 'Pendências e histórico de notas', () => navegarPara('notas'))}
-            {item('➕', 'Nova nota', 'Criar lembrete rápido', abrirNovaNota)}
           </details>
 
           <details className="mobile-menu-group" open>
             <summary>Financeiro</summary>
-            {item('💰', 'Nova conta', 'Cadastrar pagamento', abrirNovaConta)}
             {item('📥', 'Importar CSV', 'Trazer histórico do Excel', () => navegarPara('importar'))}
           </details>
 
@@ -2489,7 +2487,6 @@ export default function App() {
           </div>
           <div className="page-actions-row">
             <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>← Painel</button>
-            <button className="btn-action-ghost" style={styles.btnGhostAction} onClick={abrirNovaNota} title="Criar nova nota">+ Nova</button>
           </div>
         </div>
 
@@ -4024,7 +4021,6 @@ export default function App() {
       <section className="dashboard-title-row">
         <div className="dashboard-heading-actions">
           <h1 className="main-title" style={styles.titulo}>📊 Dashboard Financeiro</h1>
-          <button className="btn-dashboard-primary" style={styles.btnGhostAction} onClick={abrirNovaConta} title="Cadastrar nova conta">+ Nova conta</button>
         </div>
 
         <div className="summary-grid" style={styles.resumo}>
@@ -4073,10 +4069,14 @@ export default function App() {
             </div>
           </div>
           <div className="notes-header-actions">
-            <button className="note-toggle-small" onClick={() => setMostrarNotas(!mostrarNotas)} title={mostrarNotas ? 'Recolher bloco de notas' : 'Expandir bloco de notas'}>
-              {mostrarNotas ? 'Ocultar' : 'Mostrar'}
+            <button
+              className="note-toggle-small"
+              onClick={() => setMostrarNotas(!mostrarNotas)}
+              title={mostrarNotas ? 'Recolher bloco de notas' : 'Expandir bloco de notas'}
+              aria-label={mostrarNotas ? 'Recolher bloco de notas' : 'Expandir bloco de notas'}
+            >
+              {mostrarNotas ? '−' : '+'}
             </button>
-            <button className="note-add-small" style={styles.btnGhostAction} onClick={abrirNovaNota} title="Criar nova nota">+ Nova</button>
           </div>
         </div>
 
@@ -4232,7 +4232,7 @@ export default function App() {
       </section>
 
       {menuAberto && (
-        <div className="mobile-fab-menu" style={styles.menuFab}>
+        <div className="global-fab-menu" style={styles.menuFab}>
           <button style={styles.menuItem} onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaConta() }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaConta() }} aria-label="Nova conta">
             <span style={styles.menuItemIcone}>💰</span>
             <span style={styles.menuItemTexto}>Nova conta</span>
@@ -4244,7 +4244,7 @@ export default function App() {
         </div>
       )}
 
-      <button className="mobile-fab" style={styles.fab} onClick={() => setMenuAberto(!menuAberto)}>
+      <button className="global-fab" style={styles.fab} onClick={() => setMenuAberto(!menuAberto)}>
         {menuAberto ? '×' : '+'}
       </button>
 
@@ -4971,15 +4971,17 @@ const styles = {
     position: 'fixed',
     right: 20,
     bottom: 20,
-    width: 58,
-    height: 58,
+    width: 52,
+    height: 52,
     borderRadius: '50%',
-    background: '#14b8a6',
-    color: '#fff',
-    border: 'none',
-    fontSize: 30,
-    boxShadow: '0 6px 18px rgba(0,0,0,0.25)',
-    zIndex: 3000
+    background: '#ffffff',
+    color: '#0f172a',
+    border: '1px solid #e5e7eb',
+    fontSize: 28,
+    lineHeight: 1,
+    boxShadow: '0 12px 28px rgba(15,23,42,0.16)',
+    zIndex: 3000,
+    cursor: 'pointer'
   },
   menuFab: {
     position: 'fixed',
@@ -4992,37 +4994,38 @@ const styles = {
   },
   menuItem: {
     background: '#fff',
-    border: '1px solid rgba(15,118,110,0.18)',
-    borderRadius: 18,
-    padding: '0 18px',
-    minWidth: 210,
-    width: 210,
-    height: 56,
-    fontSize: 17,
-    fontWeight: 900,
-    boxShadow: '0 10px 24px rgba(15,23,42,0.18)',
+    border: '1px solid #e5e7eb',
+    borderRadius: 14,
+    padding: '0 14px',
+    minWidth: 190,
+    width: 190,
+    height: 48,
+    fontSize: 14,
+    fontWeight: 800,
+    boxShadow: '0 10px 24px rgba(15,23,42,0.14)',
     textAlign: 'left',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    gap: 12,
+    gap: 10,
     color: '#0f172a',
     whiteSpace: 'nowrap',
-    overflow: 'visible'
+    overflow: 'visible',
+    cursor: 'pointer'
   },
   menuItemIcone: {
     display: 'inline-flex',
     width: 26,
     minWidth: 26,
     justifyContent: 'center',
-    fontSize: 22,
+    fontSize: 18,
     lineHeight: 1
   },
   menuItemTexto: {
     display: 'inline-block',
     color: '#0f172a',
-    fontSize: 17,
-    fontWeight: 900,
+    fontSize: 14,
+    fontWeight: 800,
     lineHeight: 1
   },
   overlay: {

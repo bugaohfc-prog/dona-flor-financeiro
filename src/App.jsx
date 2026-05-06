@@ -220,6 +220,7 @@ export default function App() {
   const [confirmarNovaSenhaUsuario, setConfirmarNovaSenhaUsuario] = useState('')
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
   const [mostrarContas, setMostrarContas] = useState(true)
+  const [mostrarContasDashboard, setMostrarContasDashboard] = useState(true)
   const [mostrarNotas, setMostrarNotas] = useState(true)
   const [mostrarConfigNegocio, setMostrarConfigNegocio] = useState(true)
   const [mostrarConfigNotificacoes, setMostrarConfigNotificacoes] = useState(true)
@@ -444,6 +445,17 @@ export default function App() {
     window.addEventListener('keydown', fecharComEsc)
     return () => window.removeEventListener('keydown', fecharComEsc)
   }, [confirmacao.aberto, modalConta, modalNota, modalCentro, menuAberto, menuNavegacaoAberto])
+
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow
+    if (menuNavegacaoAberto) {
+      document.body.style.overflow = 'hidden'
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow
+    }
+  }, [menuNavegacaoAberto])
 
   async function carregarEmpresaDoUsuario(userId) {
     setLoading(true)
@@ -1614,17 +1626,19 @@ export default function App() {
           <title>Relatório de contas</title>
           <style>
             * { box-sizing: border-box; }
-            body { margin: 0; font-family: Arial, sans-serif; color: #111827; background: #f8fafc; }
-            .page { max-width: 1120px; margin: 24px auto; padding: 24px; background: #fff; border: 1px solid #e5e7eb; border-radius: 20px; }
+            html, body { width: 100%; min-height: 100%; }
+            body { margin: 0; font-family: Arial, sans-serif; color: #111827; background: #f8fafc; -webkit-text-size-adjust: 100%; }
+            .page { width: min(100%, 920px); margin: 0 auto; padding: 18px; background: #fff; min-height: 100vh; }
             header { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; border-bottom: 2px solid #ccfbf1; padding-bottom: 18px; margin-bottom: 18px; }
-            h1 { margin: 0; font-size: 26px; color: #0f766e; }
+            h1 { margin: 0; font-size: 24px; color: #0f766e; }
             .empresa { margin-top: 6px; color: #475569; font-size: 14px; }
             .data { text-align: right; color: #64748b; font-size: 13px; }
-            .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0; }
+            .summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 18px 0; }
             .box { border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px; background: #f8fafc; }
             .box span { display: block; font-size: 12px; color: #64748b; font-weight: 700; }
             .box strong { display: block; margin-top: 4px; font-size: 17px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 18px; }
+            .table-wrap { width: 100%; overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 16px; }
+            table { width: 100%; border-collapse: collapse; min-width: 620px; }
             th { background: #f0fdfa; color: #0f766e; text-align: left; padding: 11px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
             td { border-bottom: 1px solid #e5e7eb; padding: 11px; vertical-align: top; font-size: 13px; }
             td small { display: block; color: #64748b; margin-top: 4px; line-height: 1.35; }
@@ -1633,8 +1647,8 @@ export default function App() {
             .status.pago { background: #dcfce7; color: #166534; }
             .status.pendente { background: #fef3c7; color: #92400e; }
             .status.vencido { background: #fee2e2; color: #991b1b; }
-            .toolbar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 14px; }
-            button { border: 1px solid #d1d5db; background: #fff; color: #374151; border-radius: 999px; padding: 9px 14px; font-weight: 800; cursor: pointer; }
+            .toolbar { position: sticky; top: 0; display: flex; justify-content: flex-end; gap: 10px; margin: -18px -18px 14px; padding: 12px 18px; background: rgba(255,255,255,.96); border-bottom: 1px solid #e5e7eb; z-index: 5; }
+            button { border: 1px solid #d1d5db; background: #fff; color: #374151; border-radius: 999px; padding: 10px 14px; font-weight: 800; cursor: pointer; font-size: 13px; }
             button.primary { background: #0f766e; border-color: #0f766e; color: white; }
             @media print {
               body { background: #fff; }
@@ -1642,11 +1656,13 @@ export default function App() {
               .toolbar { display: none; }
             }
             @media (max-width: 760px) {
-              .page { margin: 0; border-radius: 0; padding: 16px; }
+              .page { width: 100%; margin: 0; border-radius: 0; padding: 16px; }
+              .toolbar { margin: -16px -16px 14px; padding: 12px 16px; justify-content: space-between; }
               header { display: block; }
+              h1 { font-size: 22px; }
               .data { text-align: left; margin-top: 8px; }
-              .summary { grid-template-columns: repeat(2, 1fr); }
-              table { font-size: 12px; }
+              .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+              .box strong { font-size: 15px; }
               th:nth-child(2), td:nth-child(2) { display: none; }
             }
           </style>
@@ -1670,14 +1686,16 @@ export default function App() {
               <div class="box"><span>Pendente</span><strong>${escapeHtml(formatarValor(pendente))}</strong></div>
               <div class="box"><span>Vencido</span><strong>${escapeHtml(formatarValor(vencido))}</strong></div>
             </section>
-            <table>
-              <thead>
-                <tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th></tr>
-              </thead>
-              <tbody>
-                ${linhas || '<tr><td colspan="5">Nenhuma conta encontrada.</td></tr>'}
-              </tbody>
-            </table>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th></tr>
+                </thead>
+                <tbody>
+                  ${linhas || '<tr><td colspan="5">Nenhuma conta encontrada.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
           </div>
         </body>
       </html>
@@ -2166,6 +2184,30 @@ export default function App() {
     )
   }
 
+  function renderFabGlobal() {
+    return (
+      <>
+        {menuAberto && (
+          <div className="global-fab-menu" style={styles.menuFab} onClick={(e) => e.stopPropagation()}>
+            <button style={styles.menuItem} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaConta() }} aria-label="Nova conta">
+              <span style={styles.menuItemIcone}>💰</span>
+              <span style={styles.menuItemTexto}>Nova conta</span>
+            </button>
+            <button style={styles.menuItem} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaNota() }} aria-label="Nova nota">
+              <span style={styles.menuItemIcone}>📝</span>
+              <span style={styles.menuItemTexto}>Nova nota</span>
+            </button>
+          </div>
+        )}
+
+        <button className="global-fab" style={styles.fab} onClick={(e) => { e.stopPropagation(); setMenuAberto(!menuAberto) }}>
+          {menuAberto ? '×' : '+'}
+        </button>
+      </>
+    )
+  }
+
+
   function renderAppFrame(children) {
     return (
       <div className="app-page app-frame" style={styles.page}>
@@ -2405,6 +2447,7 @@ export default function App() {
         {renderMobileMenu()}
 
         <main className="app-frame-content">{children}</main>
+        {renderFabGlobal()}
         {renderConfirmacaoGlobal()}
         {renderModaisGlobais()}
       </div>
@@ -2572,6 +2615,7 @@ export default function App() {
         {renderMobileMenu()}
 
         <main className="app-frame-content">{children}</main>
+        {renderFabGlobal()}
         {renderConfirmacaoGlobal()}
         {renderModaisGlobais()}
       </div>
@@ -4614,6 +4658,85 @@ export default function App() {
           }
         }
 
+
+
+        /* HOTFIX VALIDACAO: contas em aberto, PDF, FAB global e menu mobile */
+        .dashboard-section-header-accounts {
+          display:flex !important;
+          align-items:flex-start !important;
+          justify-content:space-between !important;
+          gap:12px !important;
+          flex-wrap:wrap !important;
+        }
+        .dashboard-section-title-wrap {
+          display:grid !important;
+          gap:4px !important;
+          min-width:0 !important;
+          flex:1 1 190px !important;
+        }
+        .dashboard-section-actions {
+          display:flex !important;
+          align-items:center !important;
+          justify-content:flex-end !important;
+          gap:8px !important;
+          flex:0 0 auto !important;
+        }
+        .dashboard-see-all-link {
+          border:1px solid #d1d5db !important;
+          background:#fff !important;
+          color:#374151 !important;
+          border-radius:999px !important;
+          padding:7px 11px !important;
+          font-size:12px !important;
+          font-weight:900 !important;
+          min-height:34px !important;
+          box-shadow:none !important;
+          white-space:nowrap !important;
+        }
+        .dashboard-open-accounts.accounts-collapsed {
+          padding-bottom:16px !important;
+        }
+        .mobile-menu-trigger {
+          display:inline-flex !important;
+          align-items:center !important;
+          justify-content:center !important;
+          line-height:1 !important;
+          padding:0 !important;
+        }
+        .mobile-menu-panel {
+          overscroll-behavior: contain !important;
+          -webkit-overflow-scrolling: touch !important;
+          touch-action: pan-y !important;
+        }
+        .mobile-menu-panel * {
+          touch-action: pan-y !important;
+        }
+        @media (max-width: 979px) {
+          .page-title-actions {
+            margin-top: 10px !important;
+          }
+          .dashboard-section-header-accounts {
+            align-items:center !important;
+          }
+          .dashboard-section-actions {
+            margin-left:auto !important;
+          }
+          .dashboard-see-all-link {
+            padding:6px 10px !important;
+            font-size:12px !important;
+          }
+          .note-toggle-small {
+            min-width:42px !important;
+            width:42px !important;
+            height:42px !important;
+            padding:0 !important;
+            display:inline-flex !important;
+            align-items:center !important;
+            justify-content:center !important;
+            border-radius:999px !important;
+          }
+        }
+
         /* Identidade visual única para botões do produto */
         .filter-toggle-button,
         .export-actions button,
@@ -4704,47 +4827,62 @@ export default function App() {
         <button style={styles.btnAgendaCompleta} onClick={() => navegarPara('agenda')}>Abrir agenda</button>
       </section>
 
-      <section className="dashboard-open-accounts content-block" style={styles.bloco}>
-        <div className="dashboard-section-header">
-          <div>
+      <section className={`dashboard-open-accounts content-block ${mostrarContasDashboard ? 'accounts-expanded' : 'accounts-collapsed'}`} style={styles.bloco}>
+        <div className="dashboard-section-header dashboard-section-header-accounts">
+          <div className="dashboard-section-title-wrap">
             <strong>💳 Contas em aberto</strong>
             <small>Mais novas primeiro • {contasAbertasDashboard.length} conta(s)</small>
           </div>
-          <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>Ver todas</button>
+          <div className="dashboard-section-actions">
+            <button className="dashboard-see-all-link" type="button" onClick={() => navegarPara('contas')}>Ver todas</button>
+            <button
+              className="note-toggle-small"
+              type="button"
+              onClick={() => setMostrarContasDashboard(!mostrarContasDashboard)}
+              title={mostrarContasDashboard ? 'Recolher contas em aberto' : 'Expandir contas em aberto'}
+              aria-label={mostrarContasDashboard ? 'Recolher contas em aberto' : 'Expandir contas em aberto'}
+            >
+              {mostrarContasDashboard ? '−' : '+'}
+            </button>
+          </div>
         </div>
 
-        <div className="dashboard-inline-filter">
-          <input
-            style={styles.input}
-            placeholder="Buscar por conta..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-          />
-        </div>
+        {mostrarContasDashboard && (
+          <>
+            <div className="dashboard-inline-filter">
+              <input
+                style={styles.input}
+                placeholder="Buscar por conta..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+              />
+            </div>
 
-        {contasAbertasDashboard.length === 0 && (
-          <p style={styles.mensagemVazia}>Nenhuma conta em aberto para os filtros atuais.</p>
+            {contasAbertasDashboard.length === 0 && (
+              <p style={styles.mensagemVazia}>Nenhuma conta em aberto para os filtros atuais.</p>
+            )}
+
+            <div className="dashboard-open-list">
+              {contasAbertasDashboard.slice(0, 8).map((conta) => {
+                const vencida = estaVencida(conta.data_vencimento, conta.status)
+                return (
+                  <div key={conta.id} className="dashboard-account-row">
+                    <div>
+                      <strong>{conta.descricao}</strong>
+                      <small>{formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'}</small>
+                      {conta.observacao && <small className="account-note-preview">Obs: {conta.observacao}</small>}
+                    </div>
+                    <div className="dashboard-account-row-actions">
+                      <span>{formatarValor(conta.valor)}</span>
+                      <span className={`status-pill ${vencida ? 'status-vencido' : 'status-pendente'}`}>{vencida ? 'Vencido' : 'Pendente'}</span>
+                      <button style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>Pago</button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
         )}
-
-        <div className="dashboard-open-list">
-          {contasAbertasDashboard.slice(0, 8).map((conta) => {
-            const vencida = estaVencida(conta.data_vencimento, conta.status)
-            return (
-              <div key={conta.id} className="dashboard-account-row">
-                <div>
-                  <strong>{conta.descricao}</strong>
-                  <small>{formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'}</small>
-                  {conta.observacao && <small className="account-note-preview">Obs: {conta.observacao}</small>}
-                </div>
-                <div className="dashboard-account-row-actions">
-                  <span>{formatarValor(conta.valor)}</span>
-                  <span className={`status-pill ${vencida ? 'status-vencido' : 'status-pendente'}`}>{vencida ? 'Vencido' : 'Pendente'}</span>
-                  <button style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>Pago</button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
       </section>
 
       <section className={`no-print dashboard-notes-card ${mostrarNotas ? 'notes-expanded' : 'notes-collapsed'}`}>
@@ -4807,22 +4945,6 @@ export default function App() {
 
       {/* Lista de contas movida para a tela Financeiro > Contas. */}
 
-      {menuAberto && (
-        <div className="global-fab-menu" style={styles.menuFab} onClick={(e) => e.stopPropagation()}>
-          <button style={styles.menuItem} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaConta() }} aria-label="Nova conta">
-            <span style={styles.menuItemIcone}>💰</span>
-            <span style={styles.menuItemTexto}>Nova conta</span>
-          </button>
-          <button style={styles.menuItem} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaNota() }} aria-label="Nova nota">
-            <span style={styles.menuItemIcone}>📝</span>
-            <span style={styles.menuItemTexto}>Nova nota</span>
-          </button>
-        </div>
-      )}
-
-      <button className="global-fab" style={styles.fab} onClick={(e) => { e.stopPropagation(); setMenuAberto(!menuAberto) }}>
-        {menuAberto ? '×' : '+'}
-      </button>
 
       {renderModaisGlobais()}
 

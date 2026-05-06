@@ -1035,9 +1035,32 @@ export default function App() {
       if (dataFinal && conta.data_vencimento > dataFinal) return false
       return true
     })
-    .filter((conta) =>
-      String(conta.descricao || '').toLowerCase().includes(busca.toLowerCase())
-    )
+    .filter((conta) => {
+      const termo = busca.trim().toLowerCase()
+      if (!termo) return true
+
+      const centroNome = conta.df_centros_custo?.nome || ''
+      const statusBusca = conta.status === 'pago'
+        ? 'pago'
+        : estaVencida(conta.data_vencimento, conta.status)
+          ? 'vencido'
+          : 'pendente'
+
+      const camposBusca = [
+        conta.descricao,
+        conta.observacao,
+        conta.categoria,
+        conta.forma_pagamento,
+        centroNome,
+        statusBusca,
+        formatarData(conta.data_vencimento),
+        conta.data_vencimento
+      ]
+
+      return camposBusca
+        .filter(Boolean)
+        .some((campo) => String(campo).toLowerCase().includes(termo))
+    })
 
   const total = contasFiltradas.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
@@ -2779,7 +2802,7 @@ export default function App() {
       <section className="no-print filters-desktop" style={styles.filtrosBox}>
         <input
           style={styles.input}
-          placeholder="Buscar por conta, centro ou status..."
+          placeholder="Buscar por conta, data, centro, observação ou status..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
         />
@@ -4737,6 +4760,90 @@ export default function App() {
           }
         }
 
+
+        /* PADRONIZACAO FINAL: links de ver paginas, busca ampla e status visual */
+        .dashboard-notes-card .dashboard-section-actions,
+        .notes-header-actions {
+          display:flex !important;
+          align-items:center !important;
+          justify-content:flex-end !important;
+          gap:8px !important;
+          flex:0 0 auto !important;
+        }
+        .dashboard-open-list {
+          display:grid !important;
+          gap:10px !important;
+        }
+        .dashboard-account-row {
+          border:1px solid #e5e7eb !important;
+          border-left:5px solid #f59e0b !important;
+          background:#fffbeb !important;
+          border-radius:18px !important;
+          padding:14px !important;
+          display:flex !important;
+          align-items:center !important;
+          justify-content:space-between !important;
+          gap:12px !important;
+        }
+        .dashboard-account-row.account-row-vencido {
+          border-left-color:#ef4444 !important;
+          background:#fff1f2 !important;
+        }
+        .dashboard-account-row.account-row-pendente {
+          border-left-color:#f59e0b !important;
+          background:#fffbeb !important;
+        }
+        .dashboard-account-row > div:first-child {
+          display:grid !important;
+          gap:4px !important;
+          min-width:0 !important;
+        }
+        .dashboard-account-row > div:first-child small {
+          color:#64748b !important;
+          font-weight:700 !important;
+        }
+        .dashboard-account-row-actions {
+          display:flex !important;
+          align-items:center !important;
+          justify-content:flex-end !important;
+          gap:8px !important;
+          flex-wrap:wrap !important;
+        }
+        .dashboard-account-row-actions > span:first-child {
+          font-size:18px !important;
+          font-weight:900 !important;
+          color:#0f172a !important;
+        }
+        .status-pill.status-pendente {
+          background:#fef3c7 !important;
+          color:#92400e !important;
+        }
+        .status-pill.status-vencido {
+          background:#fee2e2 !important;
+          color:#991b1b !important;
+        }
+        .status-pill.status-pago {
+          background:#dcfce7 !important;
+          color:#166534 !important;
+        }
+        @media (max-width: 979px) {
+          .dashboard-account-row {
+            align-items:flex-start !important;
+            flex-direction:column !important;
+          }
+          .dashboard-account-row-actions {
+            width:100% !important;
+            justify-content:flex-start !important;
+          }
+          .dashboard-section-header,
+          .notes-header-clean {
+            gap:10px !important;
+          }
+          .dashboard-see-all-link {
+            min-width:auto !important;
+          }
+        }
+
         /* Identidade visual única para botões do produto */
         .filter-toggle-button,
         .export-actions button,
@@ -4852,7 +4959,7 @@ export default function App() {
             <div className="dashboard-inline-filter">
               <input
                 style={styles.input}
-                placeholder="Buscar por conta..."
+                placeholder="Buscar por conta, data, centro ou observação..."
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
               />
@@ -4866,7 +4973,7 @@ export default function App() {
               {contasAbertasDashboard.slice(0, 8).map((conta) => {
                 const vencida = estaVencida(conta.data_vencimento, conta.status)
                 return (
-                  <div key={conta.id} className="dashboard-account-row">
+                  <div key={conta.id} className={`dashboard-account-row ${vencida ? 'account-row-vencido' : 'account-row-pendente'}`}>
                     <div>
                       <strong>{conta.descricao}</strong>
                       <small>{formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'}</small>
@@ -4896,6 +5003,7 @@ export default function App() {
             </div>
           </div>
           <div className="notes-header-actions">
+            <button className="dashboard-see-all-link" type="button" onClick={() => navegarPara('notas')}>Ver notas</button>
             <button
               className="note-toggle-small"
               onClick={() => setMostrarNotas(!mostrarNotas)}
@@ -4938,8 +5046,6 @@ export default function App() {
           })}
         </div>
         )}
-
-        <button className="notes-see-all" style={styles.btnCinza} onClick={() => navegarPara('notas')}>Ver todas as notas</button>
       </section>
 
 

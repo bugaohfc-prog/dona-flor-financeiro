@@ -138,7 +138,7 @@ export default function App() {
 
   function deveGerarRecorrenciaNoMes(recorrencia, ano, mes) {
     if (!recorrencia?.ativo) return false
-    if ((recorrencia.tipo_recorrencia || 'mensal') !== 'mensal') return false
+    if ((recorrencia.frequencia || recorrencia.tipo_recorrencia || 'mensal') !== 'mensal') return false
 
     const inicio = recorrencia.data_inicio ? dataLocal(recorrencia.data_inicio) : null
     if (!inicio) return true
@@ -168,6 +168,7 @@ export default function App() {
   const [valor, setValor] = useState('')
   const [dataVencimento, setDataVencimento] = useState('')
   const [centroCustoId, setCentroCustoId] = useState('')
+  const [observacaoConta, setObservacaoConta] = useState('')
   const [contaWhatsapp, setContaWhatsapp] = useState(false)
   const [contaEmail, setContaEmail] = useState(false)
   const [contaPush, setContaPush] = useState(false)
@@ -229,6 +230,11 @@ export default function App() {
   const [configEmail, setConfigEmail] = useState(true)
   const [configPush, setConfigPush] = useState(false)
   const [diasAvisoPadrao, setDiasAvisoPadrao] = useState('1')
+  const [diasAlertaContas, setDiasAlertaContas] = useState('1')
+  const [alertarContasVencidas, setAlertarContasVencidas] = useState(true)
+  const [destacarContasCriticas, setDestacarContasCriticas] = useState(true)
+  const [diasAlertaNotas, setDiasAlertaNotas] = useState('3')
+  const [destacarNotasUrgentes, setDestacarNotasUrgentes] = useState(true)
   const [nomeEmpresa, setNomeEmpresa] = useState('')
   const [whatsappPadrao, setWhatsappPadrao] = useState('')
   const [emailPadrao, setEmailPadrao] = useState('')
@@ -792,12 +798,14 @@ export default function App() {
         data_vencimento: dataGerada,
         vencimento: dataGerada,
         centro_custo_id: recorrencia.centro_custo_id || null,
+        observacao: recorrencia.observacao || null,
+        recorrencia_id: recorrencia.id,
         status: 'pendente',
         excluido: false,
-        enviar_whatsapp: recorrencia.enviar_whatsapp ?? false,
-        enviar_email: recorrencia.enviar_email ?? false,
-        enviar_push: recorrencia.enviar_push ?? false,
-        dias_aviso: recorrencia.dias_aviso ?? 1
+        enviar_whatsapp: configWhatsapp,
+        enviar_email: configEmail,
+        enviar_push: configPush,
+        dias_aviso: Number(diasAlertaContas || diasAvisoPadrao || 1)
       })
     })
 
@@ -838,6 +846,58 @@ export default function App() {
 
 
 
+  async function carregarAlertasGlobais(empresaAtual = empresaId) {
+    if (!empresaAtual) return
+
+    const { data, error } = await supabase
+      .from('df_configuracoes_alertas')
+      .select('*')
+      .eq('empresa_id', empresaAtual)
+      .maybeSingle()
+
+    if (error) {
+      console.warn('Não foi possível carregar alertas globais:', error.message)
+      return
+    }
+
+    if (data) {
+      setDiasAlertaContas(String(data.dias_alerta_contas ?? 1))
+      setAlertarContasVencidas(data.alertar_contas_vencidas ?? true)
+      setDestacarContasCriticas(data.destacar_contas_criticas ?? true)
+      setDiasAlertaNotas(String(data.dias_alerta_notas ?? 3))
+      setDestacarNotasUrgentes(data.destacar_notas_urgentes ?? true)
+      return
+    }
+
+    const payload = {
+      empresa_id: empresaAtual,
+      dias_alerta_contas: 1,
+      alertar_contas_vencidas: true,
+      destacar_contas_criticas: true,
+      dias_alerta_notas: 3,
+      destacar_notas_urgentes: true
+    }
+
+    const { data: criada, error: erroInsert } = await supabase
+      .from('df_configuracoes_alertas')
+      .insert([payload])
+      .select()
+      .maybeSingle()
+
+    if (erroInsert) {
+      console.warn('Não foi possível criar alertas globais:', erroInsert.message)
+      return
+    }
+
+    if (criada) {
+      setDiasAlertaContas(String(criada.dias_alerta_contas ?? 1))
+      setAlertarContasVencidas(criada.alertar_contas_vencidas ?? true)
+      setDestacarContasCriticas(criada.destacar_contas_criticas ?? true)
+      setDiasAlertaNotas(String(criada.dias_alerta_notas ?? 3))
+      setDestacarNotasUrgentes(criada.destacar_notas_urgentes ?? true)
+    }
+  }
+
   async function buscarConfiguracoes(empresaAtual = empresaId) {
     if (!empresaAtual) return
 
@@ -864,6 +924,7 @@ export default function App() {
       setNomeEmpresa(configEncontrada.nome_empresa || '')
       setWhatsappPadrao(configEncontrada.whatsapp_padrao || '')
       setEmailPadrao(configEncontrada.email_padrao || '')
+      await carregarAlertasGlobais(empresaAtual)
       return
     }
 
@@ -896,6 +957,7 @@ export default function App() {
     setNomeEmpresa(configCriada?.nome_empresa || '')
     setWhatsappPadrao(configCriada?.whatsapp_padrao || '')
     setEmailPadrao(configCriada?.email_padrao || '')
+    await carregarAlertasGlobais(empresaAtual)
   }
 
   async function buscarLixeira(empresaAtual = empresaId) {
@@ -977,6 +1039,10 @@ export default function App() {
 
   const pendente = total - pago
 
+  const contasAbertasDashboard = contasFiltradas
+    .filter((conta) => conta.status !== 'pago')
+    .sort((a, b) => String(b.created_at || b.data_vencimento || '').localeCompare(String(a.created_at || a.data_vencimento || '')))
+
   const resumoPorCentro = centros
     .map((centro) => {
       const lista = contasFiltradas.filter((conta) => conta.centro_custo_id === centro.id)
@@ -1034,6 +1100,7 @@ export default function App() {
     setValor('')
     setDataVencimento('')
     setCentroCustoId('')
+    setObservacaoConta('')
     setContaWhatsapp(configWhatsapp)
     setContaEmail(configEmail)
     setContaPush(configPush)
@@ -1050,6 +1117,7 @@ export default function App() {
     setValor(conta.valor || '')
     setDataVencimento(conta.data_vencimento || '')
     setCentroCustoId(conta.centro_custo_id || '')
+    setObservacaoConta(conta.observacao || '')
     setContaWhatsapp(conta.enviar_whatsapp ?? false)
     setContaEmail(conta.enviar_email ?? false)
     setContaPush(conta.enviar_push ?? false)
@@ -1067,6 +1135,7 @@ export default function App() {
     setValor('')
     setDataVencimento('')
     setCentroCustoId('')
+    setObservacaoConta('')
     setContaWhatsapp(false)
     setContaEmail(false)
     setContaPush(false)
@@ -1087,23 +1156,17 @@ export default function App() {
       return
     }
 
-    const diasAvisoConta = Number(contaDiasAviso)
-
-    if (isNaN(diasAvisoConta) || diasAvisoConta < 0) {
-      mostrarAviso('Informe uma quantidade válida de dias de aviso.', 'erro')
-      return
-    }
-
     const payload = {
       descricao: primeiraLetraMaiuscula(descricao.trim()),
       valor: converterValor(valor),
       data_vencimento: formatarDataParaBanco(dataVencimento),
       vencimento: formatarDataParaBanco(dataVencimento),
       centro_custo_id: centroCustoId || null,
-      enviar_whatsapp: contaWhatsapp,
-      enviar_email: contaEmail,
-      enviar_push: contaPush,
-      dias_aviso: diasAvisoConta,
+      observacao: observacaoConta.trim() || null,
+      enviar_whatsapp: configWhatsapp,
+      enviar_email: configEmail,
+      enviar_push: configPush,
+      dias_aviso: Number(diasAlertaContas || diasAvisoPadrao || 1),
       empresa_id: empresaId
     }
 
@@ -1113,7 +1176,7 @@ export default function App() {
       const resposta = await supabase.from('df_contas').update(payload).eq('id', editandoContaId).eq('empresa_id', empresaId)
       error = resposta.error
     } else {
-      const resposta = await supabase.from('df_contas').insert([{ ...payload, status: 'pendente', excluido: false }])
+      const resposta = await supabase.from('df_contas').insert([{ ...payload, status: 'pendente', excluido: false }]).select()
       error = resposta.error
 
       if (!error && contaRecorrente) {
@@ -1121,29 +1184,33 @@ export default function App() {
         const diaRecorrencia = Number(diaVencimentoRecorrencia || String(dataBanco).slice(8, 10))
 
         if (!diaRecorrencia || diaRecorrencia < 1 || diaRecorrencia > 31) {
-          alert('Informe um dia válido para a recorrência.')
+          mostrarAviso('Informe um dia válido para a recorrência.', 'erro')
           return
         }
 
-        const { error: erroRecorrencia } = await supabase
+        const { data: dataRecorrencia, error: erroRecorrencia } = await supabase
           .from('df_contas_recorrentes')
           .insert([{
             empresa_id: empresaId,
             descricao: primeiraLetraMaiuscula(descricao.trim()),
             valor: converterValor(valor),
             centro_custo_id: centroCustoId || null,
-            tipo_recorrencia: tipoRecorrencia,
+            observacao: observacaoConta.trim() || null,
+            frequencia: tipoRecorrencia,
             dia_vencimento: diaRecorrencia,
             data_inicio: dataBanco,
-            ativo: true,
-            enviar_whatsapp: contaWhatsapp,
-            enviar_email: contaEmail,
-            enviar_push: contaPush,
-            dias_aviso: diasAvisoConta
+            ativo: true
           }])
+          .select()
 
         if (erroRecorrencia) {
-          alert('A conta foi criada, mas a recorrência não foi salva: ' + erroRecorrencia.message)
+          mostrarAviso('A conta foi criada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
+        } else {
+          const recorrenciaCriada = Array.isArray(dataRecorrencia) ? dataRecorrencia[0] : dataRecorrencia
+          const contaCriada = Array.isArray(resposta.data) ? resposta.data[0] : resposta.data
+          if (recorrenciaCriada?.id && contaCriada?.id) {
+            await supabase.from('df_contas').update({ recorrencia_id: recorrenciaCriada.id }).eq('id', contaCriada.id).eq('empresa_id', empresaId)
+          }
         }
       }
     }
@@ -1304,9 +1371,11 @@ export default function App() {
     }
 
     const dias = Number(diasAvisoPadrao)
+    const diasContas = Number(diasAlertaContas)
+    const diasNotas = Number(diasAlertaNotas)
 
-    if (isNaN(dias) || dias < 0) {
-      alert('Informe uma quantidade válida de dias de aviso.')
+    if (isNaN(dias) || dias < 0 || isNaN(diasContas) || diasContas < 0 || isNaN(diasNotas) || diasNotas < 0) {
+      mostrarAviso('Informe uma quantidade válida para os dias de alerta.', 'erro')
       return
     }
 
@@ -1345,7 +1414,24 @@ export default function App() {
 
     const configSalva = Array.isArray(resposta.data) ? resposta.data[0] : resposta.data
     setConfiguracoes(configSalva)
-    alert('Configurações salvas com sucesso!')
+
+    const { error: erroAlertas } = await supabase
+      .from('df_configuracoes_alertas')
+      .upsert([{
+        empresa_id: empresaId,
+        dias_alerta_contas: diasContas,
+        alertar_contas_vencidas: alertarContasVencidas,
+        destacar_contas_criticas: destacarContasCriticas,
+        dias_alerta_notas: diasNotas,
+        destacar_notas_urgentes: destacarNotasUrgentes
+      }], { onConflict: 'empresa_id' })
+
+    if (erroAlertas) {
+      mostrarAviso('Configurações principais salvas, mas os alertas globais não foram atualizados: ' + erroAlertas.message, 'erro')
+      return
+    }
+
+    mostrarAviso('Configurações salvas com sucesso.', 'info')
   }
 
   // =========================
@@ -1491,111 +1577,123 @@ export default function App() {
   }
 
   function imprimirPDF() {
-    const normalizarTextoPdf = (valor) => String(valor ?? '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[\n\r\t]/g, ' ')
-      .replace(/[^\x20-\x7E]/g, '')
-      .trim()
+    const escapeHtml = (valor) => String(valor ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;')
 
-    const quebrarLinha = (texto, limite = 92) => {
-      const palavras = normalizarTextoPdf(texto).split(' ')
-      const linhas = []
-      let linha = ''
+    const linhas = contasFiltradas.map((conta) => {
+      const status = estaVencida(conta.data_vencimento, conta.status)
+        ? 'Vencido'
+        : conta.status === 'pago'
+          ? 'Pago'
+          : 'Pendente'
 
-      palavras.forEach((palavra) => {
-        if ((linha + ' ' + palavra).trim().length > limite) {
-          if (linha) linhas.push(linha)
-          linha = palavra
-        } else {
-          linha = (linha + ' ' + palavra).trim()
-        }
-      })
+      return `
+        <tr>
+          <td>
+            <strong>${escapeHtml(conta.descricao || '-')}</strong>
+            ${conta.observacao ? `<small>Obs: ${escapeHtml(conta.observacao)}</small>` : ''}
+          </td>
+          <td>${escapeHtml(conta.df_centros_custo?.nome || '-')}</td>
+          <td>${escapeHtml(formatarData(conta.data_vencimento))}</td>
+          <td><span class="status ${status.toLowerCase()}">${status}</span></td>
+          <td class="valor">${escapeHtml(formatarValor(conta.valor))}</td>
+        </tr>
+      `
+    }).join('')
 
-      if (linha) linhas.push(linha)
-      return linhas.length ? linhas : ['-']
+    const html = `
+      <!doctype html>
+      <html lang="pt-BR">
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>Relatório de contas</title>
+          <style>
+            * { box-sizing: border-box; }
+            body { margin: 0; font-family: Arial, sans-serif; color: #111827; background: #f8fafc; }
+            .page { max-width: 1120px; margin: 24px auto; padding: 24px; background: #fff; border: 1px solid #e5e7eb; border-radius: 20px; }
+            header { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; border-bottom: 2px solid #ccfbf1; padding-bottom: 18px; margin-bottom: 18px; }
+            h1 { margin: 0; font-size: 26px; color: #0f766e; }
+            .empresa { margin-top: 6px; color: #475569; font-size: 14px; }
+            .data { text-align: right; color: #64748b; font-size: 13px; }
+            .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0; }
+            .box { border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px; background: #f8fafc; }
+            .box span { display: block; font-size: 12px; color: #64748b; font-weight: 700; }
+            .box strong { display: block; margin-top: 4px; font-size: 17px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 18px; }
+            th { background: #f0fdfa; color: #0f766e; text-align: left; padding: 11px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+            td { border-bottom: 1px solid #e5e7eb; padding: 11px; vertical-align: top; font-size: 13px; }
+            td small { display: block; color: #64748b; margin-top: 4px; line-height: 1.35; }
+            .valor { text-align: right; font-weight: 700; white-space: nowrap; }
+            .status { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+            .status.pago { background: #dcfce7; color: #166534; }
+            .status.pendente { background: #fef3c7; color: #92400e; }
+            .status.vencido { background: #fee2e2; color: #991b1b; }
+            .toolbar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 14px; }
+            button { border: 1px solid #d1d5db; background: #fff; color: #374151; border-radius: 999px; padding: 9px 14px; font-weight: 800; cursor: pointer; }
+            button.primary { background: #0f766e; border-color: #0f766e; color: white; }
+            @media print {
+              body { background: #fff; }
+              .page { margin: 0; border: 0; border-radius: 0; max-width: none; }
+              .toolbar { display: none; }
+            }
+            @media (max-width: 760px) {
+              .page { margin: 0; border-radius: 0; padding: 16px; }
+              header { display: block; }
+              .data { text-align: left; margin-top: 8px; }
+              .summary { grid-template-columns: repeat(2, 1fr); }
+              table { font-size: 12px; }
+              th:nth-child(2), td:nth-child(2) { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="page">
+            <div class="toolbar">
+              <button onclick="window.close()">Fechar</button>
+              <button class="primary" onclick="window.print()">Imprimir / salvar PDF</button>
+            </div>
+            <header>
+              <div>
+                <h1>Relatório de Contas</h1>
+                <div class="empresa">${escapeHtml(nomeEmpresa || 'DF Gestão Financeira')}</div>
+              </div>
+              <div class="data">Gerado em ${new Date().toLocaleDateString('pt-BR')}<br/>${contasFiltradas.length} conta(s) listada(s)</div>
+            </header>
+            <section class="summary">
+              <div class="box"><span>Total</span><strong>${escapeHtml(formatarValor(total))}</strong></div>
+              <div class="box"><span>Pago</span><strong>${escapeHtml(formatarValor(pago))}</strong></div>
+              <div class="box"><span>Pendente</span><strong>${escapeHtml(formatarValor(pendente))}</strong></div>
+              <div class="box"><span>Vencido</span><strong>${escapeHtml(formatarValor(vencido))}</strong></div>
+            </section>
+            <table>
+              <thead>
+                <tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th></tr>
+              </thead>
+              <tbody>
+                ${linhas || '<tr><td colspan="5">Nenhuma conta encontrada.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        </body>
+      </html>
+    `
+
+    const janela = window.open('', '_blank')
+    if (!janela) {
+      mostrarAviso('O navegador bloqueou a visualização do PDF. Permita pop-ups para abrir o relatório.', 'erro')
+      return
     }
 
-    const linhas = [
-      'RELATORIO DE CONTAS',
-      `${normalizarTextoPdf(nomeEmpresa || 'DF Gestao Financeira')} - ${new Date().toLocaleDateString('pt-BR')}`,
-      '',
-      `Total: ${normalizarTextoPdf(formatarValor(total))} | Pago: ${normalizarTextoPdf(formatarValor(pago))} | Pendente: ${normalizarTextoPdf(formatarValor(pendente))} | Vencido: ${normalizarTextoPdf(formatarValor(vencido))}`,
-      '',
-      'Conta | Valor | Vencimento | Centro | Status',
-      '------------------------------------------------------------'
-    ]
-
-    if (!contasFiltradas.length) {
-      linhas.push('Nenhuma conta encontrada.')
-    } else {
-      contasFiltradas.forEach((conta) => {
-        const status = estaVencida(conta.data_vencimento, conta.status) ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'
-        const linha = `${conta.descricao || '-'} | ${formatarValor(conta.valor)} | ${formatarData(conta.data_vencimento)} | ${conta.df_centros_custo?.nome || '-'} | ${status}`
-        linhas.push(...quebrarLinha(linha, 105))
-      })
-    }
-
-    const escapePdf = (texto) => normalizarTextoPdf(texto).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)')
-    const paginas = []
-    const linhasPorPagina = 45
-
-    for (let i = 0; i < linhas.length; i += linhasPorPagina) {
-      paginas.push(linhas.slice(i, i + linhasPorPagina))
-    }
-
-    const objetos = []
-    const adicionarObjeto = (conteudo) => {
-      objetos.push(conteudo)
-      return objetos.length
-    }
-
-    const fontId = adicionarObjeto('<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>')
-    const pageIds = []
-
-    paginas.forEach((pagina) => {
-      const comandos = ['BT', '/F1 10 Tf', '48 800 Td']
-      pagina.forEach((linha, index) => {
-        if (index > 0) comandos.push('0 -16 Td')
-        comandos.push(`(${escapePdf(linha)}) Tj`)
-      })
-      comandos.push('ET')
-      const stream = comandos.join('\n')
-      const contentId = adicionarObjeto(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`)
-      const pageId = adicionarObjeto(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentId} 0 R >>`)
-      pageIds.push(pageId)
-    })
-
-    const pagesId = objetos.length + 1
-    pageIds.forEach((pageId) => {
-      objetos[pageId - 1] = objetos[pageId - 1].replace('/Parent 0 0 R', `/Parent ${pagesId} 0 R`)
-    })
-    adicionarObjeto(`<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(' ')}] /Count ${pageIds.length} >>`)
-    const catalogId = adicionarObjeto(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`)
-
-    let pdf = '%PDF-1.4\n'
-    const offsets = [0]
-    objetos.forEach((objeto, index) => {
-      offsets.push(pdf.length)
-      pdf += `${index + 1} 0 obj\n${objeto}\nendobj\n`
-    })
-    const xrefOffset = pdf.length
-    pdf += `xref\n0 ${objetos.length + 1}\n0000000000 65535 f \n`
-    offsets.slice(1).forEach((offset) => {
-      pdf += `${String(offset).padStart(10, '0')} 00000 n \n`
-    })
-    pdf += `trailer\n<< /Size ${objetos.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`
-
-    const blob = new Blob([pdf], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'relatorio-contas.pdf'
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    janela.document.open()
+    janela.document.write(html)
+    janela.document.close()
   }
+
 
   function limparFiltros() {
     setBusca('')
@@ -1952,6 +2050,13 @@ export default function App() {
                 ))}
               </select>
 
+              <textarea
+                style={styles.textareaModal}
+                placeholder="Observação ou comentário da conta..."
+                value={observacaoConta}
+                onChange={(e) => setObservacaoConta(primeiraLetraMaiuscula(e.target.value))}
+              />
+
               {!editandoContaId && (
                 <div className="recurrence-box" style={styles.blocoRecorrenciaConta}>
                   <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
@@ -1995,28 +2100,6 @@ export default function App() {
                   )}
                 </div>
               )}
-
-              <div style={styles.blocoNotificacaoConta}>
-                <strong>🔔 Notificações desta conta</strong>
-
-                <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
-                  <span>WhatsApp</span>
-                  <input type="checkbox" checked={contaWhatsapp} onChange={(e) => setContaWhatsapp(e.target.checked)} />
-                </label>
-
-                <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
-                  <span>E-mail</span>
-                  <input type="checkbox" checked={contaEmail} onChange={(e) => setContaEmail(e.target.checked)} />
-                </label>
-
-                <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
-                  <span>Push mobile</span>
-                  <input type="checkbox" checked={contaPush} onChange={(e) => setContaPush(e.target.checked)} />
-                </label>
-
-                <input style={styles.inputModal} type="number" min="0" placeholder="Dias antes do vencimento" value={contaDiasAviso} onChange={(e) => setContaDiasAviso(e.target.value)} />
-                <small style={styles.textoAjuda}>Exemplo: 1 = avisar 1 dia antes. 0 = avisar no dia do vencimento.</small>
-              </div>
 
               <button style={styles.btnSalvar} onClick={salvarConta}>Salvar</button>
               <button style={styles.btnCancelar} onClick={fecharConta}>Cancelar</button>
@@ -3141,7 +3224,7 @@ export default function App() {
               <label className="checkbox-row-fix" style={styles.switchLinha}>
                 <div>
                   <strong>Notificações ativas</strong>
-                  <small>Controle geral dos disparos automáticos.</small>
+                  <small>Controle geral dos disparos automáticos da empresa.</small>
                 </div>
 
                 <input
@@ -3151,53 +3234,62 @@ export default function App() {
                 />
               </label>
 
-              <label className="checkbox-row-fix" style={styles.switchLinha}>
-                <div>
-                  <strong>WhatsApp</strong>
-                  <small>Permitir disparos por WhatsApp.</small>
-                </div>
-
-                <input
-                  type="checkbox"
-                  checked={configWhatsapp}
-                  onChange={(e) => setConfigWhatsapp(e.target.checked)}
-                />
-              </label>
-
-              <label className="checkbox-row-fix" style={styles.switchLinha}>
-                <div>
-                  <strong>E-mail</strong>
-                  <small>Permitir disparos por e-mail.</small>
-                </div>
-
-                <input
-                  type="checkbox"
-                  checked={configEmail}
-                  onChange={(e) => setConfigEmail(e.target.checked)}
-                />
-              </label>
-
-              <label className="checkbox-row-fix" style={styles.switchLinha}>
-                <div>
-                  <strong>Push mobile</strong>
-                  <small>Preparado para notificação web/PWA.</small>
-                </div>
-
-                <input
-                  type="checkbox"
-                  checked={configPush}
-                  onChange={(e) => setConfigPush(e.target.checked)}
-                />
-              </label>
+              <div style={styles.configResumo}>
+                <strong>Contas</strong>
+                <span>Regras aplicadas automaticamente em todas as contas, sem checkbox individual no formulário.</span>
+              </div>
 
               <input
                 style={styles.input}
                 type="number"
                 min="0"
-                placeholder="Dias padrão de aviso"
-                value={diasAvisoPadrao}
-                onChange={(e) => setDiasAvisoPadrao(e.target.value)}
+                placeholder="Avisar contas antes do vencimento. Ex: 1"
+                value={diasAlertaContas}
+                onChange={(e) => { setDiasAlertaContas(e.target.value); setDiasAvisoPadrao(e.target.value) }}
               />
+
+              <label className="checkbox-row-fix" style={styles.switchLinha}>
+                <div>
+                  <strong>Notificar contas vencidas</strong>
+                  <small>Exibir contas em atraso nas notificações e destaques.</small>
+                </div>
+                <input type="checkbox" checked={alertarContasVencidas} onChange={(e) => setAlertarContasVencidas(e.target.checked)} />
+              </label>
+
+              <label className="checkbox-row-fix" style={styles.switchLinha}>
+                <div>
+                  <strong>Destacar contas críticas</strong>
+                  <small>Dar prioridade visual para contas vencidas ou muito próximas do vencimento.</small>
+                </div>
+                <input type="checkbox" checked={destacarContasCriticas} onChange={(e) => setDestacarContasCriticas(e.target.checked)} />
+              </label>
+
+              <div style={styles.configResumo}>
+                <strong>Notas</strong>
+                <span>Regras para pendências e prioridades do bloco de notas.</span>
+              </div>
+
+              <input
+                style={styles.input}
+                type="number"
+                min="0"
+                placeholder="Avisar notas pendentes após quantos dias. Ex: 3"
+                value={diasAlertaNotas}
+                onChange={(e) => setDiasAlertaNotas(e.target.value)}
+              />
+
+              <label className="checkbox-row-fix" style={styles.switchLinha}>
+                <div>
+                  <strong>Destacar notas urgentes</strong>
+                  <small>Manter notas urgentes e críticas no topo do acompanhamento.</small>
+                </div>
+                <input type="checkbox" checked={destacarNotasUrgentes} onChange={(e) => setDestacarNotasUrgentes(e.target.checked)} />
+              </label>
+
+              <div style={styles.configResumo}>
+                <strong>Canais preparados</strong>
+                <span>WhatsApp: {configWhatsapp ? 'Ligado' : 'Desligado'} • E-mail: {configEmail ? 'Ligado' : 'Desligado'} • Push: {configPush ? 'Ligado' : 'Desligado'}</span>
+              </div>
             </>
           )}
         </section>
@@ -3264,8 +3356,8 @@ export default function App() {
           <h2 style={styles.subtitulo}>🧠 Como o sistema vai usar</h2>
 
           <p style={styles.textoNota}>
-            O envio automático só acontecerá quando a configuração global estiver ativa
-            e a conta também estiver marcada para receber aviso.
+            O envio automático seguirá as regras globais da empresa. Os formulários ficam mais limpos
+            e as contas/notas passam a obedecer ao mesmo padrão configurado aqui.
           </p>
 
           <div style={styles.configResumo}>
@@ -4612,6 +4704,49 @@ export default function App() {
         <button style={styles.btnAgendaCompleta} onClick={() => navegarPara('agenda')}>Abrir agenda</button>
       </section>
 
+      <section className="dashboard-open-accounts content-block" style={styles.bloco}>
+        <div className="dashboard-section-header">
+          <div>
+            <strong>💳 Contas em aberto</strong>
+            <small>Mais novas primeiro • {contasAbertasDashboard.length} conta(s)</small>
+          </div>
+          <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>Ver todas</button>
+        </div>
+
+        <div className="dashboard-inline-filter">
+          <input
+            style={styles.input}
+            placeholder="Buscar por conta..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
+        </div>
+
+        {contasAbertasDashboard.length === 0 && (
+          <p style={styles.mensagemVazia}>Nenhuma conta em aberto para os filtros atuais.</p>
+        )}
+
+        <div className="dashboard-open-list">
+          {contasAbertasDashboard.slice(0, 8).map((conta) => {
+            const vencida = estaVencida(conta.data_vencimento, conta.status)
+            return (
+              <div key={conta.id} className="dashboard-account-row">
+                <div>
+                  <strong>{conta.descricao}</strong>
+                  <small>{formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'}</small>
+                  {conta.observacao && <small className="account-note-preview">Obs: {conta.observacao}</small>}
+                </div>
+                <div className="dashboard-account-row-actions">
+                  <span>{formatarValor(conta.valor)}</span>
+                  <span className={`status-pill ${vencida ? 'status-vencido' : 'status-pendente'}`}>{vencida ? 'Vencido' : 'Pendente'}</span>
+                  <button style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>Pago</button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
       <section className={`no-print dashboard-notes-card ${mostrarNotas ? 'notes-expanded' : 'notes-collapsed'}`}>
         <div style={styles.notasHeaderNovo} className="notes-header-clean dashboard-notes-content">
           <div className="notes-title-wrap">
@@ -4689,112 +4824,7 @@ export default function App() {
         {menuAberto ? '×' : '+'}
       </button>
 
-      {modalConta && (
-        <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3>{editandoContaId ? 'Editar Conta' : 'Nova Conta'}</h3>
-
-            <input style={styles.inputModal} placeholder="Descrição" value={descricao} onChange={(e) => setDescricao(primeiraLetraMaiuscula(e.target.value))} />
-            <input style={styles.inputModal} placeholder="Valor. Ex: 150,90" value={valor} onChange={(e) => setValor(e.target.value)} />
-            <input style={styles.inputModal} type="date" value={dataVencimento} onChange={(e) => setDataVencimento(e.target.value)} />
-
-            <select style={styles.inputModal} value={centroCustoId} onChange={(e) => setCentroCustoId(e.target.value)}>
-              <option value="">Centro de custo</option>
-              {centros.map((centro) => (
-                <option key={centro.id} value={centro.id}>{centro.nome}</option>
-              ))}
-            </select>
-
-            <div style={styles.blocoNotificacaoConta}>
-              <strong>🔔 Notificações desta conta</strong>
-
-              <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
-                <span>WhatsApp</span>
-                <input
-                  type="checkbox"
-                  checked={contaWhatsapp}
-                  onChange={(e) => setContaWhatsapp(e.target.checked)}
-                />
-              </label>
-
-              <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
-                <span>E-mail</span>
-                <input
-                  type="checkbox"
-                  checked={contaEmail}
-                  onChange={(e) => setContaEmail(e.target.checked)}
-                />
-              </label>
-
-              <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
-                <span>Push mobile</span>
-                <input
-                  type="checkbox"
-                  checked={contaPush}
-                  onChange={(e) => setContaPush(e.target.checked)}
-                />
-              </label>
-
-              <input
-                style={styles.inputModal}
-                type="number"
-                min="0"
-                placeholder="Dias antes do vencimento"
-                value={contaDiasAviso}
-                onChange={(e) => setContaDiasAviso(e.target.value)}
-              />
-
-              <small style={styles.textoAjuda}>
-                Exemplo: 1 = avisar 1 dia antes. 0 = avisar no dia do vencimento.
-              </small>
-            </div>
-
-            <button style={styles.btnSalvar} onClick={salvarConta}>Salvar</button>
-            <button style={styles.btnCancelar} onClick={fecharConta}>Cancelar</button>
-          </div>
-        </div>
-      )}
-
-      {modalNota && (
-        <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3>{editandoNotaId ? 'Editar Nota' : 'Nova Nota'}</h3>
-
-            <input style={styles.inputModal} placeholder="Título" value={tituloNota} onChange={(e) => setTituloNota(primeiraLetraMaiuscula(e.target.value))} />
-            <select style={styles.inputModal} value={prioridadeNota} onChange={(e) => setPrioridadeNota(e.target.value)}>
-              <option value="normal">Prioridade normal</option>
-              <option value="urgente">Urgente</option>
-              <option value="critico">Crítico</option>
-            </select>
-            <input style={styles.inputModal} type="date" value={dataEventoNota} onChange={(e) => setDataEventoNota(e.target.value)} />
-            <textarea style={styles.textareaModal} placeholder="Conteúdo..." value={conteudoNota} onChange={(e) => setConteudoNota(e.target.value)} />
-
-            <button style={styles.btnSalvar} onClick={salvarNota}>Salvar</button>
-            <button style={styles.btnCancelar} onClick={fecharNota}>Cancelar</button>
-          </div>
-        </div>
-      )}
-
-      {modalCentro && (
-        <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3>Centros de Custo</h3>
-
-            <input style={styles.inputModal} placeholder="Novo centro" value={novoCentro} onChange={(e) => setNovoCentro(primeiraLetraMaiuscula(e.target.value))} />
-            <button style={styles.btnSalvar} onClick={salvarCentro}>Salvar Centro</button>
-
-            {centros.map((centro) => (
-              <div key={centro.id} style={styles.itemCentro}>
-                <span>{centro.nome}</span>
-                <button style={styles.btnMiniExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir centro de custo', mensagem: `Deseja excluir o centro ${centro.nome}?`, textoConfirmar: 'Excluir', tipo: 'perigo', acao: () => excluirCentro(centro.id) })}>excluir</button>
-              </div>
-            ))}
-
-            <button style={styles.btnCancelar} onClick={() => setModalCentro(false)}>Fechar</button>
-          </div>
-        </div>
-      )}
-
+      {renderModaisGlobais()}
 
       {toast.visivel && (
         <div

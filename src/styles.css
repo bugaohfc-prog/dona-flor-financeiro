@@ -1676,3 +1676,126 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
     z-index: 5001 !important;
   }
 }
+
+/* =====================================================
+   Marco zero real — correções estruturais 2026-05-06
+   ===================================================== */
+.mobile-menu-panel {
+  max-height: calc(100vh - 32px) !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.mobile-menu-trigger {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border-radius: 14px !important;
+  border: 1px solid #e5e7eb !important;
+  background: #ffffff !important;
+  color: #0f766e !important;
+  line-height: 1 !important;
+  font-size: 20px !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06) !important;
+}
+
+.dashboard-open-accounts {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 22px !important;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06) !important;
+}
+
+.dashboard-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dashboard-section-header strong {
+  display: block;
+  color: #0f172a;
+  font-size: 17px;
+}
+
+.dashboard-section-header small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.dashboard-inline-filter {
+  margin-bottom: 12px;
+}
+
+.dashboard-inline-filter input {
+  margin-bottom: 0 !important;
+}
+
+.dashboard-open-list {
+  display: grid;
+  gap: 10px;
+}
+
+.dashboard-account-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.dashboard-account-row strong {
+  display: block;
+  color: #111827;
+  font-size: 14px;
+}
+
+.dashboard-account-row small {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+.account-note-preview {
+  color: #475569 !important;
+}
+
+.dashboard-account-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dashboard-account-row-actions > span:first-child {
+  font-weight: 800;
+  color: #111827;
+}
+
+@media (max-width: 979px) {
+  .dashboard-section-header {
+    align-items: center;
+  }
+
+  .dashboard-account-row {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-account-row-actions {
+    justify-content: flex-start;
+  }
+}

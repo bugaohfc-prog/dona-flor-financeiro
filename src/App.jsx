@@ -243,6 +243,15 @@ export default function App() {
   const [arquivoImportacao, setArquivoImportacao] = useState(null)
   const [linhasImportacao, setLinhasImportacao] = useState([])
   const [statusImportacao, setStatusImportacao] = useState('')
+  const [toast, setToast] = useState({ visivel: false, mensagem: '', tipo: 'info' })
+
+  function mostrarAviso(mensagem, tipo = 'info') {
+    setToast({ visivel: true, mensagem, tipo })
+    window.clearTimeout(mostrarAviso.timeoutId)
+    mostrarAviso.timeoutId = window.setTimeout(() => {
+      setToast({ visivel: false, mensagem: '', tipo: 'info' })
+    }, 3200)
+  }
 
   function limparEstadoAutenticacao() {
     setContas([])
@@ -1069,19 +1078,19 @@ export default function App() {
 
   async function salvarConta() {
     if (!empresaId) {
-      alert('Usuário sem empresa vinculada.')
+      mostrarAviso('Usuário sem empresa vinculada.', 'erro')
       return
     }
 
     if (!descricao || !valor || !dataVencimento) {
-      alert('Preencha descrição, valor e vencimento')
+      mostrarAviso('Preencha descrição, valor e vencimento.', 'erro')
       return
     }
 
     const diasAvisoConta = Number(contaDiasAviso)
 
     if (isNaN(diasAvisoConta) || diasAvisoConta < 0) {
-      alert('Informe uma quantidade válida de dias de aviso.')
+      mostrarAviso('Informe uma quantidade válida de dias de aviso.', 'erro')
       return
     }
 
@@ -1211,12 +1220,12 @@ export default function App() {
 
   async function salvarNota() {
     if (!empresaId) {
-      alert('Usuário sem empresa vinculada.')
+      mostrarAviso('Usuário sem empresa vinculada.', 'erro')
       return
     }
 
     if (!tituloNota.trim()) {
-      alert('Digite o título da nota')
+      mostrarAviso('Digite o título da nota.', 'erro')
       return
     }
 
@@ -1482,72 +1491,110 @@ export default function App() {
   }
 
   function imprimirPDF() {
-    const linhasTabela = contasFiltradas.map((conta) => {
-      const status = estaVencida(conta.data_vencimento, conta.status) ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'
-      return `
-        <tr>
-          <td>${conta.descricao || ''}</td>
-          <td>${formatarValor(conta.valor)}</td>
-          <td>${formatarData(conta.data_vencimento)}</td>
-          <td>${conta.df_centros_custo?.nome || '-'}</td>
-          <td>${status}</td>
-        </tr>
-      `
-    }).join('')
+    const normalizarTextoPdf = (valor) => String(valor ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[\n\r\t]/g, ' ')
+      .replace(/[^\x20-\x7E]/g, '')
+      .trim()
 
-    const janela = window.open('', '_blank', 'width=960,height=720')
+    const quebrarLinha = (texto, limite = 92) => {
+      const palavras = normalizarTextoPdf(texto).split(' ')
+      const linhas = []
+      let linha = ''
 
-    if (!janela) {
-      alert('Não foi possível abrir a janela de impressão. Verifique se o navegador bloqueou pop-ups.')
-      return
+      palavras.forEach((palavra) => {
+        if ((linha + ' ' + palavra).trim().length > limite) {
+          if (linha) linhas.push(linha)
+          linha = palavra
+        } else {
+          linha = (linha + ' ' + palavra).trim()
+        }
+      })
+
+      if (linha) linhas.push(linha)
+      return linhas.length ? linhas : ['-']
     }
 
-    janela.document.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <title>Relatório de contas</title>
-          <style>
-            * { box-sizing: border-box; }
-            body { font-family: Arial, sans-serif; color: #111827; padding: 28px; }
-            h1 { margin: 0 0 4px; font-size: 24px; }
-            p { margin: 0 0 18px; color: #6b7280; }
-            table { width: 100%; border-collapse: collapse; font-size: 12px; }
-            th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
-            th { background: #f8fafc; }
-            .resumo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0; }
-            .card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; }
-            .card small { display: block; color: #6b7280; }
-            .card strong { font-size: 16px; }
-            @media print { body { padding: 0; } }
-          </style>
-        </head>
-        <body>
-          <h1>Relatório de contas</h1>
-          <p>${nomeEmpresa || 'DF Gestão Financeira'} • ${new Date().toLocaleDateString('pt-BR')}</p>
-          <div class="resumo">
-            <div class="card"><small>Total</small><strong>${formatarValor(total)}</strong></div>
-            <div class="card"><small>Pago</small><strong>${formatarValor(pago)}</strong></div>
-            <div class="card"><small>Pendente</small><strong>${formatarValor(pendente)}</strong></div>
-            <div class="card"><small>Vencido</small><strong>${formatarValor(vencido)}</strong></div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Conta</th>
-                <th>Valor</th>
-                <th>Vencimento</th>
-                <th>Centro</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>${linhasTabela || '<tr><td colspan="5">Nenhuma conta encontrada.</td></tr>'}</tbody>
-          </table>
-          <script>window.onload = () => { window.print(); }</script>
-        </body>
-      </html>
-    `)
-    janela.document.close()
+    const linhas = [
+      'RELATORIO DE CONTAS',
+      `${normalizarTextoPdf(nomeEmpresa || 'DF Gestao Financeira')} - ${new Date().toLocaleDateString('pt-BR')}`,
+      '',
+      `Total: ${normalizarTextoPdf(formatarValor(total))} | Pago: ${normalizarTextoPdf(formatarValor(pago))} | Pendente: ${normalizarTextoPdf(formatarValor(pendente))} | Vencido: ${normalizarTextoPdf(formatarValor(vencido))}`,
+      '',
+      'Conta | Valor | Vencimento | Centro | Status',
+      '------------------------------------------------------------'
+    ]
+
+    if (!contasFiltradas.length) {
+      linhas.push('Nenhuma conta encontrada.')
+    } else {
+      contasFiltradas.forEach((conta) => {
+        const status = estaVencida(conta.data_vencimento, conta.status) ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'
+        const linha = `${conta.descricao || '-'} | ${formatarValor(conta.valor)} | ${formatarData(conta.data_vencimento)} | ${conta.df_centros_custo?.nome || '-'} | ${status}`
+        linhas.push(...quebrarLinha(linha, 105))
+      })
+    }
+
+    const escapePdf = (texto) => normalizarTextoPdf(texto).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)')
+    const paginas = []
+    const linhasPorPagina = 45
+
+    for (let i = 0; i < linhas.length; i += linhasPorPagina) {
+      paginas.push(linhas.slice(i, i + linhasPorPagina))
+    }
+
+    const objetos = []
+    const adicionarObjeto = (conteudo) => {
+      objetos.push(conteudo)
+      return objetos.length
+    }
+
+    const fontId = adicionarObjeto('<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>')
+    const pageIds = []
+
+    paginas.forEach((pagina) => {
+      const comandos = ['BT', '/F1 10 Tf', '48 800 Td']
+      pagina.forEach((linha, index) => {
+        if (index > 0) comandos.push('0 -16 Td')
+        comandos.push(`(${escapePdf(linha)}) Tj`)
+      })
+      comandos.push('ET')
+      const stream = comandos.join('\n')
+      const contentId = adicionarObjeto(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`)
+      const pageId = adicionarObjeto(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentId} 0 R >>`)
+      pageIds.push(pageId)
+    })
+
+    const pagesId = objetos.length + 1
+    pageIds.forEach((pageId) => {
+      objetos[pageId - 1] = objetos[pageId - 1].replace('/Parent 0 0 R', `/Parent ${pagesId} 0 R`)
+    })
+    adicionarObjeto(`<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(' ')}] /Count ${pageIds.length} >>`)
+    const catalogId = adicionarObjeto(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`)
+
+    let pdf = '%PDF-1.4\n'
+    const offsets = [0]
+    objetos.forEach((objeto, index) => {
+      offsets.push(pdf.length)
+      pdf += `${index + 1} 0 obj\n${objeto}\nendobj\n`
+    })
+    const xrefOffset = pdf.length
+    pdf += `xref\n0 ${objetos.length + 1}\n0000000000 65535 f \n`
+    offsets.slice(1).forEach((offset) => {
+      pdf += `${String(offset).padStart(10, '0')} 00000 n \n`
+    })
+    pdf += `trailer\n<< /Size ${objetos.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`
+
+    const blob = new Blob([pdf], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'relatorio-contas.pdf'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
 
   function limparFiltros() {
@@ -2040,6 +2087,81 @@ export default function App() {
     return (
       <div className="app-page app-frame" style={styles.page}>
         <style>{`
+
+          .app-toast {
+            position: fixed;
+            left: 50%;
+            bottom: 92px;
+            transform: translateX(-50%);
+            z-index: 5000;
+            width: min(360px, calc(100vw - 32px));
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 18px 45px rgba(15,23,42,.20);
+            display: grid;
+            gap: 3px;
+            color: #111827;
+          }
+          .app-toast strong { font-size: 13px; }
+          .app-toast span { font-size: 13px; color: #4b5563; }
+          .app-toast-erro { border-left: 5px solid #ef4444; }
+          .app-toast-info { border-left: 5px solid #14b8a6; }
+          .top-shell-clean {
+            min-height: 72px !important;
+            box-sizing: border-box !important;
+          }
+          @media (max-width: 979px) {
+            .top-shell-clean {
+              display: flex !important;
+              align-items: center !important;
+              justify-content: space-between !important;
+              gap: 10px !important;
+              margin: 0 0 14px 0 !important;
+              padding: 10px 12px !important;
+              border-radius: 20px !important;
+              background: #ffffff !important;
+              border: 1px solid #e5e7eb !important;
+              box-shadow: 0 10px 24px rgba(15,23,42,.06) !important;
+            }
+            .top-shell-logo {
+              min-width: 0 !important;
+              flex: 1 !important;
+              overflow: hidden !important;
+            }
+            .top-shell-logo img {
+              width: 42px !important;
+              height: 42px !important;
+              flex: 0 0 42px !important;
+            }
+            .top-shell-logo strong {
+              display: block !important;
+              max-width: 190px !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+              white-space: nowrap !important;
+              font-size: 15px !important;
+              line-height: 1.1 !important;
+            }
+            .top-shell-logo small {
+              display: block !important;
+              font-size: 11px !important;
+              line-height: 1.1 !important;
+              color: #64748b !important;
+            }
+            .mobile-menu-trigger {
+              flex: 0 0 42px !important;
+              width: 42px !important;
+              height: 42px !important;
+              border-radius: 14px !important;
+              background: #ffffff !important;
+              color: #0f172a !important;
+              border: 1px solid #e5e7eb !important;
+              box-shadow: 0 6px 16px rgba(15,23,42,.08) !important;
+            }
+          }
+
           .desktop-sidebar { display: none; }
           @media (min-width: 980px) {
             body { background: #eef7f5 !important; }
@@ -4552,11 +4674,11 @@ export default function App() {
 
       {menuAberto && (
         <div className="global-fab-menu" style={styles.menuFab} onClick={(e) => e.stopPropagation()}>
-          <button style={styles.menuItem} onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaConta() }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaConta() }} aria-label="Nova conta">
+          <button style={styles.menuItem} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaConta() }} aria-label="Nova conta">
             <span style={styles.menuItemIcone}>💰</span>
             <span style={styles.menuItemTexto}>Nova conta</span>
           </button>
-          <button style={styles.menuItem} onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaNota() }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaNota() }} aria-label="Nova nota">
+          <button style={styles.menuItem} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaNota() }} aria-label="Nova nota">
             <span style={styles.menuItemIcone}>📝</span>
             <span style={styles.menuItemTexto}>Nova nota</span>
           </button>
@@ -4673,6 +4795,17 @@ export default function App() {
         </div>
       )}
 
+
+      {toast.visivel && (
+        <div
+          className={`app-toast app-toast-${toast.tipo}`}
+          role="status"
+          onClick={() => setToast({ visivel: false, mensagem: '', tipo: 'info' })}
+        >
+          <strong>{toast.tipo === 'erro' ? 'Atenção' : 'Aviso'}</strong>
+          <span>{toast.mensagem}</span>
+        </div>
+      )}
 
       {confirmacao.aberto && (
         <div style={styles.overlayConfirmacao}>

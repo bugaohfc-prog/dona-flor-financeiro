@@ -203,7 +203,7 @@ export default function App() {
   const [menuNavegacaoAberto, setMenuNavegacaoAberto] = useState(false)
   const [sidebarCompacta, setSidebarCompacta] = useState(false)
   const [gruposMenu, setGruposMenu] = useState({ principal: true, financeiro: true, analise: true, sistema: true })
-  const [telaAtual, setTelaAtualState] = useState('contas')
+  const [telaAtual, setTelaAtualState] = useState('dashboard')
   const [usuarioLogado, setUsuarioLogado] = useState(null)
   const [carregandoAuth, setCarregandoAuth] = useState(true)
   const [empresaId, setEmpresaId] = useState(null)
@@ -393,7 +393,7 @@ export default function App() {
     window.history.replaceState({ tela: telaAtual }, '', window.location.href)
 
     function aoVoltar(event) {
-      const proximaTela = event.state?.tela || 'contas'
+      const proximaTela = event.state?.tela || 'dashboard'
       setMenuAberto(false)
       setMenuNavegacaoAberto(false)
       setTelaAtualState(proximaTela)
@@ -1482,7 +1482,72 @@ export default function App() {
   }
 
   function imprimirPDF() {
-    window.print()
+    const linhasTabela = contasFiltradas.map((conta) => {
+      const status = estaVencida(conta.data_vencimento, conta.status) ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'
+      return `
+        <tr>
+          <td>${conta.descricao || ''}</td>
+          <td>${formatarValor(conta.valor)}</td>
+          <td>${formatarData(conta.data_vencimento)}</td>
+          <td>${conta.df_centros_custo?.nome || '-'}</td>
+          <td>${status}</td>
+        </tr>
+      `
+    }).join('')
+
+    const janela = window.open('', '_blank', 'width=960,height=720')
+
+    if (!janela) {
+      alert('Não foi possível abrir a janela de impressão. Verifique se o navegador bloqueou pop-ups.')
+      return
+    }
+
+    janela.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <title>Relatório de contas</title>
+          <style>
+            * { box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; color: #111827; padding: 28px; }
+            h1 { margin: 0 0 4px; font-size: 24px; }
+            p { margin: 0 0 18px; color: #6b7280; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
+            th { background: #f8fafc; }
+            .resumo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0; }
+            .card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 10px; }
+            .card small { display: block; color: #6b7280; }
+            .card strong { font-size: 16px; }
+            @media print { body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <h1>Relatório de contas</h1>
+          <p>${nomeEmpresa || 'DF Gestão Financeira'} • ${new Date().toLocaleDateString('pt-BR')}</p>
+          <div class="resumo">
+            <div class="card"><small>Total</small><strong>${formatarValor(total)}</strong></div>
+            <div class="card"><small>Pago</small><strong>${formatarValor(pago)}</strong></div>
+            <div class="card"><small>Pendente</small><strong>${formatarValor(pendente)}</strong></div>
+            <div class="card"><small>Vencido</small><strong>${formatarValor(vencido)}</strong></div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Conta</th>
+                <th>Valor</th>
+                <th>Vencimento</th>
+                <th>Centro</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>${linhasTabela || '<tr><td colspan="5">Nenhuma conta encontrada.</td></tr>'}</tbody>
+          </table>
+          <script>window.onload = () => { window.print(); }</script>
+        </body>
+      </html>
+    `)
+    janela.document.close()
   }
 
   function limparFiltros() {
@@ -1779,7 +1844,7 @@ export default function App() {
   }
 
   function voltarPainel() {
-    navegarPara('contas')
+    navegarPara('dashboard')
   }
 
   function nomeUsuario() {
@@ -1955,7 +2020,7 @@ export default function App() {
     return (
       <section className="no-print top-shell top-shell-clean" style={styles.usuarioTopo}>
         <div className="top-shell-context">
-          <button className="top-shell-logo" style={styles.logoMarca} onClick={() => navegarPara('contas')} title="Ir para o painel">
+          <button className="top-shell-logo" style={styles.logoMarca} onClick={() => navegarPara('dashboard')} title="Ir para o painel">
             <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.logoImagem} />
             <span>
               <strong>{nomeEmpresa || 'Dona Flor'}</strong>
@@ -2368,7 +2433,7 @@ export default function App() {
 
         <div className="desktop-sidebar-scroll">
           <GrupoMenu id="principal" titulo="Principal">
-            <ItemMenu tela="contas" icon="🏠" label="Painel" />
+            <ItemMenu tela="dashboard" icon="🏠" label="Painel" />
             <ItemMenu tela="agenda" icon="📅" label="Agenda" />
             <ItemMenu tela="notas" icon="📝" label="Bloco de Notas" />
           </GrupoMenu>
@@ -2417,7 +2482,7 @@ export default function App() {
 
           <details className="mobile-menu-group" open>
             <summary>Principal</summary>
-            {item('🏠', 'Dashboard', 'Resumo financeiro', () => navegarPara('contas'))}
+            {item('🏠', 'Painel', 'Resumo financeiro', () => navegarPara('dashboard'))}
             {item('📅', 'Agenda', 'Vencimentos e previsões', () => navegarPara('agenda'))}
             {item('📝', 'Bloco de Notas', 'Pendências e histórico de notas', () => navegarPara('notas'))}
           </details>
@@ -2458,6 +2523,129 @@ export default function App() {
     return <Login onLogin={setUsuarioLogado} />
   }
 
+
+  function renderListaContasConteudo() {
+    return (
+      <>
+      <section className="no-print filters-desktop" style={styles.filtrosBox}>
+        <input
+          style={styles.input}
+          placeholder="Buscar por conta, centro ou status..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+        />
+
+        <button className="filter-toggle-button" onClick={() => setMostrarFiltros(!mostrarFiltros)}>
+          {mostrarFiltros ? 'Ocultar filtros' : 'Filtros'}
+        </button>
+
+        <div className="export-actions" style={styles.acoes}>
+          <button style={styles.btnCinza} onClick={limparFiltros}>Limpar</button>
+          <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
+          <button style={styles.btnVerde} onClick={exportarCSV}>CSV</button>
+        </div>
+
+        {mostrarFiltros && (
+          <div className="advanced-filters">
+            <div className="status-tabs filter-tabs-fixed" style={styles.filtros}>
+              <button style={filtroStatus === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('todas')}>Todas</button>
+              <button style={filtroStatus === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pendentes')}>Pendentes</button>
+              <button style={filtroStatus === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pagas')}>Pagas</button>
+              <button style={filtroStatus === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('vencidas')}>Vencidas</button>
+            </div>
+
+            <select style={styles.input} value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)}>
+              <option value="">Todos os centros</option>
+              {centros.map((centro) => (<option key={centro.id} value={centro.id}>{centro.nome}</option>))}
+            </select>
+
+            <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
+
+            <input style={styles.input} type="date" value={dataInicial} onChange={(e) => setDataInicial(e.target.value)} />
+            <input style={styles.input} type="date" value={dataFinal} onChange={(e) => setDataFinal(e.target.value)} />
+          </div>
+        )}
+      </section>
+
+      <section className="result-summary" style={styles.resumoFiltro}>
+        <strong>Resultado filtrado</strong>
+        <span>{contasFiltradas.length} conta(s) • Total {formatarValor(total)}</span>
+        <small>
+          Centro: {filtroCentro ? centros.find((centro) => centro.id === filtroCentro)?.nome || 'Selecionado' : 'Todos'} •
+          Status: {filtroStatus} •
+          Mês: {filtroMes || 'Todos'}
+        </small>
+      </section>
+
+      <section className="content-block" style={styles.bloco}>
+        {loading && <p>Carregando...</p>}
+
+        <HeaderExpansivel
+          titulo="💰 Contas"
+          aberto={mostrarContas}
+          onClick={() => setMostrarContas(!mostrarContas)}
+        />
+
+        {mostrarContas && contasFiltradas.map((conta) => {
+          const vencida = estaVencida(conta.data_vencimento, conta.status)
+
+          return (
+            <div
+              className="print-card account-card-desktop"
+              key={conta.id}
+              style={{
+                ...styles.cardConta,
+                background:
+                  conta.status === 'pago'
+                    ? '#d4edda'
+                    : vencida
+                      ? '#ffb3b3'
+                      : '#fff3cd'
+              }}
+            >
+              <div style={styles.cardTopo}>
+                <strong>{conta.descricao}</strong>
+                <span>{formatarValor(conta.valor)}</span>
+              </div>
+
+              <div style={styles.cardInfo} className="account-meta-line">
+                <span>{formatarData(conta.data_vencimento)}</span>
+                <span>•</span>
+                <span>{conta.df_centros_custo?.nome || '-'}</span>
+                <span>•</span>
+                <span className={`status-pill ${vencida ? 'status-vencido' : conta.status === 'pago' ? 'status-pago' : 'status-pendente'}`}>
+                  {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}
+                </span>
+              </div>
+
+              <div className="account-actions" style={styles.acoes}>
+                {conta.status !== 'pago' ? (
+                  <button style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>
+                    Pago
+                  </button>
+                ) : (
+                  <button style={styles.btnVoltar} onClick={() => abrirConfirmacao({ titulo: 'Voltar para pendente', mensagem: `Deseja voltar a conta ${conta.descricao} para pendente?`, textoConfirmar: 'Voltar', tipo: 'aviso', acao: () => voltarParaPendente(conta.id) })}>
+                    Voltar
+                  </button>
+                )}
+
+                <button style={styles.btnEditar} onClick={() => abrirEdicaoConta(conta)}>
+                  Editar
+                </button>
+
+                <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
+                  Excluir
+                </button>
+              </div>
+            </div>
+          )
+        })}
+      </section>
+
+      </>
+    )
+  }
+
   if (erroEmpresa) {
     return (
       <div style={styles.page}>
@@ -2465,6 +2653,24 @@ export default function App() {
         <p>{erroEmpresa}</p>
         <button style={styles.btnSair} onClick={sairDoSistema}>Sair</button>
       </div>
+    )
+  }
+
+
+  if (telaAtual === 'contas') {
+    return renderAppFrame(
+      <>
+        <div className="page-title-actions">
+          <div>
+            <h1 style={styles.titulo}>💳 Contas</h1>
+            <p style={styles.textoNota}>Consulte, filtre, exporte e administre as contas da empresa em uma página dedicada.</p>
+          </div>
+          <div className="page-actions-row">
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Painel</button>
+          </div>
+        </div>
+        {renderListaContasConteudo()}
+      </>
     )
   }
 
@@ -2487,7 +2693,7 @@ export default function App() {
             <p style={styles.textoNota}>Central de notas e lembretes da empresa, separada do painel financeiro para reduzir poluição visual.</p>
           </div>
           <div className="page-actions-row">
-            <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>← Painel</button>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Painel</button>
           </div>
         </div>
 
@@ -2552,7 +2758,7 @@ export default function App() {
       <AppFrame>
         <h1 style={styles.titulo}>📥 Importar planilha</h1>
 
-        <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
+        <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>
           ← Voltar
         </button>
 
@@ -2630,7 +2836,7 @@ export default function App() {
       <>
         <h1 style={styles.titulo}>👥 Gestão de usuários</h1>
 
-        <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
+        <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>
           ← Voltar
         </button>
 
@@ -2797,7 +3003,7 @@ export default function App() {
       <>
         <h1 style={styles.titulo}>⚙️ Configurações</h1>
 
-        <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>
+        <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>
           ← Voltar
         </button>
 
@@ -3026,7 +3232,7 @@ export default function App() {
       <AppFrame>
         <h1 style={styles.titulo}>📅 Agenda Financeira</h1>
 
-        <button className="btn-back-page" style={styles.btnCinza} onClick={() => navegarPara('contas')}>
+        <button className="btn-back-page" style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>
           ← Voltar
         </button>
 
@@ -3067,7 +3273,7 @@ export default function App() {
       <AppFrame>
         <h1 style={styles.titulo}>🗑️ Lixeira</h1>
 
-        <button className="btn-back-page" style={styles.btnCinza} onClick={() => navegarPara('contas')}>
+        <button className="btn-back-page" style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>
           ← Voltar
         </button>
 
@@ -3157,7 +3363,7 @@ export default function App() {
   // BLOCO 11 — UI
   // =========================
   return (
-    <div className="app-page" style={styles.page}>
+    <div className="app-page" style={styles.page} onClick={() => { if (menuAberto) setMenuAberto(false) }}>
       <style>
         {`
           .print-header,
@@ -4342,123 +4548,10 @@ export default function App() {
       </section>
 
 
-      <section className="no-print filters-desktop" style={styles.filtrosBox}>
-        <input
-          style={styles.input}
-          placeholder="Buscar por conta, centro ou status..."
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-        />
-
-        <button className="filter-toggle-button" onClick={() => setMostrarFiltros(!mostrarFiltros)}>
-          {mostrarFiltros ? 'Ocultar filtros' : 'Filtros'}
-        </button>
-
-        <div className="export-actions" style={styles.acoes}>
-          <button style={styles.btnCinza} onClick={limparFiltros}>Limpar</button>
-          <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
-          <button style={styles.btnVerde} onClick={exportarCSV}>CSV</button>
-        </div>
-
-        {mostrarFiltros && (
-          <div className="advanced-filters">
-            <div className="status-tabs filter-tabs-fixed" style={styles.filtros}>
-              <button style={filtroStatus === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('todas')}>Todas</button>
-              <button style={filtroStatus === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pendentes')}>Pendentes</button>
-              <button style={filtroStatus === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pagas')}>Pagas</button>
-              <button style={filtroStatus === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('vencidas')}>Vencidas</button>
-            </div>
-
-            <select style={styles.input} value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)}>
-              <option value="">Todos os centros</option>
-              {centros.map((centro) => (<option key={centro.id} value={centro.id}>{centro.nome}</option>))}
-            </select>
-
-            <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
-
-            <input style={styles.input} type="date" value={dataInicial} onChange={(e) => setDataInicial(e.target.value)} />
-            <input style={styles.input} type="date" value={dataFinal} onChange={(e) => setDataFinal(e.target.value)} />
-          </div>
-        )}
-      </section>
-
-      <section className="result-summary" style={styles.resumoFiltro}>
-        <strong>Resultado filtrado</strong>
-        <span>{contasFiltradas.length} conta(s) • Total {formatarValor(total)}</span>
-        <small>
-          Centro: {filtroCentro ? centros.find((centro) => centro.id === filtroCentro)?.nome || 'Selecionado' : 'Todos'} •
-          Status: {filtroStatus} •
-          Mês: {filtroMes || 'Todos'}
-        </small>
-      </section>
-
-      <section className="content-block" style={styles.bloco}>
-        {loading && <p>Carregando...</p>}
-
-        <HeaderExpansivel
-          titulo="💰 Contas"
-          aberto={mostrarContas}
-          onClick={() => setMostrarContas(!mostrarContas)}
-        />
-
-        {mostrarContas && contasFiltradas.map((conta) => {
-          const vencida = estaVencida(conta.data_vencimento, conta.status)
-
-          return (
-            <div
-              className="print-card account-card-desktop"
-              key={conta.id}
-              style={{
-                ...styles.cardConta,
-                background:
-                  conta.status === 'pago'
-                    ? '#d4edda'
-                    : vencida
-                      ? '#ffb3b3'
-                      : '#fff3cd'
-              }}
-            >
-              <div style={styles.cardTopo}>
-                <strong>{conta.descricao}</strong>
-                <span>{formatarValor(conta.valor)}</span>
-              </div>
-
-              <div style={styles.cardInfo} className="account-meta-line">
-                <span>{formatarData(conta.data_vencimento)}</span>
-                <span>•</span>
-                <span>{conta.df_centros_custo?.nome || '-'}</span>
-                <span>•</span>
-                <span className={`status-pill ${vencida ? 'status-vencido' : conta.status === 'pago' ? 'status-pago' : 'status-pendente'}`}>
-                  {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}
-                </span>
-              </div>
-
-              <div className="account-actions" style={styles.acoes}>
-                {conta.status !== 'pago' ? (
-                  <button style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>
-                    Pago
-                  </button>
-                ) : (
-                  <button style={styles.btnVoltar} onClick={() => abrirConfirmacao({ titulo: 'Voltar para pendente', mensagem: `Deseja voltar a conta ${conta.descricao} para pendente?`, textoConfirmar: 'Voltar', tipo: 'aviso', acao: () => voltarParaPendente(conta.id) })}>
-                    Voltar
-                  </button>
-                )}
-
-                <button style={styles.btnEditar} onClick={() => abrirEdicaoConta(conta)}>
-                  Editar
-                </button>
-
-                <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
-                  Excluir
-                </button>
-              </div>
-            </div>
-          )
-        })}
-      </section>
+      {/* Lista de contas movida para a tela Financeiro > Contas. */}
 
       {menuAberto && (
-        <div className="global-fab-menu" style={styles.menuFab}>
+        <div className="global-fab-menu" style={styles.menuFab} onClick={(e) => e.stopPropagation()}>
           <button style={styles.menuItem} onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaConta() }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaConta() }} aria-label="Nova conta">
             <span style={styles.menuItemIcone}>💰</span>
             <span style={styles.menuItemTexto}>Nova conta</span>
@@ -4470,7 +4563,7 @@ export default function App() {
         </div>
       )}
 
-      <button className="global-fab" style={styles.fab} onClick={() => setMenuAberto(!menuAberto)}>
+      <button className="global-fab" style={styles.fab} onClick={(e) => { e.stopPropagation(); setMenuAberto(!menuAberto) }}>
         {menuAberto ? '×' : '+'}
       </button>
 

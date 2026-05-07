@@ -11,6 +11,9 @@ import {
 import Relatorios from './pages/Relatorios.jsx'
 import Login from './pages/Login.jsx'
 import UserSecurityCards from './components/UserSecurityCards.jsx'
+import Topbar from './components/layout/Topbar.jsx'
+import Sidebar from './components/layout/Sidebar.jsx'
+import MobileMenu from './components/layout/MobileMenu.jsx'
 import './styles.css'
 
 const SESSAO_STORAGE_KEY = 'df_sessao_segura'

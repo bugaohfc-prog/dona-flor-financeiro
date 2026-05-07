@@ -2045,3 +2045,124 @@ button.danger {
     padding: 7px 11px !important;
   }
 }
+
+/* =========================================================
+   Fechamento desktop: usuários mais compacto e elegante
+   ========================================================= */
+@media (min-width: 980px) {
+  .users-page-section {
+    gap: 14px !important;
+    padding: 18px 20px !important;
+    border-radius: 18px !important;
+  }
+
+  .users-account-grid {
+    grid-template-columns: repeat(2, minmax(280px, 1fr)) !important;
+    gap: 14px !important;
+  }
+
+  .users-form-card {
+    padding: 14px !important;
+    border-radius: 14px !important;
+    gap: 10px !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  .users-form-card input,
+  .users-add-card input,
+  .users-add-card select {
+    min-height: 42px !important;
+  }
+
+  .users-form-card button,
+  .users-add-card button {
+    min-height: 42px !important;
+  }
+
+  .users-permission-guide {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    padding: 12px !important;
+    border-radius: 16px !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  .users-permission-guide span {
+    min-height: 54px !important;
+    padding: 10px 12px !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    background: #f8fafc !important;
+    line-height: 1.25 !important;
+  }
+
+  .users-add-card {
+    grid-template-columns: minmax(170px, .9fr) minmax(220px, 1.1fr) 160px auto !important;
+    gap: 10px !important;
+    padding: 12px !important;
+    border-radius: 16px !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  .users-list {
+    gap: 8px !important;
+  }
+
+  .user-card,
+  .userCard {
+    grid-template-columns: minmax(220px, 1fr) auto 150px auto !important;
+    gap: 12px !important;
+    padding: 12px 14px !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  .user-main-info strong,
+  .userInfo strong {
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+
+  .user-main-info small,
+  .userInfo small {
+    font-size: 12px !important;
+    color: #64748b !important;
+  }
+
+  .user-role-select {
+    max-width: 150px !important;
+    min-height: 38px !important;
+  }
+
+  .user-actions {
+    gap: 6px !important;
+  }
+
+  .user-actions button {
+    min-height: 32px !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    border-radius: 9px !important;
+  }
+
+  .sidebar-collapse-btn.sidebar-collapse-icon {
+    width: 42px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 0 !important;
+    margin: 8px auto 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    align-self: center !important;
+  }
+
+  .sidebar-collapse-btn.sidebar-collapse-icon small {
+    display: none !important;
+  }
+}

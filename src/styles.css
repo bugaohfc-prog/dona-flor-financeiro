@@ -2620,3 +2620,50 @@ button.danger {
     padding: 0 11px !important;
   }
 }
+
+/* =========================================================
+   DONA FLOR — AJUSTE FINAL MINHA CONTA
+   Mantém visual validado e corrige alinhamento leve dos cards.
+   ========================================================= */
+.users-security-grid {
+  align-items: stretch !important;
+}
+
+.users-security-card {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+}
+
+.users-security-card-header {
+  min-height: 42px !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+.users-security-card input {
+  margin-bottom: 10px !important;
+}
+
+.users-security-card button {
+  margin-top: auto !important;
+}
+
+.users-security-password-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+}
+
+@media (max-width: 979px) {
+  .users-security-password-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .users-security-card-header {
+    min-height: auto !important;
+    display: block !important;
+  }
+}

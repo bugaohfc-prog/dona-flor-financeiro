@@ -10,6 +10,7 @@ import {
 } from './services/usuariosService'
 import Relatorios from './pages/Relatorios.jsx'
 import Login from './pages/Login.jsx'
+import UserSecurityCards from './components/UserSecurityCards.jsx'
 import './styles.css'
 
 const SESSAO_STORAGE_KEY = 'df_sessao_segura'
@@ -3685,10 +3686,10 @@ export default function App() {
             {notasFiltradas.map((nota) => {
               const prioridade = nota.prioridade || 'normal'
               return (
-                <div key={nota.id} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
+                <div key={nota.id} className={`note-card-action note-card-${prioridade}`} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
                   <div style={styles.cardTopo}>
                     <strong style={{ textDecoration: nota.concluida ? 'line-through' : 'none' }}>{nota.titulo}</strong>
-                    <span style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
+                    <span className={`note-priority-badge note-priority-${prioridade}`} style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
                       {prioridade === 'critico' ? 'Crítico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
                     </span>
                   </div>
@@ -3804,39 +3805,17 @@ export default function App() {
             Usuário conectado: <strong>{usuarioAtualEmail}</strong> • Perfil: <strong>{normalizarPerfil(perfilUsuario)}</strong>
           </p>
 
-          <div className="users-account-grid">
-            <div className="users-form-card">
-              <strong>Alterar e-mail</strong>
-              <input
-                style={styles.input}
-                type="email"
-                placeholder="Novo e-mail"
-                value={novoEmailUsuario}
-                onChange={(e) => setNovoEmailUsuario(e.target.value)}
-              />
-              <button style={styles.btnSalvar} onClick={salvarMeuEmail}>Atualizar e-mail</button>
-              <small style={styles.textoAjuda}>Pode ser necessário confirmar o novo e-mail.</small>
-            </div>
-
-            <div className="users-form-card">
-              <strong>Alterar senha</strong>
-              <input
-                style={styles.input}
-                type="password"
-                placeholder="Nova senha"
-                value={novaSenhaUsuario}
-                onChange={(e) => setNovaSenhaUsuario(e.target.value)}
-              />
-              <input
-                style={styles.input}
-                type="password"
-                placeholder="Confirmar nova senha"
-                value={confirmarNovaSenhaUsuario}
-                onChange={(e) => setConfirmarNovaSenhaUsuario(e.target.value)}
-              />
-              <button style={styles.btnSalvar} onClick={salvarMinhaSenha}>Atualizar senha</button>
-            </div>
-          </div>
+          <UserSecurityCards
+            novoEmailUsuario={novoEmailUsuario}
+            setNovoEmailUsuario={setNovoEmailUsuario}
+            novaSenhaUsuario={novaSenhaUsuario}
+            setNovaSenhaUsuario={setNovaSenhaUsuario}
+            confirmarNovaSenhaUsuario={confirmarNovaSenhaUsuario}
+            setConfirmarNovaSenhaUsuario={setConfirmarNovaSenhaUsuario}
+            salvarMeuEmail={salvarMeuEmail}
+            salvarMinhaSenha={salvarMinhaSenha}
+            styles={styles}
+          />
         </section>
 
         <section style={styles.cardConfiguracao} className="users-page-section">
@@ -5852,10 +5831,10 @@ export default function App() {
           {notasPendentes.slice(0, 6).map((nota) => {
             const prioridade = nota.prioridade || 'normal'
             return (
-              <div key={nota.id} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
+              <div key={nota.id} className={`note-card-action note-card-${prioridade}`} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
                 <div style={styles.cardTopo}>
                   <strong style={{ textDecoration: nota.concluida ? 'line-through' : 'none' }}>{nota.titulo}</strong>
-                  <span style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
+                  <span className={`note-priority-badge note-priority-${prioridade}`} style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
                     {prioridade === 'critico' ? 'Crítico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
                   </span>
                 </div>

@@ -1867,3 +1867,66 @@ button.danger,
     grid-template-columns: 1fr !important;
   }
 }
+
+/* === HOTFIX REAL: sessão/menu/botões/contas === */
+@media (min-width: 980px) {
+  .mobile-menu-trigger,
+  .mobile-menu-panel {
+    display: none !important;
+  }
+}
+.mobile-menu-panel {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+  scrollbar-width: thin;
+}
+.mobile-menu-panel details,
+.mobile-menu-panel summary,
+.mobile-menu-panel button {
+  touch-action: manipulation;
+}
+.desktop-sidebar-nav button,
+.account-actions button,
+.notes-list-dashboard button,
+.export-actions button {
+  line-height: 1.1 !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.account-actions {
+  align-items: center !important;
+}
+.btn-danger,
+button.danger {
+  background: #fff1f2 !important;
+  color: #e11d48 !important;
+  border: 1px solid #fecdd3 !important;
+}
+.sidebar-group-toggle strong {
+  min-width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,.12);
+  color: #ffffff;
+}
+@media (max-width: 979px) {
+  .mobile-menu-trigger {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #e5e7eb !important;
+  }
+  .account-actions button,
+  .notes-list-dashboard button,
+  .export-actions button {
+    min-height: 44px !important;
+  }
+}

@@ -35,6 +35,7 @@ function limparSessaoSegura() {
 
 export default function App() {
   const avisoSessaoMostradoRef = useRef(false)
+  const encerrandoSessaoRef = useRef(false)
   // =========================
   // BLOCO 0 — UTILITÁRIOS
   // =========================
@@ -63,16 +64,33 @@ export default function App() {
   function formatarDataParaBanco(valor) {
     if (!valor) return null
 
-    if (/^\d{4}-\d{2}-\d{2}$/.test(valor)) {
-      return valor
+    const texto = String(valor).trim()
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+      return texto
     }
 
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(valor)) {
-      const [dia, mes, ano] = valor.split('/')
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(texto)) {
+      const [dia, mes, ano] = texto.split('/')
       return `${ano}-${mes}-${dia}`
     }
 
-    return valor
+    return texto.slice(0, 10)
+  }
+
+  function limitarDataInput(valor) {
+    if (!valor) return ''
+    const texto = String(valor)
+    if (texto.includes('-')) return texto.slice(0, 10)
+    const numeros = texto.replace(/\D/g, '').slice(0, 8)
+    if (numeros.length <= 2) return numeros
+    if (numeros.length <= 4) return `${numeros.slice(0, 2)}/${numeros.slice(2)}`
+    return `${numeros.slice(0, 2)}/${numeros.slice(2, 4)}/${numeros.slice(4, 8)}`
+  }
+
+  function erroEhSessaoExpirada(erro) {
+    const mensagem = String(erro?.message || erro || '').toLowerCase()
+    return mensagem.includes('jwt') || mensagem.includes('expired') || mensagem.includes('unauthorized') || mensagem.includes('session')
   }
 
 
@@ -260,6 +278,26 @@ export default function App() {
     }, 3200)
   }
 
+  function avisarErro(erro, fallback = 'Não foi possível concluir a operação.') {
+    const mensagem = erro?.message || erro || fallback
+
+    if (erroEhSessaoExpirada(erro)) {
+      if (encerrandoSessaoRef.current) return
+      encerrandoSessaoRef.current = true
+      supabase.auth.signOut().finally(() => {
+        limparEstadoAutenticacao()
+        setUsuarioLogado(null)
+        setTelaAtualState('dashboard')
+        setCarregandoAuth(false)
+        mostrarAviso('Sua sessão expirou. Faça login novamente.', 'erro')
+        window.setTimeout(() => { encerrandoSessaoRef.current = false }, 1200)
+      })
+      return
+    }
+
+    mostrarAviso(String(mensagem), 'erro')
+  }
+
   function limparEstadoAutenticacao() {
     setContas([])
     setNotas([])
@@ -346,12 +384,15 @@ export default function App() {
     }
 
     async function encerrarPorSeguranca(mensagem) {
+      if (encerrandoSessaoRef.current) return
+      encerrandoSessaoRef.current = true
       limparEstadoAutenticacao()
       setUsuarioLogado(null)
-      setTelaAtualState('contas')
+      setTelaAtualState('dashboard')
       setCarregandoAuth(false)
       await supabase.auth.signOut()
-      alert(mensagem)
+      mostrarAviso(mensagem, 'erro')
+      window.setTimeout(() => { encerrandoSessaoRef.current = false }, 1200)
     }
 
     function verificarExpiracao() {
@@ -449,18 +490,14 @@ export default function App() {
   useEffect(() => {
     const originalBodyOverflow = document.body.style.overflow
     const originalHtmlOverflow = document.documentElement.style.overflow
-    const originalBodyTouchAction = document.body.style.touchAction
-
     if (menuNavegacaoAberto) {
       document.body.style.overflow = 'hidden'
       document.documentElement.style.overflow = 'hidden'
-      document.body.style.touchAction = 'none'
     }
 
     return () => {
       document.body.style.overflow = originalBodyOverflow
       document.documentElement.style.overflow = originalHtmlOverflow
-      document.body.style.touchAction = originalBodyTouchAction
     }
   }, [menuNavegacaoAberto])
 
@@ -481,7 +518,14 @@ export default function App() {
 
     if (error) {
       setLoading(false)
-      alert(error.message)
+      if (erroEhSessaoExpirada(error)) {
+        await supabase.auth.signOut()
+        limparEstadoAutenticacao()
+        setUsuarioLogado(null)
+        mostrarAviso('Sua sessão expirou. Faça login novamente.', 'erro')
+      } else {
+        mostrarAviso(error.message, 'erro')
+      }
       return
     }
 
@@ -581,7 +625,7 @@ export default function App() {
         perfil
       })
     } catch (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -600,9 +644,9 @@ export default function App() {
           const resultado = await enviarAcessoUsuarioEmpresaService({
             usuario: { email, nome: nomeConviteUsuario }
           })
-          alert(resultado.mensagem)
+          mostrarAviso(resultado.mensagem, 'info')
         } catch (error) {
-          alert(error.message)
+          avisarErro(error)
         }
       }
     })
@@ -624,9 +668,9 @@ export default function App() {
       acao: async () => {
         try {
           const resultado = await enviarAcessoUsuarioEmpresaService({ usuario })
-          alert(resultado.mensagem)
+          mostrarAviso(resultado.mensagem, 'info')
         } catch (error) {
-          alert(error.message)
+          avisarErro(error)
         }
       }
     })
@@ -663,7 +707,7 @@ export default function App() {
         try {
           await atualizarPerfilUsuarioEmpresaService({ empresaId, usuario, perfil })
         } catch (error) {
-          alert(error.message)
+          avisarErro(error)
           return
         }
 
@@ -702,7 +746,7 @@ export default function App() {
         try {
           await removerUsuarioEmpresaService({ empresaId, usuario })
         } catch (error) {
-          alert(error.message)
+          avisarErro(error)
           return
         }
 
@@ -725,7 +769,7 @@ export default function App() {
     )
 
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -747,7 +791,7 @@ export default function App() {
     const { error } = await supabase.auth.updateUser({ password: novaSenhaUsuario })
 
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -771,7 +815,7 @@ export default function App() {
       .order('data_vencimento')
 
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -856,7 +900,7 @@ export default function App() {
       .order('created_at', { ascending: false })
 
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -927,7 +971,7 @@ export default function App() {
       .limit(1)
 
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -961,7 +1005,7 @@ export default function App() {
       .select()
 
     if (erroInsert) {
-      alert(erroInsert.message)
+      avisarErro(erroInsert)
       return
     }
 
@@ -997,11 +1041,11 @@ export default function App() {
       .order('excluido_em', { ascending: false })
 
     if (erroContas) {
-      alert(erroContas.message)
+      avisarErro(erroContas)
     }
 
     if (erroNotas) {
-      alert(erroNotas.message)
+      avisarErro(erroNotas)
     }
 
     setContasLixeira(contasExcluidas || [])
@@ -1018,7 +1062,7 @@ export default function App() {
       .order('nome')
 
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -1164,9 +1208,9 @@ export default function App() {
     setContaEmail(conta.enviar_email ?? false)
     setContaPush(conta.enviar_push ?? false)
     setContaDiasAviso(String(conta.dias_aviso ?? diasAvisoPadrao ?? 1))
-    setContaRecorrente(false)
-    setTipoRecorrencia('mensal')
-    setDiaVencimentoRecorrencia(conta.data_vencimento ? String(Number(conta.data_vencimento.slice(8, 10))) : '')
+    setContaRecorrente(Boolean(conta.recorrencia_id))
+    setTipoRecorrencia(conta.frequencia || 'mensal')
+    setDiaVencimentoRecorrencia(conta.dia_vencimento_recorrencia || (conta.data_vencimento ? String(Number(conta.data_vencimento.slice(8, 10))) : ''))
     setModalConta(true)
   }
 
@@ -1258,7 +1302,14 @@ export default function App() {
     }
 
     if (error) {
-      alert(error.message)
+      if (erroEhSessaoExpirada(error)) {
+        await supabase.auth.signOut()
+        limparEstadoAutenticacao()
+        setUsuarioLogado(null)
+        mostrarAviso('Sua sessão expirou. Faça login novamente.', 'erro')
+      } else {
+        mostrarAviso(error.message, 'erro')
+      }
       return
     }
 
@@ -1287,7 +1338,7 @@ export default function App() {
       .eq('empresa_id', empresaId)
 
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -1358,7 +1409,7 @@ export default function App() {
     }
 
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -1377,7 +1428,7 @@ export default function App() {
       .eq('empresa_id', empresaId)
 
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -1394,7 +1445,7 @@ export default function App() {
       .eq('empresa_id', empresaId)
 
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -1450,7 +1501,7 @@ export default function App() {
     }
 
     if (resposta.error) {
-      alert(resposta.error.message)
+      avisarErro(resposta.error)
       return
     }
 
@@ -1490,7 +1541,7 @@ export default function App() {
       .eq('empresa_id', empresaId)
 
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -1509,7 +1560,7 @@ export default function App() {
       .eq('empresa_id', empresaId)
 
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -1525,7 +1576,7 @@ export default function App() {
       .eq('empresa_id', empresaId)
 
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -1540,7 +1591,7 @@ export default function App() {
       .eq('empresa_id', empresaId)
 
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -1566,7 +1617,7 @@ export default function App() {
       .insert([{ nome: primeiraLetraMaiuscula(novoCentro.trim()), empresa_id: empresaId }])
 
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -1957,7 +2008,7 @@ export default function App() {
           .select()
 
         if (error) {
-          alert(error.message)
+          avisarErro(error)
           return
         }
 
@@ -1982,7 +2033,7 @@ export default function App() {
 
     const { error } = await supabase.from('df_contas').insert(payload)
     if (error) {
-      alert(error.message)
+      avisarErro(error)
       return
     }
 
@@ -2094,7 +2145,7 @@ export default function App() {
 
               <input style={styles.inputModal} placeholder="Descrição" value={descricao} onChange={(e) => setDescricao(primeiraLetraMaiuscula(e.target.value))} />
               <input style={styles.inputModal} placeholder="Valor. Ex: 150,90" value={valor} onChange={(e) => setValor(e.target.value)} />
-              <input style={styles.inputModal} type="date" value={dataVencimento} onChange={(e) => setDataVencimento(e.target.value)} />
+              <input style={styles.inputModal} type="date" value={dataVencimento} onChange={(e) => setDataVencimento(limitarDataInput(e.target.value))} />
 
               <select style={styles.inputModal} value={centroCustoId} onChange={(e) => setCentroCustoId(e.target.value)}>
                 <option value="">Centro de custo</option>
@@ -2170,7 +2221,7 @@ export default function App() {
                 <option value="urgente">Urgente</option>
                 <option value="critico">Crítico</option>
               </select>
-              <input style={styles.inputModal} type="date" value={dataEventoNota} onChange={(e) => setDataEventoNota(e.target.value)} />
+              <input style={styles.inputModal} type="date" value={dataEventoNota} onChange={(e) => setDataEventoNota(limitarDataInput(e.target.value))} />
               <textarea style={styles.textareaModal} placeholder="Conteúdo..." value={conteudoNota} onChange={(e) => setConteudoNota(e.target.value)} />
               <button style={styles.btnSalvar} onClick={salvarNota}>Salvar</button>
               <button style={styles.btnCancelar} onClick={fecharNota}>Cancelar</button>
@@ -2838,7 +2889,6 @@ export default function App() {
           style={styles.menuNavegacao}
           onClick={(e) => e.stopPropagation()}
           onWheel={(e) => e.stopPropagation()}
-          onTouchMove={(e) => e.stopPropagation()}
         >
           <div style={styles.menuPerfil}>
             <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.menuPerfilIcone} />
@@ -2911,8 +2961,8 @@ export default function App() {
 
             <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
 
-            <input style={styles.input} type="date" value={dataInicial} onChange={(e) => setDataInicial(e.target.value)} />
-            <input style={styles.input} type="date" value={dataFinal} onChange={(e) => setDataFinal(e.target.value)} />
+            <input style={styles.input} type="date" value={dataInicial} onChange={(e) => setDataInicial(limitarDataInput(e.target.value))} />
+            <input style={styles.input} type="date" value={dataFinal} onChange={(e) => setDataFinal(limitarDataInput(e.target.value))} />
           </div>
         )}
       </section>
@@ -5359,18 +5409,21 @@ const styles = {
     width: 44,
     height: 44,
     borderRadius: 14,
-    border: 'none',
-    background: 'linear-gradient(135deg, #14b8a6, #0f766e)',
-    color: '#fff',
+    border: '1px solid #e5e7eb',
+    background: '#ffffff',
+    color: '#0f172a',
     fontSize: 22,
     fontWeight: 'bold',
-    boxShadow: '0 8px 18px rgba(20,184,166,0.28)'
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 6px 16px rgba(15,23,42,0.08)'
   },
   menuBackdrop: {
     position: 'fixed',
     inset: 0,
     background: 'rgba(15, 23, 42, 0.22)',
-    zIndex: 999,
+    zIndex: 4000,
     display: 'flex',
     justifyContent: 'flex-end',
     alignItems: 'flex-start',
@@ -5378,8 +5431,12 @@ const styles = {
   },
   menuNavegacao: {
     width: 'min(360px, 94vw)',
-    maxHeight: 'calc(100vh - 110px)',
+    height: 'calc(100dvh - 110px)',
+    maxHeight: 'calc(100dvh - 110px)',
     overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
+    overscrollBehavior: 'contain',
+    touchAction: 'pan-y',
     background: '#ffffff',
     border: '1px solid #d8eee9',
     borderRadius: 22,
@@ -5812,33 +5869,60 @@ const styles = {
     opacity: 0.7
   },
   btnPago: {
+    minHeight: 38,
+    minWidth: 74,
     background: '#0f766e',
     color: '#fff',
-    border: 'none',
-    padding: '6px 10px',
-    borderRadius: 8
+    border: '1px solid #0f766e',
+    padding: '8px 12px',
+    borderRadius: 10,
+    fontWeight: 800,
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   btnVoltar: {
-    background: '#6f42c1',
-    color: '#fff',
-    border: 'none',
-    padding: '6px 10px',
-    borderRadius: 8
+    minHeight: 38,
+    minWidth: 74,
+    background: '#f8fafc',
+    color: '#475569',
+    border: '1px solid #cbd5e1',
+    padding: '8px 12px',
+    borderRadius: 10,
+    fontWeight: 800,
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   btnEditar: {
-    background: '#f59e0b',
-    color: '#111',
-    border: 'none',
-    padding: '6px 10px',
-    borderRadius: 8
+    minHeight: 38,
+    minWidth: 74,
+    background: '#fef3c7',
+    color: '#92400e',
+    border: '1px solid #fcd34d',
+    padding: '8px 12px',
+    borderRadius: 10,
+    fontWeight: 800,
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   btnExcluir: {
-    background: '#e11d48',
-    color: '#fff',
-    border: 'none',
-    padding: '6px 10px',
-    borderRadius: 8,
-    cursor: 'pointer'
+    minHeight: 38,
+    minWidth: 74,
+    background: '#fff1f2',
+    color: '#e11d48',
+    border: '1px solid #fecdd3',
+    padding: '8px 12px',
+    borderRadius: 10,
+    fontWeight: 800,
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   btnSecundario: {
     background: '#f8fafc',

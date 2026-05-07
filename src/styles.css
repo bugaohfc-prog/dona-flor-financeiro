@@ -2467,3 +2467,156 @@ button.danger {
     margin-top: 3px !important;
   }
 }
+
+/* =========================================================
+   DF Gestão — HOTFIX MOBILE REAL 2026-05-07
+   Mantém desktop intacto e força o layout mobile depois dos
+   estilos antigos/inline que estavam centralizando o botão Pago.
+   ========================================================= */
+@media (max-width: 979px) {
+  body .app-frame .dashboard-open-list .dashboard-account-row,
+  body .app-page .dashboard-open-list .dashboard-account-row,
+  body .dashboard-open-accounts .dashboard-open-list .dashboard-account-row,
+  body .dashboard-open-list .dashboard-account-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    justify-content: stretch !important;
+    gap: 10px 12px !important;
+    flex-direction: initial !important;
+  }
+
+  body .app-frame .dashboard-open-list .dashboard-account-row > div:first-child,
+  body .app-page .dashboard-open-list .dashboard-account-row > div:first-child,
+  body .dashboard-open-accounts .dashboard-account-row > div:first-child {
+    grid-column: 1 / 2 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  body .app-frame .dashboard-open-list .dashboard-account-row-actions,
+  body .app-page .dashboard-open-list .dashboard-account-row-actions,
+  body .dashboard-open-accounts .dashboard-account-row-actions {
+    grid-column: 2 / 3 !important;
+    width: auto !important;
+    min-width: 108px !important;
+    display: grid !important;
+    grid-template-columns: auto auto !important;
+    grid-template-areas:
+      "valor valor"
+      "status pago" !important;
+    align-items: center !important;
+    justify-content: end !important;
+    justify-items: end !important;
+    gap: 6px 7px !important;
+    margin-left: 0 !important;
+    flex: initial !important;
+    flex-wrap: nowrap !important;
+  }
+
+  body .app-frame .dashboard-open-list .dashboard-account-value,
+  body .app-page .dashboard-open-list .dashboard-account-value,
+  body .dashboard-open-accounts .dashboard-account-value,
+  body .dashboard-account-row-actions > span:first-child {
+    grid-area: valor !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+    font-size: 16px !important;
+    font-weight: 900 !important;
+    line-height: 1.1 !important;
+  }
+
+  body .app-frame .dashboard-open-list .status-pill,
+  body .app-page .dashboard-open-list .status-pill,
+  body .dashboard-open-accounts .status-pill {
+    grid-area: status !important;
+    justify-self: end !important;
+    white-space: nowrap !important;
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    min-width: 0 !important;
+  }
+
+  body .app-frame .dashboard-open-list .dashboard-paid-button,
+  body .app-page .dashboard-open-list .dashboard-paid-button,
+  body .dashboard-open-accounts .dashboard-paid-button {
+    grid-area: pago !important;
+    justify-self: end !important;
+    align-self: center !important;
+    width: auto !important;
+    min-width: 66px !important;
+    max-width: 78px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    padding: 0 13px !important;
+    margin: 0 !important;
+    border-radius: 999px !important;
+    font-size: 13px !important;
+    line-height: 1 !important;
+  }
+
+  body .dashboard-notes-card .notes-header-clean,
+  body .notes-page-section .notes-page-header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: start !important;
+    gap: 10px !important;
+  }
+
+  body .dashboard-notes-card .notes-title-wrap,
+  body .notes-page-section .notes-page-header > div:first-child {
+    min-width: 0 !important;
+  }
+
+  body .dashboard-notes-card .notes-stats-row,
+  body .notes-page-section .notes-page-stats {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+  }
+
+  body .dashboard-notes-card .notes-stats-row::-webkit-scrollbar,
+  body .notes-page-section .notes-page-stats::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  body .dashboard-notes-card .note-stat,
+  body .notes-page-section .note-stat {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 5px 8px !important;
+    font-size: 10.5px !important;
+    line-height: 1 !important;
+  }
+}
+
+@media (max-width: 390px) {
+  body .app-frame .dashboard-open-list .dashboard-account-row,
+  body .app-page .dashboard-open-list .dashboard-account-row,
+  body .dashboard-open-accounts .dashboard-open-list .dashboard-account-row {
+    grid-template-columns: minmax(0, 1fr) 98px !important;
+  }
+
+  body .app-frame .dashboard-open-list .dashboard-account-row-actions,
+  body .app-page .dashboard-open-list .dashboard-account-row-actions,
+  body .dashboard-open-accounts .dashboard-account-row-actions {
+    min-width: 98px !important;
+    gap: 5px !important;
+  }
+
+  body .app-frame .dashboard-open-list .dashboard-paid-button,
+  body .app-page .dashboard-open-list .dashboard-paid-button,
+  body .dashboard-open-accounts .dashboard-paid-button {
+    min-width: 62px !important;
+    max-width: 70px !important;
+    padding: 0 11px !important;
+  }
+}

@@ -946,9 +946,9 @@ const styles = {
 
   grid3: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    gap: 8,
-    marginTop: 8
+    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+    gap: 16,
+    marginTop: 12
   },
 
   caixaCinza: {

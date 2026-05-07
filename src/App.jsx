@@ -221,7 +221,7 @@ export default function App() {
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
   const [mostrarContas, setMostrarContas] = useState(true)
   const [mostrarContasDashboard, setMostrarContasDashboard] = useState(true)
-  const [mostrarNotas, setMostrarNotas] = useState(true)
+  const [mostrarNotas, setMostrarNotas] = useState(() => typeof window === 'undefined' ? true : window.innerWidth >= 980)
   const [mostrarConfigNegocio, setMostrarConfigNegocio] = useState(true)
   const [mostrarConfigNotificacoes, setMostrarConfigNotificacoes] = useState(true)
   const [mostrarConfigCentros, setMostrarConfigCentros] = useState(true)
@@ -2475,7 +2475,55 @@ export default function App() {
             .mobile-fab-menu button { touch-action: manipulation !important; }
           }
 
-        `}</style>
+  
+
+        /* PARIDADE MOBILE/DESKTOP + CSS SUAVE */
+        .relatorios-page [style*="grid-template-columns: 1fr 1fr 1fr"],
+        .relatorios-page [style*="grid-template-columns: repeat(3"],
+        .relatorios-page .report-grid-fluid,
+        .summary-grid,
+        .metrics-grid,
+        .dashboard-grid-fluid {
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+        }
+        .app-frame-content > section,
+        .content-block,
+        .print-card,
+        .modal,
+        .dashboard-notes-card,
+        .dashboard-open-accounts {
+          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06) !important;
+        }
+        button.danger,
+        .btn-danger,
+        .account-actions button:last-child,
+        .notes-list-dashboard button:last-child {
+          background: #fee2e2 !important;
+          color: #ef4444 !important;
+          border: 1px solid #f87171 !important;
+        }
+        @media (max-width: 979px) {
+          button,
+          .desktop-sidebar-nav button,
+          .mobile-menu-panel button,
+          .filter-toggle-button,
+          .dashboard-see-all-link,
+          .note-toggle-small,
+          .account-actions button,
+          .export-actions button {
+            min-height: 44px !important;
+          }
+          .btnMiniExcluir,
+          [style*="padding: 4px 7px"] {
+            min-width: 44px !important;
+            min-height: 44px !important;
+          }
+          .dashboard-notes-card.mobile-collapsed-default {
+            margin-top: 10px !important;
+          }
+        }
+
+      `}</style>
       {renderTopShell()}
 
         {renderSidebar()}
@@ -2687,6 +2735,42 @@ export default function App() {
     )
   }
 
+  const menuSections = [
+    {
+      id: 'principal',
+      titulo: 'Principal',
+      items: [
+        { tela: 'dashboard', icon: '🏠', label: 'Dashboard', desc: 'Resumo financeiro' },
+        { tela: 'agenda', icon: '📅', label: 'Agenda', desc: 'Vencimentos e previsões' },
+        { tela: 'notas', icon: '📝', label: 'Bloco de Notas', desc: 'Pendências e histórico de notas' }
+      ]
+    },
+    {
+      id: 'financeiro',
+      titulo: 'Financeiro',
+      items: [
+        { tela: 'contas', icon: '💳', label: 'Contas', desc: 'Contas a pagar e filtros' }
+      ]
+    },
+    {
+      id: 'analise',
+      titulo: 'Análise',
+      items: [
+        { tela: 'relatorios', icon: '📊', label: 'Relatórios', desc: 'Análises e indicadores' }
+      ]
+    },
+    {
+      id: 'sistema',
+      titulo: 'Sistema',
+      items: [
+        { tela: 'usuarios', icon: '👥', label: 'Usuários', desc: 'Perfis, acessos e senhas' },
+        { tela: 'configuracoes', icon: '⚙️', label: 'Configurações', desc: 'Preferências da empresa' },
+        { tela: 'importar', icon: '📥', label: 'Importar CSV', desc: 'Trazer histórico do Excel' },
+        { tela: 'lixeira', icon: '🗑️', label: 'Lixeira', desc: 'Restaurar ou excluir definitivo' }
+      ]
+    }
+  ]
+
   function renderSidebar() {
     return (
       <aside className={`desktop-sidebar no-print ${sidebarCompacta ? 'compacta' : ''}`}>
@@ -2716,27 +2800,18 @@ export default function App() {
         </button>
 
         <div className="desktop-sidebar-scroll">
-          <GrupoMenu id="principal" titulo="Principal">
-            <ItemMenu tela="dashboard" icon="🏠" label="Dashboard" />
-            <ItemMenu tela="agenda" icon="📅" label="Agenda" />
-            <ItemMenu tela="notas" icon="📝" label="Bloco de Notas" />
-          </GrupoMenu>
-
-          <GrupoMenu id="financeiro" titulo="Financeiro">
-            <ItemMenu tela="contas" icon="💳" label="Contas" />
-          </GrupoMenu>
-
-
-          <GrupoMenu id="analise" titulo="Análise">
-            <ItemMenu tela="relatorios" icon="📊" label="Relatórios" />
-          </GrupoMenu>
-
-          <GrupoMenu id="sistema" titulo="Sistema">
-            <ItemMenu tela="usuarios" icon="👥" label="Usuários" onClick={() => navegarPara('usuarios')} />
-            <ItemMenu tela="configuracoes" icon="⚙️" label="Configurações" />
-            <ItemMenu tela="importar" icon="📥" label="Importar CSV" />
-            <ItemMenu tela="lixeira" icon="🗑️" label="Lixeira" />
-          </GrupoMenu>
+          {menuSections.map((grupo) => (
+            <GrupoMenu key={grupo.id} id={grupo.id} titulo={grupo.titulo}>
+              {grupo.items.map((navItem) => (
+                <ItemMenu
+                  key={navItem.tela}
+                  tela={navItem.tela}
+                  icon={navItem.icon}
+                  label={navItem.label}
+                />
+              ))}
+            </GrupoMenu>
+          ))}
         </div>
 
         <div className="desktop-sidebar-spacer" />
@@ -2770,32 +2845,17 @@ export default function App() {
             <div><strong>{nomeUsuario()}</strong><small>{normalizarPerfil(perfilUsuario || 'usuário')}</small></div>
           </div>
 
-          <details className="mobile-menu-group" open>
-            <summary>Principal</summary>
-            {item('🏠', 'Dashboard', 'Resumo financeiro', () => navegarPara('dashboard'))}
-            {item('📅', 'Agenda', 'Vencimentos e previsões', () => navegarPara('agenda'))}
-            {item('📝', 'Bloco de Notas', 'Pendências e histórico de notas', () => navegarPara('notas'))}
-          </details>
-
-          <details className="mobile-menu-group">
-            <summary>Financeiro</summary>
-            {item('💳', 'Contas', 'Contas a pagar e filtros', () => navegarPara('contas'))}
-          </details>
-
-
-          <details className="mobile-menu-group">
-            <summary>Análise</summary>
-            {item('📊', 'Relatórios PRO+', 'Análises e indicadores', () => navegarPara('relatorios'))}
-          </details>
-
-          <details className="mobile-menu-group">
-            <summary>Sistema</summary>
-            {item('👥', 'Gestão de usuários', 'Perfis, acessos e senhas', () => navegarPara('usuarios'))}
-            {item('⚙️', 'Configurações', 'Preferências da empresa', () => navegarPara('configuracoes'))}
-            {item('📥', 'Importar CSV', 'Trazer histórico do Excel', () => navegarPara('importar'))}
-            {item('🗑️', 'Lixeira', 'Restaurar ou excluir definitivo', () => navegarPara('lixeira'))}
-            <button style={styles.menuSairItem} onClick={sairDoSistema}><span>🚪</span><div><strong>Sair</strong><small>Encerrar sessão</small></div></button>
-          </details>
+          {menuSections.map((grupo, index) => (
+            <details className="mobile-menu-group" key={grupo.id} open={index === 0}>
+              <summary>{grupo.titulo}</summary>
+              {grupo.items.map((navItem) => (
+                item(navItem.icon, navItem.label, navItem.desc, () => navegarPara(navItem.tela))
+              ))}
+              {grupo.id === 'sistema' && (
+                <button style={styles.menuSairItem} onClick={sairDoSistema}><span>🚪</span><div><strong>Sair</strong><small>Encerrar sessão</small></div></button>
+              )}
+            </details>
+          ))}
         </div>
       </div>
     )
@@ -5445,8 +5505,8 @@ const styles = {
     fontWeight: 'bold'
   },
   btnSair: {
-    background: '#dc3545',
-    color: '#fff',
+    background: '#fee2e2',
+    color: '#ef4444',
     border: 'none',
     padding: '8px 12px',
     borderRadius: 8,
@@ -5989,11 +6049,11 @@ const styles = {
     fontSize: 13
   },
   btnMiniExcluir: {
-    background: '#dc3545',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 6,
-    padding: '4px 7px',
+    background: '#fee2e2',
+    color: '#ef4444',
+    border: '1px solid #f87171',
+    borderRadius: 999,
+    padding: '8px 10px',
     fontSize: 11
   },
   notasHeaderNovo: {

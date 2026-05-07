@@ -1799,3 +1799,71 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
     justify-content: flex-start;
   }
 }
+
+/* PARIDADE MOBILE/DESKTOP + CSS SUAVE */
+:root {
+  --df-shadow-soft: 0 10px 24px rgba(15, 23, 42, 0.06);
+  --df-shadow-modal: 0 18px 42px rgba(15, 23, 42, 0.08);
+  --df-danger-bg: #fee2e2;
+  --df-danger-text: #ef4444;
+  --df-danger-border: #f87171;
+}
+
+button.danger,
+.btn-danger,
+.account-actions button:last-child,
+.notes-list-dashboard button:last-child,
+.users-page-section button[title*="Remover"] {
+  background: var(--df-danger-bg) !important;
+  color: var(--df-danger-text) !important;
+  border: 1px solid var(--df-danger-border) !important;
+}
+
+.modal,
+.loginCard,
+.card,
+.alertCard,
+.print-card,
+.content-block,
+.dashboard-notes-card,
+.dashboard-open-accounts,
+.app-frame-content > section {
+  box-shadow: var(--df-shadow-soft) !important;
+}
+
+.relatorios-page [style*="grid-template-columns: 1fr 1fr 1fr"],
+.relatorios-page [style*="grid-template-columns: repeat(3"],
+.reportMetrics,
+.grid3,
+.miniGrid,
+.summary-grid,
+.metrics,
+.metrics-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+}
+
+@media (max-width: 979px) {
+  button,
+  .mobile-menu-panel button,
+  .filter-toggle-button,
+  .dashboard-see-all-link,
+  .note-toggle-small,
+  .account-actions button,
+  .export-actions button,
+  .notes-page-section button,
+  .users-page-section button {
+    min-height: 44px !important;
+  }
+
+  .dashboard-notes-card {
+    order: 3;
+  }
+
+  .relatorios-page [style*="grid-template-columns"],
+  .summary-grid,
+  .metrics,
+  .miniGrid,
+  .reportMetrics {
+    grid-template-columns: 1fr !important;
+  }
+}

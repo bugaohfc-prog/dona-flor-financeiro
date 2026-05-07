@@ -1,24 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { money as formatarValor, dateBR as formatarData } from '../utils/format'
 
 export default function Relatorios({ voltar }) {
   // =========================
   // BLOCO 0 — UTILITÁRIOS
   // =========================
-  function formatarValor(valor) {
-    return Number(valor || 0).toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    })
-  }
-
   function formatarPercentual(valor) {
     return `${Number(valor || 0).toFixed(1)}%`
-  }
-
-  function formatarData(data) {
-    if (!data) return '-'
-    return new Date(data + 'T00:00:00').toLocaleDateString('pt-BR')
   }
 
   function estaVencida(data, status) {

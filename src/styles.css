@@ -1930,3 +1930,118 @@ button.danger {
     min-height: 44px !important;
   }
 }
+
+/* =========================================================
+   Marco desktop — sidebar e usuários sem impacto no mobile
+   ========================================================= */
+@media (min-width: 980px) {
+  .mobile-menu-trigger {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .desktop-sidebar {
+    align-items: stretch !important;
+  }
+
+  .desktop-sidebar-brand,
+  .sidebar-user-clean,
+  .desktop-sidebar-nav button,
+  .sidebar-group-toggle,
+  .sidebar-collapse-btn {
+    box-sizing: border-box !important;
+  }
+
+  .desktop-sidebar-brand {
+    min-height: 62px !important;
+  }
+
+  .desktop-sidebar-nav button {
+    display: grid !important;
+    grid-template-columns: 24px minmax(0, 1fr) !important;
+    align-items: center !important;
+    column-gap: 10px !important;
+    line-height: 1.15 !important;
+  }
+
+  .desktop-sidebar-nav .menu-icon {
+    width: 24px !important;
+    min-width: 24px !important;
+    height: 24px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    font-size: 17px !important;
+  }
+
+  .desktop-sidebar-nav .menu-text,
+  .desktop-sidebar-nav button > span:not(.menu-icon) {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .sidebar-group-toggle strong {
+    width: 20px !important;
+    height: 20px !important;
+    border-radius: 999px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(255,255,255,.12) !important;
+    color: #ffffff !important;
+    line-height: 1 !important;
+  }
+
+  .sidebar-collapse-btn {
+    margin: 0 !important;
+    min-height: 38px !important;
+  }
+
+  .desktop-sidebar.compacta .desktop-sidebar-nav button {
+    display: flex !important;
+  }
+
+  .desktop-sidebar.compacta .sidebar-group-toggle strong,
+  .desktop-sidebar.compacta .sidebar-collapse-btn small {
+    display: none !important;
+  }
+
+  .users-page-section {
+    gap: 18px !important;
+    border: 1px solid rgba(15, 118, 110, .08) !important;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, .06) !important;
+  }
+
+  .users-form-card,
+  .users-add-card,
+  .user-card,
+  .users-permission-guide {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .045) !important;
+  }
+
+  .users-permission-guide {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .users-permission-guide span {
+    padding: 10px 12px !important;
+    border-radius: 14px !important;
+    background: #f8fafc !important;
+  }
+
+  .user-card {
+    grid-template-columns: minmax(0, 1fr) 160px auto !important;
+    padding: 12px 14px !important;
+  }
+
+  .user-actions button {
+    min-height: 34px !important;
+    padding: 7px 11px !important;
+  }
+}

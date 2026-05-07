@@ -194,6 +194,7 @@ export default function App() {
   const [contaRecorrente, setContaRecorrente] = useState(false)
   const [tipoRecorrencia, setTipoRecorrencia] = useState('mensal')
   const [diaVencimentoRecorrencia, setDiaVencimentoRecorrencia] = useState('')
+  const [recorrenciaContaId, setRecorrenciaContaId] = useState(null)
 
   // =========================
   // BLOCO 2 — STATES NOTAS
@@ -243,6 +244,7 @@ export default function App() {
   const [mostrarConfigNegocio, setMostrarConfigNegocio] = useState(true)
   const [mostrarConfigNotificacoes, setMostrarConfigNotificacoes] = useState(true)
   const [mostrarConfigCentros, setMostrarConfigCentros] = useState(true)
+  const [mostrarConfigRecorrencias, setMostrarConfigRecorrencias] = useState(true)
   const [configuracoes, setConfiguracoes] = useState(null)
   const [notificacoesAtivas, setNotificacoesAtivas] = useState(true)
   const [configWhatsapp, setConfigWhatsapp] = useState(true)
@@ -1194,10 +1196,14 @@ export default function App() {
     setContaRecorrente(false)
     setTipoRecorrencia('mensal')
     setDiaVencimentoRecorrencia('')
+    setRecorrenciaContaId(null)
     setModalConta(true)
   }
 
-  function abrirEdicaoConta(conta) {
+  async function abrirEdicaoConta(conta) {
+    const dataBanco = formatarDataParaBanco(conta.data_vencimento || '')
+    const diaPadrao = dataBanco ? String(Number(String(dataBanco).slice(8, 10))) : ''
+
     setEditandoContaId(conta.id)
     setDescricao(conta.descricao || '')
     setValor(conta.valor || '')
@@ -1209,9 +1215,24 @@ export default function App() {
     setContaPush(conta.enviar_push ?? false)
     setContaDiasAviso(String(conta.dias_aviso ?? diasAvisoPadrao ?? 1))
     setContaRecorrente(Boolean(conta.recorrencia_id))
-    setTipoRecorrencia(conta.frequencia || 'mensal')
-    setDiaVencimentoRecorrencia(conta.dia_vencimento_recorrencia || (conta.data_vencimento ? String(Number(conta.data_vencimento.slice(8, 10))) : ''))
+    setRecorrenciaContaId(conta.recorrencia_id || null)
+    setTipoRecorrencia('mensal')
+    setDiaVencimentoRecorrencia(diaPadrao)
     setModalConta(true)
+
+    if (conta.recorrencia_id) {
+      const { data, error } = await supabase
+        .from('df_contas_recorrentes')
+        .select('*')
+        .eq('id', conta.recorrencia_id)
+        .eq('empresa_id', empresaId)
+        .maybeSingle()
+
+      if (!error && data) {
+        setTipoRecorrencia(data.frequencia || data.tipo_recorrencia || 'mensal')
+        setDiaVencimentoRecorrencia(String(data.dia_vencimento || diaPadrao || ''))
+      }
+    }
   }
 
   function fecharConta() {
@@ -1229,6 +1250,7 @@ export default function App() {
     setContaRecorrente(false)
     setTipoRecorrencia('mensal')
     setDiaVencimentoRecorrencia('')
+    setRecorrenciaContaId(null)
   }
 
   async function salvarConta() {
@@ -1261,6 +1283,61 @@ export default function App() {
     if (editandoContaId) {
       const resposta = await supabase.from('df_contas').update(payload).eq('id', editandoContaId).eq('empresa_id', empresaId)
       error = resposta.error
+
+      if (!error) {
+        const dataBanco = formatarDataParaBanco(dataVencimento)
+        const diaRecorrencia = Number(diaVencimentoRecorrencia || String(dataBanco).slice(8, 10))
+
+        if (contaRecorrente) {
+          if (!diaRecorrencia || diaRecorrencia < 1 || diaRecorrencia > 31) {
+            mostrarAviso('Informe um dia válido para a recorrência.', 'erro')
+            return
+          }
+
+          const payloadRecorrencia = {
+            empresa_id: empresaId,
+            descricao: primeiraLetraMaiuscula(descricao.trim()),
+            valor: converterValor(valor),
+            centro_custo_id: centroCustoId || null,
+            observacao: observacaoConta.trim() || null,
+            frequencia: tipoRecorrencia,
+            dia_vencimento: diaRecorrencia,
+            data_inicio: dataBanco,
+            ativo: true
+          }
+
+          if (recorrenciaContaId) {
+            const { error: erroRecorrencia } = await supabase
+              .from('df_contas_recorrentes')
+              .update(payloadRecorrencia)
+              .eq('id', recorrenciaContaId)
+              .eq('empresa_id', empresaId)
+
+            if (erroRecorrencia) {
+              mostrarAviso('A conta foi atualizada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
+              return
+            }
+          } else {
+            const { data: dataRecorrencia, error: erroRecorrencia } = await supabase
+              .from('df_contas_recorrentes')
+              .insert([payloadRecorrencia])
+              .select()
+
+            if (erroRecorrencia) {
+              mostrarAviso('A conta foi atualizada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
+              return
+            }
+
+            const recorrenciaCriada = Array.isArray(dataRecorrencia) ? dataRecorrencia[0] : dataRecorrencia
+            if (recorrenciaCriada?.id) {
+              await supabase.from('df_contas').update({ recorrencia_id: recorrenciaCriada.id }).eq('id', editandoContaId).eq('empresa_id', empresaId)
+            }
+          }
+        } else if (recorrenciaContaId) {
+          await supabase.from('df_contas_recorrentes').update({ ativo: false }).eq('id', recorrenciaContaId).eq('empresa_id', empresaId)
+          await supabase.from('df_contas').update({ recorrencia_id: null }).eq('id', editandoContaId).eq('empresa_id', empresaId)
+        }
+      }
     } else {
       const resposta = await supabase.from('df_contas').insert([{ ...payload, status: 'pendente', excluido: false }]).select()
       error = resposta.error
@@ -2161,8 +2238,7 @@ export default function App() {
                 onChange={(e) => setObservacaoConta(primeiraLetraMaiuscula(e.target.value))}
               />
 
-              {!editandoContaId && (
-                <div className="recurrence-box" style={styles.blocoRecorrenciaConta}>
+              <div className="recurrence-box" style={styles.blocoRecorrenciaConta}>
                   <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
                     <span>
                       <strong>🔁 Conta recorrente</strong>
@@ -2203,7 +2279,6 @@ export default function App() {
                     </div>
                   )}
                 </div>
-              )}
 
               <button style={styles.btnSalvar} onClick={salvarConta}>Salvar</button>
               <button style={styles.btnCancelar} onClick={fecharConta}>Cancelar</button>
@@ -3518,6 +3593,28 @@ export default function App() {
                 value={emailPadrao}
                 onChange={(e) => setEmailPadrao(e.target.value)}
               />
+            </>
+          )}
+        </section>
+
+
+        <section style={styles.cardConfiguracao}>
+          <HeaderExpansivel
+            titulo="🔁 Recorrências"
+            aberto={mostrarConfigRecorrencias}
+            onClick={() => setMostrarConfigRecorrencias(!mostrarConfigRecorrencias)}
+          />
+
+          {mostrarConfigRecorrencias && (
+            <>
+              <p style={styles.textoNota}>
+                As recorrências são cadastradas e editadas dentro de Nova Conta ou Editar Conta, mantendo o mesmo padrão de campos da conta original.
+              </p>
+
+              <div style={styles.configResumo}>
+                <strong>Padrão atual</strong>
+                <span>Frequência mensal • dia de vencimento configurável • geração automática no mês vigente quando ainda não existir.</span>
+              </div>
             </>
           )}
         </section>

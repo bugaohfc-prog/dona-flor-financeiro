@@ -2166,3 +2166,36 @@ button.danger {
     display: none !important;
   }
 }
+
+
+
+/* =========================================================
+   DF Gestão — Hotfix limpo mobile: notas + dashboard
+   ========================================================= */
+.dashboard-paid-button {
+  min-width: 104px !important;
+  min-height: 42px !important;
+  padding: 9px 18px !important;
+  border-radius: 999px !important;
+  background: #0f766e !important;
+  border: 1px solid #0f766e !important;
+  color: #ffffff !important;
+  font-size: 15px !important;
+  font-weight: 850 !important;
+  box-shadow: 0 8px 18px rgba(15, 118, 110, .16) !important;
+}
+
+.note-stat {
+  border-radius: 999px !important;
+  padding: 5px 10px !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+}
+
+@media (max-width: 768px) {
+  .dashboard-paid-button {
+    min-width: 132px !important;
+    min-height: 44px !important;
+    padding: 10px 22px !important;
+  }
+}

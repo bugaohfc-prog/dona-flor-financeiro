@@ -447,13 +447,20 @@ export default function App() {
   }, [confirmacao.aberto, modalConta, modalNota, modalCentro, menuAberto, menuNavegacaoAberto])
 
   useEffect(() => {
-    const originalOverflow = document.body.style.overflow
+    const originalBodyOverflow = document.body.style.overflow
+    const originalHtmlOverflow = document.documentElement.style.overflow
+    const originalBodyTouchAction = document.body.style.touchAction
+
     if (menuNavegacaoAberto) {
       document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
+      document.body.style.touchAction = 'none'
     }
 
     return () => {
-      document.body.style.overflow = originalOverflow
+      document.body.style.overflow = originalBodyOverflow
+      document.documentElement.style.overflow = originalHtmlOverflow
+      document.body.style.touchAction = originalBodyTouchAction
     }
   }, [menuNavegacaoAberto])
 
@@ -1661,6 +1668,7 @@ export default function App() {
             .box span { display: block; font-size: 12px; color: #64748b; font-weight: 700; }
             .box strong { display: block; margin-top: 4px; font-size: 17px; }
             .table-wrap { width: 100%; overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 16px; }
+            footer { margin-top: 18px; padding-top: 12px; border-top: 1px solid #e5e7eb; color: #64748b; font-size: 12px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
             table { width: 100%; border-collapse: collapse; min-width: 620px; }
             th { background: #f0fdfa; color: #0f766e; text-align: left; padding: 11px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
             td { border-bottom: 1px solid #e5e7eb; padding: 11px; vertical-align: top; font-size: 13px; }
@@ -1719,6 +1727,10 @@ export default function App() {
                 </tbody>
               </table>
             </div>
+            <footer>
+              <span>Gerado pelo DF Gestão Financeira</span>
+              <span>${new Date().toLocaleString('pt-BR')}</span>
+            </footer>
           </div>
         </body>
       </html>
@@ -2191,7 +2203,7 @@ export default function App() {
     return (
       <section className="no-print top-shell top-shell-clean" style={styles.usuarioTopo}>
         <div className="top-shell-context">
-          <button className="top-shell-logo" style={styles.logoMarca} onClick={() => navegarPara('dashboard')} title="Ir para o painel">
+          <button className="top-shell-logo" style={styles.logoMarca} onClick={() => navegarPara('dashboard')} title="Ir para o dashboard">
             <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.logoImagem} />
             <span>
               <strong>{nomeEmpresa || 'Dona Flor'}</strong>
@@ -2705,7 +2717,7 @@ export default function App() {
 
         <div className="desktop-sidebar-scroll">
           <GrupoMenu id="principal" titulo="Principal">
-            <ItemMenu tela="dashboard" icon="🏠" label="Painel" />
+            <ItemMenu tela="dashboard" icon="🏠" label="Dashboard" />
             <ItemMenu tela="agenda" icon="📅" label="Agenda" />
             <ItemMenu tela="notas" icon="📝" label="Bloco de Notas" />
           </GrupoMenu>
@@ -2746,7 +2758,13 @@ export default function App() {
 
     return (
       <div className="no-print" style={styles.menuBackdrop} onClick={() => setMenuNavegacaoAberto(false)}>
-        <div className="mobile-menu-panel" style={styles.menuNavegacao} onClick={(e) => e.stopPropagation()}>
+        <div
+          className="mobile-menu-panel"
+          style={styles.menuNavegacao}
+          onClick={(e) => e.stopPropagation()}
+          onWheel={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+        >
           <div style={styles.menuPerfil}>
             <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.menuPerfilIcone} />
             <div><strong>{nomeUsuario()}</strong><small>{normalizarPerfil(perfilUsuario || 'usuário')}</small></div>
@@ -2754,7 +2772,7 @@ export default function App() {
 
           <details className="mobile-menu-group" open>
             <summary>Principal</summary>
-            {item('🏠', 'Painel', 'Resumo financeiro', () => navegarPara('dashboard'))}
+            {item('🏠', 'Dashboard', 'Resumo financeiro', () => navegarPara('dashboard'))}
             {item('📅', 'Agenda', 'Vencimentos e previsões', () => navegarPara('agenda'))}
             {item('📝', 'Bloco de Notas', 'Pendências e histórico de notas', () => navegarPara('notas'))}
           </details>
@@ -2938,7 +2956,7 @@ export default function App() {
             <p style={styles.textoNota}>Consulte, filtre, exporte e administre as contas da empresa em uma página dedicada.</p>
           </div>
           <div className="page-actions-row">
-            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Painel</button>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Dashboard</button>
           </div>
         </div>
         {renderListaContasConteudo()}
@@ -2965,7 +2983,7 @@ export default function App() {
             <p style={styles.textoNota}>Central de notas e lembretes da empresa, separada do painel financeiro para reduzir poluição visual.</p>
           </div>
           <div className="page-actions-row">
-            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Painel</button>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Dashboard</button>
           </div>
         </div>
 
@@ -4245,6 +4263,8 @@ export default function App() {
 
       {renderMobileMenu()}
 
+      {renderFabGlobal()}
+
       <style>{`
         /* ===== CORRECAO ESTRUTURAL DEFINITIVA: DASHBOARD + NOTAS ===== */
         @media (min-width: 980px) {
@@ -4891,6 +4911,119 @@ export default function App() {
           border-color: #fecaca !important;
           background: #fff1f2 !important;
           color: #be123c !important;
+        }
+
+        /* FECHAMENTO MOBILE: alinhamentos, header, chips e menu */
+        .top-shell-clean {
+          background: #ffffff !important;
+          border: 1px solid #e5e7eb !important;
+          box-shadow: 0 6px 18px rgba(15,23,42,.06) !important;
+        }
+        .top-shell-logo span {
+          display: grid !important;
+          gap: 1px !important;
+          line-height: 1.1 !important;
+        }
+        .top-shell-logo strong {
+          display: block !important;
+          white-space: normal !important;
+          font-size: 15px !important;
+        }
+        .top-shell-logo small {
+          display: block !important;
+          font-size: 12px !important;
+          color: #64748b !important;
+          font-weight: 700 !important;
+        }
+        .dashboard-open-accounts.content-block,
+        .dashboard-notes-card {
+          padding: 16px !important;
+          border-radius: 20px !important;
+          overflow: visible !important;
+        }
+        .dashboard-section-header-accounts,
+        .notes-header-clean {
+          display: flex !important;
+          align-items: flex-start !important;
+          justify-content: space-between !important;
+          gap: 12px !important;
+        }
+        .dashboard-section-title-wrap,
+        .notes-title-wrap {
+          padding-top: 2px !important;
+          min-width: 0 !important;
+          flex: 1 1 auto !important;
+        }
+        .dashboard-section-title-wrap strong,
+        .notes-title {
+          display: block !important;
+          line-height: 1.25 !important;
+          margin-bottom: 4px !important;
+        }
+        .dashboard-section-actions,
+        .notes-header-actions {
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: flex-end !important;
+          gap: 8px !important;
+          margin-top: 0 !important;
+        }
+        .dashboard-see-all-link,
+        .note-toggle-small {
+          height: 36px !important;
+          min-height: 36px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+        .note-toggle-small {
+          width: 36px !important;
+          min-width: 36px !important;
+          padding: 0 !important;
+          font-size: 18px !important;
+          line-height: 1 !important;
+        }
+        .notes-stats-row,
+        .notes-page-stats {
+          display: flex !important;
+          flex-wrap: wrap !important;
+          gap: 6px !important;
+        }
+        .note-stat {
+          background: #f8fafc !important;
+          border: 1px solid #e5e7eb !important;
+          color: #475569 !important;
+          font-size: 11px !important;
+          font-weight: 800 !important;
+          padding: 4px 8px !important;
+          border-radius: 999px !important;
+        }
+        .note-stat-critico { border-color: #fecaca !important; color: #991b1b !important; background: #fff7f7 !important; }
+        .note-stat-urgente { border-color: #fde68a !important; color: #92400e !important; background: #fffbeb !important; }
+        .mobile-menu-trigger {
+          background: #ffffff !important;
+          color: #0f766e !important;
+          border: 1px solid #d8eee9 !important;
+          box-shadow: 0 6px 16px rgba(15,23,42,.08) !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          padding: 0 !important;
+          line-height: 1 !important;
+        }
+        .mobile-menu-panel {
+          max-height: calc(100dvh - 104px) !important;
+          overflow-y: auto !important;
+          overscroll-behavior: contain !important;
+          -webkit-overflow-scrolling: touch !important;
+          touch-action: auto !important;
+        }
+        .mobile-menu-panel * { touch-action: auto !important; }
+        @media (max-width: 979px) {
+          .app-frame-content,
+          .app-page { padding-bottom: 92px !important; }
+          .dashboard-section-header-accounts,
+          .notes-header-clean { align-items: flex-start !important; }
         }
       `}</style>
 
@@ -5892,16 +6025,16 @@ const styles = {
     boxShadow: '0 8px 20px rgba(15,23,42,0.06)'
   },
   cardNotaNormal: {
-    background: '#dcfce7',
-    borderColor: '#86efac'
+    background: '#f8fafc',
+    borderColor: '#e5e7eb'
   },
   cardNotaUrgente: {
-    background: '#fef3c7',
-    borderColor: '#facc15'
+    background: '#fffbeb',
+    borderColor: '#fde68a'
   },
   cardNotaCritico: {
-    background: '#fee2e2',
-    borderColor: '#f87171'
+    background: '#fff7f7',
+    borderColor: '#fecaca'
   },
   badgePrioridade: {
     borderRadius: 999,
@@ -5910,16 +6043,18 @@ const styles = {
     fontWeight: '900'
   },
   badgeNormal: {
-    background: '#bbf7d0',
-    color: '#166534'
+    background: '#f1f5f9',
+    color: '#475569'
   },
   badgeUrgente: {
-    background: '#fde68a',
-    color: '#92400e'
+    background: '#fffbeb',
+    color: '#92400e',
+    border: '1px solid #fde68a'
   },
   badgeCritico: {
-    background: '#fecaca',
-    color: '#991b1b'
+    background: '#fff7f7',
+    color: '#991b1b',
+    border: '1px solid #fecaca'
   }
 
 }

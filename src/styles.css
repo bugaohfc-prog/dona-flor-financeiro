@@ -2199,3 +2199,83 @@ button.danger {
     padding: 10px 22px !important;
   }
 }
+
+
+
+/* ===== FINALIZAÇÃO UX/UI ===== */
+
+.notes-stats-row,
+.notes-page-stats{
+  display:flex !important;
+  flex-wrap:nowrap !important;
+  gap:8px !important;
+  overflow-x:auto !important;
+}
+
+.note-stat,
+.notes-page-stats .badge{
+  width:auto !important;
+  min-width:auto !important;
+  padding:6px 12px !important;
+  border-radius:999px !important;
+  white-space:nowrap !important;
+}
+
+.dashboard-paid-button{
+  min-width:110px !important;
+  width:auto !important;
+}
+
+.dashboard-account-row-actions{
+  justify-items:end !important;
+  align-items:end !important;
+}
+
+@media(max-width:768px){
+  .dashboard-account-row-actions{
+    display:flex !important;
+    justify-content:flex-end !important;
+    width:100% !important;
+  }
+
+  .dashboard-paid-button{
+    margin-left:auto !important;
+    margin-right:0 !important;
+  }
+}
+
+/* notas desktop mais suaves */
+.notes-panel .noteCard,
+.notes-page-grid > div{
+  box-shadow:0 10px 26px rgba(15,23,42,.05) !important;
+}
+
+.notes-panel .critico,
+.noteCard .critico{
+  background:#fff1f2 !important;
+  color:#9f1239 !important;
+}
+
+.notes-panel .urgente,
+.noteCard .urgente{
+  background:#fffbeb !important;
+  color:#92400e !important;
+}
+
+/* compactação usuarios */
+.user-config-grid,
+.account-security-grid{
+  gap:16px !important;
+}
+
+.user-config-grid .card,
+.account-security-grid .card{
+  padding:18px !important;
+  min-height:auto !important;
+}
+
+.user-config-grid input,
+.account-security-grid input{
+  padding:10px 12px !important;
+}
+

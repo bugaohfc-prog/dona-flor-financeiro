@@ -2343,21 +2343,13 @@ export default function App() {
 
   function renderTopShell() {
     return (
-      <section className="no-print top-shell top-shell-clean" style={styles.usuarioTopo}>
-        <div className="top-shell-context">
-          <button className="top-shell-logo" style={styles.logoMarca} onClick={() => navegarPara('dashboard')} title="Ir para o dashboard">
-            <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.logoImagem} />
-            <span>
-              <strong>{nomeEmpresa || 'Dona Flor'}</strong>
-              <small>Gestão Financeira</small>
-            </span>
-          </button>
-        </div>
-
-        <div className="top-shell-actions" style={styles.usuarioAcoes}>
-          <button className="mobile-menu-trigger" style={styles.btnMenuTopo} onClick={() => setMenuNavegacaoAberto(!menuNavegacaoAberto)}>☰</button>
-        </div>
-      </section>
+      <Topbar
+        styles={styles}
+        nomeEmpresa={nomeEmpresa}
+        navegarPara={navegarPara}
+        menuNavegacaoAberto={menuNavegacaoAberto}
+        setMenuNavegacaoAberto={setMenuNavegacaoAberto}
+      />
     )
   }
 
@@ -3376,97 +3368,35 @@ export default function App() {
 
   function renderSidebar() {
     return (
-      <aside className={`desktop-sidebar no-print ${sidebarCompacta ? 'compacta' : ''}`}>
-        <div className="desktop-sidebar-brand sidebar-brand-clean" title="DF Gestão Financeira">
-          <img src="/icon-192.png" alt="DF Gestão Financeira" />
-          {!sidebarCompacta && (
-            <div>
-              <strong>DF Gestão</strong>
-              <small>Painel financeiro</small>
-            </div>
-          )}
-        </div>
-
-        <div className="desktop-sidebar-user sidebar-user-clean" title={`${nomeUsuario()} • ${normalizarPerfil(perfilUsuario || 'usuário')}`}>
-          <span className="sidebar-user-avatar">{String(nomeUsuario() || 'U').slice(0, 1).toUpperCase()}</span>
-          {!sidebarCompacta && (
-            <div>
-              <strong>{nomeUsuario()}</strong>
-              <small>{normalizarPerfil(perfilUsuario || 'usuário')}</small>
-            </div>
-          )}
-        </div>
-
-        <button className="sidebar-collapse-btn sidebar-collapse-icon" onClick={() => setSidebarCompacta(!sidebarCompacta)} title={sidebarCompacta ? 'Expandir menu' : 'Recolher menu'} aria-label={sidebarCompacta ? 'Expandir menu' : 'Recolher menu'}>
-          <span className="sidebar-collapse-arrow">{sidebarCompacta ? '→' : '←'}</span>
-        </button>
-
-        <div className="desktop-sidebar-scroll">
-          {menuSections.map((grupo) => (
-            <GrupoMenu key={grupo.id} id={grupo.id} titulo={grupo.titulo}>
-              {grupo.items.map((navItem) => (
-                <ItemMenu
-                  key={navItem.tela}
-                  tela={navItem.tela}
-                  icon={navItem.icon}
-                  label={navItem.label}
-                />
-              ))}
-            </GrupoMenu>
-          ))}
-        </div>
-
-        <div className="desktop-sidebar-spacer" />
-        <nav className="desktop-sidebar-nav sidebar-exit">
-          <button onClick={sairDoSistema} title="Sair"><span className="menu-icon">🚪</span>{!sidebarCompacta && <span>Sair</span>}</button>
-        </nav>
-      </aside>
+      <Sidebar
+        sidebarCompacta={sidebarCompacta}
+        setSidebarCompacta={setSidebarCompacta}
+        nomeUsuario={nomeUsuario}
+        normalizarPerfil={normalizarPerfil}
+        perfilUsuario={perfilUsuario}
+        menuSections={menuSections}
+        telaAtual={telaAtual}
+        navegarPara={navegarPara}
+        gruposMenu={gruposMenu}
+        toggleGrupoMenu={toggleGrupoMenu}
+        sairDoSistema={sairDoSistema}
+      />
     )
   }
 
   function renderMobileMenu() {
-    if (!menuNavegacaoAberto) return null
-    const item = (icon, titulo, desc, acao) => (
-      <button type="button" style={styles.menuNavItem} onClick={acao}>
-        <span>{icon}</span>
-        <div><strong>{titulo}</strong><small>{desc}</small></div>
-      </button>
-    )
-
     return (
-      <div
-        className="no-print mobile-menu-backdrop"
-        style={styles.menuBackdrop}
-        onClick={() => setMenuNavegacaoAberto(false)}
-        onTouchMove={(e) => e.preventDefault()}
-      >
-        <div
-          className="mobile-menu-panel"
-          style={styles.menuNavegacao}
-          role="dialog"
-          aria-label="Menu de navegação"
-          onClick={(e) => e.stopPropagation()}
-          onWheel={(e) => e.stopPropagation()}
-          onTouchMove={(e) => e.stopPropagation()}
-        >
-          <div style={styles.menuPerfil}>
-            <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.menuPerfilIcone} />
-            <div><strong>{nomeUsuario()}</strong><small>{normalizarPerfil(perfilUsuario || 'usuário')}</small></div>
-          </div>
-
-          {menuSections.map((grupo, index) => (
-            <details className="mobile-menu-group" key={grupo.id} open={index === 0}>
-              <summary>{grupo.titulo}</summary>
-              {grupo.items.map((navItem) => (
-                item(navItem.icon, navItem.label, navItem.desc, () => navegarPara(navItem.tela))
-              ))}
-              {grupo.id === 'sistema' && (
-                <button type="button" style={styles.menuSairItem} onClick={sairDoSistema}><span>🚪</span><div><strong>Sair</strong><small>Encerrar sessão</small></div></button>
-              )}
-            </details>
-          ))}
-        </div>
-      </div>
+      <MobileMenu
+        visible={menuNavegacaoAberto}
+        styles={styles}
+        setMenuNavegacaoAberto={setMenuNavegacaoAberto}
+        nomeUsuario={nomeUsuario}
+        normalizarPerfil={normalizarPerfil}
+        perfilUsuario={perfilUsuario}
+        menuSections={menuSections}
+        navegarPara={navegarPara}
+        sairDoSistema={sairDoSistema}
+      />
     )
   }
 

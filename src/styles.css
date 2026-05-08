@@ -2827,3 +2827,29 @@ body .note-card-action::before{
     width:4px !important;
   }
 }
+
+
+/* ===== DONA FLOR — HOTFIX TOPBAR USUÁRIO DESKTOP ===== */
+.topbar-user{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  justify-content:center;
+  gap:2px;
+  color:#0f172a;
+  font-weight:900;
+  line-height:1.15;
+}
+.topbar-user span{
+  font-size:13px;
+}
+.topbar-user small{
+  font-size:11px;
+  color:#64748b;
+  font-weight:800;
+}
+@media (max-width: 979px){
+  .topbar-user{
+    display:none !important;
+  }
+}

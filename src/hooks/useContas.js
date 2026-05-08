@@ -253,7 +253,8 @@ export function useContas() {
       erroEhSessaoExpirada,
       limparEstadoAutenticacao,
       setUsuarioLogado,
-      buscarContas
+      buscarContas,
+      fecharConta
     } = contexto
 
     if (!empresaId) {
@@ -332,7 +333,16 @@ export function useContas() {
 
             const recorrenciaCriada = Array.isArray(dataRecorrencia) ? dataRecorrencia[0] : dataRecorrencia
             if (recorrenciaCriada?.id) {
-              await supabase.from('df_contas').update({ recorrencia_id: recorrenciaCriada.id }).eq('id', editandoContaId).eq('empresa_id', empresaId)
+              const { error: erroVinculoRecorrencia } = await supabase
+                .from('df_contas')
+                .update({ recorrencia_id: recorrenciaCriada.id })
+                .eq('id', editandoContaId)
+                .eq('empresa_id', empresaId)
+
+              if (erroVinculoRecorrencia) {
+                mostrarAviso('A recorrência foi criada, mas não foi vinculada à conta: ' + erroVinculoRecorrencia.message, 'erro')
+                return
+              }
             }
           }
         } else if (recorrenciaContaId) {
@@ -374,7 +384,16 @@ export function useContas() {
           const recorrenciaCriada = Array.isArray(dataRecorrencia) ? dataRecorrencia[0] : dataRecorrencia
           const contaCriada = Array.isArray(resposta.data) ? resposta.data[0] : resposta.data
           if (recorrenciaCriada?.id && contaCriada?.id) {
-            await supabase.from('df_contas').update({ recorrencia_id: recorrenciaCriada.id }).eq('id', contaCriada.id).eq('empresa_id', empresaId)
+            const { error: erroVinculoRecorrencia } = await supabase
+              .from('df_contas')
+              .update({ recorrencia_id: recorrenciaCriada.id })
+              .eq('id', contaCriada.id)
+              .eq('empresa_id', empresaId)
+
+            if (erroVinculoRecorrencia) {
+              mostrarAviso('A recorrência foi criada, mas não foi vinculada à conta: ' + erroVinculoRecorrencia.message, 'erro')
+              return
+            }
           }
         }
       }

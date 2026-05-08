@@ -1207,7 +1207,8 @@ export default function App() {
       erroEhSessaoExpirada,
       limparEstadoAutenticacao,
       setUsuarioLogado,
-      buscarContas
+      buscarContas,
+      fecharConta
     })
   }
 

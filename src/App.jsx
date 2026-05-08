@@ -15,6 +15,10 @@ import Topbar from './components/layout/Topbar.jsx'
 import Sidebar from './components/layout/Sidebar.jsx'
 import MobileMenu from './components/layout/MobileMenu.jsx'
 import DashboardHome from './components/dashboard/DashboardHome.jsx'
+import AccountModal from './components/modals/AccountModal.jsx'
+import NoteModal from './components/modals/NoteModal.jsx'
+import CostCenterModal from './components/modals/CostCenterModal.jsx'
+import ConfirmModal from './components/modals/ConfirmModal.jsx'
 import './styles.css'
 
 const SESSAO_STORAGE_KEY = 'df_sessao_segura'
@@ -2236,109 +2240,76 @@ export default function App() {
     return (
       <>
         {modalConta && (
-          <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
-            <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-              <h3>{editandoContaId ? 'Editar Conta' : 'Nova Conta'}</h3>
-
-              <input style={styles.inputModal} placeholder="Descrição" value={descricao} onChange={(e) => setDescricao(primeiraLetraMaiuscula(e.target.value))} />
-              <input style={styles.inputModal} placeholder="Valor. Ex: 150,90" value={valor} onChange={(e) => setValor(e.target.value)} />
-              <input style={styles.inputModal} type="date" value={dataVencimento} onChange={(e) => setDataVencimento(limitarDataInput(e.target.value))} />
-
-              <select style={styles.inputModal} value={centroCustoId} onChange={(e) => setCentroCustoId(e.target.value)}>
-                <option value="">Centro de custo</option>
-                {centros.map((centro) => (
-                  <option key={centro.id} value={centro.id}>{centro.nome}</option>
-                ))}
-              </select>
-
-              <textarea
-                style={styles.textareaModal}
-                placeholder="Observação ou comentário da conta..."
-                value={observacaoConta}
-                onChange={(e) => setObservacaoConta(primeiraLetraMaiuscula(e.target.value))}
-              />
-
-              <div className="recurrence-box" style={styles.blocoRecorrenciaConta}>
-                  <label className="checkbox-row-fix" style={styles.switchLinhaCompacta}>
-                    <span>
-                      <strong>🔁 Conta recorrente</strong>
-                      <small style={styles.textoAjuda}>Ideal para aluguel, internet, sistema, mensalidades e contas fixas.</small>
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={contaRecorrente}
-                      onChange={(e) => {
-                        const marcado = e.target.checked
-                        setContaRecorrente(marcado)
-                        if (marcado && dataVencimento) {
-                          setDiaVencimentoRecorrencia(String(Number(formatarDataParaBanco(dataVencimento).slice(8, 10))))
-                        }
-                      }}
-                    />
-                  </label>
-
-                  {contaRecorrente && (
-                    <div className="recurrence-fields">
-                      <select style={styles.inputModal} value={tipoRecorrencia} onChange={(e) => setTipoRecorrencia(e.target.value)}>
-                        <option value="mensal">Mensal</option>
-                      </select>
-
-                      <input
-                        style={styles.inputModal}
-                        type="number"
-                        min="1"
-                        max="31"
-                        placeholder="Dia de vencimento mensal. Ex: 5"
-                        value={diaVencimentoRecorrencia || (dataVencimento ? String(Number(formatarDataParaBanco(dataVencimento).slice(8, 10))) : '')}
-                        onChange={(e) => setDiaVencimentoRecorrencia(e.target.value)}
-                      />
-
-                      <small style={styles.textoAjuda}>
-                        O sistema criará automaticamente essa conta no mês vigente quando ela ainda não existir.
-                      </small>
-                    </div>
-                  )}
-                </div>
-
-              <button style={styles.btnSalvar} onClick={salvarConta}>Salvar</button>
-              <button style={styles.btnCancelar} onClick={fecharConta}>Cancelar</button>
-            </div>
-          </div>
+          <AccountModal
+            styles={styles}
+            editandoContaId={editandoContaId}
+            descricao={descricao}
+            setDescricao={setDescricao}
+            valor={valor}
+            setValor={setValor}
+            dataVencimento={dataVencimento}
+            setDataVencimento={setDataVencimento}
+            centroCustoId={centroCustoId}
+            setCentroCustoId={setCentroCustoId}
+            centros={centros}
+            observacaoConta={observacaoConta}
+            setObservacaoConta={setObservacaoConta}
+            contaRecorrente={contaRecorrente}
+            setContaRecorrente={setContaRecorrente}
+            tipoRecorrencia={tipoRecorrencia}
+            setTipoRecorrencia={setTipoRecorrencia}
+            diaVencimentoRecorrencia={diaVencimentoRecorrencia}
+            setDiaVencimentoRecorrencia={setDiaVencimentoRecorrencia}
+            fecharConta={fecharConta}
+            salvarConta={salvarConta}
+            primeiraLetraMaiuscula={primeiraLetraMaiuscula}
+            limitarDataInput={limitarDataInput}
+            formatarDataParaBanco={formatarDataParaBanco}
+            fecharNota={fecharNota}
+            setModalCentro={setModalCentro}
+            setMenuAberto={setMenuAberto}
+            setMenuNavegacaoAberto={setMenuNavegacaoAberto}
+          />
         )}
 
         {modalNota && (
-          <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
-            <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-              <h3>{editandoNotaId ? 'Editar Nota' : 'Nova Nota'}</h3>
-              <input style={styles.inputModal} placeholder="Título" value={tituloNota} onChange={(e) => setTituloNota(primeiraLetraMaiuscula(e.target.value))} />
-              <select style={styles.inputModal} value={prioridadeNota} onChange={(e) => setPrioridadeNota(e.target.value)}>
-                <option value="normal">Prioridade normal</option>
-                <option value="urgente">Urgente</option>
-                <option value="critico">Crítico</option>
-              </select>
-              <input style={styles.inputModal} type="date" value={dataEventoNota} onChange={(e) => setDataEventoNota(limitarDataInput(e.target.value))} />
-              <textarea style={styles.textareaModal} placeholder="Conteúdo..." value={conteudoNota} onChange={(e) => setConteudoNota(e.target.value)} />
-              <button style={styles.btnSalvar} onClick={salvarNota}>Salvar</button>
-              <button style={styles.btnCancelar} onClick={fecharNota}>Cancelar</button>
-            </div>
-          </div>
+          <NoteModal
+            styles={styles}
+            editandoNotaId={editandoNotaId}
+            tituloNota={tituloNota}
+            setTituloNota={setTituloNota}
+            prioridadeNota={prioridadeNota}
+            setPrioridadeNota={setPrioridadeNota}
+            dataEventoNota={dataEventoNota}
+            setDataEventoNota={setDataEventoNota}
+            conteudoNota={conteudoNota}
+            setConteudoNota={setConteudoNota}
+            salvarNota={salvarNota}
+            fecharNota={fecharNota}
+            fecharConta={fecharConta}
+            setModalCentro={setModalCentro}
+            setMenuAberto={setMenuAberto}
+            setMenuNavegacaoAberto={setMenuNavegacaoAberto}
+            primeiraLetraMaiuscula={primeiraLetraMaiuscula}
+            limitarDataInput={limitarDataInput}
+          />
         )}
 
         {modalCentro && (
-          <div style={styles.overlay} onClick={() => { fecharConta(); fecharNota(); setModalCentro(false); setMenuAberto(false); setMenuNavegacaoAberto(false) }}>
-            <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-              <h3>Centros de Custo</h3>
-              <input style={styles.inputModal} placeholder="Novo centro" value={novoCentro} onChange={(e) => setNovoCentro(e.target.value)} autoFocus />
-              <button style={styles.btnSalvar} onClick={salvarCentro}>Salvar Centro</button>
-              {centros.map((centro) => (
-                <div key={centro.id} style={styles.itemCentro}>
-                  <span>{centro.nome}</span>
-                  <button style={styles.btnMiniExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir centro de custo', mensagem: `Deseja excluir o centro ${centro.nome}?`, textoConfirmar: 'Excluir', tipo: 'perigo', acao: () => excluirCentro(centro.id) })}>excluir</button>
-                </div>
-              ))}
-              <button style={styles.btnCancelar} onClick={() => setModalCentro(false)}>Fechar</button>
-            </div>
-          </div>
+          <CostCenterModal
+            styles={styles}
+            novoCentro={novoCentro}
+            setNovoCentro={setNovoCentro}
+            salvarCentro={salvarCentro}
+            centros={centros}
+            abrirConfirmacao={abrirConfirmacao}
+            excluirCentro={excluirCentro}
+            fecharConta={fecharConta}
+            fecharNota={fecharNota}
+            setModalCentro={setModalCentro}
+            setMenuAberto={setMenuAberto}
+            setMenuNavegacaoAberto={setMenuNavegacaoAberto}
+          />
         )}
       </>
     )
@@ -5680,34 +5651,12 @@ export default function App() {
         </div>
       )}
 
-      {confirmacao.aberto && (
-        <div style={styles.overlayConfirmacao}>
-          <div style={styles.modalConfirmacao}>
-            <div style={styles.confirmacaoIcone}>
-              {confirmacao.tipo === 'perigo' ? '⚠️' : confirmacao.tipo === 'sucesso' ? '✅' : 'ℹ️'}
-            </div>
-
-            <h3 style={styles.confirmacaoTitulo}>{confirmacao.titulo}</h3>
-            <p style={styles.confirmacaoTexto}>{confirmacao.mensagem}</p>
-
-            <div style={styles.confirmacaoAcoes}>
-              <button style={styles.btnConfirmarCancelar} onClick={fecharConfirmacao}>
-                Cancelar
-              </button>
-
-              <button
-                style={{
-                  ...styles.btnConfirmarAcao,
-                  background: confirmacao.tipo === 'perigo' ? '#dc3545' : confirmacao.tipo === 'sucesso' ? '#14b8a6' : '#0d6efd'
-                }}
-                onClick={executarConfirmacao}
-              >
-                {confirmacao.textoConfirmar}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        styles={styles}
+        confirmacao={confirmacao}
+        fecharConfirmacao={fecharConfirmacao}
+        executarConfirmacao={executarConfirmacao}
+      />
     </div>
   )
 }

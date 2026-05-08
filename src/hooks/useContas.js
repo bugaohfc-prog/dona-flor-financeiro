@@ -267,11 +267,15 @@ export function useContas() {
       return
     }
 
-    const payload = {
-      descricao: primeiraLetraMaiuscula(descricao.trim()),
-      valor: converterValor(valor),
-      data_vencimento: formatarDataParaBanco(dataVencimento),
-      vencimento: formatarDataParaBanco(dataVencimento),
+    const dataBanco = formatarDataParaBanco(dataVencimento)
+    const descricaoFormatada = primeiraLetraMaiuscula(descricao.trim())
+    const valorConvertido = converterValor(valor)
+
+    const payloadBaseConta = {
+      descricao: descricaoFormatada,
+      valor: valorConvertido,
+      data_vencimento: dataBanco,
+      vencimento: dataBanco,
       centro_custo_id: centroCustoId || null,
       observacao: observacaoConta.trim() || null,
       enviar_whatsapp: configWhatsapp,
@@ -281,33 +285,43 @@ export function useContas() {
       empresa_id: empresaId
     }
 
-    let error
+    const criarIdRecorrencia = () => {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID()
+      }
+      return `${Date.now()}-${Math.random().toString(16).slice(2)}`
+    }
 
-    if (editandoContaId) {
-      const resposta = await supabase.from('df_contas').update(payload).eq('id', editandoContaId).eq('empresa_id', empresaId)
-      error = resposta.error
+    const montarPayloadRecorrencia = () => {
+      const diaRecorrencia = Number(diaVencimentoRecorrencia || String(dataBanco).slice(8, 10))
 
-      if (!error) {
-        const dataBanco = formatarDataParaBanco(dataVencimento)
-        const diaRecorrencia = Number(diaVencimentoRecorrencia || String(dataBanco).slice(8, 10))
+      if (!diaRecorrencia || diaRecorrencia < 1 || diaRecorrencia > 31) {
+        mostrarAviso('Informe um dia válido para a recorrência.', 'erro')
+        return null
+      }
+
+      return {
+        empresa_id: empresaId,
+        descricao: descricaoFormatada,
+        valor: valorConvertido,
+        centro_custo_id: centroCustoId || null,
+        observacao: observacaoConta.trim() || null,
+        frequencia: tipoRecorrencia || 'mensal',
+        dia_vencimento: diaRecorrencia,
+        data_inicio: dataBanco,
+        ativo: true
+      }
+    }
+
+    try {
+      let error = null
+
+      if (editandoContaId) {
+        const payloadConta = { ...payloadBaseConta }
 
         if (contaRecorrente) {
-          if (!diaRecorrencia || diaRecorrencia < 1 || diaRecorrencia > 31) {
-            mostrarAviso('Informe um dia válido para a recorrência.', 'erro')
-            return
-          }
-
-          const payloadRecorrencia = {
-            empresa_id: empresaId,
-            descricao: primeiraLetraMaiuscula(descricao.trim()),
-            valor: converterValor(valor),
-            centro_custo_id: centroCustoId || null,
-            observacao: observacaoConta.trim() || null,
-            frequencia: tipoRecorrencia,
-            dia_vencimento: diaRecorrencia,
-            data_inicio: dataBanco,
-            ativo: true
-          }
+          const payloadRecorrencia = montarPayloadRecorrencia()
+          if (!payloadRecorrencia) return
 
           if (recorrenciaContaId) {
             const { error: erroRecorrencia } = await supabase
@@ -317,102 +331,92 @@ export function useContas() {
               .eq('empresa_id', empresaId)
 
             if (erroRecorrencia) {
-              mostrarAviso('A conta foi atualizada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
+              mostrarAviso('A conta não foi salva porque a recorrência não pôde ser atualizada: ' + erroRecorrencia.message, 'erro')
               return
             }
+
+            payloadConta.recorrencia_id = recorrenciaContaId
           } else {
-            const { data: dataRecorrencia, error: erroRecorrencia } = await supabase
+            const novaRecorrenciaId = criarIdRecorrencia()
+            const { error: erroRecorrencia } = await supabase
               .from('df_contas_recorrentes')
-              .insert([payloadRecorrencia])
-              .select()
+              .insert([{ ...payloadRecorrencia, id: novaRecorrenciaId }])
 
             if (erroRecorrencia) {
-              mostrarAviso('A conta foi atualizada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
+              mostrarAviso('A conta não foi salva porque a recorrência não pôde ser criada: ' + erroRecorrencia.message, 'erro')
               return
             }
 
-            const recorrenciaCriada = Array.isArray(dataRecorrencia) ? dataRecorrencia[0] : dataRecorrencia
-            if (recorrenciaCriada?.id) {
-              const { error: erroVinculoRecorrencia } = await supabase
-                .from('df_contas')
-                .update({ recorrencia_id: recorrenciaCriada.id })
-                .eq('id', editandoContaId)
-                .eq('empresa_id', empresaId)
-
-              if (erroVinculoRecorrencia) {
-                mostrarAviso('A recorrência foi criada, mas não foi vinculada à conta: ' + erroVinculoRecorrencia.message, 'erro')
-                return
-              }
-            }
+            payloadConta.recorrencia_id = novaRecorrenciaId
           }
-        } else if (recorrenciaContaId) {
-          await supabase.from('df_contas_recorrentes').update({ ativo: false }).eq('id', recorrenciaContaId).eq('empresa_id', empresaId)
-          await supabase.from('df_contas').update({ recorrencia_id: null }).eq('id', editandoContaId).eq('empresa_id', empresaId)
-        }
-      }
-    } else {
-      const resposta = await supabase.from('df_contas').insert([{ ...payload, status: 'pendente', excluido: false }]).select()
-      error = resposta.error
-
-      if (!error && contaRecorrente) {
-        const dataBanco = formatarDataParaBanco(dataVencimento)
-        const diaRecorrencia = Number(diaVencimentoRecorrencia || String(dataBanco).slice(8, 10))
-
-        if (!diaRecorrencia || diaRecorrencia < 1 || diaRecorrencia > 31) {
-          mostrarAviso('Informe um dia válido para a recorrência.', 'erro')
-          return
-        }
-
-        const { data: dataRecorrencia, error: erroRecorrencia } = await supabase
-          .from('df_contas_recorrentes')
-          .insert([{
-            empresa_id: empresaId,
-            descricao: primeiraLetraMaiuscula(descricao.trim()),
-            valor: converterValor(valor),
-            centro_custo_id: centroCustoId || null,
-            observacao: observacaoConta.trim() || null,
-            frequencia: tipoRecorrencia,
-            dia_vencimento: diaRecorrencia,
-            data_inicio: dataBanco,
-            ativo: true
-          }])
-          .select()
-
-        if (erroRecorrencia) {
-          mostrarAviso('A conta foi criada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
         } else {
-          const recorrenciaCriada = Array.isArray(dataRecorrencia) ? dataRecorrencia[0] : dataRecorrencia
-          const contaCriada = Array.isArray(resposta.data) ? resposta.data[0] : resposta.data
-          if (recorrenciaCriada?.id && contaCriada?.id) {
-            const { error: erroVinculoRecorrencia } = await supabase
-              .from('df_contas')
-              .update({ recorrencia_id: recorrenciaCriada.id })
-              .eq('id', contaCriada.id)
+          payloadConta.recorrencia_id = null
+
+          if (recorrenciaContaId) {
+            const { error: erroDesativarRecorrencia } = await supabase
+              .from('df_contas_recorrentes')
+              .update({ ativo: false })
+              .eq('id', recorrenciaContaId)
               .eq('empresa_id', empresaId)
 
-            if (erroVinculoRecorrencia) {
-              mostrarAviso('A recorrência foi criada, mas não foi vinculada à conta: ' + erroVinculoRecorrencia.message, 'erro')
+            if (erroDesativarRecorrencia) {
+              mostrarAviso('A conta não foi salva porque a recorrência não pôde ser desativada: ' + erroDesativarRecorrencia.message, 'erro')
               return
             }
           }
         }
-      }
-    }
 
-    if (error) {
-      if (erroEhSessaoExpirada(error)) {
-        await supabase.auth.signOut()
-        limparEstadoAutenticacao()
-        setUsuarioLogado(null)
-        mostrarAviso('Sua sessão expirou. Faça login novamente.', 'erro')
+        const resposta = await supabase
+          .from('df_contas')
+          .update(payloadConta)
+          .eq('id', editandoContaId)
+          .eq('empresa_id', empresaId)
+
+        error = resposta.error
       } else {
-        mostrarAviso(error.message, 'erro')
-      }
-      return
-    }
+        const payloadConta = { ...payloadBaseConta, status: 'pendente', excluido: false }
 
-    fecharConta()
-    buscarContas()
+        if (contaRecorrente) {
+          const payloadRecorrencia = montarPayloadRecorrencia()
+          if (!payloadRecorrencia) return
+
+          const novaRecorrenciaId = criarIdRecorrencia()
+          const { error: erroRecorrencia } = await supabase
+            .from('df_contas_recorrentes')
+            .insert([{ ...payloadRecorrencia, id: novaRecorrenciaId }])
+
+          if (erroRecorrencia) {
+            mostrarAviso('A conta não foi salva porque a recorrência não pôde ser criada: ' + erroRecorrencia.message, 'erro')
+            return
+          }
+
+          payloadConta.recorrencia_id = novaRecorrenciaId
+        }
+
+        const resposta = await supabase
+          .from('df_contas')
+          .insert([payloadConta])
+
+        error = resposta.error
+      }
+
+      if (error) {
+        if (erroEhSessaoExpirada(error)) {
+          await supabase.auth.signOut()
+          limparEstadoAutenticacao()
+          setUsuarioLogado(null)
+          mostrarAviso('Sua sessão expirou. Faça login novamente.', 'erro')
+        } else {
+          mostrarAviso(error.message, 'erro')
+        }
+        return
+      }
+
+      fecharConta()
+      buscarContas()
+    } catch (erro) {
+      mostrarAviso(erro?.message || 'Não foi possível salvar a conta.', 'erro')
+    }
   }
 
   async function marcarComoPago(contexto) {

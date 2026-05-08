@@ -2667,3 +2667,125 @@ button.danger {
     display: block !important;
   }
 }
+
+/* ===== DONA FLOR — HOTFIX FASE 2: PADRÃO ÚNICO DAS NOTAS =====
+   Escopo: igualar visual das notas no Dashboard e na página Notas.
+   Não altera contas, auth, menus ou regras de negócio. */
+
+:root{
+  --df-note-shadow: 0 12px 28px rgba(15,23,42,.06);
+  --df-note-border: #e2e8f0;
+  --df-note-normal: #0f766e;
+  --df-note-critico: #dc2626;
+  --df-note-urgente: #f59e0b;
+  --df-note-bg-normal: linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);
+  --df-note-bg-critico: linear-gradient(180deg,#fff7f7 0%,#fef2f2 100%);
+  --df-note-bg-urgente: linear-gradient(180deg,#fffdf5 0%,#fffbeb 100%);
+}
+
+.dashboard-notes-card,
+.notes-page-section{
+  background:#ffffff !important;
+  border:1px solid rgba(226,232,240,.95) !important;
+  box-shadow:0 12px 30px rgba(15,23,42,.055) !important;
+}
+
+.dashboard-notes-card .note-card-action,
+.notes-page-grid .note-card-action,
+.notes-list-dashboard .note-card-action,
+body .note-card-action{
+  position:relative !important;
+  overflow:hidden !important;
+  border:1px solid var(--df-note-border) !important;
+  border-left:6px solid var(--df-note-normal) !important;
+  border-radius:18px !important;
+  background:var(--df-note-bg-normal) !important;
+  box-shadow:var(--df-note-shadow) !important;
+}
+
+.dashboard-notes-card .note-card-action::before,
+.notes-page-grid .note-card-action::before,
+.notes-list-dashboard .note-card-action::before,
+body .note-card-action::before{
+  content:'' !important;
+  position:absolute !important;
+  left:0 !important;
+  top:0 !important;
+  bottom:0 !important;
+  width:6px !important;
+  border-radius:18px 0 0 18px !important;
+  background:var(--df-note-normal) !important;
+}
+
+.dashboard-notes-card .note-card-critico,
+.notes-page-grid .note-card-critico,
+.notes-list-dashboard .note-card-critico,
+body .note-card-critico{
+  border-left-color:var(--df-note-critico) !important;
+  background:var(--df-note-bg-critico) !important;
+}
+
+.dashboard-notes-card .note-card-critico::before,
+.notes-page-grid .note-card-critico::before,
+.notes-list-dashboard .note-card-critico::before,
+body .note-card-critico::before{
+  background:var(--df-note-critico) !important;
+}
+
+.dashboard-notes-card .note-card-urgente,
+.notes-page-grid .note-card-urgente,
+.notes-list-dashboard .note-card-urgente,
+body .note-card-urgente{
+  border-left-color:var(--df-note-urgente) !important;
+  background:var(--df-note-bg-urgente) !important;
+}
+
+.dashboard-notes-card .note-card-urgente::before,
+.notes-page-grid .note-card-urgente::before,
+.notes-list-dashboard .note-card-urgente::before,
+body .note-card-urgente::before{
+  background:var(--df-note-urgente) !important;
+}
+
+.dashboard-notes-card .note-card-normal,
+.notes-page-grid .note-card-normal,
+.notes-list-dashboard .note-card-normal,
+body .note-card-normal{
+  border-left-color:var(--df-note-normal) !important;
+  background:var(--df-note-bg-normal) !important;
+}
+
+.dashboard-notes-card .note-card-normal::before,
+.notes-page-grid .note-card-normal::before,
+.notes-list-dashboard .note-card-normal::before,
+body .note-card-normal::before{
+  background:var(--df-note-normal) !important;
+}
+
+/* Mantém nota concluída mais suave, mas sem criar segunda identidade de cor. */
+.note-card-action[style*="opacity: 0.65"],
+.note-card-action[style*="opacity:.65"]{
+  filter:saturate(.85) !important;
+}
+
+/* Desktop: garante que o bloco de notas do dashboard também receba identidade visual. */
+@media (min-width:980px){
+  .dashboard-notes-card .note-card-action,
+  .notes-page-grid .note-card-action{
+    min-height:150px !important;
+  }
+
+  .dashboard-notes-card .notes-header-clean,
+  .notes-page-section .notes-page-header{
+    color:#0f172a !important;
+  }
+}
+
+/* Mobile: preserva o comportamento validado, só padroniza cor/sombra. */
+@media (max-width:979px){
+  .dashboard-notes-card .note-card-action,
+  .notes-page-grid .note-card-action,
+  .notes-list-dashboard .note-card-action{
+    box-shadow:0 10px 24px rgba(15,23,42,.055) !important;
+  }
+}

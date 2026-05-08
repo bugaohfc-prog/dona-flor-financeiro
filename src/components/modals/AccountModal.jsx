@@ -101,8 +101,8 @@ export default function AccountModal({
           )}
         </div>
 
-        <button style={styles.btnSalvar} onClick={salvarConta}>Salvar</button>
-        <button style={styles.btnCancelar} onClick={fecharConta}>Cancelar</button>
+        <button style={styles.btnSalvar} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); salvarConta() }}>Salvar</button>
+        <button style={styles.btnCancelar} type="button" onClick={fecharConta}>Cancelar</button>
       </div>
     </div>
   )

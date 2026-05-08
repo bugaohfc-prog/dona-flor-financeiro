@@ -321,10 +321,10 @@ export function useContas() {
       vencimento: formatarDataParaBanco(dataVencimento),
       centro_custo_id: centroCustoId || null,
       observacao: observacaoConta.trim() || null,
-      enviar_whatsapp: configWhatsapp,
-      enviar_email: configEmail,
-      enviar_push: configPush,
-      dias_aviso: Number(diasAlertaContas || diasAvisoPadrao || 1),
+      enviar_whatsapp: contaWhatsapp,
+      enviar_email: contaEmail,
+      enviar_push: contaPush,
+      dias_aviso: Number(contaDiasAviso || diasAlertaContas || diasAvisoPadrao || 1),
       empresa_id: empresaId
     }
 
@@ -349,8 +349,7 @@ export function useContas() {
             descricao: primeiraLetraMaiuscula(descricao.trim()),
             valor: converterValor(valor),
             centro_custo_id: centroCustoId || null,
-            observacao: observacaoConta.trim() || null,
-            frequencia: tipoRecorrencia,
+            tipo_recorrencia: tipoRecorrencia || 'mensal',
             dia_vencimento: diaRecorrencia,
             data_inicio: dataBanco,
             ativo: true
@@ -365,6 +364,17 @@ export function useContas() {
 
             if (erroRecorrencia) {
               mostrarAviso('A conta foi atualizada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
+              return
+            }
+
+            const { error: erroVinculoRecorrencia } = await supabase
+              .from('df_contas')
+              .update({ recorrencia_id: recorrenciaContaId })
+              .eq('id', editandoContaId)
+              .eq('empresa_id', empresaId)
+
+            if (erroVinculoRecorrencia) {
+              mostrarAviso('A recorrência foi atualizada, mas não foi vinculada à conta: ' + erroVinculoRecorrencia.message, 'erro')
               return
             }
           } else {
@@ -443,8 +453,7 @@ export function useContas() {
             descricao: primeiraLetraMaiuscula(descricao.trim()),
             valor: converterValor(valor),
             centro_custo_id: centroCustoId || null,
-            observacao: observacaoConta.trim() || null,
-            frequencia: tipoRecorrencia,
+            tipo_recorrencia: tipoRecorrencia || 'mensal',
             dia_vencimento: diaRecorrencia,
             data_inicio: dataBanco,
             ativo: true

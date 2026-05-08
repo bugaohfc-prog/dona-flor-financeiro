@@ -2324,8 +2324,6 @@ export default function App() {
         navegarPara={navegarPara}
         menuNavegacaoAberto={menuNavegacaoAberto}
         setMenuNavegacaoAberto={setMenuNavegacaoAberto}
-          nomeUsuarioPerfil={nomeUsuarioPerfil}
-          perfilUsuario={perfilUsuario}
       />
     )
   }

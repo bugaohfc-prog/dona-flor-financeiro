@@ -3,9 +3,8 @@ export default function Topbar({
   nomeEmpresa,
   navegarPara,
   menuNavegacaoAberto,
-  setMenuNavegacaoAberto,
-  nomeUsuarioPerfil,
-  perfilUsuario}) {
+  setMenuNavegacaoAberto
+}) {
   return (
     <section className="no-print top-shell top-shell-clean" style={styles.usuarioTopo}>
       <div className="top-shell-context">
@@ -20,14 +19,7 @@ export default function Topbar({
 
       <div className="top-shell-actions" style={styles.usuarioAcoes}>
         <button className="mobile-menu-trigger" style={styles.btnMenuTopo} onClick={() => setMenuNavegacaoAberto(!menuNavegacaoAberto)}>☰</button>
-      
-      {usuario && (
-        <div className="topbar-user">
-          <span>Olá, {nomeUsuarioPerfil || usuario.email}</span>
-          {perfilUsuario && <small>Perfil: {perfilUsuario}</small>}
-        </div>
-      )}
-</div>
+      </div>
     </section>
   )
 }

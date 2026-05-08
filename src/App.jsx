@@ -228,7 +228,15 @@ export default function App() {
     diaVencimentoRecorrencia,
     setDiaVencimentoRecorrencia,
     recorrenciaContaId,
-    setRecorrenciaContaId
+    setRecorrenciaContaId,
+    buscarContas: buscarContasHook,
+    abrirNovaConta: abrirNovaContaHook,
+    abrirEdicaoConta: abrirEdicaoContaHook,
+    fecharConta: fecharContaHook,
+    salvarConta: salvarContaHook,
+    marcarComoPago: marcarComoPagoHook,
+    voltarParaPendente: voltarParaPendenteHook,
+    excluirConta: excluirContaHook
   } = useContas()
 
   // =========================
@@ -857,88 +865,16 @@ export default function App() {
   // BLOCO 5 — BUSCAS SUPABASE
   // =========================
   async function buscarContas(empresaAtual = empresaId) {
-    if (!empresaAtual) return
-
-    const { data, error } = await supabase
-      .from('df_contas')
-      .select('*, df_centros_custo(nome)')
-      .eq('empresa_id', empresaAtual)
-      .eq('excluido', false)
-      .order('data_vencimento')
-
-    if (error) {
-      avisarErro(error)
-      return
-    }
-
-    const contasAtuais = data || []
-    const contasComRecorrencias = await garantirContasRecorrentesDoMes(empresaAtual, contasAtuais)
-    setContas(contasComRecorrencias)
-  }
-
-  async function garantirContasRecorrentesDoMes(empresaAtual, contasAtuais) {
-    const hoje = new Date()
-    const ano = hoje.getFullYear()
-    const mes = hoje.getMonth() + 1
-
-    const { data: recorrentes, error } = await supabase
-      .from('df_contas_recorrentes')
-      .select('*')
-      .eq('empresa_id', empresaAtual)
-      .eq('ativo', true)
-
-    if (error) {
-      console.warn('Não foi possível carregar contas recorrentes:', error.message)
-      return contasAtuais
-    }
-
-    const novasContas = []
-
-    ;(recorrentes || []).forEach((recorrencia) => {
-      if (!deveGerarRecorrenciaNoMes(recorrencia, ano, mes)) return
-
-      const dataGerada = montarDataRecorrente(ano, mes, recorrencia.dia_vencimento)
-
-      const jaExiste = contasAtuais.some((conta) =>
-        String(conta.descricao || '').trim().toLowerCase() === String(recorrencia.descricao || '').trim().toLowerCase()
-        && conta.data_vencimento === dataGerada
-      )
-
-      if (jaExiste) return
-
-      novasContas.push({
-        empresa_id: empresaAtual,
-        descricao: recorrencia.descricao,
-        valor: Number(recorrencia.valor || 0),
-        data_vencimento: dataGerada,
-        vencimento: dataGerada,
-        centro_custo_id: recorrencia.centro_custo_id || null,
-        observacao: recorrencia.observacao || null,
-        recorrencia_id: recorrencia.id,
-        status: 'pendente',
-        excluido: false,
-        enviar_whatsapp: configWhatsapp,
-        enviar_email: configEmail,
-        enviar_push: configPush,
-        dias_aviso: Number(diasAlertaContas || diasAvisoPadrao || 1)
-      })
+    return buscarContasHook({
+      supabase,
+      empresaAtual,
+      avisarErro,
+      configWhatsapp,
+      configEmail,
+      configPush,
+      diasAlertaContas,
+      diasAvisoPadrao
     })
-
-    if (novasContas.length === 0) return contasAtuais
-
-    const { data: contasCriadas, error: erroInsert } = await supabase
-      .from('df_contas')
-      .insert(novasContas)
-      .select('*, df_centros_custo(nome)')
-
-    if (erroInsert) {
-      console.warn('Não foi possível gerar contas recorrentes:', erroInsert.message)
-      return contasAtuais
-    }
-
-    return [...contasAtuais, ...(contasCriadas || [])].sort((a, b) =>
-      String(a.data_vencimento || '').localeCompare(String(b.data_vencimento || ''))
-    )
   }
 
   async function buscarNotas(empresaAtual = empresaId) {
@@ -1231,246 +1167,60 @@ export default function App() {
   // BLOCO 7 — AÇÕES CONTAS
   // =========================
   function abrirNovaConta() {
-    setMenuAberto(false)
-    setMenuNavegacaoAberto(false)
-    setEditandoContaId(null)
-    setDescricao('')
-    setValor('')
-    setDataVencimento('')
-    setCentroCustoId('')
-    setObservacaoConta('')
-    setContaWhatsapp(configWhatsapp)
-    setContaEmail(configEmail)
-    setContaPush(configPush)
-    setContaDiasAviso(String(diasAvisoPadrao || 1))
-    setContaRecorrente(false)
-    setTipoRecorrencia('mensal')
-    setDiaVencimentoRecorrencia('')
-    setRecorrenciaContaId(null)
-    setModalConta(true)
+    return abrirNovaContaHook({
+      setMenuAberto,
+      setMenuNavegacaoAberto,
+      configWhatsapp,
+      configEmail,
+      configPush,
+      diasAvisoPadrao
+    })
   }
 
   async function abrirEdicaoConta(conta) {
-    const dataBanco = formatarDataParaBanco(conta.data_vencimento || '')
-    const diaPadrao = dataBanco ? String(Number(String(dataBanco).slice(8, 10))) : ''
-
-    setEditandoContaId(conta.id)
-    setDescricao(conta.descricao || '')
-    setValor(conta.valor || '')
-    setDataVencimento(conta.data_vencimento || '')
-    setCentroCustoId(conta.centro_custo_id || '')
-    setObservacaoConta(conta.observacao || '')
-    setContaWhatsapp(conta.enviar_whatsapp ?? false)
-    setContaEmail(conta.enviar_email ?? false)
-    setContaPush(conta.enviar_push ?? false)
-    setContaDiasAviso(String(conta.dias_aviso ?? diasAvisoPadrao ?? 1))
-    setContaRecorrente(Boolean(conta.recorrencia_id))
-    setRecorrenciaContaId(conta.recorrencia_id || null)
-    setTipoRecorrencia('mensal')
-    setDiaVencimentoRecorrencia(diaPadrao)
-    setModalConta(true)
-
-    if (conta.recorrencia_id) {
-      const { data, error } = await supabase
-        .from('df_contas_recorrentes')
-        .select('*')
-        .eq('id', conta.recorrencia_id)
-        .eq('empresa_id', empresaId)
-        .maybeSingle()
-
-      if (!error && data) {
-        setTipoRecorrencia(data.frequencia || data.tipo_recorrencia || 'mensal')
-        setDiaVencimentoRecorrencia(String(data.dia_vencimento || diaPadrao || ''))
-      }
-    }
+    return abrirEdicaoContaHook({
+      conta,
+      supabase,
+      empresaId,
+      diasAvisoPadrao,
+      formatarDataParaBanco
+    })
   }
 
   function fecharConta() {
-    setModalConta(false)
-    setEditandoContaId(null)
-    setDescricao('')
-    setValor('')
-    setDataVencimento('')
-    setCentroCustoId('')
-    setObservacaoConta('')
-    setContaWhatsapp(false)
-    setContaEmail(false)
-    setContaPush(false)
-    setContaDiasAviso('1')
-    setContaRecorrente(false)
-    setTipoRecorrencia('mensal')
-    setDiaVencimentoRecorrencia('')
-    setRecorrenciaContaId(null)
+    return fecharContaHook()
   }
 
   async function salvarConta() {
-    if (!empresaId) {
-      mostrarAviso('Usuário sem empresa vinculada.', 'erro')
-      return
-    }
-
-    if (!descricao || !valor || !dataVencimento) {
-      mostrarAviso('Preencha descrição, valor e vencimento.', 'erro')
-      return
-    }
-
-    const payload = {
-      descricao: primeiraLetraMaiuscula(descricao.trim()),
-      valor: converterValor(valor),
-      data_vencimento: formatarDataParaBanco(dataVencimento),
-      vencimento: formatarDataParaBanco(dataVencimento),
-      centro_custo_id: centroCustoId || null,
-      observacao: observacaoConta.trim() || null,
-      enviar_whatsapp: configWhatsapp,
-      enviar_email: configEmail,
-      enviar_push: configPush,
-      dias_aviso: Number(diasAlertaContas || diasAvisoPadrao || 1),
-      empresa_id: empresaId
-    }
-
-    let error
-
-    if (editandoContaId) {
-      const resposta = await supabase.from('df_contas').update(payload).eq('id', editandoContaId).eq('empresa_id', empresaId)
-      error = resposta.error
-
-      if (!error) {
-        const dataBanco = formatarDataParaBanco(dataVencimento)
-        const diaRecorrencia = Number(diaVencimentoRecorrencia || String(dataBanco).slice(8, 10))
-
-        if (contaRecorrente) {
-          if (!diaRecorrencia || diaRecorrencia < 1 || diaRecorrencia > 31) {
-            mostrarAviso('Informe um dia válido para a recorrência.', 'erro')
-            return
-          }
-
-          const payloadRecorrencia = {
-            empresa_id: empresaId,
-            descricao: primeiraLetraMaiuscula(descricao.trim()),
-            valor: converterValor(valor),
-            centro_custo_id: centroCustoId || null,
-            observacao: observacaoConta.trim() || null,
-            frequencia: tipoRecorrencia,
-            dia_vencimento: diaRecorrencia,
-            data_inicio: dataBanco,
-            ativo: true
-          }
-
-          if (recorrenciaContaId) {
-            const { error: erroRecorrencia } = await supabase
-              .from('df_contas_recorrentes')
-              .update(payloadRecorrencia)
-              .eq('id', recorrenciaContaId)
-              .eq('empresa_id', empresaId)
-
-            if (erroRecorrencia) {
-              mostrarAviso('A conta foi atualizada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
-              return
-            }
-          } else {
-            const { data: dataRecorrencia, error: erroRecorrencia } = await supabase
-              .from('df_contas_recorrentes')
-              .insert([payloadRecorrencia])
-              .select()
-
-            if (erroRecorrencia) {
-              mostrarAviso('A conta foi atualizada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
-              return
-            }
-
-            const recorrenciaCriada = Array.isArray(dataRecorrencia) ? dataRecorrencia[0] : dataRecorrencia
-            if (recorrenciaCriada?.id) {
-              await supabase.from('df_contas').update({ recorrencia_id: recorrenciaCriada.id }).eq('id', editandoContaId).eq('empresa_id', empresaId)
-            }
-          }
-        } else if (recorrenciaContaId) {
-          await supabase.from('df_contas_recorrentes').update({ ativo: false }).eq('id', recorrenciaContaId).eq('empresa_id', empresaId)
-          await supabase.from('df_contas').update({ recorrencia_id: null }).eq('id', editandoContaId).eq('empresa_id', empresaId)
-        }
-      }
-    } else {
-      const resposta = await supabase.from('df_contas').insert([{ ...payload, status: 'pendente', excluido: false }]).select()
-      error = resposta.error
-
-      if (!error && contaRecorrente) {
-        const dataBanco = formatarDataParaBanco(dataVencimento)
-        const diaRecorrencia = Number(diaVencimentoRecorrencia || String(dataBanco).slice(8, 10))
-
-        if (!diaRecorrencia || diaRecorrencia < 1 || diaRecorrencia > 31) {
-          mostrarAviso('Informe um dia válido para a recorrência.', 'erro')
-          return
-        }
-
-        const { data: dataRecorrencia, error: erroRecorrencia } = await supabase
-          .from('df_contas_recorrentes')
-          .insert([{
-            empresa_id: empresaId,
-            descricao: primeiraLetraMaiuscula(descricao.trim()),
-            valor: converterValor(valor),
-            centro_custo_id: centroCustoId || null,
-            observacao: observacaoConta.trim() || null,
-            frequencia: tipoRecorrencia,
-            dia_vencimento: diaRecorrencia,
-            data_inicio: dataBanco,
-            ativo: true
-          }])
-          .select()
-
-        if (erroRecorrencia) {
-          mostrarAviso('A conta foi criada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
-        } else {
-          const recorrenciaCriada = Array.isArray(dataRecorrencia) ? dataRecorrencia[0] : dataRecorrencia
-          const contaCriada = Array.isArray(resposta.data) ? resposta.data[0] : resposta.data
-          if (recorrenciaCriada?.id && contaCriada?.id) {
-            await supabase.from('df_contas').update({ recorrencia_id: recorrenciaCriada.id }).eq('id', contaCriada.id).eq('empresa_id', empresaId)
-          }
-        }
-      }
-    }
-
-    if (error) {
-      if (erroEhSessaoExpirada(error)) {
-        await supabase.auth.signOut()
-        limparEstadoAutenticacao()
-        setUsuarioLogado(null)
-        mostrarAviso('Sua sessão expirou. Faça login novamente.', 'erro')
-      } else {
-        mostrarAviso(error.message, 'erro')
-      }
-      return
-    }
-
-    fecharConta()
-    buscarContas()
+    return salvarContaHook({
+      supabase,
+      empresaId,
+      mostrarAviso,
+      configWhatsapp,
+      configEmail,
+      configPush,
+      diasAlertaContas,
+      diasAvisoPadrao,
+      primeiraLetraMaiuscula,
+      converterValor,
+      formatarDataParaBanco,
+      erroEhSessaoExpirada,
+      limparEstadoAutenticacao,
+      setUsuarioLogado,
+      buscarContas
+    })
   }
 
   async function marcarComoPago(id) {
-    await supabase.from('df_contas').update({ status: 'pago' }).eq('id', id).eq('empresa_id', empresaId)
-    buscarContas()
+    return marcarComoPagoHook({ supabase, id, empresaId, buscarContas })
   }
 
   async function voltarParaPendente(id) {
-    await supabase.from('df_contas').update({ status: 'pendente' }).eq('id', id).eq('empresa_id', empresaId)
-    buscarContas()
+    return voltarParaPendenteHook({ supabase, id, empresaId, buscarContas })
   }
 
   async function excluirConta(id) {
-    const { error } = await supabase
-      .from('df_contas')
-      .update({
-        excluido: true,
-        excluido_em: new Date().toISOString()
-      })
-      .eq('id', id)
-      .eq('empresa_id', empresaId)
-
-    if (error) {
-      avisarErro(error)
-      return
-    }
-
-    buscarContas()
-    buscarLixeira()
+    return excluirContaHook({ supabase, id, empresaId, avisarErro, buscarContas, buscarLixeira })
   }
 
   // =========================

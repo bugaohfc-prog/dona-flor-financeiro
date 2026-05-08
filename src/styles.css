@@ -2789,3 +2789,41 @@ body .note-card-normal::before{
     box-shadow:0 10px 24px rgba(15,23,42,.055) !important;
   }
 }
+
+/* ===== DONA FLOR — HOTFIX FINAL: LINHA DAS NOTAS IGUAL ÀS CONTAS =====
+   Base validada: mantém cores/sombras já aprovadas e ajusta apenas a espessura
+   da faixa lateral das notas para o mesmo padrão visual dos cards de contas. */
+.dashboard-notes-card .note-card-action,
+.notes-page-grid .note-card-action,
+.notes-list-dashboard .note-card-action,
+.notes-panel .note-card-action,
+body .note-card-action{
+  border-left-width:4px !important;
+}
+
+.dashboard-notes-card .note-card-action::before,
+.notes-page-grid .note-card-action::before,
+.notes-list-dashboard .note-card-action::before,
+.notes-panel .note-card-action::before,
+body .note-card-action::before{
+  width:4px !important;
+  border-radius:18px 0 0 18px !important;
+}
+
+@media (max-width:979px){
+  .dashboard-notes-card .note-card-action,
+  .notes-page-grid .note-card-action,
+  .notes-list-dashboard .note-card-action,
+  .notes-panel .note-card-action,
+  body .note-card-action{
+    border-left-width:4px !important;
+  }
+
+  .dashboard-notes-card .note-card-action::before,
+  .notes-page-grid .note-card-action::before,
+  .notes-list-dashboard .note-card-action::before,
+  .notes-panel .note-card-action::before,
+  body .note-card-action::before{
+    width:4px !important;
+  }
+}

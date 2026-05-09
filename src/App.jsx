@@ -20,6 +20,7 @@ import NoteModal from './components/modals/NoteModal.jsx'
 import CostCenterModal from './components/modals/CostCenterModal.jsx'
 import ConfirmModal from './components/modals/ConfirmModal.jsx'
 import { useContas } from './hooks/useContas'
+import { useNotas } from './hooks/useNotas'
 import './styles.css'
 
 const SESSAO_STORAGE_KEY = 'df_sessao_segura'
@@ -256,17 +257,37 @@ export default function App() {
   } = useContas()
 
   // =========================
-  // BLOCO 2 — STATES NOTAS
+  // BLOCO 2 — HOOK NOTAS
   // =========================
-  const [notas, setNotas] = useState([])
-  const [notasLixeira, setNotasLixeira] = useState([])
-  const [buscaNota, setBuscaNota] = useState('')
-  const [modalNota, setModalNota] = useState(false)
-  const [editandoNotaId, setEditandoNotaId] = useState(null)
-  const [tituloNota, setTituloNota] = useState('')
-  const [conteudoNota, setConteudoNota] = useState('')
-  const [prioridadeNota, setPrioridadeNota] = useState('normal')
-  const [dataEventoNota, setDataEventoNota] = useState('')
+  const {
+    notas,
+    setNotas,
+    notasLixeira,
+    setNotasLixeira,
+    buscaNota,
+    setBuscaNota,
+    modalNota,
+    setModalNota,
+    editandoNotaId,
+    setEditandoNotaId,
+    tituloNota,
+    setTituloNota,
+    conteudoNota,
+    setConteudoNota,
+    prioridadeNota,
+    setPrioridadeNota,
+    dataEventoNota,
+    setDataEventoNota,
+    buscarNotas: buscarNotasHook,
+    abrirNovaNota: abrirNovaNotaHook,
+    abrirEdicaoNota: abrirEdicaoNotaHook,
+    fecharNota: fecharNotaHook,
+    salvarNota: salvarNotaHook,
+    excluirNota: excluirNotaHook,
+    alternarNotaConcluida: alternarNotaConcluidaHook,
+    restaurarNota: restaurarNotaHook,
+    excluirNotaDefinitivo: excluirNotaDefinitivoHook
+  } = useNotas()
 
   // =========================
   // BLOCO 3 — STATES CENTROS
@@ -894,21 +915,11 @@ export default function App() {
   }
 
   async function buscarNotas(empresaAtual = empresaId) {
-    if (!empresaAtual) return
-
-    const { data, error } = await supabase
-      .from('df_notas')
-      .select('*')
-      .eq('empresa_id', empresaAtual)
-      .eq('excluido', false)
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      avisarErro(error)
-      return
-    }
-
-    setNotas(data || [])
+    return buscarNotasHook({
+      supabase,
+      empresaAtual,
+      avisarErro
+    })
   }
 
 
@@ -1244,106 +1255,50 @@ export default function App() {
   // BLOCO 8 — AÇÕES NOTAS
   // =========================
   function abrirNovaNota() {
-    setMenuAberto(false)
-    setMenuNavegacaoAberto(false)
-    setEditandoNotaId(null)
-    setTituloNota('')
-    setConteudoNota('')
-    setPrioridadeNota('normal')
-    setDataEventoNota('')
-    setModalNota(true)
+    return abrirNovaNotaHook({
+      setMenuAberto,
+      setMenuNavegacaoAberto
+    })
   }
 
   function abrirEdicaoNota(nota) {
-    setEditandoNotaId(nota.id)
-    setTituloNota(nota.titulo || '')
-    setConteudoNota(nota.conteudo || '')
-    setPrioridadeNota(nota.prioridade || 'normal')
-    setDataEventoNota(nota.data_evento || '')
-    setModalNota(true)
+    return abrirEdicaoNotaHook(nota)
   }
 
   function fecharNota() {
-    setModalNota(false)
-    setEditandoNotaId(null)
-    setTituloNota('')
-    setConteudoNota('')
-    setPrioridadeNota('normal')
-    setDataEventoNota('')
+    return fecharNotaHook()
   }
 
   async function salvarNota() {
-    if (!empresaId) {
-      mostrarAviso('Usuário sem empresa vinculada.', 'erro')
-      return
-    }
-
-    if (!tituloNota.trim()) {
-      mostrarAviso('Digite o título da nota.', 'erro')
-      return
-    }
-
-    const payload = {
-      titulo: primeiraLetraMaiuscula(tituloNota.trim()),
-      conteudo: conteudoNota.trim(),
-      prioridade: prioridadeNota || 'normal',
-      data_evento: dataEventoNota || null,
-      concluida: false,
-      empresa_id: empresaId
-    }
-
-    let error
-
-    if (editandoNotaId) {
-      const resposta = await supabase.from('df_notas').update(payload).eq('id', editandoNotaId).eq('empresa_id', empresaId)
-      error = resposta.error
-    } else {
-      const resposta = await supabase.from('df_notas').insert([payload])
-      error = resposta.error
-    }
-
-    if (error) {
-      avisarErro(error)
-      return
-    }
-
-    fecharNota()
-    buscarNotas()
+    return salvarNotaHook({
+      supabase,
+      empresaId,
+      mostrarAviso,
+      avisarErro,
+      buscarNotas
+    })
   }
 
   async function excluirNota(id) {
-    const { error } = await supabase
-      .from('df_notas')
-      .update({
-        excluido: true,
-        excluido_em: new Date().toISOString()
-      })
-      .eq('id', id)
-      .eq('empresa_id', empresaId)
-
-    if (error) {
-      avisarErro(error)
-      return
-    }
-
-    buscarNotas()
-    buscarLixeira()
+    return excluirNotaHook({
+      supabase,
+      id,
+      empresaId,
+      avisarErro,
+      buscarNotas,
+      buscarLixeira
+    })
   }
 
 
   async function alternarNotaConcluida(nota) {
-    const { error } = await supabase
-      .from('df_notas')
-      .update({ concluida: !nota.concluida })
-      .eq('id', nota.id)
-      .eq('empresa_id', empresaId)
-
-    if (error) {
-      avisarErro(error)
-      return
-    }
-
-    buscarNotas()
+    return alternarNotaConcluidaHook({
+      supabase,
+      nota,
+      empresaId,
+      avisarErro,
+      buscarNotas
+    })
   }
 
 
@@ -1444,22 +1399,14 @@ export default function App() {
   }
 
   async function restaurarNota(id) {
-    const { error } = await supabase
-      .from('df_notas')
-      .update({
-        excluido: false,
-        excluido_em: null
-      })
-      .eq('id', id)
-      .eq('empresa_id', empresaId)
-
-    if (error) {
-      avisarErro(error)
-      return
-    }
-
-    buscarNotas()
-    buscarLixeira()
+    return restaurarNotaHook({
+      supabase,
+      id,
+      empresaId,
+      avisarErro,
+      buscarNotas,
+      buscarLixeira
+    })
   }
 
   async function excluirContaDefinitivo(conta) {
@@ -1478,18 +1425,13 @@ export default function App() {
   }
 
   async function excluirNotaDefinitivo(nota) {
-    const { error } = await supabase
-      .from('df_notas')
-      .delete()
-      .eq('id', nota.id)
-      .eq('empresa_id', empresaId)
-
-    if (error) {
-      avisarErro(error)
-      return
-    }
-
-    buscarLixeira()
+    return excluirNotaDefinitivoHook({
+      supabase,
+      nota,
+      empresaId,
+      avisarErro,
+      buscarLixeira
+    })
   }
 
   // =========================

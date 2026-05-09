@@ -1,5 +1,6 @@
 import OpenAccountsList from './OpenAccountsList.jsx'
 import NotesPanel from './NotesPanel.jsx'
+import { SummarySkeleton, AccountListSkeleton, NotesSkeleton } from '../feedback/Skeletons.jsx'
 
 export default function DashboardHome({
   styles,
@@ -27,7 +28,8 @@ export default function DashboardHome({
   setMostrarNotas,
   alternarNotaConcluida,
   abrirEdicaoNota,
-  excluirNota
+  excluirNota,
+  loading = false
 }) {
   return (
     <>
@@ -36,27 +38,31 @@ export default function DashboardHome({
           <h1 className="main-title" style={styles.titulo}>📊 Dashboard Financeiro</h1>
         </div>
 
-        <div className="summary-grid" style={styles.resumo}>
-          <div style={styles.boxTotal}>
-            <span>Total</span>
-            <strong>{formatarValor(total)}</strong>
-          </div>
+        {loading ? (
+          <SummarySkeleton items={4} />
+        ) : (
+          <div className="summary-grid" style={styles.resumo}>
+            <div style={styles.boxTotal}>
+              <span>Total</span>
+              <strong>{formatarValor(total)}</strong>
+            </div>
 
-          <div style={styles.boxPago}>
-            <span>Pago</span>
-            <strong>{formatarValor(pago)}</strong>
-          </div>
+            <div style={styles.boxPago}>
+              <span>Pago</span>
+              <strong>{formatarValor(pago)}</strong>
+            </div>
 
-          <div style={styles.boxPendente}>
-            <span>Pendente</span>
-            <strong>{formatarValor(pendente)}</strong>
-          </div>
+            <div style={styles.boxPendente}>
+              <span>Pendente</span>
+              <strong>{formatarValor(pendente)}</strong>
+            </div>
 
-          <div style={styles.boxVencido}>
-            <span>Vencido</span>
-            <strong>{formatarValor(vencido)}</strong>
+            <div style={styles.boxVencido}>
+              <span>Vencido</span>
+              <strong>{formatarValor(vencido)}</strong>
+            </div>
           </div>
-        </div>
+        )}
       </section>
 
       <section className="no-print agenda-card-polished" style={styles.agendaResumoCard}>
@@ -71,6 +77,17 @@ export default function DashboardHome({
         <button style={styles.btnAgendaCompleta} onClick={() => navegarPara('agenda')}>Abrir agenda</button>
       </section>
 
+      {loading ? (
+        <section className="content-block" style={styles.bloco}>
+          <div className="dashboard-section-header-accounts">
+            <div>
+              <h2 style={styles.subtitulo}>💰 Contas em aberto</h2>
+              <p style={styles.textoNota}>Carregando contas e vencimentos...</p>
+            </div>
+          </div>
+          <AccountListSkeleton items={2} />
+        </section>
+      ) : (
       <OpenAccountsList
         styles={styles}
         formatarValor={formatarValor}
@@ -85,7 +102,19 @@ export default function DashboardHome({
         abrirConfirmacao={abrirConfirmacao}
         marcarComoPago={marcarComoPago}
       />
+      )}
 
+      {loading ? (
+        <section className="content-block" style={styles.bloco}>
+          <div className="notes-header-clean">
+            <div>
+              <h2 style={styles.subtitulo}>📝 Notas</h2>
+              <p style={styles.textoNota}>Carregando lembretes...</p>
+            </div>
+          </div>
+          <NotesSkeleton items={2} />
+        </section>
+      ) : (
       <NotesPanel
         styles={styles}
         navegarPara={navegarPara}
@@ -100,6 +129,7 @@ export default function DashboardHome({
         abrirConfirmacao={abrirConfirmacao}
         excluirNota={excluirNota}
       />
+      )}
     </>
   )
 }

@@ -3098,6 +3098,7 @@ export default function App() {
         abrirEdicaoNota={abrirEdicaoNota}
         abrirConfirmacao={abrirConfirmacao}
         excluirNota={excluirNota}
+        loading={loading}
       />
     )
   }
@@ -5119,6 +5120,7 @@ export default function App() {
         alternarNotaConcluida={alternarNotaConcluida}
         abrirEdicaoNota={abrirEdicaoNota}
         excluirNota={excluirNota}
+        loading={loading}
       />
 
       {/* Lista de contas movida para a tela Financeiro > Contas. */}

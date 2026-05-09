@@ -3004,3 +3004,97 @@ body .note-card-action::before{
     transform: translateY(0) scale(1);
   }
 }
+
+/* Fase 7.3 — skeletons e carregamento inteligente */
+.df-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 48%, #f8fafc 100%);
+  background-size: 220% 100%;
+  border-radius: 999px;
+  animation: df-skeleton-pulse 1.25s ease-in-out infinite;
+}
+
+.df-skeleton-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+}
+
+.df-skeleton-summary {
+  width: 100%;
+}
+
+.df-skeleton-summary-card {
+  min-height: 94px;
+  padding: 16px;
+  display: grid;
+  align-content: center;
+  gap: 12px;
+}
+
+.df-skeleton-list {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.df-skeleton-account-card,
+.df-skeleton-note-card {
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.df-skeleton-card-top,
+.df-skeleton-chip-row,
+.df-skeleton-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.df-skeleton-line {
+  height: 12px;
+}
+
+.df-skeleton-line-sm { width: 86px; }
+.df-skeleton-line-lg { width: 132px; height: 22px; }
+.df-skeleton-line-title { width: min(260px, 62%); height: 18px; }
+.df-skeleton-line-value { width: 92px; height: 18px; }
+.df-skeleton-line-full { width: 100%; }
+.df-skeleton-line-mid { width: 68%; }
+
+.df-skeleton-chip,
+.df-skeleton-pill {
+  height: 26px;
+  width: 112px;
+  border-radius: 999px;
+}
+
+.df-skeleton-pill { width: 78px; }
+
+.df-skeleton-button {
+  width: 96px;
+  height: 34px;
+  border-radius: 12px;
+}
+
+.df-skeleton-notes {
+  margin-top: 12px;
+}
+
+@keyframes df-skeleton-pulse {
+  0% { background-position: 120% 0; }
+  100% { background-position: -120% 0; }
+}
+
+@media (max-width: 640px) {
+  .df-skeleton-summary-card { min-height: 78px; }
+  .df-skeleton-card-top,
+  .df-skeleton-actions-row { align-items: flex-start; }
+  .df-skeleton-line-title { width: 100%; }
+}

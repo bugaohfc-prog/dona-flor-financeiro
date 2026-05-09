@@ -1,3 +1,4 @@
+import { AccountListSkeleton } from '../components/feedback/Skeletons.jsx'
 export default function ContasPage({
   styles, busca, setBusca, mostrarFiltros, setMostrarFiltros, limparFiltros, imprimirPDF, exportarCSV,
   filtroStatus, setFiltroStatus, centros, filtroCentro, setFiltroCentro, filtroMes, setFiltroMes,
@@ -60,7 +61,7 @@ export default function ContasPage({
       </section>
 
       <section className="content-block" style={styles.bloco}>
-        {loading && <p>Carregando...</p>}
+        {loading && <AccountListSkeleton items={3} />}
 
         <HeaderExpansivel
           titulo="💰 Contas"
@@ -68,7 +69,7 @@ export default function ContasPage({
           onClick={() => setMostrarContas(!mostrarContas)}
         />
 
-        {mostrarContas && contasFiltradas.map((conta) => {
+        {!loading && mostrarContas && contasFiltradas.map((conta) => {
           const vencida = estaVencida(conta.data_vencimento, conta.status)
 
           return (

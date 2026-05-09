@@ -1,4 +1,14 @@
 import { useState } from 'react'
+import {
+  alternarNotaConcluidaService,
+  atualizarNota,
+  criarNota,
+  enviarNotaParaLixeira,
+  excluirNotaPermanentemente,
+  listarNotas,
+  listarNotasLixeira,
+  restaurarNotaDaLixeira
+} from '../services/notasService'
 
 function primeiraLetraMaiuscula(texto) {
   if (!texto) return ''
@@ -27,12 +37,7 @@ export function useNotas() {
   async function buscarNotas({ supabase, empresaAtual, avisarErro }) {
     if (!empresaAtual) return
 
-    const { data, error } = await supabase
-      .from('df_notas')
-      .select('*')
-      .eq('empresa_id', empresaAtual)
-      .eq('excluido', false)
-      .order('created_at', { ascending: false })
+    const { data, error } = await listarNotas(supabase, empresaAtual)
 
     if (error) {
       avisarErro(error)
@@ -46,12 +51,7 @@ export function useNotas() {
   async function buscarNotasLixeira({ supabase, empresaAtual, avisarErro }) {
     if (!empresaAtual) return
 
-    const { data, error } = await supabase
-      .from('df_notas')
-      .select('*')
-      .eq('empresa_id', empresaAtual)
-      .eq('excluido', true)
-      .order('excluido_em', { ascending: false })
+    const { data, error } = await listarNotasLixeira(supabase, empresaAtual)
 
     if (error) {
       avisarErro(error)
@@ -105,14 +105,10 @@ export function useNotas() {
     let error
 
     if (editandoNotaId) {
-      const resposta = await supabase
-        .from('df_notas')
-        .update(payload)
-        .eq('id', editandoNotaId)
-        .eq('empresa_id', empresaId)
+      const resposta = await atualizarNota(supabase, editandoNotaId, empresaId, payload)
       error = resposta.error
     } else {
-      const resposta = await supabase.from('df_notas').insert([payload])
+      const resposta = await criarNota(supabase, payload)
       error = resposta.error
     }
 
@@ -126,14 +122,7 @@ export function useNotas() {
   }
 
   async function excluirNota({ supabase, id, empresaId, avisarErro, buscarNotas, buscarLixeira }) {
-    const { error } = await supabase
-      .from('df_notas')
-      .update({
-        excluido: true,
-        excluido_em: new Date().toISOString()
-      })
-      .eq('id', id)
-      .eq('empresa_id', empresaId)
+    const { error } = await enviarNotaParaLixeira(supabase, id, empresaId)
 
     if (error) {
       avisarErro(error)
@@ -145,11 +134,7 @@ export function useNotas() {
   }
 
   async function alternarNotaConcluida({ supabase, nota, empresaId, avisarErro, buscarNotas }) {
-    const { error } = await supabase
-      .from('df_notas')
-      .update({ concluida: !nota.concluida })
-      .eq('id', nota.id)
-      .eq('empresa_id', empresaId)
+    const { error } = await alternarNotaConcluidaService(supabase, nota, empresaId)
 
     if (error) {
       avisarErro(error)
@@ -160,14 +145,7 @@ export function useNotas() {
   }
 
   async function restaurarNota({ supabase, id, empresaId, avisarErro, buscarNotas, buscarLixeira }) {
-    const { error } = await supabase
-      .from('df_notas')
-      .update({
-        excluido: false,
-        excluido_em: null
-      })
-      .eq('id', id)
-      .eq('empresa_id', empresaId)
+    const { error } = await restaurarNotaDaLixeira(supabase, id, empresaId)
 
     if (error) {
       avisarErro(error)
@@ -179,11 +157,7 @@ export function useNotas() {
   }
 
   async function excluirNotaDefinitivo({ supabase, nota, empresaId, avisarErro, buscarLixeira }) {
-    const { error } = await supabase
-      .from('df_notas')
-      .delete()
-      .eq('id', nota.id)
-      .eq('empresa_id', empresaId)
+    const { error } = await excluirNotaPermanentemente(supabase, nota.id, empresaId)
 
     if (error) {
       avisarErro(error)

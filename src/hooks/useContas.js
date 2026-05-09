@@ -1,4 +1,19 @@
 import { useState } from 'react'
+import {
+  atualizarConta,
+  atualizarRecorrencia,
+  atualizarStatusConta,
+  buscarRecorrenciaPorId,
+  criarConta,
+  criarContasEmLote,
+  criarRecorrencia,
+  desativarRecorrencia,
+  enviarContaParaLixeira,
+  listarContasAtivas,
+  listarRecorrenciasAtivas,
+  listarRecorrenciasPorDia,
+  vincularRecorrenciaNaConta
+} from '../services/contasService'
 
 function dataLocal(data) {
   if (!data) return null
@@ -84,11 +99,7 @@ export function useContas() {
     const ano = hoje.getFullYear()
     const mes = hoje.getMonth() + 1
 
-    const { data: recorrentes, error } = await supabase
-      .from('df_contas_recorrentes')
-      .select('*')
-      .eq('empresa_id', empresaAtual)
-      .eq('ativo', true)
+    const { data: recorrentes, error } = await listarRecorrenciasAtivas(supabase, empresaAtual)
 
     if (error) {
       console.warn('Não foi possível carregar contas recorrentes:', error.message)
@@ -129,10 +140,7 @@ export function useContas() {
 
     if (novasContas.length === 0) return contasAtuais
 
-    const { data: contasCriadas, error: erroInsert } = await supabase
-      .from('df_contas')
-      .insert(novasContas)
-      .select('*, df_centros_custo(nome), df_contas_recorrentes(tipo_recorrencia)')
+    const { data: contasCriadas, error: erroInsert } = await criarContasEmLote(supabase, novasContas)
 
     if (erroInsert) {
       console.warn('Não foi possível gerar contas recorrentes:', erroInsert.message)
@@ -158,12 +166,7 @@ export function useContas() {
 
     if (!empresaAtual) return
 
-    const { data, error } = await supabase
-      .from('df_contas')
-      .select('*, df_centros_custo(nome), df_contas_recorrentes(tipo_recorrencia)')
-      .eq('empresa_id', empresaAtual)
-      .eq('excluido', false)
-      .order('data_vencimento')
+    const { data, error } = await listarContasAtivas(supabase, empresaAtual)
 
     if (error) {
       avisarErro(error)
@@ -201,12 +204,7 @@ export function useContas() {
     if (!supabase || !empresaId || !conta) return null
 
     if (conta.recorrencia_id) {
-      const { data, error } = await supabase
-        .from('df_contas_recorrentes')
-        .select('*')
-        .eq('id', conta.recorrencia_id)
-        .eq('empresa_id', empresaId)
-        .maybeSingle()
+      const { data, error } = await buscarRecorrenciaPorId(supabase, conta.recorrencia_id, empresaId)
 
       if (!error && data) return data
     }
@@ -214,13 +212,7 @@ export function useContas() {
     const diaReferencia = Number(String(dataBanco || conta.data_vencimento || '').slice(8, 10))
     if (!diaReferencia) return null
 
-    const { data, error } = await supabase
-      .from('df_contas_recorrentes')
-      .select('*')
-      .eq('empresa_id', empresaId)
-      .eq('ativo', true)
-      .eq('dia_vencimento', diaReferencia)
-      .order('created_at', { ascending: false })
+    const { data, error } = await listarRecorrenciasPorDia(supabase, empresaId, diaReferencia)
 
     if (error || !Array.isArray(data)) return null
 
@@ -270,11 +262,7 @@ export function useContas() {
       setDiaVencimentoRecorrencia(String(recorrenciaEncontrada.dia_vencimento || diaPadrao || ''))
 
       if (!conta.recorrencia_id && recorrenciaEncontrada.id) {
-        await supabase
-          .from('df_contas')
-          .update({ recorrencia_id: recorrenciaEncontrada.id })
-          .eq('id', conta.id)
-          .eq('empresa_id', empresaId)
+        await vincularRecorrenciaNaConta(supabase, conta.id, empresaId, recorrenciaEncontrada.id)
       }
     }
   }
@@ -331,7 +319,7 @@ export function useContas() {
     let error
 
     if (editandoContaId) {
-      const resposta = await supabase.from('df_contas').update(payload).eq('id', editandoContaId).eq('empresa_id', empresaId)
+      const resposta = await atualizarConta(supabase, editandoContaId, empresaId, payload)
       error = resposta.error
 
       if (!error) {
@@ -356,32 +344,21 @@ export function useContas() {
           }
 
           if (recorrenciaContaId) {
-            const { error: erroRecorrencia } = await supabase
-              .from('df_contas_recorrentes')
-              .update(payloadRecorrencia)
-              .eq('id', recorrenciaContaId)
-              .eq('empresa_id', empresaId)
+            const { error: erroRecorrencia } = await atualizarRecorrencia(supabase, recorrenciaContaId, empresaId, payloadRecorrencia)
 
             if (erroRecorrencia) {
               mostrarAviso('A conta foi atualizada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
               return
             }
 
-            const { error: erroVinculoRecorrencia } = await supabase
-              .from('df_contas')
-              .update({ recorrencia_id: recorrenciaContaId })
-              .eq('id', editandoContaId)
-              .eq('empresa_id', empresaId)
+            const { error: erroVinculoRecorrencia } = await vincularRecorrenciaNaConta(supabase, editandoContaId, empresaId, recorrenciaContaId)
 
             if (erroVinculoRecorrencia) {
               mostrarAviso('A recorrência foi atualizada, mas não foi vinculada à conta: ' + erroVinculoRecorrencia.message, 'erro')
               return
             }
           } else {
-            const { data: dataRecorrencia, error: erroRecorrencia } = await supabase
-              .from('df_contas_recorrentes')
-              .insert([payloadRecorrencia])
-              .select()
+            const { data: dataRecorrencia, error: erroRecorrencia } = await criarRecorrencia(supabase, payloadRecorrencia)
 
             if (erroRecorrencia) {
               mostrarAviso('A conta foi atualizada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
@@ -412,11 +389,7 @@ export function useContas() {
               return
             }
 
-            const { error: erroVinculoRecorrencia } = await supabase
-              .from('df_contas')
-              .update({ recorrencia_id: recorrenciaIdCriada })
-              .eq('id', editandoContaId)
-              .eq('empresa_id', empresaId)
+            const { error: erroVinculoRecorrencia } = await vincularRecorrenciaNaConta(supabase, editandoContaId, empresaId, recorrenciaIdCriada)
 
             if (erroVinculoRecorrencia) {
               mostrarAviso('A recorrência foi criada, mas não foi vinculada à conta: ' + erroVinculoRecorrencia.message, 'erro')
@@ -429,12 +402,12 @@ export function useContas() {
             ))
           }
         } else if (recorrenciaContaId) {
-          await supabase.from('df_contas_recorrentes').update({ ativo: false }).eq('id', recorrenciaContaId).eq('empresa_id', empresaId)
-          await supabase.from('df_contas').update({ recorrencia_id: null }).eq('id', editandoContaId).eq('empresa_id', empresaId)
+          await desativarRecorrencia(supabase, recorrenciaContaId, empresaId)
+          await vincularRecorrenciaNaConta(supabase, editandoContaId, empresaId, null)
         }
       }
     } else {
-      const resposta = await supabase.from('df_contas').insert([{ ...payload, status: 'pendente', excluido: false }]).select()
+      const resposta = await criarConta(supabase, { ...payload, status: 'pendente', excluido: false })
       error = resposta.error
 
       if (!error && contaRecorrente) {
@@ -446,19 +419,16 @@ export function useContas() {
           return
         }
 
-        const { data: dataRecorrencia, error: erroRecorrencia } = await supabase
-          .from('df_contas_recorrentes')
-          .insert([{
-            empresa_id: empresaId,
-            descricao: primeiraLetraMaiuscula(descricao.trim()),
-            valor: converterValor(valor),
-            centro_custo_id: centroCustoId || null,
-            tipo_recorrencia: tipoRecorrencia || 'mensal',
-            dia_vencimento: diaRecorrencia,
-            data_inicio: dataBanco,
-            ativo: true
-          }])
-          .select()
+        const { data: dataRecorrencia, error: erroRecorrencia } = await criarRecorrencia(supabase, {
+          empresa_id: empresaId,
+          descricao: primeiraLetraMaiuscula(descricao.trim()),
+          valor: converterValor(valor),
+          centro_custo_id: centroCustoId || null,
+          tipo_recorrencia: tipoRecorrencia || 'mensal',
+          dia_vencimento: diaRecorrencia,
+          data_inicio: dataBanco,
+          ativo: true
+        })
 
         if (erroRecorrencia) {
           mostrarAviso('A conta foi criada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
@@ -479,11 +449,7 @@ export function useContas() {
           }
 
           if (recorrenciaIdCriada && contaCriada?.id) {
-            const { error: erroVinculoRecorrencia } = await supabase
-              .from('df_contas')
-              .update({ recorrencia_id: recorrenciaIdCriada })
-              .eq('id', contaCriada.id)
-              .eq('empresa_id', empresaId)
+            const { error: erroVinculoRecorrencia } = await vincularRecorrenciaNaConta(supabase, contaCriada.id, empresaId, recorrenciaIdCriada)
 
             if (erroVinculoRecorrencia) {
               mostrarAviso('A recorrência foi criada, mas não foi vinculada à conta: ' + erroVinculoRecorrencia.message, 'erro')
@@ -512,26 +478,19 @@ export function useContas() {
 
   async function marcarComoPago(contexto) {
     const { supabase, id, empresaId, buscarContas } = contexto
-    await supabase.from('df_contas').update({ status: 'pago' }).eq('id', id).eq('empresa_id', empresaId)
+    await atualizarStatusConta(supabase, id, empresaId, 'pago')
     buscarContas()
   }
 
   async function voltarParaPendente(contexto) {
     const { supabase, id, empresaId, buscarContas } = contexto
-    await supabase.from('df_contas').update({ status: 'pendente' }).eq('id', id).eq('empresa_id', empresaId)
+    await atualizarStatusConta(supabase, id, empresaId, 'pendente')
     buscarContas()
   }
 
   async function excluirConta(contexto) {
     const { supabase, id, empresaId, avisarErro, buscarContas, buscarLixeira } = contexto
-    const { error } = await supabase
-      .from('df_contas')
-      .update({
-        excluido: true,
-        excluido_em: new Date().toISOString()
-      })
-      .eq('id', id)
-      .eq('empresa_id', empresaId)
+    const { error } = await enviarContaParaLixeira(supabase, id, empresaId)
 
     if (error) {
       avisarErro(error)

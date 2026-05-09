@@ -279,6 +279,7 @@ export default function App() {
     dataEventoNota,
     setDataEventoNota,
     buscarNotas: buscarNotasHook,
+    buscarNotasLixeira: buscarNotasLixeiraHook,
     abrirNovaNota: abrirNovaNotaHook,
     abrirEdicaoNota: abrirEdicaoNotaHook,
     fecharNota: fecharNotaHook,
@@ -1048,23 +1049,17 @@ export default function App() {
       .eq('excluido', true)
       .order('excluido_em', { ascending: false })
 
-    const { data: notasExcluidas, error: erroNotas } = await supabase
-      .from('df_notas')
-      .select('*')
-      .eq('empresa_id', empresaAtual)
-      .eq('excluido', true)
-      .order('excluido_em', { ascending: false })
-
     if (erroContas) {
       avisarErro(erroContas)
     }
 
-    if (erroNotas) {
-      avisarErro(erroNotas)
-    }
-
     setContasLixeira(contasExcluidas || [])
-    setNotasLixeira(notasExcluidas || [])
+
+    await buscarNotasLixeiraHook({
+      supabase,
+      empresaAtual,
+      avisarErro
+    })
   }
 
   async function buscarCentros(empresaAtual = empresaId) {

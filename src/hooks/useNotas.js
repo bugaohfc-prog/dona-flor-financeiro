@@ -42,6 +42,25 @@ export function useNotas() {
     setNotas(data || [])
   }
 
+
+  async function buscarNotasLixeira({ supabase, empresaAtual, avisarErro }) {
+    if (!empresaAtual) return
+
+    const { data, error } = await supabase
+      .from('df_notas')
+      .select('*')
+      .eq('empresa_id', empresaAtual)
+      .eq('excluido', true)
+      .order('excluido_em', { ascending: false })
+
+    if (error) {
+      avisarErro(error)
+      return
+    }
+
+    setNotasLixeira(data || [])
+  }
+
   function abrirNovaNota({ setMenuAberto, setMenuNavegacaoAberto }) {
     setMenuAberto(false)
     setMenuNavegacaoAberto(false)
@@ -194,6 +213,7 @@ export function useNotas() {
     dataEventoNota,
     setDataEventoNota,
     buscarNotas,
+    buscarNotasLixeira,
     abrirNovaNota,
     abrirEdicaoNota,
     fecharNota,

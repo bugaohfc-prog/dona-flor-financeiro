@@ -22,6 +22,9 @@ import AccountModal from './components/modals/AccountModal.jsx'
 import NoteModal from './components/modals/NoteModal.jsx'
 import CostCenterModal from './components/modals/CostCenterModal.jsx'
 import ConfirmModal from './components/modals/ConfirmModal.jsx'
+import GlobalLoader from './components/feedback/GlobalLoader.jsx'
+import GlobalToast from './components/feedback/GlobalToast.jsx'
+import { useApp } from './context/AppContext.jsx'
 import { useContas } from './hooks/useContas'
 import { useNotas } from './hooks/useNotas'
 import { converterValor, formatarData, formatarDataParaBanco, formatarValor, limitarDataInput, primeiraLetraMaiuscula } from './utils/format'
@@ -53,6 +56,7 @@ function limparSessaoSegura() {
 export default function App() {
   const avisoSessaoMostradoRef = useRef(false)
   const encerrandoSessaoRef = useRef(false)
+  const { globalLoading, toast: globalToast, showToast, hideToast } = useApp()
   // =========================
   // BLOCO 0 — UTILITÁRIOS
   // =========================
@@ -250,14 +254,8 @@ export default function App() {
   const [arquivoImportacao, setArquivoImportacao] = useState(null)
   const [linhasImportacao, setLinhasImportacao] = useState([])
   const [statusImportacao, setStatusImportacao] = useState('')
-  const [toast, setToast] = useState({ visivel: false, mensagem: '', tipo: 'info' })
-
   function mostrarAviso(mensagem, tipo = 'info') {
-    setToast({ visivel: true, mensagem, tipo })
-    window.clearTimeout(mostrarAviso.timeoutId)
-    mostrarAviso.timeoutId = window.setTimeout(() => {
-      setToast({ visivel: false, mensagem: '', tipo: 'info' })
-    }, 3200)
+    showToast(mensagem, tipo)
   }
 
   function avisarErro(erro, fallback = 'Não foi possível concluir a operação.') {
@@ -596,19 +594,19 @@ export default function App() {
 
   async function adicionarUsuarioEmpresa() {
     if (!empresaId) {
-      alert('Empresa não identificada.')
+      mostrarAviso('Empresa não identificada.', 'erro')
       return
     }
 
     if (!podeAdministrarUsuarios()) {
-      alert('Apenas administradores podem adicionar usuários.')
+      mostrarAviso('Apenas administradores podem adicionar usuários.', 'erro')
       return
     }
 
     const email = emailConviteUsuario.trim().toLowerCase()
 
     if (!email || !email.includes('@')) {
-      alert('Informe um e-mail válido.')
+      mostrarAviso('Informe um e-mail válido.', 'erro')
       return
     }
 
@@ -651,7 +649,7 @@ export default function App() {
 
   async function enviarAcessoUsuarioEmpresa(usuario) {
     if (!podeAdministrarUsuarios()) {
-      alert('Apenas administradores podem enviar acesso ou reset de senha.')
+      mostrarAviso('Apenas administradores podem enviar acesso ou reset de senha.', 'erro')
       return
     }
 
@@ -675,7 +673,7 @@ export default function App() {
 
   async function atualizarPerfilUsuarioEmpresa(usuario, novoPerfil) {
     if (!podeAdministrarUsuarios()) {
-      alert('Apenas administradores podem alterar perfis.')
+      mostrarAviso('Apenas administradores podem alterar perfis.', 'erro')
       return
     }
 
@@ -685,7 +683,7 @@ export default function App() {
     if (usuarioAtual && perfil !== 'admin') {
       const admins = usuariosEmpresa.filter((u) => normalizarPerfil(u.perfil) === 'admin')
       if (admins.length <= 1) {
-        alert('Você não pode remover o último administrador da empresa.')
+        mostrarAviso('Você não pode remover o último administrador da empresa.', 'erro')
         return
       }
     }
@@ -715,21 +713,21 @@ export default function App() {
 
   async function removerUsuarioEmpresa(usuario) {
     if (!podeAdministrarUsuarios()) {
-      alert('Apenas administradores podem remover usuários.')
+      mostrarAviso('Apenas administradores podem remover usuários.', 'erro')
       return
     }
 
     const usuarioAtual = usuario.user_id && usuarioLogado?.id && usuario.user_id === usuarioLogado.id
 
     if (usuarioAtual) {
-      alert('Você não pode remover o próprio acesso por aqui.')
+      mostrarAviso('Você não pode remover o próprio acesso por aqui.', 'erro')
       return
     }
 
     if (normalizarPerfil(usuario.perfil) === 'admin') {
       const adminsAtivos = usuariosEmpresa.filter((u) => normalizarPerfil(u.perfil) === 'admin')
       if (adminsAtivos.length <= 1) {
-        alert('Você não pode remover o último administrador da empresa.')
+        mostrarAviso('Você não pode remover o último administrador da empresa.', 'erro')
         return
       }
     }
@@ -756,7 +754,7 @@ export default function App() {
     const email = novoEmailUsuario.trim().toLowerCase()
 
     if (!email || !email.includes('@')) {
-      alert('Informe um e-mail válido.')
+      mostrarAviso('Informe um e-mail válido.', 'erro')
       return
     }
 
@@ -771,17 +769,17 @@ export default function App() {
     }
 
     setNovoEmailUsuario('')
-    alert('Solicitação enviada. Confirme o novo e-mail conforme orientação do Supabase.')
+    mostrarAviso('Solicitação enviada. Confirme o novo e-mail conforme orientação do Supabase.', 'sucesso')
   }
 
   async function salvarMinhaSenha() {
     if (!novaSenhaUsuario || novaSenhaUsuario.length < 6) {
-      alert('A senha precisa ter pelo menos 6 caracteres.')
+      mostrarAviso('A senha precisa ter pelo menos 6 caracteres.', 'erro')
       return
     }
 
     if (novaSenhaUsuario !== confirmarNovaSenhaUsuario) {
-      alert('As senhas não conferem.')
+      mostrarAviso('As senhas não conferem.', 'erro')
       return
     }
 
@@ -794,7 +792,7 @@ export default function App() {
 
     setNovaSenhaUsuario('')
     setConfirmarNovaSenhaUsuario('')
-    alert('Senha atualizada com sucesso.')
+    mostrarAviso('Senha atualizada com sucesso.', 'sucesso')
   }
 
 
@@ -1202,7 +1200,7 @@ export default function App() {
   // =========================
   async function salvarConfiguracoes() {
     if (!empresaId) {
-      alert('Usuário sem empresa vinculada.')
+      mostrarAviso('Usuário sem empresa vinculada.', 'erro')
       return
     }
 
@@ -1333,12 +1331,12 @@ export default function App() {
   // =========================
   async function salvarCentro() {
     if (!empresaId) {
-      alert('Usuário sem empresa vinculada.')
+      mostrarAviso('Usuário sem empresa vinculada.', 'erro')
       return
     }
 
     if (!novoCentro.trim()) {
-      alert('Digite o centro de custo')
+      mostrarAviso('Digite o centro de custo.', 'erro')
       return
     }
 
@@ -1363,7 +1361,7 @@ export default function App() {
       .eq('empresa_id', empresaId)
 
     if (error) {
-      alert('Não foi possível excluir. Verifique se existem contas usando este centro.')
+      mostrarAviso('Não foi possível excluir. Verifique se existem contas usando este centro.', 'erro')
       return
     }
 
@@ -1718,13 +1716,13 @@ export default function App() {
 
   async function importarExcelParaContas() {
     if (!empresaId) {
-      alert('Usuário sem empresa vinculada.')
+      mostrarAviso('Usuário sem empresa vinculada.', 'erro')
       return
     }
 
     const invalidas = linhasImportacao.filter((linha) => !linha.descricao || !linha.valor || !linha.data_vencimento)
     if (invalidas.length > 0) {
-      alert(`Existem ${invalidas.length} linha(s) sem descrição, valor ou vencimento. Corrija a planilha e importe novamente.`)
+      mostrarAviso(`Existem ${invalidas.length} linha(s) sem descrição, valor ou vencimento. Corrija a planilha e importe novamente.`, 'erro')
       return
     }
 
@@ -5128,16 +5126,8 @@ export default function App() {
 
       {renderModaisGlobais()}
 
-      {toast.visivel && (
-        <div
-          className={`app-toast app-toast-${toast.tipo}`}
-          role="status"
-          onClick={() => setToast({ visivel: false, mensagem: '', tipo: 'info' })}
-        >
-          <strong>{toast.tipo === 'erro' ? 'Atenção' : 'Aviso'}</strong>
-          <span>{toast.mensagem}</span>
-        </div>
-      )}
+      <GlobalLoader visible={globalLoading} />
+      <GlobalToast toast={globalToast} onClose={hideToast} />
 
       <ConfirmModal
         styles={styles}

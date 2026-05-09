@@ -2888,3 +2888,119 @@ body .note-card-action::before{
     padding: 5px 8px;
   }
 }
+
+/* Fase 7.2 — feedback visual profissional */
+.global-loader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(3px);
+}
+
+.global-loader-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.global-loader-spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 3px solid #ccfbf1;
+  border-top-color: #0f766e;
+  animation: df-spin 0.8s linear infinite;
+}
+
+@keyframes df-spin {
+  to { transform: rotate(360deg); }
+}
+
+.app-toast-global {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  animation: df-toast-in 0.22s ease-out;
+}
+
+.app-toast-content {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-toast-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.app-toast-icon-sucesso {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.app-toast-icon-info {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.app-toast-icon-alerta {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.app-toast-icon-erro {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.app-toast-close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.app-toast-sucesso {
+  border-left: 5px solid #22c55e !important;
+}
+
+.app-toast-alerta {
+  border-left: 5px solid #f59e0b !important;
+}
+
+@keyframes df-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

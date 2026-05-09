@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { primeiraLetraMaiuscula } from '../utils/format'
 import {
   alternarNotaConcluidaService,
   atualizarNota,
@@ -11,6 +10,10 @@ import {
   restaurarNotaDaLixeira
 } from '../services/notasService'
 
+function primeiraLetraMaiuscula(texto) {
+  if (!texto) return ''
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
+}
 
 export function useNotas() {
   const [notas, setNotas] = useState([])

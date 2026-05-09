@@ -24,7 +24,6 @@ import { useNotas } from './hooks/useNotas'
 import { converterValor, formatarData, formatarDataParaBanco, formatarValor, limitarDataInput, primeiraLetraMaiuscula } from './utils/format'
 import { dataLocal, diferencaDias, mesmoMesAtual } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
-import { prepararLinhasImportacaoCsv } from './utils/importacaoCsv'
 import './styles.css'
 
 const SESSAO_STORAGE_KEY = 'df_sessao_segura'
@@ -1570,6 +1569,107 @@ export default function App() {
 
 
 
+  function normalizarChaveExcel(chave) {
+    return String(chave || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+  }
+
+  function obterCampoExcel(linha, nomesPossiveis) {
+    const entradas = Object.entries(linha || {})
+    for (const nome of nomesPossiveis) {
+      const alvo = normalizarChaveExcel(nome)
+      const encontrado = entradas.find(([chave]) => normalizarChaveExcel(chave) === alvo)
+      if (encontrado) return encontrado[1]
+    }
+    return ''
+  }
+
+  function converterDataExcel(valor) {
+    if (!valor) return null
+
+    if (typeof valor === 'number') {
+      const base = new Date(Date.UTC(1899, 11, 30))
+      base.setUTCDate(base.getUTCDate() + valor)
+      return base.toISOString().slice(0, 10)
+    }
+
+    const texto = String(valor).trim()
+    if (!texto) return null
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) return texto
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(texto)) {
+      const [dia, mes, ano] = texto.split('/')
+      return `${ano}-${mes}-${dia}`
+    }
+
+    return formatarDataParaBanco(texto)
+  }
+
+  function converterValorExcel(valor) {
+    if (typeof valor === 'number') return valor
+    const texto = String(valor || '')
+      .replace(/R\$/gi, '')
+      .replace(/\./g, '')
+      .replace(',', '.')
+      .trim()
+    return Number(texto || 0)
+  }
+
+  function separarLinhaCsv(linha) {
+    const resultado = []
+    let atual = ''
+    let dentroDeAspas = false
+
+    for (let i = 0; i < linha.length; i += 1) {
+      const char = linha[i]
+      const proximo = linha[i + 1]
+
+      if (char === '"' && proximo === '"') {
+        atual += '"'
+        i += 1
+        continue
+      }
+
+      if (char === '"') {
+        dentroDeAspas = !dentroDeAspas
+        continue
+      }
+
+      if ((char === ';' || char === ',') && !dentroDeAspas) {
+        resultado.push(atual.trim())
+        atual = ''
+        continue
+      }
+
+      atual += char
+    }
+
+    resultado.push(atual.trim())
+    return resultado
+  }
+
+  function csvParaJson(texto) {
+    const linhas = String(texto || '')
+      .replace(/^﻿/, '')
+      .split(/\r?\n/)
+      .filter((linha) => linha.trim())
+
+    if (linhas.length < 2) return []
+
+    const cabecalho = separarLinhaCsv(linhas[0])
+
+    return linhas.slice(1).map((linha) => {
+      const valores = separarLinhaCsv(linha)
+      return cabecalho.reduce((obj, chave, index) => {
+        obj[chave] = valores[index] || ''
+        return obj
+      }, {})
+    })
+  }
+
   async function lerArquivoExcel(event) {
     const file = event.target.files?.[0]
     setArquivoImportacao(file || null)
@@ -1587,7 +1687,24 @@ export default function App() {
 
     const reader = new FileReader()
     reader.onload = (e) => {
-      const preparadas = prepararLinhasImportacaoCsv(e.target.result)
+      const linhas = csvParaJson(e.target.result)
+
+      const preparadas = linhas.map((linha, index) => {
+        const descricaoExcel = obterCampoExcel(linha, ['descricao', 'descrição', 'conta', 'nome', 'fornecedor'])
+        const valorExcel = obterCampoExcel(linha, ['valor', 'valor pago', 'total'])
+        const vencimentoExcel = obterCampoExcel(linha, ['vencimento', 'data vencimento', 'data_vencimento', 'data'])
+        const statusExcel = String(obterCampoExcel(linha, ['status', 'situacao', 'situação']) || 'pendente').toLowerCase()
+        const centroExcel = obterCampoExcel(linha, ['centro', 'centro de custo', 'categoria', 'setor'])
+
+        return {
+          linha: index + 2,
+          descricao: primeiraLetraMaiuscula(String(descricaoExcel || '').trim()),
+          valor: converterValorExcel(valorExcel),
+          data_vencimento: converterDataExcel(vencimentoExcel),
+          status: statusExcel.includes('pag') ? 'pago' : 'pendente',
+          centro: String(centroExcel || '').trim()
+        }
+      }).filter((linha) => linha.descricao || linha.valor || linha.data_vencimento)
 
       setLinhasImportacao(preparadas)
       setStatusImportacao(`${preparadas.length} linha(s) preparada(s) para revisão.`)

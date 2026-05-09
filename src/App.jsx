@@ -21,6 +21,9 @@ import CostCenterModal from './components/modals/CostCenterModal.jsx'
 import ConfirmModal from './components/modals/ConfirmModal.jsx'
 import { useContas } from './hooks/useContas'
 import { useNotas } from './hooks/useNotas'
+import { converterValor, formatarData, formatarDataParaBanco, formatarValor, limitarDataInput, primeiraLetraMaiuscula } from './utils/format'
+import { dataLocal, diferencaDias, mesmoMesAtual } from './utils/dates'
+import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
 import './styles.css'
 
 const SESSAO_STORAGE_KEY = 'df_sessao_segura'
@@ -50,70 +53,7 @@ export default function App() {
   // =========================
   // BLOCO 0 — UTILITÁRIOS
   // =========================
-  function primeiraLetraMaiuscula(texto) {
-    if (!texto) return ''
-    return texto.charAt(0).toUpperCase() + texto.slice(1)
-  }
-
-  function formatarValor(valor) {
-    return Number(valor || 0).toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    })
-  }
-
-  function formatarData(data) {
-    if (!data) return '-'
-    return new Date(data + 'T00:00:00').toLocaleDateString('pt-BR')
-  }
-
-  function obterTipoRecorrenciaConta(conta) {
-    const tipo = conta?.df_contas_recorrentes?.tipo_recorrencia || conta?.tipo_recorrencia || ''
-    return String(tipo || 'mensal')
-  }
-
-  function formatarTipoRecorrencia(tipo) {
-    const normalizado = String(tipo || 'mensal').toLowerCase()
-    const mapa = {
-      mensal: 'Mensal',
-      semanal: 'Semanal',
-      anual: 'Anual',
-      quinzenal: 'Quinzenal'
-    }
-    return mapa[normalizado] || primeiraLetraMaiuscula(normalizado)
-  }
-
-  function converterValor(valorDigitado) {
-    return Number(String(valorDigitado).replace(',', '.'))
-  }
-
-
-  function formatarDataParaBanco(valor) {
-    if (!valor) return null
-
-    const texto = String(valor).trim()
-
-    if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
-      return texto
-    }
-
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(texto)) {
-      const [dia, mes, ano] = texto.split('/')
-      return `${ano}-${mes}-${dia}`
-    }
-
-    return texto.slice(0, 10)
-  }
-
-  function limitarDataInput(valor) {
-    if (!valor) return ''
-    const texto = String(valor)
-    if (texto.includes('-')) return texto.slice(0, 10)
-    const numeros = texto.replace(/\D/g, '').slice(0, 8)
-    if (numeros.length <= 2) return numeros
-    if (numeros.length <= 4) return `${numeros.slice(0, 2)}/${numeros.slice(2)}`
-    return `${numeros.slice(0, 2)}/${numeros.slice(2, 4)}/${numeros.slice(4, 8)}`
-  }
+  // Utilitários compartilhados foram movidos para src/utils.
 
   function erroEhSessaoExpirada(erro) {
     const mensagem = String(erro?.message || erro || '').toLowerCase()
@@ -148,50 +88,6 @@ export default function App() {
 
   function podeExcluirDefinitivo(dataExclusao) {
     return true
-  }
-
-  function dataLocal(data) {
-    if (!data) return null
-    const valor = String(data).slice(0, 10)
-    return new Date(valor + 'T00:00:00')
-  }
-
-  function diferencaDias(data) {
-    const hoje = new Date()
-    hoje.setHours(0, 0, 0, 0)
-
-    const alvo = dataLocal(data)
-    if (!alvo) return 999999
-
-    const diff = alvo - hoje
-    return Math.round(diff / (1000 * 60 * 60 * 24))
-  }
-
-  function mesmoMesAtual(data) {
-    const alvo = dataLocal(data)
-    if (!alvo) return false
-
-    const hoje = new Date()
-    return alvo.getMonth() === hoje.getMonth() && alvo.getFullYear() === hoje.getFullYear()
-  }
-
-  function montarDataRecorrente(ano, mes, dia) {
-    const ultimoDiaMes = new Date(ano, mes, 0).getDate()
-    const diaSeguro = Math.min(Number(dia || 1), ultimoDiaMes)
-    return `${ano}-${String(mes).padStart(2, '0')}-${String(diaSeguro).padStart(2, '0')}`
-  }
-
-  function deveGerarRecorrenciaNoMes(recorrencia, ano, mes) {
-    if (!recorrencia?.ativo) return false
-    if ((recorrencia.frequencia || recorrencia.tipo_recorrencia || 'mensal') !== 'mensal') return false
-
-    const inicio = recorrencia.data_inicio ? dataLocal(recorrencia.data_inicio) : null
-    if (!inicio) return true
-
-    const primeiroDiaMes = new Date(ano, mes - 1, 1)
-    const ultimoDiaMes = new Date(ano, mes, 0)
-
-    return inicio <= ultimoDiaMes && primeiroDiaMes >= new Date(inicio.getFullYear(), inicio.getMonth(), 1)
   }
 
   // =========================

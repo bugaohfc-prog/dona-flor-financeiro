@@ -14,32 +14,8 @@ import {
   listarRecorrenciasPorDia,
   vincularRecorrenciaNaConta
 } from '../services/contasService'
-
-function dataLocal(data) {
-  if (!data) return null
-  const partes = String(data).slice(0, 10).split('-').map(Number)
-  if (partes.length !== 3 || partes.some(Number.isNaN)) return null
-  return new Date(partes[0], partes[1] - 1, partes[2])
-}
-
-function montarDataRecorrente(ano, mes, dia) {
-  const ultimoDiaMes = new Date(ano, mes, 0).getDate()
-  const diaSeguro = Math.min(Number(dia || 1), ultimoDiaMes)
-  return `${ano}-${String(mes).padStart(2, '0')}-${String(diaSeguro).padStart(2, '0')}`
-}
-
-function deveGerarRecorrenciaNoMes(recorrencia, ano, mes) {
-  if (!recorrencia?.ativo) return false
-  if ((recorrencia.frequencia || recorrencia.tipo_recorrencia || 'mensal') !== 'mensal') return false
-
-  const inicio = recorrencia.data_inicio ? dataLocal(recorrencia.data_inicio) : null
-  if (!inicio) return true
-
-  const primeiroDiaMes = new Date(ano, mes - 1, 1)
-  const ultimoDiaMes = new Date(ano, mes, 0)
-
-  return inicio <= ultimoDiaMes && primeiroDiaMes >= new Date(inicio.getFullYear(), inicio.getMonth(), 1)
-}
+import { dataLocal } from '../utils/dates'
+import { deveGerarRecorrenciaNoMes, montarDataRecorrente } from '../utils/recorrencia'
 
 export function useContas() {
   const [contas, setContas] = useState([])

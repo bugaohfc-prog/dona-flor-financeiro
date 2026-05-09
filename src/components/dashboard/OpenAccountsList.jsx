@@ -1,3 +1,5 @@
+import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from '../../utils/recorrencia'
+
 export default function OpenAccountsList({
   styles,
   formatarValor,
@@ -12,21 +14,7 @@ export default function OpenAccountsList({
   abrirConfirmacao,
   marcarComoPago
 }) {
-  function obterTipoRecorrenciaConta(conta) {
-    const tipo = conta?.df_contas_recorrentes?.tipo_recorrencia || conta?.tipo_recorrencia || ''
-    return String(tipo || 'mensal')
-  }
 
-  function formatarTipoRecorrencia(tipo) {
-    const normalizado = String(tipo || 'mensal').toLowerCase()
-    const mapa = {
-      mensal: 'Mensal',
-      semanal: 'Semanal',
-      anual: 'Anual',
-      quinzenal: 'Quinzenal'
-    }
-    return mapa[normalizado] || normalizado.charAt(0).toUpperCase() + normalizado.slice(1)
-  }
 
   return (
     <section className={`dashboard-open-accounts content-block ${mostrarContasDashboard ? 'accounts-expanded' : 'accounts-collapsed'}`} style={styles.bloco}>

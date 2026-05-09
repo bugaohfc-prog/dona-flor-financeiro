@@ -132,7 +132,7 @@ export function useContas() {
     const { data: contasCriadas, error: erroInsert } = await supabase
       .from('df_contas')
       .insert(novasContas)
-      .select('*, df_centros_custo(nome)')
+      .select('*, df_centros_custo(nome), df_contas_recorrentes(tipo_recorrencia)')
 
     if (erroInsert) {
       console.warn('Não foi possível gerar contas recorrentes:', erroInsert.message)
@@ -160,7 +160,7 @@ export function useContas() {
 
     const { data, error } = await supabase
       .from('df_contas')
-      .select('*, df_centros_custo(nome)')
+      .select('*, df_centros_custo(nome), df_contas_recorrentes(tipo_recorrencia)')
       .eq('empresa_id', empresaAtual)
       .eq('excluido', false)
       .order('data_vencimento')

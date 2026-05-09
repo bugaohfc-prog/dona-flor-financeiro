@@ -12,6 +12,22 @@ export default function OpenAccountsList({
   abrirConfirmacao,
   marcarComoPago
 }) {
+  function obterTipoRecorrenciaConta(conta) {
+    const tipo = conta?.df_contas_recorrentes?.tipo_recorrencia || conta?.tipo_recorrencia || ''
+    return String(tipo || 'mensal')
+  }
+
+  function formatarTipoRecorrencia(tipo) {
+    const normalizado = String(tipo || 'mensal').toLowerCase()
+    const mapa = {
+      mensal: 'Mensal',
+      semanal: 'Semanal',
+      anual: 'Anual',
+      quinzenal: 'Quinzenal'
+    }
+    return mapa[normalizado] || normalizado.charAt(0).toUpperCase() + normalizado.slice(1)
+  }
+
   return (
     <section className={`dashboard-open-accounts content-block ${mostrarContasDashboard ? 'accounts-expanded' : 'accounts-collapsed'}`} style={styles.bloco}>
       <div className="dashboard-section-header dashboard-section-header-accounts">
@@ -55,7 +71,13 @@ export default function OpenAccountsList({
                 <div key={conta.id} className={`dashboard-account-row ${vencida ? 'account-row-vencido' : 'account-row-pendente'}`}>
                   <div>
                     <strong>{conta.descricao}</strong>
-                    <small>{formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'}</small>
+                    <div className="dashboard-account-meta">
+                      <span className="account-date-badge">📅 {formatarData(conta.data_vencimento)}</span>
+                      <span className="account-center-label">{conta.df_centros_custo?.nome || 'Sem centro'}</span>
+                      {conta.recorrencia_id && (
+                        <span className="account-recurring-badge">🔁 {formatarTipoRecorrencia(obterTipoRecorrenciaConta(conta))}</span>
+                      )}
+                    </div>
                     {conta.observacao && <small className="account-note-preview">Obs: {conta.observacao}</small>}
                   </div>
                   <div className="dashboard-account-row-actions">

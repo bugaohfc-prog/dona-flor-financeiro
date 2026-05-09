@@ -2827,3 +2827,64 @@ body .note-card-action::before{
     width:4px !important;
   }
 }
+
+/* Fase 6.3 — UX de data e recorrência em Contas
+   Mantém o layout atual e aproxima a leitura visual do padrão do Bloco de Notas. */
+.account-date-badge,
+.account-recurring-badge,
+.account-center-label {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.account-date-badge {
+  background: #eefbf8;
+  color: #0f766e;
+}
+
+.account-recurring-badge {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.account-center-label {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e5e7eb;
+}
+
+.dashboard-account-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.account-meta-line .account-date-badge,
+.account-meta-line .account-recurring-badge,
+.account-meta-line .account-center-label {
+  margin: 2px 0;
+}
+
+@media (max-width: 979px) {
+  .dashboard-account-meta,
+  .account-meta-line {
+    gap: 6px !important;
+  }
+
+  .account-date-badge,
+  .account-recurring-badge,
+  .account-center-label {
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+}

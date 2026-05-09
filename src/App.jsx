@@ -66,6 +66,22 @@ export default function App() {
     return new Date(data + 'T00:00:00').toLocaleDateString('pt-BR')
   }
 
+  function obterTipoRecorrenciaConta(conta) {
+    const tipo = conta?.df_contas_recorrentes?.tipo_recorrencia || conta?.tipo_recorrencia || ''
+    return String(tipo || 'mensal')
+  }
+
+  function formatarTipoRecorrencia(tipo) {
+    const normalizado = String(tipo || 'mensal').toLowerCase()
+    const mapa = {
+      mensal: 'Mensal',
+      semanal: 'Semanal',
+      anual: 'Anual',
+      quinzenal: 'Quinzenal'
+    }
+    return mapa[normalizado] || primeiraLetraMaiuscula(normalizado)
+  }
+
   function converterValor(valorDigitado) {
     return Number(String(valorDigitado).replace(',', '.'))
   }
@@ -1016,7 +1032,7 @@ export default function App() {
 
     const { data: contasExcluidas, error: erroContas } = await supabase
       .from('df_contas')
-      .select('*, df_centros_custo(nome)')
+      .select('*, df_centros_custo(nome), df_contas_recorrentes(tipo_recorrencia)')
       .eq('empresa_id', empresaAtual)
       .eq('excluido', true)
       .order('excluido_em', { ascending: false })
@@ -3250,10 +3266,11 @@ export default function App() {
               </div>
 
               <div style={styles.cardInfo} className="account-meta-line">
-                <span>{formatarData(conta.data_vencimento)}</span>
-                <span>•</span>
+                <span className="account-date-badge">📅 {formatarData(conta.data_vencimento)}</span>
                 <span>{conta.df_centros_custo?.nome || '-'}</span>
-                <span>•</span>
+                {conta.recorrencia_id && (
+                  <span className="account-recurring-badge">🔁 {formatarTipoRecorrencia(obterTipoRecorrenciaConta(conta))}</span>
+                )}
                 <span className={`status-pill ${vencida ? 'status-vencido' : conta.status === 'pago' ? 'status-pago' : 'status-pendente'}`}>
                   {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}
                 </span>

@@ -1,0 +1,146 @@
+export default function ContasPage({
+  styles, busca, setBusca, mostrarFiltros, setMostrarFiltros, limparFiltros, imprimirPDF, exportarCSV,
+  filtroStatus, setFiltroStatus, centros, filtroCentro, setFiltroCentro, filtroMes, setFiltroMes,
+  dataInicial, setDataInicial, dataFinal, setDataFinal, limitarDataInput, contasFiltradas, total, formatarValor,
+  loading, HeaderExpansivel, mostrarContas, setMostrarContas, estaVencida, formatarData, formatarTipoRecorrencia,
+  obterTipoRecorrenciaConta, abrirConfirmacao, marcarComoPago, voltarParaPendente, abrirEdicaoConta, excluirConta,
+  navegarPara
+}) {
+  function renderListaContasConteudo() {
+    return (
+      <>
+      <section className="no-print filters-desktop" style={styles.filtrosBox}>
+        <input
+          style={styles.input}
+          placeholder="Buscar por conta, data, centro, observação ou status..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+        />
+
+        <button className="filter-toggle-button" onClick={() => setMostrarFiltros(!mostrarFiltros)}>
+          {mostrarFiltros ? 'Ocultar filtros' : 'Filtros'}
+        </button>
+
+        <div className="export-actions" style={styles.acoes}>
+          <button style={styles.btnCinza} onClick={limparFiltros}>Limpar</button>
+          <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
+          <button style={styles.btnVerde} onClick={exportarCSV}>CSV</button>
+        </div>
+
+        {mostrarFiltros && (
+          <div className="advanced-filters">
+            <div className="status-tabs filter-tabs-fixed" style={styles.filtros}>
+              <button style={filtroStatus === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('todas')}>Todas</button>
+              <button style={filtroStatus === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pendentes')}>Pendentes</button>
+              <button style={filtroStatus === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pagas')}>Pagas</button>
+              <button style={filtroStatus === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('vencidas')}>Vencidas</button>
+            </div>
+
+            <select style={styles.input} value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)}>
+              <option value="">Todos os centros</option>
+              {centros.map((centro) => (<option key={centro.id} value={centro.id}>{centro.nome}</option>))}
+            </select>
+
+            <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
+
+            <input style={styles.input} type="date" value={dataInicial} onChange={(e) => setDataInicial(limitarDataInput(e.target.value))} />
+            <input style={styles.input} type="date" value={dataFinal} onChange={(e) => setDataFinal(limitarDataInput(e.target.value))} />
+          </div>
+        )}
+      </section>
+
+      <section className="result-summary" style={styles.resumoFiltro}>
+        <strong>Resultado filtrado</strong>
+        <span>{contasFiltradas.length} conta(s) • Total {formatarValor(total)}</span>
+        <small>
+          Centro: {filtroCentro ? centros.find((centro) => centro.id === filtroCentro)?.nome || 'Selecionado' : 'Todos'} •
+          Status: {filtroStatus} •
+          Mês: {filtroMes || 'Todos'}
+        </small>
+      </section>
+
+      <section className="content-block" style={styles.bloco}>
+        {loading && <p>Carregando...</p>}
+
+        <HeaderExpansivel
+          titulo="💰 Contas"
+          aberto={mostrarContas}
+          onClick={() => setMostrarContas(!mostrarContas)}
+        />
+
+        {mostrarContas && contasFiltradas.map((conta) => {
+          const vencida = estaVencida(conta.data_vencimento, conta.status)
+
+          return (
+            <div
+              className={`print-card account-card-desktop ${vencida ? 'account-card-vencida' : conta.status === 'pago' ? 'account-card-paga' : 'account-card-pendente'}`}
+              key={conta.id}
+              style={{
+                ...styles.cardConta,
+                background:
+                  conta.status === 'pago'
+                    ? '#d4edda'
+                    : vencida
+                      ? '#ffb3b3'
+                      : '#fff3cd'
+              }}
+            >
+              <div style={styles.cardTopo}>
+                <strong>{conta.descricao}</strong>
+                <span>{formatarValor(conta.valor)}</span>
+              </div>
+
+              <div style={styles.cardInfo} className="account-meta-line">
+                <span className="account-date-badge">📅 {formatarData(conta.data_vencimento)}</span>
+                <span>{conta.df_centros_custo?.nome || '-'}</span>
+                {conta.recorrencia_id && (
+                  <span className="account-recurring-badge">🔁 {formatarTipoRecorrencia(obterTipoRecorrenciaConta(conta))}</span>
+                )}
+                <span className={`status-pill ${vencida ? 'status-vencido' : conta.status === 'pago' ? 'status-pago' : 'status-pendente'}`}>
+                  {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}
+                </span>
+              </div>
+
+              <div className="account-actions" style={styles.acoes}>
+                {conta.status !== 'pago' ? (
+                  <button style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>
+                    Pago
+                  </button>
+                ) : (
+                  <button style={styles.btnVoltar} onClick={() => abrirConfirmacao({ titulo: 'Voltar para pendente', mensagem: `Deseja voltar a conta ${conta.descricao} para pendente?`, textoConfirmar: 'Voltar', tipo: 'aviso', acao: () => voltarParaPendente(conta.id) })}>
+                    Voltar
+                  </button>
+                )}
+
+                <button style={styles.btnEditar} onClick={() => abrirEdicaoConta(conta)}>
+                  Editar
+                </button>
+
+                <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
+                  Excluir
+                </button>
+              </div>
+            </div>
+          )
+        })}
+      </section>
+
+      </>
+    )
+  }
+
+  return (
+    <>
+      <div className="page-title-actions">
+        <div>
+          <h1 style={styles.titulo}>💳 Contas</h1>
+          <p style={styles.textoNota}>Consulte, filtre, exporte e administre as contas da empresa em uma página dedicada.</p>
+        </div>
+        <div className="page-actions-row">
+          <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Dashboard</button>
+        </div>
+      </div>
+      {renderListaContasConteudo()}
+    </>
+  )
+}

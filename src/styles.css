@@ -3243,3 +3243,94 @@ body .note-card-action::before{
     max-width: none !important;
   }
 }
+
+/* Fase 7.6 — UX suave sem tocar no core
+   Escopo: somente CSS. Mantém feedbacks, handlers e renderização intactos. */
+:root {
+  --df-transition-fast: 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  --df-transition-soft: 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+button,
+.card,
+.alertCard,
+.content-block,
+.accountCard,
+.noteCard,
+.dashboard-open-accounts,
+.dashboard-notes-card,
+.print-card,
+.modal,
+.mobile-menu-panel,
+.desktop-sidebar-nav button,
+.account-actions button,
+.notes-list-dashboard button,
+.export-actions button,
+.top-action-button,
+.top-exit-button,
+.filter-toggle-button,
+.dashboard-see-all-link,
+.note-card-action,
+.note-toggle-small {
+  transition:
+    background-color var(--df-transition-soft),
+    border-color var(--df-transition-soft),
+    color var(--df-transition-soft),
+    box-shadow var(--df-transition-soft),
+    transform var(--df-transition-soft),
+    opacity var(--df-transition-soft) !important;
+}
+
+button:hover,
+.desktop-sidebar-nav button:hover,
+.account-actions button:hover,
+.notes-list-dashboard button:hover,
+.export-actions button:hover,
+.top-action-button:hover,
+.dashboard-see-all-link:hover,
+.note-card-action:hover,
+.note-toggle-small:hover {
+  transform: translateY(-1px) !important;
+}
+
+button:active,
+.desktop-sidebar-nav button:active,
+.account-actions button:active,
+.notes-list-dashboard button:active,
+.export-actions button:active,
+.top-action-button:active,
+.dashboard-see-all-link:active,
+.note-card-action:active,
+.note-toggle-small:active {
+  transform: translateY(0) scale(0.99) !important;
+  transition-duration: var(--df-transition-fast) !important;
+}
+
+.modalOverlay {
+  animation: df-overlay-soft-in 320ms ease-out both !important;
+}
+
+.modal {
+  animation: df-modal-soft-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both !important;
+}
+
+@keyframes df-overlay-soft-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes df-modal-soft-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+}

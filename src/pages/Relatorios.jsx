@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { money as formatarValor, dateBR as formatarData } from '../utils/format'
 
-export default function Relatorios({ voltar }) {
+export default function Relatorios({ voltar, mostrarAviso }) {
   // =========================
   // BLOCO 0 — UTILITÁRIOS
   // =========================
@@ -97,8 +97,8 @@ export default function Relatorios({ voltar }) {
       .select('*')
       .order('nome', { ascending: true })
 
-    if (contasError) alert(contasError.message)
-    if (centrosError) alert(centrosError.message)
+    if (contasError) mostrarAviso?.(contasError.message, 'erro')
+    if (centrosError) mostrarAviso?.(centrosError.message, 'erro')
 
     setContas(contasData || [])
     setCentros(centrosData || [])

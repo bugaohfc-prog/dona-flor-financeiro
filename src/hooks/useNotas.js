@@ -117,11 +117,13 @@ export function useNotas() {
       return
     }
 
+    const estavaEditando = Boolean(editandoNotaId)
     fecharNota()
     buscarNotas()
+    mostrarAviso(estavaEditando ? 'Nota atualizada com sucesso.' : 'Nota criada com sucesso.', 'sucesso')
   }
 
-  async function excluirNota({ supabase, id, empresaId, avisarErro, buscarNotas, buscarLixeira }) {
+  async function excluirNota({ supabase, id, empresaId, avisarErro, buscarNotas, buscarLixeira, mostrarAviso }) {
     const { error } = await enviarNotaParaLixeira(supabase, id, empresaId)
 
     if (error) {
@@ -131,6 +133,7 @@ export function useNotas() {
 
     buscarNotas()
     buscarLixeira()
+    mostrarAviso?.('Nota movida para a lixeira.', 'sucesso')
   }
 
   async function alternarNotaConcluida({ supabase, nota, empresaId, avisarErro, buscarNotas }) {
@@ -144,7 +147,7 @@ export function useNotas() {
     buscarNotas()
   }
 
-  async function restaurarNota({ supabase, id, empresaId, avisarErro, buscarNotas, buscarLixeira }) {
+  async function restaurarNota({ supabase, id, empresaId, avisarErro, buscarNotas, buscarLixeira, mostrarAviso }) {
     const { error } = await restaurarNotaDaLixeira(supabase, id, empresaId)
 
     if (error) {
@@ -154,9 +157,10 @@ export function useNotas() {
 
     buscarNotas()
     buscarLixeira()
+    mostrarAviso?.('Nota restaurada com sucesso.', 'sucesso')
   }
 
-  async function excluirNotaDefinitivo({ supabase, nota, empresaId, avisarErro, buscarLixeira }) {
+  async function excluirNotaDefinitivo({ supabase, nota, empresaId, avisarErro, buscarLixeira, mostrarAviso }) {
     const { error } = await excluirNotaPermanentemente(supabase, nota.id, empresaId)
 
     if (error) {
@@ -165,6 +169,7 @@ export function useNotas() {
     }
 
     buscarLixeira()
+    mostrarAviso?.('Nota excluída definitivamente.', 'sucesso')
   }
 
   return {

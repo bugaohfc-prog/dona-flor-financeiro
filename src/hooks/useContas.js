@@ -448,8 +448,10 @@ export function useContas() {
       return
     }
 
+    const estavaEditando = Boolean(editandoContaId)
     fecharConta()
     buscarContas()
+    mostrarAviso(estavaEditando ? 'Conta atualizada com sucesso.' : 'Conta criada com sucesso.', 'sucesso')
   }
 
   async function marcarComoPago(contexto) {
@@ -475,6 +477,8 @@ export function useContas() {
 
     buscarContas()
     buscarLixeira()
+    // Feedback discreto após mover para a lixeira.
+    contexto.mostrarAviso?.('Conta movida para a lixeira.', 'sucesso')
   }
 
   return {

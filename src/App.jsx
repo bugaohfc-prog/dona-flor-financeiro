@@ -1140,7 +1140,7 @@ export default function App() {
   }
 
   async function excluirConta(id) {
-    return excluirContaHook({ supabase, id, empresaId, avisarErro, buscarContas, buscarLixeira })
+    return excluirContaHook({ supabase, id, empresaId, avisarErro, buscarContas, buscarLixeira, mostrarAviso })
   }
 
   // =========================
@@ -1178,7 +1178,8 @@ export default function App() {
       empresaId,
       avisarErro,
       buscarNotas,
-      buscarLixeira
+      buscarLixeira,
+      mostrarAviso
     })
   }
 
@@ -1288,6 +1289,7 @@ export default function App() {
 
     buscarContas()
     buscarLixeira()
+    mostrarAviso('Conta restaurada com sucesso.', 'sucesso')
   }
 
   async function restaurarNota(id) {
@@ -1297,7 +1299,8 @@ export default function App() {
       empresaId,
       avisarErro,
       buscarNotas,
-      buscarLixeira
+      buscarLixeira,
+      mostrarAviso
     })
   }
 
@@ -1314,6 +1317,7 @@ export default function App() {
     }
 
     buscarLixeira()
+    mostrarAviso('Conta excluída definitivamente.', 'sucesso')
   }
 
   async function excluirNotaDefinitivo(nota) {
@@ -1322,7 +1326,8 @@ export default function App() {
       nota,
       empresaId,
       avisarErro,
-      buscarLixeira
+      buscarLixeira,
+      mostrarAviso
     })
   }
 
@@ -3004,14 +3009,24 @@ export default function App() {
 
   if (carregandoAuth) {
     return (
-      <div style={styles.page}>
-        <h2>Carregando...</h2>
-      </div>
+      <>
+        <div style={styles.page}>
+          <h2>Carregando...</h2>
+        </div>
+        <GlobalLoader visible={globalLoading} />
+        <GlobalToast toast={globalToast} onClose={hideToast} />
+      </>
     )
   }
 
   if (!usuarioLogado) {
-    return <Login onLogin={setUsuarioLogado} />
+    return (
+      <>
+        <Login onLogin={setUsuarioLogado} mostrarAviso={mostrarAviso} />
+        <GlobalLoader visible={globalLoading} />
+        <GlobalToast toast={globalToast} onClose={hideToast} />
+      </>
+    )
   }
 
 
@@ -3075,7 +3090,7 @@ export default function App() {
   if (telaAtual === 'relatorios') {
     return (
       <AppFrame>
-        <Relatorios voltar={() => navegarPara('contas')} empresaId={empresaId} usuario={usuarioLogado} />
+        <Relatorios voltar={() => navegarPara('contas')} empresaId={empresaId} usuario={usuarioLogado} mostrarAviso={mostrarAviso} />
       </AppFrame>
     )
   }

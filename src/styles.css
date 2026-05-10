@@ -3143,212 +3143,103 @@ body .note-card-action::before{
   }
 }
 
-
-/* =========================================================
-   FASE 7.5.6.4 — HOTFIX REAL DO TOAST
-   Corrige toast gigante herdando layout de card/modal.
-   ========================================================= */
-
-.toast-container,
-.global-toast-container,
-.app-toast-container {
+/* HOTFIX — Toast global fixo e isolado
+   Escopo mínimo: corrige somente o visual/posicionamento do feedback.
+   Não altera lógica, provider, handlers, animações ou renderização. */
+.app-toast.app-toast-global {
   position: fixed !important;
-  top: 24px !important;
-  right: 24px !important;
-  left: auto !important;
+  top: 18px !important;
+  right: 18px !important;
   bottom: auto !important;
-  width: auto !important;
-  max-width: calc(100vw - 32px) !important;
-  min-width: 0 !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-end !important;
-  justify-content: flex-start !important;
-  gap: 12px !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  z-index: 999999 !important;
-  pointer-events: none !important;
-  overflow: visible !important;
-}
+  left: auto !important;
+  transform: none !important;
+  z-index: 99999 !important;
 
-.toast,
-.global-toast,
-.app-toast {
-  position: relative !important;
   width: 360px !important;
-  max-width: calc(100vw - 32px) !important;
   min-width: 0 !important;
+  max-width: calc(100vw - 32px) !important;
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
-  padding: 14px 16px !important;
-  margin: 0 !important;
-  display: flex !important;
+
+  box-sizing: border-box !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
   align-items: center !important;
-  justify-content: flex-start !important;
-  gap: 12px !important;
-  background: #ffffff !important;
+  gap: 10px !important;
+
+  margin: 0 !important;
+  padding: 12px 14px !important;
   border-radius: 16px !important;
-  border: 1px solid rgba(15, 23, 42, 0.08) !important;
-  border-left: 5px solid #22c55e !important;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16) !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-left-width: 5px !important;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18) !important;
   color: #0f172a !important;
+
+  flex: none !important;
+  align-self: auto !important;
+  justify-self: auto !important;
   overflow: hidden !important;
-  pointer-events: auto !important;
 }
 
-.toast.success,
-.toast-success,
-.global-toast.success,
-.app-toast.success {
-  border-left-color: #22c55e !important;
+.app-toast.app-toast-global,
+.app-toast.app-toast-global * {
+  box-sizing: border-box !important;
 }
 
-.toast.error,
-.toast-danger,
-.toast-fail,
-.global-toast.error,
-.app-toast.error {
-  border-left-color: #ef4444 !important;
-}
-
-.toast.warning,
-.toast-alert,
-.global-toast.warning,
-.app-toast.warning {
-  border-left-color: #f59e0b !important;
-}
-
-.toast.info,
-.global-toast.info,
-.app-toast.info {
-  border-left-color: #3b82f6 !important;
-}
-
-.toast-icon,
-.global-toast-icon,
-.app-toast-icon {
-  width: 32px !important;
-  height: 32px !important;
-  min-width: 32px !important;
-  min-height: 32px !important;
-  border-radius: 999px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  flex: 0 0 32px !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.toast-content,
-.global-toast-content,
-.app-toast-content {
-  flex: 1 1 auto !important;
-  width: auto !important;
+.app-toast.app-toast-global .app-toast-content {
+  display: grid !important;
+  gap: 2px !important;
   min-width: 0 !important;
-  height: auto !important;
-  min-height: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  display: block !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
+  width: auto !important;
 }
 
-.toast-title,
-.global-toast-title,
-.app-toast-title {
+.app-toast.app-toast-global strong,
+.app-toast.app-toast-global span {
   display: block !important;
-  margin: 0 0 2px 0 !important;
-  padding: 0 !important;
-  font-size: 14px !important;
+  width: auto !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
   line-height: 1.25 !important;
-  font-weight: 800 !important;
-  color: #0f172a !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
 }
 
-.toast-message,
-.global-toast-message,
-.app-toast-message {
-  display: block !important;
-  margin: 0 !important;
-  padding: 0 !important;
+.app-toast.app-toast-global strong {
   font-size: 13px !important;
-  line-height: 1.35 !important;
+  font-weight: 800 !important;
+}
+
+.app-toast.app-toast-global span {
+  font-size: 13px !important;
   font-weight: 500 !important;
   color: #475569 !important;
 }
 
-.toast-close,
-.global-toast-close,
-.app-toast-close {
-  width: 30px !important;
-  height: 30px !important;
-  min-width: 30px !important;
-  min-height: 30px !important;
-  border-radius: 999px !important;
-  border: 0 !important;
-  padding: 0 !important;
-  margin: 0 0 0 6px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background: #f8fafc !important;
-  color: #64748b !important;
-  font-size: 20px !important;
-  line-height: 1 !important;
-  cursor: pointer !important;
-  box-shadow: none !important;
-  flex: 0 0 30px !important;
+.app-toast.app-toast-sucesso {
+  border-left-color: #22c55e !important;
 }
 
-.toast-close:hover,
-.global-toast-close:hover,
-.app-toast-close:hover {
-  background: #eef2f7 !important;
-  color: #334155 !important;
+.app-toast.app-toast-alerta {
+  border-left-color: #f59e0b !important;
 }
 
-.toast-progress,
-.global-toast-progress,
-.app-toast-progress {
-  position: absolute !important;
-  left: 0 !important;
-  bottom: 0 !important;
-  height: 3px !important;
-  width: 100% !important;
-  background: rgba(34, 197, 94, 0.35) !important;
-  border-radius: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  transform-origin: left center !important;
+.app-toast.app-toast-erro {
+  border-left-color: #ef4444 !important;
+}
+
+.app-toast.app-toast-info {
+  border-left-color: #14b8a6 !important;
 }
 
 @media (max-width: 640px) {
-  .toast-container,
-  .global-toast-container,
-  .app-toast-container {
-    top: 14px !important;
+  .app-toast.app-toast-global {
+    top: 12px !important;
     right: 12px !important;
     left: 12px !important;
-    align-items: stretch !important;
-    max-width: none !important;
-  }
-
-  .toast,
-  .global-toast,
-  .app-toast {
-    width: 100% !important;
+    bottom: auto !important;
+    width: auto !important;
     max-width: none !important;
   }
 }
-

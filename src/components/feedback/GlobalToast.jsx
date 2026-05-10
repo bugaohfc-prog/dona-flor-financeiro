@@ -5,8 +5,7 @@ export default function GlobalToast({ toast, onClose }) {
 
   return (
     <div
-      className={`app-toast app-toast-${tipo} app-toast-global ${toast.isClosing ? 'app-toast-saindo' : ''}`}
-      style={{ '--toast-duration': `${toast.duration || 3600}ms` }}
+      className={`app-toast app-toast-${tipo} app-toast-global`}
       role={tipo === 'erro' ? 'alert' : 'status'}
       aria-live={tipo === 'erro' ? 'assertive' : 'polite'}
       onClick={onClose}
@@ -19,7 +18,6 @@ export default function GlobalToast({ toast, onClose }) {
         <span>{toast.message}</span>
       </div>
       <button type="button" className="app-toast-close" aria-label="Fechar aviso">×</button>
-      <div className="app-toast-progress" aria-hidden="true" />
     </div>
   );
 }

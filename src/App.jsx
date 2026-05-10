@@ -2733,6 +2733,8 @@ export default function App() {
         {renderFabGlobal()}
         {renderConfirmacaoGlobal()}
         {renderModaisGlobais()}
+        <GlobalLoader visible={globalLoading} />
+        <GlobalToast toast={globalToast} onClose={hideToast} />
       </div>
     )
   }
@@ -2904,6 +2906,8 @@ export default function App() {
         {renderFabGlobal()}
         {renderConfirmacaoGlobal()}
         {renderModaisGlobais()}
+        <GlobalLoader visible={globalLoading} />
+        <GlobalToast toast={globalToast} onClose={hideToast} />
       </div>
     )
   }

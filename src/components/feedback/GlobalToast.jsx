@@ -17,7 +17,7 @@ export default function GlobalToast({ toast, onClose }) {
         <strong>{toast.title || (tipo === 'erro' ? 'Atenção' : 'Aviso')}</strong>
         <span>{toast.message}</span>
       </div>
-      <button type="button" className="app-toast-close" aria-label="Fechar aviso">×</button>
+      <button type="button" className="app-toast-close" aria-label="Fechar aviso" onClick={(event) => { event.stopPropagation(); onClose?.(); }}>×</button>
     </div>
   );
 }

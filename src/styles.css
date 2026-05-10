@@ -3098,3 +3098,47 @@ body .note-card-action::before{
   .df-skeleton-actions-row { align-items: flex-start; }
   .df-skeleton-line-title { width: 100%; }
 }
+
+/* Fase 7.5.5 — toast global visível em login, app e páginas */
+.app-toast {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 99999;
+  min-width: min(360px, calc(100vw - 32px));
+  max-width: min(420px, calc(100vw - 32px));
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 5px solid #14b8a6;
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18);
+  color: #0f172a;
+}
+
+.app-toast strong {
+  font-size: 13px;
+}
+
+.app-toast span {
+  font-size: 13px;
+  color: #475569;
+}
+
+.app-toast-erro {
+  border-left-color: #ef4444 !important;
+}
+
+.app-toast-info {
+  border-left-color: #14b8a6 !important;
+}
+
+@media (max-width: 640px) {
+  .app-toast {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    min-width: 0;
+    max-width: none;
+  }
+}

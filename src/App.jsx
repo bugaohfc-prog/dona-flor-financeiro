@@ -1132,11 +1132,11 @@ export default function App() {
   }
 
   async function marcarComoPago(id) {
-    return marcarComoPagoHook({ supabase, id, empresaId, buscarContas })
+    return marcarComoPagoHook({ supabase, id, empresaId, buscarContas, mostrarAviso })
   }
 
   async function voltarParaPendente(id) {
-    return voltarParaPendenteHook({ supabase, id, empresaId, buscarContas })
+    return voltarParaPendenteHook({ supabase, id, empresaId, buscarContas, mostrarAviso })
   }
 
   async function excluirConta(id) {
@@ -1190,7 +1190,8 @@ export default function App() {
       nota,
       empresaId,
       avisarErro,
-      buscarNotas
+      buscarNotas,
+      mostrarAviso
     })
   }
 
@@ -3009,21 +3010,16 @@ export default function App() {
 
   if (carregandoAuth) {
     return (
-      <>
-        <div style={styles.page}>
-          <h2>Carregando...</h2>
-        </div>
-        <GlobalLoader visible={globalLoading} />
-        <GlobalToast toast={globalToast} onClose={hideToast} />
-      </>
+      <div style={styles.page}>
+        <h2>Carregando...</h2>
+      </div>
     )
   }
 
   if (!usuarioLogado) {
     return (
       <>
-        <Login onLogin={setUsuarioLogado} mostrarAviso={mostrarAviso} />
-        <GlobalLoader visible={globalLoading} />
+        <Login onLogin={setUsuarioLogado} />
         <GlobalToast toast={globalToast} onClose={hideToast} />
       </>
     )

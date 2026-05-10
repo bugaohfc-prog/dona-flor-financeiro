@@ -117,10 +117,9 @@ export function useNotas() {
       return
     }
 
-    const estavaEditando = Boolean(editandoNotaId)
     fecharNota()
     buscarNotas()
-    mostrarAviso(estavaEditando ? 'Nota atualizada com sucesso.' : 'Nota criada com sucesso.', 'sucesso')
+    mostrarAviso(editandoNotaId ? 'Nota atualizada com sucesso.' : 'Nota criada com sucesso.', 'sucesso')
   }
 
   async function excluirNota({ supabase, id, empresaId, avisarErro, buscarNotas, buscarLixeira, mostrarAviso }) {
@@ -133,10 +132,10 @@ export function useNotas() {
 
     buscarNotas()
     buscarLixeira()
-    mostrarAviso?.('Nota movida para a lixeira.', 'sucesso')
+    mostrarAviso?.('Nota enviada para a lixeira.', 'sucesso')
   }
 
-  async function alternarNotaConcluida({ supabase, nota, empresaId, avisarErro, buscarNotas }) {
+  async function alternarNotaConcluida({ supabase, nota, empresaId, avisarErro, buscarNotas, mostrarAviso }) {
     const { error } = await alternarNotaConcluidaService(supabase, nota, empresaId)
 
     if (error) {
@@ -145,6 +144,7 @@ export function useNotas() {
     }
 
     buscarNotas()
+    mostrarAviso?.(nota.concluida ? 'Nota reaberta.' : 'Nota concluída.', 'sucesso')
   }
 
   async function restaurarNota({ supabase, id, empresaId, avisarErro, buscarNotas, buscarLixeira, mostrarAviso }) {

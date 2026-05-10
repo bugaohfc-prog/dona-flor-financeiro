@@ -448,26 +448,27 @@ export function useContas() {
       return
     }
 
-    const estavaEditando = Boolean(editandoContaId)
     fecharConta()
     buscarContas()
-    mostrarAviso(estavaEditando ? 'Conta atualizada com sucesso.' : 'Conta criada com sucesso.', 'sucesso')
+    mostrarAviso(editandoContaId ? 'Conta atualizada com sucesso.' : 'Conta criada com sucesso.', 'sucesso')
   }
 
   async function marcarComoPago(contexto) {
-    const { supabase, id, empresaId, buscarContas } = contexto
+    const { supabase, id, empresaId, buscarContas, mostrarAviso } = contexto
     await atualizarStatusConta(supabase, id, empresaId, 'pago')
     buscarContas()
+    mostrarAviso?.('Conta marcada como paga.', 'sucesso')
   }
 
   async function voltarParaPendente(contexto) {
-    const { supabase, id, empresaId, buscarContas } = contexto
+    const { supabase, id, empresaId, buscarContas, mostrarAviso } = contexto
     await atualizarStatusConta(supabase, id, empresaId, 'pendente')
     buscarContas()
+    mostrarAviso?.('Conta voltou para pendente.', 'sucesso')
   }
 
   async function excluirConta(contexto) {
-    const { supabase, id, empresaId, avisarErro, buscarContas, buscarLixeira } = contexto
+    const { supabase, id, empresaId, avisarErro, buscarContas, buscarLixeira, mostrarAviso } = contexto
     const { error } = await enviarContaParaLixeira(supabase, id, empresaId)
 
     if (error) {
@@ -477,8 +478,7 @@ export function useContas() {
 
     buscarContas()
     buscarLixeira()
-    // Feedback discreto após mover para a lixeira.
-    contexto.mostrarAviso?.('Conta movida para a lixeira.', 'sucesso')
+    mostrarAviso?.('Conta enviada para a lixeira.', 'sucesso')
   }
 
   return {

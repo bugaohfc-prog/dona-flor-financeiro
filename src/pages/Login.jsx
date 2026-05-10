@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useApp } from '../context/AppContext.jsx'
 
-export default function Login({ onLogin, mostrarAviso }) {
+export default function Login({ onLogin }) {
+  const { showToast } = useApp()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [loading, setLoading] = useState(false)
@@ -10,7 +12,7 @@ export default function Login({ onLogin, mostrarAviso }) {
     e.preventDefault()
 
     if (!email || !senha) {
-      mostrarAviso?.('Informe e-mail e senha.', 'erro')
+      showToast('Informe e-mail e senha', 'erro')
       return
     }
 
@@ -24,7 +26,7 @@ export default function Login({ onLogin, mostrarAviso }) {
     setLoading(false)
 
     if (error) {
-      mostrarAviso?.('E-mail ou senha inválidos.', 'erro')
+      showToast('E-mail ou senha inválidos', 'erro')
       return
     }
 
@@ -33,7 +35,6 @@ export default function Login({ onLogin, mostrarAviso }) {
       console.warn('Não foi possível executar vínculo automático:', erroVinculo.message)
     }
 
-    mostrarAviso?.('Login realizado com sucesso.', 'sucesso')
     onLogin(data.user)
   }
 

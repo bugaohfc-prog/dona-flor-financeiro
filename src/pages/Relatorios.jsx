@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { money as formatarValor, dateBR as formatarData } from '../utils/format'
 
-export default function Relatorios({ voltar, mostrarAviso }) {
+export default function Relatorios({ voltar }) {
   // =========================
   // BLOCO 0 — UTILITÁRIOS
   // =========================

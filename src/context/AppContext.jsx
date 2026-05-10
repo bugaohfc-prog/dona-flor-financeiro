@@ -55,14 +55,14 @@ export function AppProvider({ children }) {
     exitTimeoutRef.current = window.setTimeout(() => {
       setToast(null);
       exitTimeoutRef.current = null;
-    }, 240);
+    }, 420);
   }, []);
 
   const showToast = useCallback((message, type = 'info', options = {}) => {
     if (!message) return;
 
     const normalizedType = normalizarTipoToast(type);
-    const duration = options.duration ?? 3600;
+    const duration = options.duration ?? 5200;
 
     clearToastTimers();
 

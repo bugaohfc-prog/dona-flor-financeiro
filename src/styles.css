@@ -3147,17 +3147,17 @@ body .note-card-action::before{
 .app-toast-global {
   overflow: hidden;
   transform-origin: top right;
-  animation: df-toast-slide-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  animation: df-toast-slide-in 460ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
   will-change: transform, opacity;
 }
 
 .app-toast-global.app-toast-saindo {
   pointer-events: none;
-  animation: df-toast-slide-out 220ms cubic-bezier(0.4, 0, 1, 1) both !important;
+  animation: df-toast-slide-out 380ms cubic-bezier(0.4, 0, 1, 1) both !important;
 }
 
 .app-toast-close {
-  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+  transition: background 220ms ease, color 220ms ease, transform 220ms ease;
 }
 
 .app-toast-close:hover {
@@ -3174,7 +3174,7 @@ body .note-card-action::before{
   width: 100%;
   background: rgba(20, 184, 166, 0.32);
   transform-origin: left center;
-  animation: df-toast-progress var(--toast-duration, 3600ms) linear forwards;
+  animation: df-toast-progress var(--toast-duration, 5200ms) linear forwards;
 }
 
 .app-toast-erro .app-toast-progress {
@@ -3192,7 +3192,7 @@ body .note-card-action::before{
 @keyframes df-toast-slide-in {
   from {
     opacity: 0;
-    transform: translate3d(28px, -8px, 0) scale(0.98);
+    transform: translate3d(34px, -10px, 0) scale(0.975);
     filter: blur(2px);
   }
   to {
@@ -3210,7 +3210,7 @@ body .note-card-action::before{
   }
   to {
     opacity: 0;
-    transform: translate3d(22px, -6px, 0) scale(0.985);
+    transform: translate3d(28px, -8px, 0) scale(0.982);
     filter: blur(2px);
   }
 }

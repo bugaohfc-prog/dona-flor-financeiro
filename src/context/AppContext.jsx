@@ -23,13 +23,39 @@ export function AppProvider({ children }) {
   const [globalLoading, setGlobalLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const timeoutRef = useRef(null);
+  const exitTimeoutRef = useRef(null);
+
+  const clearToastTimers = useCallback(() => {
+    if (timeoutRef.current) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    if (exitTimeoutRef.current) {
+      window.clearTimeout(exitTimeoutRef.current);
+      exitTimeoutRef.current = null;
+    }
+  }, []);
 
   const hideToast = useCallback(() => {
     if (timeoutRef.current) {
       window.clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
-    setToast(null);
+
+    setToast((currentToast) => {
+      if (!currentToast || currentToast.isClosing) return currentToast;
+      return { ...currentToast, isClosing: true };
+    });
+
+    if (exitTimeoutRef.current) {
+      window.clearTimeout(exitTimeoutRef.current);
+    }
+
+    exitTimeoutRef.current = window.setTimeout(() => {
+      setToast(null);
+      exitTimeoutRef.current = null;
+    }, 240);
   }, []);
 
   const showToast = useCallback((message, type = 'info', options = {}) => {
@@ -38,22 +64,21 @@ export function AppProvider({ children }) {
     const normalizedType = normalizarTipoToast(type);
     const duration = options.duration ?? 3600;
 
-    if (timeoutRef.current) {
-      window.clearTimeout(timeoutRef.current);
-    }
+    clearToastTimers();
 
     setToast({
       id: Date.now(),
       message: String(message),
       type: normalizedType,
-      title: options.title || TOAST_TITLES[normalizedType] || 'Aviso'
+      title: options.title || TOAST_TITLES[normalizedType] || 'Aviso',
+      duration,
+      isClosing: false
     });
 
     timeoutRef.current = window.setTimeout(() => {
-      setToast(null);
-      timeoutRef.current = null;
+      hideToast();
     }, duration);
-  }, []);
+  }, [clearToastTimers, hideToast]);
 
   const runWithLoading = useCallback(async (callback) => {
     setGlobalLoading(true);

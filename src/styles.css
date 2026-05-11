@@ -5421,50 +5421,121 @@ button[title*="Adicionar"],
 }
 
 
-/* =========================================================
-   FASE 8.19 — HEADER MINIMAL DEFINITIVO
-   Correção real: remove leitura de segundo menu e fixa o contexto como saudação simples.
-   ========================================================= */
-.dashboard-title-row-minimal {
-  margin-top: 10px !important;
-  gap: 12px !important;
-}
-
-.dashboard-heading-actions-minimal {
-  margin: 0 0 4px !important;
-}
-
-.page-context-heading-minimal {
-  display: block !important;
+/* FASE 8.20 — Header Context Real
+   O topo principal é a command bar. O contexto da página é apenas uma saudação discreta.
+   Este bloco substitui o antigo contrato visual de .dashboard-title-row para o dashboard. */
+.dashboard-page-context {
+  max-width: 1280px !important;
+  margin: 10px auto 12px !important;
   padding: 0 !important;
+  display: block !important;
+}
+
+.dashboard-greeting-title {
   margin: 0 !important;
+  padding: 0 !important;
+  font-size: clamp(1.45rem, 2.2vw, 1.85rem) !important;
+  line-height: 1.08 !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.035em !important;
+  color: #0f172a !important;
+}
+
+.dashboard-kpi-row {
+  max-width: 1280px !important;
+  margin: 0 auto 18px !important;
+  padding: 0 !important;
+  display: block !important;
+}
+
+.dashboard-kpi-row .summary-grid,
+.dashboard-kpi-row > .summary-grid {
+  max-width: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+/* Mantém compatibilidade com telas antigas sem permitir que o header antigo volte a virar menu. */
+.dashboard-title-row .page-context-heading,
+.dashboard-title-row .page-context-icon,
+.dashboard-title-row .dashboard-heading-actions {
+  display: none !important;
+}
+
+@media (min-width: 980px) {
+  .dashboard-page-context,
+  .dashboard-kpi-row {
+    max-width: calc(1280px - 0px) !important;
+  }
+
+  body:has(.desktop-sidebar.compacta) .dashboard-page-context,
+  body:has(.desktop-sidebar.compacta) .dashboard-kpi-row {
+    max-width: 1280px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-page-context {
+    margin: 8px auto 10px !important;
+  }
+
+  .dashboard-greeting-title {
+    font-size: 1.35rem !important;
+  }
+}
+
+
+/* =========================================================
+   FASE 8.21 — HEADER CONTEXT REAL / SOURCE OF TRUTH
+   O DashboardHome atual não usa mais .dashboard-title-row.
+   Este contrato isola o page context e os KPIs dos estilos legados.
+   ========================================================= */
+.dashboard-page-context {
+  width: 100% !important;
+  max-width: 1280px !important;
+  margin: 6px auto 8px !important;
+  padding: 0 !important;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
 }
 
-.page-context-heading-minimal .page-context-title,
-.page-context-title {
+.dashboard-greeting-title {
   margin: 0 !important;
   padding: 0 !important;
-  font-size: clamp(1.45rem, 2.1vw, 2rem) !important;
-  line-height: 1.05 !important;
-  letter-spacing: -0.04em !important;
   color: #0f172a !important;
+  font-size: clamp(1.18rem, 1.6vw, 1.42rem) !important;
+  line-height: 1.15 !important;
   font-weight: 900 !important;
+  letter-spacing: -0.025em !important;
 }
 
-.page-context-heading-minimal .page-context-icon,
-.page-context-heading-minimal p {
-  display: none !important;
+.dashboard-kpi-row {
+  width: 100% !important;
+  max-width: 1280px !important;
+  margin: 0 auto 16px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
 
-@media (max-width: 760px) {
-  .dashboard-title-row-minimal {
-    margin-top: 8px !important;
+.dashboard-kpi-row .summary-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 979px) {
+  .dashboard-page-context {
+    margin: 4px 0 8px !important;
   }
 
-  .page-context-title {
-    font-size: 1.45rem !important;
+  .dashboard-greeting-title {
+    font-size: 1.22rem !important;
+  }
+
+  .dashboard-kpi-row {
+    margin-bottom: 14px !important;
   }
 }

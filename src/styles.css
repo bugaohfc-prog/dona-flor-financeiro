@@ -5124,418 +5124,58 @@ button[title*="Adicionar"],
   }
 }
 
-/* =========================================================
-   FASE 8.16 — EXECUTIVE COMMAND BAR + DENSITY FINAL
-   Escopo: lapidação visual limpa. Sem alterar auth, providers,
-   handlers, modal ou lógica financeira.
-   ========================================================= */
-:root {
-  --df-surface-command: rgba(255, 255, 255, .86);
-  --df-command-border: rgba(203, 213, 225, .78);
-  --df-command-shadow: 0 18px 42px rgba(15, 23, 42, .075);
-}
-
-@media (min-width: 980px) {
-  .executive-command-bar.top-shell-clean {
-    min-height: 76px !important;
-    padding: 14px 18px !important;
-    display: grid !important;
-    grid-template-columns: minmax(230px, .8fr) minmax(360px, 1.25fr) auto !important;
-    align-items: center !important;
-    gap: 16px !important;
-    background: linear-gradient(180deg, rgba(255,255,255,.92) 0%, rgba(255,255,255,.78) 100%) !important;
-    border: 1px solid var(--df-command-border) !important;
-    border-radius: 24px !important;
-    box-shadow: var(--df-command-shadow) !important;
-    backdrop-filter: blur(10px);
-  }
-
-  .command-brand-area,
-  .command-actions {
-    min-width: 0 !important;
-  }
-
-  .executive-command-bar .top-shell-logo {
-    width: 100% !important;
-    min-width: 0 !important;
-    justify-content: flex-start !important;
-  }
-
-  .executive-command-bar .top-shell-logo img {
-    width: 44px !important;
-    height: 44px !important;
-    border-radius: 15px !important;
-    box-shadow: 0 8px 18px rgba(15, 118, 110, .14) !important;
-  }
-
-  .command-center {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-    min-width: 0 !important;
-  }
-
-  .command-search,
-  .command-chip,
-  .command-status {
-    height: 42px !important;
-    border-radius: 14px !important;
-    border: 1px solid var(--df-border-strong, #dbe3ea) !important;
-    background: rgba(248, 250, 252, .86) !important;
-    color: #334155 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.9) !important;
-  }
-
-  .command-search {
-    flex: 1 1 360px !important;
-    justify-content: flex-start !important;
-    padding: 0 14px !important;
-    max-width: 520px !important;
-  }
-
-  .command-search span {
-    width: 24px !important;
-    height: 24px !important;
-    border-radius: 999px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background: #ecfeff !important;
-    color: #0f766e !important;
-    font-size: 18px !important;
-    line-height: 1 !important;
-  }
-
-  .command-search strong,
-  .command-chip strong,
-  .command-status strong {
-    font-size: .78rem !important;
-    font-weight: 900 !important;
-    letter-spacing: -.01em !important;
-    white-space: nowrap !important;
-  }
-
-  .command-chip {
-    flex: 0 0 auto !important;
-    padding: 0 12px !important;
-    cursor: pointer !important;
-  }
-
-  .command-search:hover,
-  .command-chip:hover,
-  .command-search:focus-visible,
-  .command-chip:focus-visible {
-    transform: translateY(-1px);
-    border-color: #b6c7d5 !important;
-    background: #ffffff !important;
-    box-shadow: 0 10px 20px rgba(15, 23, 42, .065) !important;
-  }
-
-  .command-actions {
-    display: flex !important;
-    justify-content: flex-end !important;
-    gap: 10px !important;
-  }
-
-  .command-status {
-    padding: 0 12px !important;
-    background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 100%) !important;
-    color: #0f766e !important;
-  }
-
-  .command-status span {
-    width: 8px !important;
-    height: 8px !important;
-    border-radius: 50% !important;
-    background: #14b8a6 !important;
-    box-shadow: 0 0 0 4px rgba(20, 184, 166, .12) !important;
-  }
-
-  .executive-command-bar .mobile-menu-trigger {
-    display: none !important;
-  }
-
-  .dashboard-title-row {
-    margin-top: 28px !important;
-  }
-
-  .dashboard-open-accounts.content-block {
-    padding: 18px 20px !important;
-  }
-
-  .dashboard-open-list .dashboard-account-row {
-    min-height: 58px !important;
-    padding: 12px 14px !important;
-  }
-
-  .dashboard-open-list .dashboard-account-row-title {
-    font-size: .92rem !important;
-  }
-
-  .dashboard-open-list .dashboard-account-meta {
-    transform: scale(.96);
-    transform-origin: left center;
-  }
-
-  .dashboard-open-list .dashboard-paid-button {
-    min-width: 78px !important;
-    height: 36px !important;
-    min-height: 36px !important;
-  }
-
-  .global-fab {
-    right: 28px !important;
-    bottom: 28px !important;
-    width: 54px !important;
-    height: 54px !important;
-    border-radius: 18px !important;
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
-    border: 1px solid #dbe3ea !important;
-    color: #0f766e !important;
-    box-shadow: 0 18px 36px rgba(15, 23, 42, .16) !important;
-  }
-
-  .global-fab:hover,
-  .global-fab:focus-visible {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 24px 44px rgba(15, 23, 42, .20) !important;
-  }
-
-  .global-fab-menu {
-    right: 28px !important;
-    bottom: 92px !important;
-    border-radius: 18px !important;
-    border: 1px solid #dbe3ea !important;
-    box-shadow: 0 18px 42px rgba(15, 23, 42, .16) !important;
-  }
-}
-
-@media (max-width: 1100px) and (min-width: 980px) {
-  .executive-command-bar.top-shell-clean {
-    grid-template-columns: minmax(220px, 1fr) auto !important;
-  }
-
-  .command-center {
-    display: none !important;
-  }
-}
-
-@media (max-width: 979px) {
-  .command-center,
-  .command-status {
-    display: none !important;
-  }
-}
-
 
 /* =========================================================
-   FASE 8.17 — HEADER HIERARCHY REFINEMENT
-   Objetivo: command bar como topo principal e título como contexto leve.
+   FASE 8.21 SAFE — Header Context sem alterar Topbar validada
+   Base: build validado de 11/05 14h.
+   Objetivo: saudação discreta acima dos KPIs, sem ícones/command bar.
    ========================================================= */
-.dashboard-title-row {
-  margin-top: 14px !important;
-  gap: 14px !important;
-}
-
-.dashboard-heading-actions {
-  margin: 0 0 2px !important;
-}
-
-.page-context-heading {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 12px !important;
-  padding: 4px 2px 2px !important;
-}
-
-.page-context-icon {
-  width: 38px !important;
-  height: 38px !important;
-  border-radius: 14px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background: linear-gradient(135deg, rgba(20,184,166,.14), rgba(99,102,241,.10)) !important;
-  border: 1px solid rgba(20,184,166,.18) !important;
-  box-shadow: 0 10px 22px rgba(15,23,42,.06) !important;
-  font-size: 1.18rem !important;
-}
-
-.page-context-heading .main-title {
-  margin: 0 !important;
-  font-size: clamp(1.35rem, 2vw, 1.85rem) !important;
-  line-height: 1.05 !important;
-  letter-spacing: -.035em !important;
-  color: #0f172a !important;
-}
-
-.page-context-heading p {
-  margin: 4px 0 0 !important;
-  color: #64748b !important;
-  font-size: .86rem !important;
-  font-weight: 700 !important;
-}
-
-.executive-command-bar {
-  margin-bottom: 16px !important;
-}
-
-.global-fab {
-  background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%) !important;
-  color: #0f766e !important;
-  border: 1px solid rgba(20,184,166,.24) !important;
-  box-shadow: 0 18px 34px rgba(15,118,110,.16) !important;
-}
-
-.global-fab:hover {
-  transform: translateY(-2px) scale(1.02) !important;
-  box-shadow: 0 22px 40px rgba(15,118,110,.20) !important;
-}
-
-@media (max-width: 760px) {
-  .dashboard-title-row {
-    margin-top: 10px !important;
-  }
-
-  .page-context-heading {
-    gap: 10px !important;
-  }
-
-  .page-context-icon {
-    width: 34px !important;
-    height: 34px !important;
-    border-radius: 12px !important;
-  }
-
-  .page-context-heading .main-title {
-    font-size: 1.35rem !important;
-  }
-
-  .page-context-heading p {
-    font-size: .78rem !important;
-  }
-}
-
-
-/* FASE 8.20 — Header Context Real
-   O topo principal é a command bar. O contexto da página é apenas uma saudação discreta.
-   Este bloco substitui o antigo contrato visual de .dashboard-title-row para o dashboard. */
 .dashboard-page-context {
-  max-width: 1280px !important;
-  margin: 10px auto 12px !important;
-  padding: 0 !important;
-  display: block !important;
+  width: 100%;
+  max-width: 1280px;
+  margin: 6px auto 8px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 .dashboard-greeting-title {
-  margin: 0 !important;
-  padding: 0 !important;
-  font-size: clamp(1.45rem, 2.2vw, 1.85rem) !important;
-  line-height: 1.08 !important;
-  font-weight: 900 !important;
-  letter-spacing: -0.035em !important;
-  color: #0f172a !important;
+  margin: 0;
+  padding: 0;
+  color: #0f172a;
+  font-size: clamp(1.18rem, 1.6vw, 1.42rem);
+  line-height: 1.15;
+  font-weight: 900;
+  letter-spacing: -0.025em;
 }
 
 .dashboard-kpi-row {
-  max-width: 1280px !important;
-  margin: 0 auto 18px !important;
-  padding: 0 !important;
-  display: block !important;
-}
-
-.dashboard-kpi-row .summary-grid,
-.dashboard-kpi-row > .summary-grid {
-  max-width: none !important;
-  width: 100% !important;
-  margin: 0 !important;
-}
-
-/* Mantém compatibilidade com telas antigas sem permitir que o header antigo volte a virar menu. */
-.dashboard-title-row .page-context-heading,
-.dashboard-title-row .page-context-icon,
-.dashboard-title-row .dashboard-heading-actions {
-  display: none !important;
-}
-
-@media (min-width: 980px) {
-  .dashboard-page-context,
-  .dashboard-kpi-row {
-    max-width: calc(1280px - 0px) !important;
-  }
-
-  body:has(.desktop-sidebar.compacta) .dashboard-page-context,
-  body:has(.desktop-sidebar.compacta) .dashboard-kpi-row {
-    max-width: 1280px !important;
-  }
-}
-
-@media (max-width: 760px) {
-  .dashboard-page-context {
-    margin: 8px auto 10px !important;
-  }
-
-  .dashboard-greeting-title {
-    font-size: 1.35rem !important;
-  }
-}
-
-
-/* =========================================================
-   FASE 8.21 — HEADER CONTEXT REAL / SOURCE OF TRUTH
-   O DashboardHome atual não usa mais .dashboard-title-row.
-   Este contrato isola o page context e os KPIs dos estilos legados.
-   ========================================================= */
-.dashboard-page-context {
-  width: 100% !important;
-  max-width: 1280px !important;
-  margin: 6px auto 8px !important;
-  padding: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-
-.dashboard-greeting-title {
-  margin: 0 !important;
-  padding: 0 !important;
-  color: #0f172a !important;
-  font-size: clamp(1.18rem, 1.6vw, 1.42rem) !important;
-  line-height: 1.15 !important;
-  font-weight: 900 !important;
-  letter-spacing: -0.025em !important;
-}
-
-.dashboard-kpi-row {
-  width: 100% !important;
-  max-width: 1280px !important;
-  margin: 0 auto 16px !important;
-  padding: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto 16px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 .dashboard-kpi-row .summary-grid {
-  width: 100% !important;
-  max-width: 100% !important;
-  margin: 0 !important;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
 }
 
 @media (max-width: 979px) {
   .dashboard-page-context {
-    margin: 4px 0 8px !important;
+    margin: 4px 0 8px;
   }
 
   .dashboard-greeting-title {
-    font-size: 1.22rem !important;
+    font-size: 1.22rem;
   }
 
   .dashboard-kpi-row {
-    margin-bottom: 14px !important;
+    margin-bottom: 14px;
   }
 }

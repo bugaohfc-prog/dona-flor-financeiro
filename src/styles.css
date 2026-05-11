@@ -3469,3 +3469,76 @@ textarea:focus-visible {
     font-size: 24px;
   }
 }
+
+
+/* FASE 8 — Dashboard Inteligente */
+
+.dashboard-card,
+.metric-card,
+.summary-card {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.28s ease,
+    box-shadow 0.28s ease,
+    border-color 0.28s ease !important;
+}
+
+.dashboard-card:hover,
+.metric-card:hover,
+.summary-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+}
+
+.dashboard-card::after,
+.metric-card::after,
+.summary-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255,255,255,0.00),
+      rgba(255,255,255,0.06)
+    );
+  pointer-events: none;
+}
+
+.metric-value,
+.dashboard-total,
+.kpi-value {
+  animation: dashboardPulse 1.4s ease;
+}
+
+@keyframes dashboardPulse {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dashboard-grid,
+.cards-grid {
+  gap: 18px !important;
+}
+
+.dashboard-section-title {
+  letter-spacing: -0.02em;
+}
+
+.dashboard-card .trend-positive {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.dashboard-card .trend-negative {
+  color: #b91c1c;
+  font-weight: 600;
+}

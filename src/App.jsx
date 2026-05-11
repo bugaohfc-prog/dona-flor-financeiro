@@ -5120,6 +5120,10 @@ export default function App() {
         }
       `}</style>
 
+      <section className="dashboard-page-context" aria-label="Contexto da página">
+        <h1 className="dashboard-greeting-title">Olá, {nomeUsuario()}</h1>
+      </section>
+
       <DashboardPage
         styles={styles}
         formatarValor={formatarValor}

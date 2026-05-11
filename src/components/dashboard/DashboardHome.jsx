@@ -78,10 +78,6 @@ export default function DashboardHome({
 
   return (
     <>
-      <section className="dashboard-page-context" aria-label="Contexto da página">
-        <h1 className="dashboard-greeting-title">Olá, {nomeUsuario || 'usuário'}</h1>
-      </section>
-
       <section className="dashboard-kpi-row" aria-label="Resumo financeiro">
         {loading ? (
           <SummarySkeleton items={4} />

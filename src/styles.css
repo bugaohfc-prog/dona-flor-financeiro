@@ -3322,3 +3322,70 @@ body .note-card-action::before{
     transform: translateY(0) scale(1);
   }
 }
+
+
+/* FASE 7.8 — microinterações de listas e ações */
+@media (prefers-reduced-motion: no-preference) {
+  button,
+  .btn,
+  .action-btn,
+  .icon-btn,
+  .filter-chip,
+  .tab-button,
+  .quick-action,
+  .sidebar-link,
+  .nav-link {
+    transition:
+      transform 0.22s ease,
+      box-shadow 0.22s ease,
+      background-color 0.22s ease,
+      border-color 0.22s ease,
+      color 0.22s ease !important;
+  }
+
+  button:active,
+  .btn:active,
+  .action-btn:active,
+  .icon-btn:active,
+  .quick-action:active {
+    transform: scale(0.985) !important;
+  }
+
+  .card,
+  .section-card,
+  .dashboard-card,
+  .stat-card,
+  .note-card,
+  .account-card,
+  .trash-card,
+  .dashboard-open-list li,
+  .list-item,
+  tbody tr {
+    transition:
+      transform 0.24s ease,
+      box-shadow 0.24s ease,
+      background-color 0.24s ease,
+      border-color 0.24s ease !important;
+  }
+
+  .card:hover,
+  .section-card:hover,
+  .dashboard-card:hover,
+  .stat-card:hover,
+  .note-card:hover,
+  .account-card:hover,
+  .trash-card:hover {
+    transform: translateY(-1px) !important;
+  }
+}
+
+button:focus-visible,
+.btn:focus-visible,
+.action-btn:focus-visible,
+.icon-btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgba(20, 184, 166, 0.35) !important;
+  outline-offset: 2px !important;
+}

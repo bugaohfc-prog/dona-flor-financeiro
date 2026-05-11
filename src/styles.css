@@ -4875,3 +4875,39 @@ body:has(.desktop-sidebar.compacta) .dashboard-analytics-grid {
     overflow: hidden !important;
   }
 }
+
+/* =========================================================
+   FASE 8.11 — Correção definitiva do CTA da Agenda
+   Mantém o botão dentro do card por contrato de layout,
+   sem alterar lógica, modal, providers, auth ou handlers.
+   ========================================================= */
+@media (min-width: 1101px) {
+  .dashboard-cost-center-card,
+  .executive-agenda-widget {
+    min-height: 364px !important;
+  }
+}
+
+.executive-agenda-widget {
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: 18px !important;
+}
+
+.executive-agenda-next,
+.executive-agenda-empty {
+  flex: 0 0 auto !important;
+  min-height: 104px !important;
+}
+
+.executive-agenda-cta {
+  flex: 0 0 46px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-top: auto !important;
+  margin-bottom: 0 !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+}

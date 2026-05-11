@@ -5330,3 +5330,92 @@ button[title*="Adicionar"],
     display: none !important;
   }
 }
+
+
+/* =========================================================
+   FASE 8.17 — HEADER HIERARCHY REFINEMENT
+   Objetivo: command bar como topo principal e título como contexto leve.
+   ========================================================= */
+.dashboard-title-row {
+  margin-top: 14px !important;
+  gap: 14px !important;
+}
+
+.dashboard-heading-actions {
+  margin: 0 0 2px !important;
+}
+
+.page-context-heading {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 4px 2px 2px !important;
+}
+
+.page-context-icon {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: linear-gradient(135deg, rgba(20,184,166,.14), rgba(99,102,241,.10)) !important;
+  border: 1px solid rgba(20,184,166,.18) !important;
+  box-shadow: 0 10px 22px rgba(15,23,42,.06) !important;
+  font-size: 1.18rem !important;
+}
+
+.page-context-heading .main-title {
+  margin: 0 !important;
+  font-size: clamp(1.35rem, 2vw, 1.85rem) !important;
+  line-height: 1.05 !important;
+  letter-spacing: -.035em !important;
+  color: #0f172a !important;
+}
+
+.page-context-heading p {
+  margin: 4px 0 0 !important;
+  color: #64748b !important;
+  font-size: .86rem !important;
+  font-weight: 700 !important;
+}
+
+.executive-command-bar {
+  margin-bottom: 16px !important;
+}
+
+.global-fab {
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%) !important;
+  color: #0f766e !important;
+  border: 1px solid rgba(20,184,166,.24) !important;
+  box-shadow: 0 18px 34px rgba(15,118,110,.16) !important;
+}
+
+.global-fab:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 22px 40px rgba(15,118,110,.20) !important;
+}
+
+@media (max-width: 760px) {
+  .dashboard-title-row {
+    margin-top: 10px !important;
+  }
+
+  .page-context-heading {
+    gap: 10px !important;
+  }
+
+  .page-context-icon {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 12px !important;
+  }
+
+  .page-context-heading .main-title {
+    font-size: 1.35rem !important;
+  }
+
+  .page-context-heading p {
+    font-size: .78rem !important;
+  }
+}

@@ -3125,6 +3125,7 @@ export default function App() {
         abrirConfirmacao={abrirConfirmacao}
         excluirNota={excluirNota}
         loading={loading}
+        nomeUsuario={nomeUsuario()}
       />
     )
   }
@@ -5147,6 +5148,7 @@ export default function App() {
         abrirEdicaoNota={abrirEdicaoNota}
         excluirNota={excluirNota}
         loading={loading}
+        nomeUsuario={nomeUsuario()}
       />
 
       {/* Lista de contas movida para a tela Financeiro > Contas. */}

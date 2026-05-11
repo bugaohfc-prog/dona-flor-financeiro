@@ -30,7 +30,8 @@ export default function DashboardHome({
   alternarNotaConcluida,
   abrirEdicaoNota,
   excluirNota,
-  loading = false
+  loading = false,
+  nomeUsuario = 'usuário'
 }) {
   const valorSeguro = (valor) => Number(valor || 0)
   const contasPagas = contas.filter((conta) => conta.status === 'pago')
@@ -79,7 +80,13 @@ export default function DashboardHome({
     <>
       <section className="dashboard-title-row">
         <div className="dashboard-heading-actions">
-          <h1 className="main-title" style={styles.titulo}>📊 Dashboard Financeiro</h1>
+          <div className="page-context-heading" aria-label="Contexto da página">
+            <span className="page-context-icon">📊</span>
+            <div>
+              <h1 className="main-title" style={styles.titulo}>Olá, {nomeUsuario || 'usuário'}</h1>
+              <p>Visão geral financeira de hoje</p>
+            </div>
+          </div>
         </div>
 
         {loading ? (

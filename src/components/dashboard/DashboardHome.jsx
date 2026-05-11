@@ -78,10 +78,10 @@ export default function DashboardHome({
 
   return (
     <>
-      <section className="dashboard-title-row">
-        <div className="dashboard-heading-actions">
+      <section className="dashboard-title-row dashboard-title-row-minimal">
+        <div className="dashboard-heading-actions dashboard-heading-actions-minimal">
           <div className="page-context-heading page-context-heading-minimal" aria-label="Contexto da página">
-            <h1 className="main-title" style={styles.titulo}>Olá, usuário</h1>
+            <h1 className="main-title page-context-title">Olá, usuário</h1>
           </div>
         </div>
 

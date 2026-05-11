@@ -4195,102 +4195,161 @@ body:has(.desktop-sidebar.compacta) .dashboard-analytics-grid {
   }
 }
 
-
-/* FASE 8.6 — Color Harmony: KPI premium, tons pastel e menor saturação */
-.dashboard-title-row .summary-grid > div,
-.summary-grid > div {
-  background-color: rgba(255, 255, 255, 0.82) !important;
-  background-image: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(248,250,252,0.86)) !important;
-  border: 1px solid rgba(226, 232, 240, 0.95) !important;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.055) !important;
+/* FASE 8.7 — Executive Agenda Card */
+.no-print.agenda-card-polished,
+.agenda-card-polished {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: minmax(240px, 1.05fr) minmax(260px, .95fr) !important;
+  grid-template-areas:
+    "title metrics"
+    "event action" !important;
+  align-items: stretch !important;
+  gap: 14px !important;
+  padding: 18px !important;
+  border-radius: 24px !important;
+  background: linear-gradient(135deg, rgba(255,255,255,.96) 0%, rgba(240,253,250,.78) 100%) !important;
+  border: 1px solid rgba(153, 246, 228, .55) !important;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, .055) !important;
+  overflow: hidden !important;
 }
 
-.dashboard-title-row .summary-grid > div::before,
-.summary-grid > div::before {
-  width: 96px !important;
-  height: 96px !important;
-  right: -22px !important;
-  top: -28px !important;
-  opacity: 0.34 !important;
-  filter: saturate(0.72) blur(0.1px) !important;
-  background: rgba(148, 163, 184, 0.16) !important;
+.agenda-card-polished::before {
+  content: "";
+  position: absolute;
+  inset: auto auto -54px -54px;
+  width: 150px;
+  height: 150px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(20,184,166,.13), rgba(20,184,166,0) 68%);
+  pointer-events: none;
 }
 
-.dashboard-title-row .summary-grid > div:nth-child(1),
-.summary-grid > div:nth-child(1) {
-  border-left: 4px solid rgba(20, 184, 166, 0.78) !important;
-  background-image: linear-gradient(135deg, #ffffff 0%, rgba(236, 254, 255, 0.54) 100%) !important;
+.agenda-card-polished > div:first-child {
+  grid-area: title !important;
+  min-width: 0 !important;
+  align-self: start !important;
 }
 
-.dashboard-title-row .summary-grid > div:nth-child(1)::before,
-.summary-grid > div:nth-child(1)::before {
-  background: rgba(125, 211, 252, 0.22) !important;
-}
-
-.dashboard-title-row .summary-grid > div:nth-child(2),
-.summary-grid > div:nth-child(2) {
-  border-left: 4px solid rgba(34, 197, 94, 0.72) !important;
-  background-image: linear-gradient(135deg, #ffffff 0%, rgba(240, 253, 244, 0.62) 100%) !important;
-}
-
-.dashboard-title-row .summary-grid > div:nth-child(2)::before,
-.summary-grid > div:nth-child(2)::before {
-  background: rgba(74, 222, 128, 0.22) !important;
-}
-
-.dashboard-title-row .summary-grid > div:nth-child(3),
-.summary-grid > div:nth-child(3) {
-  border-left: 4px solid rgba(245, 158, 11, 0.72) !important;
-  background-image: linear-gradient(135deg, #ffffff 0%, rgba(255, 251, 235, 0.70) 100%) !important;
-}
-
-.dashboard-title-row .summary-grid > div:nth-child(3)::before,
-.summary-grid > div:nth-child(3)::before {
-  background: rgba(251, 191, 36, 0.22) !important;
-}
-
-.dashboard-title-row .summary-grid > div:nth-child(4),
-.summary-grid > div:nth-child(4) {
-  border-left: 4px solid rgba(239, 68, 68, 0.70) !important;
-  background-image: linear-gradient(135deg, #ffffff 0%, rgba(254, 242, 242, 0.68) 100%) !important;
-}
-
-.dashboard-title-row .summary-grid > div:nth-child(4)::before,
-.summary-grid > div:nth-child(4)::before {
-  background: rgba(248, 113, 113, 0.22) !important;
-}
-
-.dashboard-title-row .summary-grid span,
-.summary-grid span {
-  color: #64748b !important;
-}
-
-.dashboard-title-row .summary-grid strong,
-.summary-grid strong {
+.agenda-card-polished > div:first-child strong {
+  display: block !important;
+  font-size: clamp(1rem, 1.4vw, 1.2rem) !important;
+  line-height: 1.1 !important;
   color: #0f172a !important;
+  letter-spacing: -0.025em !important;
 }
 
-.dashboard-analytics-card,
-.dashboard-analytics-wide,
-.agenda-card-polished,
-.dashboard-notes-card,
-.content-block {
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.055) !important;
-  border-color: rgba(226, 232, 240, 0.92) !important;
+.agenda-card-polished > div:first-child small {
+  display: block !important;
+  margin-top: 4px !important;
+  color: #64748b !important;
+  font-size: .88rem !important;
 }
 
-.dashboard-analytics-card .recharts-bar-rectangle path,
-.dashboard-analytics-card .recharts-sector {
-  filter: saturate(0.82) !important;
+.agenda-compact-items {
+  grid-area: metrics !important;
+  justify-self: end !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(96px, 1fr)) !important;
+  gap: 10px !important;
+  min-width: min(270px, 100%) !important;
+  width: auto !important;
 }
 
-@media (max-width: 640px) {
-  .dashboard-title-row .summary-grid > div::before,
-  .summary-grid > div::before {
-    width: 74px !important;
-    height: 74px !important;
-    right: -18px !important;
-    top: -22px !important;
-    opacity: 0.30 !important;
+.agenda-pill {
+  min-height: 54px !important;
+  padding: 10px 14px !important;
+  border-radius: 16px !important;
+  background: rgba(255,255,255,.78) !important;
+  border: 1px solid rgba(153,246,228,.70) !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, .035) !important;
+  display: grid !important;
+  align-content: center !important;
+}
+
+.agenda-pill small {
+  display: block !important;
+  color: #0f766e !important;
+  font-size: .72rem !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+}
+
+.agenda-pill strong {
+  display: block !important;
+  margin-top: 4px !important;
+  color: #0f172a !important;
+  font-size: .88rem !important;
+  line-height: 1.05 !important;
+  white-space: nowrap !important;
+}
+
+.agenda-card-polished::after {
+  content: "Hoje • próximo resumo financeiro";
+  grid-area: event;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px 0 44px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.70);
+  border: 1px solid rgba(226,232,240,.92);
+  color: #334155;
+  font-size: .88rem;
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+  position: relative;
+  z-index: 1;
+}
+
+.agenda-card-polished button {
+  grid-area: action !important;
+  min-height: 52px !important;
+  width: 100% !important;
+  align-self: stretch !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(45,212,191,.70) !important;
+  background: linear-gradient(135deg, rgba(240,253,250,.94), rgba(255,255,255,.88)) !important;
+  color: #0f766e !important;
+  font-weight: 900 !important;
+  box-shadow: 0 10px 22px rgba(15,118,110,.06) !important;
+}
+
+.agenda-card-polished button:hover {
+  transform: translateY(-1px) !important;
+  background: linear-gradient(135deg, rgba(204,251,241,.90), rgba(240,253,250,.96)) !important;
+  border-color: rgba(20,184,166,.82) !important;
+}
+
+@media (max-width: 980px) {
+  .no-print.agenda-card-polished,
+  .agenda-card-polished {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "title"
+      "metrics"
+      "event"
+      "action" !important;
+    gap: 12px !important;
+    padding: 16px !important;
+  }
+
+  .agenda-compact-items {
+    justify-self: stretch !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .agenda-compact-items {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .agenda-card-polished::after {
+    min-height: 54px;
+    padding-left: 14px;
+    justify-content: center;
+    text-align: center;
   }
 }

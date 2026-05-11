@@ -62,6 +62,19 @@ export default function DashboardHome({
   const percentualPago = total > 0 ? Math.round((pago / total) * 100) : 0
   const percentualRisco = total > 0 ? Math.round((vencido / total) * 100) : 0
 
+  const contasAgenda = contas
+    .filter((conta) => conta.status !== 'pago')
+    .sort((a, b) => diferencaDias(a.data_vencimento) - diferencaDias(b.data_vencimento))
+
+  const contasHoje = contasAgenda.filter((conta) => diferencaDias(conta.data_vencimento) === 0)
+  const contasSemana = contasAgenda.filter((conta) => {
+    const dias = diferencaDias(conta.data_vencimento)
+    return dias > 0 && dias <= 7
+  })
+  const proximaConta = contasAgenda.find((conta) => diferencaDias(conta.data_vencimento) >= 0) || contasAgenda[0]
+  const totalHoje = contasHoje.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
+  const totalSemana = contasSemana.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
+
   return (
     <>
       <section className="dashboard-title-row">
@@ -153,17 +166,17 @@ export default function DashboardHome({
             </div>
 
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={fluxoChartData} margin={{ top: 12, right: 10, left: -18, bottom: 0 }}>
+              <BarChart data={fluxoChartData} margin={{ top: 12, right: 20, left: 8, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} tickFormatter={(value) => `R$${Math.round(value / 1000)}k`} />
+                <YAxis width={62} tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `R$ ${Math.round(value / 1000)}k`} />
                 <Tooltip formatter={(value) => formatarValor(value)} />
                 <Bar dataKey="valor" radius={[10, 10, 4, 4]} fill="#0f766e" />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="dashboard-analytics-card dashboard-analytics-wide">
+          <div className="dashboard-analytics-card dashboard-cost-center-card">
             <div className="analytics-card-header">
               <div>
                 <span className="analytics-kicker">Centros de custo</span>
@@ -193,20 +206,41 @@ export default function DashboardHome({
               <div className="analytics-empty">Cadastre centros de custo para visualizar o ranking.</div>
             )}
           </div>
+
+          <div className="dashboard-analytics-card executive-agenda-widget">
+            <div className="analytics-card-header">
+              <div>
+                <span className="analytics-kicker">Agenda executiva</span>
+                <strong>Próximos vencimentos</strong>
+              </div>
+              <span className="analytics-badge neutral">{contasAgenda.length} abertas</span>
+            </div>
+
+            <div className="executive-agenda-metrics">
+              <div>
+                <small>Hoje</small>
+                <strong>{formatarValor(totalHoje)}</strong>
+              </div>
+              <div>
+                <small>7 dias</small>
+                <strong>{formatarValor(totalSemana)}</strong>
+              </div>
+            </div>
+
+            {proximaConta ? (
+              <div className="executive-agenda-next">
+                <span>Próximo compromisso</span>
+                <strong>{proximaConta.descricao}</strong>
+                <small>{formatarData(proximaConta.data_vencimento)} • {formatarValor(proximaConta.valor)}</small>
+              </div>
+            ) : (
+              <div className="analytics-empty executive-agenda-empty">Agenda financeira limpa.</div>
+            )}
+
+            <button className="executive-agenda-cta" onClick={() => navegarPara('agenda')}>Abrir agenda completa</button>
+          </div>
         </section>
       )}
-
-      <section className="no-print agenda-card-polished" style={styles.agendaResumoCard}>
-        <div>
-          <strong>📅 Próximos vencimentos</strong>
-          <small>Resumo compacto da agenda financeira</small>
-        </div>
-        <div className="agenda-compact-items" style={styles.agendaResumoGrid}>
-          <div className="agenda-pill"><small>Hoje</small><strong>{formatarValor(contas.filter((conta) => conta.status !== 'pago' && diferencaDias(conta.data_vencimento) === 0).reduce((acc, conta) => acc + Number(conta.valor || 0), 0))}</strong></div>
-          <div className="agenda-pill"><small>7 dias</small><strong>{formatarValor(contas.filter((conta) => { const dias = diferencaDias(conta.data_vencimento); return conta.status !== 'pago' && dias > 0 && dias <= 7 }).reduce((acc, conta) => acc + Number(conta.valor || 0), 0))}</strong></div>
-        </div>
-        <button style={styles.btnAgendaCompleta} onClick={() => navegarPara('agenda')}>Abrir agenda</button>
-      </section>
 
       {loading ? (
         <section className="content-block" style={styles.bloco}>

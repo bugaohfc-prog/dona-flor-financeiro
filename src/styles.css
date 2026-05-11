@@ -4627,3 +4627,191 @@ body:has(.desktop-sidebar.compacta) .dashboard-analytics-grid {
     grid-template-columns: 1fr !important;
   }
 }
+
+
+/* =========================================================
+   FASE 8.8 — Hardening visual do Dashboard Premium
+   Objetivo: estabilizar grid, KPIs, gráficos e widgets executivos
+   sem tocar em auth, providers, context ou lógica financeira.
+   ========================================================= */
+:root {
+  --df-dashboard-max: 1280px;
+  --df-gap-lg: 18px;
+  --df-gap-md: 14px;
+  --df-card-radius: 24px;
+  --df-card-border: rgba(226, 232, 240, .9);
+  --df-card-shadow: 0 14px 34px rgba(15, 23, 42, .055);
+  --df-card-shadow-hover: 0 18px 42px rgba(15, 23, 42, .08);
+  --df-kpi-total: #f8fafc;
+  --df-kpi-paid: #f0fdf4;
+  --df-kpi-open: #fffbeb;
+  --df-kpi-risk: #fef2f2;
+}
+
+@media (min-width: 980px) {
+  .dashboard-title-row,
+  .dashboard-analytics-grid,
+  .dashboard-notes-card,
+  .filters-desktop,
+  .result-summary,
+  .content-block {
+    width: min(100%, var(--df-dashboard-max)) !important;
+    max-width: var(--df-dashboard-max) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box !important;
+  }
+}
+
+.dashboard-title-row .summary-grid,
+.summary-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: var(--df-gap-md) !important;
+  align-items: stretch !important;
+}
+
+.dashboard-title-row .summary-grid > div,
+.summary-grid > div {
+  min-width: 0 !important;
+  min-height: 104px !important;
+  padding: 18px !important;
+  border: 1px solid var(--df-card-border) !important;
+  border-radius: var(--df-card-radius) !important;
+  box-shadow: var(--df-card-shadow) !important;
+  background: linear-gradient(135deg, #fff 0%, var(--df-kpi-total) 100%) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+}
+
+.summary-grid > div:nth-child(2) { background: linear-gradient(135deg, #fff 0%, var(--df-kpi-paid) 100%) !important; }
+.summary-grid > div:nth-child(3) { background: linear-gradient(135deg, #fff 0%, var(--df-kpi-open) 100%) !important; }
+.summary-grid > div:nth-child(4) { background: linear-gradient(135deg, #fff 0%, var(--df-kpi-risk) 100%) !important; }
+
+.summary-grid > div::before {
+  right: -38px !important;
+  top: -46px !important;
+  width: 118px !important;
+  height: 118px !important;
+  opacity: .88 !important;
+  filter: none !important;
+}
+
+.summary-grid > div::after { display: none !important; }
+
+.summary-grid span {
+  color: #64748b !important;
+  font-size: .74rem !important;
+  font-weight: 900 !important;
+  line-height: 1.15 !important;
+  letter-spacing: .065em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.summary-grid strong {
+  color: #0f172a !important;
+  margin-top: 10px !important;
+  font-size: clamp(1.35rem, 2.2vw, 1.88rem) !important;
+  line-height: 1.05 !important;
+  letter-spacing: -.045em !important;
+  white-space: nowrap !important;
+}
+
+.dashboard-analytics-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: var(--df-gap-lg) !important;
+  align-items: stretch !important;
+  margin-top: 18px !important;
+  margin-bottom: 18px !important;
+}
+
+.dashboard-analytics-card {
+  min-width: 0 !important;
+  min-height: 324px !important;
+  padding: 18px !important;
+  border: 1px solid var(--df-card-border) !important;
+  border-radius: var(--df-card-radius) !important;
+  background: rgba(255, 255, 255, .97) !important;
+  box-shadow: var(--df-card-shadow) !important;
+  overflow: visible !important;
+}
+
+.dashboard-analytics-card:hover,
+.summary-grid > div:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--df-card-shadow-hover) !important;
+}
+
+.dashboard-analytics-card .recharts-responsive-container,
+.dashboard-analytics-card .recharts-wrapper,
+.dashboard-analytics-card .recharts-surface {
+  overflow: visible !important;
+}
+
+.dashboard-analytics-card .recharts-cartesian-grid line { stroke: #e2e8f0 !important; }
+.dashboard-analytics-card .recharts-cartesian-axis-tick-value {
+  fill: #64748b !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+.dashboard-cost-center-card,
+.executive-agenda-widget {
+  min-height: 300px !important;
+}
+
+.executive-agenda-widget {
+  display: grid !important;
+  grid-template-rows: auto auto 1fr auto !important;
+  gap: 14px !important;
+  background: linear-gradient(135deg, #fff 0%, #f8fafc 100%) !important;
+}
+
+.executive-agenda-metrics {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.executive-agenda-metrics > div,
+.executive-agenda-next {
+  border: 1px solid rgba(226, 232, 240, .9) !important;
+  background: #fff !important;
+  border-radius: 18px !important;
+  padding: 12px !important;
+}
+
+.executive-agenda-next {
+  display: grid !important;
+  align-content: center !important;
+  gap: 6px !important;
+  min-height: 112px !important;
+  background: #f8fafc !important;
+}
+
+.executive-agenda-cta {
+  width: 100% !important;
+  min-height: 46px !important;
+  border-radius: 16px !important;
+  background: #0f172a !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 1100px) {
+  .dashboard-analytics-grid { grid-template-columns: 1fr !important; }
+  .dashboard-analytics-card { min-height: auto !important; overflow: hidden !important; }
+}
+
+@media (max-width: 720px) {
+  .dashboard-title-row .summary-grid,
+  .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+  .summary-grid > div { min-height: 86px !important; padding: 14px !important; border-radius: 20px !important; }
+  .summary-grid strong { font-size: clamp(1.12rem, 5vw, 1.52rem) !important; }
+  .dashboard-analytics-grid { gap: 12px !important; }
+  .executive-agenda-metrics { grid-template-columns: 1fr !important; }
+}

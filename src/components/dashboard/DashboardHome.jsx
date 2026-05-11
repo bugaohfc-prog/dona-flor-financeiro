@@ -166,10 +166,10 @@ export default function DashboardHome({
             </div>
 
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={fluxoChartData} margin={{ top: 12, right: 20, left: 8, bottom: 0 }}>
+              <BarChart data={fluxoChartData} margin={{ top: 14, right: 18, left: 24, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                <YAxis width={62} tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `R$ ${Math.round(value / 1000)}k`} />
+                <YAxis width={82} tickLine={false} axisLine={false} tickMargin={10} tickFormatter={(value) => `R$ ${Math.round(value / 1000)}k`} />
                 <Tooltip formatter={(value) => formatarValor(value)} />
                 <Bar dataKey="valor" radius={[10, 10, 4, 4]} fill="#0f766e" />
               </BarChart>

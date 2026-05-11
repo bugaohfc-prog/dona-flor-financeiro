@@ -1,4 +1,17 @@
 import { AccountListSkeleton } from '../components/feedback/Skeletons.jsx'
+
+function EmptyState({ icon, title, description, actionLabel, onAction }) {
+  return (
+    <div className="empty-state-card">
+      <div className="empty-state-icon">{icon}</div>
+      <strong>{title}</strong>
+      <p>{description}</p>
+      {actionLabel && onAction && (
+        <button className="empty-state-action" onClick={onAction}>{actionLabel}</button>
+      )}
+    </div>
+  )
+}
 export default function ContasPage({
   styles, busca, setBusca, mostrarFiltros, setMostrarFiltros, limparFiltros, imprimirPDF, exportarCSV,
   filtroStatus, setFiltroStatus, centros, filtroCentro, setFiltroCentro, filtroMes, setFiltroMes,
@@ -68,6 +81,14 @@ export default function ContasPage({
           aberto={mostrarContas}
           onClick={() => setMostrarContas(!mostrarContas)}
         />
+
+        {!loading && mostrarContas && contasFiltradas.length === 0 && (
+          <EmptyState
+            icon="💳"
+            title="Nenhuma conta encontrada"
+            description="Ajuste os filtros ou cadastre uma nova conta para acompanhar os vencimentos da empresa."
+          />
+        )}
 
         {!loading && mostrarContas && contasFiltradas.map((conta) => {
           const vencida = estaVencida(conta.data_vencimento, conta.status)

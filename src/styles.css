@@ -3389,3 +3389,83 @@ textarea:focus-visible {
   outline: 2px solid rgba(20, 184, 166, 0.35) !important;
   outline-offset: 2px !important;
 }
+
+/* FASE 7.9 — Empty States profissionais */
+.empty-state-card {
+  width: 100%;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px 22px;
+  margin: 14px 0;
+  text-align: center;
+  border: 1px dashed rgba(148, 163, 184, 0.65);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.92));
+  color: #475569;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 24px rgba(15, 23, 42, 0.05);
+  animation: emptyStateIn 0.34s ease both;
+}
+
+.empty-state-icon {
+  width: 54px;
+  height: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  background: rgba(226, 232, 240, 0.7);
+  font-size: 28px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+.empty-state-card strong {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.empty-state-card p {
+  max-width: 440px;
+  margin: 0;
+  line-height: 1.5;
+  font-size: 0.92rem;
+}
+
+.empty-state-action {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #111827;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+@keyframes emptyStateIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 640px) {
+  .empty-state-card {
+    min-height: 132px;
+    padding: 22px 16px;
+    border-radius: 18px;
+  }
+
+  .empty-state-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+  }
+}

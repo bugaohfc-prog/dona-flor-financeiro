@@ -1,3 +1,13 @@
+function EmptyState({ icon, title, description }) {
+  return (
+    <div className="empty-state-card">
+      <div className="empty-state-icon">{icon}</div>
+      <strong>{title}</strong>
+      <p>{description}</p>
+    </div>
+  )
+}
+
 export default function NotasPage({
   styles, navegarPara, notasFiltradas, notasPendentes, notasCriticas, notasUrgentes,
   buscaNota, setBuscaNota, formatarData, alternarNotaConcluida, abrirEdicaoNota,
@@ -38,7 +48,11 @@ export default function NotasPage({
         </div>
 
         {notasFiltradas.length === 0 && (
-          <p style={styles.mensagemVazia}>Nenhuma nota encontrada.</p>
+          <EmptyState
+            icon="📝"
+            title="Nenhuma nota encontrada"
+            description="Use as notas para registrar pendências, lembretes e prioridades da operação."
+          />
         )}
 
         <div className="notes-page-grid">

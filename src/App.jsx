@@ -2912,6 +2912,17 @@ export default function App() {
     )
   }
 
+
+  function EmptyState({ icon, title, description }) {
+    return (
+      <div className="empty-state-card">
+        <div className="empty-state-icon">{icon}</div>
+        <strong>{title}</strong>
+        <p>{description}</p>
+      </div>
+    )
+  }
+
   function toggleGrupoMenu(grupo) {
     setGruposMenu((atual) => ({ ...atual, [grupo]: !atual[grupo] }))
   }
@@ -3274,7 +3285,7 @@ export default function App() {
 
           <div className="users-list">
             {usuariosEmpresa.length === 0 && (
-              <p style={styles.mensagemVazia}>Nenhum usuário cadastrado para esta empresa.</p>
+              <EmptyState icon="👥" title="Nenhum usuário cadastrado" description="Adicione usuários para dividir a operação com segurança e níveis de acesso." />
             )}
 
             {usuariosEmpresa.map((usuario) => {
@@ -3569,7 +3580,7 @@ export default function App() {
           </div>
 
           {lista.length === 0 && (
-            <p style={styles.mensagemVazia}>Nenhuma conta nesta agenda.</p>
+            <EmptyState icon="✅" title="Agenda limpa" description="Não há contas neste grupo de vencimento no momento." />
           )}
 
           {lista.map((conta) => {
@@ -3659,7 +3670,7 @@ export default function App() {
           <h2 style={styles.subtitulo}>💰 Contas excluídas</h2>
 
           {contasLixeira.length === 0 && (
-            <p style={styles.mensagemVazia}>Nenhuma conta na lixeira.</p>
+            <EmptyState icon="🧹" title="Nenhuma conta na lixeira" description="As contas excluídas aparecerão aqui durante o período de quarentena." />
           )}
 
           {contasLixeira.map((conta) => {
@@ -3701,7 +3712,7 @@ export default function App() {
           <h2 style={styles.subtitulo}>📝 Notas excluídas</h2>
 
           {notasLixeira.length === 0 && (
-            <p style={styles.mensagemVazia}>Nenhuma nota na lixeira.</p>
+            <EmptyState icon="🗒️" title="Nenhuma nota na lixeira" description="As notas excluídas aparecerão aqui antes da remoção definitiva." />
           )}
 
           {notasLixeira.map((nota) => {

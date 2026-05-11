@@ -5419,3 +5419,47 @@ button[title*="Adicionar"],
     font-size: .78rem !important;
   }
 }
+
+
+/* =========================================================
+   FASE 8.18 — PAGE CONTEXT MINIMAL
+   Remove a leitura de segundo menu no cabeçalho da página.
+   Mantém a command bar como topo principal e deixa o título
+   como saudação simples: "Olá, usuário".
+   ========================================================= */
+.dashboard-title-row {
+  margin-top: 8px !important;
+  gap: 12px !important;
+}
+
+.dashboard-heading-actions {
+  margin: 0 !important;
+}
+
+.page-context-heading-minimal {
+  display: block !important;
+  padding: 0 !important;
+  margin: 0 0 4px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.page-context-heading-minimal .main-title {
+  margin: 0 !important;
+  font-size: clamp(1.55rem, 2.1vw, 2rem) !important;
+  line-height: 1.05 !important;
+  letter-spacing: -.04em !important;
+  color: #0f172a !important;
+}
+
+.page-context-heading-minimal p,
+.page-context-heading-minimal .page-context-icon {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  .page-context-heading-minimal .main-title {
+    font-size: 1.5rem !important;
+  }
+}

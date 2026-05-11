@@ -80,12 +80,8 @@ export default function DashboardHome({
     <>
       <section className="dashboard-title-row">
         <div className="dashboard-heading-actions">
-          <div className="page-context-heading" aria-label="Contexto da página">
-            <span className="page-context-icon">📊</span>
-            <div>
-              <h1 className="main-title" style={styles.titulo}>Olá, {nomeUsuario || 'usuário'}</h1>
-              <p>Visão geral financeira de hoje</p>
-            </div>
+          <div className="page-context-heading page-context-heading-minimal" aria-label="Contexto da página">
+            <h1 className="main-title" style={styles.titulo}>Olá, usuário</h1>
           </div>
         </div>
 

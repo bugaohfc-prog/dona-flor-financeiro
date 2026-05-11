@@ -1,23 +1,24 @@
-{
-  "name": "dona-flor-financeiro",
-  "version": "1.0.0",
-  "private": true,
-  "engines": {
-    "node": "20.x"
-  },
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "recharts": "^2.12.7"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^5.0.12"
-  }
+export function dataLocal(data) {
+  if (!data) return null
+  const valor = String(data).slice(0, 10)
+  return new Date(valor + 'T00:00:00')
+}
+
+export function diferencaDias(data) {
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+
+  const alvo = dataLocal(data)
+  if (!alvo) return 999999
+
+  const diff = alvo - hoje
+  return Math.round(diff / (1000 * 60 * 60 * 24))
+}
+
+export function mesmoMesAtual(data) {
+  const alvo = dataLocal(data)
+  if (!alvo) return false
+
+  const hoje = new Date()
+  return alvo.getMonth() === hoje.getMonth() && alvo.getFullYear() === hoje.getFullYear()
 }

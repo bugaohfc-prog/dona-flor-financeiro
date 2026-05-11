@@ -1,19 +1,37 @@
-PIPEDREAM - AJUSTE DO E-MAIL PROFISSIONAL
+import { dataLocal } from './dates'
+import { primeiraLetraMaiuscula } from './format'
 
-No step Gmail > Send Email:
+export function montarDataRecorrente(ano, mes, dia) {
+  const ultimoDiaMes = new Date(ano, mes, 0).getDate()
+  const diaSeguro = Math.min(Number(dia || 1), ultimoDiaMes)
+  return `${ano}-${String(mes).padStart(2, '0')}-${String(diaSeguro).padStart(2, '0')}`
+}
 
-To:
-donafloradm@outlook.com
+export function deveGerarRecorrenciaNoMes(recorrencia, ano, mes) {
+  if (!recorrencia?.ativo) return false
+  if ((recorrencia.tipo_recorrencia || recorrencia.frequencia || 'mensal') !== 'mensal') return false
 
-Subject:
-{{steps.trigger.event.body.subject || steps.trigger.event.body.assunto || "Resumo financeiro - Dona Flor"}}
+  const inicio = recorrencia.data_inicio ? dataLocal(recorrencia.data_inicio) : null
+  if (!inicio) return true
 
-Email Body / Text:
-{{steps.trigger.event.body.body || steps.trigger.event.body.corpo || steps.trigger.event.body.resumo || "Nenhuma conta encontrada."}}
+  const primeiroDiaMes = new Date(ano, mes - 1, 1)
+  const ultimoDiaMes = new Date(ano, mes, 0)
 
-Se tiver campo HTML:
-{{steps.trigger.event.body.html}}
+  return inicio <= ultimoDiaMes && primeiroDiaMes >= new Date(inicio.getFullYear(), inicio.getMonth(), 1)
+}
 
-IMPORTANTE:
-Se o Gmail step tiver a opção de HTML, use o campo HTML acima para chegar formatado.
-Se não tiver, use o campo Text mesmo. O e-mail não virá vazio.
+export function obterTipoRecorrenciaConta(conta) {
+  const tipo = conta?.df_contas_recorrentes?.tipo_recorrencia || conta?.tipo_recorrencia || ''
+  return String(tipo || 'mensal')
+}
+
+export function formatarTipoRecorrencia(tipo) {
+  const normalizado = String(tipo || 'mensal').toLowerCase()
+  const mapa = {
+    mensal: 'Mensal',
+    semanal: 'Semanal',
+    anual: 'Anual',
+    quinzenal: 'Quinzenal'
+  }
+  return mapa[normalizado] || primeiraLetraMaiuscula(normalizado)
+}

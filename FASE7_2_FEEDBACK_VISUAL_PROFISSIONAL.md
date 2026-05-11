@@ -1,37 +1,55 @@
-# Fase 7.2 — Feedback visual profissional
+export async function listarNotas(supabase, empresaId) {
+  return supabase
+    .from('df_notas')
+    .select('*')
+    .eq('empresa_id', empresaId)
+    .eq('excluido', false)
+    .order('created_at', { ascending: false })
+}
 
-## Objetivo
-Centralizar e padronizar os feedbacks visuais do Dona Flor sem alterar regras de negócio, UX principal, CSS estrutural, Supabase ou responsividade.
+export async function listarNotasLixeira(supabase, empresaId) {
+  return supabase
+    .from('df_notas')
+    .select('*')
+    .eq('empresa_id', empresaId)
+    .eq('excluido', true)
+    .order('excluido_em', { ascending: false })
+}
 
-## Alterações realizadas
+export async function criarNota(supabase, payload) {
+  return supabase.from('df_notas').insert([payload])
+}
 
-- `AppProvider` passou a centralizar:
-  - toast global;
-  - fechamento de toast;
-  - loading global;
-  - helper `runWithLoading` para próximas fases.
-- `main.jsx` agora envolve o app com `AppProvider`.
-- `App.jsx` passou a usar `useApp()` para feedback visual.
-- Alertas antigos em `alert()` foram substituídos por `mostrarAviso()`.
-- `GlobalToast` foi evoluído para:
-  - título por tipo;
-  - ícone visual;
-  - botão de fechar;
-  - acessibilidade básica com `role` e `aria-live`.
-- `GlobalLoader` foi evoluído com card central e mensagem.
-- CSS adicional criado apenas para feedback visual.
+export async function atualizarNota(supabase, id, empresaId, payload) {
+  return supabase
+    .from('df_notas')
+    .update(payload)
+    .eq('id', id)
+    .eq('empresa_id', empresaId)
+}
 
-## Não alterado
+export async function enviarNotaParaLixeira(supabase, id, empresaId) {
+  return atualizarNota(supabase, id, empresaId, {
+    excluido: true,
+    excluido_em: new Date().toISOString()
+  })
+}
 
-- Regras financeiras.
-- Supabase.
-- Fluxo de contas.
-- Fluxo de notas.
-- Recorrência.
-- UX principal.
-- Responsividade.
-- Pages/hooks/services já validados.
+export async function alternarNotaConcluidaService(supabase, nota, empresaId) {
+  return atualizarNota(supabase, nota.id, empresaId, { concluida: !nota.concluida })
+}
 
-## Build
+export async function restaurarNotaDaLixeira(supabase, id, empresaId) {
+  return atualizarNota(supabase, id, empresaId, {
+    excluido: false,
+    excluido_em: null
+  })
+}
 
-Build aprovado com `npm run build`.
+export async function excluirNotaPermanentemente(supabase, id, empresaId) {
+  return supabase
+    .from('df_notas')
+    .delete()
+    .eq('id', id)
+    .eq('empresa_id', empresaId)
+}

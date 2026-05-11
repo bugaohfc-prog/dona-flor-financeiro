@@ -5056,318 +5056,70 @@ button[title*="Adicionar"],
   .dashboard-open-list .dashboard-paid-button { min-width: 68px !important; border-radius: 12px !important; }
 }
 
-/* ===== FASE 8.14 REAL — PREMIUM DENSITY + EXECUTIVE TOPBAR ===== */
-:root {
-  --df-surface: #ffffff;
-  --df-surface-soft: #f8fbfb;
-  --df-border-soft: #e2e8f0;
-  --df-border-teal: #c8eee7;
-  --df-text-main: #0f172a;
-  --df-text-muted: #64748b;
-  --df-teal-deep: #0f766e;
-  --df-shadow-card: 0 16px 38px rgba(15, 23, 42, .075);
-  --df-shadow-soft: 0 8px 22px rgba(15, 23, 42, .055);
-}
-
-@media (min-width: 980px) {
-  .top-shell-executive {
-    display: grid !important;
-    grid-template-columns: minmax(220px, .85fr) minmax(360px, 1.45fr) minmax(220px, auto) !important;
-    align-items: center !important;
-    gap: 16px !important;
-    padding: 14px 18px !important;
-    min-height: 78px !important;
-    background: rgba(255, 255, 255, .92) !important;
-    border: 1px solid var(--df-border-teal) !important;
-    box-shadow: var(--df-shadow-card) !important;
-    backdrop-filter: blur(12px);
+/* =========================================================
+   FASE 8.15 — DASHBOARD EQUAL HEIGHT CONTRACT
+   Escopo: corrigir desalinhamento entre Centros de Custo e Agenda
+   sem alterar lógica, modal, auth, providers ou handlers.
+   ========================================================= */
+@media (min-width: 1101px) {
+  .dashboard-analytics-grid,
+  body:has(.desktop-sidebar.compacta) .dashboard-analytics-grid {
+    align-items: stretch !important;
+    grid-auto-rows: minmax(0, auto) !important;
   }
 
-  .top-shell-context,
-  .top-shell-actions {
-    min-width: 0 !important;
+  .dashboard-cost-center-card,
+  .executive-agenda-widget {
+    height: 100% !important;
+    min-height: 372px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
   }
 
-  .top-shell-logo {
+  .dashboard-cost-center-card .analytics-card-header,
+  .executive-agenda-widget .analytics-card-header {
+    flex: 0 0 auto !important;
+  }
+
+  .dashboard-cost-center-card .cost-center-bars {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+  }
+
+  .executive-agenda-widget {
+    gap: 14px !important;
+  }
+
+  .executive-agenda-metrics {
+    flex: 0 0 auto !important;
+  }
+
+  .executive-agenda-next,
+  .executive-agenda-empty {
+    flex: 1 1 auto !important;
+    min-height: 104px !important;
+  }
+
+  .executive-agenda-cta {
+    flex: 0 0 48px !important;
+    margin-top: auto !important;
+    margin-bottom: 0 !important;
     width: 100% !important;
-  }
-
-  .top-shell-logo img {
-    box-shadow: 0 10px 22px rgba(15, 118, 110, .12) !important;
-  }
-
-  .top-shell-command {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-    min-width: 0 !important;
-  }
-
-  .top-shell-search {
-    min-width: 260px !important;
-    max-width: 360px !important;
-    flex: 1 1 320px !important;
-    height: 42px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 10px !important;
-    padding: 0 14px !important;
-    border-radius: 999px !important;
-    border: 1px solid #dbe7e5 !important;
-    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
-    color: var(--df-text-muted) !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.8) !important;
-  }
-
-  .top-shell-search span {
-    width: 24px !important;
-    height: 24px !important;
-    border-radius: 999px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background: #ecfdf5 !important;
-    color: var(--df-teal-deep) !important;
-    font-size: 18px !important;
-    font-weight: 900 !important;
-  }
-
-  .top-shell-search small {
-    overflow: hidden !important;
-    white-space: nowrap !important;
-    text-overflow: ellipsis !important;
-    color: var(--df-text-muted) !important;
-    font-weight: 750 !important;
-  }
-
-  .top-shell-command button {
-    height: 38px !important;
-    border-radius: 999px !important;
-    padding: 0 13px !important;
-    border: 1px solid #dce8e5 !important;
-    background: #ffffff !important;
-    color: #334155 !important;
-    font-size: 12px !important;
-    font-weight: 900 !important;
-    cursor: pointer !important;
-    box-shadow: 0 6px 14px rgba(15, 23, 42, .045) !important;
-  }
-
-  .top-shell-command button:hover,
-  .top-shell-avatar:hover {
-    transform: translateY(-1px) !important;
-    border-color: #99f6e4 !important;
-    box-shadow: 0 10px 22px rgba(15, 118, 110, .10) !important;
-  }
-
-  .top-shell-status {
-    display: grid !important;
-    justify-items: end !important;
-    gap: 1px !important;
-    min-width: 118px !important;
-  }
-
-  .top-shell-status span {
-    color: var(--df-text-muted) !important;
-    font-size: 10px !important;
-    font-weight: 900 !important;
-    text-transform: uppercase !important;
-    letter-spacing: .08em !important;
-  }
-
-  .top-shell-status strong {
-    color: var(--df-text-main) !important;
-    max-width: 150px !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-    font-size: 13px !important;
-  }
-
-  .top-shell-avatar {
-    width: 42px !important;
-    height: 42px !important;
-    border-radius: 15px !important;
-    border: 1px solid #c8eee7 !important;
-    background: linear-gradient(135deg, #ecfdf5, #ffffff) !important;
-    color: var(--df-teal-deep) !important;
-    font-weight: 950 !important;
-    cursor: pointer !important;
-    box-shadow: 0 8px 18px rgba(15, 118, 110, .10) !important;
-  }
-
-  .dashboard-title-row {
-    margin-bottom: 12px !important;
-  }
-
-  .main-title {
-    margin-bottom: 12px !important;
-  }
-
-  .summary-grid {
-    gap: 14px !important;
-    margin-bottom: 18px !important;
-  }
-
-  .summary-grid > div {
-    min-height: 88px !important;
-    padding: 16px 18px !important;
-    border-radius: 20px !important;
-  }
-
-  .dashboard-analytics-grid {
-    gap: 18px !important;
-  }
-
-  .dashboard-analytics-card {
-    border-radius: 22px !important;
-    box-shadow: var(--df-shadow-card) !important;
-  }
-
-  .dashboard-open-accounts.content-block {
-    margin-top: 18px !important;
-    padding: 18px !important;
-    border-radius: 24px !important;
-    box-shadow: var(--df-shadow-card) !important;
-  }
-
-  .dashboard-section-header-accounts {
-    margin-bottom: 12px !important;
-  }
-
-  .dashboard-inline-filter {
-    margin: 10px 0 12px !important;
-  }
-
-  .dashboard-inline-filter input {
-    min-height: 42px !important;
-    border-radius: 13px !important;
-  }
-
-  .dashboard-open-list {
-    gap: 8px !important;
-  }
-
-  .dashboard-open-list .dashboard-account-row {
-    min-height: 58px !important;
-    padding: 12px 14px !important;
-    border-radius: 16px !important;
-    display: grid !important;
-    grid-template-columns: minmax(280px, 1fr) auto !important;
-    align-items: center !important;
-    gap: 14px !important;
-    background: #ffffff !important;
-  }
-
-  .dashboard-open-list .dashboard-account-row.account-row-vencido {
-    background: linear-gradient(90deg, #fffafa 0%, #ffffff 64%) !important;
-  }
-
-  .dashboard-open-list .dashboard-account-row.account-row-pendente {
-    background: linear-gradient(90deg, #fffdf5 0%, #ffffff 64%) !important;
-  }
-
-  .dashboard-open-list .dashboard-account-row > div:first-child {
-    min-width: 0 !important;
-  }
-
-  .dashboard-open-list .dashboard-account-row > div:first-child strong {
-    display: block !important;
-    font-size: 14px !important;
-    line-height: 1.15 !important;
-    margin-bottom: 6px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-
-  .dashboard-account-meta {
-    gap: 6px !important;
-  }
-
-  .account-date-badge,
-  .account-center-label,
-  .account-recurring-badge {
-    padding: 3px 8px !important;
-    font-size: 11px !important;
-    line-height: 1.1 !important;
-  }
-
-  .dashboard-account-row-actions {
-    display: grid !important;
-    grid-template-columns: auto auto auto !important;
-    align-items: center !important;
-    justify-content: end !important;
-    gap: 10px !important;
-    min-width: 280px !important;
-  }
-
-  .dashboard-open-list .dashboard-account-value {
-    min-width: 104px !important;
-    text-align: right !important;
-    font-size: 18px !important;
-  }
-
-  .dashboard-open-list .status-pill {
-    min-height: 24px !important;
-    padding: 0 9px !important;
-    font-size: 11px !important;
-  }
-
-  .dashboard-open-list .dashboard-paid-button {
-    min-width: 78px !important;
-    height: 36px !important;
-    min-height: 36px !important;
-    border-radius: 13px !important;
-  }
-
-  .global-fab {
-    width: 54px !important;
-    height: 54px !important;
-    right: 28px !important;
-    bottom: 28px !important;
-    border-radius: 18px !important;
-    background: linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%) !important;
-    color: #0f766e !important;
-    border: 1px solid #c8eee7 !important;
-    box-shadow: 0 18px 38px rgba(15, 118, 110, .20) !important;
-    font-size: 25px !important;
-    font-weight: 950 !important;
-  }
-
-  .global-fab:hover {
-    transform: translateY(-2px) scale(1.02) !important;
-    box-shadow: 0 22px 46px rgba(15, 118, 110, .26) !important;
-  }
-
-  .global-fab-menu {
-    right: 28px !important;
-    bottom: 92px !important;
-  }
-
-  .global-fab-menu button {
-    border-radius: 16px !important;
-    background: #ffffff !important;
-    border: 1px solid #dbe7e5 !important;
-    box-shadow: 0 14px 30px rgba(15, 23, 42, .12) !important;
+    align-self: stretch !important;
   }
 }
 
-@media (max-width: 979px) {
-  .top-shell-command,
-  .top-shell-status,
-  .top-shell-avatar {
-    display: none !important;
-  }
-
-  .top-shell-executive {
-    display: flex !important;
+@media (max-width: 1100px) {
+  .dashboard-cost-center-card,
+  .executive-agenda-widget {
+    height: auto !important;
     min-height: auto !important;
   }
 
-  .dashboard-open-list .dashboard-account-row {
-    min-height: 62px !important;
-    padding: 12px !important;
+  .executive-agenda-cta {
+    margin-top: 12px !important;
   }
 }

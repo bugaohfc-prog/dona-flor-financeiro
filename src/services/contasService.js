@@ -1,79 +1,59 @@
-import { assertEmpresaId, assertPayloadEmpresaId, assertPayloadsEmpresaId } from './tenantService'
+import {
+  atualizarPorEmpresa,
+  inserirComEmpresa,
+  inserirLoteComEmpresa,
+  selecionarPorEmpresa
+} from './supabaseQueryService'
+import { assertEmpresaId } from './tenantService'
 
 export async function listarContasAtivas(supabase, empresaId) {
   assertEmpresaId(empresaId)
-  return supabase
-    .from('df_contas')
-    .select('*, df_centros_custo(nome), df_contas_recorrentes(tipo_recorrencia)')
-    .eq('empresa_id', empresaId)
+  return selecionarPorEmpresa(supabase, 'df_contas', empresaId, '*, df_centros_custo(nome), df_contas_recorrentes(tipo_recorrencia)')
     .eq('excluido', false)
     .order('data_vencimento')
 }
 
 export async function listarRecorrenciasAtivas(supabase, empresaId) {
   assertEmpresaId(empresaId)
-  return supabase
-    .from('df_contas_recorrentes')
-    .select('*')
-    .eq('empresa_id', empresaId)
+  return selecionarPorEmpresa(supabase, 'df_contas_recorrentes', empresaId)
     .eq('ativo', true)
 }
 
 export async function criarContasEmLote(supabase, contas) {
-  assertPayloadsEmpresaId(contas)
-  return supabase
-    .from('df_contas')
-    .insert(contas)
-    .select('*, df_centros_custo(nome), df_contas_recorrentes(tipo_recorrencia)')
+  return inserirLoteComEmpresa(supabase, 'df_contas', contas, {
+    select: '*, df_centros_custo(nome), df_contas_recorrentes(tipo_recorrencia)'
+  })
 }
 
 export async function criarConta(supabase, payload) {
-  assertPayloadEmpresaId(payload)
-  return supabase.from('df_contas').insert([payload]).select()
+  return inserirComEmpresa(supabase, 'df_contas', payload, { select: true })
 }
 
 export async function atualizarConta(supabase, id, empresaId, payload) {
-  assertEmpresaId(empresaId)
-  return supabase
-    .from('df_contas')
-    .update(payload)
-    .eq('id', id)
-    .eq('empresa_id', empresaId)
+  return atualizarPorEmpresa(supabase, 'df_contas', id, empresaId, payload)
 }
 
 export async function buscarRecorrenciaPorId(supabase, id, empresaId) {
   assertEmpresaId(empresaId)
-  return supabase
-    .from('df_contas_recorrentes')
-    .select('*')
+  return selecionarPorEmpresa(supabase, 'df_contas_recorrentes', empresaId)
     .eq('id', id)
-    .eq('empresa_id', empresaId)
     .maybeSingle()
 }
 
 export async function listarRecorrenciasPorDia(supabase, empresaId, diaVencimento) {
   assertEmpresaId(empresaId)
-  return supabase
-    .from('df_contas_recorrentes')
-    .select('*')
-    .eq('empresa_id', empresaId)
+  return selecionarPorEmpresa(supabase, 'df_contas_recorrentes', empresaId)
     .eq('ativo', true)
     .eq('dia_vencimento', diaVencimento)
     .order('created_at', { ascending: false })
 }
 
 export async function criarRecorrencia(supabase, payload) {
-  assertPayloadEmpresaId(payload)
-  return supabase.from('df_contas_recorrentes').insert([payload]).select()
+  return inserirComEmpresa(supabase, 'df_contas_recorrentes', payload, { select: true })
 }
 
 export async function atualizarRecorrencia(supabase, id, empresaId, payload) {
-  assertEmpresaId(empresaId)
-  return supabase
-    .from('df_contas_recorrentes')
-    .update(payload)
-    .eq('id', id)
-    .eq('empresa_id', empresaId)
+  return atualizarPorEmpresa(supabase, 'df_contas_recorrentes', id, empresaId, payload)
 }
 
 export async function vincularRecorrenciaNaConta(supabase, contaId, empresaId, recorrenciaId) {

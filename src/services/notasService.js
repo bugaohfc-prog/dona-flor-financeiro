@@ -1,37 +1,28 @@
-import { assertEmpresaId, assertPayloadEmpresaId } from './tenantService'
+import {
+  atualizarPorEmpresa,
+  excluirPorEmpresa,
+  inserirComEmpresa,
+  selecionarPorEmpresa
+} from './supabaseQueryService'
 
 export async function listarNotas(supabase, empresaId) {
-  assertEmpresaId(empresaId)
-  return supabase
-    .from('df_notas')
-    .select('*')
-    .eq('empresa_id', empresaId)
+  return selecionarPorEmpresa(supabase, 'df_notas', empresaId)
     .eq('excluido', false)
     .order('created_at', { ascending: false })
 }
 
 export async function listarNotasLixeira(supabase, empresaId) {
-  assertEmpresaId(empresaId)
-  return supabase
-    .from('df_notas')
-    .select('*')
-    .eq('empresa_id', empresaId)
+  return selecionarPorEmpresa(supabase, 'df_notas', empresaId)
     .eq('excluido', true)
     .order('excluido_em', { ascending: false })
 }
 
 export async function criarNota(supabase, payload) {
-  assertPayloadEmpresaId(payload)
-  return supabase.from('df_notas').insert([payload])
+  return inserirComEmpresa(supabase, 'df_notas', payload)
 }
 
 export async function atualizarNota(supabase, id, empresaId, payload) {
-  assertEmpresaId(empresaId)
-  return supabase
-    .from('df_notas')
-    .update(payload)
-    .eq('id', id)
-    .eq('empresa_id', empresaId)
+  return atualizarPorEmpresa(supabase, 'df_notas', id, empresaId, payload)
 }
 
 export async function enviarNotaParaLixeira(supabase, id, empresaId) {
@@ -53,10 +44,5 @@ export async function restaurarNotaDaLixeira(supabase, id, empresaId) {
 }
 
 export async function excluirNotaPermanentemente(supabase, id, empresaId) {
-  assertEmpresaId(empresaId)
-  return supabase
-    .from('df_notas')
-    .delete()
-    .eq('id', id)
-    .eq('empresa_id', empresaId)
+  return excluirPorEmpresa(supabase, 'df_notas', id, empresaId)
 }

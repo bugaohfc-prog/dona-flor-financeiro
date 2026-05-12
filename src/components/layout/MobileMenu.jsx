@@ -3,6 +3,7 @@ export default function MobileMenu({
   styles,
   setMenuNavegacaoAberto,
   nomeUsuario,
+  nomeUsuarioAtual,
   normalizarPerfil,
   perfilUsuario,
   menuSections,
@@ -19,6 +20,7 @@ export default function MobileMenu({
 
   const exibirSeletorEmpresa = canSwitchCompany && empresasDisponiveis.length > 0
   const empresaAtual = empresasDisponiveis.find((empresa) => empresa.id === empresaId)
+  const nomeExibicao = nomeUsuarioAtual || (typeof nomeUsuario === 'function' ? nomeUsuario() : nomeUsuario) || 'usuário'
 
   const item = (icon, titulo, desc, acao) => (
     <button type="button" style={styles.menuNavItem} onClick={acao}>
@@ -45,7 +47,7 @@ export default function MobileMenu({
       >
         <div style={styles.menuPerfil}>
           <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.menuPerfilIcone} />
-          <div><strong>{nomeUsuario()}</strong><small>{normalizarPerfil(perfilUsuario || 'usuário')}</small></div>
+          <div><strong>{nomeExibicao}</strong><small>{normalizarPerfil(perfilUsuario || 'usuário')}</small></div>
         </div>
 
         {exibirSeletorEmpresa && (

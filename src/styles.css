@@ -145,3 +145,52 @@
   .profile-modal-card { border-radius: 24px; }
 }
 
+
+
+/* FASE 10.3D — Profile Sync + UX Polish */
+.profile-modal-header button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+}
+
+.global-fab {
+  width: 54px !important;
+  height: 54px !important;
+  border-radius: 18px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,.24) !important;
+  box-shadow: 0 18px 38px rgba(15, 118, 110, .28) !important;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease !important;
+}
+.global-fab:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 22px 44px rgba(15, 118, 110, .34) !important;
+  filter: saturate(1.04) !important;
+}
+.global-fab:active {
+  transform: translateY(0) scale(.98) !important;
+}
+.global-fab-menu button {
+  border-color: rgba(20, 184, 166, .18) !important;
+}
+
+@media (max-width: 979px) {
+  .global-fab {
+    right: 18px !important;
+    bottom: max(20px, env(safe-area-inset-bottom)) !important;
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 18px !important;
+  }
+}

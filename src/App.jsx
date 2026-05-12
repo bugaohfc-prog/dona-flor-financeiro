@@ -313,6 +313,20 @@ export default function App() {
     limparSessaoSegura()
   }
 
+  async function sincronizarNomeUsuarioPerfil() {
+    if (!usuarioLogado?.id) return
+
+    try {
+      const nomePerfil = await buscarNomePerfilUsuario(usuarioLogado.id)
+      const nomeResolvido = nomePerfil || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name || ''
+      if (nomeResolvido && nomeResolvido !== nomeUsuarioPerfil) {
+        setNomeUsuarioPerfil(nomeResolvido)
+      }
+    } catch (error) {
+      console.warn('Falha ao sincronizar nome do perfil:', error?.message || error)
+    }
+  }
+
   useEffect(() => {
     let ativo = true
 
@@ -444,6 +458,11 @@ export default function App() {
 
     carregarEmpresaDoUsuario(usuarioLogado.id)
   }, [usuarioLogado])
+
+  useEffect(() => {
+    if (!menuNavegacaoAberto || !usuarioLogado?.id) return
+    sincronizarNomeUsuarioPerfil()
+  }, [menuNavegacaoAberto, usuarioLogado?.id])
 
 
   useEffect(() => {
@@ -3134,6 +3153,7 @@ export default function App() {
         sidebarCompacta={sidebarCompacta}
         setSidebarCompacta={setSidebarCompacta}
         nomeUsuario={nomeUsuario}
+        nomeUsuarioAtual={nomeUsuario()}
         normalizarPerfil={normalizarPerfil}
         perfilUsuario={perfilUsuario}
         menuSections={menuSections}
@@ -3153,6 +3173,7 @@ export default function App() {
         styles={styles}
         setMenuNavegacaoAberto={setMenuNavegacaoAberto}
         nomeUsuario={nomeUsuario}
+        nomeUsuarioAtual={nomeUsuario()}
         normalizarPerfil={normalizarPerfil}
         perfilUsuario={perfilUsuario}
         menuSections={menuSections}

@@ -8,6 +8,8 @@ export const PERFIS_GLOBAIS = {
   OPERADOR: 'operador'
 }
 
+const MASTER_EMAILS = new Set(['donafloradm@outlook.com'])
+
 function normalizarEmail(email) {
   return String(email || '').trim().toLowerCase()
 }
@@ -46,6 +48,13 @@ export function criarPermissoesUsuario({ perfilEmpresa = 'operador', master = nu
 export async function buscarPermissoesUsuario({ userId, email, perfilEmpresa = 'operador' } = {}) {
   const emailNormalizado = normalizarEmail(email)
   const base = criarPermissoesUsuario({ perfilEmpresa })
+
+  if (MASTER_EMAILS.has(emailNormalizado)) {
+    return criarPermissoesUsuario({
+      perfilEmpresa,
+      master: { isMaster: true, perfil: PERFIS_GLOBAIS.MASTER }
+    })
+  }
 
   if (!userId && !emailNormalizado) return base
 

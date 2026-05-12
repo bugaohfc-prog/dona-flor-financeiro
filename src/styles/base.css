@@ -110,6 +110,20 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
   opacity: .7;
 }
 
+.company-switcher-static {
+  justify-content: space-between;
+}
+
+.company-switcher-static strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 979px) {
   .company-switcher {
     display: none;

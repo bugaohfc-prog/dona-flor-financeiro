@@ -518,8 +518,21 @@ export default function App() {
     try {
       await sincronizarUsuarioLogadoComEmpresa()
       const vinculo = await buscarVinculoEmpresaDoUsuario(userId)
+      const nomePerfil = await buscarNomePerfilUsuario(userId)
 
-      if (!vinculo?.empresaId) {
+      const permissoesBase = await buscarPermissoesUsuario({
+        userId,
+        email: usuarioLogado?.email,
+        perfilEmpresa: vinculo?.perfil || 'operador'
+      })
+
+      const empresasSessao = await listarEmpresasDisponiveisParaUsuario({
+        userId,
+        email: usuarioLogado?.email,
+        isMaster: permissoesBase.isMaster
+      })
+
+      if (!vinculo?.empresaId && !permissoesBase.isMaster) {
         setEmpresaId(null)
         limparEmpresaAtiva()
         setPerfilUsuario('')
@@ -529,28 +542,24 @@ export default function App() {
         return
       }
 
-      const nomePerfil = await buscarNomePerfilUsuario(userId)
-
-      const permissoesBase = await buscarPermissoesUsuario({
-        userId,
-        email: usuarioLogado?.email,
-        perfilEmpresa: vinculo.perfil || 'operador'
-      })
-
-      const empresasSessao = await listarEmpresasDisponiveisParaUsuario({
-        userId,
-        email: usuarioLogado?.email,
-        isMaster: permissoesBase.isMaster
-      })
-
-      const empresaSalvaValida = empresasSessao.find((empresa) => empresa.id === empresaAtiva?.id)
-      const empresaSelecionada = empresaSalvaValida || empresasSessao.find((empresa) => empresa.id === vinculo.empresaId) || {
-        id: vinculo.empresaId,
-        nome: vinculo.nomeEmpresa || 'Dona Flor',
-        perfil: vinculo.perfil || 'operador'
+      if (permissoesBase.isMaster && empresasSessao.length === 0) {
+        setEmpresaId(null)
+        limparEmpresaAtiva()
+        setPerfilUsuario('master')
+        setPermissoesUsuario({ ...permissoesBase, canSwitchCompany: true, canManageCompanies: true })
+        setNomeUsuarioPerfil(nomePerfil || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name || '')
+        setErroEmpresa('Nenhuma empresa cadastrada em df_empresas para o usuário master.')
+        return
       }
 
-      const perfilSelecionado = empresaSelecionada.perfil || vinculo.perfil || 'operador'
+      const empresaSalvaValida = empresasSessao.find((empresa) => empresa.id === empresaAtiva?.id)
+      const empresaSelecionada = empresaSalvaValida || empresasSessao.find((empresa) => empresa.id === vinculo?.empresaId) || empresasSessao[0] || {
+        id: vinculo?.empresaId,
+        nome: vinculo?.nomeEmpresa || 'Dona Flor',
+        perfil: vinculo?.perfil || 'operador'
+      }
+
+      const perfilSelecionado = empresaSelecionada.perfil || vinculo?.perfil || (permissoesBase.isMaster ? 'master' : 'operador')
       const permissoes = permissoesBase.isMaster
         ? { ...permissoesBase, perfilEmpresa: normalizarPerfil(perfilSelecionado), canSwitchCompany: true, canManageCompanies: true }
         : await buscarPermissoesUsuario({
@@ -563,7 +572,7 @@ export default function App() {
       setEmpresaId(empresaSelecionada.id)
       setEmpresaAtiva({
         id: empresaSelecionada.id,
-        nome: empresaSelecionada.nome || vinculo.nomeEmpresa || 'Dona Flor',
+        nome: empresaSelecionada.nome || vinculo?.nomeEmpresa || 'Dona Flor',
         perfil: perfilSelecionado
       })
       setPerfilUsuario(perfilSelecionado)

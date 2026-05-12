@@ -14,6 +14,7 @@ import DashboardPage from './pages/DashboardPage.jsx'
 import ContasPage from './pages/ContasPage.jsx'
 import NotasPage from './pages/NotasPage.jsx'
 import MasterPanelPage from './pages/MasterPanelPage.jsx'
+import FiliaisPage from './pages/FiliaisPage.jsx'
 import Login from './pages/Login.jsx'
 import UserSecurityCards from './components/UserSecurityCards.jsx'
 import Topbar from './components/layout/Topbar.jsx'
@@ -3631,7 +3632,7 @@ export default function App() {
 
 
 
-  if (telaAtual === 'master-empresas' || telaAtual === 'master-filiais') {
+  if (telaAtual === 'master-empresas') {
     if (!permissoesUsuario?.canManageCompanies) {
       return renderAppFrame(
         <>
@@ -3657,7 +3658,33 @@ export default function App() {
         mostrarAviso={mostrarAviso}
         onEmpresasAtualizadas={recarregarEmpresasDisponiveis}
         voltarPainel={voltarPainel}
-        abaInicial={telaAtual === 'master-filiais' ? 'filiais' : 'empresas'}
+        abaInicial="empresas"
+      />
+    )
+  }
+
+
+  if (telaAtual === 'filiais') {
+    if (!podeAcessarConfiguracoes()) {
+      return renderAppFrame(
+        <>
+          <h1 style={styles.titulo}>🏬 Filiais</h1>
+          <section style={styles.cardConfiguracao}>
+            <h2 style={styles.subtitulo}>Acesso restrito</h2>
+            <p style={styles.textoNota}>Seu perfil atual não permite gerenciar filiais.</p>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
+          </section>
+        </>
+      )
+    }
+
+    return renderAppFrame(
+      <FiliaisPage
+        styles={styles}
+        empresaId={empresaId}
+        empresaNome={nomeEmpresa}
+        mostrarAviso={mostrarAviso}
+        voltarPainel={() => navegarPara('configuracoes')}
       />
     )
   }
@@ -4018,6 +4045,27 @@ export default function App() {
               </button>
             </>
           )}
+        </section>
+
+        <section style={styles.cardConfiguracao}>
+          <HeaderExpansivel
+            titulo="🏬 Filiais / Unidades"
+            aberto={mostrarConfigCentros}
+            onClick={() => navegarPara('filiais')}
+          />
+
+          <p style={styles.textoNota}>
+            Cadastre lojas, unidades, produção ou delivery dentro da empresa ativa. Na próxima fase, contas poderão ser vinculadas a uma filial.
+          </p>
+
+          <div style={styles.configResumo}>
+            <span>Organização: empresa → filial → centro de custo → conta</span>
+            <span>Isolamento por empresa ativo</span>
+          </div>
+
+          <button style={styles.btnSalvar} onClick={() => navegarPara('filiais')}>
+            Gerenciar filiais
+          </button>
         </section>
 
         <section style={styles.cardConfiguracao}>

@@ -26,8 +26,7 @@ const menuSections = [
     id: 'master',
     titulo: 'Master',
     items: [
-      { tela: 'master-empresas', icon: '🏢', label: 'Painel Master', desc: 'Empresas e tenants SaaS', masterOnly: true },
-      { tela: 'master-filiais', icon: '🏬', label: 'Filiais', desc: 'Unidades por empresa', masterOnly: true }
+      { tela: 'master-empresas', icon: '🏢', label: 'Painel Master', desc: 'Empresas e tenants SaaS', masterOnly: true }
     ]
   },
   {
@@ -36,6 +35,7 @@ const menuSections = [
     items: [
       { tela: 'usuarios', icon: '👥', label: 'Usuários', desc: 'Perfis, acessos e senhas' },
       { tela: 'configuracoes', icon: '⚙️', label: 'Configurações', desc: 'Preferências da empresa' },
+      { tela: 'filiais', icon: '🏬', label: 'Filiais', desc: 'Unidades da empresa' },
       { tela: 'importar', icon: '📥', label: 'Importar CSV', desc: 'Trazer histórico do Excel' },
       { tela: 'lixeira', icon: '🗑️', label: 'Lixeira', desc: 'Restaurar ou excluir definitivo' }
     ]

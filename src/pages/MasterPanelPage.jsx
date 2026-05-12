@@ -385,14 +385,9 @@ export default function MasterPanelPage({
         <div>
           <span className="master-kicker">Painel Master SaaS</span>
           <h1 style={styles.titulo}>🏢 Painel Master</h1>
-          <p style={styles.textoNota}>Gerencie empresas e filiais da plataforma. Esta é a base para planos, billing e gestão multiunidade.</p>
+          <p style={styles.textoNota}>Gerencie empresas e tenants da plataforma. Filiais ficam nas Configurações de cada empresa.</p>
         </div>
         <button style={styles.btnCinza} type="button" onClick={voltarPainel}>← Dashboard</button>
-      </div>
-
-      <div className="master-tabs" role="tablist" aria-label="Navegação do Painel Master">
-        <button className={abaAtiva === 'empresas' ? 'active' : ''} type="button" onClick={() => setAbaAtiva('empresas')}>Empresas</button>
-        <button className={abaAtiva === 'filiais' ? 'active' : ''} type="button" onClick={() => setAbaAtiva('filiais')}>Filiais</button>
       </div>
 
       <div className="master-stats-grid">
@@ -401,16 +396,16 @@ export default function MasterPanelPage({
           <strong>{empresas.length}</strong>
         </section>
         <section className="master-stat-card">
-          <small>Filiais da empresa ativa</small>
-          <strong>{filiais.length}</strong>
-        </section>
-        <section className="master-stat-card">
           <small>Empresa ativa</small>
           <strong>{empresaAtiva?.nome || '—'}</strong>
         </section>
+        <section className="master-stat-card">
+          <small>Administração SaaS</small>
+          <strong>Tenants</strong>
+        </section>
       </div>
 
-      {abaAtiva === 'filiais' ? renderFiliais() : renderEmpresas()}
+      {renderEmpresas()}
     </div>
   )
 }

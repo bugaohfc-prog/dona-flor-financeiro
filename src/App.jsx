@@ -2773,6 +2773,35 @@ export default function App() {
             letter-spacing: .08em;
             margin-bottom: 8px;
           }
+
+          .master-tabs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: -4px 0 18px;
+            padding: 6px;
+            width: fit-content;
+            border-radius: 999px;
+            background: #f1f5f9;
+            border: 1px solid rgba(15, 23, 42, .06);
+          }
+          .master-tabs button {
+            min-height: 36px;
+            border: 0;
+            border-radius: 999px;
+            padding: 8px 14px;
+            background: transparent;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all .18s ease;
+          }
+          .master-tabs button.active {
+            background: #ffffff;
+            color: #0f766e;
+            box-shadow: 0 8px 22px rgba(15, 23, 42, .08);
+          }
           .master-stats-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2890,6 +2919,8 @@ export default function App() {
               display: grid;
               align-items: stretch;
             }
+            .master-tabs { width: 100%; }
+            .master-tabs button { flex: 1; }
             .master-stats-grid { grid-template-columns: 1fr; }
             .master-create-form { max-width: none; }
             .master-search-input { max-width: none; }
@@ -3600,7 +3631,7 @@ export default function App() {
 
 
 
-  if (telaAtual === 'master-empresas') {
+  if (telaAtual === 'master-empresas' || telaAtual === 'master-filiais') {
     if (!permissoesUsuario?.canManageCompanies) {
       return renderAppFrame(
         <>
@@ -3626,6 +3657,7 @@ export default function App() {
         mostrarAviso={mostrarAviso}
         onEmpresasAtualizadas={recarregarEmpresasDisponiveis}
         voltarPainel={voltarPainel}
+        abaInicial={telaAtual === 'master-filiais' ? 'filiais' : 'empresas'}
       />
     )
   }

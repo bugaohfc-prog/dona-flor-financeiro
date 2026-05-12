@@ -1,2 +1,135 @@
 @import './styles/base.css';
 @import './styles/legacy-dashboard.css';
+
+/* FASE 10.3B — Perfil do usuário */
+.top-user-profile-button {
+  border: 1px solid #d8eee9 !important;
+  background: #ffffff !important;
+  color: #0f766e !important;
+  border-radius: 999px !important;
+  min-height: 38px !important;
+  padding: 0 14px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  box-shadow: 0 6px 16px rgba(15,23,42,.06) !important;
+}
+.top-user-profile-button:hover {
+  background: #f0fdfa !important;
+  border-color: #99f6e4 !important;
+}
+.profile-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  background: rgba(15, 23, 42, .48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.profile-modal-card {
+  width: min(440px, 100%);
+  background: #ffffff;
+  border-radius: 26px;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, .28);
+  border: 1px solid rgba(226, 232, 240, .95);
+  padding: 22px;
+  display: grid;
+  gap: 16px;
+}
+.profile-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.profile-modal-header span {
+  display: block;
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 4px;
+}
+.profile-modal-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 24px;
+  line-height: 1.1;
+}
+.profile-modal-header button {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 24px;
+  cursor: pointer;
+}
+.profile-modal-field {
+  display: grid;
+  gap: 7px;
+}
+.profile-modal-field span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.profile-modal-field input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #dbe3ea;
+  border-radius: 16px;
+  padding: 13px 14px;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 800;
+  outline: none;
+  background: #ffffff;
+}
+.profile-modal-field input:read-only {
+  background: #f8fafc;
+  color: #64748b;
+}
+.profile-modal-field input:focus {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, .12);
+}
+.profile-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+.profile-modal-actions button {
+  border-radius: 999px;
+  min-height: 40px;
+  padding: 0 16px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.profile-modal-cancel {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #475569;
+}
+.profile-modal-save {
+  border: 1px solid #0f766e;
+  background: #0f766e;
+  color: #ffffff;
+}
+.profile-modal-actions button:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+}
+@media (max-width: 979px) {
+  .top-user-profile-button { display: none !important; }
+  .profile-modal-backdrop { align-items: flex-end; padding: 12px; }
+  .profile-modal-card { border-radius: 24px; }
+}
+

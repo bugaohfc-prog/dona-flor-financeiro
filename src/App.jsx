@@ -6,7 +6,8 @@ import {
   enviarAcessoUsuarioEmpresa as enviarAcessoUsuarioEmpresaService,
   listarUsuariosEmpresa,
   normalizarPerfilUsuario,
-  removerUsuarioEmpresa as removerUsuarioEmpresaService
+  removerUsuarioEmpresa as removerUsuarioEmpresaService,
+  atualizarNomeUsuarioLogado
 } from './services/usuariosService'
 import Relatorios from './pages/Relatorios.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
@@ -22,6 +23,7 @@ import AccountModal from './components/modals/AccountModal.jsx'
 import NoteModal from './components/modals/NoteModal.jsx'
 import CostCenterModal from './components/modals/CostCenterModal.jsx'
 import ConfirmModal from './components/modals/ConfirmModal.jsx'
+import ProfileModal from './components/modals/ProfileModal.jsx'
 import GlobalLoader from './components/feedback/GlobalLoader.jsx'
 import GlobalToast from './components/feedback/GlobalToast.jsx'
 import { useApp } from './context/AppContext.jsx'
@@ -206,6 +208,9 @@ export default function App() {
   const [perfilUsuario, setPerfilUsuario] = useState('')
   const [permissoesUsuario, setPermissoesUsuario] = useState(() => criarPermissoesUsuario())
   const [nomeUsuarioPerfil, setNomeUsuarioPerfil] = useState('')
+  const [modalPerfilUsuario, setModalPerfilUsuario] = useState(false)
+  const [nomePerfilEditando, setNomePerfilEditando] = useState('')
+  const [salvandoPerfilUsuario, setSalvandoPerfilUsuario] = useState(false)
   const [erroEmpresa, setErroEmpresa] = useState('')
   const [usuariosEmpresa, setUsuariosEmpresa] = useState([])
   const [emailConviteUsuario, setEmailConviteUsuario] = useState('')
@@ -1935,6 +1940,60 @@ export default function App() {
     return primeiraLetraMaiuscula(email.split('@')[0])
   }
 
+  function nomeUsuarioCompleto() {
+    const nome = nomeUsuarioPerfil || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name
+    if (nome) return String(nome).trim()
+
+    const email = usuarioLogado?.email || ''
+    return email ? primeiraLetraMaiuscula(email.split('@')[0]) : ''
+  }
+
+  function abrirPerfilUsuario() {
+    setNomePerfilEditando(nomeUsuarioCompleto())
+    setModalPerfilUsuario(true)
+  }
+
+  async function salvarPerfilUsuario() {
+    const nomeLimpo = String(nomePerfilEditando || '').trim().replace(/\s+/g, ' ')
+
+    if (nomeLimpo.length < 2) {
+      mostrarAviso('Informe um nome com pelo menos 2 caracteres.', 'erro')
+      return
+    }
+
+    setSalvandoPerfilUsuario(true)
+
+    try {
+      await atualizarNomeUsuarioLogado({
+        userId: usuarioLogado?.id,
+        email: usuarioLogado?.email,
+        nome: nomeLimpo
+      })
+
+      setNomeUsuarioPerfil(nomeLimpo)
+      setUsuarioLogado((usuarioAtual) => usuarioAtual
+        ? {
+            ...usuarioAtual,
+            user_metadata: {
+              ...(usuarioAtual.user_metadata || {}),
+              name: nomeLimpo,
+              full_name: nomeLimpo
+            }
+          }
+        : usuarioAtual
+      )
+
+      if (empresaId) await buscarUsuariosEmpresa(empresaId)
+
+      setModalPerfilUsuario(false)
+      mostrarAviso('Perfil atualizado com sucesso.', 'sucesso')
+    } catch (error) {
+      avisarErro(error, 'Não foi possível atualizar o perfil.')
+    } finally {
+      setSalvandoPerfilUsuario(false)
+    }
+  }
+
   function renderConfirmacaoGlobal() {
     if (!confirmacao.aberto) return null
 
@@ -2041,6 +2100,17 @@ export default function App() {
             setMenuNavegacaoAberto={setMenuNavegacaoAberto}
           />
         )}
+
+        {modalPerfilUsuario && (
+          <ProfileModal
+            nome={nomePerfilEditando}
+            setNome={setNomePerfilEditando}
+            email={usuarioLogado?.email}
+            salvando={salvandoPerfilUsuario}
+            onClose={() => setModalPerfilUsuario(false)}
+            onSave={salvarPerfilUsuario}
+          />
+        )}
       </>
     )
   }
@@ -2059,6 +2129,9 @@ export default function App() {
         empresaId={empresaId}
         trocarEmpresaAtiva={trocarEmpresaAtiva}
         trocandoEmpresa={trocandoEmpresa}
+        nomeUsuario={nomeUsuario}
+        abrirPerfilUsuario={abrirPerfilUsuario}
+        sairDoSistema={sairDoSistema}
       />
     )
   }
@@ -3090,6 +3163,7 @@ export default function App() {
         empresaId={empresaId}
         trocarEmpresaAtiva={trocarEmpresaAtiva}
         trocandoEmpresa={trocandoEmpresa}
+        abrirPerfilUsuario={abrirPerfilUsuario}
       />
     )
   }

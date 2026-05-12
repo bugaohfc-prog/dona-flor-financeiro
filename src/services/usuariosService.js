@@ -163,3 +163,42 @@ export async function enviarAcessoUsuarioEmpresa({ usuario }) {
     mensagem: 'Envio solicitado. Se este e-mail já existir no Auth, o usuário receberá o link para criar/redefinir a senha.'
   }
 }
+
+export async function atualizarNomeUsuarioLogado({ userId, email, nome }) {
+  const nomeLimpo = String(nome || '').trim()
+  const emailNormalizado = String(email || '').trim().toLowerCase()
+
+  if (!userId) throw new Error('Usuário não identificado.')
+  if (nomeLimpo.length < 2) throw new Error('Informe um nome com pelo menos 2 caracteres.')
+
+  const erros = []
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .upsert({ id: userId, name: nomeLimpo }, { onConflict: 'id' })
+
+  if (profileError) erros.push(profileError)
+
+  const { error: vinculoUserError } = await supabase
+    .from('df_usuarios_empresas')
+    .update({ nome: nomeLimpo })
+    .eq('user_id', userId)
+
+  if (vinculoUserError) erros.push(vinculoUserError)
+
+  if (emailNormalizado) {
+    const { error: vinculoEmailError } = await supabase
+      .from('df_usuarios_empresas')
+      .update({ nome: nomeLimpo })
+      .eq('email', emailNormalizado)
+
+    if (vinculoEmailError) erros.push(vinculoEmailError)
+  }
+
+  if (erros.length > 0) {
+    throw erros[0]
+  }
+
+  return { nome: nomeLimpo }
+}
+

@@ -8,7 +8,10 @@ export default function Topbar({
   empresasDisponiveis = [],
   empresaId = '',
   trocarEmpresaAtiva,
-  trocandoEmpresa = false
+  trocandoEmpresa = false,
+  nomeUsuario,
+  abrirPerfilUsuario,
+  sairDoSistema
 }) {
   const exibirSeletorEmpresa = canSwitchCompany && empresasDisponiveis.length > 0
   const empresaAtual = empresasDisponiveis.find((empresa) => empresa.id === empresaId)
@@ -25,6 +28,16 @@ export default function Topbar({
       </div>
 
       <div className="top-shell-actions" style={styles.usuarioAcoes}>
+
+        <button
+          type="button"
+          className="top-user-profile-button"
+          title="Editar meu perfil"
+          onClick={() => abrirPerfilUsuario?.()}
+          aria-label="Editar meu perfil"
+        >
+          <span>Olá, {typeof nomeUsuario === 'function' ? nomeUsuario() : 'usuário'}</span>
+        </button>
         {exibirSeletorEmpresa && (
           empresasDisponiveis.length > 1 ? (
             <label className="company-switcher" title="Trocar empresa ativa">

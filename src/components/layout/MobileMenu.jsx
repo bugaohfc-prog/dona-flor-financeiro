@@ -12,7 +12,8 @@ export default function MobileMenu({
   empresasDisponiveis = [],
   empresaId = '',
   trocarEmpresaAtiva,
-  trocandoEmpresa = false
+  trocandoEmpresa = false,
+  abrirPerfilUsuario
 }) {
   if (!visible) return null
 
@@ -89,6 +90,19 @@ export default function MobileMenu({
             )}
           </div>
         )}
+
+
+        <button
+          type="button"
+          style={styles.menuNavItem}
+          onClick={() => {
+            setMenuNavegacaoAberto(false)
+            abrirPerfilUsuario?.()
+          }}
+        >
+          <span>👤</span>
+          <div><strong>Meu perfil</strong><small>Editar nome do usuário</small></div>
+        </button>
 
         {menuSections.map((grupo, index) => (
           <details className="mobile-menu-group" key={grupo.id} open={index === 0}>

@@ -92,3 +92,64 @@ export async function listarEmpresasDisponiveisParaMaster({ isMaster } = {}) {
   if (error) throw error
   return data || []
 }
+
+
+export async function listarEmpresasDisponiveisParaUsuario({ userId, email, isMaster } = {}) {
+  if (isMaster) {
+    return listarEmpresasDisponiveisParaMaster({ isMaster })
+  }
+
+  const emailNormalizado = normalizarEmail(email)
+  if (!userId && !emailNormalizado) return []
+
+  let query = supabase
+    .from('df_usuarios_empresas')
+    .select('empresa_id, perfil, nome, email, user_id')
+
+  if (userId && emailNormalizado) {
+    query = query.or(`user_id.eq.${userId},email.eq.${emailNormalizado}`)
+  } else if (userId) {
+    query = query.eq('user_id', userId)
+  } else {
+    query = query.eq('email', emailNormalizado)
+  }
+
+  const { data: vinculos, error } = await query
+
+  if (error) throw error
+
+  const mapa = new Map()
+  ;(vinculos || []).forEach((vinculo) => {
+    if (!vinculo?.empresa_id) return
+    const perfil = normalizarPerfilUsuario(vinculo.perfil)
+    const existente = mapa.get(vinculo.empresa_id)
+    mapa.set(vinculo.empresa_id, {
+      id: vinculo.empresa_id,
+      nome: existente?.nome || '',
+      perfil: existente?.perfil === 'admin' ? existente.perfil : perfil
+    })
+  })
+
+  const empresasIds = Array.from(mapa.keys())
+  if (empresasIds.length === 0) return []
+
+  const { data: empresas, error: empresasError } = await supabase
+    .from('df_empresas')
+    .select('id, nome, created_at')
+    .in('id', empresasIds)
+    .order('nome', { ascending: true })
+
+  if (empresasError) throw empresasError
+
+  ;(empresas || []).forEach((empresa) => {
+    const atual = mapa.get(empresa.id)
+    if (!atual) return
+    mapa.set(empresa.id, {
+      ...atual,
+      nome: empresa.nome || atual.nome || 'Empresa',
+      created_at: empresa.created_at
+    })
+  })
+
+  return Array.from(mapa.values()).sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || '')))
+}

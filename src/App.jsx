@@ -31,7 +31,7 @@ import { converterValor, formatarData, formatarDataParaBanco, formatarValor, lim
 import { dataLocal, diferencaDias, mesmoMesAtual } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
-import { buscarPermissoesUsuario, criarPermissoesUsuario } from './services/permissoesService'
+import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario } from './services/permissoesService'
 import './styles.css'
 
 const SESSAO_STORAGE_KEY = 'df_sessao_segura'
@@ -58,7 +58,7 @@ function limparSessaoSegura() {
 export default function App() {
   const avisoSessaoMostradoRef = useRef(false)
   const encerrandoSessaoRef = useRef(false)
-  const { globalLoading, toast: globalToast, showToast, hideToast, setEmpresaAtiva, limparEmpresaAtiva } = useApp()
+  const { globalLoading, toast: globalToast, showToast, hideToast, empresaAtiva, setEmpresaAtiva, limparEmpresaAtiva, empresasDisponiveis, setEmpresasDisponiveis } = useApp()
   // =========================
   // BLOCO 0 — UTILITÁRIOS
   // =========================
@@ -288,6 +288,7 @@ export default function App() {
     setContasLixeira([])
     setNotasLixeira([])
     setUsuariosEmpresa([])
+    setEmpresasDisponiveis([])
     setEmpresaId(null)
     limparEmpresaAtiva()
     setPerfilUsuario('')
@@ -520,21 +521,45 @@ export default function App() {
 
       const nomePerfil = await buscarNomePerfilUsuario(userId)
 
-      setEmpresaId(vinculo.empresaId)
-      setEmpresaAtiva({
-        id: vinculo.empresaId,
-        nome: vinculo.nomeEmpresa || 'Dona Flor',
-        perfil: vinculo.perfil || 'operador'
-      })
-      setPerfilUsuario(vinculo.perfil || 'operador')
-      const permissoes = await buscarPermissoesUsuario({
+      const permissoesBase = await buscarPermissoesUsuario({
         userId,
         email: usuarioLogado?.email,
         perfilEmpresa: vinculo.perfil || 'operador'
       })
+
+      const empresasSessao = await listarEmpresasDisponiveisParaUsuario({
+        userId,
+        email: usuarioLogado?.email,
+        isMaster: permissoesBase.isMaster
+      })
+
+      const empresaSalvaValida = empresasSessao.find((empresa) => empresa.id === empresaAtiva?.id)
+      const empresaSelecionada = empresaSalvaValida || empresasSessao.find((empresa) => empresa.id === vinculo.empresaId) || {
+        id: vinculo.empresaId,
+        nome: vinculo.nomeEmpresa || 'Dona Flor',
+        perfil: vinculo.perfil || 'operador'
+      }
+
+      const perfilSelecionado = empresaSelecionada.perfil || vinculo.perfil || 'operador'
+      const permissoes = permissoesBase.isMaster
+        ? { ...permissoesBase, perfilEmpresa: normalizarPerfil(perfilSelecionado), canSwitchCompany: true, canManageCompanies: true }
+        : await buscarPermissoesUsuario({
+            userId,
+            email: usuarioLogado?.email,
+            perfilEmpresa: perfilSelecionado
+          })
+
+      setEmpresasDisponiveis(empresasSessao.length > 0 ? empresasSessao : [empresaSelecionada])
+      setEmpresaId(empresaSelecionada.id)
+      setEmpresaAtiva({
+        id: empresaSelecionada.id,
+        nome: empresaSelecionada.nome || vinculo.nomeEmpresa || 'Dona Flor',
+        perfil: perfilSelecionado
+      })
+      setPerfilUsuario(perfilSelecionado)
       setPermissoesUsuario(permissoes)
       setNomeUsuarioPerfil(nomePerfil || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name || '')
-      await carregarTudo(vinculo.empresaId)
+      await carregarTudo(empresaSelecionada.id)
     } catch (error) {
       if (erroEhSessaoExpirada(error)) {
         await supabase.auth.signOut()
@@ -578,6 +603,34 @@ export default function App() {
 
   function podeAcessarConfiguracoes() {
     return Boolean(permissoesUsuario?.canAccessSettings || temPermissao(['admin', 'gerente']))
+  }
+
+
+  async function trocarEmpresaAtiva(empresaSelecionadaId) {
+    const empresaSelecionada = empresasDisponiveis.find((empresa) => empresa.id === empresaSelecionadaId)
+
+    if (!empresaSelecionada) {
+      mostrarAviso('Empresa selecionada não encontrada para este usuário.', 'erro')
+      return
+    }
+
+    const perfilSelecionado = empresaSelecionada.perfil || 'operador'
+    setEmpresaId(empresaSelecionada.id)
+    setEmpresaAtiva({
+      id: empresaSelecionada.id,
+      nome: empresaSelecionada.nome || 'Empresa',
+      perfil: perfilSelecionado
+    })
+    setPerfilUsuario(perfilSelecionado)
+    setPermissoesUsuario((atual) => ({
+      ...atual,
+      perfilEmpresa: normalizarPerfil(perfilSelecionado),
+      canManageUsers: Boolean(atual?.isMaster || normalizarPerfil(perfilSelecionado) === 'admin'),
+      canAccessSettings: Boolean(atual?.isMaster || ['admin', 'gerente'].includes(normalizarPerfil(perfilSelecionado)))
+    }))
+    setTelaAtualState('dashboard')
+    await carregarTudo(empresaSelecionada.id)
+    mostrarAviso(`Empresa ativa: ${empresaSelecionada.nome || 'Empresa'}`, 'sucesso')
   }
 
   async function buscarUsuariosEmpresa(empresaAtual = empresaId) {
@@ -3236,6 +3289,28 @@ export default function App() {
             styles={styles}
           />
         </section>
+
+        {permissoesUsuario?.canSwitchCompany && empresasDisponiveis.length > 1 && (
+          <section style={styles.cardConfiguracao} className="users-page-section">
+            <div className="users-header-row">
+              <div>
+                <h2 style={styles.subtitulo}>🏢 Empresas disponíveis</h2>
+                <p style={styles.textoNota}>Base preparada para troca de empresa ativa. Esta ação recarrega os dados da empresa selecionada.</p>
+              </div>
+              <span className="roleBadge admin">master</span>
+            </div>
+
+            <select
+              style={styles.input}
+              value={empresaId || ''}
+              onChange={(e) => trocarEmpresaAtiva(e.target.value)}
+            >
+              {empresasDisponiveis.map((empresa) => (
+                <option key={empresa.id} value={empresa.id}>{empresa.nome || empresa.id}</option>
+              ))}
+            </select>
+          </section>
+        )}
 
         <section style={styles.cardConfiguracao} className="users-page-section">
           <div className="users-header-row">

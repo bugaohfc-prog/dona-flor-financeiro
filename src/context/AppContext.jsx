@@ -45,6 +45,7 @@ function normalizarTipoToast(type) {
 export function AppProvider({ children }) {
   const [globalLoading, setGlobalLoading] = useState(false);
   const [empresaAtiva, setEmpresaAtivaState] = useState(() => lerEmpresaAtivaSalva());
+  const [empresasDisponiveis, setEmpresasDisponiveis] = useState([]);
   const [toast, setToast] = useState(null);
   const timeoutRef = useRef(null);
 
@@ -114,11 +115,13 @@ export function AppProvider({ children }) {
     perfilEmpresaAtiva: empresaAtiva?.perfil || '',
     setEmpresaAtiva,
     limparEmpresaAtiva,
+    empresasDisponiveis,
+    setEmpresasDisponiveis,
     toast,
     showToast,
     hideToast,
     runWithLoading
-  }), [globalLoading, empresaAtiva, toast, showToast, hideToast, runWithLoading, setEmpresaAtiva, limparEmpresaAtiva]);
+  }), [globalLoading, empresaAtiva, empresasDisponiveis, toast, showToast, hideToast, runWithLoading, setEmpresaAtiva, limparEmpresaAtiva]);
 
   return (
     <AppContext.Provider value={value}>

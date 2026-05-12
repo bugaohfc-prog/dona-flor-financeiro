@@ -30,6 +30,7 @@ import { useNotas } from './hooks/useNotas'
 import { converterValor, formatarData, formatarDataParaBanco, formatarValor, limitarDataInput, primeiraLetraMaiuscula } from './utils/format'
 import { dataLocal, diferencaDias, mesmoMesAtual } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
+import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
 import './styles.css'
 
 const SESSAO_STORAGE_KEY = 'df_sessao_segura'
@@ -500,19 +501,25 @@ export default function App() {
     setLoading(true)
     setErroEmpresa('')
 
-    const { error: erroVinculo } = await supabase.rpc('vincular_usuario_logado')
-    if (erroVinculo) {
-      console.warn('Não foi possível executar vínculo automático:', erroVinculo.message)
-    }
+    try {
+      await sincronizarUsuarioLogadoComEmpresa()
+      const vinculo = await buscarVinculoEmpresaDoUsuario(userId)
 
-    const { data, error } = await supabase
-      .from('df_usuarios_empresas')
-      .select('empresa_id, perfil')
-      .eq('user_id', userId)
-      .limit(1)
+      if (!vinculo?.empresaId) {
+        setEmpresaId(null)
+        setPerfilUsuario('')
+        setNomeUsuarioPerfil('')
+        setErroEmpresa(TENANT_ERRORS.semEmpresa)
+        return
+      }
 
-    if (error) {
-      setLoading(false)
+      const nomePerfil = await buscarNomePerfilUsuario(userId)
+
+      setEmpresaId(vinculo.empresaId)
+      setPerfilUsuario(vinculo.perfil || 'operador')
+      setNomeUsuarioPerfil(nomePerfil || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name || '')
+      await carregarTudo(vinculo.empresaId)
+    } catch (error) {
       if (erroEhSessaoExpirada(error)) {
         await supabase.auth.signOut()
         limparEstadoAutenticacao()
@@ -521,33 +528,9 @@ export default function App() {
       } else {
         mostrarAviso(error.message, 'erro')
       }
-      return
-    }
-
-    const vinculo = Array.isArray(data) ? data[0] : data
-
-    if (!vinculo?.empresa_id) {
-      setEmpresaId(null)
-      setPerfilUsuario('')
-      setNomeUsuarioPerfil('')
+    } finally {
       setLoading(false)
-      setErroEmpresa('Usuário sem empresa vinculada. Vincule este usuário em df_usuarios_empresas antes de continuar.')
-      return
     }
-
-    const { data: perfilData } = await supabase
-      .from('profiles')
-      .select('name')
-      .eq('id', userId)
-      .limit(1)
-
-    const perfilEncontrado = Array.isArray(perfilData) ? perfilData[0] : perfilData
-
-    setEmpresaId(vinculo.empresa_id)
-    setPerfilUsuario(vinculo.perfil || 'usuario')
-    setNomeUsuarioPerfil(perfilEncontrado?.name || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name || '')
-    await carregarTudo(vinculo.empresa_id)
-    setLoading(false)
   }
 
   async function carregarTudo(empresaAtual = empresaId) {

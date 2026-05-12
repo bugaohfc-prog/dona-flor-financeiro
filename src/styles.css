@@ -5133,8 +5133,8 @@ button[title*="Adicionar"],
 .dashboard-page-context {
   width: 100%;
   max-width: 1280px;
-  margin: 6px auto 8px;
-  padding: 0;
+  margin: 8px auto 10px;
+  padding: 0 2px;
   background: transparent;
   border: 0;
   box-shadow: none;
@@ -5144,10 +5144,11 @@ button[title*="Adicionar"],
   margin: 0;
   padding: 0;
   color: #0f172a;
-  font-size: clamp(1.18rem, 1.6vw, 1.42rem);
-  line-height: 1.15;
-  font-weight: 900;
-  letter-spacing: -0.025em;
+  font-size: clamp(1.08rem, 1.4vw, 1.32rem);
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  opacity: 0.96;
 }
 
 .dashboard-kpi-row {
@@ -5178,4 +5179,23 @@ button[title*="Adicionar"],
   .dashboard-kpi-row {
     margin-bottom: 14px;
   }
+}
+
+
+.summary-grid > div {
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.03),
+    0 10px 28px rgba(15, 23, 42, 0.04) !important;
+  transition:
+    transform 180ms ease,
+    box-shadow 220ms ease,
+    filter 220ms ease !important;
+}
+
+.summary-grid > div:hover {
+  transform: translateY(-1px);
+  filter: saturate(1.01);
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    0 14px 32px rgba(15, 23, 42, 0.06) !important;
 }

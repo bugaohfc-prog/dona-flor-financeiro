@@ -11,7 +11,7 @@ export function normalizarVinculoEmpresa(vinculo) {
   return {
     empresaId: vinculo.empresa_id,
     perfil: normalizarPerfilUsuario(vinculo.perfil),
-    nomeEmpresa: vinculo.empresas?.nome || vinculo.df_empresas?.nome || '',
+    nomeEmpresa: vinculo.nome_empresa || vinculo.empresas?.nome || vinculo.df_empresas?.nome || '',
     origem: 'df_usuarios_empresas'
   }
 }
@@ -36,7 +36,24 @@ export async function buscarVinculoEmpresaDoUsuario(userId) {
   if (error) throw error
 
   const vinculo = Array.isArray(data) ? data[0] : data
-  return normalizarVinculoEmpresa(vinculo)
+  if (!vinculo?.empresa_id) return null
+
+  let nomeEmpresa = ''
+
+  const { data: empresa, error: empresaError } = await supabase
+    .from('df_empresas')
+    .select('nome')
+    .eq('id', vinculo.empresa_id)
+    .limit(1)
+
+  if (empresaError) {
+    console.warn('Não foi possível carregar o nome da empresa ativa:', empresaError.message)
+  } else {
+    const empresaEncontrada = Array.isArray(empresa) ? empresa[0] : empresa
+    nomeEmpresa = empresaEncontrada?.nome || ''
+  }
+
+  return normalizarVinculoEmpresa({ ...vinculo, nome_empresa: nomeEmpresa })
 }
 
 export async function buscarNomePerfilUsuario(userId) {

@@ -2,6 +2,29 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState } fro
 
 const AppContext = createContext(null);
 
+const EMPRESA_ATIVA_STORAGE_KEY = 'df_empresa_ativa';
+
+function lerEmpresaAtivaSalva() {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    return JSON.parse(window.localStorage.getItem(EMPRESA_ATIVA_STORAGE_KEY) || 'null');
+  } catch {
+    return null;
+  }
+}
+
+function salvarEmpresaAtiva(empresa) {
+  if (typeof window === 'undefined') return;
+
+  if (!empresa?.id) {
+    window.localStorage.removeItem(EMPRESA_ATIVA_STORAGE_KEY);
+    return;
+  }
+
+  window.localStorage.setItem(EMPRESA_ATIVA_STORAGE_KEY, JSON.stringify(empresa));
+}
+
 const TOAST_TITLES = {
   sucesso: 'Sucesso',
   success: 'Sucesso',
@@ -21,8 +44,27 @@ function normalizarTipoToast(type) {
 
 export function AppProvider({ children }) {
   const [globalLoading, setGlobalLoading] = useState(false);
+  const [empresaAtiva, setEmpresaAtivaState] = useState(() => lerEmpresaAtivaSalva());
   const [toast, setToast] = useState(null);
   const timeoutRef = useRef(null);
+
+  const setEmpresaAtiva = useCallback((empresa) => {
+    const empresaNormalizada = empresa?.id
+      ? {
+          id: empresa.id,
+          nome: empresa.nome || '',
+          perfil: empresa.perfil || 'operador'
+        }
+      : null;
+
+    setEmpresaAtivaState(empresaNormalizada);
+    salvarEmpresaAtiva(empresaNormalizada);
+  }, []);
+
+  const limparEmpresaAtiva = useCallback(() => {
+    setEmpresaAtivaState(null);
+    salvarEmpresaAtiva(null);
+  }, []);
 
   const hideToast = useCallback(() => {
     if (timeoutRef.current) {
@@ -67,11 +109,16 @@ export function AppProvider({ children }) {
   const value = useMemo(() => ({
     globalLoading,
     setGlobalLoading,
+    empresaAtiva,
+    empresaId: empresaAtiva?.id || null,
+    perfilEmpresaAtiva: empresaAtiva?.perfil || '',
+    setEmpresaAtiva,
+    limparEmpresaAtiva,
     toast,
     showToast,
     hideToast,
     runWithLoading
-  }), [globalLoading, toast, showToast, hideToast, runWithLoading]);
+  }), [globalLoading, empresaAtiva, toast, showToast, hideToast, runWithLoading, setEmpresaAtiva, limparEmpresaAtiva]);
 
   return (
     <AppContext.Provider value={value}>

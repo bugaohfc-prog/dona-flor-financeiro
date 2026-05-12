@@ -1,101 +1,138 @@
-function MenuItem({ tela, icon, label, telaAtual, sidebarCompacta, navegarPara }) {
-  const ativo = tela && telaAtual === tela
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 
-  return (
-    <button
-      className={ativo ? 'active' : ''}
-      title={label}
-      onClick={() => navegarPara(tela)}
-    >
-      <span className="menu-icon">{icon}</span>
-      {!sidebarCompacta && <span className="menu-text">{label}</span>}
-    </button>
-  )
+const AppContext = createContext(null);
+
+const EMPRESA_ATIVA_STORAGE_KEY = 'df_empresa_ativa';
+
+function lerEmpresaAtivaSalva() {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    return JSON.parse(window.localStorage.getItem(EMPRESA_ATIVA_STORAGE_KEY) || 'null');
+  } catch {
+    return null;
+  }
 }
 
-function MenuGroup({ id, titulo, children, sidebarCompacta, gruposMenu, toggleGrupoMenu }) {
-  return (
-    <div className="sidebar-group-clean">
-      <button className="sidebar-group-toggle" onClick={() => toggleGrupoMenu(id)} title={titulo}>
-        <span>{!sidebarCompacta ? titulo : '•'}</span>
-        {!sidebarCompacta && <strong>{gruposMenu[id] ? '−' : '+'}</strong>}
-      </button>
-      {(sidebarCompacta || gruposMenu[id]) && <nav className="desktop-sidebar-nav">{children}</nav>}
-    </div>
-  )
+function salvarEmpresaAtiva(empresa) {
+  if (typeof window === 'undefined') return;
+
+  if (!empresa?.id) {
+    window.localStorage.removeItem(EMPRESA_ATIVA_STORAGE_KEY);
+    return;
+  }
+
+  window.localStorage.setItem(EMPRESA_ATIVA_STORAGE_KEY, JSON.stringify(empresa));
 }
 
-export default function Sidebar({
-  sidebarCompacta,
-  setSidebarCompacta,
-  nomeUsuario,
-  normalizarPerfil,
-  perfilUsuario,
-  menuSections,
-  telaAtual,
-  navegarPara,
-  gruposMenu,
-  toggleGrupoMenu,
-  sairDoSistema
-}) {
-  const nome = nomeUsuario()
-  const perfil = normalizarPerfil(perfilUsuario || 'usuário')
+const TOAST_TITLES = {
+  sucesso: 'Sucesso',
+  success: 'Sucesso',
+  erro: 'Atenção',
+  error: 'Atenção',
+  alerta: 'Atenção',
+  warning: 'Atenção',
+  info: 'Aviso'
+};
+
+function normalizarTipoToast(type) {
+  if (type === 'success') return 'sucesso';
+  if (type === 'error') return 'erro';
+  if (type === 'warning') return 'alerta';
+  return type || 'info';
+}
+
+export function AppProvider({ children }) {
+  const [globalLoading, setGlobalLoading] = useState(false);
+  const [empresaAtiva, setEmpresaAtivaState] = useState(() => lerEmpresaAtivaSalva());
+  const [toast, setToast] = useState(null);
+  const timeoutRef = useRef(null);
+
+  const setEmpresaAtiva = useCallback((empresa) => {
+    const empresaNormalizada = empresa?.id
+      ? {
+          id: empresa.id,
+          nome: empresa.nome || '',
+          perfil: empresa.perfil || 'operador'
+        }
+      : null;
+
+    setEmpresaAtivaState(empresaNormalizada);
+    salvarEmpresaAtiva(empresaNormalizada);
+  }, []);
+
+  const limparEmpresaAtiva = useCallback(() => {
+    setEmpresaAtivaState(null);
+    salvarEmpresaAtiva(null);
+  }, []);
+
+  const hideToast = useCallback(() => {
+    if (timeoutRef.current) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setToast(null);
+  }, []);
+
+  const showToast = useCallback((message, type = 'info', options = {}) => {
+    if (!message) return;
+
+    const normalizedType = normalizarTipoToast(type);
+    const duration = options.duration ?? 5200;
+
+    if (timeoutRef.current) {
+      window.clearTimeout(timeoutRef.current);
+    }
+
+    setToast({
+      id: Date.now(),
+      message: String(message),
+      type: normalizedType,
+      title: options.title || TOAST_TITLES[normalizedType] || 'Aviso'
+    });
+
+    timeoutRef.current = window.setTimeout(() => {
+      setToast(null);
+      timeoutRef.current = null;
+    }, duration);
+  }, []);
+
+  const runWithLoading = useCallback(async (callback) => {
+    setGlobalLoading(true);
+    try {
+      return await callback();
+    } finally {
+      setGlobalLoading(false);
+    }
+  }, []);
+
+  const value = useMemo(() => ({
+    globalLoading,
+    setGlobalLoading,
+    empresaAtiva,
+    empresaId: empresaAtiva?.id || null,
+    perfilEmpresaAtiva: empresaAtiva?.perfil || '',
+    setEmpresaAtiva,
+    limparEmpresaAtiva,
+    toast,
+    showToast,
+    hideToast,
+    runWithLoading
+  }), [globalLoading, empresaAtiva, toast, showToast, hideToast, runWithLoading, setEmpresaAtiva, limparEmpresaAtiva]);
 
   return (
-    <aside className={`desktop-sidebar no-print ${sidebarCompacta ? 'compacta' : ''}`}>
-      <div className="desktop-sidebar-brand sidebar-brand-clean" title="DF Gestão Financeira">
-        <img src="/icon-192.png" alt="DF Gestão Financeira" />
-        {!sidebarCompacta && (
-          <div>
-            <strong>DF Gestão</strong>
-            <small>Painel financeiro</small>
-          </div>
-        )}
-      </div>
+    <AppContext.Provider value={value}>
+      {children}
+    </AppContext.Provider>
+  );
+}
 
-      <div className="desktop-sidebar-user sidebar-user-clean" title={`${nome} • ${perfil}`}>
-        <span className="sidebar-user-avatar">{String(nome || 'U').slice(0, 1).toUpperCase()}</span>
-        {!sidebarCompacta && (
-          <div>
-            <strong>{nome}</strong>
-            <small>{perfil}</small>
-          </div>
-        )}
-      </div>
+export function useApp() {
+  const context = useContext(AppContext);
 
-      <button className="sidebar-collapse-btn sidebar-collapse-icon" onClick={() => setSidebarCompacta(!sidebarCompacta)} title={sidebarCompacta ? 'Expandir menu' : 'Recolher menu'} aria-label={sidebarCompacta ? 'Expandir menu' : 'Recolher menu'}>
-        <span className="sidebar-collapse-arrow">{sidebarCompacta ? '→' : '←'}</span>
-      </button>
+  if (!context) {
+    throw new Error('useApp deve ser usado dentro do AppProvider');
+  }
 
-      <div className="desktop-sidebar-scroll">
-        {menuSections.map((grupo) => (
-          <MenuGroup
-            key={grupo.id}
-            id={grupo.id}
-            titulo={grupo.titulo}
-            sidebarCompacta={sidebarCompacta}
-            gruposMenu={gruposMenu}
-            toggleGrupoMenu={toggleGrupoMenu}
-          >
-            {grupo.items.map((navItem) => (
-              <MenuItem
-                key={navItem.tela}
-                tela={navItem.tela}
-                icon={navItem.icon}
-                label={navItem.label}
-                telaAtual={telaAtual}
-                sidebarCompacta={sidebarCompacta}
-                navegarPara={navegarPara}
-              />
-            ))}
-          </MenuGroup>
-        ))}
-      </div>
-
-      <div className="desktop-sidebar-spacer" />
-      <nav className="desktop-sidebar-nav sidebar-exit">
-        <button onClick={sairDoSistema} title="Sair"><span className="menu-icon">🚪</span>{!sidebarCompacta && <span>Sair</span>}</button>
-      </nav>
-    </aside>
-  )
+  return context;
 }

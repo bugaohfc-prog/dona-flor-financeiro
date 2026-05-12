@@ -57,7 +57,7 @@ function limparSessaoSegura() {
 export default function App() {
   const avisoSessaoMostradoRef = useRef(false)
   const encerrandoSessaoRef = useRef(false)
-  const { globalLoading, toast: globalToast, showToast, hideToast } = useApp()
+  const { globalLoading, toast: globalToast, showToast, hideToast, setEmpresaAtiva, limparEmpresaAtiva } = useApp()
   // =========================
   // BLOCO 0 — UTILITÁRIOS
   // =========================
@@ -287,6 +287,7 @@ export default function App() {
     setNotasLixeira([])
     setUsuariosEmpresa([])
     setEmpresaId(null)
+    limparEmpresaAtiva()
     setPerfilUsuario('')
     setNomeUsuarioPerfil('')
     setErroEmpresa('')
@@ -507,6 +508,7 @@ export default function App() {
 
       if (!vinculo?.empresaId) {
         setEmpresaId(null)
+        limparEmpresaAtiva()
         setPerfilUsuario('')
         setNomeUsuarioPerfil('')
         setErroEmpresa(TENANT_ERRORS.semEmpresa)
@@ -516,6 +518,11 @@ export default function App() {
       const nomePerfil = await buscarNomePerfilUsuario(userId)
 
       setEmpresaId(vinculo.empresaId)
+      setEmpresaAtiva({
+        id: vinculo.empresaId,
+        nome: vinculo.nomeEmpresa || 'Dona Flor',
+        perfil: vinculo.perfil || 'operador'
+      })
       setPerfilUsuario(vinculo.perfil || 'operador')
       setNomeUsuarioPerfil(nomePerfil || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name || '')
       await carregarTudo(vinculo.empresaId)

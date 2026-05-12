@@ -23,6 +23,13 @@ const menuSections = [
     ]
   },
   {
+    id: 'master',
+    titulo: 'Master',
+    items: [
+      { tela: 'master-empresas', icon: '🏢', label: 'Painel Master', desc: 'Empresas e tenants SaaS', masterOnly: true }
+    ]
+  },
+  {
     id: 'sistema',
     titulo: 'Sistema',
     items: [

@@ -13,6 +13,7 @@ import Relatorios from './pages/Relatorios.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import ContasPage from './pages/ContasPage.jsx'
 import NotasPage from './pages/NotasPage.jsx'
+import MasterPanelPage from './pages/MasterPanelPage.jsx'
 import Login from './pages/Login.jsx'
 import UserSecurityCards from './components/UserSecurityCards.jsx'
 import Topbar from './components/layout/Topbar.jsx'
@@ -646,6 +647,31 @@ export default function App() {
 
   function podeAcessarConfiguracoes() {
     return Boolean(permissoesUsuario?.canAccessSettings || temPermissao(['admin', 'gerente']))
+  }
+
+  function menuSectionsVisiveis() {
+    return menuSections
+      .map((grupo) => ({
+        ...grupo,
+        items: grupo.items.filter((item) => !item.masterOnly || permissoesUsuario?.canManageCompanies)
+      }))
+      .filter((grupo) => grupo.items.length > 0)
+  }
+
+  async function recarregarEmpresasDisponiveis() {
+    if (!usuarioLogado) return
+
+    try {
+      const empresasAtualizadas = await listarEmpresasDisponiveisParaUsuario({
+        userId: usuarioLogado.id,
+        email: usuarioLogado.email,
+        isMaster: permissoesUsuario?.isMaster
+      })
+
+      setEmpresasDisponiveis(empresasAtualizadas)
+    } catch (error) {
+      console.warn('Não foi possível atualizar a lista de empresas:', error.message)
+    }
   }
 
 
@@ -2659,6 +2685,153 @@ export default function App() {
           .app-toast span { font-size: 13px; color: #4b5563; }
           .app-toast-erro { border-left: 5px solid #ef4444; }
           .app-toast-info { border-left: 5px solid #14b8a6; }
+          .master-page-hero {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+          }
+          .master-kicker {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(20, 184, 166, .10);
+            color: #0f766e;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin-bottom: 8px;
+          }
+          .master-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
+          }
+          .master-stat-card {
+            border: 1px solid rgba(15, 23, 42, .08);
+            border-radius: 22px;
+            background: linear-gradient(135deg, #ffffff, #f8fafc);
+            box-shadow: 0 14px 34px rgba(15, 23, 42, .06);
+            padding: 18px;
+            display: grid;
+            gap: 8px;
+          }
+          .master-stat-card small {
+            color: #64748b;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            font-size: 11px;
+          }
+          .master-stat-card strong {
+            color: #0f172a;
+            font-size: 24px;
+            font-weight: 950;
+            line-height: 1.1;
+          }
+          .master-create-card,
+          .master-create-form,
+          .master-list-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 14px;
+          }
+          .master-create-form { flex: 1; max-width: 560px; }
+          .master-create-form input { margin: 0 !important; }
+          .master-search-input { max-width: 320px; margin: 0 !important; }
+          .master-companies-list {
+            display: grid;
+            gap: 12px;
+            margin-top: 16px;
+          }
+          .master-company-card {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) auto auto;
+            gap: 14px;
+            align-items: center;
+            border: 1px solid rgba(15, 23, 42, .08);
+            border-radius: 20px;
+            background: #ffffff;
+            padding: 14px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
+          }
+          .master-company-card.active {
+            border-color: rgba(20, 184, 166, .32);
+            background: linear-gradient(135deg, #ffffff, #f0fdfa);
+          }
+          .master-company-main {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          }
+          .master-company-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(20, 184, 166, .10);
+            flex: 0 0 42px;
+          }
+          .master-company-main h3 {
+            margin: 0 0 4px;
+            color: #0f172a;
+            font-size: 16px;
+          }
+          .master-company-main small {
+            display: block;
+            max-width: 360px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #64748b;
+          }
+          .master-company-meta {
+            display: grid;
+            gap: 4px;
+            color: #64748b;
+            font-size: 12px;
+          }
+          .master-company-meta strong {
+            color: #0f766e;
+            font-weight: 900;
+          }
+          .master-company-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+          }
+          .master-company-actions button {
+            min-height: 36px !important;
+            padding: 8px 12px !important;
+            margin: 0 !important;
+          }
+          @media (max-width: 860px) {
+            .master-page-hero,
+            .master-create-card,
+            .master-create-form,
+            .master-list-header {
+              display: grid;
+              align-items: stretch;
+            }
+            .master-stats-grid { grid-template-columns: 1fr; }
+            .master-create-form { max-width: none; }
+            .master-search-input { max-width: none; }
+            .master-company-card {
+              grid-template-columns: 1fr;
+              align-items: stretch;
+            }
+            .master-company-actions { justify-content: flex-start; flex-wrap: wrap; }
+          }
           .top-shell-clean {
             min-height: 72px !important;
             box-sizing: border-box !important;
@@ -3156,7 +3329,7 @@ export default function App() {
         nomeUsuarioAtual={nomeUsuario()}
         normalizarPerfil={normalizarPerfil}
         perfilUsuario={perfilUsuario}
-        menuSections={menuSections}
+        menuSections={menuSectionsVisiveis()}
         telaAtual={telaAtual}
         navegarPara={navegarPara}
         gruposMenu={gruposMenu}
@@ -3176,7 +3349,7 @@ export default function App() {
         nomeUsuarioAtual={nomeUsuario()}
         normalizarPerfil={normalizarPerfil}
         perfilUsuario={perfilUsuario}
-        menuSections={menuSections}
+        menuSections={menuSectionsVisiveis()}
         navegarPara={navegarPara}
         sairDoSistema={sairDoSistema}
         canSwitchCompany={permissoesUsuario?.canSwitchCompany}
@@ -3358,6 +3531,37 @@ export default function App() {
     )
   }
 
+
+
+  if (telaAtual === 'master-empresas') {
+    if (!permissoesUsuario?.canManageCompanies) {
+      return renderAppFrame(
+        <>
+          <h1 style={styles.titulo}>🏢 Painel Master</h1>
+          <section style={styles.cardConfiguracao}>
+            <h2 style={styles.subtitulo}>Acesso restrito</h2>
+            <p style={styles.textoNota}>Seu perfil atual não permite acessar o painel master.</p>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
+          </section>
+        </>
+      )
+    }
+
+    return renderAppFrame(
+      <MasterPanelPage
+        styles={styles}
+        usuarioLogado={usuarioLogado}
+        nomeUsuarioCompleto={nomeUsuarioCompleto}
+        empresaId={empresaId}
+        empresasDisponiveis={empresasDisponiveis}
+        trocarEmpresaAtiva={trocarEmpresaAtiva}
+        trocandoEmpresa={trocandoEmpresa}
+        mostrarAviso={mostrarAviso}
+        onEmpresasAtualizadas={recarregarEmpresasDisponiveis}
+        voltarPainel={voltarPainel}
+      />
+    )
+  }
 
 
   if (telaAtual === 'usuarios') {

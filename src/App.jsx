@@ -31,6 +31,7 @@ import { converterValor, formatarData, formatarDataParaBanco, formatarValor, lim
 import { dataLocal, diferencaDias, mesmoMesAtual } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
+import { buscarPermissoesUsuario, criarPermissoesUsuario } from './services/permissoesService'
 import './styles.css'
 
 const SESSAO_STORAGE_KEY = 'df_sessao_segura'
@@ -213,6 +214,7 @@ export default function App() {
   const [carregandoAuth, setCarregandoAuth] = useState(true)
   const [empresaId, setEmpresaId] = useState(null)
   const [perfilUsuario, setPerfilUsuario] = useState('')
+  const [permissoesUsuario, setPermissoesUsuario] = useState(() => criarPermissoesUsuario())
   const [nomeUsuarioPerfil, setNomeUsuarioPerfil] = useState('')
   const [erroEmpresa, setErroEmpresa] = useState('')
   const [usuariosEmpresa, setUsuariosEmpresa] = useState([])
@@ -510,6 +512,7 @@ export default function App() {
         setEmpresaId(null)
         limparEmpresaAtiva()
         setPerfilUsuario('')
+        setPermissoesUsuario(criarPermissoesUsuario())
         setNomeUsuarioPerfil('')
         setErroEmpresa(TENANT_ERRORS.semEmpresa)
         return
@@ -524,6 +527,12 @@ export default function App() {
         perfil: vinculo.perfil || 'operador'
       })
       setPerfilUsuario(vinculo.perfil || 'operador')
+      const permissoes = await buscarPermissoesUsuario({
+        userId,
+        email: usuarioLogado?.email,
+        perfilEmpresa: vinculo.perfil || 'operador'
+      })
+      setPermissoesUsuario(permissoes)
       setNomeUsuarioPerfil(nomePerfil || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name || '')
       await carregarTudo(vinculo.empresaId)
     } catch (error) {
@@ -558,16 +567,17 @@ export default function App() {
   }
 
   function temPermissao(perfisPermitidos = []) {
+    if (permissoesUsuario?.isMaster) return true
     const perfilAtual = normalizarPerfil(perfilUsuario)
     return perfisPermitidos.includes(perfilAtual)
   }
 
   function podeAdministrarUsuarios() {
-    return temPermissao(['admin'])
+    return Boolean(permissoesUsuario?.canManageUsers || temPermissao(['admin']))
   }
 
   function podeAcessarConfiguracoes() {
-    return temPermissao(['admin', 'gerente'])
+    return Boolean(permissoesUsuario?.canAccessSettings || temPermissao(['admin', 'gerente']))
   }
 
   async function buscarUsuariosEmpresa(empresaAtual = empresaId) {
@@ -3211,7 +3221,7 @@ export default function App() {
         <section style={styles.cardConfiguracao} className="users-page-section">
           <h2 style={styles.subtitulo}>Minha conta</h2>
           <p style={styles.textoNota}>
-            Usuário conectado: <strong>{usuarioAtualEmail}</strong> • Perfil: <strong>{normalizarPerfil(perfilUsuario)}</strong>
+            Usuário conectado: <strong>{usuarioAtualEmail}</strong> • Perfil: <strong>{normalizarPerfil(perfilUsuario)}</strong>{permissoesUsuario?.isMaster ? <> • Global: <strong>master</strong></> : null}
           </p>
 
           <UserSecurityCards

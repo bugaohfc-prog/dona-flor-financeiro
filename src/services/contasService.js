@@ -19,6 +19,22 @@ export async function listarRecorrenciasAtivas(supabase, empresaId) {
     .eq('ativo', true)
 }
 
+
+export async function validarCentroCustoDaEmpresa(supabase, centroCustoId, empresaId) {
+  if (!centroCustoId) return null
+  assertEmpresaId(empresaId)
+
+  const { data, error } = await supabase
+    .from('df_centros_custo')
+    .select('id')
+    .eq('id', centroCustoId)
+    .eq('empresa_id', empresaId)
+    .maybeSingle()
+
+  if (error || !data?.id) return null
+  return data.id
+}
+
 export async function criarContasEmLote(supabase, contas) {
   return inserirLoteComEmpresa(supabase, 'df_contas', contas, {
     select: '*, df_centros_custo(nome), df_contas_recorrentes(tipo_recorrencia)'

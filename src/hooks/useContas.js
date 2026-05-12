@@ -12,6 +12,7 @@ import {
   listarContasAtivas,
   listarRecorrenciasAtivas,
   listarRecorrenciasPorDia,
+  validarCentroCustoDaEmpresa,
   vincularRecorrenciaNaConta
 } from '../services/contasService'
 import { dataLocal } from '../utils/dates'
@@ -61,6 +62,12 @@ export function useContas() {
     setRecorrenciaContaId(null)
   }
 
+
+  async function resolverCentroCustoSeguro(supabase, empresaId, centroCustoId) {
+    if (!centroCustoId) return null
+    return validarCentroCustoDaEmpresa(supabase, centroCustoId, empresaId)
+  }
+
   async function garantirContasRecorrentesDoMes({
     supabase,
     empresaAtual,
@@ -84,8 +91,8 @@ export function useContas() {
 
     const novasContas = []
 
-    ;(recorrentes || []).forEach((recorrencia) => {
-      if (!deveGerarRecorrenciaNoMes(recorrencia, ano, mes)) return
+    for (const recorrencia of (recorrentes || [])) {
+      if (!deveGerarRecorrenciaNoMes(recorrencia, ano, mes)) continue
 
       const dataGerada = montarDataRecorrente(ano, mes, recorrencia.dia_vencimento)
 
@@ -94,7 +101,9 @@ export function useContas() {
         && conta.data_vencimento === dataGerada
       )
 
-      if (jaExiste) return
+      if (jaExiste) continue
+
+      const centroCustoSeguro = await resolverCentroCustoSeguro(supabase, empresaAtual, recorrencia.centro_custo_id)
 
       novasContas.push({
         empresa_id: empresaAtual,
@@ -102,7 +111,7 @@ export function useContas() {
         valor: Number(recorrencia.valor || 0),
         data_vencimento: dataGerada,
         vencimento: dataGerada,
-        centro_custo_id: recorrencia.centro_custo_id || null,
+        centro_custo_id: centroCustoSeguro,
         observacao: recorrencia.observacao || null,
         recorrencia_id: recorrencia.id,
         status: 'pendente',
@@ -112,7 +121,7 @@ export function useContas() {
         enviar_push: configPush,
         dias_aviso: Number(diasAlertaContas || diasAvisoPadrao || 1)
       })
-    })
+    }
 
     if (novasContas.length === 0) return contasAtuais
 
@@ -278,12 +287,14 @@ export function useContas() {
       return
     }
 
+    const centroCustoSeguro = await resolverCentroCustoSeguro(supabase, empresaId, centroCustoId)
+
     const payload = {
       descricao: primeiraLetraMaiuscula(descricao.trim()),
       valor: converterValor(valor),
       data_vencimento: formatarDataParaBanco(dataVencimento),
       vencimento: formatarDataParaBanco(dataVencimento),
-      centro_custo_id: centroCustoId || null,
+      centro_custo_id: centroCustoSeguro,
       observacao: observacaoConta.trim() || null,
       enviar_whatsapp: contaWhatsapp,
       enviar_email: contaEmail,
@@ -312,7 +323,7 @@ export function useContas() {
             empresa_id: empresaId,
             descricao: primeiraLetraMaiuscula(descricao.trim()),
             valor: converterValor(valor),
-            centro_custo_id: centroCustoId || null,
+            centro_custo_id: centroCustoSeguro,
             tipo_recorrencia: tipoRecorrencia || 'mensal',
             dia_vencimento: diaRecorrencia,
             data_inicio: dataBanco,
@@ -399,7 +410,7 @@ export function useContas() {
           empresa_id: empresaId,
           descricao: primeiraLetraMaiuscula(descricao.trim()),
           valor: converterValor(valor),
-          centro_custo_id: centroCustoId || null,
+          centro_custo_id: centroCustoSeguro,
           tipo_recorrencia: tipoRecorrencia || 'mensal',
           dia_vencimento: diaRecorrencia,
           data_inicio: dataBanco,

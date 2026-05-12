@@ -50,6 +50,7 @@ import {
 export default function App() {
   const avisoSessaoMostradoRef = useRef(false)
   const encerrandoSessaoRef = useRef(false)
+  const sincronizacaoTenantRef = useRef(null)
   const { globalLoading, toast: globalToast, showToast, hideToast, empresaAtiva, setEmpresaAtiva, limparEmpresaAtiva, empresasDisponiveis, setEmpresasDisponiveis } = useApp()
   // =========================
   // BLOCO 0 — UTILITÁRIOS
@@ -459,6 +460,54 @@ export default function App() {
 
     carregarEmpresaDoUsuario(usuarioLogado.id)
   }, [usuarioLogado])
+
+
+  useEffect(() => {
+    if (!usuarioLogado?.id || !empresaId) return
+
+    let cancelado = false
+
+    async function sincronizarTenantAtual() {
+      if (cancelado) return
+
+      try {
+        await Promise.allSettled([
+          buscarContas(empresaId),
+          buscarCentros(empresaId),
+          buscarLixeira(empresaId)
+        ])
+      } catch (error) {
+        console.warn('Falha ao sincronizar dados do tenant:', error?.message || error)
+      }
+    }
+
+    function agendarSincronizacaoTenant() {
+      window.clearTimeout(sincronizacaoTenantRef.current)
+      sincronizacaoTenantRef.current = window.setTimeout(sincronizarTenantAtual, 350)
+    }
+
+    function sincronizarAoVoltarParaAba() {
+      if (document.visibilityState === 'visible') agendarSincronizacaoTenant()
+    }
+
+    window.addEventListener('focus', agendarSincronizacaoTenant)
+    document.addEventListener('visibilitychange', sincronizarAoVoltarParaAba)
+
+    const canal = supabase
+      .channel(`tenant-sync-${empresaId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'df_centros_custo', filter: `empresa_id=eq.${empresaId}` }, agendarSincronizacaoTenant)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'df_contas', filter: `empresa_id=eq.${empresaId}` }, agendarSincronizacaoTenant)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'df_contas_recorrentes', filter: `empresa_id=eq.${empresaId}` }, agendarSincronizacaoTenant)
+      .subscribe()
+
+    return () => {
+      cancelado = true
+      window.clearTimeout(sincronizacaoTenantRef.current)
+      window.removeEventListener('focus', agendarSincronizacaoTenant)
+      document.removeEventListener('visibilitychange', sincronizarAoVoltarParaAba)
+      supabase.removeChannel(canal)
+    }
+  }, [usuarioLogado?.id, empresaId])
 
   useEffect(() => {
     if (!menuNavegacaoAberto || !usuarioLogado?.id) return
@@ -1488,14 +1537,27 @@ export default function App() {
       return
     }
 
-    if (!novoCentro.trim()) {
+    const nomeCentro = primeiraLetraMaiuscula(novoCentro.trim())
+
+    if (!nomeCentro) {
       mostrarAviso('Digite o centro de custo.', 'erro')
       return
     }
 
-    const { error } = await supabase
+    const centroDuplicado = centros.some((centro) =>
+      String(centro.nome || '').trim().toLowerCase() === nomeCentro.toLowerCase()
+    )
+
+    if (centroDuplicado) {
+      mostrarAviso('Este centro de custo já existe nesta empresa.', 'erro')
+      return
+    }
+
+    const { data, error } = await supabase
       .from('df_centros_custo')
-      .insert([{ nome: primeiraLetraMaiuscula(novoCentro.trim()), empresa_id: empresaId }])
+      .insert([{ nome: nomeCentro, empresa_id: empresaId }])
+      .select('*')
+      .single()
 
     if (error) {
       avisarErro(error)
@@ -1503,7 +1565,12 @@ export default function App() {
     }
 
     setNovoCentro('')
-    buscarCentros()
+    setCentros((listaAtual) => {
+      const listaSemDuplicidade = listaAtual.filter((centro) => centro.id !== data.id)
+      return [...listaSemDuplicidade, data].sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || '')))
+    })
+    await buscarCentros(empresaId)
+    mostrarAviso('Centro de custo criado com sucesso.', 'sucesso')
   }
 
   async function excluirCentro(id) {

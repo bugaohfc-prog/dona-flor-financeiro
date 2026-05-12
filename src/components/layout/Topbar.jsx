@@ -29,15 +29,6 @@ export default function Topbar({
 
       <div className="top-shell-actions" style={styles.usuarioAcoes}>
 
-        <button
-          type="button"
-          className="top-user-profile-button"
-          title="Editar meu perfil"
-          onClick={() => abrirPerfilUsuario?.()}
-          aria-label="Editar meu perfil"
-        >
-          <span>Olá, {typeof nomeUsuario === 'function' ? nomeUsuario() : 'usuário'}</span>
-        </button>
         {exibirSeletorEmpresa && (
           empresasDisponiveis.length > 1 ? (
             <label className="company-switcher" title="Trocar empresa ativa">
@@ -60,6 +51,15 @@ export default function Topbar({
             </div>
           )
         )}
+        <button
+          type="button"
+          className="top-user-profile-button top-user-profile-icon"
+          title={`Meu perfil${typeof nomeUsuario === 'function' ? `: ${nomeUsuario()}` : ''}`}
+          onClick={() => abrirPerfilUsuario?.()}
+          aria-label="Abrir meu perfil"
+        >
+          <span aria-hidden="true">👤</span>
+        </button>
         <button className="mobile-menu-trigger" style={styles.btnMenuTopo} onClick={() => setMenuNavegacaoAberto(!menuNavegacaoAberto)}>☰</button>
       </div>
     </section>

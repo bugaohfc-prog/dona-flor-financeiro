@@ -202,6 +202,7 @@ export default function App() {
   const [usuarioLogado, setUsuarioLogado] = useState(null)
   const [carregandoAuth, setCarregandoAuth] = useState(true)
   const [empresaId, setEmpresaId] = useState(null)
+  const [trocandoEmpresa, setTrocandoEmpresa] = useState(false)
   const [perfilUsuario, setPerfilUsuario] = useState('')
   const [permissoesUsuario, setPermissoesUsuario] = useState(() => criarPermissoesUsuario())
   const [nomeUsuarioPerfil, setNomeUsuarioPerfil] = useState('')
@@ -270,13 +271,33 @@ export default function App() {
     mostrarAviso(String(mensagem), 'erro')
   }
 
-  function limparEstadoAutenticacao() {
+  function limparDadosTenant() {
     setContas([])
     setNotas([])
     setCentros([])
     setContasLixeira([])
     setNotasLixeira([])
     setUsuariosEmpresa([])
+    setConfiguracoes(null)
+    setModalConta(false)
+    setModalNota(false)
+    setModalCentro(false)
+    setMenuAberto(false)
+    setMenuNavegacaoAberto(false)
+    setBusca('')
+    setBuscaNota('')
+    setFiltroStatus('todas')
+    setFiltroCentro('')
+    setFiltroMes('')
+    setDataInicial('')
+    setDataFinal('')
+    setArquivoImportacao(null)
+    setLinhasImportacao([])
+    setStatusImportacao('')
+  }
+
+  function limparEstadoAutenticacao() {
+    limparDadosTenant()
     setEmpresasDisponiveis([])
     setEmpresaId(null)
     limparEmpresaAtiva()
@@ -596,6 +617,8 @@ export default function App() {
 
 
   async function trocarEmpresaAtiva(empresaSelecionadaId) {
+    if (!empresaSelecionadaId || trocandoEmpresa) return
+
     const empresaSelecionada = empresasDisponiveis.find((empresa) => empresa.id === empresaSelecionadaId)
 
     if (!empresaSelecionada) {
@@ -603,23 +626,46 @@ export default function App() {
       return
     }
 
-    const perfilSelecionado = empresaSelecionada.perfil || 'operador'
-    setEmpresaId(empresaSelecionada.id)
-    setEmpresaAtiva({
-      id: empresaSelecionada.id,
-      nome: empresaSelecionada.nome || 'Empresa',
-      perfil: perfilSelecionado
-    })
-    setPerfilUsuario(perfilSelecionado)
-    setPermissoesUsuario((atual) => ({
-      ...atual,
-      perfilEmpresa: normalizarPerfil(perfilSelecionado),
-      canManageUsers: Boolean(atual?.isMaster || normalizarPerfil(perfilSelecionado) === 'admin'),
-      canAccessSettings: Boolean(atual?.isMaster || ['admin', 'gerente'].includes(normalizarPerfil(perfilSelecionado)))
-    }))
-    setTelaAtualState('dashboard')
-    await carregarTudo(empresaSelecionada.id)
-    mostrarAviso(`Empresa ativa: ${empresaSelecionada.nome || 'Empresa'}`, 'sucesso')
+    if (empresaSelecionada.id === empresaId) return
+
+    setTrocandoEmpresa(true)
+    setLoading(true)
+
+    try {
+      const perfilSelecionado = empresaSelecionada.perfil || (permissoesUsuario?.isMaster ? 'master' : 'operador')
+      const permissoesAtualizadas = permissoesUsuario?.isMaster
+        ? {
+            ...permissoesUsuario,
+            perfilEmpresa: normalizarPerfil(perfilSelecionado),
+            canSwitchCompany: true,
+            canManageCompanies: true,
+            canManageUsers: true,
+            canAccessSettings: true
+          }
+        : await buscarPermissoesUsuario({
+            userId: usuarioLogado?.id,
+            email: usuarioLogado?.email,
+            perfilEmpresa: perfilSelecionado
+          })
+
+      limparDadosTenant()
+      setEmpresaId(empresaSelecionada.id)
+      setEmpresaAtiva({
+        id: empresaSelecionada.id,
+        nome: empresaSelecionada.nome || 'Empresa',
+        perfil: perfilSelecionado
+      })
+      setPerfilUsuario(perfilSelecionado)
+      setPermissoesUsuario(permissoesAtualizadas)
+      setTelaAtualState('dashboard')
+      await carregarTudo(empresaSelecionada.id)
+      mostrarAviso(`Empresa ativa: ${empresaSelecionada.nome || 'Empresa'}`, 'sucesso')
+    } catch (error) {
+      avisarErro(error, 'Não foi possível trocar a empresa ativa.')
+    } finally {
+      setTrocandoEmpresa(false)
+      setLoading(false)
+    }
   }
 
   async function buscarUsuariosEmpresa(empresaAtual = empresaId) {
@@ -1999,6 +2045,11 @@ export default function App() {
         navegarPara={navegarPara}
         menuNavegacaoAberto={menuNavegacaoAberto}
         setMenuNavegacaoAberto={setMenuNavegacaoAberto}
+        canSwitchCompany={permissoesUsuario?.canSwitchCompany}
+        empresasDisponiveis={empresasDisponiveis}
+        empresaId={empresaId}
+        trocarEmpresaAtiva={trocarEmpresaAtiva}
+        trocandoEmpresa={trocandoEmpresa}
       />
     )
   }
@@ -3256,6 +3307,7 @@ export default function App() {
             <select
               style={styles.input}
               value={empresaId || ''}
+              disabled={trocandoEmpresa}
               onChange={(e) => trocarEmpresaAtiva(e.target.value)}
             >
               {empresasDisponiveis.map((empresa) => (

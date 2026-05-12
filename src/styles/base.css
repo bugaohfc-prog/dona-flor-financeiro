@@ -63,3 +63,55 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
   .printActions{display:none!important}
   @page{margin:12mm}
 }
+
+/* =========================================================
+   FASE 10.2 — Real Company Switch
+   Seletor discreto no Topbar, sem alterar a hierarquia validada.
+   ========================================================= */
+.company-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 220px;
+  max-width: 320px;
+  padding: 7px 10px;
+  border: 1px solid #d8eee9;
+  border-radius: 999px;
+  background: #f8fffd;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+}
+
+.company-switcher span {
+  flex: 0 0 auto;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.company-switcher select {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 3px 24px 3px 6px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+  outline: none;
+  cursor: pointer;
+}
+
+.company-switcher select:disabled {
+  cursor: progress;
+  opacity: .7;
+}
+
+@media (max-width: 979px) {
+  .company-switcher {
+    display: none;
+  }
+}

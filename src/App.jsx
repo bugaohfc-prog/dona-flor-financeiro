@@ -3085,6 +3085,11 @@ export default function App() {
         menuSections={menuSections}
         navegarPara={navegarPara}
         sairDoSistema={sairDoSistema}
+        canSwitchCompany={permissoesUsuario?.canSwitchCompany}
+        empresasDisponiveis={empresasDisponiveis}
+        empresaId={empresaId}
+        trocarEmpresaAtiva={trocarEmpresaAtiva}
+        trocandoEmpresa={trocandoEmpresa}
       />
     )
   }

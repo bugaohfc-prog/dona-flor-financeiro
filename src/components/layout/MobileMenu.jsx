@@ -7,9 +7,17 @@ export default function MobileMenu({
   perfilUsuario,
   menuSections,
   navegarPara,
-  sairDoSistema
+  sairDoSistema,
+  canSwitchCompany = false,
+  empresasDisponiveis = [],
+  empresaId = '',
+  trocarEmpresaAtiva,
+  trocandoEmpresa = false
 }) {
   if (!visible) return null
+
+  const exibirSeletorEmpresa = canSwitchCompany && empresasDisponiveis.length > 0
+  const empresaAtual = empresasDisponiveis.find((empresa) => empresa.id === empresaId)
 
   const item = (icon, titulo, desc, acao) => (
     <button type="button" style={styles.menuNavItem} onClick={acao}>
@@ -38,6 +46,49 @@ export default function MobileMenu({
           <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.menuPerfilIcone} />
           <div><strong>{nomeUsuario()}</strong><small>{normalizarPerfil(perfilUsuario || 'usuário')}</small></div>
         </div>
+
+        {exibirSeletorEmpresa && (
+          <div
+            className="mobile-company-switcher"
+            style={{
+              margin: '12px 0 18px',
+              padding: '12px 14px',
+              border: '1px solid rgba(20, 184, 166, 0.22)',
+              borderRadius: 18,
+              background: 'rgba(240, 253, 250, 0.9)',
+              display: 'grid',
+              gap: 8
+            }}
+          >
+            <span style={{ fontSize: 11, fontWeight: 900, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '.08em' }}>Empresa ativa</span>
+            {empresasDisponiveis.length > 1 ? (
+              <select
+                value={empresaId || ''}
+                disabled={trocandoEmpresa}
+                onChange={(event) => {
+                  trocarEmpresaAtiva?.(event.target.value)
+                  setMenuNavegacaoAberto(false)
+                }}
+                aria-label="Empresa ativa"
+                style={{
+                  width: '100%',
+                  border: '0',
+                  background: 'transparent',
+                  color: '#111827',
+                  fontWeight: 900,
+                  fontSize: 15,
+                  outline: 'none'
+                }}
+              >
+                {empresasDisponiveis.map((empresa) => (
+                  <option key={empresa.id} value={empresa.id}>{empresa.nome || empresa.id}</option>
+                ))}
+              </select>
+            ) : (
+              <strong style={{ color: '#111827', fontSize: 15 }}>{empresaAtual?.nome || 'Empresa ativa'}</strong>
+            )}
+          </div>
+        )}
 
         {menuSections.map((grupo, index) => (
           <details className="mobile-menu-group" key={grupo.id} open={index === 0}>

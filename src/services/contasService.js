@@ -1,4 +1,7 @@
+import { assertEmpresaId, assertPayloadEmpresaId, assertPayloadsEmpresaId } from './tenantService'
+
 export async function listarContasAtivas(supabase, empresaId) {
+  assertEmpresaId(empresaId)
   return supabase
     .from('df_contas')
     .select('*, df_centros_custo(nome), df_contas_recorrentes(tipo_recorrencia)')
@@ -8,6 +11,7 @@ export async function listarContasAtivas(supabase, empresaId) {
 }
 
 export async function listarRecorrenciasAtivas(supabase, empresaId) {
+  assertEmpresaId(empresaId)
   return supabase
     .from('df_contas_recorrentes')
     .select('*')
@@ -16,6 +20,7 @@ export async function listarRecorrenciasAtivas(supabase, empresaId) {
 }
 
 export async function criarContasEmLote(supabase, contas) {
+  assertPayloadsEmpresaId(contas)
   return supabase
     .from('df_contas')
     .insert(contas)
@@ -23,10 +28,12 @@ export async function criarContasEmLote(supabase, contas) {
 }
 
 export async function criarConta(supabase, payload) {
+  assertPayloadEmpresaId(payload)
   return supabase.from('df_contas').insert([payload]).select()
 }
 
 export async function atualizarConta(supabase, id, empresaId, payload) {
+  assertEmpresaId(empresaId)
   return supabase
     .from('df_contas')
     .update(payload)
@@ -35,6 +42,7 @@ export async function atualizarConta(supabase, id, empresaId, payload) {
 }
 
 export async function buscarRecorrenciaPorId(supabase, id, empresaId) {
+  assertEmpresaId(empresaId)
   return supabase
     .from('df_contas_recorrentes')
     .select('*')
@@ -44,6 +52,7 @@ export async function buscarRecorrenciaPorId(supabase, id, empresaId) {
 }
 
 export async function listarRecorrenciasPorDia(supabase, empresaId, diaVencimento) {
+  assertEmpresaId(empresaId)
   return supabase
     .from('df_contas_recorrentes')
     .select('*')
@@ -54,10 +63,12 @@ export async function listarRecorrenciasPorDia(supabase, empresaId, diaVenciment
 }
 
 export async function criarRecorrencia(supabase, payload) {
+  assertPayloadEmpresaId(payload)
   return supabase.from('df_contas_recorrentes').insert([payload]).select()
 }
 
 export async function atualizarRecorrencia(supabase, id, empresaId, payload) {
+  assertEmpresaId(empresaId)
   return supabase
     .from('df_contas_recorrentes')
     .update(payload)

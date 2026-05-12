@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { money as formatarValor, dateBR as formatarData } from '../utils/format'
 
-export default function Relatorios({ voltar }) {
+export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
   // =========================
   // BLOCO 0 — UTILITÁRIOS
   // =========================
@@ -79,22 +79,31 @@ export default function Relatorios({ voltar }) {
 
   useEffect(() => {
     buscarDados()
-  }, [])
+  }, [empresaId])
 
   // =========================
   // BLOCO 2 — BUSCAS
   // =========================
   async function buscarDados() {
+    if (!empresaId) {
+      setContas([])
+      setCentros([])
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
 
     const { data: contasData, error: contasError } = await supabase
       .from('df_contas')
       .select('*, df_centros_custo(nome)')
+      .eq('empresa_id', empresaId)
       .order('data_vencimento', { ascending: true })
 
     const { data: centrosData, error: centrosError } = await supabase
       .from('df_centros_custo')
       .select('*')
+      .eq('empresa_id', empresaId)
       .order('nome', { ascending: true })
 
     if (contasError) mostrarAviso?.(contasError.message, 'erro')

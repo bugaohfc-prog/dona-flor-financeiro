@@ -81,3 +81,19 @@ export function assertEmpresaId(empresaId) {
 
   return empresaId
 }
+
+
+export function assertPayloadEmpresaId(payload) {
+  if (!payload?.empresa_id) {
+    throw new Error('Operação bloqueada: empresa_id ausente no payload.')
+  }
+
+  return payload
+}
+
+export function assertPayloadsEmpresaId(payloads) {
+  if (!Array.isArray(payloads) || payloads.length === 0) return payloads
+
+  payloads.forEach(assertPayloadEmpresaId)
+  return payloads
+}

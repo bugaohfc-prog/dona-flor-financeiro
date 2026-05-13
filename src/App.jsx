@@ -17,6 +17,7 @@ import ContasPage from './pages/ContasPage.jsx'
 import NotasPage from './pages/NotasPage.jsx'
 import MasterPanelPage from './pages/MasterPanelPage.jsx'
 import FiliaisPage from './pages/FiliaisPage.jsx'
+import BillingPage from './pages/BillingPage.jsx'
 import Login from './pages/Login.jsx'
 import UserSecurityCards from './components/UserSecurityCards.jsx'
 import Topbar from './components/layout/Topbar.jsx'
@@ -3812,6 +3813,35 @@ export default function App() {
         onEmpresasAtualizadas={recarregarEmpresasDisponiveis}
         voltarPainel={voltarPainel}
         abaInicial="empresas"
+      />
+    )
+  }
+
+
+  if (telaAtual === 'billing') {
+    if (!podeAcessarConfiguracoes()) {
+      return renderAppFrame(
+        <>
+          <h1 style={styles.titulo}>💼 Billing</h1>
+          <section style={styles.cardConfiguracao}>
+            <h2 style={styles.subtitulo}>Acesso restrito</h2>
+            <p style={styles.textoNota}>Seu perfil atual não permite acessar o billing.</p>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
+          </section>
+        </>
+      )
+    }
+
+    return renderAppFrame(
+      <BillingPage
+        styles={styles}
+        empresaId={empresaId}
+        empresaNome={nomeEmpresa}
+        filiais={filiais}
+        usuarios={usuariosEmpresa}
+        mostrarAviso={mostrarAviso}
+        podeEditar={podeAdministrarUsuarios()}
+        voltarPainel={() => navegarPara('configuracoes')}
       />
     )
   }

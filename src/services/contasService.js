@@ -8,7 +8,7 @@ import { assertEmpresaId } from './tenantService'
 
 export async function listarContasAtivas(supabase, empresaId) {
   assertEmpresaId(empresaId)
-  return selecionarPorEmpresa(supabase, 'df_contas', empresaId, '*, df_centros_custo(nome), df_contas_recorrentes(tipo_recorrencia)')
+  return selecionarPorEmpresa(supabase, 'df_contas', empresaId, '*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia)')
     .eq('excluido', false)
     .order('data_vencimento')
 }
@@ -35,9 +35,26 @@ export async function validarCentroCustoDaEmpresa(supabase, centroCustoId, empre
   return data.id
 }
 
+
+export async function validarFilialDaEmpresa(supabase, filialId, empresaId) {
+  if (!filialId) return null
+  assertEmpresaId(empresaId)
+
+  const { data, error } = await supabase
+    .from('df_filiais')
+    .select('id')
+    .eq('id', filialId)
+    .eq('empresa_id', empresaId)
+    .eq('ativo', true)
+    .maybeSingle()
+
+  if (error || !data?.id) return null
+  return data.id
+}
+
 export async function criarContasEmLote(supabase, contas) {
   return inserirLoteComEmpresa(supabase, 'df_contas', contas, {
-    select: '*, df_centros_custo(nome), df_contas_recorrentes(tipo_recorrencia)'
+    select: '*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia)'
   })
 }
 

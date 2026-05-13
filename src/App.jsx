@@ -36,6 +36,7 @@ import { dataLocal, diferencaDias, mesmoMesAtual } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
 import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario } from './services/permissoesService'
+import { listarFiliaisPorEmpresa } from './services/filiaisService'
 import './styles.css'
 import styles from './styles/appStyles.js'
 import menuSections from './config/menuSections.js'
@@ -107,6 +108,8 @@ export default function App() {
     setFiltroStatus,
     filtroCentro,
     setFiltroCentro,
+    filtroFilial,
+    setFiltroFilial,
     filtroMes,
     setFiltroMes,
     dataInicial,
@@ -127,6 +130,8 @@ export default function App() {
     setDataVencimento,
     centroCustoId,
     setCentroCustoId,
+    filialId,
+    setFilialId,
     observacaoConta,
     setObservacaoConta,
     contaWhatsapp,
@@ -193,6 +198,7 @@ export default function App() {
   // BLOCO 3 — STATES CENTROS
   // =========================
   const [centros, setCentros] = useState([])
+  const [filiais, setFiliais] = useState([])
   const [modalCentro, setModalCentro] = useState(false)
   const [novoCentro, setNovoCentro] = useState('')
 
@@ -283,6 +289,7 @@ export default function App() {
     setContas([])
     setNotas([])
     setCentros([])
+    setFiliais([])
     setContasLixeira([])
     setNotasLixeira([])
     setUsuariosEmpresa([])
@@ -296,6 +303,7 @@ export default function App() {
     setBuscaNota('')
     setFiltroStatus('todas')
     setFiltroCentro('')
+    setFiltroFilial('')
     setFiltroMes('')
     setDataInicial('')
     setDataFinal('')
@@ -475,6 +483,7 @@ export default function App() {
         await Promise.allSettled([
           buscarContas(empresaId),
           buscarCentros(empresaId),
+          buscarFiliais(empresaId),
           buscarLixeira(empresaId)
         ])
       } catch (error) {
@@ -497,6 +506,7 @@ export default function App() {
     const canal = supabase
       .channel(`tenant-sync-${empresaId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'df_centros_custo', filter: `empresa_id=eq.${empresaId}` }, agendarSincronizacaoTenant)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'df_filiais', filter: `empresa_id=eq.${empresaId}` }, agendarSincronizacaoTenant)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'df_contas', filter: `empresa_id=eq.${empresaId}` }, agendarSincronizacaoTenant)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'df_contas_recorrentes', filter: `empresa_id=eq.${empresaId}` }, agendarSincronizacaoTenant)
       .subscribe()
@@ -675,6 +685,7 @@ export default function App() {
       buscarContas(empresaAtual),
       buscarNotas(empresaAtual),
       buscarCentros(empresaAtual),
+      buscarFiliais(empresaAtual),
       buscarLixeira(empresaAtual),
       buscarConfiguracoes(empresaAtual),
       buscarUsuariosEmpresa(empresaAtual)
@@ -1138,7 +1149,7 @@ export default function App() {
 
     const { data: contasExcluidas, error: erroContas } = await supabase
       .from('df_contas')
-      .select('*, df_centros_custo(nome), df_contas_recorrentes(tipo_recorrencia)')
+      .select('*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia)')
       .eq('empresa_id', empresaAtual)
       .eq('excluido', true)
       .order('excluido_em', { ascending: false })
@@ -1173,6 +1184,22 @@ export default function App() {
     setCentros(data || [])
   }
 
+
+  async function buscarFiliais(empresaAtual = empresaId) {
+    if (!empresaAtual) {
+      setFiliais([])
+      return
+    }
+
+    try {
+      const dados = await listarFiliaisPorEmpresa(empresaAtual)
+      setFiliais((dados || []).filter((filial) => filial.ativo !== false))
+    } catch (error) {
+      avisarErro(error)
+      setFiliais([])
+    }
+  }
+
   // =========================
   // BLOCO 6 — FILTROS / RESUMOS
   // =========================
@@ -1184,6 +1211,7 @@ export default function App() {
       return true
     })
     .filter((conta) => !filtroCentro || conta.centro_custo_id === filtroCentro)
+    .filter((conta) => !filtroFilial || conta.filial_id === filtroFilial)
     .filter((conta) => !filtroMes || pegarMes(conta.data_vencimento) === filtroMes)
     .filter((conta) => {
       if (dataInicial && conta.data_vencimento < dataInicial) return false
@@ -1195,6 +1223,7 @@ export default function App() {
       if (!termo) return true
 
       const centroNome = conta.df_centros_custo?.nome || ''
+      const filialNome = conta.df_filiais?.nome || ''
       const statusBusca = conta.status === 'pago'
         ? 'pago'
         : estaVencida(conta.data_vencimento, conta.status)
@@ -1207,6 +1236,7 @@ export default function App() {
         conta.categoria,
         conta.forma_pagamento,
         centroNome,
+        filialNome,
         statusBusca,
         formatarData(conta.data_vencimento),
         conta.data_vencimento
@@ -1594,12 +1624,13 @@ export default function App() {
   // BLOCO 10 — EXPORTAÇÕES
   // =========================
   function exportarCSV() {
-    const cabecalho = ['Descricao', 'Valor', 'Vencimento', 'Status', 'Centro']
+    const cabecalho = ['Descricao', 'Valor', 'Vencimento', 'Status', 'Filial', 'Centro']
     const linhas = contasFiltradas.map((conta) => [
       conta.descricao || '',
       Number(conta.valor || 0).toFixed(2).replace('.', ','),
       formatarData(conta.data_vencimento),
       estaVencida(conta.data_vencimento, conta.status) ? 'vencido' : conta.status,
+      conta.df_filiais?.nome || '',
       conta.df_centros_custo?.nome || ''
     ])
 
@@ -1639,6 +1670,7 @@ export default function App() {
             <strong>${escapeHtml(conta.descricao || '-')}</strong>
             ${conta.observacao ? `<small>Obs: ${escapeHtml(conta.observacao)}</small>` : ''}
           </td>
+          <td>${escapeHtml(conta.df_filiais?.nome || '-')}</td>
           <td>${escapeHtml(conta.df_centros_custo?.nome || '-')}</td>
           <td>${escapeHtml(formatarData(conta.data_vencimento))}</td>
           <td><span class="status ${status.toLowerCase()}">${status}</span></td>
@@ -1720,10 +1752,10 @@ export default function App() {
             <div class="table-wrap">
               <table>
                 <thead>
-                  <tr><th>Conta</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th></tr>
+                  <tr><th>Conta</th><th>Filial</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th></tr>
                 </thead>
                 <tbody>
-                  ${linhas || '<tr><td colspan="5">Nenhuma conta encontrada.</td></tr>'}
+                  ${linhas || '<tr><td colspan="6">Nenhuma conta encontrada.</td></tr>'}
                 </tbody>
               </table>
             </div>
@@ -1752,6 +1784,7 @@ export default function App() {
     setBusca('')
     setFiltroStatus('todas')
     setFiltroCentro('')
+    setFiltroFilial('')
     setFiltroMes('')
     setDataInicial('')
     setDataFinal('')
@@ -2154,6 +2187,9 @@ export default function App() {
             centroCustoId={centroCustoId}
             setCentroCustoId={setCentroCustoId}
             centros={centros}
+            filialId={filialId}
+            setFilialId={setFilialId}
+            filiais={filiais}
             observacaoConta={observacaoConta}
             setObservacaoConta={setObservacaoConta}
             contaRecorrente={contaRecorrente}
@@ -3508,6 +3544,9 @@ export default function App() {
         centros={centros}
         filtroCentro={filtroCentro}
         setFiltroCentro={setFiltroCentro}
+        filiais={filiais}
+        filtroFilial={filtroFilial}
+        setFiltroFilial={setFiltroFilial}
         filtroMes={filtroMes}
         setFiltroMes={setFiltroMes}
         dataInicial={dataInicial}

@@ -14,7 +14,7 @@ function EmptyState({ icon, title, description, actionLabel, onAction }) {
 }
 export default function ContasPage({
   styles, busca, setBusca, mostrarFiltros, setMostrarFiltros, limparFiltros, imprimirPDF, exportarCSV,
-  filtroStatus, setFiltroStatus, centros, filtroCentro, setFiltroCentro, filtroMes, setFiltroMes,
+  filtroStatus, setFiltroStatus, centros, filtroCentro, setFiltroCentro, filiais, filtroFilial, setFiltroFilial, filtroMes, setFiltroMes,
   dataInicial, setDataInicial, dataFinal, setDataFinal, limitarDataInput, contasFiltradas, total, formatarValor,
   loading, HeaderExpansivel, mostrarContas, setMostrarContas, estaVencida, formatarData, formatarTipoRecorrencia,
   obterTipoRecorrenciaConta, abrirConfirmacao, marcarComoPago, voltarParaPendente, abrirEdicaoConta, excluirConta,
@@ -50,6 +50,11 @@ export default function ContasPage({
               <button style={filtroStatus === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('vencidas')}>Vencidas</button>
             </div>
 
+            <select style={styles.input} value={filtroFilial} onChange={(e) => setFiltroFilial(e.target.value)}>
+              <option value="">Todas as filiais</option>
+              {(filiais || []).map((filial) => (<option key={filial.id} value={filial.id}>{filial.nome}</option>))}
+            </select>
+
             <select style={styles.input} value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)}>
               <option value="">Todos os centros</option>
               {centros.map((centro) => (<option key={centro.id} value={centro.id}>{centro.nome}</option>))}
@@ -67,6 +72,7 @@ export default function ContasPage({
         <strong>Resultado filtrado</strong>
         <span>{contasFiltradas.length} conta(s) • Total {formatarValor(total)}</span>
         <small>
+          Filial: {filtroFilial ? (filiais || []).find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas'} •
           Centro: {filtroCentro ? centros.find((centro) => centro.id === filtroCentro)?.nome || 'Selecionado' : 'Todos'} •
           Status: {filtroStatus} •
           Mês: {filtroMes || 'Todos'}
@@ -114,6 +120,7 @@ export default function ContasPage({
 
               <div style={styles.cardInfo} className="account-meta-line">
                 <span className="account-date-badge">📅 {formatarData(conta.data_vencimento)}</span>
+                <span>{conta.df_filiais?.nome || 'Sem filial'}</span>
                 <span>{conta.df_centros_custo?.nome || '-'}</span>
                 {conta.recorrencia_id && (
                   <span className="account-recurring-badge">🔁 {formatarTipoRecorrencia(obterTipoRecorrenciaConta(conta))}</span>

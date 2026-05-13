@@ -13,6 +13,7 @@ import {
   listarRecorrenciasAtivas,
   listarRecorrenciasPorDia,
   validarCentroCustoDaEmpresa,
+  validarFilialDaEmpresa,
   vincularRecorrenciaNaConta
 } from '../services/contasService'
 import { dataLocal } from '../utils/dates'
@@ -24,6 +25,7 @@ export function useContas() {
   const [busca, setBusca] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('todas')
   const [filtroCentro, setFiltroCentro] = useState('')
+  const [filtroFilial, setFiltroFilial] = useState('')
   const [filtroMes, setFiltroMes] = useState('')
   const [dataInicial, setDataInicial] = useState('')
   const [dataFinal, setDataFinal] = useState('')
@@ -35,6 +37,7 @@ export function useContas() {
   const [valor, setValor] = useState('')
   const [dataVencimento, setDataVencimento] = useState('')
   const [centroCustoId, setCentroCustoId] = useState('')
+  const [filialId, setFilialId] = useState('')
   const [observacaoConta, setObservacaoConta] = useState('')
   const [contaWhatsapp, setContaWhatsapp] = useState(false)
   const [contaEmail, setContaEmail] = useState(false)
@@ -51,6 +54,7 @@ export function useContas() {
     setValor('')
     setDataVencimento('')
     setCentroCustoId('')
+    setFilialId('')
     setObservacaoConta('')
     setContaWhatsapp(false)
     setContaEmail(false)
@@ -66,6 +70,11 @@ export function useContas() {
   async function resolverCentroCustoSeguro(supabase, empresaId, centroCustoId) {
     if (!centroCustoId) return null
     return validarCentroCustoDaEmpresa(supabase, centroCustoId, empresaId)
+  }
+
+  async function resolverFilialSegura(supabase, empresaId, filialId) {
+    if (!filialId) return null
+    return validarFilialDaEmpresa(supabase, filialId, empresaId)
   }
 
   async function garantirContasRecorrentesDoMes({
@@ -104,6 +113,7 @@ export function useContas() {
       if (jaExiste) continue
 
       const centroCustoSeguro = await resolverCentroCustoSeguro(supabase, empresaAtual, recorrencia.centro_custo_id)
+      const filialSegura = await resolverFilialSegura(supabase, empresaAtual, recorrencia.filial_id)
 
       novasContas.push({
         empresa_id: empresaAtual,
@@ -112,6 +122,7 @@ export function useContas() {
         data_vencimento: dataGerada,
         vencimento: dataGerada,
         centro_custo_id: centroCustoSeguro,
+        filial_id: filialSegura,
         observacao: recorrencia.observacao || null,
         recorrencia_id: recorrencia.id,
         status: 'pendente',
@@ -221,6 +232,7 @@ export function useContas() {
     setValor(conta.valor || '')
     setDataVencimento(conta.data_vencimento || '')
     setCentroCustoId(conta.centro_custo_id || '')
+    setFilialId(conta.filial_id || '')
     setObservacaoConta(conta.observacao || '')
     setContaWhatsapp(conta.enviar_whatsapp ?? false)
     setContaEmail(conta.enviar_email ?? false)
@@ -288,6 +300,7 @@ export function useContas() {
     }
 
     const centroCustoSeguro = await resolverCentroCustoSeguro(supabase, empresaId, centroCustoId)
+    const filialSegura = await resolverFilialSegura(supabase, empresaId, filialId)
 
     const payload = {
       descricao: primeiraLetraMaiuscula(descricao.trim()),
@@ -295,6 +308,7 @@ export function useContas() {
       data_vencimento: formatarDataParaBanco(dataVencimento),
       vencimento: formatarDataParaBanco(dataVencimento),
       centro_custo_id: centroCustoSeguro,
+      filial_id: filialSegura,
       observacao: observacaoConta.trim() || null,
       enviar_whatsapp: contaWhatsapp,
       enviar_email: contaEmail,
@@ -324,6 +338,7 @@ export function useContas() {
             descricao: primeiraLetraMaiuscula(descricao.trim()),
             valor: converterValor(valor),
             centro_custo_id: centroCustoSeguro,
+            filial_id: filialSegura,
             tipo_recorrencia: tipoRecorrencia || 'mensal',
             dia_vencimento: diaRecorrencia,
             data_inicio: dataBanco,
@@ -411,6 +426,7 @@ export function useContas() {
           descricao: primeiraLetraMaiuscula(descricao.trim()),
           valor: converterValor(valor),
           centro_custo_id: centroCustoSeguro,
+          filial_id: filialSegura,
           tipo_recorrencia: tipoRecorrencia || 'mensal',
           dia_vencimento: diaRecorrencia,
           data_inicio: dataBanco,
@@ -503,6 +519,8 @@ export function useContas() {
     setFiltroStatus,
     filtroCentro,
     setFiltroCentro,
+    filtroFilial,
+    setFiltroFilial,
     filtroMes,
     setFiltroMes,
     dataInicial,
@@ -523,6 +541,8 @@ export function useContas() {
     setDataVencimento,
     centroCustoId,
     setCentroCustoId,
+    filialId,
+    setFilialId,
     observacaoConta,
     setObservacaoConta,
     contaWhatsapp,

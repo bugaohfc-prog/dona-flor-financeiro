@@ -10,6 +10,9 @@ export default function AccountModal({
   centroCustoId,
   setCentroCustoId,
   centros,
+  filialId,
+  setFilialId,
+  filiais,
   observacaoConta,
   setObservacaoConta,
   contaRecorrente,
@@ -44,6 +47,13 @@ export default function AccountModal({
         <input style={styles.inputModal} placeholder="Descrição" value={descricao} onChange={(e) => setDescricao(primeiraLetraMaiuscula(e.target.value))} />
         <input style={styles.inputModal} placeholder="Valor. Ex: 150,90" value={valor} onChange={(e) => setValor(e.target.value)} />
         <input style={styles.inputModal} type="date" value={dataVencimento} onChange={(e) => setDataVencimento(limitarDataInput(e.target.value))} />
+
+        <select style={styles.inputModal} value={filialId} onChange={(e) => setFilialId(e.target.value)}>
+          <option value="">Filial / unidade</option>
+          {(filiais || []).map((filial) => (
+            <option key={filial.id} value={filial.id}>{filial.nome}</option>
+          ))}
+        </select>
 
         <select style={styles.inputModal} value={centroCustoId} onChange={(e) => setCentroCustoId(e.target.value)}>
           <option value="">Centro de custo</option>

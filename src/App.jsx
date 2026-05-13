@@ -182,6 +182,8 @@ export default function App() {
     setPrioridadeNota,
     dataEventoNota,
     setDataEventoNota,
+    filialNotaId,
+    setFilialNotaId,
     buscarNotas: buscarNotasHook,
     buscarNotasLixeira: buscarNotasLixeiraHook,
     abrirNovaNota: abrirNovaNotaHook,
@@ -1289,7 +1291,7 @@ export default function App() {
 
   const notasFiltradas = notas
     .filter((nota) =>
-      `${nota.titulo || ''} ${nota.conteudo || ''}`
+      (!filtroFilial || nota.filial_id === filtroFilial) && `${nota.titulo || ''} ${nota.conteudo || ''}`
         .toLowerCase()
         .includes(buscaNota.toLowerCase())
     )
@@ -2222,6 +2224,9 @@ export default function App() {
             setDataEventoNota={setDataEventoNota}
             conteudoNota={conteudoNota}
             setConteudoNota={setConteudoNota}
+            filialNotaId={filialNotaId}
+            setFilialNotaId={setFilialNotaId}
+            filiais={filiais}
             salvarNota={salvarNota}
             fecharNota={fecharNota}
             fecharConta={fecharConta}

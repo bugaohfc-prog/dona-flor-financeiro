@@ -25,6 +25,7 @@ export function useNotas() {
   const [conteudoNota, setConteudoNota] = useState('')
   const [prioridadeNota, setPrioridadeNota] = useState('normal')
   const [dataEventoNota, setDataEventoNota] = useState('')
+  const [filialNotaId, setFilialNotaId] = useState('')
 
   function resetarFormularioNota() {
     setEditandoNotaId(null)
@@ -32,6 +33,7 @@ export function useNotas() {
     setConteudoNota('')
     setPrioridadeNota('normal')
     setDataEventoNota('')
+    setFilialNotaId('')
   }
 
   async function buscarNotas({ supabase, empresaAtual, avisarErro }) {
@@ -74,6 +76,7 @@ export function useNotas() {
     setConteudoNota(nota.conteudo || '')
     setPrioridadeNota(nota.prioridade || 'normal')
     setDataEventoNota(nota.data_evento || '')
+    setFilialNotaId(nota.filial_id || '')
     setModalNota(true)
   }
 
@@ -99,7 +102,8 @@ export function useNotas() {
       prioridade: prioridadeNota || 'normal',
       data_evento: dataEventoNota || null,
       concluida: false,
-      empresa_id: empresaId
+      empresa_id: empresaId,
+      filial_id: filialNotaId || null
     }
 
     let error
@@ -191,6 +195,8 @@ export function useNotas() {
     setPrioridadeNota,
     dataEventoNota,
     setDataEventoNota,
+    filialNotaId,
+    setFilialNotaId,
     buscarNotas,
     buscarNotasLixeira,
     abrirNovaNota,

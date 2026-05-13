@@ -9,6 +9,9 @@ export default function NoteModal({
   setDataEventoNota,
   conteudoNota,
   setConteudoNota,
+  filialNotaId,
+  setFilialNotaId,
+  filiais,
   salvarNota,
   fecharNota,
   fecharConta,
@@ -35,6 +38,12 @@ export default function NoteModal({
           <option value="normal">Prioridade normal</option>
           <option value="urgente">Urgente</option>
           <option value="critico">Crítico</option>
+        </select>
+        <select style={styles.inputModal} value={filialNotaId} onChange={(e) => setFilialNotaId(e.target.value)}>
+          <option value="">Todas as filiais</option>
+          {(filiais || []).map((filial) => (
+            <option key={filial.id} value={filial.id}>{filial.nome}</option>
+          ))}
         </select>
         <input style={styles.inputModal} type="date" value={dataEventoNota} onChange={(e) => setDataEventoNota(limitarDataInput(e.target.value))} />
         <textarea style={styles.textareaModal} placeholder="Conteúdo..." value={conteudoNota} onChange={(e) => setConteudoNota(e.target.value)} />

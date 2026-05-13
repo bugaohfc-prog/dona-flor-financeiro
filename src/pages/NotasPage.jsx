@@ -11,7 +11,7 @@ function EmptyState({ icon, title, description }) {
 export default function NotasPage({
   styles, navegarPara, notasFiltradas, notasPendentes, notasCriticas, notasUrgentes,
   buscaNota, setBuscaNota, formatarData, alternarNotaConcluida, abrirEdicaoNota,
-  abrirConfirmacao, excluirNota
+  abrirConfirmacao, excluirNota, filtroFilial, setFiltroFilial, filiais
 }) {
   return (
     <>
@@ -39,6 +39,10 @@ export default function NotasPage({
         </div>
 
         <div className="notes-toolbar">
+          <select style={styles.input} value={filtroFilial} onChange={(e) => setFiltroFilial(e.target.value)}>
+            <option value="">Todas as filiais</option>
+            {(filiais || []).map((filial) => (<option key={filial.id} value={filial.id}>{filial.nome}</option>))}
+          </select>
           <input
             style={styles.input}
             placeholder="Buscar por título, conteúdo ou prioridade..."
@@ -68,6 +72,7 @@ export default function NotasPage({
                 </div>
 
                 {nota.data_evento && <small className="note-event-date">📅 {formatarData(nota.data_evento)}</small>}
+                {nota.df_filiais?.nome && <small className="note-event-date">🏢 {nota.df_filiais.nome}</small>}
                 {nota.conteudo && <p style={styles.textoNota}>{nota.conteudo}</p>}
 
                 <div style={styles.acoes}>

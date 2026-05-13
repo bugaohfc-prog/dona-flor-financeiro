@@ -7,7 +7,9 @@ import {
   listarUsuariosEmpresa,
   normalizarPerfilUsuario,
   removerUsuarioEmpresa as removerUsuarioEmpresaService,
-  atualizarNomeUsuarioLogado
+  atualizarNomeUsuarioLogado,
+  listarFiliaisUsuariosEmpresa,
+  atualizarFiliaisUsuarioEmpresa
 } from './services/usuariosService'
 import Relatorios from './pages/Relatorios.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
@@ -224,6 +226,8 @@ export default function App() {
   const [salvandoPerfilUsuario, setSalvandoPerfilUsuario] = useState(false)
   const [erroEmpresa, setErroEmpresa] = useState('')
   const [usuariosEmpresa, setUsuariosEmpresa] = useState([])
+  const [filiaisUsuariosEmpresa, setFiliaisUsuariosEmpresa] = useState({})
+  const [salvandoFilialUsuario, setSalvandoFilialUsuario] = useState('')
   const [emailConviteUsuario, setEmailConviteUsuario] = useState('')
   const [nomeConviteUsuario, setNomeConviteUsuario] = useState('')
   const [perfilConviteUsuario, setPerfilConviteUsuario] = useState('operador')
@@ -320,6 +324,7 @@ export default function App() {
     setEmpresaId(null)
     limparEmpresaAtiva()
     setPerfilUsuario('')
+    setFiliaisUsuariosEmpresa({})
     setNomeUsuarioPerfil('')
     setErroEmpresa('')
     setLoading(false)
@@ -794,11 +799,22 @@ export default function App() {
     if (!empresaAtual) return
 
     try {
-      const usuarios = await listarUsuariosEmpresa(empresaAtual)
+      const [usuarios, vinculosFiliais] = await Promise.all([
+        listarUsuariosEmpresa(empresaAtual),
+        listarFiliaisUsuariosEmpresa(empresaAtual)
+      ])
+      const mapaFiliais = {}
+      ;(vinculosFiliais || []).forEach((vinculo) => {
+        if (!vinculo?.usuario_empresa_id || !vinculo?.filial_id) return
+        if (!mapaFiliais[vinculo.usuario_empresa_id]) mapaFiliais[vinculo.usuario_empresa_id] = []
+        mapaFiliais[vinculo.usuario_empresa_id].push(vinculo.filial_id)
+      })
       setUsuariosEmpresa(usuarios)
+      setFiliaisUsuariosEmpresa(mapaFiliais)
     } catch (error) {
       console.warn('Não foi possível carregar usuários:', error.message)
       setUsuariosEmpresa([])
+      setFiliaisUsuariosEmpresa({})
     }
   }
 
@@ -919,6 +935,52 @@ export default function App() {
         await buscarUsuariosEmpresa()
       }
     })
+  }
+
+  async function atualizarFiliaisDoUsuario(usuario, proximasFiliais) {
+    if (!podeAdministrarUsuarios()) {
+      mostrarAviso('Apenas administradores podem alterar filiais dos usuários.', 'erro')
+      return
+    }
+
+    if (!usuario?.id) {
+      mostrarAviso('Este usuário precisa estar cadastrado na empresa para receber filiais.', 'erro')
+      return
+    }
+
+    const chaveSalvamento = usuario.id
+    setSalvandoFilialUsuario(chaveSalvamento)
+
+    try {
+      await atualizarFiliaisUsuarioEmpresa({
+        empresaId,
+        usuario,
+        filialIds: proximasFiliais
+      })
+      setFiliaisUsuariosEmpresa((atual) => ({
+        ...atual,
+        [usuario.id]: proximasFiliais
+      }))
+      mostrarAviso('Filiais do usuário atualizadas.', 'sucesso')
+    } catch (error) {
+      avisarErro(error, 'Não foi possível atualizar as filiais do usuário.')
+    } finally {
+      setSalvandoFilialUsuario('')
+    }
+  }
+
+  function alternarFilialUsuario(usuario, filialId) {
+    const filiaisAtuais = filiaisUsuariosEmpresa[usuario.id] || []
+    const jaSelecionada = filiaisAtuais.includes(filialId)
+    const proximasFiliais = jaSelecionada
+      ? filiaisAtuais.filter((id) => id !== filialId)
+      : [...filiaisAtuais, filialId]
+
+    atualizarFiliaisDoUsuario(usuario, proximasFiliais)
+  }
+
+  function liberarTodasFiliaisUsuario(usuario) {
+    atualizarFiliaisDoUsuario(usuario, [])
   }
 
   async function removerUsuarioEmpresa(usuario) {
@@ -3851,7 +3913,7 @@ export default function App() {
           <div className="users-header-row">
             <div>
               <h2 style={styles.subtitulo}>Usuários da empresa</h2>
-              <p style={styles.textoNota}>Defina o nível de acesso: admin, gerente ou operador.</p>
+              <p style={styles.textoNota}>Defina perfil e escopo por filial. Sem filial marcada = acesso a todas as filiais da empresa.</p>
             </div>
             <button style={styles.btnCinza} onClick={() => buscarUsuariosEmpresa()}>Atualizar</button>
           </div>
@@ -3859,7 +3921,11 @@ export default function App() {
           <div className="users-permission-guide">
             <span><strong>Admin:</strong> acesso total</span>
             <span><strong>Gerente:</strong> contas, notas, relatórios e configurações operacionais</span>
-            <span><strong>Operador:</strong> contas e notas</span>
+            <span><strong>Financeiro:</strong> contas, notas e relatórios</span>
+            <span><strong>Operacional:</strong> contas e notas operacionais</span>
+            <span><strong>Visualização:</strong> somente consulta</span>
+            <span><strong>Operador:</strong> compatibilidade com acessos antigos</span>
+            <span><strong>Filiais:</strong> limita o usuário às unidades selecionadas</span>
           </div>
 
           {podeAdministrarUsuarios() && (
@@ -3885,6 +3951,9 @@ export default function App() {
                 value={perfilConviteUsuario}
                 onChange={(e) => setPerfilConviteUsuario(e.target.value)}
               >
+                <option value="visualizacao">Visualização</option>
+                <option value="operacional">Operacional</option>
+                <option value="financeiro">Financeiro</option>
                 <option value="operador">Operador</option>
                 <option value="gerente">Gerente</option>
                 <option value="admin">Admin</option>
@@ -3923,8 +3992,47 @@ export default function App() {
                   >
                     <option value="admin">Admin</option>
                     <option value="gerente">Gerente</option>
+                    <option value="financeiro">Financeiro</option>
+                    <option value="operacional">Operacional</option>
+                    <option value="visualizacao">Visualização</option>
                     <option value="operador">Operador</option>
                   </select>
+
+                  <div className="user-branch-scope">
+                    <div className="user-branch-scope-header">
+                      <strong>Filiais permitidas</strong>
+                      <button
+                        type="button"
+                        className="user-branch-clear"
+                        disabled={!podeAdministrarUsuarios() || salvandoFilialUsuario === usuario.id}
+                        onClick={() => liberarTodasFiliaisUsuario(usuario)}
+                        title="Deixar o usuário com acesso a todas as filiais da empresa"
+                      >
+                        Todas
+                      </button>
+                    </div>
+                    <div className="user-branch-list">
+                      {filiais.length === 0 ? (
+                        <small>Nenhuma filial ativa cadastrada.</small>
+                      ) : filiais.map((filial) => {
+                        const selecionada = (filiaisUsuariosEmpresa[usuario.id] || []).includes(filial.id)
+                        return (
+                          <label key={filial.id} className={`user-branch-chip ${selecionada ? 'selected' : ''}`}>
+                            <input
+                              type="checkbox"
+                              checked={selecionada}
+                              disabled={!podeAdministrarUsuarios() || salvandoFilialUsuario === usuario.id}
+                              onChange={() => alternarFilialUsuario(usuario, filial.id)}
+                            />
+                            <span>{filial.nome || 'Filial'}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                    {(filiaisUsuariosEmpresa[usuario.id] || []).length === 0 && (
+                      <small className="user-branch-all">Acesso a todas as filiais da empresa.</small>
+                    )}
+                  </div>
 
                   {podeAdministrarUsuarios() && (
                     <div className="user-actions">

@@ -231,3 +231,84 @@
     align-items: stretch;
   }
 }
+
+/* FASE 10.7 — Usuários e permissões por filial */
+.user-branch-scope {
+  grid-column: 1 / -1;
+  border: 1px solid rgba(15, 118, 110, .16);
+  background: rgba(240, 253, 250, .45);
+  border-radius: 18px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.user-branch-scope-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  color: #0f172a;
+}
+
+.user-branch-clear {
+  border: 1px solid rgba(15, 118, 110, .28);
+  border-radius: 999px;
+  background: #fff;
+  color: #0f766e;
+  font-weight: 800;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.user-branch-clear:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.user-branch-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.user-branch-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(100, 116, 139, .22);
+  border-radius: 999px;
+  background: #fff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.user-branch-chip.selected {
+  border-color: rgba(15, 118, 110, .45);
+  background: rgba(20, 184, 166, .12);
+  color: #0f766e;
+}
+
+.user-branch-chip input {
+  accent-color: #0f766e;
+}
+
+.user-branch-all {
+  color: #64748b;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .user-branch-scope {
+    padding: 10px;
+  }
+
+  .user-branch-chip {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

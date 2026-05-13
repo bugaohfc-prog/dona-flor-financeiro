@@ -5,7 +5,10 @@ export function normalizarPerfilUsuario(perfil) {
 
   if (['admin', 'adm', 'administrador', 'master', 'owner'].includes(valor)) return 'admin'
   if (['gerente', 'gerencia', 'gestor', 'manager'].includes(valor)) return 'gerente'
-  if (['operador', 'usuario', 'usuário', 'user', 'atendente'].includes(valor)) return 'operador'
+  if (['financeiro', 'financas', 'finanças', 'financial'].includes(valor)) return 'financeiro'
+  if (['operacional', 'operacao', 'operação', 'atendente'].includes(valor)) return 'operacional'
+  if (['visualizacao', 'visualização', 'viewer', 'leitura', 'consulta'].includes(valor)) return 'visualizacao'
+  if (['operador', 'usuario', 'usuário', 'user'].includes(valor)) return 'operador'
 
   return 'operador'
 }
@@ -202,3 +205,47 @@ export async function atualizarNomeUsuarioLogado({ userId, email, nome }) {
   return { nome: nomeLimpo }
 }
 
+
+
+export async function listarFiliaisUsuariosEmpresa(empresaId) {
+  if (!empresaId) return []
+
+  const { data, error } = await supabase
+    .from('df_usuarios_filiais')
+    .select('id, empresa_id, usuario_empresa_id, filial_id, created_at')
+    .eq('empresa_id', empresaId)
+
+  if (error) throw error
+  return data || []
+}
+
+export async function atualizarFiliaisUsuarioEmpresa({ empresaId, usuario, filialIds }) {
+  if (!empresaId) throw new Error('Empresa não identificada.')
+  if (!usuario?.id) throw new Error('Usuário da empresa não identificado.')
+
+  const filiaisNormalizadas = Array.from(new Set((filialIds || []).filter(Boolean)))
+
+  const { error: deleteError } = await supabase
+    .from('df_usuarios_filiais')
+    .delete()
+    .eq('empresa_id', empresaId)
+    .eq('usuario_empresa_id', usuario.id)
+
+  if (deleteError) throw deleteError
+
+  if (filiaisNormalizadas.length === 0) return []
+
+  const payload = filiaisNormalizadas.map((filialId) => ({
+    empresa_id: empresaId,
+    usuario_empresa_id: usuario.id,
+    filial_id: filialId
+  }))
+
+  const { data, error } = await supabase
+    .from('df_usuarios_filiais')
+    .insert(payload)
+    .select('id, empresa_id, usuario_empresa_id, filial_id, created_at')
+
+  if (error) throw error
+  return data || []
+}

@@ -194,3 +194,40 @@
     border-radius: 18px !important;
   }
 }
+
+/* FASE 10.5D — filtro de filial no dashboard */
+.dashboard-branch-filter {
+  margin: 0 0 16px;
+}
+
+.dashboard-branch-filter-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+  gap: 14px;
+  align-items: end;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.dashboard-branch-filter-card strong {
+  display: block;
+  margin-top: 2px;
+  color: #0f172a;
+  font-size: 1.02rem;
+}
+
+.dashboard-branch-filter-card small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+}
+
+@media (max-width: 760px) {
+  .dashboard-branch-filter-card {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+}

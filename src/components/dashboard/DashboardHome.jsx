@@ -31,9 +31,13 @@ export default function DashboardHome({
   abrirEdicaoNota,
   excluirNota,
   loading = false,
-  nomeUsuario = 'usuário'
+  nomeUsuario = 'usuário',
+  filiais = [],
+  filtroFilial = '',
+  setFiltroFilial = () => {}
 }) {
   const valorSeguro = (valor) => Number(valor || 0)
+  const filialSelecionada = (filiais || []).find((filial) => filial.id === filtroFilial)
   const contasPagas = contas.filter((conta) => conta.status === 'pago')
   const contasPendentes = contas.filter((conta) => conta.status !== 'pago')
 
@@ -78,6 +82,28 @@ export default function DashboardHome({
 
   return (
     <>
+      <section className="dashboard-branch-filter no-print" aria-label="Filtro de filial do dashboard">
+        <div className="dashboard-branch-filter-card">
+          <div>
+            <span className="analytics-kicker">Visão por filial</span>
+            <strong>{filialSelecionada ? filialSelecionada.nome : 'Todas as filiais'}</strong>
+            <small>Os KPIs, gráficos e contas em aberto respeitam a filial selecionada.</small>
+          </div>
+
+          <select
+            style={styles.input}
+            value={filtroFilial}
+            onChange={(e) => setFiltroFilial(e.target.value)}
+            aria-label="Filtrar dashboard por filial"
+          >
+            <option value="">Todas as filiais</option>
+            {(filiais || []).map((filial) => (
+              <option key={filial.id} value={filial.id}>{filial.nome}</option>
+            ))}
+          </select>
+        </div>
+      </section>
+
       <section className="dashboard-kpi-row" aria-label="Resumo financeiro">
         {loading ? (
           <SummarySkeleton items={4} />

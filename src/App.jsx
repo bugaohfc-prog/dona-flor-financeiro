@@ -3603,6 +3603,9 @@ export default function App() {
         excluirNota={excluirNota}
         loading={loading}
         nomeUsuario={nomeUsuario()}
+        filiais={filiais}
+        filtroFilial={filtroFilial}
+        setFiltroFilial={setFiltroFilial}
       />
     )
   }
@@ -5710,7 +5713,7 @@ export default function App() {
         pago={pago}
         pendente={pendente}
         vencido={vencido}
-        contas={contas}
+        contas={contasFiltradas}
         diferencaDias={diferencaDias}
         navegarPara={navegarPara}
         contasAbertasDashboard={contasAbertasDashboard}
@@ -5732,6 +5735,9 @@ export default function App() {
         excluirNota={excluirNota}
         loading={loading}
         nomeUsuario={nomeUsuario()}
+        filiais={filiais}
+        filtroFilial={filtroFilial}
+        setFiltroFilial={setFiltroFilial}
       />
 
       {/* Lista de contas movida para a tela Financeiro > Contas. */}

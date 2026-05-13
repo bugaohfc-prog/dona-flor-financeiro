@@ -1249,6 +1249,49 @@ export default function App() {
         .some((campo) => String(campo).toLowerCase().includes(termo))
     })
 
+  const contasOperacionaisFiliais = contas
+    .filter((conta) => {
+      if (filtroStatus === 'pendentes') return conta.status !== 'pago'
+      if (filtroStatus === 'pagas') return conta.status === 'pago'
+      if (filtroStatus === 'vencidas') return estaVencida(conta.data_vencimento, conta.status)
+      return true
+    })
+    .filter((conta) => !filtroCentro || conta.centro_custo_id === filtroCentro)
+    .filter((conta) => !filtroMes || pegarMes(conta.data_vencimento) === filtroMes)
+    .filter((conta) => {
+      if (dataInicial && conta.data_vencimento < dataInicial) return false
+      if (dataFinal && conta.data_vencimento > dataFinal) return false
+      return true
+    })
+    .filter((conta) => {
+      const termo = busca.trim().toLowerCase()
+      if (!termo) return true
+
+      const centroNome = conta.df_centros_custo?.nome || ''
+      const filialNome = conta.df_filiais?.nome || ''
+      const statusBusca = conta.status === 'pago'
+        ? 'pago'
+        : estaVencida(conta.data_vencimento, conta.status)
+          ? 'vencido'
+          : 'pendente'
+
+      const camposBusca = [
+        conta.descricao,
+        conta.observacao,
+        conta.categoria,
+        conta.forma_pagamento,
+        centroNome,
+        filialNome,
+        statusBusca,
+        formatarData(conta.data_vencimento),
+        conta.data_vencimento
+      ]
+
+      return camposBusca
+        .filter(Boolean)
+        .some((campo) => String(campo).toLowerCase().includes(termo))
+    })
+
   const total = contasFiltradas.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
   const pago = contasFiltradas
@@ -3611,6 +3654,7 @@ export default function App() {
         filiais={filiais}
         filtroFilial={filtroFilial}
         setFiltroFilial={setFiltroFilial}
+        contasOperacionaisFiliais={contasOperacionaisFiliais}
       />
     )
   }
@@ -5743,6 +5787,7 @@ export default function App() {
         filiais={filiais}
         filtroFilial={filtroFilial}
         setFiltroFilial={setFiltroFilial}
+        contasOperacionaisFiliais={contasOperacionaisFiliais}
       />
 
       {/* Lista de contas movida para a tela Financeiro > Contas. */}

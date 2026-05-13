@@ -34,12 +34,45 @@ export default function DashboardHome({
   nomeUsuario = 'usuário',
   filiais = [],
   filtroFilial = '',
-  setFiltroFilial = () => {}
+  setFiltroFilial = () => {},
+  contasOperacionaisFiliais = []
 }) {
   const valorSeguro = (valor) => Number(valor || 0)
   const filialSelecionada = (filiais || []).find((filial) => filial.id === filtroFilial)
   const contasPagas = contas.filter((conta) => conta.status === 'pago')
   const contasPendentes = contas.filter((conta) => conta.status !== 'pago')
+  const baseOperacionalFiliais = (contasOperacionaisFiliais && contasOperacionaisFiliais.length > 0)
+    ? contasOperacionaisFiliais
+    : contas
+
+  const resumoFiliais = (filiais || [])
+    .map((filial) => {
+      const contasFilial = baseOperacionalFiliais.filter((conta) => conta.filial_id === filial.id)
+      const totalFilial = contasFilial.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
+      const pagoFilial = contasFilial
+        .filter((conta) => conta.status === 'pago')
+        .reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
+      const vencidoFilial = contasFilial
+        .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
+        .reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
+      const pendenteFilial = totalFilial - pagoFilial
+
+      return {
+        id: filial.id,
+        nome: filial.nome || 'Filial sem nome',
+        total: totalFilial,
+        pago: pagoFilial,
+        pendente: pendenteFilial,
+        vencido: vencidoFilial,
+        contas: contasFilial.length
+      }
+    })
+    .filter((filial) => filial.total > 0 || filial.contas > 0)
+    .sort((a, b) => b.total - a.total)
+
+  const filialMaiorVolume = resumoFiliais[0]
+  const filialMaiorPendente = [...resumoFiliais].sort((a, b) => b.pendente - a.pendente)[0]
+  const filialMaiorRisco = [...resumoFiliais].sort((a, b) => b.vencido - a.vencido)[0]
 
   const statusChartData = [
     { name: 'Pago', value: valorSeguro(pago), color: '#22c55e' },
@@ -131,6 +164,66 @@ export default function DashboardHome({
           </div>
         )}
       </section>
+
+      {!loading && (
+        <section className="dashboard-operational-grid no-print" aria-label="Dashboard operacional por filial">
+          <article className="dashboard-operational-card highlight">
+            <span className="analytics-kicker">Ranking de unidades</span>
+            <strong>{filialMaiorVolume ? filialMaiorVolume.nome : 'Sem movimento'}</strong>
+            <small>{filialMaiorVolume ? `${formatarValor(filialMaiorVolume.total)} em volume financeiro` : 'Cadastre contas vinculadas às filiais.'}</small>
+          </article>
+
+          <article className="dashboard-operational-card">
+            <span className="analytics-kicker">Maior pendência</span>
+            <strong>{filialMaiorPendente ? filialMaiorPendente.nome : 'Sem pendências'}</strong>
+            <small>{filialMaiorPendente ? formatarValor(filialMaiorPendente.pendente) : 'Nenhuma conta pendente encontrada.'}</small>
+          </article>
+
+          <article className="dashboard-operational-card">
+            <span className="analytics-kicker">Risco vencido</span>
+            <strong>{filialMaiorRisco && filialMaiorRisco.vencido > 0 ? filialMaiorRisco.nome : 'Sem vencidos'}</strong>
+            <small>{filialMaiorRisco && filialMaiorRisco.vencido > 0 ? formatarValor(filialMaiorRisco.vencido) : 'Operação sem vencidos no filtro atual.'}</small>
+          </article>
+
+          <article className="dashboard-operational-card ranking">
+            <div className="analytics-card-header compact">
+              <div>
+                <span className="analytics-kicker">Comparativo por filial</span>
+                <strong>Top unidades</strong>
+              </div>
+              <span className="analytics-badge neutral">{resumoFiliais.length}</span>
+            </div>
+
+            {resumoFiliais.length > 0 ? (
+              <div className="branch-ranking-list">
+                {resumoFiliais.slice(0, 5).map((filial, index) => {
+                  const percentual = filialMaiorVolume?.total > 0
+                    ? Math.max(5, Math.round((filial.total / filialMaiorVolume.total) * 100))
+                    : 0
+
+                  return (
+                    <div key={filial.id} className="branch-ranking-row">
+                      <div className="branch-ranking-info">
+                        <span>{index + 1}</span>
+                        <div>
+                          <strong>{filial.nome}</strong>
+                          <small>{filial.contas} conta(s) • pendente {formatarValor(filial.pendente)}</small>
+                        </div>
+                      </div>
+                      <div className="branch-ranking-value">
+                        <strong>{formatarValor(filial.total)}</strong>
+                        <div className="cost-center-track"><span style={{ width: `${percentual}%` }} /></div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="analytics-empty">Sem contas com filial no filtro atual.</div>
+            )}
+          </article>
+        </section>
+      )}
 
       {!loading && (
         <section className="dashboard-analytics-grid no-print">

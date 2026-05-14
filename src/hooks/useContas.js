@@ -476,21 +476,21 @@ export function useContas() {
     }
 
     fecharConta()
-    buscarContas()
+    await buscarContas()
     mostrarAviso(editandoContaId ? 'Conta atualizada com sucesso.' : 'Conta criada com sucesso.', 'sucesso')
   }
 
   async function marcarComoPago(contexto) {
     const { supabase, id, empresaId, buscarContas, mostrarAviso } = contexto
     await atualizarStatusConta(supabase, id, empresaId, 'pago')
-    buscarContas()
+    await buscarContas()
     mostrarAviso?.('Conta marcada como paga.', 'sucesso')
   }
 
   async function voltarParaPendente(contexto) {
     const { supabase, id, empresaId, buscarContas, mostrarAviso } = contexto
     await atualizarStatusConta(supabase, id, empresaId, 'pendente')
-    buscarContas()
+    await buscarContas()
     mostrarAviso?.('Conta voltou para pendente.', 'sucesso')
   }
 
@@ -503,8 +503,7 @@ export function useContas() {
       return
     }
 
-    buscarContas()
-    buscarLixeira()
+    await Promise.all([buscarContas(), buscarLixeira()])
     mostrarAviso?.('Conta enviada para a lixeira.', 'sucesso')
   }
 

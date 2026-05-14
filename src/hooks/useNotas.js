@@ -122,7 +122,7 @@ export function useNotas() {
     }
 
     fecharNota()
-    buscarNotas()
+    await buscarNotas()
     mostrarAviso(editandoNotaId ? 'Nota atualizada com sucesso.' : 'Nota criada com sucesso.', 'sucesso')
   }
 
@@ -134,8 +134,7 @@ export function useNotas() {
       return
     }
 
-    buscarNotas()
-    buscarLixeira()
+    await Promise.all([buscarNotas(), buscarLixeira()])
     mostrarAviso?.('Nota enviada para a lixeira.', 'sucesso')
   }
 
@@ -147,7 +146,7 @@ export function useNotas() {
       return
     }
 
-    buscarNotas()
+    await buscarNotas()
     mostrarAviso?.(nota.concluida ? 'Nota reaberta.' : 'Nota concluída.', 'sucesso')
   }
 
@@ -159,8 +158,7 @@ export function useNotas() {
       return
     }
 
-    buscarNotas()
-    buscarLixeira()
+    await Promise.all([buscarNotas(), buscarLixeira()])
     mostrarAviso?.('Nota restaurada com sucesso.', 'sucesso')
   }
 
@@ -172,7 +170,7 @@ export function useNotas() {
       return
     }
 
-    buscarLixeira()
+    await buscarLixeira()
     mostrarAviso?.('Nota excluída definitivamente.', 'sucesso')
   }
 

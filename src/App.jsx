@@ -3688,10 +3688,8 @@ export default function App() {
   }
 
   if (telaAtual === 'relatorios') {
-    return (
-      <AppFrame>
-        <Relatorios voltar={() => navegarPara('contas')} empresaId={empresaId} usuario={usuarioLogado} mostrarAviso={mostrarAviso} />
-      </AppFrame>
+    return renderAppFrame(
+      <Relatorios voltar={() => navegarPara('contas')} empresaId={empresaId} usuario={usuarioLogado} mostrarAviso={mostrarAviso} />
     )
   }
 
@@ -3725,8 +3723,8 @@ export default function App() {
 
 
   if (telaAtual === 'importar') {
-    return (
-      <AppFrame>
+    return renderAppFrame(
+      <>
         <h1 style={styles.titulo}>📥 Importar planilha</h1>
 
         <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>
@@ -3781,7 +3779,7 @@ export default function App() {
             </button>
           </section>
         )}
-      </AppFrame>
+      </>
     )
   }
 
@@ -4419,8 +4417,8 @@ export default function App() {
       )
     }
 
-    return (
-      <AppFrame>
+    return renderAppFrame(
+      <>
         <h1 style={styles.titulo}>📅 Agenda Financeira</h1>
 
         <button className="btn-back-page" style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>
@@ -4455,13 +4453,13 @@ export default function App() {
           <CardAgenda titulo="🗓️ Próximos 7 dias" total={totalSemanaAgenda} lista={contasSemana} cor="#0d6efd" />
           <CardAgenda titulo="📆 Restante do mês" total={totalMesAgenda} lista={contasMes} cor="#14b8a6" />
         </div>
-      </AppFrame>
+      </>
     )
   }
 
   if (telaAtual === 'lixeira') {
-    return (
-      <AppFrame>
+    return renderAppFrame(
+      <>
         <h1 style={styles.titulo}>🗑️ Lixeira</h1>
 
         <button className="btn-back-page" style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>
@@ -4546,7 +4544,7 @@ export default function App() {
             )
           })}
         </section>
-      </AppFrame>
+      </>
     )
   }
 

@@ -70,6 +70,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
   const [filtroFilial, setFiltroFilial] = useState('')
   const [visaoExecutiva, setVisaoExecutiva] = useState('dre')
   const [metaMensal, setMetaMensal] = useState('')
+  const [exportMenuAberto, setExportMenuAberto] = useState(false)
 
   useEffect(() => {
     buscarDados()
@@ -436,9 +437,16 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         <div>
           <div style={styles.actionsTop}>
             <button style={styles.btnVoltar} onClick={voltar}>← Voltar</button>
-            <button style={styles.btnExcel} onClick={exportarExcel}>Excel</button>
-            <button style={styles.btnPDF} onClick={imprimirPDF}>PDF</button>
-            <button style={styles.btnCSV} onClick={exportarCSV}>CSV</button>
+            <div style={styles.exportWrap}>
+              <button style={styles.btnExportar} onClick={() => setExportMenuAberto((aberto) => !aberto)}>Exportar ▾</button>
+              {exportMenuAberto && (
+                <div style={styles.exportMenu}>
+                  <button style={styles.exportItem} onClick={() => { exportarExcel(); setExportMenuAberto(false) }}>Excel</button>
+                  <button style={styles.exportItem} onClick={() => { imprimirPDF(); setExportMenuAberto(false) }}>PDF</button>
+                  <button style={styles.exportItem} onClick={() => { exportarCSV(); setExportMenuAberto(false) }}>CSV</button>
+                </div>
+              )}
+            </div>
           </div>
           <h1 style={styles.titulo}>📊 Relatórios Gerenciais</h1>
           <p style={styles.descricaoTela}>Fase 11.1: relatórios avançados com DRE gerencial, gráficos, Excel e leitura executiva.</p>
@@ -450,13 +458,16 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         </div>
       </header>
 
-      <section className="no-print relatorio-sticky-filtros" style={styles.filtrosBox}>
+      <section className="no-print relatorio-sticky-filtros executive-toolbar" style={styles.filtrosBox}>
         <div style={styles.filtroHeader}>
-          <strong>🎛️ Filtros do relatório</strong>
+          <div style={styles.toolbarTitle}>
+            <strong>🎛️ Filtros</strong>
+            <span>{nomeMes(filtroMes)} • {filtroCentro ? centroSelecionado?.nome || 'Centro' : 'Todos os centros'} • {filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Filial' : 'Todas as filiais'}</span>
+          </div>
           <button style={styles.btnLimpar} onClick={limparFiltros}>Limpar</button>
         </div>
-        <div style={styles.filtrosGrid}>
-          <input style={styles.input} placeholder="Meta mensal. Ex: 5000" value={metaMensal} onChange={(e) => setMetaMensal(e.target.value)} />
+        <div style={styles.toolbarRow}>
+          <input style={styles.input} placeholder="Meta mensal" value={metaMensal} onChange={(e) => setMetaMensal(e.target.value)} />
           <select style={styles.input} value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)}>
             <option value="">Todos os centros</option>
             {centros.map((centro) => <option key={centro.id} value={centro.id}>{centro.nome}</option>)}
@@ -466,21 +477,24 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             {filiais.map((filial) => <option key={filial.id} value={filial.id}>{filial.nome}</option>)}
           </select>
           <select style={styles.input} value={visaoExecutiva} onChange={(e) => setVisaoExecutiva(e.target.value)}>
-            <option value="dre">Visão DRE</option>
-            <option value="graficos">Visão Gráficos</option>
-            <option value="filiais">Visão Filiais</option>
+            <option value="dre">DRE</option>
+            <option value="graficos">Gráficos</option>
+            <option value="filiais">Filiais</option>
           </select>
           <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
         </div>
-        <div style={styles.filtros}>
-          {[
-            ['todas', 'Todas'],
-            ['pendentes', 'Pendentes'],
-            ['pagas', 'Pagas'],
-            ['vencidas', 'Vencidas']
-          ].map(([valor, label]) => (
-            <button key={valor} style={filtroStatus === valor ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus(valor)}>{label}</button>
-          ))}
+        <div style={styles.toolbarFooter}>
+          <div style={styles.filtros}>
+            {[
+              ['todas', 'Todas'],
+              ['pendentes', 'Pendentes'],
+              ['pagas', 'Pagas'],
+              ['vencidas', 'Vencidas']
+            ].map(([valor, label]) => (
+              <button key={valor} style={filtroStatus === valor ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus(valor)}>{label}</button>
+            ))}
+          </div>
+          <small style={styles.toolbarHint}>{contasFiltradas.length} conta(s) no filtro</small>
         </div>
       </section>
 
@@ -805,10 +819,32 @@ const cssAntiFlicker = `
   .relatorios-page .relatorio-sticky-filtros {
     position: sticky !important;
     top: 8px !important;
-    z-index: 20 !important;
+    z-index: 30 !important;
     transform: translateZ(0) !important;
     backface-visibility: hidden !important;
     contain: paint !important;
+  }
+
+  .relatorios-page .executive-toolbar input,
+  .relatorios-page .executive-toolbar select,
+  .relatorios-page .executive-toolbar button {
+    min-height: 36px;
+  }
+
+  @media (max-width: 1050px) {
+    .relatorios-page .executive-toolbar [style*="grid-template-columns"] {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .relatorios-page .relatorio-sticky-filtros {
+      top: 4px !important;
+      padding: 10px !important;
+    }
+    .relatorios-page .executive-toolbar [style*="grid-template-columns"] {
+      grid-template-columns: 1fr !important;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -861,7 +897,10 @@ const styles = {
     marginBottom: 14,
     flexWrap: 'wrap'
   },
-  actionsTop: { display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' },
+  actionsTop: { display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' },
+  exportWrap: { position: 'relative' },
+  exportMenu: { position: 'absolute', top: 44, left: 0, zIndex: 50, minWidth: 150, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 6, boxShadow: '0 18px 40px rgba(15,23,42,0.16)' },
+  exportItem: { width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '10px 12px', borderRadius: 10, fontWeight: 800, color: '#0f172a', cursor: 'pointer' },
   titulo: { fontSize: 30, margin: 0 },
   descricaoTela: { fontSize: 14, color: '#64748b', marginTop: 4, marginBottom: 0 },
   heroBadge: {
@@ -879,19 +918,27 @@ const styles = {
   subtitulo: { fontSize: 22, marginBottom: 12 },
   bloco: { marginTop: 20 },
   filtrosBox: {
-    ...cardBase(),
     position: 'sticky',
     top: 8,
-    zIndex: 5,
-    border: '1px solid #d7f5ef',
-    marginBottom: 16
+    zIndex: 25,
+    border: '1px solid rgba(13,148,136,0.18)',
+    marginBottom: 14,
+    background: 'rgba(255,255,255,0.88)',
+    padding: 12,
+    borderRadius: 18,
+    boxShadow: '0 14px 36px rgba(15,23,42,0.10)',
+    backdropFilter: 'blur(14px)'
   },
-  filtroHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 10 },
+  filtroHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 8 },
+  toolbarTitle: { display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' },
+  toolbarRow: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 0.8fr 0.8fr', gap: 8, alignItems: 'center' },
+  toolbarFooter: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap' },
+  toolbarHint: { color: '#64748b', fontWeight: 800, whiteSpace: 'nowrap' },
   filtrosGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 },
-  input: { width: '100%', padding: 11, borderRadius: 12, border: '1px solid #d1d5db', boxSizing: 'border-box', background: '#fff' },
-  filtros: { display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 },
-  filtro: { border: '1px solid #d1d5db', background: '#fff', padding: '8px 13px', borderRadius: 999, fontWeight: 700, color: '#334155' },
-  filtroAtivo: { border: '1px solid #0d9488', background: '#0d9488', color: '#fff', padding: '8px 13px', borderRadius: 999, fontWeight: 700 },
+  input: { width: '100%', height: 38, padding: '8px 10px', borderRadius: 11, border: '1px solid #cbd5e1', boxSizing: 'border-box', background: 'rgba(255,255,255,0.94)', fontWeight: 600, color: '#0f172a' },
+  filtros: { display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 0 },
+  filtro: { border: '1px solid #cbd5e1', background: 'rgba(255,255,255,0.92)', padding: '7px 11px', borderRadius: 999, fontWeight: 800, color: '#334155', cursor: 'pointer' },
+  filtroAtivo: { border: '1px solid #0d9488', background: '#0d9488', color: '#fff', padding: '7px 11px', borderRadius: 999, fontWeight: 800, cursor: 'pointer' },
   kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, marginBottom: 16 },
   kpiCard: { ...cardBase(), minHeight: 130 },
   kpiIcon: { width: 38, height: 38, borderRadius: 14, background: '#f1f5f9', display: 'grid', placeItems: 'center', fontSize: 20, marginBottom: 8 },
@@ -937,7 +984,8 @@ const styles = {
   btnExcel: btn('#16a34a'),
   btnPDF: btn('#7c3aed'),
   btnCSV: btn('#0d9488'),
-  btnLimpar: { ...btn('#64748b'), padding: '7px 10px' },
+  btnExportar: btn('#0d9488'),
+  btnLimpar: { ...btn('#64748b'), padding: '8px 12px', borderRadius: 12 },
   btnAcao: btn('#dc3545')
 }
 

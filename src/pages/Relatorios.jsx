@@ -339,66 +339,155 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
 
   const chartCentros = useMemo(() => ranking.slice(0, 6).map((item) => ({ nome: item.nome.length > 14 ? `${item.nome.slice(0, 14)}…` : item.nome, total: Number(item.total.toFixed(2)) })), [ranking])
 
-  function imprimirPDF() {
-    window.print()
-  }
-
-  function exportarCSV() {
-    const cabecalho = ['Descricao', 'Valor', 'Vencimento', 'Status', 'Centro']
-    const linhas = contasFiltradas.map((conta) => [
-      conta.descricao,
-      Number(conta.valor || 0).toFixed(2).replace('.', ','),
-      formatarData(conta.data_vencimento),
-      estaVencida(conta.data_vencimento, conta.status) ? 'vencido' : conta.status,
-      conta.df_centros_custo?.nome || 'Sem centro'
-    ])
-    const csv = [cabecalho, ...linhas]
-      .map((linha) => linha.map((campo) => `"${String(campo || '').replaceAll('"', '""')}"`).join(';'))
-      .join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'relatorio-financeiro.csv'
-    link.click()
-    URL.revokeObjectURL(url)
-  }
-
-
-  function exportarExcel() {
-    const linhasResumo = [
-      ['Relatório Avançado 11.1 - Dona Flor Financeiro'],
-      ['Gerado em', new Date().toLocaleString('pt-BR')],
-      ['Mês', filtroMes || 'Todos'],
-      ['Centro', filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos'],
-      ['Filial', filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas'],
-      [],
-      ['Indicador', 'Valor'],
-      ['Total', totalGeral],
-      ['Pago', totalPago],
-      ['Pendente', totalPendente],
-      ['Vencido', totalVencido],
-      ['Score financeiro', scoreSaude]
-    ]
-    const linhasDre = [[''], ['DRE Gerencial'], ['Linha', 'Valor', 'Descrição'], ...dreGerencial.map((linha) => [linha.linha, linha.percentual ? `${formatarPercentual(linha.valor)}` : linha.valor, linha.descricao])]
-    const linhasContas = [[''], ['Contas'], ['Descrição', 'Valor', 'Vencimento', 'Status', 'Centro', 'Filial', 'Recorrência'], ...contasFiltradas.map((conta) => [
-      conta.descricao,
+  function criarLinhasContasExportacao() {
+    return contasFiltradas.map((conta) => [
+      conta.descricao || 'Sem descrição',
       Number(conta.valor || 0),
       formatarData(conta.data_vencimento),
       estaVencida(conta.data_vencimento, conta.status) ? 'vencido' : conta.status,
       conta.df_centros_custo?.nome || 'Sem centro',
       conta.df_filiais?.nome || 'Sem filial',
       conta.df_contas_recorrentes?.tipo_recorrencia || 'Não recorrente'
-    ])]
-    const todas = [...linhasResumo, ...linhasDre, ...linhasContas]
-    const html = `<html><head><meta charset="UTF-8"></head><body><table>${todas.map((linha) => `<tr>${linha.map((campo) => `<td>${String(campo ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')}</td>`).join('')}</tr>`).join('')}</table></body></html>`
-    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+    ])
+  }
+
+  function baixarArquivo(nome, blob) {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'relatorio-avancado-dona-flor.xls'
+    link.download = nome
+    document.body.appendChild(link)
     link.click()
-    URL.revokeObjectURL(url)
+    link.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 0)
+  }
+
+  function imprimirPDF() {
+    const janela = window.open('', '_blank', 'noopener,noreferrer,width=1100,height=800')
+    if (!janela) {
+      mostrarAviso?.('Permita pop-ups para gerar o PDF/impressão do relatório.', 'erro')
+      return
+    }
+
+    const linhasDre = dreGerencial.map((linha) => `
+      <tr>
+        <td>${escapeHtml(linha.linha)}</td>
+        <td class="valor">${linha.percentual ? formatarPercentual(linha.valor) : formatarValor(linha.valor)}</td>
+        <td>${escapeHtml(linha.descricao)}</td>
+      </tr>
+    `).join('')
+
+    const linhasContas = criarLinhasContasExportacao().map((linha) => `
+      <tr>${linha.map((campo, index) => `<td class="${index === 1 ? 'valor' : ''}">${index === 1 ? formatarValor(campo) : escapeHtml(campo)}</td>`).join('')}</tr>
+    `).join('')
+
+    janela.document.write(`<!doctype html>
+      <html lang="pt-BR">
+        <head>
+          <meta charset="utf-8" />
+          <title>Relatório Financeiro - Dona Flor</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #0f172a; margin: 28px; }
+            h1 { margin: 0 0 4px; font-size: 24px; }
+            h2 { margin: 24px 0 10px; font-size: 17px; color: #0f766e; }
+            .meta { color: #64748b; margin-bottom: 18px; }
+            .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0; }
+            .card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; background: #f8fafc; }
+            .label { color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 700; }
+            .numero { display: block; font-size: 18px; font-weight: 800; margin-top: 5px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+            th, td { border: 1px solid #e2e8f0; padding: 7px; text-align: left; vertical-align: top; }
+            th { background: #ecfdf5; color: #065f46; }
+            .valor { text-align: right; white-space: nowrap; }
+            .insight { border-left: 4px solid #0d9488; padding: 8px 10px; background: #f0fdfa; margin: 6px 0; }
+            @page { size: A4; margin: 12mm; }
+          </style>
+        </head>
+        <body>
+          <h1>Relatório Financeiro Gerencial</h1>
+          <div class="meta">Gerado em ${new Date().toLocaleString('pt-BR')} • ${escapeHtml(nomeMes(filtroMes || mesAtualPadrao()))}</div>
+          <div class="cards">
+            <div class="card"><span class="label">Total</span><span class="numero">${formatarValor(totalGeral)}</span></div>
+            <div class="card"><span class="label">Pago</span><span class="numero">${formatarValor(totalPago)}</span></div>
+            <div class="card"><span class="label">Pendente</span><span class="numero">${formatarValor(totalPendente)}</span></div>
+            <div class="card"><span class="label">Vencido</span><span class="numero">${formatarValor(totalVencido)}</span></div>
+          </div>
+          <h2>DRE Gerencial</h2>
+          <table><thead><tr><th>Linha</th><th>Valor</th><th>Descrição</th></tr></thead><tbody>${linhasDre}</tbody></table>
+          <h2>Insights executivos</h2>
+          ${insights.map((insight) => `<div class="insight">${escapeHtml(insight.texto)}</div>`).join('')}
+          <h2>Contas filtradas</h2>
+          <table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Centro</th><th>Filial</th><th>Recorrência</th></tr></thead><tbody>${linhasContas || '<tr><td colspan="7">Nenhuma conta encontrada.</td></tr>'}</tbody></table>
+        </body>
+      </html>`)
+    janela.document.close()
+    janela.focus()
+    janela.addEventListener('load', () => {
+      janela.print()
+    })
+    setTimeout(() => janela.print(), 350)
+  }
+
+  function exportarCSV() {
+    const cabecalho = ['Descrição', 'Valor', 'Vencimento', 'Status', 'Centro', 'Filial', 'Recorrência']
+    const linhas = criarLinhasContasExportacao().map((linha) => [
+      linha[0],
+      Number(linha[1] || 0).toFixed(2).replace('.', ','),
+      linha[2],
+      linha[3],
+      linha[4],
+      linha[5],
+      linha[6]
+    ])
+    const csv = [cabecalho, ...linhas]
+      .map((linha) => linha.map((campo) => `"${String(campo ?? '').replaceAll('\r', ' ').replaceAll('\n', ' ').replaceAll('\"', '\"\"')}"`).join(';'))
+      .join('\r\n')
+    baixarArquivo('relatorio-financeiro-dona-flor.csv', new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' }))
+  }
+
+  function exportarExcel() {
+    const sheets = [
+      {
+        name: 'Resumo',
+        rows: [
+          ['Relatório Avançado 11.1D - Dona Flor Financeiro'],
+          ['Gerado em', new Date().toLocaleString('pt-BR')],
+          ['Mês', filtroMes || 'Todos'],
+          ['Centro', filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos'],
+          ['Filial', filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas'],
+          [],
+          ['Indicador', 'Valor'],
+          ['Total', totalGeral],
+          ['Pago', totalPago],
+          ['Pendente', totalPendente],
+          ['Vencido', totalVencido],
+          ['Score financeiro', scoreSaude]
+        ]
+      },
+      {
+        name: 'DRE',
+        rows: [
+          ['Linha', 'Valor', 'Descrição'],
+          ...dreGerencial.map((linha) => [linha.linha, linha.valor, linha.descricao])
+        ]
+      },
+      {
+        name: 'Contas',
+        rows: [
+          ['Descrição', 'Valor', 'Vencimento', 'Status', 'Centro', 'Filial', 'Recorrência'],
+          ...criarLinhasContasExportacao()
+        ]
+      },
+      {
+        name: 'Ranking',
+        rows: [
+          ['Centro', 'Total', 'Pago', 'Pendente', 'Vencido', 'Participação'],
+          ...ranking.map((item) => [item.nome, item.total, item.pago, item.pendente, item.vencido, `${formatarPercentual(item.percentual)}`])
+        ]
+      }
+    ]
+
+    baixarArquivo('relatorio-avancado-dona-flor.xlsx', criarXlsx(sheets))
   }
 
   function limparFiltros() {
@@ -485,8 +574,8 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         </div>
       </section>
 
-      {loading && <section style={styles.card}><strong>Carregando relatório...</strong></section>}
-
+      {loading ? <RelatorioSkeleton /> : (
+        <>
       <section style={styles.kpiGrid}>
         <KpiCard titulo="Total" valor={formatarValor(totalGeral)} detalhe={`${contasFiltradas.length} conta(s)`} emoji="💼" cor="#364fc7" progresso={100} />
         <KpiCard titulo="Pago" valor={formatarValor(totalPago)} detalhe={`${formatarPercentual(taxaPago)} do total`} emoji="✅" cor="#12b886" progresso={taxaPago} />
@@ -738,9 +827,225 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
           ))}
         </div>
       </section>
+        </>
+      )}
     </div>
   )
 }
+
+
+function RelatorioSkeleton() {
+  return (
+    <div style={styles.skeletonArea} aria-busy="true" aria-label="Carregando relatório">
+      <section style={styles.skeletonGrid}>
+        {[1, 2, 3, 4].map((item) => <div key={item} style={styles.skeletonCard} />)}
+      </section>
+      <section style={styles.skeletonPanel}>
+        <div style={styles.skeletonLineGrande} />
+        <div style={styles.skeletonLine} />
+        <div style={styles.skeletonLineCurta} />
+      </section>
+      <section style={styles.skeletonGrid}> 
+        {[1, 2].map((item) => <div key={item} style={styles.skeletonCardAlto} />)}
+      </section>
+    </div>
+  )
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+}
+
+function criarXlsx(sheets) {
+  const safeSheets = sheets.map((sheet) => ({
+    name: sanitizeSheetName(sheet.name),
+    rows: sheet.rows || []
+  }))
+
+  const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    ${safeSheets.map((sheet, index) => `<sheet name="${escapeXml(sheet.name)}" sheetId="${index + 1}" r:id="rId${index + 1}"/>`).join('')}
+  </sheets>
+</workbook>`
+
+  const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  ${safeSheets.map((_, index) => `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${index + 1}.xml"/>`).join('')}
+  <Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`
+
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`
+
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+  ${safeSheets.map((_, index) => `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}
+</Types>`
+
+  const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>
+  <fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
+  <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+  <cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>
+</styleSheet>`
+
+  const files = [
+    { path: '[Content_Types].xml', content: contentTypes },
+    { path: '_rels/.rels', content: rootRels },
+    { path: 'xl/workbook.xml', content: workbookXml },
+    { path: 'xl/_rels/workbook.xml.rels', content: workbookRels },
+    { path: 'xl/styles.xml', content: stylesXml },
+    ...safeSheets.map((sheet, index) => ({ path: `xl/worksheets/sheet${index + 1}.xml`, content: criarWorksheetXml(sheet.rows) }))
+  ]
+
+  return new Blob([zipStore(files)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+}
+
+function criarWorksheetXml(rows) {
+  const xmlRows = rows.map((row, rowIndex) => {
+    const cells = (row || []).map((value, colIndex) => criarCellXml(value, colIndex, rowIndex, rowIndex === 0)).join('')
+    return `<row r="${rowIndex + 1}">${cells}</row>`
+  }).join('')
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetViews><sheetView workbookViewId="0"/></sheetViews>
+  <sheetFormatPr defaultRowHeight="15"/>
+  <sheetData>${xmlRows}</sheetData>
+</worksheet>`
+}
+
+function criarCellXml(value, colIndex, rowIndex, bold) {
+  const ref = `${colName(colIndex)}${rowIndex + 1}`
+  const style = bold ? ' s="1"' : ''
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return `<c r="${ref}"${style}><v>${value}</v></c>`
+  }
+  return `<c r="${ref}" t="inlineStr"${style}><is><t>${escapeXml(value)}</t></is></c>`
+}
+
+function colName(index) {
+  let name = ''
+  let current = index + 1
+  while (current > 0) {
+    const modulo = (current - 1) % 26
+    name = String.fromCharCode(65 + modulo) + name
+    current = Math.floor((current - modulo) / 26)
+  }
+  return name
+}
+
+function sanitizeSheetName(name) {
+  return String(name || 'Planilha').replace(/[\\/?*\[\]:]/g, ' ').slice(0, 31) || 'Planilha'
+}
+
+function escapeXml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;')
+}
+
+function zipStore(files) {
+  const encoder = new TextEncoder()
+  const chunks = []
+  const central = []
+  let offset = 0
+
+  files.forEach((file) => {
+    const nameBytes = encoder.encode(file.path)
+    const data = encoder.encode(file.content)
+    const crc = crc32(data)
+    const local = new Uint8Array(30 + nameBytes.length)
+    const view = new DataView(local.buffer)
+    view.setUint32(0, 0x04034b50, true)
+    view.setUint16(4, 20, true)
+    view.setUint16(6, 0, true)
+    view.setUint16(8, 0, true)
+    view.setUint16(10, 0, true)
+    view.setUint16(12, 0, true)
+    view.setUint32(14, crc, true)
+    view.setUint32(18, data.length, true)
+    view.setUint32(22, data.length, true)
+    view.setUint16(26, nameBytes.length, true)
+    view.setUint16(28, 0, true)
+    local.set(nameBytes, 30)
+    chunks.push(local, data)
+
+    const centralHeader = new Uint8Array(46 + nameBytes.length)
+    const centralView = new DataView(centralHeader.buffer)
+    centralView.setUint32(0, 0x02014b50, true)
+    centralView.setUint16(4, 20, true)
+    centralView.setUint16(6, 20, true)
+    centralView.setUint16(8, 0, true)
+    centralView.setUint16(10, 0, true)
+    centralView.setUint16(12, 0, true)
+    centralView.setUint16(14, 0, true)
+    centralView.setUint32(16, crc, true)
+    centralView.setUint32(20, data.length, true)
+    centralView.setUint32(24, data.length, true)
+    centralView.setUint16(28, nameBytes.length, true)
+    centralView.setUint16(30, 0, true)
+    centralView.setUint16(32, 0, true)
+    centralView.setUint16(34, 0, true)
+    centralView.setUint16(36, 0, true)
+    centralView.setUint32(38, 0, true)
+    centralView.setUint32(42, offset, true)
+    centralHeader.set(nameBytes, 46)
+    central.push(centralHeader)
+    offset += local.length + data.length
+  })
+
+  const centralOffset = offset
+  central.forEach((chunk) => {
+    chunks.push(chunk)
+    offset += chunk.length
+  })
+  const end = new Uint8Array(22)
+  const endView = new DataView(end.buffer)
+  endView.setUint32(0, 0x06054b50, true)
+  endView.setUint16(8, files.length, true)
+  endView.setUint16(10, files.length, true)
+  endView.setUint32(12, offset - centralOffset, true)
+  endView.setUint32(16, centralOffset, true)
+  chunks.push(end)
+  return new Blob(chunks)
+}
+
+function crc32(data) {
+  let crc = -1
+  for (let i = 0; i < data.length; i += 1) {
+    crc = (crc >>> 8) ^ crcTable[(crc ^ data[i]) & 0xff]
+  }
+  return (crc ^ -1) >>> 0
+}
+
+const crcTable = (() => {
+  const table = new Uint32Array(256)
+  for (let n = 0; n < 256; n += 1) {
+    let c = n
+    for (let k = 0; k < 8; k += 1) {
+      c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+    }
+    table[n] = c >>> 0
+  }
+  return table
+})()
 
 function Widget({ titulo, emoji, badge, badgeColor = '#0d9488', children, destaque }) {
   return (
@@ -944,6 +1249,14 @@ const styles = {
   maiorCusto: { display: 'block', color: '#12b886', fontWeight: 'bold', fontSize: 12 },
   alertaTexto: { color: '#dc3545', fontWeight: 'bold' },
   vazio: { opacity: 0.7, fontSize: 14 },
+  skeletonArea: { display: 'grid', gap: 14, marginTop: 12 },
+  skeletonGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 },
+  skeletonCard: { height: 130, borderRadius: 20, border: '1px solid #e2e8f0', background: 'linear-gradient(90deg, #f1f5f9 0%, #ffffff 50%, #f1f5f9 100%)' },
+  skeletonCardAlto: { height: 250, borderRadius: 20, border: '1px solid #e2e8f0', background: 'linear-gradient(90deg, #f1f5f9 0%, #ffffff 50%, #f1f5f9 100%)' },
+  skeletonPanel: { ...cardBase(), display: 'grid', gap: 12 },
+  skeletonLineGrande: { height: 22, width: '55%', borderRadius: 999, background: '#e2e8f0' },
+  skeletonLine: { height: 14, width: '80%', borderRadius: 999, background: '#e2e8f0' },
+  skeletonLineCurta: { height: 14, width: '35%', borderRadius: 999, background: '#e2e8f0' },
   muted: { color: '#64748b', lineHeight: 1.45 },
   btnVoltar: btn('#64748b'),
   btnExcel: btn('#16a34a'),

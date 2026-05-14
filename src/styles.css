@@ -509,3 +509,180 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+
+/* FASE 10.9 — Onboarding SaaS */
+.app-toast.app-toast-global .app-toast-close,
+.app-toast-close {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  flex: 0 0 auto !important;
+}
+
+.onboarding-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.onboarding-eyebrow {
+  display: block;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 8px;
+}
+
+.onboarding-progress-box {
+  min-width: 220px;
+  border: 1px solid #99f6e4;
+  border-radius: 24px;
+  padding: 18px;
+  background: linear-gradient(135deg, #f0fdfa, #ffffff);
+  display: grid;
+  gap: 8px;
+}
+
+.onboarding-progress-box span {
+  color: #0f172a;
+  font-size: 30px;
+  font-weight: 950;
+}
+
+.onboarding-progress-box small,
+.onboarding-kpi-grid span,
+.onboarding-step-head span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.onboarding-progress,
+.onboarding-progress-box .onboarding-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.onboarding-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #0f766e;
+}
+
+.onboarding-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.onboarding-kpi-grid div {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .05);
+}
+
+.onboarding-kpi-grid strong {
+  display: block;
+  color: #0f172a;
+  font-size: 28px;
+  font-weight: 950;
+  margin-top: 6px;
+}
+
+.onboarding-steps-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.onboarding-step-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  padding: 18px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .05);
+}
+
+.onboarding-step-card.active {
+  border-color: #14b8a6;
+  box-shadow: 0 18px 46px rgba(20, 184, 166, .12);
+}
+
+.onboarding-step-card.done {
+  background: linear-gradient(135deg, #f0fdfa, #ffffff);
+}
+
+.onboarding-step-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.onboarding-step-number {
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  background: #0f766e;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 950;
+  flex: 0 0 auto;
+}
+
+.onboarding-step-card.done .onboarding-step-number {
+  background: #14b8a6;
+}
+
+.onboarding-step-head h3 {
+  margin: 2px 0 4px;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.onboarding-step-head p {
+  margin: 0;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.onboarding-step-body {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.onboarding-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 760px) {
+  .onboarding-hero,
+  .onboarding-kpi-grid,
+  .onboarding-form-grid {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .onboarding-progress-box {
+    min-width: 0;
+  }
+}

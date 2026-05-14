@@ -37,6 +37,7 @@ const menuSections = [
       { tela: 'configuracoes', icon: '⚙️', label: 'Configurações', desc: 'Preferências da empresa' },
       { tela: 'filiais', icon: '🏬', label: 'Filiais', desc: 'Unidades da empresa' },
       { tela: 'billing', icon: '💼', label: 'Billing', desc: 'Planos, limites e assinatura' },
+      { tela: 'onboarding', icon: '🚀', label: 'Onboarding', desc: 'Implantação inicial SaaS' },
       { tela: 'importar', icon: '📥', label: 'Importar CSV', desc: 'Trazer histórico do Excel' },
       { tela: 'lixeira', icon: '🗑️', label: 'Lixeira', desc: 'Restaurar ou excluir definitivo' }
     ]

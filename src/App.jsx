@@ -18,6 +18,7 @@ import NotasPage from './pages/NotasPage.jsx'
 import MasterPanelPage from './pages/MasterPanelPage.jsx'
 import FiliaisPage from './pages/FiliaisPage.jsx'
 import BillingPage from './pages/BillingPage.jsx'
+import OnboardingPage from './pages/OnboardingPage.jsx'
 import Login from './pages/Login.jsx'
 import UserSecurityCards from './components/UserSecurityCards.jsx'
 import Topbar from './components/layout/Topbar.jsx'
@@ -3817,6 +3818,37 @@ export default function App() {
     )
   }
 
+
+
+  if (telaAtual === 'onboarding') {
+    if (!podeAcessarConfiguracoes()) {
+      return renderAppFrame(
+        <>
+          <h1 style={styles.titulo}>🚀 Onboarding SaaS</h1>
+          <section style={styles.cardConfiguracao}>
+            <h2 style={styles.subtitulo}>Acesso restrito</h2>
+            <p style={styles.textoNota}>Seu perfil atual não permite acessar o onboarding.</p>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
+          </section>
+        </>
+      )
+    }
+
+    return renderAppFrame(
+      <OnboardingPage
+        styles={styles}
+        empresaId={empresaId}
+        empresaNome={nomeEmpresa}
+        filiais={filiais}
+        centros={centros}
+        contas={contas}
+        mostrarAviso={mostrarAviso}
+        onRefresh={() => carregarTudo(empresaId)}
+        voltarPainel={() => navegarPara('configuracoes')}
+        abrirDashboard={() => navegarPara('dashboard')}
+      />
+    )
+  }
 
   if (telaAtual === 'billing') {
     if (!podeAcessarConfiguracoes()) {

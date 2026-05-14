@@ -14,6 +14,17 @@ function formatarPreco(valor) {
   return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+function normalizarValorLimite(valor) {
+  return valor === null || valor === undefined ? '' : String(valor)
+}
+
+function formatarDataBR(valor) {
+  if (!valor) return ''
+  const data = new Date(valor)
+  if (Number.isNaN(data.getTime())) return String(valor)
+  return data.toLocaleDateString('pt-BR')
+}
+
 export default function BillingPage({ styles, empresaId, empresaNome, filiais = [], usuarios = [], mostrarAviso, podeEditar = false, voltarPainel }) {
   const [loading, setLoading] = useState(true)
   const [salvando, setSalvando] = useState(false)
@@ -23,6 +34,7 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
   const [statusSelecionado, setStatusSelecionado] = useState('trial')
   const [limiteFiliais, setLimiteFiliais] = useState(5)
   const [limiteUsuarios, setLimiteUsuarios] = useState(15)
+  const [estadoOriginal, setEstadoOriginal] = useState(null)
 
   useEffect(() => {
     let ativo = true
@@ -35,10 +47,20 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
         if (!ativo) return
         setPlanos(resumo.planos || PLANOS_BASE)
         setAssinatura(resumo.assinatura)
-        setPlanoSelecionado(resumo.assinatura?.plano_codigo || resumo.planoAtual?.codigo || 'profissional')
-        setStatusSelecionado(resumo.assinatura?.status || 'trial')
-        setLimiteFiliais(resumo.planoAtual?.limite_filiais ?? '')
-        setLimiteUsuarios(resumo.planoAtual?.limite_usuarios ?? '')
+        const proximoPlano = resumo.assinatura?.plano_codigo || resumo.assinatura?.plano_slug || resumo.planoAtual?.codigo || 'profissional'
+        const proximoStatus = resumo.assinatura?.status || 'trial'
+        const proximoLimiteFiliais = resumo.planoAtual?.limite_filiais ?? ''
+        const proximoLimiteUsuarios = resumo.planoAtual?.limite_usuarios ?? ''
+        setPlanoSelecionado(proximoPlano)
+        setStatusSelecionado(proximoStatus)
+        setLimiteFiliais(proximoLimiteFiliais)
+        setLimiteUsuarios(proximoLimiteUsuarios)
+        setEstadoOriginal({
+          planoSelecionado: proximoPlano,
+          statusSelecionado: proximoStatus,
+          limiteFiliais: normalizarValorLimite(proximoLimiteFiliais),
+          limiteUsuarios: normalizarValorLimite(proximoLimiteUsuarios)
+        })
       } catch (error) {
         console.error('Erro ao carregar billing:', error)
         if (ativo) mostrarAviso?.('Não foi possível carregar o billing: ' + error.message, 'erro')
@@ -65,6 +87,12 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
   const percentualUsuarios = limiteUsuariosNumero ? Math.min(100, Math.round((totalUsuarios / limiteUsuariosNumero) * 100)) : 100
   const filiaisNoLimite = limiteFiliaisNumero !== null && totalFiliais >= limiteFiliaisNumero
   const usuariosNoLimite = limiteUsuariosNumero !== null && totalUsuarios >= limiteUsuariosNumero
+  const alteracoesPendentes = Boolean(estadoOriginal) && (
+    estadoOriginal.planoSelecionado !== planoSelecionado ||
+    estadoOriginal.statusSelecionado !== statusSelecionado ||
+    estadoOriginal.limiteFiliais !== normalizarValorLimite(limiteFiliais) ||
+    estadoOriginal.limiteUsuarios !== normalizarValorLimite(limiteUsuarios)
+  )
 
   function selecionarPlano(codigo) {
     const plano = planos.find((item) => item.codigo === codigo)
@@ -85,6 +113,12 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
         limiteUsuarios: limiteUsuarios === '' ? null : Number(limiteUsuarios)
       })
       setAssinatura(novaAssinatura)
+      setEstadoOriginal({
+        planoSelecionado,
+        statusSelecionado,
+        limiteFiliais: normalizarValorLimite(limiteFiliais),
+        limiteUsuarios: normalizarValorLimite(limiteUsuarios)
+      })
       mostrarAviso?.('Billing atualizado com sucesso.', 'info')
     } catch (error) {
       console.error('Erro ao salvar billing:', error)
@@ -135,7 +169,7 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
         <div className="billing-kpi-card">
           <span>Status comercial</span>
           <strong>{statusSelecionado}</strong>
-          <small>{assinatura?.trial_fim ? `Trial até ${assinatura.trial_fim}` : 'Trial preparado'}</small>
+          <small>{assinatura?.trial_fim ? `Trial até ${formatarDataBR(assinatura.trial_fim)}` : 'Trial preparado'}</small>
         </div>
       </section>
 
@@ -168,6 +202,7 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
             <p style={styles.textoNota}>Defina os limites comerciais da empresa sem alterar os dados operacionais já validados.</p>
           </div>
           {!podeEditar && <span className="billing-readonly">Somente leitura</span>}
+          {podeEditar && alteracoesPendentes && <span className="billing-pending">● Alterações pendentes</span>}
         </div>
 
         <div className="billing-form-grid">
@@ -200,8 +235,12 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
         </div>
 
         {podeEditar && (
-          <button style={styles.btnSalvar} disabled={loading || salvando} onClick={salvarBilling}>
-            {salvando ? 'Salvando...' : 'Salvar billing'}
+          <button
+            style={{ ...styles.btnSalvar, opacity: loading || salvando || !alteracoesPendentes ? 0.65 : 1 }}
+            disabled={loading || salvando || !alteracoesPendentes}
+            onClick={salvarBilling}
+          >
+            {salvando ? 'Salvando...' : alteracoesPendentes ? 'Salvar alterações do billing' : 'Billing salvo'}
           </button>
         )}
       </section>

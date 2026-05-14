@@ -540,8 +540,8 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         <button style={styles.btnCSV} onClick={exportarCSV}>CSV</button>
       </div>
 
-      <h1 style={styles.titulo}>📊 Relatórios PRO+</h1>
-      <p style={styles.descricaoTela}>Painel gerencial com score, meta, previsão e alertas automáticos.</p>
+      <h1 style={styles.titulo}>📊 Relatórios Gerenciais</h1>
+      <p style={styles.descricaoTela}>Fase 11.0: painel gerencial com resumo executivo, score financeiro, comparativos, ranking por centro de custo e exportação simples.</p>
 
       <section style={styles.resumo}>
         <div style={styles.boxTotal}>

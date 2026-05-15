@@ -37,25 +37,41 @@ function csvCell(value) {
 }
 
 export function printHtmlReport(html, onError) {
+  if (!html || typeof html !== 'string') {
+    onError?.(new Error('Conteúdo de impressão vazio.'))
+    return
+  }
+
   const iframe = document.createElement('iframe')
   iframe.title = 'Relatório para impressão'
   iframe.style.position = 'fixed'
-  iframe.style.right = '0'
-  iframe.style.bottom = '0'
-  iframe.style.width = '0'
-  iframe.style.height = '0'
+  iframe.style.left = '-10000px'
+  iframe.style.top = '0'
+  iframe.style.width = '794px'
+  iframe.style.height = '1123px'
   iframe.style.border = '0'
-  iframe.style.opacity = '0'
+  iframe.style.background = '#ffffff'
+  iframe.style.opacity = '0.01'
   iframe.setAttribute('aria-hidden', 'true')
 
+  let printed = false
+  let timeoutId
+
   const cleanup = () => {
-    window.setTimeout(() => iframe.remove(), 1500)
+    window.clearTimeout(timeoutId)
+    window.setTimeout(() => iframe.remove(), 1800)
   }
 
-  iframe.onload = () => {
+  const runPrint = () => {
+    if (printed) return
+    printed = true
+
     try {
-      iframe.contentWindow?.focus()
-      iframe.contentWindow?.print()
+      const printWindow = iframe.contentWindow
+      if (!printWindow) throw new Error('Janela de impressão indisponível.')
+
+      printWindow.focus()
+      printWindow.print()
       cleanup()
     } catch (error) {
       cleanup()
@@ -63,8 +79,50 @@ export function printHtmlReport(html, onError) {
     }
   }
 
+  const waitAndPrint = async () => {
+    try {
+      const doc = iframe.contentDocument
+      if (!doc || !doc.body || !doc.body.innerText.trim()) {
+        throw new Error('Documento de impressão não foi renderizado.')
+      }
+
+      if (doc.fonts?.ready) {
+        await doc.fonts.ready
+      }
+
+      const images = Array.from(doc.images || [])
+      await Promise.all(images.map((image) => {
+        if (image.complete) return Promise.resolve()
+        return new Promise((resolve) => {
+          image.onload = resolve
+          image.onerror = resolve
+        })
+      }))
+
+      window.requestAnimationFrame(() => {
+        window.setTimeout(runPrint, 250)
+      })
+    } catch (error) {
+      cleanup()
+      onError?.(error)
+    }
+  }
+
+  iframe.onload = waitAndPrint
+  timeoutId = window.setTimeout(waitAndPrint, 1200)
+
   document.body.appendChild(iframe)
-  iframe.srcdoc = html
+
+  const doc = iframe.contentDocument
+  if (!doc) {
+    cleanup()
+    onError?.(new Error('Documento de impressão indisponível.'))
+    return
+  }
+
+  doc.open()
+  doc.write(html)
+  doc.close()
 }
 
 export function createXlsxBlob(sheets) {

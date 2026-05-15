@@ -405,6 +405,57 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
     }
   }, [contasFiltradas, totalGeral, totalPendente, totalVencido, taxaVencido, scoreSaude, principalCentro, percentualClassificacao, contasSemCentro, metaValida, percentualMeta, topDespesas, previsaoProximoMes])
 
+
+  const camadaPreditiva = useMemo(() => {
+    const historico = contasPorMes.length ? contasPorMes : []
+    const totais = historico.map((item) => Number(item.total || 0))
+    const mediaMovel = totais.length ? totais.reduce((acc, valor) => acc + valor, 0) / totais.length : totalGeral
+    const ultimo = totais.length ? totais[totais.length - 1] : totalGeral
+    const penultimo = totais.length > 1 ? totais[totais.length - 2] : ultimo
+    const variacao = ultimo - penultimo
+    const fatorRisco = totalGeral ? Math.min(((totalVencido + totalPendente) / totalGeral), 1.5) : 0
+    const previsao30 = Math.max(ultimo + variacao * 0.35, 0)
+    const previsao60 = Math.max(previsao30 + variacao * 0.55, 0)
+    const previsao90 = Math.max(previsao60 + variacao * 0.75, 0)
+    const riscoProjetado = Math.min(100, Math.max(0, taxaVencido + fatorRisco * 35 + (principalCentro?.percentual >= 60 ? 12 : 0) + (percentualClassificacao < 80 ? 10 : 0)))
+    const statusRisco = riscoProjetado >= 65 ? 'Alto' : riscoProjetado >= 35 ? 'Moderado' : 'Baixo'
+    const corRisco = riscoProjetado >= 65 ? '#dc3545' : riscoProjetado >= 35 ? '#f59f00' : '#12b886'
+    const tendencia = variacao > 0 ? 'alta' : variacao < 0 ? 'queda' : 'estável'
+    const metaForecast = metaValida ? {
+      meta,
+      atual: totalGeral,
+      falta: Math.max(meta - totalGeral, 0),
+      projetado: previsao30,
+      chance: previsao30 <= meta ? 'Alta' : previsao30 <= meta * 1.15 ? 'Média' : 'Baixa',
+      percentualProjetado: meta ? (previsao30 / meta) * 100 : 0
+    } : null
+    const alertas = []
+    if (riscoProjetado >= 65) alertas.push('Risco projetado alto para os próximos 30 dias. Priorize vencidos e reduza concentração.')
+    if (previsao90 > Math.max(mediaMovel, 1) * 1.25) alertas.push('Forecast 90 dias indica possível aceleração de despesas acima da média histórica.')
+    if (metaForecast && metaForecast.percentualProjetado > 100) alertas.push('A previsão de 30 dias pode ultrapassar a meta mensal cadastrada.')
+    if (percentualClassificacao < 80 && contasFiltradas.length > 0) alertas.push('A qualidade da previsão melhora após classificar contas sem centro de custo.')
+    if (alertas.length === 0) alertas.push('Cenário projetado controlado para os filtros atuais.')
+    return {
+      mediaMovel,
+      variacao,
+      tendencia,
+      previsao30,
+      previsao60,
+      previsao90,
+      riscoProjetado,
+      statusRisco,
+      corRisco,
+      metaForecast,
+      alertas,
+      serie: [
+        ...historico.map((item) => ({ mes: item.mes, realizado: item.total, previsto: null })),
+        { mes: '+30d', realizado: null, previsto: previsao30 },
+        { mes: '+60d', realizado: null, previsto: previsao60 },
+        { mes: '+90d', realizado: null, previsto: previsao90 }
+      ]
+    }
+  }, [contasPorMes, totalGeral, totalVencido, totalPendente, taxaVencido, principalCentro, percentualClassificacao, metaValida, meta, contasFiltradas.length])
+
   function criarLinhasContasExportacao() {
     return contasFiltradas.map((conta) => [
       conta.descricao || 'Sem descrição',
@@ -515,7 +566,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
       {
         name: 'Resumo',
         rows: [
-          ['Relatório Avançado 11.3 - Financial Intelligence Engine'],
+          ['Relatório Avançado 11.4 - Predictive Intelligence Layer'],
           ['Gerado em', new Date().toLocaleString('pt-BR')],
           ['Mês', filtroMes || 'Todos'],
           ['Centro', filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos'],
@@ -566,6 +617,21 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
           ['Ações recomendadas'],
           ...inteligenciaFinanceira.acoes.map((acao, index) => [index + 1, acao])
         ]
+      },
+      {
+        name: 'Preditiva 11.4',
+        rows: [
+          ['Indicador', 'Valor', 'Observação'],
+          ['Forecast 30 dias', camadaPreditiva.previsao30, camadaPreditiva.tendencia],
+          ['Forecast 60 dias', camadaPreditiva.previsao60, 'Projeção intermediária'],
+          ['Forecast 90 dias', camadaPreditiva.previsao90, 'Projeção estendida'],
+          ['Risco projetado %', camadaPreditiva.riscoProjetado, camadaPreditiva.statusRisco],
+          ['Média móvel', camadaPreditiva.mediaMovel, 'Histórico filtrado'],
+          ['Variação base', camadaPreditiva.variacao, 'Último mês vs anterior'],
+          [],
+          ['Alertas preditivos'],
+          ...camadaPreditiva.alertas.map((alerta, index) => [index + 1, alerta])
+        ]
       }
     ]
 
@@ -612,7 +678,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             <button style={styles.btnCSV} onClick={exportarCSV}>CSV</button>
           </div>
           <h1 style={styles.titulo}>📊 Relatórios Gerenciais</h1>
-          <p style={styles.descricaoTela}>Fase 11.3: Financial Intelligence Engine com alertas, projeções, Pareto e recomendações automáticas.</p>
+          <p style={styles.descricaoTela}>Fase 11.4: Predictive Intelligence Layer com forecast 30/60/90 dias, metas inteligentes e risco projetado.</p>
         </div>
         <div style={styles.heroBadge}>
           <span>{statusSaude.emoji}</span>
@@ -642,6 +708,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             <option value="graficos">Visão Gráficos</option>
             <option value="filiais">Visão Filiais</option>
             <option value="inteligencia">Inteligência 11.3</option>
+            <option value="preditiva">Preditiva 11.4</option>
           </select>
           <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
         </div>
@@ -670,7 +737,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         <div style={styles.widgetHeader}>
           <div>
             <strong>📈 Relatórios Avançados 11.1</strong>
-            <p style={styles.muted}>DRE gerencial, gráficos executivos, tendência, multiunidade e inteligência financeira 11.3.</p>
+            <p style={styles.muted}>DRE gerencial, gráficos executivos, tendência, multiunidade, inteligência financeira 11.3 e camada preditiva 11.4.</p>
           </div>
           <span style={styles.badge}>Enterprise</span>
         </div>
@@ -843,6 +910,58 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             <MiniStat label="Previsão" value={formatarValor(previsaoProximoMes)} sub="próximo mês" />
           </div>
         </Widget>
+      </section>
+
+
+      <section style={styles.predictivePanel}>
+        <div style={styles.widgetHeader}>
+          <div>
+            <strong>🔮 Predictive Intelligence Layer 11.4</strong>
+            <p style={styles.muted}>Forecast financeiro 30/60/90 dias, risco projetado e leitura preditiva da meta.</p>
+          </div>
+          <span style={{ ...styles.badge, color: camadaPreditiva.corRisco }}>{camadaPreditiva.statusRisco}</span>
+        </div>
+        <div style={styles.predictiveGrid}>
+          <MiniStat label="Forecast 30d" value={formatarValor(camadaPreditiva.previsao30)} sub={camadaPreditiva.tendencia} />
+          <MiniStat label="Forecast 60d" value={formatarValor(camadaPreditiva.previsao60)} sub="projeção" />
+          <MiniStat label="Forecast 90d" value={formatarValor(camadaPreditiva.previsao90)} sub="cenário" />
+          <MiniStat label="Risco projetado" value={`${formatarPercentual(camadaPreditiva.riscoProjetado)}`} sub={camadaPreditiva.statusRisco} />
+        </div>
+        <Progress value={camadaPreditiva.riscoProjetado} color={camadaPreditiva.corRisco} />
+        <div style={styles.advancedGrid}>
+          <Widget titulo="Curva preditiva" emoji="📈">
+            <div style={styles.chartBox}>
+              <ResponsiveContainer width="100%" height={230}>
+                <LineChart data={camadaPreditiva.serie}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="mes" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => value == null ? '-' : formatarValor(value)} />
+                  <Line type="monotone" dataKey="realizado" stroke="#0d9488" strokeWidth={3} connectNulls dot={false} />
+                  <Line type="monotone" dataKey="previsto" stroke="#7c3aed" strokeWidth={3} strokeDasharray="6 4" connectNulls dot />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Widget>
+          <Widget titulo="Alertas preditivos" emoji="🚦">
+            <div style={styles.insightList}>
+              {camadaPreditiva.alertas.map((alerta, index) => (
+                <div key={index} style={styles.insightItem}>
+                  <span style={styles.insightEmoji}>🔎</span>
+                  <p>{alerta}</p>
+                </div>
+              ))}
+            </div>
+            {camadaPreditiva.metaForecast && (
+              <div style={styles.metaForecastBox}>
+                <strong>🎯 Meta forecast</strong>
+                <small>Chance de cumprir: {camadaPreditiva.metaForecast.chance}</small>
+                <small>Falta: {formatarValor(camadaPreditiva.metaForecast.falta)}</small>
+                <Progress value={Math.min(camadaPreditiva.metaForecast.percentualProjetado, 100)} color={camadaPreditiva.metaForecast.percentualProjetado > 100 ? '#dc3545' : '#12b886'} />
+              </div>
+            )}
+          </Widget>
+        </div>
       </section>
 
       {mostrarAcaoPrioritaria && (
@@ -1358,6 +1477,9 @@ const styles = {
   cardDestaque: { background: 'linear-gradient(135deg, #ffffff 0%, #ecfeff 100%)', border: '1px solid #ccfbf1' },
   cardAlerta: { ...cardBase(), background: '#fff5f5', border: '1px solid #fecaca', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
   cardMeta: { ...cardBase(), border: '1px solid #fef3c7' },
+  predictivePanel: { ...cardBase(), marginBottom: 16, border: '1px solid #ddd6fe', background: 'linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%)' },
+  predictiveGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 8 },
+  metaForecastBox: { marginTop: 12, padding: 12, borderRadius: 16, background: '#f8fafc', border: '1px solid #e2e8f0', display: 'grid', gap: 4 },
   widgetHeader: { display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', marginBottom: 10, flexWrap: 'wrap' },
   executivoTexto: { fontSize: 16, lineHeight: 1.5, margin: '6px 0 12px 0' },
   miniStats: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8 },

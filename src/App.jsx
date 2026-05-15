@@ -98,6 +98,20 @@ export default function App() {
     return true
   }
 
+  function assinaturaLixeira(itens = []) {
+    return itens
+      .map((item) => `${item.id || ''}:${item.excluido_em || ''}:${item.updated_at || ''}`)
+      .join('|')
+  }
+
+  function atualizarListaLixeiraEstavel(setLista, novaLista = []) {
+    setLista((listaAtual = []) => (
+      assinaturaLixeira(listaAtual) === assinaturaLixeira(novaLista)
+        ? listaAtual
+        : novaLista
+    ))
+  }
+
   // =========================
   // BLOCO 1 — STATES CONTAS
   // =========================
@@ -1224,7 +1238,7 @@ export default function App() {
       avisarErro(erroContas)
     }
 
-    setContasLixeira(contasExcluidas || [])
+    atualizarListaLixeiraEstavel(setContasLixeira, contasExcluidas || [])
 
     await buscarNotasLixeiraHook({
       supabase,
@@ -4466,7 +4480,7 @@ export default function App() {
           ← Voltar
         </button>
 
-        <section style={styles.bloco}>
+        <section className="trash-section trash-section-accounts" style={styles.bloco}>
           <h2 style={styles.subtitulo}>💰 Contas excluídas</h2>
 
           {contasLixeira.length === 0 && (
@@ -4508,7 +4522,7 @@ export default function App() {
           })}
         </section>
 
-        <section style={styles.bloco}>
+        <section className="trash-section trash-section-notes" style={styles.bloco}>
           <h2 style={styles.subtitulo}>📝 Notas excluídas</h2>
 
           {notasLixeira.length === 0 && (

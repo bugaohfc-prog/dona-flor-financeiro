@@ -1,4 +1,18 @@
 import { useState } from 'react'
+
+function assinaturaListaNotas(itens = []) {
+  return itens
+    .map((item) => `${item.id || ''}:${item.excluido_em || ''}:${item.updated_at || ''}:${item.titulo || ''}`)
+    .join('|')
+}
+
+function manterListaSeNaoMudou(setLista, novaLista = []) {
+  setLista((listaAtual = []) => (
+    assinaturaListaNotas(listaAtual) === assinaturaListaNotas(novaLista)
+      ? listaAtual
+      : novaLista
+  ))
+}
 import {
   alternarNotaConcluidaService,
   atualizarNota,
@@ -60,7 +74,7 @@ export function useNotas() {
       return
     }
 
-    setNotasLixeira(data || [])
+    manterListaSeNaoMudou(setNotasLixeira, data || [])
   }
 
   function abrirNovaNota({ setMenuAberto, setMenuNavegacaoAberto }) {

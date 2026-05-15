@@ -5454,3 +5454,19 @@ button[title*="Adicionar"],
     padding-bottom: 7px !important;
   }
 }
+
+
+/* FASE 11.2B — Lixeira Empty State Stability
+   Empty states da lixeira não devem animar/reentrar a cada refresh silencioso. */
+.trash-section .empty-state-card {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+.trash-section .trash-card {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}

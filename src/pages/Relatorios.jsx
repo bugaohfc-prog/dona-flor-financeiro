@@ -340,6 +340,71 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
 
   const chartCentros = useMemo(() => ranking.slice(0, 6).map((item) => ({ nome: item.nome.length > 14 ? `${item.nome.slice(0, 14)}…` : item.nome, total: Number(item.total.toFixed(2)) })), [ranking])
 
+
+  const inteligenciaFinanceira = useMemo(() => {
+    const ticketMedio = contasFiltradas.length ? totalGeral / contasFiltradas.length : 0
+    const pendentesAbertas = contasFiltradas.filter((conta) => conta.status !== 'pago')
+    const vencidas = contasFiltradas.filter((conta) => estaVencida(conta.data_vencimento, conta.status))
+    const maiorDespesa = topDespesas[0] || null
+    const maiorDespesaPercentual = maiorDespesa && totalGeral ? (Number(maiorDespesa.valor || 0) / totalGeral) * 100 : 0
+    const paretoTop3 = topDespesas.slice(0, 3).reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+    const paretoTop3Percentual = totalGeral ? (paretoTop3 / totalGeral) * 100 : 0
+    const recorrentes = contasFiltradas.filter((conta) => conta.df_contas_recorrentes?.tipo_recorrencia)
+    const totalRecorrente = recorrentes.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+    const percentualRecorrente = totalGeral ? (totalRecorrente / totalGeral) * 100 : 0
+    const concentracaoCentro = principalCentro?.percentual || 0
+    const riscoCaixa = totalGeral ? ((totalPendente + totalVencido) / totalGeral) * 100 : 0
+    const anomalias = contasFiltradas
+      .filter((conta) => ticketMedio > 0 && Number(conta.valor || 0) >= ticketMedio * 2.5)
+      .sort((a, b) => Number(b.valor || 0) - Number(a.valor || 0))
+      .slice(0, 5)
+
+    let nivel = 'baixo'
+    let cor = '#12b886'
+    let titulo = 'Inteligência financeira saudável'
+    if (scoreSaude < 45 || riscoCaixa >= 55 || taxaVencido >= 25) {
+      nivel = 'alto'
+      cor = '#dc3545'
+      titulo = 'Inteligência financeira em alerta'
+    } else if (scoreSaude < 75 || riscoCaixa >= 30 || concentracaoCentro >= 50 || percentualClassificacao < 80) {
+      nivel = 'medio'
+      cor = '#f59f00'
+      titulo = 'Inteligência financeira em atenção'
+    }
+
+    const acoes = []
+    if (vencidas.length > 0) acoes.push(`Priorizar ${vencidas.length} conta(s) vencida(s), somando ${formatarValor(totalVencido)}.`)
+    if (percentualClassificacao < 80 && contasSemCentro > 0) acoes.push(`Classificar ${contasSemCentro} conta(s) sem centro para aumentar a confiabilidade do motor.`)
+    if (principalCentro && principalCentro.id !== 'sem-centro' && concentracaoCentro >= 50) acoes.push(`Revisar concentração em ${principalCentro.nome}, que representa ${formatarPercentual(concentracaoCentro)} do filtro.`)
+    if (metaValida && percentualMeta >= 80) acoes.push(percentualMeta > 100 ? 'Revisar meta mensal: o limite foi ultrapassado.' : 'Acompanhar meta mensal: consumo acima de 80%.')
+    if (anomalias.length > 0) acoes.push(`Auditar ${anomalias.length} lançamento(s) acima de 2,5x o ticket médio.`)
+    if (acoes.length === 0) acoes.push('Manter acompanhamento semanal dos indicadores e revisar centros de maior valor.')
+
+    const previsoes = [
+      { label: 'Próximo mês', value: previsaoProximoMes, sub: 'projeção por tendência simples' },
+      { label: 'Risco em aberto', value: totalPendente + totalVencido, sub: `${formatarPercentual(riscoCaixa)} do total filtrado` },
+      { label: 'Recorrente', value: totalRecorrente, sub: `${formatarPercentual(percentualRecorrente)} do total` },
+      { label: 'Top 3 despesas', value: paretoTop3, sub: `${formatarPercentual(paretoTop3Percentual)} do total` }
+    ]
+
+    return {
+      titulo,
+      nivel,
+      cor,
+      ticketMedio,
+      riscoCaixa,
+      paretoTop3,
+      paretoTop3Percentual,
+      percentualRecorrente,
+      maiorDespesa,
+      maiorDespesaPercentual,
+      anomalias,
+      acoes,
+      previsoes,
+      pendentesAbertas: pendentesAbertas.length
+    }
+  }, [contasFiltradas, totalGeral, totalPendente, totalVencido, taxaVencido, scoreSaude, principalCentro, percentualClassificacao, contasSemCentro, metaValida, percentualMeta, topDespesas, previsaoProximoMes])
+
   function criarLinhasContasExportacao() {
     return contasFiltradas.map((conta) => [
       conta.descricao || 'Sem descrição',
@@ -450,7 +515,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
       {
         name: 'Resumo',
         rows: [
-          ['Relatório Avançado 11.1D - Dona Flor Financeiro'],
+          ['Relatório Avançado 11.3 - Financial Intelligence Engine'],
           ['Gerado em', new Date().toLocaleString('pt-BR')],
           ['Mês', filtroMes || 'Todos'],
           ['Centro', filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos'],
@@ -461,7 +526,10 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
           ['Pago', totalPago],
           ['Pendente', totalPendente],
           ['Vencido', totalVencido],
-          ['Score financeiro', scoreSaude]
+          ['Score financeiro', scoreSaude],
+          ['Nível inteligência', inteligenciaFinanceira.nivel],
+          ['Risco caixa %', inteligenciaFinanceira.riscoCaixa],
+          ['Ticket médio', inteligenciaFinanceira.ticketMedio]
         ]
       },
       {
@@ -483,6 +551,20 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         rows: [
           ['Centro', 'Total', 'Pago', 'Pendente', 'Vencido', 'Participação'],
           ...ranking.map((item) => [item.nome, item.total, item.pago, item.pendente, item.vencido, `${formatarPercentual(item.percentual)}`])
+        ]
+      },
+      {
+        name: 'Inteligencia 11.3',
+        rows: [
+          ['Indicador', 'Valor', 'Observação'],
+          ['Nível', inteligenciaFinanceira.nivel, inteligenciaFinanceira.titulo],
+          ['Ticket médio', inteligenciaFinanceira.ticketMedio, 'Média por conta filtrada'],
+          ['Risco caixa %', inteligenciaFinanceira.riscoCaixa, 'Pendente + vencido sobre total'],
+          ['Top 3 despesas', inteligenciaFinanceira.paretoTop3, `${formatarPercentual(inteligenciaFinanceira.paretoTop3Percentual)} do total`],
+          ['Recorrente %', inteligenciaFinanceira.percentualRecorrente, 'Peso das contas recorrentes'],
+          [],
+          ['Ações recomendadas'],
+          ...inteligenciaFinanceira.acoes.map((acao, index) => [index + 1, acao])
         ]
       }
     ]
@@ -530,7 +612,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             <button style={styles.btnCSV} onClick={exportarCSV}>CSV</button>
           </div>
           <h1 style={styles.titulo}>📊 Relatórios Gerenciais</h1>
-          <p style={styles.descricaoTela}>Fase 11.2A: exportação enterprise com Excel real, CSV consistente e PDF/impressão estável.</p>
+          <p style={styles.descricaoTela}>Fase 11.3: Financial Intelligence Engine com alertas, projeções, Pareto e recomendações automáticas.</p>
         </div>
         <div style={styles.heroBadge}>
           <span>{statusSaude.emoji}</span>
@@ -559,6 +641,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             <option value="dre">Visão DRE</option>
             <option value="graficos">Visão Gráficos</option>
             <option value="filiais">Visão Filiais</option>
+            <option value="inteligencia">Inteligência 11.3</option>
           </select>
           <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
         </div>
@@ -587,7 +670,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         <div style={styles.widgetHeader}>
           <div>
             <strong>📈 Relatórios Avançados 11.1</strong>
-            <p style={styles.muted}>DRE gerencial, gráficos executivos, tendência e leitura multiunidade.</p>
+            <p style={styles.muted}>DRE gerencial, gráficos executivos, tendência, multiunidade e inteligência financeira 11.3.</p>
           </div>
           <span style={styles.badge}>Enterprise</span>
         </div>
@@ -670,6 +753,57 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
                 <MiniStat label="Maior unidade" value={rankingFiliais[0]?.nome || '-'} />
                 <MiniStat label="Valor" value={rankingFiliais[0] ? formatarValor(rankingFiliais[0].total) : '-'} />
               </div>
+            </Widget>
+          </div>
+        )}
+
+
+        {visaoExecutiva === 'inteligencia' && (
+          <div style={styles.advancedGrid}>
+            <Widget titulo={inteligenciaFinanceira.titulo} emoji="🧠" badge={inteligenciaFinanceira.nivel.toUpperCase()} badgeColor={inteligenciaFinanceira.cor}>
+              <p style={styles.executivoTexto}>Motor 11.3 analisando risco de caixa, concentração, tendência, recorrência, Pareto e qualidade dos dados para os filtros atuais.</p>
+              <Progress value={scoreSaude} color={inteligenciaFinanceira.cor} />
+              <div style={styles.grid3Compacto}>
+                <MiniStat label="Ticket médio" value={formatarValor(inteligenciaFinanceira.ticketMedio)} />
+                <MiniStat label="Risco caixa" value={formatarPercentual(inteligenciaFinanceira.riscoCaixa)} />
+                <MiniStat label="Pendências" value={inteligenciaFinanceira.pendentesAbertas} />
+              </div>
+            </Widget>
+
+            <Widget titulo="Previsões e Pareto" emoji="🔮">
+              <div style={styles.compareGrid}>
+                {inteligenciaFinanceira.previsoes.map((item) => (
+                  <MiniStat key={item.label} label={item.label} value={formatarValor(item.value)} sub={item.sub} />
+                ))}
+              </div>
+              {inteligenciaFinanceira.maiorDespesa && (
+                <p style={styles.muted}>Maior despesa: <strong>{inteligenciaFinanceira.maiorDespesa.descricao}</strong> representa {formatarPercentual(inteligenciaFinanceira.maiorDespesaPercentual)} do total filtrado.</p>
+              )}
+            </Widget>
+
+            <Widget titulo="Ações recomendadas" emoji="✅">
+              <div style={styles.insightList}>
+                {inteligenciaFinanceira.acoes.map((acao, index) => (
+                  <div key={index} style={styles.insightItem}>
+                    <span style={styles.insightEmoji}>{index + 1}</span>
+                    <p>{acao}</p>
+                  </div>
+                ))}
+              </div>
+            </Widget>
+
+            <Widget titulo="Anomalias financeiras" emoji="🕵️">
+              {inteligenciaFinanceira.anomalias.length === 0 && <p style={styles.vazio}>Nenhuma anomalia acima de 2,5x o ticket médio foi encontrada.</p>}
+              {inteligenciaFinanceira.anomalias.map((conta) => (
+                <div key={conta.id} style={styles.topItem}>
+                  <div style={styles.medalha}>!</div>
+                  <div style={styles.topText}>
+                    <strong>{conta.descricao}</strong>
+                    <small>{formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'}</small>
+                  </div>
+                  <strong>{formatarValor(conta.valor)}</strong>
+                </div>
+              ))}
             </Widget>
           </div>
         )}

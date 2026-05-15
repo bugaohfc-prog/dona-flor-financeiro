@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from 'recharts'
 import { supabase } from '../lib/supabase'
 import { money as formatarValor, dateBR as formatarData } from '../utils/format'
+import { createXlsxBlob, downloadBlob, exportCsv, printHtmlReport } from '../services/export/reportExportService'
 
 export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
   function formatarPercentual(valor) {
@@ -108,7 +109,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
     if (centrosError) mostrarAviso?.(centrosError.message, 'erro')
     if (filiaisError) mostrarAviso?.(filiaisError.message, 'erro')
 
-    setContas(contasData || [])
+    setContas((contasData || []).filter((conta) => !conta.excluido_em && !conta.deleted_at))
     setCentros(centrosData || [])
     setFiliais(filiaisData || [])
     setLoading(false)
@@ -351,24 +352,8 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
     ])
   }
 
-  function baixarArquivo(nome, blob) {
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = nome
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    setTimeout(() => URL.revokeObjectURL(url), 0)
-  }
 
   function imprimirPDF() {
-    const janela = window.open('', '_blank', 'noopener,noreferrer,width=1100,height=800')
-    if (!janela) {
-      mostrarAviso?.('Permita pop-ups para gerar o PDF/impressão do relatório.', 'erro')
-      return
-    }
-
     const linhasDre = dreGerencial.map((linha) => `
       <tr>
         <td>${escapeHtml(linha.linha)}</td>
@@ -381,31 +366,49 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
       <tr>${linha.map((campo, index) => `<td class="${index === 1 ? 'valor' : ''}">${index === 1 ? formatarValor(campo) : escapeHtml(campo)}</td>`).join('')}</tr>
     `).join('')
 
-    janela.document.write(`<!doctype html>
+    const linhasRanking = ranking.map((item) => `
+      <tr>
+        <td>${escapeHtml(item.nome)}</td>
+        <td class="valor">${formatarValor(item.total)}</td>
+        <td class="valor">${formatarValor(item.pago)}</td>
+        <td class="valor">${formatarValor(item.pendente)}</td>
+        <td class="valor">${formatarValor(item.vencido)}</td>
+        <td class="valor">${formatarPercentual(item.percentual)}</td>
+      </tr>
+    `).join('')
+
+    const html = `<!doctype html>
       <html lang="pt-BR">
         <head>
           <meta charset="utf-8" />
           <title>Relatório Financeiro - Dona Flor</title>
           <style>
-            body { font-family: Arial, sans-serif; color: #0f172a; margin: 28px; }
+            * { box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; color: #0f172a; margin: 28px; background: #fff; }
             h1 { margin: 0 0 4px; font-size: 24px; }
             h2 { margin: 24px 0 10px; font-size: 17px; color: #0f766e; }
-            .meta { color: #64748b; margin-bottom: 18px; }
+            .meta { color: #64748b; margin-bottom: 18px; font-size: 12px; }
             .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0; }
             .card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; background: #f8fafc; }
             .label { color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 700; }
             .numero { display: block; font-size: 18px; font-weight: 800; margin-top: 5px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
             th, td { border: 1px solid #e2e8f0; padding: 7px; text-align: left; vertical-align: top; }
             th { background: #ecfdf5; color: #065f46; }
             .valor { text-align: right; white-space: nowrap; }
             .insight { border-left: 4px solid #0d9488; padding: 8px 10px; background: #f0fdfa; margin: 6px 0; }
+            .footer { margin-top: 24px; color: #64748b; font-size: 11px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
             @page { size: A4; margin: 12mm; }
+            @media print { body { margin: 0; } }
           </style>
         </head>
         <body>
           <h1>Relatório Financeiro Gerencial</h1>
-          <div class="meta">Gerado em ${new Date().toLocaleString('pt-BR')} • ${escapeHtml(nomeMes(filtroMes || mesAtualPadrao()))}</div>
+          <div class="meta">
+            Gerado em ${new Date().toLocaleString('pt-BR')} • ${escapeHtml(nomeMes(filtroMes || mesAtualPadrao()))}<br />
+            Centro: ${escapeHtml(filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos')} • Filial: ${escapeHtml(filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas')} • Status: ${escapeHtml(filtroStatus)}
+          </div>
           <div class="cards">
             <div class="card"><span class="label">Total</span><span class="numero">${formatarValor(totalGeral)}</span></div>
             <div class="card"><span class="label">Pago</span><span class="numero">${formatarValor(totalPago)}</span></div>
@@ -416,33 +419,30 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
           <table><thead><tr><th>Linha</th><th>Valor</th><th>Descrição</th></tr></thead><tbody>${linhasDre}</tbody></table>
           <h2>Insights executivos</h2>
           ${insights.map((insight) => `<div class="insight">${escapeHtml(insight.texto)}</div>`).join('')}
+          <h2>Ranking por centro</h2>
+          <table><thead><tr><th>Centro</th><th>Total</th><th>Pago</th><th>Pendente</th><th>Vencido</th><th>Participação</th></tr></thead><tbody>${linhasRanking || '<tr><td colspan="6">Nenhum centro encontrado.</td></tr>'}</tbody></table>
           <h2>Contas filtradas</h2>
           <table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Centro</th><th>Filial</th><th>Recorrência</th></tr></thead><tbody>${linhasContas || '<tr><td colspan="7">Nenhuma conta encontrada.</td></tr>'}</tbody></table>
+          <div class="footer">Relatório gerado pelo Sistema Dona Flor Financeiro.</div>
         </body>
-      </html>`)
-    janela.document.close()
-    janela.focus()
-    janela.addEventListener('load', () => {
-      janela.print()
-    })
-    setTimeout(() => janela.print(), 350)
+      </html>`
+
+    printHtmlReport(html, () => mostrarAviso?.('Não foi possível abrir a impressão do relatório.', 'erro'))
   }
 
   function exportarCSV() {
-    const cabecalho = ['Descrição', 'Valor', 'Vencimento', 'Status', 'Centro', 'Filial', 'Recorrência']
-    const linhas = criarLinhasContasExportacao().map((linha) => [
+    const headers = ['Descrição', 'Valor', 'Vencimento', 'Status', 'Centro', 'Filial', 'Recorrência']
+    const rows = criarLinhasContasExportacao().map((linha) => [
       linha[0],
-      Number(linha[1] || 0).toFixed(2).replace('.', ','),
+      Number(linha[1] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       linha[2],
       linha[3],
       linha[4],
       linha[5],
       linha[6]
     ])
-    const csv = [cabecalho, ...linhas]
-      .map((linha) => linha.map((campo) => `"${String(campo ?? '').replaceAll('\r', ' ').replaceAll('\n', ' ').replaceAll('\"', '\"\"')}"`).join(';'))
-      .join('\r\n')
-    baixarArquivo('relatorio-financeiro-dona-flor.csv', new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' }))
+
+    exportCsv({ filename: 'relatorio-financeiro-dona-flor.csv', headers, rows })
   }
 
   function exportarExcel() {
@@ -487,7 +487,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
       }
     ]
 
-    baixarArquivo('relatorio-avancado-dona-flor.xlsx', criarXlsx(sheets))
+    downloadBlob('relatorio-avancado-dona-flor.xlsx', createXlsxBlob(sheets))
   }
 
   function limparFiltros() {
@@ -530,7 +530,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             <button style={styles.btnCSV} onClick={exportarCSV}>CSV</button>
           </div>
           <h1 style={styles.titulo}>📊 Relatórios Gerenciais</h1>
-          <p style={styles.descricaoTela}>Fase 11.1: relatórios avançados com DRE gerencial, gráficos, Excel e leitura executiva.</p>
+          <p style={styles.descricaoTela}>Fase 11.2A: exportação enterprise com Excel real, CSV consistente e PDF/impressão estável.</p>
         </div>
         <div style={styles.heroBadge}>
           <span>{statusSaude.emoji}</span>

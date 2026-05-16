@@ -32,6 +32,10 @@ import ConfirmModal from './components/modals/ConfirmModal.jsx'
 import ProfileModal from './components/modals/ProfileModal.jsx'
 import GlobalLoader from './components/feedback/GlobalLoader.jsx'
 import GlobalToast from './components/feedback/GlobalToast.jsx'
+import { CopilotProvider } from './components/copilot/core/CopilotProvider.jsx'
+import CopilotFloatingButton from './components/copilot/layout/CopilotFloatingButton.jsx'
+import CopilotDrawer from './components/copilot/layout/CopilotDrawer.jsx'
+import CopilotStyles from './components/copilot/layout/CopilotStyles.jsx'
 import { useApp } from './context/AppContext.jsx'
 import { useContas } from './hooks/useContas'
 import { useNotas } from './hooks/useNotas'
@@ -2892,6 +2896,7 @@ export default function App() {
 
   function renderAppFrame(children) {
     return (
+      <CopilotProvider contas={contas} contasFiltradas={contasFiltradas} navegarPara={navegarPara}>
       <div className="app-page app-frame" style={styles.page}>
         <style>{`
 
@@ -3351,6 +3356,7 @@ export default function App() {
       `}</style>
       {renderDesktopRefinoStyle()}
       {renderMobileFinalStyle()}
+      <CopilotStyles />
       {renderMobileUxFinalPatchStyle()}
       {renderTopShell()}
 
@@ -3359,11 +3365,14 @@ export default function App() {
 
         <main className="app-frame-content">{children}</main>
         {renderFabGlobal()}
+      <CopilotFloatingButton />
+      <CopilotDrawer />
         {renderConfirmacaoGlobal()}
         {renderModaisGlobais()}
         <GlobalLoader visible={globalLoading} />
         <GlobalToast toast={globalToast} onClose={hideToast} />
       </div>
+      </CopilotProvider>
     )
   }
 
@@ -3524,6 +3533,7 @@ export default function App() {
         `}</style>
       {renderDesktopRefinoStyle()}
       {renderMobileFinalStyle()}
+      <CopilotStyles />
       {renderMobileUxFinalPatchStyle()}
       {renderTopShell()}
 
@@ -3532,6 +3542,8 @@ export default function App() {
 
         <main className="app-frame-content">{children}</main>
         {renderFabGlobal()}
+      <CopilotFloatingButton />
+      <CopilotDrawer />
         {renderConfirmacaoGlobal()}
         {renderModaisGlobais()}
         <GlobalLoader visible={globalLoading} />
@@ -4566,6 +4578,7 @@ export default function App() {
   // BLOCO 11 — UI
   // =========================
   return (
+    <CopilotProvider contas={contas} contasFiltradas={contasFiltradas} navegarPara={navegarPara}>
     <div className="app-page" style={styles.page} onClick={() => { if (menuAberto) setMenuAberto(false) }}>
       <style>
         {`
@@ -5154,6 +5167,7 @@ export default function App() {
       </style>
       {renderDesktopRefinoStyle()}
       {renderMobileFinalStyle()}
+      <CopilotStyles />
 
       <div className="print-header">
         <h1>Relatório Financeiro</h1>
@@ -5170,6 +5184,8 @@ export default function App() {
       {renderMobileMenu()}
 
       {renderFabGlobal()}
+      <CopilotFloatingButton />
+      <CopilotDrawer />
 
       <style>{`
         /* ===== CORRECAO ESTRUTURAL DEFINITIVA: DASHBOARD + NOTAS ===== */
@@ -5987,5 +6003,6 @@ export default function App() {
         executarConfirmacao={executarConfirmacao}
       />
     </div>
+    </CopilotProvider>
   )
 }

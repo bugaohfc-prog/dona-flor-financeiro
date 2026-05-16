@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { supabase } from '../lib/supabase'
 import { money as formatarValor, dateBR as formatarData } from '../utils/format'
 import { createXlsxBlob, downloadBlob, exportCsv, printHtmlReport } from '../services/export/reportExportService'
+import { gerarCopilotFinanceiro } from '../services/ai/copilotEngine.js'
 
 export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
   function formatarPercentual(valor) {
@@ -406,6 +407,8 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
   }, [contasFiltradas, totalGeral, totalPendente, totalVencido, taxaVencido, scoreSaude, principalCentro, percentualClassificacao, contasSemCentro, metaValida, percentualMeta, topDespesas, previsaoProximoMes])
 
 
+  const copilotFinanceiro = useMemo(() => gerarCopilotFinanceiro({ contas, contasFiltradas }), [contas, contasFiltradas])
+
   const camadaPreditiva = useMemo(() => {
     const historico = contasPorMes.length ? contasPorMes : []
     const totais = historico.map((item) => Number(item.total || 0))
@@ -493,6 +496,20 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
       </tr>
     `).join('')
 
+    const linhasPrioridadesCopilot = copilotFinanceiro.priorities.map((item) => `
+      <tr>
+        <td>${escapeHtml(item.level)}</td>
+        <td>${escapeHtml(item.title)}</td>
+        <td>${escapeHtml(item.description)}</td>
+        <td class="valor">${escapeHtml(item.impact)}</td>
+        <td>${escapeHtml(item.action)}</td>
+      </tr>
+    `).join('')
+
+    const linhasRecomendacoesCopilot = copilotFinanceiro.recomendacoes.map((item, index) => `
+      <div class="insight"><strong>${index + 1}.</strong> ${escapeHtml(item)}</div>
+    `).join('')
+
     const html = `<!doctype html>
       <html lang="pt-BR">
         <head>
@@ -514,23 +531,36 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             th { background: #ecfdf5; color: #065f46; }
             .valor { text-align: right; white-space: nowrap; }
             .insight { border-left: 4px solid #0d9488; padding: 8px 10px; background: #f0fdfa; margin: 6px 0; }
+            .cover { border-radius: 18px; padding: 18px; background: linear-gradient(135deg, #052e2b, #0f766e); color: #fff; margin-bottom: 16px; }
+            .cover h1 { color: #fff; }
+            .cover .meta { color: rgba(255,255,255,.78); margin-bottom: 0; }
+            .score { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.12); font-weight: 800; }
             .footer { margin-top: 24px; color: #64748b; font-size: 11px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
             @page { size: A4; margin: 12mm; }
             @media print { body { margin: 0; } }
           </style>
         </head>
         <body>
-          <h1>Relatório Financeiro Gerencial</h1>
-          <div class="meta">
-            Gerado em ${new Date().toLocaleString('pt-BR')} • ${escapeHtml(nomeMes(filtroMes || mesAtualPadrao()))}<br />
-            Centro: ${escapeHtml(filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos')} • Filial: ${escapeHtml(filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas')} • Status: ${escapeHtml(filtroStatus)}
+          <div class="cover">
+            <h1>PDF Executive Premium — Copilot IA 11.6</h1>
+            <div class="meta">
+              Gerado em ${new Date().toLocaleString('pt-BR')} • ${escapeHtml(nomeMes(filtroMes || mesAtualPadrao()))}<br />
+              Centro: ${escapeHtml(filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos')} • Filial: ${escapeHtml(filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas')} • Status: ${escapeHtml(filtroStatus)}
+            </div>
+            <div class="score">Score Copilot: ${copilotFinanceiro.score}/100 • ${escapeHtml(copilotFinanceiro.status.label)}</div>
           </div>
+          <h2>Executive AI Summary</h2>
+          <div class="insight">${escapeHtml(copilotFinanceiro.executiveSummary)}</div>
           <div class="cards">
             <div class="card"><span class="label">Total</span><span class="numero">${formatarValor(totalGeral)}</span></div>
             <div class="card"><span class="label">Pago</span><span class="numero">${formatarValor(totalPago)}</span></div>
             <div class="card"><span class="label">Pendente</span><span class="numero">${formatarValor(totalPendente)}</span></div>
             <div class="card"><span class="label">Vencido</span><span class="numero">${formatarValor(totalVencido)}</span></div>
           </div>
+          <h2>Smart Priority Engine</h2>
+          <table><thead><tr><th>Nível</th><th>Prioridade</th><th>Leitura</th><th>Impacto</th><th>Ação</th></tr></thead><tbody>${linhasPrioridadesCopilot || '<tr><td colspan="5">Nenhuma prioridade crítica encontrada.</td></tr>'}</tbody></table>
+          <h2>Recomendações acionáveis</h2>
+          ${linhasRecomendacoesCopilot}
           <h2>DRE Gerencial</h2>
           <table><thead><tr><th>Linha</th><th>Valor</th><th>Descrição</th></tr></thead><tbody>${linhasDre}</tbody></table>
           <h2>Insights executivos</h2>
@@ -619,6 +649,30 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         ]
       },
       {
+        name: 'Copilot IA 11.6',
+        rows: [
+          ['Executive AI Summary'],
+          [copilotFinanceiro.executiveSummary],
+          [],
+          ['Score', copilotFinanceiro.score, copilotFinanceiro.status.label],
+          ['Total', copilotFinanceiro.totals.total],
+          ['Pago', copilotFinanceiro.totals.pago],
+          ['Pendente', copilotFinanceiro.totals.pendente],
+          ['Vencido', copilotFinanceiro.totals.vencido],
+          [],
+          ['Smart Priority Engine'],
+          ['Nível', 'Prioridade', 'Descrição', 'Impacto', 'Ação'],
+          ...copilotFinanceiro.priorities.map((item) => [item.level, item.title, item.description, item.impact, item.action]),
+          [],
+          ['Recomendações acionáveis'],
+          ...copilotFinanceiro.recomendacoes.map((item, index) => [index + 1, item]),
+          [],
+          ['Drill-down analytics'],
+          ['Centro', 'Total', 'Pendente', 'Vencido', 'Peso', 'Risco'],
+          ...copilotFinanceiro.rankingCentros.map((item) => [item.nome, item.total, item.pendente, item.vencido, `${item.peso}%`, `${item.risco}%`])
+        ]
+      },
+      {
         name: 'Preditiva 11.4',
         rows: [
           ['Indicador', 'Valor', 'Observação'],
@@ -678,7 +732,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             <button style={styles.btnCSV} onClick={exportarCSV}>CSV</button>
           </div>
           <h1 style={styles.titulo}>📊 Relatórios Gerenciais</h1>
-          <p style={styles.descricaoTela}>Fase 11.4: Predictive Intelligence Layer com forecast 30/60/90 dias, metas inteligentes e risco projetado.</p>
+          <p style={styles.descricaoTela}>Fase 11.6: Copilot Experience REAL com narrativa executiva, prioridades inteligentes e PDF Executive Premium.</p>
         </div>
         <div style={styles.heroBadge}>
           <span>{statusSaude.emoji}</span>
@@ -709,6 +763,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             <option value="filiais">Visão Filiais</option>
             <option value="inteligencia">Inteligência 11.3</option>
             <option value="preditiva">Preditiva 11.4</option>
+            <option value="copilot">Copilot IA 11.6</option>
           </select>
           <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
         </div>
@@ -737,7 +792,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         <div style={styles.widgetHeader}>
           <div>
             <strong>📈 Relatórios Avançados 11.1</strong>
-            <p style={styles.muted}>DRE gerencial, gráficos executivos, tendência, multiunidade, inteligência financeira 11.3 e camada preditiva 11.4.</p>
+            <p style={styles.muted}>DRE gerencial, gráficos executivos, tendência, multiunidade, inteligência financeira 11.3, preditiva 11.4 e Copilot IA 11.6.</p>
           </div>
           <span style={styles.badge}>Enterprise</span>
         </div>
@@ -869,6 +924,53 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
                     <small>{formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'}</small>
                   </div>
                   <strong>{formatarValor(conta.valor)}</strong>
+                </div>
+              ))}
+            </Widget>
+          </div>
+        )}
+
+
+        {visaoExecutiva === 'copilot' && (
+          <div style={styles.advancedGrid}>
+            <Widget titulo="Executive AI Summary" emoji="✨" badge={`${copilotFinanceiro.score}/100`} badgeColor={copilotFinanceiro.status.tone === 'danger' ? '#dc3545' : copilotFinanceiro.status.tone === 'warning' ? '#f59f00' : '#12b886'}>
+              <p style={styles.executivoTexto}>{copilotFinanceiro.executiveSummary}</p>
+              <div style={styles.grid3Compacto}>
+                <MiniStat label="Total" value={formatarValor(copilotFinanceiro.totals.total)} />
+                <MiniStat label="Pendente" value={formatarValor(copilotFinanceiro.totals.pendente)} />
+                <MiniStat label="Vencido" value={formatarValor(copilotFinanceiro.totals.vencido)} />
+              </div>
+            </Widget>
+
+            <Widget titulo="Smart Priority Engine" emoji="🚦" badge={`${copilotFinanceiro.priorities.length} ações`} badgeColor="#0f766e">
+              <div style={styles.insightList}>
+                {copilotFinanceiro.priorities.map((item, index) => (
+                  <div key={`${item.title}-${index}`} style={styles.insightItem}>
+                    <span style={styles.insightEmoji}>{index + 1}</span>
+                    <p><strong>{item.title}</strong><br />{item.description}<br /><small>{item.level} impacto • {item.impact} • {item.action}</small></p>
+                  </div>
+                ))}
+              </div>
+            </Widget>
+
+            <Widget titulo="Recomendações acionáveis" emoji="✅">
+              <div style={styles.insightList}>
+                {copilotFinanceiro.recomendacoes.map((item, index) => (
+                  <div key={`${item}-${index}`} style={styles.insightItem}>
+                    <span style={styles.insightEmoji}>✓</span>
+                    <p>{item}</p>
+                  </div>
+                ))}
+              </div>
+            </Widget>
+
+            <Widget titulo="Drill-down analytics" emoji="🔎">
+              {copilotFinanceiro.rankingCentros.length === 0 && <p style={styles.vazio}>Sem centros suficientes para análise.</p>}
+              {copilotFinanceiro.rankingCentros.map((centro) => (
+                <div key={centro.nome} style={styles.itemGrafico}>
+                  <div style={styles.cardLinha}><span>{centro.nome}</span><strong>{formatarValor(centro.total)}</strong></div>
+                  <Progress value={Math.max(centro.peso, 4)} color={corPorPercentual(centro.peso)} />
+                  <small>{centro.peso}% do recorte • risco {centro.risco}% • vencido {formatarValor(centro.vencido)}</small>
                 </div>
               ))}
             </Widget>

@@ -55,11 +55,13 @@ export function printHtmlReport(html, onError) {
   iframe.setAttribute('aria-hidden', 'true')
 
   let printed = false
-  let timeoutId
+  let retryId
+  let cleanupId
 
   const cleanup = () => {
-    window.clearTimeout(timeoutId)
-    window.setTimeout(() => iframe.remove(), 1800)
+    window.clearTimeout(retryId)
+    window.clearTimeout(cleanupId)
+    cleanupId = window.setTimeout(() => iframe.remove(), 3000)
   }
 
   const runPrint = () => {
@@ -79,13 +81,24 @@ export function printHtmlReport(html, onError) {
     }
   }
 
-  const waitAndPrint = async () => {
-    try {
-      const doc = iframe.contentDocument
-      if (!doc || !doc.body || !doc.body.innerText.trim()) {
-        throw new Error('Documento de impressão não foi renderizado.')
+  const waitAndPrint = async (attempt = 0) => {
+    if (printed) return
+
+    const doc = iframe.contentDocument
+    const rendered = Boolean(doc?.body?.innerText?.trim())
+
+    if (!rendered) {
+      if (attempt < 12) {
+        retryId = window.setTimeout(() => waitAndPrint(attempt + 1), 250)
+        return
       }
 
+      cleanup()
+      onError?.(new Error('Documento de impressão não foi renderizado.'))
+      return
+    }
+
+    try {
       if (doc.fonts?.ready) {
         await doc.fonts.ready
       }
@@ -100,16 +113,20 @@ export function printHtmlReport(html, onError) {
       }))
 
       window.requestAnimationFrame(() => {
-        window.setTimeout(runPrint, 250)
+        window.setTimeout(runPrint, 350)
       })
     } catch (error) {
+      if (attempt < 12) {
+        retryId = window.setTimeout(() => waitAndPrint(attempt + 1), 250)
+        return
+      }
+
       cleanup()
       onError?.(error)
     }
   }
 
-  iframe.onload = waitAndPrint
-  timeoutId = window.setTimeout(waitAndPrint, 1200)
+  iframe.onload = () => waitAndPrint()
 
   document.body.appendChild(iframe)
 
@@ -123,6 +140,8 @@ export function printHtmlReport(html, onError) {
   doc.open()
   doc.write(html)
   doc.close()
+
+  retryId = window.setTimeout(() => waitAndPrint(), 500)
 }
 
 export function createXlsxBlob(sheets) {

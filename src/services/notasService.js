@@ -18,11 +18,19 @@ export async function listarNotasLixeira(supabase, empresaId) {
 }
 
 export async function criarNota(supabase, payload) {
-  return inserirComEmpresa(supabase, 'df_notas', payload)
+  const resposta = await inserirComEmpresa(supabase, 'df_notas', payload)
+  if (deveTentarSemFilial(resposta.error, payload)) {
+    return inserirComEmpresa(supabase, 'df_notas', removerFilialId(payload))
+  }
+  return resposta
 }
 
 export async function atualizarNota(supabase, id, empresaId, payload) {
-  return atualizarPorEmpresa(supabase, 'df_notas', id, empresaId, payload)
+  const resposta = await atualizarPorEmpresa(supabase, 'df_notas', id, empresaId, payload)
+  if (deveTentarSemFilial(resposta.error, payload)) {
+    return atualizarPorEmpresa(supabase, 'df_notas', id, empresaId, removerFilialId(payload))
+  }
+  return resposta
 }
 
 export async function enviarNotaParaLixeira(supabase, id, empresaId) {
@@ -45,4 +53,19 @@ export async function restaurarNotaDaLixeira(supabase, id, empresaId) {
 
 export async function excluirNotaPermanentemente(supabase, id, empresaId) {
   return excluirPorEmpresa(supabase, 'df_notas', id, empresaId)
+}
+
+
+function deveTentarSemFilial(error, payload) {
+  return Boolean(error && payload && Object.prototype.hasOwnProperty.call(payload, 'filial_id') && ehErroColunaFilialAusente(error))
+}
+
+function ehErroColunaFilialAusente(error) {
+  const mensagem = String(error?.message || error?.details || error?.hint || '').toLowerCase()
+  return mensagem.includes('filial_id') && (mensagem.includes('schema cache') || mensagem.includes('column') || mensagem.includes('coluna'))
+}
+
+function removerFilialId(payload) {
+  const { filial_id, ...restante } = payload || {}
+  return restante
 }

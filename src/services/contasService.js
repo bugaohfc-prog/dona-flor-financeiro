@@ -82,11 +82,19 @@ export async function listarRecorrenciasPorDia(supabase, empresaId, diaVenciment
 }
 
 export async function criarRecorrencia(supabase, payload) {
-  return inserirComEmpresa(supabase, 'df_contas_recorrentes', payload, { select: true })
+  const resposta = await inserirComEmpresa(supabase, 'df_contas_recorrentes', payload, { select: true })
+  if (deveTentarSemFilial(resposta.error, payload)) {
+    return inserirComEmpresa(supabase, 'df_contas_recorrentes', removerFilialId(payload), { select: true })
+  }
+  return resposta
 }
 
 export async function atualizarRecorrencia(supabase, id, empresaId, payload) {
-  return atualizarPorEmpresa(supabase, 'df_contas_recorrentes', id, empresaId, payload)
+  const resposta = await atualizarPorEmpresa(supabase, 'df_contas_recorrentes', id, empresaId, payload)
+  if (deveTentarSemFilial(resposta.error, payload)) {
+    return atualizarPorEmpresa(supabase, 'df_contas_recorrentes', id, empresaId, removerFilialId(payload))
+  }
+  return resposta
 }
 
 export async function vincularRecorrenciaNaConta(supabase, contaId, empresaId, recorrenciaId) {
@@ -106,4 +114,19 @@ export async function enviarContaParaLixeira(supabase, id, empresaId) {
     excluido: true,
     excluido_em: new Date().toISOString()
   })
+}
+
+
+function deveTentarSemFilial(error, payload) {
+  return Boolean(error && payload && Object.prototype.hasOwnProperty.call(payload, 'filial_id') && ehErroColunaFilialAusente(error))
+}
+
+function ehErroColunaFilialAusente(error) {
+  const mensagem = String(error?.message || error?.details || error?.hint || '').toLowerCase()
+  return mensagem.includes('filial_id') && (mensagem.includes('schema cache') || mensagem.includes('column') || mensagem.includes('coluna'))
+}
+
+function removerFilialId(payload) {
+  const { filial_id, ...restante } = payload || {}
+  return restante
 }

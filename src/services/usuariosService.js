@@ -254,7 +254,7 @@ export async function listarFiliaisUsuariosEmpresa(empresaId) {
 
   const { data, error } = await supabase
     .from('df_usuarios_filiais')
-    .select('id, empresa_id, usuario_empresa_id, filial_id, created_at')
+    .select('id, empresa_id, usuario_id, filial_id, created_at')
     .eq('empresa_id', empresaId)
 
   if (error) throw error
@@ -271,7 +271,7 @@ export async function atualizarFiliaisUsuarioEmpresa({ empresaId, usuario, filia
     .from('df_usuarios_filiais')
     .delete()
     .eq('empresa_id', empresaId)
-    .eq('usuario_empresa_id', usuario.id)
+    .eq('usuario_id', usuario.id)
 
   if (deleteError) throw deleteError
 
@@ -279,14 +279,14 @@ export async function atualizarFiliaisUsuarioEmpresa({ empresaId, usuario, filia
 
   const payload = filiaisNormalizadas.map((filialId) => ({
     empresa_id: empresaId,
-    usuario_empresa_id: usuario.id,
+    usuario_id: usuario.id,
     filial_id: filialId
   }))
 
   const { data, error } = await supabase
     .from('df_usuarios_filiais')
     .insert(payload)
-    .select('id, empresa_id, usuario_empresa_id, filial_id, created_at')
+    .select('id, empresa_id, usuario_id, filial_id, created_at')
 
   if (error) throw error
   return data || []

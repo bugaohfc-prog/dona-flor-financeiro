@@ -835,9 +835,9 @@ export default function App() {
       ])
       const mapaFiliais = {}
       ;(vinculosFiliais || []).forEach((vinculo) => {
-        if (!vinculo?.usuario_empresa_id || !vinculo?.filial_id) return
-        if (!mapaFiliais[vinculo.usuario_empresa_id]) mapaFiliais[vinculo.usuario_empresa_id] = []
-        mapaFiliais[vinculo.usuario_empresa_id].push(vinculo.filial_id)
+        if (!vinculo?.usuario_id || !vinculo?.filial_id) return
+        if (!mapaFiliais[vinculo.usuario_id]) mapaFiliais[vinculo.usuario_id] = []
+        mapaFiliais[vinculo.usuario_id].push(vinculo.filial_id)
       })
       setUsuariosEmpresa(usuarios)
       setFiliaisUsuariosEmpresa(mapaFiliais)

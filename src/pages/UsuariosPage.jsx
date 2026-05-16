@@ -194,29 +194,35 @@ export default function UsuariosPage({
 
             return (
               <div key={usuario.id || usuario.user_id || usuario.email} className="user-card userCard">
-                <div className="user-main-info userInfo">
-                  <strong>{usuario.nome || usuario.email || 'Usuário sem nome'}</strong>
-                  <small>{usuario.email || usuario.user_id || 'Sem e-mail vinculado'}</small>
-                  {atual && <span className="user-badge user-badge-self">Você</span>}
-                  {pendente && <span className="user-badge user-badge-pending">Pendente de vínculo</span>}
+                <div className="user-card-header">
+                  <div className="user-main-info userInfo">
+                    <strong>{usuario.nome || usuario.email || 'Usuário sem nome'}</strong>
+                    <small>{usuario.email || usuario.user_id || 'Sem e-mail vinculado'}</small>
+                    <div className="user-status-row">
+                      {atual && <span className="user-badge user-badge-self">Você</span>}
+                      {pendente && <span className="user-badge user-badge-pending">Pendente de vínculo</span>}
+                    </div>
+                  </div>
+
+                  <div className="user-card-controls">
+                    <span className={`roleBadge ${normalizarPerfil(usuario.perfil)}`}>{normalizarPerfil(usuario.perfil)}</span>
+
+                    <select
+                      className="user-role-select"
+                      style={styles.input}
+                      value={normalizarPerfil(usuario.perfil)}
+                      disabled={!podeAdministrarUsuarios()}
+                      onChange={(event) => atualizarPerfilUsuarioEmpresa(usuario, event.target.value)}
+                    >
+                      <option value="admin">Admin</option>
+                      <option value="gerente">Gerente</option>
+                      <option value="financeiro">Financeiro</option>
+                      <option value="operacional">Operacional</option>
+                      <option value="visualizacao">Visualização</option>
+                      <option value="operador">Operador</option>
+                    </select>
+                  </div>
                 </div>
-
-                <span className={`roleBadge ${normalizarPerfil(usuario.perfil)}`}>{normalizarPerfil(usuario.perfil)}</span>
-
-                <select
-                  className="user-role-select"
-                  style={styles.input}
-                  value={normalizarPerfil(usuario.perfil)}
-                  disabled={!podeAdministrarUsuarios()}
-                  onChange={(event) => atualizarPerfilUsuarioEmpresa(usuario, event.target.value)}
-                >
-                  <option value="admin">Admin</option>
-                  <option value="gerente">Gerente</option>
-                  <option value="financeiro">Financeiro</option>
-                  <option value="operacional">Operacional</option>
-                  <option value="visualizacao">Visualização</option>
-                  <option value="operador">Operador</option>
-                </select>
 
                 <div className="user-branch-scope">
                   <div className="user-branch-scope-header">

@@ -686,3 +686,180 @@
     min-width: 0;
   }
 }
+
+/* FASE 11.9.6A — refinamento compacto da gestão de usuários */
+.users-page-section {
+  align-content: start;
+}
+
+.users-permission-guide {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  padding: 12px;
+}
+
+.users-permission-guide span {
+  display: block;
+  min-height: auto;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .72);
+  padding: 8px 10px;
+  line-height: 1.25;
+}
+
+.users-add-card {
+  grid-template-columns: minmax(160px, 1fr) minmax(210px, 1.2fr) minmax(160px, .8fr) minmax(140px, .55fr);
+  align-items: center;
+}
+
+.users-add-card button,
+.users-add-card small {
+  grid-column: auto;
+}
+
+.users-list {
+  gap: 12px;
+}
+
+.user-card {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.user-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.user-main-info {
+  gap: 3px;
+}
+
+.user-main-info strong {
+  line-height: 1.2;
+}
+
+.user-main-info small {
+  line-height: 1.25;
+}
+
+.user-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.user-card-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.user-role-select {
+  width: min(160px, 100%) !important;
+  min-width: 132px !important;
+  padding: 9px 12px !important;
+}
+
+.user-branch-scope {
+  padding: 10px 12px;
+  gap: 8px;
+  border-radius: 16px;
+}
+
+.user-branch-scope-header {
+  min-height: 28px;
+}
+
+.user-branch-clear {
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.user-branch-list {
+  gap: 7px;
+}
+
+.user-branch-chip {
+  min-height: 34px;
+  max-width: 100%;
+  gap: 7px;
+  padding: 6px 10px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.user-branch-chip input {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.user-branch-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-branch-all {
+  margin-top: -2px;
+}
+
+.user-actions {
+  justify-content: flex-end;
+  align-items: center;
+  padding-top: 2px;
+}
+
+.user-actions button {
+  min-height: 34px;
+  padding: 8px 12px !important;
+}
+
+@media (max-width: 1024px) {
+  .users-add-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .users-add-card button,
+  .users-add-card small {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .user-card-header,
+  .user-card-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .user-card-controls {
+    justify-content: flex-start;
+  }
+
+  .user-role-select {
+    width: 100% !important;
+  }
+
+  .user-branch-chip {
+    width: auto;
+    white-space: normal;
+  }
+
+  .user-actions {
+    justify-content: stretch;
+  }
+
+  .user-actions button {
+    flex: 1 1 140px;
+  }
+}

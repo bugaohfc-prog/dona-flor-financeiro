@@ -1,0 +1,26 @@
+# Fase 11.8.1 — AI Narrative & Insights
+
+## Status
+✅ Implementado e validado com build de produção.
+
+## Objetivo
+Transformar o Copilot de painel inteligente para analista financeiro executivo, adicionando narrativa contextual, leitura de risco e anomalias operacionais.
+
+## Implementações
+- Novo `narrativeEngine.js` desacoplado da UI.
+- Parecer executivo avançado com score, vencidos, pendências e concentração.
+- Leitura de liquidez.
+- Leitura de concentração por centro.
+- Leitura de pressão de curto prazo.
+- Detecção de anomalias contextuais.
+- Novas perguntas rápidas:
+  - Qual cenário de risco?
+  - Gerar parecer executivo avançado
+- Novo card no drawer Copilot: `AI Narrative & Insights 11.8`.
+- Nova seção na visão Copilot IA 11.8 em Relatórios.
+- PDF atualizado para Copilot IA 11.8 com narrativa e anomalias.
+- Excel atualizado para aba `Copilot IA 11.8` com narrativa, anomalias, prioridades e recomendações.
+
+## Validação
+- `npm run build` executado com sucesso.
+- Build Vite finalizado sem erro.

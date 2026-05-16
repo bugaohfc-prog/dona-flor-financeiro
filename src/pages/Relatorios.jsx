@@ -596,7 +596,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
       {
         name: 'Resumo',
         rows: [
-          ['Relatório Avançado 11.4 - Predictive Intelligence Layer'],
+          ['Relatório Avançado 11.6 - Copilot IA Executive Premium'],
           ['Gerado em', new Date().toLocaleString('pt-BR')],
           ['Mês', filtroMes || 'Todos'],
           ['Centro', filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos'],
@@ -607,8 +607,9 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
           ['Pago', totalPago],
           ['Pendente', totalPendente],
           ['Vencido', totalVencido],
-          ['Score financeiro', scoreSaude],
-          ['Nível inteligência', inteligenciaFinanceira.nivel],
+          ['Score Copilot IA', copilotFinanceiro.score],
+          ['Status Copilot IA', copilotFinanceiro.status.label],
+          ['Nível inteligência 11.3', inteligenciaFinanceira.nivel],
           ['Risco caixa %', inteligenciaFinanceira.riscoCaixa],
           ['Ticket médio', inteligenciaFinanceira.ticketMedio]
         ]

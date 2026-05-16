@@ -23,10 +23,10 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
     if (!supabaseUrl || !serviceRoleKey) {
-      throw new Error('Variáveis SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são obrigatórias.')
+      throw new Error('Variáveis SUPABASE_URL e SERVICE_ROLE_KEY são obrigatórias. Configure SERVICE_ROLE_KEY em Supabase Secrets.')
     }
 
     const authHeader = req.headers.get('Authorization')

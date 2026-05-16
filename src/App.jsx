@@ -246,6 +246,9 @@ export default function App() {
   const [salvandoPerfilUsuario, setSalvandoPerfilUsuario] = useState(false)
   const [erroEmpresa, setErroEmpresa] = useState('')
   const [usuariosEmpresa, setUsuariosEmpresa] = useState([])
+  const [usuariosCarregando, setUsuariosCarregando] = useState(false)
+  const [usuariosInicializados, setUsuariosInicializados] = useState(false)
+  const [criandoUsuarioManual, setCriandoUsuarioManual] = useState(false)
   const [filiaisUsuariosEmpresa, setFiliaisUsuariosEmpresa] = useState({})
   const [salvandoFilialUsuario, setSalvandoFilialUsuario] = useState('')
   const [emailConviteUsuario, setEmailConviteUsuario] = useState('')
@@ -816,8 +819,11 @@ export default function App() {
     }
   }
 
-  async function buscarUsuariosEmpresa(empresaAtual = empresaId) {
+  async function buscarUsuariosEmpresa(empresaAtual = empresaId, opcoes = {}) {
     if (!empresaAtual) return
+
+    const silencioso = Boolean(opcoes?.silencioso)
+    if (!silencioso) setUsuariosCarregando(true)
 
     try {
       const [usuarios, vinculosFiliais] = await Promise.all([
@@ -832,14 +838,19 @@ export default function App() {
       })
       setUsuariosEmpresa(usuarios)
       setFiliaisUsuariosEmpresa(mapaFiliais)
+      setUsuariosInicializados(true)
     } catch (error) {
       console.warn('Não foi possível carregar usuários:', error.message)
-      setUsuariosEmpresa([])
       setFiliaisUsuariosEmpresa({})
+      setUsuariosInicializados(true)
+    } finally {
+      if (!silencioso) setUsuariosCarregando(false)
     }
   }
 
   async function adicionarUsuarioEmpresa() {
+    if (criandoUsuarioManual) return
+
     if (!empresaId) {
       mostrarAviso('Empresa não identificada.', 'erro')
       return
@@ -867,6 +878,7 @@ export default function App() {
     const perfil = normalizarPerfil(perfilConviteUsuario)
 
     try {
+      setCriandoUsuarioManual(true)
       await adicionarUsuarioEmpresaService({
         empresaId,
         email,
@@ -878,13 +890,15 @@ export default function App() {
     } catch (error) {
       avisarErro(error)
       return
+    } finally {
+      setCriandoUsuarioManual(false)
     }
 
     setEmailConviteUsuario('')
     setNomeConviteUsuario('')
     setSenhaConviteUsuario('')
     setPerfilConviteUsuario('operador')
-    await buscarUsuariosEmpresa()
+    await buscarUsuariosEmpresa(empresaId, { silencioso: true })
 
     mostrarAviso('Usuário criado manualmente. Entregue o e-mail e a senha provisória ao usuário por um canal seguro.', 'sucesso')
   }
@@ -4049,13 +4063,17 @@ export default function App() {
                 <option value="admin">Admin</option>
               </select>
 
-              <button style={styles.btnSalvar} onClick={adicionarUsuarioEmpresa}>Criar acesso manual</button>
+              <button style={styles.btnSalvar} onClick={adicionarUsuarioEmpresa} disabled={criandoUsuarioManual}>{criandoUsuarioManual ? 'Criando acesso...' : 'Criar acesso manual'}</button>
               <small style={styles.textoNota}>Sem envio de e-mail: o admin entrega o e-mail e a senha provisória manualmente.</small>
             </div>
           )}
 
-          <div className="users-list">
-            {usuariosEmpresa.length === 0 && (
+          <div className="users-list users-list-stable" aria-busy={usuariosCarregando}>
+            {usuariosCarregando && !usuariosInicializados && (
+              <EmptyState icon="⏳" title="Carregando usuários" description="Buscando acessos cadastrados nesta empresa." />
+            )}
+
+            {!usuariosCarregando && usuariosInicializados && usuariosEmpresa.length === 0 && (
               <EmptyState icon="👥" title="Nenhum usuário cadastrado" description="Adicione usuários para dividir a operação com segurança e níveis de acesso." />
             )}
 

@@ -93,10 +93,10 @@ export async function adicionarUsuarioEmpresa({ empresaId, email, nome, perfil, 
 
     if (adminError) {
       const mensagem = String(adminError?.message || adminError?.details || '')
-      if (mensagem.includes('Failed to send a request') || mensagem.includes('Edge Function')) {
-        throw new Error('A Edge Function criar-usuario-manual ainda não está publicada no Supabase. Rode o deploy da function pelo pacote 11.9.1.')
+      if (mensagem.includes('Failed to send a request')) {
+        throw new Error('Não foi possível conectar à Edge Function criar-usuario-manual. Confirme se ela foi publicada no Supabase e se o projeto está correto.')
       }
-      throw adminError
+      throw new Error(mensagem || 'A Edge Function criar-usuario-manual retornou erro. Verifique os logs no Supabase.')
     }
     if (adminData?.ok === false) throw new Error(adminData?.message || 'Não foi possível criar o usuário manualmente.')
 

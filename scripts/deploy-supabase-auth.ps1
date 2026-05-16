@@ -1,20 +1,21 @@
-# Dona Flor Financeiro — Deploy Auth Manual Provisioning
-# Execute no PowerShell dentro da pasta do projeto.
+Set-Location (Join-Path $PSScriptRoot '..')
+$localCli = Join-Path (Get-Location) 'supabase.exe'
+$supabase = if (Test-Path $localCli) { $localCli } else { 'supabase' }
 
-Write-Host "== Dona Flor Financeiro | Deploy Supabase Auth 11.9.1 ==" -ForegroundColor Cyan
-
-if (-not (Get-Command supabase -ErrorAction SilentlyContinue)) {
-  Write-Host "Supabase CLI não encontrada. Instalando via npm..." -ForegroundColor Yellow
-  npm install -g supabase
+Write-Host '== Dona Flor Financeiro | Deploy Supabase Auth 11.9.2 =='
+& $supabase --version
+if ($LASTEXITCODE -ne 0) {
+  Write-Host 'Supabase CLI nao encontrada. Coloque supabase.exe na raiz do projeto ou instale a CLI.' -ForegroundColor Red
+  Read-Host 'Pressione ENTER para sair'
+  exit 1
 }
 
-$projectRef = Read-Host "Cole o PROJECT REF do Supabase"
-$serviceRole = Read-Host "Cole a SERVICE_ROLE_KEY do Supabase"
+$projectRef = Read-Host 'Cole o PROJECT REF do Supabase'
+$serviceRole = Read-Host 'Cole a service_role key do Supabase'
 
-supabase login
-supabase link --project-ref $projectRef
-supabase secrets set SUPABASE_SERVICE_ROLE_KEY="$serviceRole"
-supabase functions deploy criar-usuario-manual
-supabase functions deploy convidar-usuario
+& $supabase link --project-ref $projectRef
+& $supabase secrets set SERVICE_ROLE_KEY="$serviceRole"
+& $supabase functions deploy criar-usuario-manual
 
-Write-Host "Deploy concluído. Atualize o sistema e teste Criar acesso manual." -ForegroundColor Green
+Write-Host 'Deploy concluido. Atualize o sistema e teste Criar acesso manual.' -ForegroundColor Green
+Read-Host 'Pressione ENTER para sair'

@@ -1,0 +1,10 @@
+# Dona Flor Financeiro — Supabase local config
+# Este arquivo permite usar Supabase CLI com migrations e Edge Functions.
+# O project-ref real é vinculado pelo comando: supabase link --project-ref SEU_PROJECT_REF
+project_id = "dona-flor-financeiro"
+
+[functions.criar-usuario-manual]
+verify_jwt = true
+
+[functions.convidar-usuario]
+verify_jwt = true

@@ -3,9 +3,9 @@ export default function CopilotStyles() {
     <style>{`
       .copilot-floating-button {
         position: fixed;
-        right: 22px;
-        bottom: 24px;
-        z-index: 140;
+        right: 88px;
+        bottom: max(24px, env(safe-area-inset-bottom));
+        z-index: 4990;
         border: 0;
         border-radius: 999px;
         padding: 12px 16px;
@@ -32,14 +32,15 @@ export default function CopilotStyles() {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-2px); }
       }
-      .copilot-shell { position: fixed; inset: 0; z-index: 220; pointer-events: none; }
+      .copilot-shell { position: fixed; inset: 0; z-index: 4900; pointer-events: none; }
       .copilot-backdrop { position: absolute; inset: 0; border: 0; background: rgba(15, 23, 42, .28); backdrop-filter: blur(3px); pointer-events: auto; cursor: default; }
       .copilot-drawer {
         position: absolute;
         top: 18px;
         right: 18px;
-        bottom: 18px;
+        bottom: 92px;
         width: min(440px, calc(100vw - 28px));
+        max-height: calc(100vh - 110px);
         border-radius: 28px;
         background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(240,253,250,.98));
         border: 1px solid rgba(15, 118, 110, .14);
@@ -95,8 +96,9 @@ export default function CopilotStyles() {
       .copilot-questions button { background: #111827; font-size: 12px; }
       .copilot-answer strong { display: block; margin: 8px 0 6px; color: #111827; }
       @media (max-width: 640px) {
-        .copilot-floating-button { right: 16px; bottom: 18px; padding: 12px 14px; }
-        .copilot-drawer { inset: 10px; width: auto; border-radius: 24px; }
+        .copilot-floating-button { right: 82px; bottom: max(18px, env(safe-area-inset-bottom)); padding: 12px 14px; }
+        .copilot-floating-button strong { display: none; }
+        .copilot-drawer { top: 10px; right: 10px; left: 10px; bottom: 82px; width: auto; max-height: calc(100vh - 92px); border-radius: 24px; }
         .copilot-metrics { grid-template-columns: 1fr; }
       }
       @media print { .copilot-floating-button, .copilot-shell { display: none !important; } }

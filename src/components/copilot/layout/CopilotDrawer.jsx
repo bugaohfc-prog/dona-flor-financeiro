@@ -15,6 +15,7 @@ export default function CopilotDrawer() {
             <span>Copilot IA 11.6</span>
             <h2>Sistema Operacional Financeiro Inteligente</h2>
             <p>Status: {intelligence.status.label} · Score {intelligence.score}/100</p>
+            <div className="copilot-live-indicator"><b /> Analisando dados em tempo real</div>
           </div>
           <button type="button" onClick={close} aria-label="Fechar">×</button>
         </header>

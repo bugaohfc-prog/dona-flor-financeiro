@@ -531,6 +531,8 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             th { background: #ecfdf5; color: #065f46; }
             .valor { text-align: right; white-space: nowrap; }
             .insight { border-left: 4px solid #0d9488; padding: 8px 10px; background: #f0fdfa; margin: 6px 0; }
+            .narrative { border: 1px solid #c7d2fe; border-radius: 14px; padding: 12px; background: #eef2ff; margin: 8px 0; }
+            .narrative strong { display: block; color: #3730a3; margin-bottom: 4px; }
             .cover { border-radius: 18px; padding: 18px; background: linear-gradient(135deg, #052e2b, #0f766e); color: #fff; margin-bottom: 16px; }
             .cover h1 { color: #fff; }
             .cover .meta { color: rgba(255,255,255,.78); margin-bottom: 0; }
@@ -542,7 +544,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         </head>
         <body>
           <div class="cover">
-            <h1>PDF Executive Premium — Copilot IA 11.6</h1>
+            <h1>PDF Executive Premium — Copilot IA 11.8</h1>
             <div class="meta">
               Gerado em ${new Date().toLocaleString('pt-BR')} • ${escapeHtml(nomeMes(filtroMes || mesAtualPadrao()))}<br />
               Centro: ${escapeHtml(filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos')} • Filial: ${escapeHtml(filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas')} • Status: ${escapeHtml(filtroStatus)}
@@ -551,6 +553,11 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
           </div>
           <h2>Executive AI Summary</h2>
           <div class="insight">${escapeHtml(copilotFinanceiro.executiveSummary)}</div>
+          <h2>AI Narrative & Insights 11.8</h2>
+          <div class="narrative"><strong>Parecer executivo contextual</strong>${escapeHtml(copilotFinanceiro.narrativa?.parecer || copilotFinanceiro.executiveSummary)}</div>
+          <div class="narrative"><strong>Liquidez</strong>${escapeHtml(copilotFinanceiro.narrativa?.liquidez || '')}</div>
+          <div class="narrative"><strong>Concentração</strong>${escapeHtml(copilotFinanceiro.narrativa?.concentracao || '')}</div>
+          <div class="narrative"><strong>Curto prazo</strong>${escapeHtml(copilotFinanceiro.narrativa?.curtoPrazo || '')}</div>
           <div class="cards">
             <div class="card"><span class="label">Total</span><span class="numero">${formatarValor(totalGeral)}</span></div>
             <div class="card"><span class="label">Pago</span><span class="numero">${formatarValor(totalPago)}</span></div>
@@ -596,7 +603,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
       {
         name: 'Resumo',
         rows: [
-          ['Relatório Avançado 11.6 - Copilot IA Executive Premium'],
+          ['Relatório Avançado 11.8 - AI Narrative & Insights'],
           ['Gerado em', new Date().toLocaleString('pt-BR')],
           ['Mês', filtroMes || 'Todos'],
           ['Centro', filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos'],
@@ -650,12 +657,23 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         ]
       },
       {
-        name: 'Copilot IA 11.6',
+        name: 'Copilot IA 11.8',
         rows: [
           ['Executive AI Summary'],
           [copilotFinanceiro.executiveSummary],
           [],
           ['Score', copilotFinanceiro.score, copilotFinanceiro.status.label],
+          [],
+          ['AI Narrative 11.8'],
+          ['Parecer contextual', copilotFinanceiro.narrativa?.parecer || ''],
+          ['Liquidez', copilotFinanceiro.narrativa?.liquidez || ''],
+          ['Concentração', copilotFinanceiro.narrativa?.concentracao || ''],
+          ['Curto prazo', copilotFinanceiro.narrativa?.curtoPrazo || ''],
+          ['Comportamento', copilotFinanceiro.narrativa?.comportamento || ''],
+          [],
+          ['Anomalias contextuais'],
+          ...(copilotFinanceiro.narrativa?.anomalias || []).map((item, index) => [index + 1, item]),
+          [],
           ['Total', copilotFinanceiro.totals.total],
           ['Pago', copilotFinanceiro.totals.pago],
           ['Pendente', copilotFinanceiro.totals.pendente],
@@ -733,7 +751,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             <button style={styles.btnCSV} onClick={exportarCSV}>CSV</button>
           </div>
           <h1 style={styles.titulo}>📊 Relatórios Gerenciais</h1>
-          <p style={styles.descricaoTela}>Fase 11.6: Copilot Experience REAL com narrativa executiva, prioridades inteligentes e PDF Executive Premium.</p>
+          <p style={styles.descricaoTela}>Fase 11.8: AI Narrative & Insights com parecer executivo contextual, anomalias e recomendações inteligentes.</p>
         </div>
         <div style={styles.heroBadge}>
           <span>{statusSaude.emoji}</span>
@@ -764,7 +782,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             <option value="filiais">Visão Filiais</option>
             <option value="inteligencia">Inteligência 11.3</option>
             <option value="preditiva">Preditiva 11.4</option>
-            <option value="copilot">Copilot IA 11.6</option>
+            <option value="copilot">Copilot IA 11.8</option>
           </select>
           <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
         </div>
@@ -793,7 +811,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         <div style={styles.widgetHeader}>
           <div>
             <strong>📈 Relatórios Avançados 11.1</strong>
-            <p style={styles.muted}>DRE gerencial, gráficos executivos, tendência, multiunidade, inteligência financeira 11.3, preditiva 11.4 e Copilot IA 11.6.</p>
+            <p style={styles.muted}>DRE gerencial, gráficos executivos, tendência, multiunidade, inteligência 11.3, preditiva 11.4 e AI Narrative 11.8.</p>
           </div>
           <span style={styles.badge}>Enterprise</span>
         </div>
@@ -940,6 +958,29 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
                 <MiniStat label="Total" value={formatarValor(copilotFinanceiro.totals.total)} />
                 <MiniStat label="Pendente" value={formatarValor(copilotFinanceiro.totals.pendente)} />
                 <MiniStat label="Vencido" value={formatarValor(copilotFinanceiro.totals.vencido)} />
+              </div>
+            </Widget>
+
+            <Widget titulo="AI Narrative & Insights 11.8" emoji="🧠" badge="Contextual" badgeColor="#7c3aed">
+              <p style={styles.executivoTexto}>{copilotFinanceiro.narrativa?.parecer || copilotFinanceiro.executiveSummary}</p>
+              <div style={styles.insightList}>
+                {[copilotFinanceiro.narrativa?.liquidez, copilotFinanceiro.narrativa?.concentracao, copilotFinanceiro.narrativa?.curtoPrazo, copilotFinanceiro.narrativa?.comportamento].filter(Boolean).map((item, index) => (
+                  <div key={`${item}-${index}`} style={styles.insightItem}>
+                    <span style={styles.insightEmoji}>✦</span>
+                    <p>{item}</p>
+                  </div>
+                ))}
+              </div>
+            </Widget>
+
+            <Widget titulo="Anomalias contextuais" emoji="⚠️" badge={`${copilotFinanceiro.narrativa?.anomalias?.length || 0} sinais`} badgeColor="#dc3545">
+              <div style={styles.insightList}>
+                {(copilotFinanceiro.narrativa?.anomalias || []).map((item, index) => (
+                  <div key={`${item}-${index}`} style={styles.insightItem}>
+                    <span style={styles.insightEmoji}>!</span>
+                    <p>{item}</p>
+                  </div>
+                ))}
               </div>
             </Widget>
 

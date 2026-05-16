@@ -1,5 +1,5 @@
 import { useCopilot } from '../core/CopilotProvider.jsx'
-import { AiInsightsCard, DrillDownCard, ExecutiveSummary, QuickQuestions, RecommendationsCard, SmartPriorityList } from '../widgets/CopilotWidgets.jsx'
+import { AiInsightsCard, AnomalyCard, DrillDownCard, ExecutiveSummary, NarrativeIntelligenceCard, QuickQuestions, RecommendationsCard, SmartPriorityList } from '../widgets/CopilotWidgets.jsx'
 
 export default function CopilotDrawer() {
   const { open, close, intelligence, lastQuestion } = useCopilot()
@@ -12,7 +12,7 @@ export default function CopilotDrawer() {
       <aside className="copilot-drawer" aria-label="Painel Copilot IA">
         <header className="copilot-header">
           <div>
-            <span>Copilot IA 11.6</span>
+            <span>Copilot IA 11.8</span>
             <h2>Sistema Operacional Financeiro Inteligente</h2>
             <p>Status: {intelligence.status.label} · Score {intelligence.score}/100</p>
             <div className="copilot-live-indicator"><b /> Analisando dados em tempo real</div>
@@ -22,7 +22,9 @@ export default function CopilotDrawer() {
 
         <main className="copilot-content">
           <ExecutiveSummary />
+          <NarrativeIntelligenceCard />
           <SmartPriorityList />
+          <AnomalyCard />
           <DrillDownCard />
           <RecommendationsCard />
           <AiInsightsCard />

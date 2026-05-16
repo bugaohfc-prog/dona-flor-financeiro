@@ -108,6 +108,46 @@ export function DrillDownCard() {
   )
 }
 
+export function NarrativeIntelligenceCard() {
+  const { intelligence } = useCopilot()
+  const narrativa = intelligence.narrativa || {}
+  const blocos = [
+    ['Liquidez', narrativa.liquidez],
+    ['Concentração', narrativa.concentracao],
+    ['Curto prazo', narrativa.curtoPrazo],
+    ['Comportamento', narrativa.comportamento]
+  ].filter(([, texto]) => texto)
+
+  return (
+    <section className="copilot-card copilot-narrative-card">
+      <div className="copilot-card-head">
+        <span>AI Narrative 11.8</span>
+        <strong>Contextual</strong>
+      </div>
+      <p>{narrativa.parecer || intelligence.executiveSummary}</p>
+      <div className="copilot-insights">
+        {blocos.map(([titulo, texto]) => <p key={titulo}><b>{titulo}:</b> {texto}</p>)}
+      </div>
+    </section>
+  )
+}
+
+export function AnomalyCard() {
+  const { intelligence } = useCopilot()
+  const anomalias = intelligence.narrativa?.anomalias || []
+  return (
+    <section className="copilot-card">
+      <div className="copilot-card-head">
+        <span>Anomalias contextuais</span>
+        <strong>{anomalias.length}</strong>
+      </div>
+      <div className="copilot-insights">
+        {anomalias.map((item, index) => <p key={`${item}-${index}`}>⚠ {item}</p>)}
+      </div>
+    </section>
+  )
+}
+
 export function QuickQuestions() {
   const { intelligence, setLastQuestion } = useCopilot()
   return (

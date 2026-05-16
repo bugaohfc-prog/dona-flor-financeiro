@@ -1,3 +1,4 @@
+import { gerarNarrativaExecutiva } from './narrativeEngine.js'
 function valorConta(conta) {
   return Number(conta?.valor || 0)
 }
@@ -187,6 +188,7 @@ export function gerarCopilotFinanceiro({ contas = [], contasFiltradas = [] } = {
   }
 
   const executiveSummary = gerarParecerExecutivo({ total, pago, pendente, vencido, taxaPago, taxaVencido, score, status, centroCritico, vencemEm7Dias })
+  const narrativa = gerarNarrativaExecutiva({ total, pago, pendente, vencido, taxaPago, taxaVencido, score, centroCritico, total7Dias, tendenciaMensal })
 
   const recomendacoes = [
     vencido > 0 ? `Priorizar a quitação ou renegociação dos vencidos (${moeda(vencido)}) antes de novas despesas.` : 'Manter rotina semanal de conferência para preservar o cenário sem vencidos críticos.',
@@ -207,15 +209,17 @@ export function gerarCopilotFinanceiro({ contas = [], contasFiltradas = [] } = {
   }
 
   const insights = [
-    taxaPago >= 70 ? 'Boa eficiência de realização no período analisado.' : 'A taxa de realização ainda pede acompanhamento próximo.',
-    vencido > 0 ? 'O valor vencido deve ser tratado antes de novas decisões de expansão.' : 'Sem vencidos relevantes no recorte atual.',
-    centroCritico ? `Centro de maior peso: ${centroCritico.nome}.` : 'Centros de custo ainda sem concentração relevante.'
+    narrativa.liquidez,
+    narrativa.concentracao,
+    narrativa.curtoPrazo,
+    narrativa.comportamento
   ]
 
   return {
     score,
     status,
     executiveSummary,
+    narrativa,
     totals: { total, pago, pendente, vencido, taxaPago, taxaVencido, total7Dias },
     priorities: priorities.slice(0, 4),
     insights,

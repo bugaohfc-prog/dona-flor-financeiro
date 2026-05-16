@@ -10,6 +10,7 @@ import {
   desativarRecorrencia,
   enviarContaParaLixeira,
   listarContasAtivas,
+  listarContasDoMesParaRecorrencia,
   listarRecorrenciasAtivas,
   listarRecorrenciasPorDia,
   validarCentroCustoDaEmpresa,
@@ -98,6 +99,15 @@ export function useContas() {
       return contasAtuais
     }
 
+    const inicioMes = `${ano}-${String(mes).padStart(2, '0')}-01`
+    const fimMes = `${ano}-${String(mes).padStart(2, '0')}-${String(new Date(ano, mes, 0).getDate()).padStart(2, '0')}`
+    const { data: contasDoMes, error: erroContasDoMes } = await listarContasDoMesParaRecorrencia(supabase, empresaAtual, inicioMes, fimMes)
+
+    if (erroContasDoMes) {
+      console.warn('Não foi possível validar contas recorrentes existentes:', erroContasDoMes.message)
+    }
+
+    const contasReferencia = Array.isArray(contasDoMes) ? contasDoMes : contasAtuais
     const novasContas = []
 
     for (const recorrencia of (recorrentes || [])) {
@@ -105,10 +115,11 @@ export function useContas() {
 
       const dataGerada = montarDataRecorrente(ano, mes, recorrencia.dia_vencimento)
 
-      const jaExiste = contasAtuais.some((conta) =>
-        String(conta.descricao || '').trim().toLowerCase() === String(recorrencia.descricao || '').trim().toLowerCase()
-        && conta.data_vencimento === dataGerada
-      )
+      const jaExiste = contasReferencia.some((conta) => {
+        const mesmaRecorrencia = recorrencia.id && conta.recorrencia_id === recorrencia.id
+        const mesmaDescricao = String(conta.descricao || '').trim().toLowerCase() === String(recorrencia.descricao || '').trim().toLowerCase()
+        return conta.data_vencimento === dataGerada && (mesmaRecorrencia || mesmaDescricao)
+      })
 
       if (jaExiste) continue
 
@@ -169,7 +180,7 @@ export function useContas() {
       return
     }
 
-    const contasAtuais = (data || []).filter((conta) => conta?.excluido !== true)
+    const contasAtuais = data || []
     const contasComRecorrencias = await garantirContasRecorrentesDoMes({
       supabase,
       empresaAtual,
@@ -503,7 +514,6 @@ export function useContas() {
       return
     }
 
-    setContas((listaAtual) => (listaAtual || []).filter((conta) => conta.id !== id))
     await Promise.all([buscarContas(), buscarLixeira()])
     mostrarAviso?.('Conta enviada para a lixeira.', 'sucesso')
   }

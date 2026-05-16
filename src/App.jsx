@@ -1198,9 +1198,7 @@ export default function App() {
   // =========================
   // BLOCO 6 — FILTROS / RESUMOS
   // =========================
-  const contasAtivas = contas.filter((conta) => conta?.excluido !== true)
-
-  const contasFiltradas = contasAtivas
+  const contasFiltradas = contas
     .filter((conta) => {
       if (filtroStatus === 'pendentes') return conta.status !== 'pago'
       if (filtroStatus === 'pagas') return conta.status === 'pago'
@@ -1244,7 +1242,7 @@ export default function App() {
         .some((campo) => String(campo).toLowerCase().includes(termo))
     })
 
-  const contasOperacionaisFiliais = contasAtivas
+  const contasOperacionaisFiliais = contas
     .filter((conta) => {
       if (filtroStatus === 'pendentes') return conta.status !== 'pago'
       if (filtroStatus === 'pagas') return conta.status === 'pago'

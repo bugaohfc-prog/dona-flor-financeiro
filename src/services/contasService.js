@@ -9,8 +9,15 @@ import { assertEmpresaId } from './tenantService'
 export async function listarContasAtivas(supabase, empresaId) {
   assertEmpresaId(empresaId)
   return selecionarPorEmpresa(supabase, 'df_contas', empresaId, '*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia)')
-    .or('excluido.is.false,excluido.is.null')
+    .or('excluido.is.null,excluido.eq.false')
     .order('data_vencimento')
+}
+
+export async function listarContasDoMesParaRecorrencia(supabase, empresaId, dataInicial, dataFinal) {
+  assertEmpresaId(empresaId)
+  return selecionarPorEmpresa(supabase, 'df_contas', empresaId, 'id, descricao, valor, data_vencimento, recorrencia_id, excluido, excluido_em')
+    .gte('data_vencimento', dataInicial)
+    .lte('data_vencimento', dataFinal)
 }
 
 export async function listarRecorrenciasAtivas(supabase, empresaId) {

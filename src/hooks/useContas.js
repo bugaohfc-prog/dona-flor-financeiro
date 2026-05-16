@@ -169,7 +169,7 @@ export function useContas() {
       return
     }
 
-    const contasAtuais = data || []
+    const contasAtuais = (data || []).filter((conta) => conta?.excluido !== true)
     const contasComRecorrencias = await garantirContasRecorrentesDoMes({
       supabase,
       empresaAtual,
@@ -503,6 +503,7 @@ export function useContas() {
       return
     }
 
+    setContas((listaAtual) => (listaAtual || []).filter((conta) => conta.id !== id))
     await Promise.all([buscarContas(), buscarLixeira()])
     mostrarAviso?.('Conta enviada para a lixeira.', 'sucesso')
   }

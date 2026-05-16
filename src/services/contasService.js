@@ -9,7 +9,7 @@ import { assertEmpresaId } from './tenantService'
 export async function listarContasAtivas(supabase, empresaId) {
   assertEmpresaId(empresaId)
   return selecionarPorEmpresa(supabase, 'df_contas', empresaId, '*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia)')
-    .eq('excluido', false)
+    .or('excluido.is.false,excluido.is.null')
     .order('data_vencimento')
 }
 

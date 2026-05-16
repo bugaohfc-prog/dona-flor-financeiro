@@ -66,6 +66,48 @@ export function AiInsightsCard() {
   )
 }
 
+export function RecommendationsCard() {
+  const { intelligence } = useCopilot()
+  return (
+    <section className="copilot-card">
+      <div className="copilot-card-head">
+        <span>Recomendações acionáveis</span>
+        <strong>{intelligence.recomendacoes.length}</strong>
+      </div>
+      <div className="copilot-recommendations">
+        {intelligence.recomendacoes.map((item, index) => (
+          <p key={`${item}-${index}`}><b>{index + 1}</b>{item}</p>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+export function DrillDownCard() {
+  const { intelligence } = useCopilot()
+  const centros = intelligence.rankingCentros || []
+
+  return (
+    <section className="copilot-card">
+      <div className="copilot-card-head">
+        <span>Drill-down analytics</span>
+        <strong>Top {centros.length || 0}</strong>
+      </div>
+      <div className="copilot-drilldown">
+        {centros.length ? centros.map((centro) => (
+          <article key={centro.nome}>
+            <div>
+              <strong>{centro.nome}</strong>
+              <small>{moeda(centro.total)} · {centro.peso}% do recorte · risco {centro.risco}%</small>
+            </div>
+            <span style={{ width: `${Math.max(6, centro.peso)}%` }} />
+          </article>
+        )) : <p>Sem centros suficientes para drill-down no recorte atual.</p>}
+      </div>
+    </section>
+  )
+}
+
 export function QuickQuestions() {
   const { intelligence, setLastQuestion } = useCopilot()
   return (

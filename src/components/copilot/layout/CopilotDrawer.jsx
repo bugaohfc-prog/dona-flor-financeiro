@@ -1,5 +1,5 @@
 import { useCopilot } from '../core/CopilotProvider.jsx'
-import { AiInsightsCard, ExecutiveSummary, QuickQuestions, SmartPriorityList } from '../widgets/CopilotWidgets.jsx'
+import { AiInsightsCard, DrillDownCard, ExecutiveSummary, QuickQuestions, RecommendationsCard, SmartPriorityList } from '../widgets/CopilotWidgets.jsx'
 
 export default function CopilotDrawer() {
   const { open, close, intelligence, lastQuestion } = useCopilot()
@@ -22,12 +22,14 @@ export default function CopilotDrawer() {
         <main className="copilot-content">
           <ExecutiveSummary />
           <SmartPriorityList />
+          <DrillDownCard />
+          <RecommendationsCard />
           <AiInsightsCard />
           {lastQuestion && (
             <section className="copilot-card copilot-answer">
               <span className="copilot-mini-label">Pergunta selecionada</span>
               <strong>{lastQuestion}</strong>
-              <p>Resposta executiva gerada a partir dos KPIs atuais. Na próxima etapa, este bloco receberá narrativa contextual avançada e drill-down.</p>
+              <p>{intelligence.respostas?.[lastQuestion] || 'Resposta executiva gerada a partir dos KPIs atuais.'}</p>
             </section>
           )}
           <QuickQuestions />

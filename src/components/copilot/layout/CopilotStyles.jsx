@@ -61,7 +61,7 @@ export default function CopilotStyles() {
       .copilot-header span { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 900; color: rgba(255,255,255,.74); }
       .copilot-header h2 { margin: 7px 0 8px; font-size: 22px; line-height: 1.1; }
       .copilot-header p { margin: 0; color: rgba(255,255,255,.82); font-size: 13px; font-weight: 700; }
-      .copilot-header button { width: 36px; height: 36px; border: 1px solid rgba(255,255,255,.25); border-radius: 14px; background: rgba(255,255,255,.12); color: #fff; font-size: 24px; cursor: pointer; }
+      .copilot-header button { width: 36px; height: 36px; min-width: 36px; border: 1px solid rgba(255,255,255,.25); border-radius: 14px; background: rgba(255,255,255,.12); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0 0 2px; }
       .copilot-content { padding: 16px; overflow-y: auto; display: grid; gap: 12px; }
       .copilot-card {
         border-radius: 22px;
@@ -90,6 +90,15 @@ export default function CopilotStyles() {
       .copilot-priority-danger { border-color: #fecaca; background: #fff7f7; }
       .copilot-priority-warning { border-color: #fde68a; background: #fffbeb; }
       .copilot-priority-success { border-color: #bbf7d0; background: #f0fdf4; }
+
+      .copilot-recommendations { display: grid; gap: 9px; }
+      .copilot-recommendations p { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 15px; background: #f8fafc; border: 1px solid #e5e7eb; }
+      .copilot-recommendations b { width: 22px; height: 22px; min-width: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: #0f766e; color: #fff; font-size: 12px; }
+      .copilot-drilldown { display: grid; gap: 10px; }
+      .copilot-drilldown article { display: grid; gap: 8px; padding: 11px 12px; border-radius: 16px; background: #f8fafc; border: 1px solid #e5e7eb; overflow: hidden; }
+      .copilot-drilldown article strong { display: block; color: #0f172a; font-size: 13px; }
+      .copilot-drilldown article small { display: block; margin-top: 3px; color: #64748b; font-size: 11px; font-weight: 800; }
+      .copilot-drilldown article span { display: block; height: 7px; min-width: 7px; border-radius: 999px; background: linear-gradient(90deg, #0f766e, #14b8a6); }
       .copilot-insights { display: grid; gap: 8px; }
       .copilot-insights p { padding: 10px 12px; border-radius: 15px; background: #f8fafc; border: 1px solid #e5e7eb; }
       .copilot-questions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }

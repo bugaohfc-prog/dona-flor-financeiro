@@ -4,7 +4,7 @@ cd /d "%~dp0.."
 set SUPABASE_CMD=supabase
 if exist "%CD%\supabase.exe" set SUPABASE_CMD=""%CD%\supabase.exe""
 
-echo == Dona Flor Financeiro | Deploy Supabase Auth 11.9.2 ==
+echo == Dona Flor Financeiro | Deploy Supabase Auth 11.9.4 ==
 %SUPABASE_CMD% --version
 if errorlevel 1 (
   echo Supabase CLI nao encontrada. Coloque supabase.exe na raiz do projeto ou instale a CLI.

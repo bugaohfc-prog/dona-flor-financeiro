@@ -1,4 +1,15 @@
 import { useState } from 'react'
+import {
+  alternarNotaConcluidaService,
+  atualizarNota,
+  criarNota,
+  enviarNotaParaLixeira,
+  excluirNotaPermanentemente,
+  listarNotas,
+  listarNotasLixeira,
+  restaurarNotaDaLixeira
+} from '../services/notasService'
+import { primeiraLetraMaiuscula } from '../utils/format'
 
 function assinaturaListaNotas(itens = []) {
   return itens
@@ -12,21 +23,6 @@ function manterListaSeNaoMudou(setLista, novaLista = []) {
       ? listaAtual
       : novaLista
   ))
-}
-import {
-  alternarNotaConcluidaService,
-  atualizarNota,
-  criarNota,
-  enviarNotaParaLixeira,
-  excluirNotaPermanentemente,
-  listarNotas,
-  listarNotasLixeira,
-  restaurarNotaDaLixeira
-} from '../services/notasService'
-
-function primeiraLetraMaiuscula(texto) {
-  if (!texto) return ''
-  return texto.charAt(0).toUpperCase() + texto.slice(1)
 }
 
 export function useNotas() {

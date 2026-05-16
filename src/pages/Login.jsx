@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { getSupabaseConfigError, supabase } from '../lib/supabase'
 import { useApp } from '../context/AppContext.jsx'
 
 export default function Login({ onLogin }) {
@@ -13,6 +13,12 @@ export default function Login({ onLogin }) {
 
     if (!email || !senha) {
       showToast('Informe e-mail e senha', 'erro')
+      return
+    }
+
+    const configError = getSupabaseConfigError()
+    if (configError) {
+      showToast(configError, 'erro')
       return
     }
 

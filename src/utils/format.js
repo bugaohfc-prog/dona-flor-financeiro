@@ -43,7 +43,18 @@ export function limitarDataInput(valor) {
 }
 
 export function converterValor(valorDigitado) {
-  return Number(String(valorDigitado).replace(',', '.'))
+  const texto = String(valorDigitado || '').trim()
+  if (!texto) return 0
+
+  const semMoeda = texto.replace(/[^\d,.-]/g, '')
+  const temVirgulaDecimal = semMoeda.includes(',')
+
+  const normalizado = temVirgulaDecimal
+    ? semMoeda.replace(/\./g, '').replace(',', '.')
+    : semMoeda.replace(/,/g, '')
+
+  const valor = Number(normalizado)
+  return Number.isFinite(valor) ? valor : 0
 }
 
 export function money(value) {

@@ -1,37 +1,61 @@
 # Dona Flor Financeiro
 
-Correção aplicada para estabilizar deploy na Vercel.
+Sistema web de controle financeiro para empresas, com contas, notas, filiais, centros de custo, usuarios, permissoes, billing e dashboards operacionais.
 
-## Importante
+## Requisitos
 
-Este pacote remove a tentativa de forçar pnpm, porque o Vercel apresentou erro:
+- Node.js 20
+- npm
+- Projeto Supabase configurado
 
-- ERR_INVALID_THIS
-- ERR_PNPM_META_FETCH_FAIL
+## Configuracao local
 
-Agora o projeto volta para o fluxo padrão com npm, Node 18 e `.npmrc` com retries.
+1. Instale as dependencias:
 
-## Configuração na Vercel
+   ```bash
+   npm install
+   ```
 
-Em Project Settings:
+2. Crie o arquivo `.env` com base no `.env.example`:
 
-- Framework Preset: Vite
-- Build Command: npm run build
-- Output Directory: dist
-- Node.js Version: 18.x
+   ```bash
+   VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+   VITE_SUPABASE_ANON_KEY=sua-chave-publica-anon
+   ```
 
-Depois faça:
+3. Rode o app em desenvolvimento:
 
-- Deployments
-- Redeploy
-- Marcar Clear Build Cache
+   ```bash
+   npm run dev
+   ```
 
-## Arquivos que NÃO devem voltar
+4. Gere o build de producao:
 
-Não suba:
+   ```bash
+   npm run build
+   ```
 
-- vercel.json
-- package-lock.json
-- pnpm-lock.yaml
-- node_modules
-- dist
+## Deploy
+
+- Framework preset: Vite
+- Build command: `npm run build`
+- Output directory: `dist`
+- Node.js version: 20.x
+
+O projeto usa `_redirects` para manter rotas de SPA funcionando em hospedagens como Netlify. Em Vercel, mantenha o preset Vite e configure as variaveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` no painel do projeto.
+
+## Estrutura
+
+- `src/components`: componentes reutilizaveis de layout, dashboard, modais e feedback.
+- `src/hooks`: regras de estado e operacoes de contas/notas.
+- `src/pages`: telas principais da aplicacao.
+- `src/services`: integracoes e acesso ao Supabase.
+- `src/utils`: formatacao, datas e recorrencia.
+- `supabase`: SQL e edge functions relacionadas ao backend.
+- `docs/implementation-history`: historico tecnico das fases antigas do projeto.
+
+## Observacoes de producao
+
+- Nao versionar `.env`, `node_modules` ou `dist`.
+- Usar apenas chaves anonimas/publicas no frontend.
+- Manter `SUPABASE_SERVICE_ROLE_KEY` somente em ambientes seguros de backend/edge functions.

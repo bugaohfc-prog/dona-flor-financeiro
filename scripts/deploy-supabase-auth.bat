@@ -18,6 +18,7 @@ set /p SERVICE_ROLE_KEY=Cole a service_role key do Supabase:
 %SUPABASE_CMD% link --project-ref %PROJECT_REF%
 %SUPABASE_CMD% secrets set SERVICE_ROLE_KEY="%SERVICE_ROLE_KEY%"
 %SUPABASE_CMD% functions deploy criar-usuario-manual
+%SUPABASE_CMD% functions deploy listar-usuarios-empresa
 
 echo.
 echo Deploy concluido. Atualize o sistema e teste Criar acesso manual.

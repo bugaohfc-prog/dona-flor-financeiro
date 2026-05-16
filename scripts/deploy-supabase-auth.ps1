@@ -16,6 +16,7 @@ $serviceRole = Read-Host 'Cole a service_role key do Supabase'
 & $supabase link --project-ref $projectRef
 & $supabase secrets set SERVICE_ROLE_KEY="$serviceRole"
 & $supabase functions deploy criar-usuario-manual
+& $SupabaseCmd functions deploy listar-usuarios-empresa
 
 Write-Host 'Deploy concluido. Atualize o sistema e teste Criar acesso manual.' -ForegroundColor Green
 Read-Host 'Pressione ENTER para sair'

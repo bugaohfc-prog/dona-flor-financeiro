@@ -9,7 +9,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "supabase:deploy:auth": "supabase functions deploy criar-usuario-manual && supabase functions deploy convidar-usuario",
+    "supabase:deploy:auth": "supabase functions deploy criar-usuario-manual && supabase functions deploy listar-usuarios-empresa && supabase functions deploy convidar-usuario",
     "supabase:secrets:auth": "supabase secrets set SUPABASE_SERVICE_ROLE_KEY",
     "supabase:db:push": "supabase db push"
   },

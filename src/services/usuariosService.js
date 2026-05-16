@@ -13,18 +13,8 @@ export function normalizarPerfilUsuario(perfil) {
   return 'operador'
 }
 
-export async function listarUsuariosEmpresa(empresaId) {
-  if (!empresaId) return []
-
-  const { data, error } = await supabase
-    .from('df_usuarios_empresas')
-    .select('*')
-    .eq('empresa_id', empresaId)
-    .order('created_at', { ascending: true })
-
-  if (error) throw error
-
-  const usuariosNormalizados = (data || []).map((usuario) => ({
+function normalizarListaUsuarios(usuarios = []) {
+  const usuariosNormalizados = (usuarios || []).map((usuario) => ({
     ...usuario,
     email: String(usuario.email || '').trim().toLowerCase(),
     perfil: normalizarPerfilUsuario(usuario.perfil)
@@ -54,6 +44,39 @@ export async function listarUsuariosEmpresa(empresaId) {
   }
 
   return Array.from(mapa.values())
+}
+
+async function listarUsuariosEmpresaViaFunction(empresaId) {
+  const { data, error } = await supabase.functions.invoke('listar-usuarios-empresa', {
+    body: { empresaId }
+  })
+
+  if (error) throw error
+  if (data?.ok === false) throw new Error(data?.message || 'Não foi possível listar usuários pela Edge Function.')
+
+  return normalizarListaUsuarios(data?.usuarios || [])
+}
+
+export async function listarUsuariosEmpresa(empresaId) {
+  if (!empresaId) return []
+
+  const { data, error } = await supabase
+    .from('df_usuarios_empresas')
+    .select('*')
+    .eq('empresa_id', empresaId)
+    .order('created_at', { ascending: true })
+
+  if (!error && Array.isArray(data) && data.length > 0) {
+    return normalizarListaUsuarios(data)
+  }
+
+  try {
+    return await listarUsuariosEmpresaViaFunction(empresaId)
+  } catch (functionError) {
+    if (error) throw error
+    console.warn('Listagem direta retornou vazia e fallback por Edge Function falhou:', functionError?.message)
+    return normalizarListaUsuarios(data || [])
+  }
 }
 
 

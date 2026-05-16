@@ -879,7 +879,7 @@ export default function App() {
 
     try {
       setCriandoUsuarioManual(true)
-      await adicionarUsuarioEmpresaService({
+      const usuarioCriado = await adicionarUsuarioEmpresaService({
         empresaId,
         email,
         nome: nomeConviteUsuario,
@@ -887,6 +887,16 @@ export default function App() {
         senhaProvisoria,
         criarAuthManual: true
       })
+
+      if (usuarioCriado) {
+        setUsuariosEmpresa((usuariosAtuais) => {
+          const chaveNova = usuarioCriado.user_id || usuarioCriado.email || usuarioCriado.id
+          const jaExiste = usuariosAtuais.some((usuario) => (usuario.user_id || usuario.email || usuario.id) === chaveNova)
+          if (jaExiste) return usuariosAtuais
+          return [...usuariosAtuais, usuarioCriado]
+        })
+        setUsuariosInicializados(true)
+      }
     } catch (error) {
       avisarErro(error)
       return
@@ -898,7 +908,9 @@ export default function App() {
     setNomeConviteUsuario('')
     setSenhaConviteUsuario('')
     setPerfilConviteUsuario('operador')
-    await buscarUsuariosEmpresa(empresaId, { silencioso: true })
+    setTimeout(() => {
+      buscarUsuariosEmpresa(empresaId, { silencioso: true })
+    }, 300)
 
     mostrarAviso('Usuário criado manualmente. Entregue o e-mail e a senha provisória ao usuário por um canal seguro.', 'sucesso')
   }

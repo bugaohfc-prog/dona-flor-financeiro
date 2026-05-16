@@ -968,6 +968,7 @@ export default function App() {
         }
 
         await buscarUsuariosEmpresa()
+        mostrarAviso('Perfil do usuário atualizado.', 'sucesso')
       }
     })
   }

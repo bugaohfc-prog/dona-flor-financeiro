@@ -1,9 +1,11 @@
+import { createPortal } from 'react-dom';
+
 export default function GlobalToast({ toast, onClose }) {
   if (!toast) return null;
 
   const tipo = toast.type || 'info';
 
-  return (
+  const content = (
     <div
       className={`app-toast app-toast-${tipo} app-toast-global`}
       role={tipo === 'erro' ? 'alert' : 'status'}
@@ -20,4 +22,8 @@ export default function GlobalToast({ toast, onClose }) {
       <button type="button" className="app-toast-close" aria-label="Fechar aviso" onClick={(event) => { event.stopPropagation(); onClose?.(); }}>×</button>
     </div>
   );
+
+  if (typeof document === 'undefined') return content;
+
+  return createPortal(content, document.body);
 }

@@ -251,6 +251,7 @@ export default function App() {
   const [emailConviteUsuario, setEmailConviteUsuario] = useState('')
   const [nomeConviteUsuario, setNomeConviteUsuario] = useState('')
   const [perfilConviteUsuario, setPerfilConviteUsuario] = useState('operador')
+  const [senhaConviteUsuario, setSenhaConviteUsuario] = useState('')
   const [novoEmailUsuario, setNovoEmailUsuario] = useState('')
   const [novaSenhaUsuario, setNovaSenhaUsuario] = useState('')
   const [confirmarNovaSenhaUsuario, setConfirmarNovaSenhaUsuario] = useState('')
@@ -856,6 +857,13 @@ export default function App() {
       return
     }
 
+    const senhaProvisoria = senhaConviteUsuario.trim()
+
+    if (senhaProvisoria.length < 6) {
+      mostrarAviso('Informe uma senha provisória com pelo menos 6 caracteres.', 'erro')
+      return
+    }
+
     const perfil = normalizarPerfil(perfilConviteUsuario)
 
     try {
@@ -863,7 +871,9 @@ export default function App() {
         empresaId,
         email,
         nome: nomeConviteUsuario,
-        perfil
+        perfil,
+        senhaProvisoria,
+        criarAuthManual: true
       })
     } catch (error) {
       avisarErro(error)
@@ -872,25 +882,11 @@ export default function App() {
 
     setEmailConviteUsuario('')
     setNomeConviteUsuario('')
+    setSenhaConviteUsuario('')
     setPerfilConviteUsuario('operador')
     await buscarUsuariosEmpresa()
 
-    abrirConfirmacao({
-      titulo: 'Usuário cadastrado',
-      mensagem: 'O usuário foi adicionado à empresa. Deseja enviar agora o link de acesso/redefinição de senha para este e-mail?',
-      textoConfirmar: 'Enviar acesso',
-      tipo: 'sucesso',
-      acao: async () => {
-        try {
-          const resultado = await enviarAcessoUsuarioEmpresaService({
-            usuario: { email, nome: nomeConviteUsuario }
-          })
-          mostrarAviso(resultado.mensagem, 'info')
-        } catch (error) {
-          avisarErro(error)
-        }
-      }
-    })
+    mostrarAviso('Usuário criado manualmente. Entregue o e-mail e a senha provisória ao usuário por um canal seguro.', 'sucesso')
   }
 
   async function enviarAcessoUsuarioEmpresa(usuario) {
@@ -4032,6 +4028,14 @@ export default function App() {
                 onChange={(e) => setEmailConviteUsuario(e.target.value)}
               />
 
+              <input
+                style={styles.input}
+                type="text"
+                placeholder="Senha provisória manual"
+                value={senhaConviteUsuario}
+                onChange={(e) => setSenhaConviteUsuario(e.target.value)}
+              />
+
               <select
                 style={styles.input}
                 value={perfilConviteUsuario}
@@ -4045,7 +4049,8 @@ export default function App() {
                 <option value="admin">Admin</option>
               </select>
 
-              <button style={styles.btnSalvar} onClick={adicionarUsuarioEmpresa}>Adicionar usuário</button>
+              <button style={styles.btnSalvar} onClick={adicionarUsuarioEmpresa}>Criar acesso manual</button>
+              <small style={styles.textoNota}>Sem envio de e-mail: o admin entrega o e-mail e a senha provisória manualmente.</small>
             </div>
           )}
 
@@ -4125,8 +4130,9 @@ export default function App() {
                       <button
                         style={styles.btnSecundario}
                         onClick={() => enviarAcessoUsuarioEmpresa(usuario)}
+                        title="Fallback por e-mail. O acesso principal agora é criação manual com senha provisória."
                       >
-                        Enviar acesso
+                        Enviar link
                       </button>
 
                       <button

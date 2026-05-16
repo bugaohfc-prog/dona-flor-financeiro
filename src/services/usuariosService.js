@@ -57,12 +57,18 @@ export async function listarUsuariosEmpresa(empresaId) {
 }
 
 
-export async function adicionarUsuarioEmpresa({ empresaId, email, nome, perfil }) {
+export async function adicionarUsuarioEmpresa({ empresaId, email, nome, perfil, senhaProvisoria, criarAuthManual = false }) {
   const emailNormalizado = String(email || '').trim().toLowerCase()
+  const nomeNormalizado = String(nome || '').trim() || emailNormalizado.split('@')[0]
   const perfilNormalizado = normalizarPerfilUsuario(perfil)
+  const senhaLimpa = String(senhaProvisoria || '').trim()
 
   if (!empresaId) throw new Error('Empresa não identificada.')
   if (!emailNormalizado || !emailNormalizado.includes('@')) throw new Error('Informe um e-mail válido.')
+
+  if (criarAuthManual && senhaLimpa.length < 6) {
+    throw new Error('Informe uma senha provisória com pelo menos 6 caracteres.')
+  }
 
   const { data: existente, error: erroConsulta } = await supabase
     .from('df_usuarios_empresas')
@@ -74,11 +80,34 @@ export async function adicionarUsuarioEmpresa({ empresaId, email, nome, perfil }
   if (erroConsulta) throw erroConsulta
   if (existente) throw new Error('Este e-mail já está cadastrado nesta empresa.')
 
+  if (criarAuthManual) {
+    const { data: adminData, error: adminError } = await supabase.functions.invoke('criar-usuario-manual', {
+      body: {
+        empresaId,
+        email: emailNormalizado,
+        nome: nomeNormalizado,
+        perfil: perfilNormalizado,
+        senhaProvisoria: senhaLimpa
+      }
+    })
+
+    if (adminError) throw adminError
+    if (adminData?.ok === false) throw new Error(adminData?.message || 'Não foi possível criar o usuário manualmente.')
+
+    return adminData?.usuario || adminData?.vinculo || {
+      empresa_id: empresaId,
+      email: emailNormalizado,
+      nome: nomeNormalizado,
+      perfil: perfilNormalizado,
+      user_id: adminData?.userId || null
+    }
+  }
+
   const payload = {
     empresa_id: empresaId,
     user_id: null,
     email: emailNormalizado,
-    nome: String(nome || '').trim() || emailNormalizado.split('@')[0],
+    nome: nomeNormalizado,
     perfil: perfilNormalizado
   }
 

@@ -1,5 +1,14 @@
 import UserSecurityCards from '../components/UserSecurityCards.jsx'
 
+const PROFILE_OPTIONS = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'gerente', label: 'Gerente' },
+  { value: 'financeiro', label: 'Financeiro' },
+  { value: 'operacional', label: 'Operacional' },
+  { value: 'visualizacao', label: 'Visualização' },
+  { value: 'operador', label: 'Operador' }
+]
+
 export default function UsuariosPage({
   styles,
   EmptyState,
@@ -61,6 +70,7 @@ export default function UsuariosPage({
   }
 
   const usuarioAtualEmail = usuarioLogado?.email || ''
+  const podeEditarUsuarios = podeAdministrarUsuarios()
 
   return (
     <>
@@ -112,8 +122,8 @@ export default function UsuariosPage({
         </section>
       )}
 
-      <section style={styles.cardConfiguracao} className="users-page-section">
-        <div className="users-header-row">
+      <section style={styles.cardConfiguracao} className="users-page-section users-management-section">
+        <div className="users-header-row users-management-header">
           <div>
             <h2 style={styles.subtitulo}>Usuários da empresa</h2>
             <p style={styles.textoNota}>Defina perfil e escopo por filial. Sem filial marcada = acesso a todas as filiais da empresa.</p>
@@ -121,18 +131,17 @@ export default function UsuariosPage({
           <button style={styles.btnCinza} onClick={() => buscarUsuariosEmpresa()}>Atualizar</button>
         </div>
 
-        <div className="users-permission-guide">
+        <div className="users-permission-guide users-permission-guide-compact">
           <span><strong>Admin:</strong> acesso total</span>
-          <span><strong>Gerente:</strong> contas, notas, relatórios e configurações operacionais</span>
-          <span><strong>Financeiro:</strong> contas, notas e relatórios</span>
-          <span><strong>Operacional:</strong> contas e notas operacionais</span>
-          <span><strong>Visualização:</strong> somente consulta</span>
-          <span><strong>Operador:</strong> compatibilidade com acessos antigos</span>
-          <span><strong>Filiais:</strong> limita o usuário às unidades selecionadas</span>
+          <span><strong>Gerente:</strong> gestão operacional</span>
+          <span><strong>Financeiro:</strong> contas e relatórios</span>
+          <span><strong>Operacional:</strong> contas e notas</span>
+          <span><strong>Visualização:</strong> consulta</span>
+          <span><strong>Filiais:</strong> escopo por unidade</span>
         </div>
 
-        {podeAdministrarUsuarios() && (
-          <div className="users-add-card">
+        {podeEditarUsuarios && (
+          <div className="users-add-card users-add-card-compact">
             <input
               style={styles.input}
               type="text"
@@ -152,7 +161,7 @@ export default function UsuariosPage({
             <input
               style={styles.input}
               type="text"
-              placeholder="Senha provisória manual"
+              placeholder="Senha provisória"
               value={senhaConviteUsuario}
               onChange={(event) => setSenhaConviteUsuario(event.target.value)}
             />
@@ -162,15 +171,12 @@ export default function UsuariosPage({
               value={perfilConviteUsuario}
               onChange={(event) => setPerfilConviteUsuario(event.target.value)}
             >
-              <option value="visualizacao">Visualização</option>
-              <option value="operacional">Operacional</option>
-              <option value="financeiro">Financeiro</option>
-              <option value="operador">Operador</option>
-              <option value="gerente">Gerente</option>
-              <option value="admin">Admin</option>
+              {PROFILE_OPTIONS.slice().reverse().map((perfil) => (
+                <option key={perfil.value} value={perfil.value}>{perfil.label}</option>
+              ))}
             </select>
 
-            <button style={styles.btnSalvar} onClick={adicionarUsuarioEmpresa} disabled={criandoUsuarioManual}>{criandoUsuarioManual ? 'Criando acesso...' : 'Criar acesso manual'}</button>
+            <button style={styles.btnSalvar} onClick={adicionarUsuarioEmpresa} disabled={criandoUsuarioManual}>{criandoUsuarioManual ? 'Criando...' : 'Criar acesso'}</button>
             <small style={styles.textoNota}>Sem envio de e-mail: o admin entrega o e-mail e a senha provisória manualmente.</small>
           </div>
         )}
@@ -191,77 +197,77 @@ export default function UsuariosPage({
           {usuariosEmpresa.map((usuario) => {
             const atual = usuario.user_id && usuarioLogado?.id && usuario.user_id === usuarioLogado.id
             const pendente = !usuario.user_id
+            const perfilNormalizado = normalizarPerfil(usuario.perfil)
+            const filiaisSelecionadas = filiaisUsuariosEmpresa[usuario.id] || []
+            const acessoTotalFiliais = filiaisSelecionadas.length === 0
 
             return (
-              <div key={usuario.id || usuario.user_id || usuario.email} className="user-card userCard">
-                <div className="user-card-header">
-                  <div className="user-main-info userInfo">
+              <article key={usuario.id || usuario.user_id || usuario.email} className="user-card userCard users-user-card">
+                <div className="users-user-card-header">
+                  <div className="user-main-info userInfo users-user-identity">
                     <strong>{usuario.nome || usuario.email || 'Usuário sem nome'}</strong>
                     <small>{usuario.email || usuario.user_id || 'Sem e-mail vinculado'}</small>
-                    <div className="user-status-row">
+                    <div className="users-user-status-row">
                       {atual && <span className="user-badge user-badge-self">Você</span>}
                       {pendente && <span className="user-badge user-badge-pending">Pendente de vínculo</span>}
                     </div>
                   </div>
 
-                  <div className="user-card-controls">
-                    <span className={`roleBadge ${normalizarPerfil(usuario.perfil)}`}>{normalizarPerfil(usuario.perfil)}</span>
-
+                  <div className="users-user-controls">
+                    <span className={`roleBadge ${perfilNormalizado}`}>{perfilNormalizado}</span>
                     <select
-                      className="user-role-select"
+                      className="user-role-select users-role-select"
                       style={styles.input}
-                      value={normalizarPerfil(usuario.perfil)}
-                      disabled={!podeAdministrarUsuarios()}
+                      value={perfilNormalizado}
+                      disabled={!podeEditarUsuarios}
                       onChange={(event) => atualizarPerfilUsuarioEmpresa(usuario, event.target.value)}
                     >
-                      <option value="admin">Admin</option>
-                      <option value="gerente">Gerente</option>
-                      <option value="financeiro">Financeiro</option>
-                      <option value="operacional">Operacional</option>
-                      <option value="visualizacao">Visualização</option>
-                      <option value="operador">Operador</option>
+                      {PROFILE_OPTIONS.map((perfil) => (
+                        <option key={perfil.value} value={perfil.value}>{perfil.label}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
 
-                <div className="user-branch-scope">
-                  <div className="user-branch-scope-header">
-                    <strong>Filiais permitidas</strong>
+                <div className="user-branch-scope users-branch-scope-compact">
+                  <div className="user-branch-scope-header users-branch-header-compact">
+                    <div>
+                      <strong>Filiais permitidas</strong>
+                      <small>{acessoTotalFiliais ? 'Acesso a todas as filiais da empresa.' : `${filiaisSelecionadas.length} filial(is) selecionada(s).`}</small>
+                    </div>
                     <button
                       type="button"
                       className="user-branch-clear"
-                      disabled={!podeAdministrarUsuarios() || salvandoFilialUsuario === usuario.id}
+                      disabled={!podeEditarUsuarios || salvandoFilialUsuario === usuario.id}
                       onClick={() => liberarTodasFiliaisUsuario(usuario)}
                       title="Deixar o usuário com acesso a todas as filiais da empresa"
                     >
                       Todas
                     </button>
                   </div>
-                  <div className="user-branch-list">
+
+                  <div className="user-branch-list users-branch-chip-list">
                     {filiais.length === 0 ? (
                       <small>Nenhuma filial ativa cadastrada.</small>
                     ) : filiais.map((filial) => {
-                      const selecionada = (filiaisUsuariosEmpresa[usuario.id] || []).includes(filial.id)
+                      const selecionada = filiaisSelecionadas.includes(filial.id)
                       return (
-                        <label key={filial.id} className={`user-branch-chip ${selecionada ? 'selected' : ''}`}>
+                        <label key={filial.id} className={`user-branch-chip users-branch-chip ${selecionada ? 'selected' : ''}`}>
                           <input
                             type="checkbox"
                             checked={selecionada}
-                            disabled={!podeAdministrarUsuarios() || salvandoFilialUsuario === usuario.id}
+                            disabled={!podeEditarUsuarios || salvandoFilialUsuario === usuario.id}
                             onChange={() => alternarFilialUsuario(usuario, filial.id)}
                           />
-                          <span>{filial.nome || 'Filial'}</span>
+                          <span>{filial.nome || filial.nome_filial || filial.descricao || 'Filial'}</span>
                         </label>
                       )
                     })}
                   </div>
-                  {(filiaisUsuariosEmpresa[usuario.id] || []).length === 0 && (
-                    <small className="user-branch-all">Acesso a todas as filiais da empresa.</small>
-                  )}
                 </div>
 
-                {podeAdministrarUsuarios() && (
-                  <div className="user-actions">
+                {podeEditarUsuarios && (
+                  <div className="user-actions users-user-actions">
                     <button
                       style={styles.btnSecundario}
                       onClick={() => enviarAcessoUsuarioEmpresa(usuario)}
@@ -280,7 +286,7 @@ export default function UsuariosPage({
                     </button>
                   </div>
                 )}
-              </div>
+              </article>
             )
           })}
         </div>

@@ -721,8 +721,7 @@ export default function App() {
       buscarCentros(empresaAtual),
       buscarFiliais(empresaAtual),
       buscarLixeira(empresaAtual),
-      buscarConfiguracoes(empresaAtual),
-      buscarUsuariosEmpresa(empresaAtual)
+      buscarConfiguracoes(empresaAtual)
     ])
   }
 
@@ -2207,10 +2206,6 @@ export default function App() {
     setMenuAberto(false)
     setMenuNavegacaoAberto(false)
     setTelaAtualState(tela)
-
-    if (tela === 'usuarios') {
-      buscarUsuariosEmpresa()
-    }
 
     if (window.history.state?.tela !== tela) {
       window.history.pushState({ tela }, '', window.location.href)

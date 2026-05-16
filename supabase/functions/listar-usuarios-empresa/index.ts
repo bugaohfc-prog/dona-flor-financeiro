@@ -16,6 +16,40 @@ function normalizarPerfil(perfil: string) {
   return 'operador'
 }
 
+function perfilPodeAdministrarEmpresa(perfil: string) {
+  return normalizarPerfil(perfil) === 'admin'
+}
+
+async function buscarVinculoAdminEmpresa(supabaseAdmin: any, user: any, empresaId: string) {
+  const email = String(user?.email || '').trim().toLowerCase()
+
+  if (user?.id) {
+    const { data, error } = await supabaseAdmin
+      .from('df_usuarios_empresas')
+      .select('id, empresa_id, user_id, email, perfil')
+      .eq('empresa_id', empresaId)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (error) throw error
+    if (data && perfilPodeAdministrarEmpresa(data.perfil)) return data
+  }
+
+  if (email) {
+    const { data, error } = await supabaseAdmin
+      .from('df_usuarios_empresas')
+      .select('id, empresa_id, user_id, email, perfil')
+      .eq('empresa_id', empresaId)
+      .eq('email', email)
+      .maybeSingle()
+
+    if (error) throw error
+    if (data && perfilPodeAdministrarEmpresa(data.perfil)) return data
+  }
+
+  return null
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -39,16 +73,16 @@ serve(async (req) => {
       throw new Error('Usuário não autenticado.')
     }
 
-    const { data: isAdmin, error: adminError } = await supabaseUser.rpc('is_admin')
-    if (adminError || !isAdmin) {
-      throw new Error('Apenas administradores podem listar usuários da empresa.')
-    }
-
     const body = await req.json()
     const empresaId = String(body?.empresaId || '').trim()
     if (!empresaId) throw new Error('Empresa não identificada.')
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
+    const vinculoAdmin = await buscarVinculoAdminEmpresa(supabaseAdmin, callerData.user, empresaId)
+
+    if (!vinculoAdmin) {
+      throw new Error('Apenas administradores desta empresa podem listar usuários.')
+    }
 
     const { data: usuarios, error: usuariosError } = await supabaseAdmin
       .from('df_usuarios_empresas')

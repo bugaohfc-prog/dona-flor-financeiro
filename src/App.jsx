@@ -19,8 +19,8 @@ import MasterPanelPage from './pages/MasterPanelPage.jsx'
 import FiliaisPage from './pages/FiliaisPage.jsx'
 import BillingPage from './pages/BillingPage.jsx'
 import OnboardingPage from './pages/OnboardingPage.jsx'
+import UsuariosPage from './pages/UsuariosPage.jsx'
 import Login from './pages/Login.jsx'
-import UserSecurityCards from './components/UserSecurityCards.jsx'
 import Topbar from './components/layout/Topbar.jsx'
 import Sidebar from './components/layout/Sidebar.jsx'
 import MobileMenu from './components/layout/MobileMenu.jsx'
@@ -248,6 +248,7 @@ export default function App() {
   const [usuariosEmpresa, setUsuariosEmpresa] = useState([])
   const [usuariosCarregando, setUsuariosCarregando] = useState(false)
   const [usuariosInicializados, setUsuariosInicializados] = useState(false)
+  const [usuariosErro, setUsuariosErro] = useState('')
   const [criandoUsuarioManual, setCriandoUsuarioManual] = useState(false)
   const [filiaisUsuariosEmpresa, setFiliaisUsuariosEmpresa] = useState({})
   const [salvandoFilialUsuario, setSalvandoFilialUsuario] = useState('')
@@ -323,6 +324,8 @@ export default function App() {
     setContasLixeira([])
     setNotasLixeira([])
     setUsuariosEmpresa([])
+    setUsuariosErro('')
+    setUsuariosInicializados(false)
     setConfiguracoes(null)
     setModalConta(false)
     setModalNota(false)
@@ -824,6 +827,7 @@ export default function App() {
 
     const silencioso = Boolean(opcoes?.silencioso)
     if (!silencioso) setUsuariosCarregando(true)
+    setUsuariosErro('')
 
     try {
       const [usuarios, vinculosFiliais] = await Promise.all([
@@ -841,8 +845,10 @@ export default function App() {
       setUsuariosInicializados(true)
     } catch (error) {
       console.warn('Não foi possível carregar usuários:', error.message)
+      setUsuariosEmpresa([])
       setFiliaisUsuariosEmpresa({})
       setUsuariosInicializados(true)
+      setUsuariosErro(error?.message || 'Não foi possível carregar os usuários da empresa.')
     } finally {
       if (!silencioso) setUsuariosCarregando(false)
     }
@@ -879,7 +885,7 @@ export default function App() {
 
     try {
       setCriandoUsuarioManual(true)
-      const usuarioCriado = await adicionarUsuarioEmpresaService({
+      await adicionarUsuarioEmpresaService({
         empresaId,
         email,
         nome: nomeConviteUsuario,
@@ -888,15 +894,7 @@ export default function App() {
         criarAuthManual: true
       })
 
-      if (usuarioCriado) {
-        setUsuariosEmpresa((usuariosAtuais) => {
-          const chaveNova = usuarioCriado.user_id || usuarioCriado.email || usuarioCriado.id
-          const jaExiste = usuariosAtuais.some((usuario) => (usuario.user_id || usuario.email || usuario.id) === chaveNova)
-          if (jaExiste) return usuariosAtuais
-          return [...usuariosAtuais, usuarioCriado]
-        })
-        setUsuariosInicializados(true)
-      }
+      await buscarUsuariosEmpresa(empresaId, { silencioso: true })
     } catch (error) {
       avisarErro(error)
       return
@@ -908,10 +906,6 @@ export default function App() {
     setNomeConviteUsuario('')
     setSenhaConviteUsuario('')
     setPerfilConviteUsuario('operador')
-    setTimeout(() => {
-      buscarUsuariosEmpresa(empresaId, { silencioso: true })
-    }, 300)
-
     mostrarAviso('Usuário criado manualmente. Entregue o e-mail e a senha provisória ao usuário por um canal seguro.', 'sucesso')
   }
 
@@ -3952,235 +3946,54 @@ export default function App() {
 
 
   if (telaAtual === 'usuarios') {
-    if (!podeAcessarConfiguracoes()) {
-      return renderAppFrame(
-        <>
-          <h1 style={styles.titulo}>👥 Usuários</h1>
-          <section style={styles.cardConfiguracao}>
-            <h2 style={styles.subtitulo}>Acesso restrito</h2>
-            <p style={styles.textoNota}>Seu perfil atual não permite acessar a gestão de usuários.</p>
-            <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>← Voltar</button>
-          </section>
-        </>
-      )
-    }
-
-    const usuarioAtualEmail = usuarioLogado?.email || ''
-
     return renderAppFrame(
-      <>
-        <h1 style={styles.titulo}>👥 Gestão de usuários</h1>
-
-        <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>
-          ← Voltar
-        </button>
-
-        <section style={styles.cardConfiguracao} className="users-page-section">
-          <h2 style={styles.subtitulo}>Minha conta</h2>
-          <p style={styles.textoNota}>
-            Usuário conectado: <strong>{usuarioAtualEmail}</strong> • Perfil: <strong>{normalizarPerfil(perfilUsuario)}</strong>{permissoesUsuario?.isMaster ? <> • Global: <strong>master</strong></> : null}
-          </p>
-
-          <UserSecurityCards
-            novoEmailUsuario={novoEmailUsuario}
-            setNovoEmailUsuario={setNovoEmailUsuario}
-            novaSenhaUsuario={novaSenhaUsuario}
-            setNovaSenhaUsuario={setNovaSenhaUsuario}
-            confirmarNovaSenhaUsuario={confirmarNovaSenhaUsuario}
-            setConfirmarNovaSenhaUsuario={setConfirmarNovaSenhaUsuario}
-            salvarMeuEmail={salvarMeuEmail}
-            salvarMinhaSenha={salvarMinhaSenha}
-            styles={styles}
-          />
-        </section>
-
-        {permissoesUsuario?.canSwitchCompany && empresasDisponiveis.length > 1 && (
-          <section style={styles.cardConfiguracao} className="users-page-section">
-            <div className="users-header-row">
-              <div>
-                <h2 style={styles.subtitulo}>🏢 Empresas disponíveis</h2>
-                <p style={styles.textoNota}>Base preparada para troca de empresa ativa. Esta ação recarrega os dados da empresa selecionada.</p>
-              </div>
-              <span className="roleBadge admin">master</span>
-            </div>
-
-            <select
-              style={styles.input}
-              value={empresaId || ''}
-              disabled={trocandoEmpresa}
-              onChange={(e) => trocarEmpresaAtiva(e.target.value)}
-            >
-              {empresasDisponiveis.map((empresa) => (
-                <option key={empresa.id} value={empresa.id}>{empresa.nome || empresa.id}</option>
-              ))}
-            </select>
-          </section>
-        )}
-
-        <section style={styles.cardConfiguracao} className="users-page-section">
-          <div className="users-header-row">
-            <div>
-              <h2 style={styles.subtitulo}>Usuários da empresa</h2>
-              <p style={styles.textoNota}>Defina perfil e escopo por filial. Sem filial marcada = acesso a todas as filiais da empresa.</p>
-            </div>
-            <button style={styles.btnCinza} onClick={() => buscarUsuariosEmpresa()}>Atualizar</button>
-          </div>
-
-          <div className="users-permission-guide">
-            <span><strong>Admin:</strong> acesso total</span>
-            <span><strong>Gerente:</strong> contas, notas, relatórios e configurações operacionais</span>
-            <span><strong>Financeiro:</strong> contas, notas e relatórios</span>
-            <span><strong>Operacional:</strong> contas e notas operacionais</span>
-            <span><strong>Visualização:</strong> somente consulta</span>
-            <span><strong>Operador:</strong> compatibilidade com acessos antigos</span>
-            <span><strong>Filiais:</strong> limita o usuário às unidades selecionadas</span>
-          </div>
-
-          {podeAdministrarUsuarios() && (
-            <div className="users-add-card">
-              <input
-                style={styles.input}
-                type="text"
-                placeholder="Nome do usuário"
-                value={nomeConviteUsuario}
-                onChange={(e) => setNomeConviteUsuario(primeiraLetraMaiuscula(e.target.value))}
-              />
-
-              <input
-                style={styles.input}
-                type="email"
-                placeholder="E-mail do usuário"
-                value={emailConviteUsuario}
-                onChange={(e) => setEmailConviteUsuario(e.target.value)}
-              />
-
-              <input
-                style={styles.input}
-                type="text"
-                placeholder="Senha provisória manual"
-                value={senhaConviteUsuario}
-                onChange={(e) => setSenhaConviteUsuario(e.target.value)}
-              />
-
-              <select
-                style={styles.input}
-                value={perfilConviteUsuario}
-                onChange={(e) => setPerfilConviteUsuario(e.target.value)}
-              >
-                <option value="visualizacao">Visualização</option>
-                <option value="operacional">Operacional</option>
-                <option value="financeiro">Financeiro</option>
-                <option value="operador">Operador</option>
-                <option value="gerente">Gerente</option>
-                <option value="admin">Admin</option>
-              </select>
-
-              <button style={styles.btnSalvar} onClick={adicionarUsuarioEmpresa} disabled={criandoUsuarioManual}>{criandoUsuarioManual ? 'Criando acesso...' : 'Criar acesso manual'}</button>
-              <small style={styles.textoNota}>Sem envio de e-mail: o admin entrega o e-mail e a senha provisória manualmente.</small>
-            </div>
-          )}
-
-          <div className="users-list users-list-stable" aria-busy={usuariosCarregando}>
-            {usuariosCarregando && !usuariosInicializados && (
-              <EmptyState icon="⏳" title="Carregando usuários" description="Buscando acessos cadastrados nesta empresa." />
-            )}
-
-            {!usuariosCarregando && usuariosInicializados && usuariosEmpresa.length === 0 && (
-              <EmptyState icon="👥" title="Nenhum usuário cadastrado" description="Adicione usuários para dividir a operação com segurança e níveis de acesso." />
-            )}
-
-            {usuariosEmpresa.map((usuario) => {
-              const atual = usuario.user_id && usuarioLogado?.id && usuario.user_id === usuarioLogado.id
-              const pendente = !usuario.user_id
-
-              return (
-                <div key={usuario.id || usuario.user_id || usuario.email} className="user-card userCard">
-                  <div className="user-main-info userInfo">
-                    <strong>{usuario.nome || usuario.email || 'Usuário sem nome'}</strong>
-                    <small>{usuario.email || usuario.user_id || 'Sem e-mail vinculado'}</small>
-                    {atual && <span className="user-badge user-badge-self">Você</span>}
-                    {pendente && <span className="user-badge user-badge-pending">Pendente de vínculo</span>}
-                  </div>
-
-                  <span className={`roleBadge ${normalizarPerfil(usuario.perfil)}`}>{normalizarPerfil(usuario.perfil)}</span>
-
-                  <select
-                    className="user-role-select"
-                    style={styles.input}
-                    value={normalizarPerfil(usuario.perfil)}
-                    disabled={!podeAdministrarUsuarios()}
-                    onChange={(e) => atualizarPerfilUsuarioEmpresa(usuario, e.target.value)}
-                  >
-                    <option value="admin">Admin</option>
-                    <option value="gerente">Gerente</option>
-                    <option value="financeiro">Financeiro</option>
-                    <option value="operacional">Operacional</option>
-                    <option value="visualizacao">Visualização</option>
-                    <option value="operador">Operador</option>
-                  </select>
-
-                  <div className="user-branch-scope">
-                    <div className="user-branch-scope-header">
-                      <strong>Filiais permitidas</strong>
-                      <button
-                        type="button"
-                        className="user-branch-clear"
-                        disabled={!podeAdministrarUsuarios() || salvandoFilialUsuario === usuario.id}
-                        onClick={() => liberarTodasFiliaisUsuario(usuario)}
-                        title="Deixar o usuário com acesso a todas as filiais da empresa"
-                      >
-                        Todas
-                      </button>
-                    </div>
-                    <div className="user-branch-list">
-                      {filiais.length === 0 ? (
-                        <small>Nenhuma filial ativa cadastrada.</small>
-                      ) : filiais.map((filial) => {
-                        const selecionada = (filiaisUsuariosEmpresa[usuario.id] || []).includes(filial.id)
-                        return (
-                          <label key={filial.id} className={`user-branch-chip ${selecionada ? 'selected' : ''}`}>
-                            <input
-                              type="checkbox"
-                              checked={selecionada}
-                              disabled={!podeAdministrarUsuarios() || salvandoFilialUsuario === usuario.id}
-                              onChange={() => alternarFilialUsuario(usuario, filial.id)}
-                            />
-                            <span>{filial.nome || 'Filial'}</span>
-                          </label>
-                        )
-                      })}
-                    </div>
-                    {(filiaisUsuariosEmpresa[usuario.id] || []).length === 0 && (
-                      <small className="user-branch-all">Acesso a todas as filiais da empresa.</small>
-                    )}
-                  </div>
-
-                  {podeAdministrarUsuarios() && (
-                    <div className="user-actions">
-                      <button
-                        style={styles.btnSecundario}
-                        onClick={() => enviarAcessoUsuarioEmpresa(usuario)}
-                        title="Fallback por e-mail. O acesso principal agora é criação manual com senha provisória."
-                      >
-                        Enviar link
-                      </button>
-
-                      <button
-                        style={styles.btnExcluir}
-                        disabled={atual}
-                        onClick={() => removerUsuarioEmpresa(usuario)}
-                        title={atual ? 'Você não pode remover o próprio acesso.' : 'Remover usuário'}
-                      >
-                        Remover
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </section>
-      </>
+      <UsuariosPage
+        styles={styles}
+        EmptyState={EmptyState}
+        podeAcessarConfiguracoes={podeAcessarConfiguracoes}
+        podeAdministrarUsuarios={podeAdministrarUsuarios}
+        navegarPara={navegarPara}
+        usuarioLogado={usuarioLogado}
+        normalizarPerfil={normalizarPerfil}
+        perfilUsuario={perfilUsuario}
+        permissoesUsuario={permissoesUsuario}
+        novoEmailUsuario={novoEmailUsuario}
+        setNovoEmailUsuario={setNovoEmailUsuario}
+        novaSenhaUsuario={novaSenhaUsuario}
+        setNovaSenhaUsuario={setNovaSenhaUsuario}
+        confirmarNovaSenhaUsuario={confirmarNovaSenhaUsuario}
+        setConfirmarNovaSenhaUsuario={setConfirmarNovaSenhaUsuario}
+        salvarMeuEmail={salvarMeuEmail}
+        salvarMinhaSenha={salvarMinhaSenha}
+        empresasDisponiveis={empresasDisponiveis}
+        empresaId={empresaId}
+        trocandoEmpresa={trocandoEmpresa}
+        trocarEmpresaAtiva={trocarEmpresaAtiva}
+        buscarUsuariosEmpresa={buscarUsuariosEmpresa}
+        primeiraLetraMaiuscula={primeiraLetraMaiuscula}
+        nomeConviteUsuario={nomeConviteUsuario}
+        setNomeConviteUsuario={setNomeConviteUsuario}
+        emailConviteUsuario={emailConviteUsuario}
+        setEmailConviteUsuario={setEmailConviteUsuario}
+        senhaConviteUsuario={senhaConviteUsuario}
+        setSenhaConviteUsuario={setSenhaConviteUsuario}
+        perfilConviteUsuario={perfilConviteUsuario}
+        setPerfilConviteUsuario={setPerfilConviteUsuario}
+        criandoUsuarioManual={criandoUsuarioManual}
+        adicionarUsuarioEmpresa={adicionarUsuarioEmpresa}
+        usuariosCarregando={usuariosCarregando}
+        usuariosInicializados={usuariosInicializados}
+        usuariosErro={usuariosErro}
+        usuariosEmpresa={usuariosEmpresa}
+        filiais={filiais}
+        filiaisUsuariosEmpresa={filiaisUsuariosEmpresa}
+        salvandoFilialUsuario={salvandoFilialUsuario}
+        liberarTodasFiliaisUsuario={liberarTodasFiliaisUsuario}
+        alternarFilialUsuario={alternarFilialUsuario}
+        atualizarPerfilUsuarioEmpresa={atualizarPerfilUsuarioEmpresa}
+        enviarAcessoUsuarioEmpresa={enviarAcessoUsuarioEmpresa}
+        removerUsuarioEmpresa={removerUsuarioEmpresa}
+      />
     )
   }
 

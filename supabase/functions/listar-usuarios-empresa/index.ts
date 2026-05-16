@@ -6,6 +6,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 }
 
+function normalizarPerfil(perfil: string) {
+  const valor = String(perfil || '').toLowerCase().trim()
+  if (['admin', 'adm', 'administrador', 'master', 'owner'].includes(valor)) return 'admin'
+  if (['gerente', 'gerencia', 'gestor', 'manager'].includes(valor)) return 'gerente'
+  if (['financeiro', 'financas', 'finanÃ§as', 'financial'].includes(valor)) return 'financeiro'
+  if (['operacional', 'operacao', 'operaÃ§Ã£o', 'atendente'].includes(valor)) return 'operacional'
+  if (['visualizacao', 'visualizaÃ§Ã£o', 'viewer', 'leitura', 'consulta'].includes(valor)) return 'visualizacao'
+  return 'operador'
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -64,11 +74,15 @@ serve(async (req) => {
 
     const resultado = (usuarios || []).map((usuario) => {
       const profile = usuario.user_id ? profilesPorId.get(usuario.user_id) : null
+      const email = String(usuario.email || profile?.email || '').trim().toLowerCase()
+      const perfil = normalizarPerfil(usuario.perfil || profile?.role || profile?.perfil || 'operador')
+
       return {
         ...usuario,
+        empresa_id: usuario.empresa_id || empresaId,
         nome: usuario.nome || profile?.name || profile?.full_name || profile?.nome || usuario.email,
-        email: usuario.email || profile?.email || '',
-        perfil: usuario.perfil || profile?.role || profile?.perfil || 'operador',
+        email,
+        perfil,
         status: usuario.status || profile?.status || 'ativo'
       }
     })

@@ -13,12 +13,13 @@ export function normalizarPerfilUsuario(perfil) {
   return 'operador'
 }
 
-function normalizarListaUsuarios(usuarios = []) {
+function normalizarListaUsuarios(usuarios = [], empresaId = null) {
   const usuariosNormalizados = (usuarios || []).map((usuario) => ({
     ...usuario,
+    empresa_id: usuario.empresa_id || empresaId,
     email: String(usuario.email || '').trim().toLowerCase(),
     perfil: normalizarPerfilUsuario(usuario.perfil)
-  }))
+  })).filter((usuario) => !empresaId || usuario.empresa_id === empresaId)
 
   const mapa = new Map()
 
@@ -54,29 +55,12 @@ async function listarUsuariosEmpresaViaFunction(empresaId) {
   if (error) throw error
   if (data?.ok === false) throw new Error(data?.message || 'Não foi possível listar usuários pela Edge Function.')
 
-  return normalizarListaUsuarios(data?.usuarios || [])
+  return normalizarListaUsuarios(data?.usuarios || [], empresaId)
 }
 
 export async function listarUsuariosEmpresa(empresaId) {
   if (!empresaId) return []
-
-  const { data, error } = await supabase
-    .from('df_usuarios_empresas')
-    .select('*')
-    .eq('empresa_id', empresaId)
-    .order('created_at', { ascending: true })
-
-  if (!error && Array.isArray(data) && data.length > 0) {
-    return normalizarListaUsuarios(data)
-  }
-
-  try {
-    return await listarUsuariosEmpresaViaFunction(empresaId)
-  } catch (functionError) {
-    if (error) throw error
-    console.warn('Listagem direta retornou vazia e fallback por Edge Function falhou:', functionError?.message)
-    return normalizarListaUsuarios(data || [])
-  }
+  return listarUsuariosEmpresaViaFunction(empresaId)
 }
 
 
@@ -92,16 +76,6 @@ export async function adicionarUsuarioEmpresa({ empresaId, email, nome, perfil, 
   if (criarAuthManual && senhaLimpa.length < 6) {
     throw new Error('Informe uma senha provisória com pelo menos 6 caracteres.')
   }
-
-  const { data: existente, error: erroConsulta } = await supabase
-    .from('df_usuarios_empresas')
-    .select('id, email, user_id')
-    .eq('empresa_id', empresaId)
-    .eq('email', emailNormalizado)
-    .maybeSingle()
-
-  if (erroConsulta) throw erroConsulta
-  if (existente) throw new Error('Este e-mail já está cadastrado nesta empresa.')
 
   if (criarAuthManual) {
     const { data: adminData, error: adminError } = await supabase.functions.invoke('criar-usuario-manual', {
@@ -131,6 +105,16 @@ export async function adicionarUsuarioEmpresa({ empresaId, email, nome, perfil, 
       user_id: adminData?.userId || null
     }
   }
+
+  const { data: existente, error: erroConsulta } = await supabase
+    .from('df_usuarios_empresas')
+    .select('id, email, user_id')
+    .eq('empresa_id', empresaId)
+    .eq('email', emailNormalizado)
+    .maybeSingle()
+
+  if (erroConsulta) throw erroConsulta
+  if (existente) throw new Error('Este e-mail já está cadastrado nesta empresa.')
 
   const payload = {
     empresa_id: empresaId,

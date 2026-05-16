@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 import {
   adicionarUsuarioEmpresa as adicionarUsuarioEmpresaService,
@@ -39,6 +39,7 @@ import CopilotStyles from './components/copilot/layout/CopilotStyles.jsx'
 import { useApp } from './context/AppContext.jsx'
 import { useContas } from './hooks/useContas'
 import { useNotas } from './hooks/useNotas'
+import { useAuthSession } from './hooks/useAuthSession'
 import { converterValor, formatarData, formatarDataParaBanco, formatarValor, limitarDataInput, primeiraLetraMaiuscula } from './utils/format'
 import { dataLocal, diferencaDias, mesmoMesAtual } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
@@ -49,17 +50,10 @@ import './styles.css'
 import styles from './styles/appStyles.js'
 import menuSections from './config/menuSections.js'
 import {
-  OITO_HORAS_MS,
-  TRINTA_MINUTOS_MS,
-  VINTE_CINCO_MINUTOS_MS,
-  lerSessaoSegura,
-  salvarSessaoSegura,
   limparSessaoSegura
 } from './services/sessionSecurityService.js'
 
 export default function App() {
-  const avisoSessaoMostradoRef = useRef(false)
-  const encerrandoSessaoRef = useRef(false)
   const sincronizacaoTenantRef = useRef(null)
   const { globalLoading, toast: globalToast, showToast, hideToast, empresaAtiva, setEmpresaAtiva, limparEmpresaAtiva, empresasDisponiveis, setEmpresasDisponiveis } = useApp()
   // =========================
@@ -234,8 +228,6 @@ export default function App() {
   const [sidebarCompacta, setSidebarCompacta] = useState(false)
   const [gruposMenu, setGruposMenu] = useState({ principal: true, financeiro: true, analise: true, sistema: true })
   const [telaAtual, setTelaAtualState] = useState('dashboard')
-  const [usuarioLogado, setUsuarioLogado] = useState(null)
-  const [carregandoAuth, setCarregandoAuth] = useState(true)
   const [empresaId, setEmpresaId] = useState(null)
   const [trocandoEmpresa, setTrocandoEmpresa] = useState(false)
   const [perfilUsuario, setPerfilUsuario] = useState('')
@@ -300,16 +292,7 @@ export default function App() {
     const mensagem = erro?.message || erro || fallback
 
     if (erroEhSessaoExpirada(erro)) {
-      if (encerrandoSessaoRef.current) return
-      encerrandoSessaoRef.current = true
-      supabase.auth.signOut().finally(() => {
-        limparEstadoAutenticacao()
-        setUsuarioLogado(null)
-        setTelaAtualState('dashboard')
-        setCarregandoAuth(false)
-        mostrarAviso('Sua sessão expirou. Faça login novamente.', 'erro')
-        window.setTimeout(() => { encerrandoSessaoRef.current = false }, 1200)
-      })
+      encerrarSessao('Sua sessão expirou. Faça login novamente.')
       return
     }
 
@@ -358,6 +341,41 @@ export default function App() {
     limparSessaoSegura()
   }
 
+  const limparEstadoAutenticacaoCallback = useCallback(() => {
+    limparEstadoAutenticacao()
+  }, [])
+
+  const navegarParaLoginCallback = useCallback(() => {
+    setTelaAtualState('dashboard')
+  }, [])
+
+  const mostrarAvisoCallback = useCallback((mensagem, tipo = 'info') => {
+    mostrarAviso(mensagem, tipo)
+  }, [showToast])
+
+  const avisarSessaoQuaseExpirada = useCallback((continuarSessao) => {
+    abrirConfirmacao({
+      titulo: 'Sessão quase expirada',
+      mensagem: 'Sua sessão vai expirar por segurança. Deseja continuar conectado?',
+      textoConfirmar: 'Continuar conectado',
+      tipo: 'padrao',
+      acao: async () => continuarSessao()
+    })
+  }, [])
+
+  const {
+    usuarioLogado,
+    setUsuarioLogado,
+    carregandoAuth,
+    setCarregandoAuth,
+    encerrarSessao
+  } = useAuthSession({
+    onClearAuthData: limparEstadoAutenticacaoCallback,
+    onNavigateHome: navegarParaLoginCallback,
+    onShowMessage: mostrarAvisoCallback,
+    onSessionWarning: avisarSessaoQuaseExpirada
+  })
+
   async function sincronizarNomeUsuarioPerfil() {
     if (!usuarioLogado?.id) return
 
@@ -371,129 +389,6 @@ export default function App() {
       console.warn('Falha ao sincronizar nome do perfil:', error?.message || error)
     }
   }
-
-  useEffect(() => {
-    let ativo = true
-
-    async function verificarSessao() {
-      try {
-        const timeoutSessao = new Promise((resolve) => {
-          window.setTimeout(() => resolve({ data: { session: null }, error: new Error('Timeout ao validar sessão') }), 8000)
-        })
-
-        const { data, error } = await Promise.race([
-          supabase.auth.getSession(),
-          timeoutSessao
-        ])
-
-        if (!ativo) return
-
-        if (error || !data?.session) {
-          limparEstadoAutenticacao()
-          setUsuarioLogado(null)
-          return
-        }
-
-        setUsuarioLogado(data.session.user)
-      } catch (error) {
-        if (!ativo) return
-        console.warn('Falha ao validar sessão:', error?.message || error)
-        limparEstadoAutenticacao()
-        setUsuarioLogado(null)
-      } finally {
-        if (ativo) setCarregandoAuth(false)
-      }
-    }
-
-    verificarSessao()
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setCarregandoAuth(false)
-      setUsuarioLogado(session?.user || null)
-
-      if (!session) {
-        limparEstadoAutenticacao()
-      }
-    })
-
-    return () => {
-      ativo = false
-      listener.subscription.unsubscribe()
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!usuarioLogado) return
-
-    const agora = Date.now()
-    const sessaoAtual = lerSessaoSegura()
-
-    salvarSessaoSegura({
-      inicio: sessaoAtual.inicio || agora,
-      ultimaAtividade: agora
-    })
-
-    function registrarAtividade() {
-      const sessao = lerSessaoSegura()
-      salvarSessaoSegura({
-        inicio: sessao.inicio || Date.now(),
-        ultimaAtividade: Date.now()
-      })
-      avisoSessaoMostradoRef.current = false
-    }
-
-    async function encerrarPorSeguranca(mensagem) {
-      if (encerrandoSessaoRef.current) return
-      encerrandoSessaoRef.current = true
-      limparEstadoAutenticacao()
-      setUsuarioLogado(null)
-      setTelaAtualState('dashboard')
-      setCarregandoAuth(false)
-      await supabase.auth.signOut()
-      mostrarAviso(mensagem, 'erro')
-      window.setTimeout(() => { encerrandoSessaoRef.current = false }, 1200)
-    }
-
-    function verificarExpiracao() {
-      const sessao = lerSessaoSegura()
-      const inicio = Number(sessao.inicio || Date.now())
-      const ultimaAtividade = Number(sessao.ultimaAtividade || Date.now())
-      const agoraVerificacao = Date.now()
-      const tempoTotal = agoraVerificacao - inicio
-      const tempoInativo = agoraVerificacao - ultimaAtividade
-
-      if (tempoTotal >= OITO_HORAS_MS) {
-        encerrarPorSeguranca('Sua sessão expirou por segurança. Faça login novamente.')
-        return
-      }
-
-      if (tempoInativo >= TRINTA_MINUTOS_MS) {
-        encerrarPorSeguranca('Sua sessão foi encerrada por inatividade. Faça login novamente.')
-        return
-      }
-
-      if (tempoInativo >= VINTE_CINCO_MINUTOS_MS && !avisoSessaoMostradoRef.current) {
-        avisoSessaoMostradoRef.current = true
-        abrirConfirmacao({
-          titulo: 'Sessão quase expirada',
-          mensagem: 'Sua sessão vai expirar por segurança. Deseja continuar conectado?',
-          textoConfirmar: 'Continuar conectado',
-          tipo: 'padrao',
-          acao: async () => registrarAtividade()
-        })
-      }
-    }
-
-    const eventos = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart']
-    eventos.forEach((evento) => window.addEventListener(evento, registrarAtividade, { passive: true }))
-
-    const intervalo = window.setInterval(verificarExpiracao, 60 * 1000)
-
-    return () => {
-      eventos.forEach((evento) => window.removeEventListener(evento, registrarAtividade))
-      window.clearInterval(intervalo)
-    }
-  }, [usuarioLogado])
 
   useEffect(() => {
     if (!usuarioLogado) {

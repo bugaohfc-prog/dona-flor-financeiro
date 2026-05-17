@@ -1,4 +1,4 @@
-import { CopilotProvider } from '../copilot/core/CopilotProvider.jsx'
+import AppProviders from '../providers/AppProviders.jsx'
 import AppShellStyles from './AppShellStyles.jsx'
 
 export default function AppShell({ contas, contasFiltradas, navegarPara, menuAberto, setMenuAberto, pageStyle, children }) {
@@ -7,11 +7,11 @@ export default function AppShell({ contas, contasFiltradas, navegarPara, menuAbe
   }
 
   return (
-    <CopilotProvider contas={contas} contasFiltradas={contasFiltradas} navegarPara={navegarPara}>
+    <AppProviders contas={contas} contasFiltradas={contasFiltradas} navegarPara={navegarPara}>
       <div className="app-page" style={pageStyle} onClick={fecharMenuAoClicarFora}>
         <AppShellStyles />
         {children}
       </div>
-    </CopilotProvider>
+    </AppProviders>
   )
 }

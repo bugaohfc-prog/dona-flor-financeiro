@@ -29,7 +29,7 @@ import DashboardRoute from './components/routes/DashboardRoute.jsx'
 import AppModalsLayer from './components/render/AppModalsLayer.jsx'
 import AppOverlaysLayer from './components/render/AppOverlaysLayer.jsx'
 import AppShell from './components/shell/AppShell.jsx'
-import { CopilotProvider } from './components/copilot/core/CopilotProvider.jsx'
+import AppProviders from './components/providers/AppProviders.jsx'
 import CopilotFloatingButton from './components/copilot/layout/CopilotFloatingButton.jsx'
 import CopilotDrawer from './components/copilot/layout/CopilotDrawer.jsx'
 import CopilotStyles from './components/copilot/layout/CopilotStyles.jsx'
@@ -2664,7 +2664,7 @@ export default function App() {
 
   function renderAppFrame(children) {
     return (
-      <CopilotProvider contas={contas} contasFiltradas={contasFiltradas} navegarPara={navegarPara}>
+      <AppProviders contas={contas} contasFiltradas={contasFiltradas} navegarPara={navegarPara}>
       <div className="app-page app-frame" style={styles.page}>
         <style>{`
 
@@ -3138,7 +3138,7 @@ export default function App() {
         {renderModaisGlobais()}
         {renderOverlaysLayer()}
       </div>
-      </CopilotProvider>
+      </AppProviders>
     )
   }
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { startTransition, useCallback, useEffect, useState } from 'react'
 
 const GRUPOS_MENU_PADRAO = {
   principal: true,
@@ -21,7 +21,9 @@ export function useAppNavigation(telaInicial = 'dashboard') {
 
   const navegarPara = useCallback((tela) => {
     fecharMenus()
-    setTelaAtualState(tela)
+    startTransition(() => {
+      setTelaAtualState(tela)
+    })
 
     if (typeof window !== 'undefined' && window.history.state?.tela !== tela) {
       window.history.pushState({ tela }, '', window.location.href)
@@ -36,7 +38,9 @@ export function useAppNavigation(telaInicial = 'dashboard') {
     function aoVoltar(event) {
       const proximaTela = event.state?.tela || telaInicial
       fecharMenus()
-      setTelaAtualState(proximaTela)
+      startTransition(() => {
+        setTelaAtualState(proximaTela)
+      })
     }
 
     window.addEventListener('popstate', aoVoltar)

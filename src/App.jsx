@@ -58,7 +58,6 @@ import {
   LazyOnboardingPage,
   LazyRelatorios,
   LazyUsuariosPage,
-  preloadRoutes
 } from './routes/lazyRoutes.js'
 
 function CopilotDrawerBoundary() {
@@ -457,23 +456,6 @@ export default function App() {
     }
   }, [telaAtual, empresaId])
 
-  useEffect(() => {
-    if (!usuarioLogado?.id || !empresaId) return
-
-    const rotasCriticas = telaAtual === 'dashboard'
-      ? ['contas', 'notas', 'relatorios']
-      : ['dashboard']
-
-    const agendarPreload = () => preloadRoutes(rotasCriticas)
-
-    if ('requestIdleCallback' in window) {
-      const idleId = window.requestIdleCallback(agendarPreload, { timeout: 1800 })
-      return () => window.cancelIdleCallback?.(idleId)
-    }
-
-    const timeoutId = window.setTimeout(agendarPreload, 900)
-    return () => window.clearTimeout(timeoutId)
-  }, [usuarioLogado?.id, empresaId, telaAtual])
 
   useEffect(() => {
     function fecharComEsc(event) {

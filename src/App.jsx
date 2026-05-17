@@ -26,6 +26,7 @@ import GlobalFab from './components/layout/GlobalFab.jsx'
 import HeaderExpansivel from './components/ui/HeaderExpansivel.jsx'
 import AppRouteGuards from './components/routes/AppRouteGuards.jsx'
 import DashboardRouteComposition from './components/routes/DashboardRouteComposition.jsx'
+import AppSuspenseBoundary from './components/routes/AppSuspenseBoundary.jsx'
 import AppModalsLayer from './components/render/AppModalsLayer.jsx'
 import AppOverlaysLayer from './components/render/AppOverlaysLayer.jsx'
 import AppShell from './components/shell/AppShell.jsx'
@@ -4197,8 +4198,9 @@ export default function App() {
 
       
 
-      <DashboardRouteComposition
-        routeProps={{
+      <AppSuspenseBoundary>
+        <DashboardRouteComposition
+          routeProps={{
           styles,
           nomeUsuario: nomeUsuario(),
           formatarValor,
@@ -4231,8 +4233,9 @@ export default function App() {
           filtroFilial,
           setFiltroFilial,
           contasOperacionaisFiliais
-        }}
-      />
+          }}
+        />
+      </AppSuspenseBoundary>
 
       {/* Lista de contas movida para a tela Financeiro > Contas. */}
 

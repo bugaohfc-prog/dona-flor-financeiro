@@ -43,6 +43,9 @@ import { useAuthSession } from './hooks/useAuthSession'
 import { converterValor, formatarData, formatarDataParaBanco, formatarValor, limitarDataInput, primeiraLetraMaiuscula } from './utils/format'
 import { dataLocal, diferencaDias, mesmoMesAtual } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
+import { estaVencida, pegarMes } from './utils/contasStatus'
+import { atualizarListaLixeiraEstavel, diasNaLixeira, podeExcluirDefinitivo } from './utils/lixeira'
+import { erroEhSessaoExpirada } from './utils/session'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
 import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario } from './services/permissoesService'
 import { listarFiliaisPorEmpresa } from './services/filiaisService'
@@ -60,55 +63,6 @@ export default function App() {
   // BLOCO 0 — UTILITÁRIOS
   // =========================
   // Utilitários compartilhados foram movidos para src/utils.
-
-  function erroEhSessaoExpirada(erro) {
-    const mensagem = String(erro?.message || erro || '').toLowerCase()
-    return mensagem.includes('jwt') || mensagem.includes('expired') || mensagem.includes('unauthorized') || mensagem.includes('session')
-  }
-
-
-
-  function estaVencida(data, status) {
-    if (!data || status === 'pago') return false
-    const hoje = new Date()
-    hoje.setHours(0, 0, 0, 0)
-    const vencimento = new Date(data + 'T00:00:00')
-    vencimento.setHours(0, 0, 0, 0)
-    return vencimento < hoje
-  }
-
-  function pegarMes(data) {
-    if (!data) return ''
-    return String(data).slice(0, 7)
-  }
-
-  function diasNaLixeira(dataExclusao) {
-    if (!dataExclusao) return 0
-
-    const excluidoEm = new Date(dataExclusao)
-    const hoje = new Date()
-    const diff = hoje - excluidoEm
-
-    return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)))
-  }
-
-  function podeExcluirDefinitivo(dataExclusao) {
-    return true
-  }
-
-  function assinaturaLixeira(itens = []) {
-    return itens
-      .map((item) => `${item.id || ''}:${item.excluido_em || ''}:${item.updated_at || ''}`)
-      .join('|')
-  }
-
-  function atualizarListaLixeiraEstavel(setLista, novaLista = []) {
-    setLista((listaAtual = []) => (
-      assinaturaLixeira(listaAtual) === assinaturaLixeira(novaLista)
-        ? listaAtual
-        : novaLista
-    ))
-  }
 
   // =========================
   // BLOCO 1 — STATES CONTAS

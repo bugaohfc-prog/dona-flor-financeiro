@@ -12,7 +12,6 @@ import {
   atualizarFiliaisUsuarioEmpresa
 } from './services/usuariosService'
 import Relatorios from './pages/Relatorios.jsx'
-import DashboardPage from './pages/DashboardPage.jsx'
 import ContasPage from './pages/ContasPage.jsx'
 import NotasPage from './pages/NotasPage.jsx'
 import MasterPanelPage from './pages/MasterPanelPage.jsx'
@@ -25,8 +24,8 @@ import Topbar from './components/layout/Topbar.jsx'
 import Sidebar from './components/layout/Sidebar.jsx'
 import MobileMenu from './components/layout/MobileMenu.jsx'
 import GlobalFab from './components/layout/GlobalFab.jsx'
-import DashboardHome from './components/dashboard/DashboardHome.jsx'
 import HeaderExpansivel from './components/ui/HeaderExpansivel.jsx'
+import DashboardRoute from './components/routes/DashboardRoute.jsx'
 import AppModalsLayer from './components/render/AppModalsLayer.jsx'
 import AppOverlaysLayer from './components/render/AppOverlaysLayer.jsx'
 import AppShell from './components/shell/AppShell.jsx'
@@ -4214,12 +4213,9 @@ export default function App() {
 
       
 
-      <section className="dashboard-page-context" aria-label="Contexto da página">
-        <h1 className="dashboard-greeting-title">Olá, {nomeUsuario()}</h1>
-      </section>
-
-      <DashboardPage
+      <DashboardRoute
         styles={styles}
+        nomeUsuario={nomeUsuario()}
         formatarValor={formatarValor}
         total={total}
         pago={pago}
@@ -4246,7 +4242,6 @@ export default function App() {
         abrirEdicaoNota={abrirEdicaoNota}
         excluirNota={excluirNota}
         loading={loading}
-        nomeUsuario={nomeUsuario()}
         filiais={filiais}
         filtroFilial={filtroFilial}
         setFiltroFilial={setFiltroFilial}

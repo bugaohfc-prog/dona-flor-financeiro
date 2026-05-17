@@ -19,13 +19,13 @@ import FiliaisPage from './pages/FiliaisPage.jsx'
 import BillingPage from './pages/BillingPage.jsx'
 import OnboardingPage from './pages/OnboardingPage.jsx'
 import UsuariosPage from './pages/UsuariosPage.jsx'
-import Login from './pages/Login.jsx'
 import Topbar from './components/layout/Topbar.jsx'
 import Sidebar from './components/layout/Sidebar.jsx'
 import MobileMenu from './components/layout/MobileMenu.jsx'
 import GlobalFab from './components/layout/GlobalFab.jsx'
 import HeaderExpansivel from './components/ui/HeaderExpansivel.jsx'
-import DashboardRoute from './components/routes/DashboardRoute.jsx'
+import AppRouteGuards from './components/routes/AppRouteGuards.jsx'
+import DashboardRouteComposition from './components/routes/DashboardRouteComposition.jsx'
 import AppModalsLayer from './components/render/AppModalsLayer.jsx'
 import AppOverlaysLayer from './components/render/AppOverlaysLayer.jsx'
 import AppShell from './components/shell/AppShell.jsx'
@@ -3399,36 +3399,20 @@ export default function App() {
     )
   }
 
-  if (carregandoAuth) {
-    return (
-      <div style={styles.page}>
-        <h2>Carregando...</h2>
-      </div>
-    )
+  const routeGuardProps = {
+    carregandoAuth,
+    usuarioLogado,
+    erroEmpresa,
+    styles,
+    setUsuarioLogado,
+    globalToast,
+    hideToast,
+    sairDoSistema
   }
 
-  if (!usuarioLogado) {
-    return (
-      <>
-        <Login onLogin={setUsuarioLogado} />
-        <GlobalToast toast={globalToast} onClose={hideToast} />
-      </>
-    )
+  if (carregandoAuth || !usuarioLogado || erroEmpresa) {
+    return <AppRouteGuards {...routeGuardProps} />
   }
-
-
-
-
-  if (erroEmpresa) {
-    return (
-      <div style={styles.page}>
-        <h2>⚠️ Empresa não vinculada</h2>
-        <p>{erroEmpresa}</p>
-        <button style={styles.btnSair} onClick={sairDoSistema}>Sair</button>
-      </div>
-    )
-  }
-
 
   if (telaAtual === 'contas') {
     return renderAppFrame(
@@ -4213,39 +4197,41 @@ export default function App() {
 
       
 
-      <DashboardRoute
-        styles={styles}
-        nomeUsuario={nomeUsuario()}
-        formatarValor={formatarValor}
-        total={total}
-        pago={pago}
-        pendente={pendente}
-        vencido={vencido}
-        contas={contasFiltradas}
-        diferencaDias={diferencaDias}
-        navegarPara={navegarPara}
-        contasAbertasDashboard={contasAbertasDashboard}
-        mostrarContasDashboard={mostrarContasDashboard}
-        setMostrarContasDashboard={setMostrarContasDashboard}
-        busca={busca}
-        setBusca={setBusca}
-        estaVencida={estaVencida}
-        formatarData={formatarData}
-        abrirConfirmacao={abrirConfirmacao}
-        marcarComoPago={marcarComoPago}
-        notasPendentes={notasPendentes}
-        notasCriticas={notasCriticas}
-        notasUrgentes={notasUrgentes}
-        mostrarNotas={mostrarNotas}
-        setMostrarNotas={setMostrarNotas}
-        alternarNotaConcluida={alternarNotaConcluida}
-        abrirEdicaoNota={abrirEdicaoNota}
-        excluirNota={excluirNota}
-        loading={loading}
-        filiais={filiais}
-        filtroFilial={filtroFilial}
-        setFiltroFilial={setFiltroFilial}
-        contasOperacionaisFiliais={contasOperacionaisFiliais}
+      <DashboardRouteComposition
+        routeProps={{
+          styles,
+          nomeUsuario: nomeUsuario(),
+          formatarValor,
+          total,
+          pago,
+          pendente,
+          vencido,
+          contas: contasFiltradas,
+          diferencaDias,
+          navegarPara,
+          contasAbertasDashboard,
+          mostrarContasDashboard,
+          setMostrarContasDashboard,
+          busca,
+          setBusca,
+          estaVencida,
+          formatarData,
+          abrirConfirmacao,
+          marcarComoPago,
+          notasPendentes,
+          notasCriticas,
+          notasUrgentes,
+          mostrarNotas,
+          setMostrarNotas,
+          alternarNotaConcluida,
+          abrirEdicaoNota,
+          excluirNota,
+          loading,
+          filiais,
+          filtroFilial,
+          setFiltroFilial,
+          contasOperacionaisFiliais
+        }}
       />
 
       {/* Lista de contas movida para a tela Financeiro > Contas. */}

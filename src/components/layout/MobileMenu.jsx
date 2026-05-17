@@ -14,7 +14,8 @@ export default function MobileMenu({
   empresaId = '',
   trocarEmpresaAtiva,
   trocandoEmpresa = false,
-  abrirPerfilUsuario
+  abrirPerfilUsuario,
+  onPreloadRoute
 }) {
   if (!visible) return null
 
@@ -22,8 +23,15 @@ export default function MobileMenu({
   const empresaAtual = empresasDisponiveis.find((empresa) => empresa.id === empresaId)
   const nomeExibicao = nomeUsuarioAtual || (typeof nomeUsuario === 'function' ? nomeUsuario() : nomeUsuario) || 'usuário'
 
-  const item = (icon, titulo, desc, acao) => (
-    <button type="button" style={styles.menuNavItem} onClick={acao}>
+  const item = (icon, titulo, desc, acao, tela) => (
+    <button
+      type="button"
+      style={styles.menuNavItem}
+      onPointerEnter={() => onPreloadRoute?.(tela)}
+      onFocus={() => onPreloadRoute?.(tela)}
+      onTouchStart={() => onPreloadRoute?.(tela)}
+      onClick={acao}
+    >
       <span>{icon}</span>
       <div><strong>{titulo}</strong><small>{desc}</small></div>
     </button>
@@ -110,7 +118,7 @@ export default function MobileMenu({
           <details className="mobile-menu-group" key={grupo.id} open={index === 0}>
             <summary>{grupo.titulo}</summary>
             {grupo.items.map((navItem) => (
-              item(navItem.icon, navItem.label, navItem.desc, () => navegarPara(navItem.tela))
+              item(navItem.icon, navItem.label, navItem.desc, () => navegarPara(navItem.tela), navItem.tela)
             ))}
             {grupo.id === 'sistema' && (
               <button type="button" style={styles.menuSairItem} onClick={sairDoSistema}><span>🚪</span><div><strong>Sair</strong><small>Encerrar sessão</small></div></button>

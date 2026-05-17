@@ -13,6 +13,23 @@ export const lazyRouteImports = {
   copilotDrawer: () => import('../components/copilot/layout/CopilotDrawer.jsx')
 }
 
+
+export const routeImportByScreen = {
+  dashboard: 'dashboard',
+  contas: 'contas',
+  relatorios: 'relatorios',
+  notas: 'notas',
+  master: 'masterPanel',
+  onboarding: 'onboarding',
+  billing: 'billing',
+  filiais: 'filiais',
+  usuarios: 'usuarios'
+}
+
+export function getLazyRouteName(screenName) {
+  return routeImportByScreen[screenName] || null
+}
+
 export const LazyDashboardRouteComposition = lazy(lazyRouteImports.dashboard)
 export const LazyContasPage = lazy(lazyRouteImports.contas)
 export const LazyRelatorios = lazy(lazyRouteImports.relatorios)

@@ -58,6 +58,8 @@ import {
   LazyOnboardingPage,
   LazyRelatorios,
   LazyUsuariosPage,
+  getLazyRouteName,
+  preloadRoute,
 } from './routes/lazyRoutes.js'
 
 function CopilotDrawerBoundary() {
@@ -3165,7 +3167,7 @@ export default function App() {
           </AppSuspenseBoundary>
         </main>
         {renderFabGlobal()}
-      <CopilotFloatingButton />
+      <CopilotFloatingButton onPreload={() => preloadRoute('copilotDrawer')} />
       <CopilotDrawerBoundary />
         {renderModaisGlobais()}
         {renderOverlaysLayer()}
@@ -3215,6 +3217,12 @@ export default function App() {
     )
   }
 
+
+  const preloadTelaLazy = useCallback((tela) => {
+    const lazyRouteName = getLazyRouteName(tela)
+    if (lazyRouteName) preloadRoute(lazyRouteName)
+  }, [])
+
   function renderSidebar() {
     return (
       <Sidebar
@@ -3230,6 +3238,7 @@ export default function App() {
         gruposMenu={gruposMenu}
         toggleGrupoMenu={toggleGrupoMenu}
         sairDoSistema={sairDoSistema}
+        onPreloadRoute={preloadTelaLazy}
       />
     )
   }
@@ -3253,6 +3262,7 @@ export default function App() {
         trocarEmpresaAtiva={trocarEmpresaAtiva}
         trocandoEmpresa={trocandoEmpresa}
         abrirPerfilUsuario={abrirPerfilUsuario}
+        onPreloadRoute={preloadTelaLazy}
       />
     )
   }
@@ -4050,7 +4060,7 @@ export default function App() {
       {renderMobileMenu()}
 
       {renderFabGlobal()}
-      <CopilotFloatingButton />
+      <CopilotFloatingButton onPreload={() => preloadRoute('copilotDrawer')} />
       <CopilotDrawerBoundary />
 
       

@@ -1,10 +1,12 @@
-function MenuItem({ tela, icon, label, telaAtual, sidebarCompacta, navegarPara }) {
+function MenuItem({ tela, icon, label, telaAtual, sidebarCompacta, navegarPara, onPreloadRoute }) {
   const ativo = tela && telaAtual === tela
 
   return (
     <button
       className={ativo ? 'active' : ''}
       title={label}
+      onPointerEnter={() => onPreloadRoute?.(tela)}
+      onFocus={() => onPreloadRoute?.(tela)}
       onClick={() => navegarPara(tela)}
     >
       <span className="menu-icon">{icon}</span>
@@ -36,7 +38,8 @@ export default function Sidebar({
   navegarPara,
   gruposMenu,
   toggleGrupoMenu,
-  sairDoSistema
+  sairDoSistema,
+  onPreloadRoute
 }) {
   const nome = nomeUsuario()
   const perfil = normalizarPerfil(perfilUsuario || 'usuário')
@@ -86,6 +89,7 @@ export default function Sidebar({
                 telaAtual={telaAtual}
                 sidebarCompacta={sidebarCompacta}
                 navegarPara={navegarPara}
+                onPreloadRoute={onPreloadRoute}
               />
             ))}
           </MenuGroup>

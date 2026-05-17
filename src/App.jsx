@@ -11,29 +11,20 @@ import {
   listarFiliaisUsuariosEmpresa,
   atualizarFiliaisUsuarioEmpresa
 } from './services/usuariosService'
-import Relatorios from './pages/Relatorios.jsx'
-import ContasPage from './pages/ContasPage.jsx'
-import NotasPage from './pages/NotasPage.jsx'
-import MasterPanelPage from './pages/MasterPanelPage.jsx'
-import FiliaisPage from './pages/FiliaisPage.jsx'
-import BillingPage from './pages/BillingPage.jsx'
-import OnboardingPage from './pages/OnboardingPage.jsx'
-import UsuariosPage from './pages/UsuariosPage.jsx'
 import Topbar from './components/layout/Topbar.jsx'
 import Sidebar from './components/layout/Sidebar.jsx'
 import MobileMenu from './components/layout/MobileMenu.jsx'
 import GlobalFab from './components/layout/GlobalFab.jsx'
 import HeaderExpansivel from './components/ui/HeaderExpansivel.jsx'
 import AppRouteGuards from './components/routes/AppRouteGuards.jsx'
-import DashboardRouteComposition from './components/routes/DashboardRouteComposition.jsx'
 import AppSuspenseBoundary from './components/routes/AppSuspenseBoundary.jsx'
 import AppModalsLayer from './components/render/AppModalsLayer.jsx'
 import AppOverlaysLayer from './components/render/AppOverlaysLayer.jsx'
 import AppShell from './components/shell/AppShell.jsx'
 import AppProviders from './components/providers/AppProviders.jsx'
 import CopilotFloatingButton from './components/copilot/layout/CopilotFloatingButton.jsx'
-import CopilotDrawer from './components/copilot/layout/CopilotDrawer.jsx'
 import CopilotStyles from './components/copilot/layout/CopilotStyles.jsx'
+import { useCopilot } from './components/copilot/core/CopilotProvider.jsx'
 import { useApp } from './context/AppContext.jsx'
 import { useContas } from './hooks/useContas'
 import { useNotas } from './hooks/useNotas'
@@ -56,6 +47,30 @@ import menuSections from './config/menuSections.js'
 import {
   limparSessaoSegura
 } from './services/sessionSecurityService.js'
+import {
+  LazyBillingPage,
+  LazyContasPage,
+  LazyCopilotDrawer,
+  LazyDashboardRouteComposition,
+  LazyFiliaisPage,
+  LazyMasterPanelPage,
+  LazyNotasPage,
+  LazyOnboardingPage,
+  LazyRelatorios,
+  LazyUsuariosPage
+} from './routes/lazyRoutes.js'
+
+function CopilotDrawerBoundary() {
+  const { open } = useCopilot()
+
+  if (!open) return null
+
+  return (
+    <AppSuspenseBoundary>
+      <LazyCopilotDrawer />
+    </AppSuspenseBoundary>
+  )
+}
 
 export default function App() {
   const sincronizacaoTenantRef = useRef(null)
@@ -3132,188 +3147,18 @@ export default function App() {
         {renderSidebar()}
         {renderMobileMenu()}
 
-        <main className="app-frame-content">{children}</main>
+        <main className="app-frame-content">
+          <AppSuspenseBoundary>
+            {children}
+          </AppSuspenseBoundary>
+        </main>
         {renderFabGlobal()}
       <CopilotFloatingButton />
-      <CopilotDrawer />
+      <CopilotDrawerBoundary />
         {renderModaisGlobais()}
         {renderOverlaysLayer()}
       </div>
       </AppProviders>
-    )
-  }
-
-
-  function AppFrame({ children }) {
-    return (
-      <div className="app-page app-frame" style={styles.page}>
-        <style>{`
-          .desktop-sidebar { display: none; }
-          @media (min-width: 980px) {
-            body { background: #eef7f5 !important; }
-            .app-frame { max-width: none !important; width: 100% !important; min-height: 100vh !important; margin: 0 !important; padding: 24px 32px 80px 300px !important; box-sizing: border-box !important; background: linear-gradient(180deg, #f8fafc 0%, #eef7f5 100%) !important; }
-            .app-frame-content { max-width: 1280px; margin: 0 auto; }
-            .app-frame-content > h1 { font-size: 34px !important; margin: 0 0 16px 0 !important; }
-            .app-frame-content > section { border-radius: 22px !important; box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07) !important; }
-            .relatorios-page { max-width: 1280px !important; width: 100% !important; padding: 0 !important; margin: 0 !important; background: transparent !important; }
-            .relatorios-page [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
-            .desktop-sidebar { display: flex !important; position: fixed; left: 24px; top: 24px; bottom: 24px; width: 244px; padding: 18px; border-radius: 24px; background: linear-gradient(180deg, #064e3b 0%, #0f766e 48%, #14b8a6 100%); color: white; box-shadow: 0 24px 60px rgba(15, 118, 110, 0.28); z-index: 60; flex-direction: column; gap: 14px; box-sizing: border-box; }
-            .desktop-sidebar-brand { display:flex; align-items:center; gap:12px; padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,.18); }
-            .desktop-sidebar-brand img { width:48px; height:48px; border-radius:16px; background:white; }
-            .desktop-sidebar-brand strong { display:block; font-size:17px; }
-            .desktop-sidebar-brand small { color:rgba(255,255,255,.78); }
-            .desktop-sidebar-section-label { margin:12px 4px 4px; font-size:10px; letter-spacing:.9px; text-transform:uppercase; color:rgba(255,255,255,.62); font-weight:900; }
-            .desktop-sidebar-nav { display:grid; gap:6px; margin-top:2px; }
-            .desktop-sidebar-nav button { display:flex; align-items:center; gap:10px; width:100%; border:1px solid transparent; background:transparent; color:rgba(255,255,255,.92); border-radius:14px; padding:11px 12px; text-align:left; font-weight:800; cursor:pointer; }
-            .desktop-sidebar-nav button:hover { background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.12); }
-            .desktop-sidebar-nav button.active { background:rgba(255,255,255,.22); border-color:rgba(255,255,255,.18); box-shadow:inset 3px 0 0 rgba(255,255,255,.8); }
-            .desktop-sidebar-spacer { flex:1; }
-            .desktop-sidebar-user { border-radius:18px; padding:12px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.16); }
-            .desktop-sidebar-user strong { display:block; }
-            .desktop-sidebar-user small { color:rgba(255,255,255,.8); }
-            .top-shell { max-width:1280px; margin:0 auto 22px auto !important; padding:16px 18px !important; border-radius:24px !important; }
-            .mobile-menu-trigger { display:none !important; }
-            .agenda-page-grid { display:grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:16px; }
-          }
-          @media (max-width: 979px) { .app-frame { max-width: 430px; margin:auto; } }
-          .note-card-action { transition:.2s; }
-
-          /* ===== DF GESTAO — LAYOUT LIMPO E BLINDADO ===== */
-          @media (min-width: 980px) {
-            .app-page, .app-frame {
-              padding-left: 300px !important;
-              transition: padding-left .25s ease !important;
-            }
-            body:has(.desktop-sidebar.compacta) .app-page,
-            body:has(.desktop-sidebar.compacta) .app-frame {
-              padding-left: 112px !important;
-            }
-            .desktop-sidebar {
-              width: 244px !important;
-              overflow: hidden !important;
-              gap: 10px !important;
-            }
-            .desktop-sidebar.compacta {
-              width: 72px !important;
-              padding: 14px 10px !important;
-              align-items: center !important;
-            }
-            .desktop-sidebar.compacta .desktop-sidebar-brand {
-              justify-content: center !important;
-              padding-bottom: 10px !important;
-            }
-            .desktop-sidebar.compacta .desktop-sidebar-brand img {
-              width: 44px !important;
-              height: 44px !important;
-            }
-            .sidebar-collapse-btn {
-              display:flex; align-items:center; justify-content:center; gap:8px;
-              width:100%; border:1px solid rgba(255,255,255,.16); border-radius:14px;
-              background:rgba(255,255,255,.10); color:white; font-weight:900;
-              padding:9px 10px; cursor:pointer;
-            }
-            .desktop-sidebar-scroll {
-              width: 100%; overflow-y: auto; overflow-x: hidden; padding-right: 2px;
-              display: grid; gap: 8px;
-            }
-            .desktop-sidebar-scroll::-webkit-scrollbar { width: 4px; }
-            .desktop-sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.28); border-radius: 999px; }
-            .sidebar-group-clean { display:grid; gap:5px; width:100%; }
-            .sidebar-group-toggle {
-              display:flex; align-items:center; justify-content:space-between;
-              width:100%; border:0; background:transparent; color:rgba(255,255,255,.70);
-              text-transform:uppercase; letter-spacing:.7px; font-size:10px; font-weight:900;
-              padding:8px 8px 2px; cursor:pointer;
-            }
-            .desktop-sidebar.compacta .sidebar-group-toggle { justify-content:center; padding:6px 0; }
-            .desktop-sidebar-nav button {
-              min-height: 42px !important; padding:10px 11px !important; border-radius:14px !important;
-              white-space: nowrap !important;
-            }
-            .desktop-sidebar.compacta .desktop-sidebar-nav button { justify-content:center !important; padding:10px 0 !important; }
-            .menu-icon { width:22px; text-align:center; flex:0 0 22px; }
-            .desktop-sidebar.compacta .menu-icon { width:auto; flex:auto; }
-            .desktop-sidebar.compacta .desktop-sidebar-user { width:44px !important; height:44px !important; border-radius:16px !important; padding:0 !important; display:flex; align-items:center; justify-content:center; }
-            .desktop-sidebar.compacta .sidebar-exit { width:100%; }
-            .top-shell { background:#ffffff !important; }
-            .top-shell strong, .desktop-sidebar-brand strong { letter-spacing:.1px; }
-            .dashboard-title-row { margin-right: 360px !important; }
-            body:has(.desktop-sidebar.compacta) .dashboard-title-row,
-            body:has(.desktop-sidebar.compacta) .summary-grid,
-            body:has(.desktop-sidebar.compacta) .agenda-card-polished,
-            body:has(.desktop-sidebar.compacta) .filters-desktop,
-            body:has(.desktop-sidebar.compacta) .result-summary,
-            body:has(.desktop-sidebar.compacta) .content-block { margin-right: 360px !important; }
-            .notes-panel {
-              right: 28px !important; top: 158px !important; width: 330px !important;
-              padding: 18px !important; border-radius: 24px !important;
-              box-shadow: 0 18px 40px rgba(15,23,42,.08) !important;
-            }
-            .quick-actions-card {
-              display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px; border-radius:18px;
-              background:linear-gradient(135deg,#f8fafc,#ecfeff); border:1px solid #ccfbf1; margin-bottom:14px;
-            }
-            .quick-actions-card strong { grid-column:1/-1; font-size:15px; }
-            .quick-actions-card button { border:0; border-radius:12px; padding:11px 10px; color:white; font-weight:900; cursor:pointer; }
-            .quick-actions-card button:nth-of-type(1) { background:linear-gradient(135deg,#14b8a6,#0f766e); }
-            .quick-actions-card button:nth-of-type(2) { background:#111827; }
-            .account-card-desktop .account-actions { display:flex !important; gap:8px !important; flex-wrap:nowrap !important; }
-            .account-card-desktop .account-actions button { min-width:74px !important; margin:0 !important; }
-            .note-event-date { display:inline-flex; margin:6px 0; padding:4px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-weight:800; font-size:12px; }
-          }
-
-          @media (max-width: 979px) {
-            .mobile-menu-panel { padding-bottom: 24px !important; }
-            .mobile-menu-group { margin-top: 12px !important; }
-            .mobile-menu-group summary { padding: 10px 4px !important; font-weight:900; color:#0f766e; }
-            .mobile-fab-menu { display:grid !important; gap:10px !important; }
-            .notes-panel { position: static !important; width:auto !important; max-height:none !important; overflow:visible !important; }
-            .quick-actions-card { display:none !important; }
-          }
-
-
-          /* MOBILE: bloco de notas visível e FAB funcional */
-          @media (max-width: 979px) {
-            .notes-panel {
-              position: static !important;
-              width: auto !important;
-              max-height: none !important;
-              overflow: visible !important;
-              margin: 14px 0 18px !important;
-              padding: 16px !important;
-              border-radius: 22px !important;
-              background: #ffffff !important;
-              border: 1px solid #e5e7eb !important;
-              box-shadow: 0 12px 28px rgba(15,23,42,.08) !important;
-            }
-            .note-add-small {
-              width: 38px !important;
-              height: 38px !important;
-              display: inline-flex !important;
-              align-items: center !important;
-              justify-content: center !important;
-            }
-            .mobile-fab, .mobile-fab-menu { z-index: 3000 !important; }
-            .mobile-fab-menu button { touch-action: manipulation !important; }
-          }
-
-        `}</style>
-      {renderDesktopRefinoStyle()}
-      {renderMobileFinalStyle()}
-      <CopilotStyles />
-      {renderMobileUxFinalPatchStyle()}
-      {renderTopShell()}
-
-        {renderSidebar()}
-        {renderMobileMenu()}
-
-        <main className="app-frame-content">{children}</main>
-        {renderFabGlobal()}
-      <CopilotFloatingButton />
-      <CopilotDrawer />
-        {renderModaisGlobais()}
-        {renderOverlaysLayer()}
-      </div>
     )
   }
 
@@ -3417,7 +3262,7 @@ export default function App() {
 
   if (telaAtual === 'contas') {
     return renderAppFrame(
-      <ContasPage
+      <LazyContasPage
         styles={styles}
         busca={busca}
         setBusca={setBusca}
@@ -3464,7 +3309,7 @@ export default function App() {
 
   if (telaAtual === 'relatorios') {
     return renderAppFrame(
-      <Relatorios voltar={() => navegarPara('contas')} empresaId={empresaId} usuario={usuarioLogado} mostrarAviso={mostrarAviso} />
+      <LazyRelatorios voltar={() => navegarPara('contas')} empresaId={empresaId} usuario={usuarioLogado} mostrarAviso={mostrarAviso} />
     )
   }
 
@@ -3472,7 +3317,7 @@ export default function App() {
 
   if (telaAtual === 'notas') {
     return renderAppFrame(
-      <NotasPage
+      <LazyNotasPage
         styles={styles}
         navegarPara={navegarPara}
         notasFiltradas={notasFiltradas}
@@ -3575,7 +3420,7 @@ export default function App() {
     }
 
     return renderAppFrame(
-      <MasterPanelPage
+      <LazyMasterPanelPage
         styles={styles}
         usuarioLogado={usuarioLogado}
         nomeUsuarioCompleto={nomeUsuarioCompleto}
@@ -3608,7 +3453,7 @@ export default function App() {
     }
 
     return renderAppFrame(
-      <OnboardingPage
+      <LazyOnboardingPage
         styles={styles}
         empresaId={empresaId}
         empresaNome={nomeEmpresa}
@@ -3638,7 +3483,7 @@ export default function App() {
     }
 
     return renderAppFrame(
-      <BillingPage
+      <LazyBillingPage
         styles={styles}
         empresaId={empresaId}
         empresaNome={nomeEmpresa}
@@ -3667,7 +3512,7 @@ export default function App() {
     }
 
     return renderAppFrame(
-      <FiliaisPage
+      <LazyFiliaisPage
         styles={styles}
         empresaId={empresaId}
         empresaNome={nomeEmpresa}
@@ -3680,7 +3525,7 @@ export default function App() {
 
   if (telaAtual === 'usuarios') {
     return renderAppFrame(
-      <UsuariosPage
+      <LazyUsuariosPage
         styles={styles}
         EmptyState={EmptyState}
         podeAcessarConfiguracoes={podeAcessarConfiguracoes}
@@ -4194,12 +4039,12 @@ export default function App() {
 
       {renderFabGlobal()}
       <CopilotFloatingButton />
-      <CopilotDrawer />
+      <CopilotDrawerBoundary />
 
       
 
       <AppSuspenseBoundary>
-        <DashboardRouteComposition
+        <LazyDashboardRouteComposition
           routeProps={{
           styles,
           nomeUsuario: nomeUsuario(),

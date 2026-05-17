@@ -1,4 +1,6 @@
-function MenuItem({ tela, icon, label, telaAtual, sidebarCompacta, navegarPara, onPreloadRoute }) {
+import { memo, useCallback, useMemo } from 'react'
+
+const MenuItem = memo(function MenuItem({ tela, icon, label, telaAtual, sidebarCompacta, navegarPara, onPreloadRoute }) {
   const ativo = tela && telaAtual === tela
 
   return (
@@ -13,9 +15,9 @@ function MenuItem({ tela, icon, label, telaAtual, sidebarCompacta, navegarPara, 
       {!sidebarCompacta && <span className="menu-text">{label}</span>}
     </button>
   )
-}
+})
 
-function MenuGroup({ id, titulo, children, sidebarCompacta, gruposMenu, toggleGrupoMenu }) {
+const MenuGroup = memo(function MenuGroup({ id, titulo, children, sidebarCompacta, gruposMenu, toggleGrupoMenu }) {
   return (
     <div className="sidebar-group-clean">
       <button className="sidebar-group-toggle" onClick={() => toggleGrupoMenu(id)} title={titulo}>
@@ -25,12 +27,13 @@ function MenuGroup({ id, titulo, children, sidebarCompacta, gruposMenu, toggleGr
       {(sidebarCompacta || gruposMenu[id]) && <nav className="desktop-sidebar-nav">{children}</nav>}
     </div>
   )
-}
+})
 
-export default function Sidebar({
+function Sidebar({
   sidebarCompacta,
   setSidebarCompacta,
   nomeUsuario,
+  nomeUsuarioAtual,
   normalizarPerfil,
   perfilUsuario,
   menuSections,
@@ -41,8 +44,16 @@ export default function Sidebar({
   sairDoSistema,
   onPreloadRoute
 }) {
-  const nome = nomeUsuario()
-  const perfil = normalizarPerfil(perfilUsuario || 'usuário')
+  const nome = useMemo(() => {
+    if (nomeUsuarioAtual) return nomeUsuarioAtual
+    return typeof nomeUsuario === 'function' ? nomeUsuario() : nomeUsuario
+  }, [nomeUsuario, nomeUsuarioAtual])
+
+  const perfil = useMemo(() => normalizarPerfil(perfilUsuario || 'usuário'), [normalizarPerfil, perfilUsuario])
+
+  const alternarSidebarCompacta = useCallback(() => {
+    setSidebarCompacta((compacta) => !compacta)
+  }, [setSidebarCompacta])
 
   return (
     <aside className={`desktop-sidebar no-print ${sidebarCompacta ? 'compacta' : ''}`}>
@@ -66,7 +77,7 @@ export default function Sidebar({
         )}
       </div>
 
-      <button className="sidebar-collapse-btn sidebar-collapse-icon" onClick={() => setSidebarCompacta(!sidebarCompacta)} title={sidebarCompacta ? 'Expandir menu' : 'Recolher menu'} aria-label={sidebarCompacta ? 'Expandir menu' : 'Recolher menu'}>
+      <button className="sidebar-collapse-btn sidebar-collapse-icon" onClick={alternarSidebarCompacta} title={sidebarCompacta ? 'Expandir menu' : 'Recolher menu'} aria-label={sidebarCompacta ? 'Expandir menu' : 'Recolher menu'}>
         <span className="sidebar-collapse-arrow">{sidebarCompacta ? '→' : '←'}</span>
       </button>
 
@@ -103,3 +114,5 @@ export default function Sidebar({
     </aside>
   )
 }
+
+export default memo(Sidebar)

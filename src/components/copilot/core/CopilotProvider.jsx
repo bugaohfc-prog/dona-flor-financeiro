@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import { gerarCopilotFinanceiro } from '../../../services/ai/copilotEngine.js'
 
 const CopilotContext = createContext(null)
@@ -9,16 +9,19 @@ export function CopilotProvider({ children, contas = [], contasFiltradas = [], n
 
   const intelligence = useMemo(() => gerarCopilotFinanceiro({ contas, contasFiltradas }), [contas, contasFiltradas])
 
+  const toggle = useCallback(() => setOpen((current) => !current), [])
+  const close = useCallback(() => setOpen(false), [])
+
   const value = useMemo(() => ({
     open,
     setOpen,
-    toggle: () => setOpen((current) => !current),
-    close: () => setOpen(false),
+    toggle,
+    close,
     intelligence,
     lastQuestion,
     setLastQuestion,
     navegarPara
-  }), [open, intelligence, lastQuestion, navegarPara])
+  }), [close, intelligence, lastQuestion, navegarPara, open, toggle])
 
   return <CopilotContext.Provider value={value}>{children}</CopilotContext.Provider>
 }

@@ -573,23 +573,21 @@ export default function App() {
     ])
   }
 
-  function normalizarPerfil(perfil) {
-    return normalizarPerfilUsuario(perfil)
-  }
+  const normalizarPerfil = useCallback((perfil) => normalizarPerfilUsuario(perfil), [])
 
-  function temPermissao(perfisPermitidos = []) {
+  const temPermissao = useCallback((perfisPermitidos = []) => {
     if (permissoesUsuario?.isMaster) return true
     const perfilAtual = normalizarPerfil(perfilUsuario)
     return perfisPermitidos.includes(perfilAtual)
-  }
+  }, [normalizarPerfil, perfilUsuario, permissoesUsuario?.isMaster])
 
-  function podeAdministrarUsuarios() {
+  const podeAdministrarUsuarios = useCallback(() => {
     return Boolean(permissoesUsuario?.canManageUsers || temPermissao(['admin']))
-  }
+  }, [permissoesUsuario?.canManageUsers, temPermissao])
 
-  function podeAcessarConfiguracoes() {
+  const podeAcessarConfiguracoes = useCallback(() => {
     return Boolean(permissoesUsuario?.canAccessSettings || temPermissao(['admin', 'gerente']))
-  }
+  }, [permissoesUsuario?.canAccessSettings, temPermissao])
 
   const menuSectionsFiltradas = useMemo(() => menuSections
     .map((grupo) => ({
@@ -597,10 +595,6 @@ export default function App() {
       items: grupo.items.filter((item) => !item.masterOnly || permissoesUsuario?.canManageCompanies)
     }))
     .filter((grupo) => grupo.items.length > 0), [permissoesUsuario?.canManageCompanies])
-
-  function menuSectionsVisiveis() {
-    return menuSectionsFiltradas
-  }
 
   async function recarregarEmpresasDisponiveis() {
     if (!usuarioLogado) return
@@ -1782,7 +1776,7 @@ export default function App() {
   }
 
 
-  function limparFiltros() {
+  const limparFiltros = useCallback(() => {
     setBusca('')
     setFiltroStatus('todas')
     setFiltroCentro('')
@@ -1790,11 +1784,11 @@ export default function App() {
     setFiltroMes('')
     setDataInicial('')
     setDataFinal('')
-  }
+  }, [])
 
 
 
-  function abrirConfirmacao({ titulo, mensagem, textoConfirmar = 'Confirmar', tipo = 'padrao', acao }) {
+  const abrirConfirmacao = useCallback(({ titulo, mensagem, textoConfirmar = 'Confirmar', tipo = 'padrao', acao }) => {
     setConfirmacao({
       aberto: true,
       titulo,
@@ -1803,9 +1797,9 @@ export default function App() {
       tipo,
       acao
     })
-  }
+  }, [setConfirmacao])
 
-  function fecharConfirmacao() {
+  const fecharConfirmacao = useCallback(() => {
     setConfirmacao({
       aberto: false,
       titulo: '',
@@ -1814,15 +1808,15 @@ export default function App() {
       tipo: 'padrao',
       acao: null
     })
-  }
+  }, [setConfirmacao])
 
-  async function executarConfirmacao() {
+  const executarConfirmacao = useCallback(async () => {
     if (typeof confirmacao.acao === 'function') {
       await confirmacao.acao()
     }
 
     fecharConfirmacao()
-  }
+  }, [confirmacao.acao, fecharConfirmacao])
 
 
 
@@ -2028,38 +2022,42 @@ export default function App() {
     navegarPara('contas')
   }
 
-  async function sairDoSistema() {
-    limparEstadoAutenticacao()
+  const sairDoSistema = useCallback(async () => {
+    limparEstadoAutenticacaoCallback()
     setUsuarioLogado(null)
     setCarregandoAuth(false)
     setTelaAtualState('contas')
     await supabase.auth.signOut()
-  }
+  }, [limparEstadoAutenticacaoCallback, setCarregandoAuth, setTelaAtualState, setUsuarioLogado])
 
   function voltarPainel() {
     navegarPara('dashboard')
   }
 
-  function nomeUsuario() {
+  const nomeUsuarioAtual = useMemo(() => {
     const nome = nomeUsuarioPerfil || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name
     if (nome) return String(nome).split(' ')[0]
 
     const email = usuarioLogado?.email || 'usuário'
     return primeiraLetraMaiuscula(email.split('@')[0])
-  }
+  }, [nomeUsuarioPerfil, usuarioLogado?.email, usuarioLogado?.user_metadata?.full_name, usuarioLogado?.user_metadata?.name])
 
-  function nomeUsuarioCompleto() {
+  const nomeUsuarioCompletoAtual = useMemo(() => {
     const nome = nomeUsuarioPerfil || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name
     if (nome) return String(nome).trim()
 
     const email = usuarioLogado?.email || ''
     return email ? primeiraLetraMaiuscula(email.split('@')[0]) : ''
-  }
+  }, [nomeUsuarioPerfil, usuarioLogado?.email, usuarioLogado?.user_metadata?.full_name, usuarioLogado?.user_metadata?.name])
 
-  function abrirPerfilUsuario() {
-    setNomePerfilEditando(nomeUsuarioCompleto())
+  const nomeUsuario = useCallback(() => nomeUsuarioAtual, [nomeUsuarioAtual])
+
+  const nomeUsuarioCompleto = useCallback(() => nomeUsuarioCompletoAtual, [nomeUsuarioCompletoAtual])
+
+  const abrirPerfilUsuario = useCallback(() => {
+    setNomePerfilEditando(nomeUsuarioCompletoAtual)
     setModalPerfilUsuario(true)
-  }
+  }, [nomeUsuarioCompletoAtual, setModalPerfilUsuario, setNomePerfilEditando])
 
   async function salvarPerfilUsuario() {
     const nomeLimpo = String(nomePerfilEditando || '').trim().replace(/\s+/g, ' ')
@@ -2216,11 +2214,11 @@ export default function App() {
         canSwitchCompany={permissoesUsuario?.canSwitchCompany}
         empresasDisponiveis={empresasDisponiveis}
         empresaId={empresaId}
-        trocarEmpresaAtiva={trocarEmpresaAtiva}
+        trocarEmpresaAtiva={permissoesUsuario?.canSwitchCompany ? trocarEmpresaAtiva : undefined}
         trocandoEmpresa={trocandoEmpresa}
         nomeUsuario={nomeUsuario}
+        nomeUsuarioAtual={nomeUsuarioAtual}
         abrirPerfilUsuario={abrirPerfilUsuario}
-        sairDoSistema={sairDoSistema}
       />
     )
   }
@@ -3187,41 +3185,18 @@ export default function App() {
     )
   }
 
-  function toggleGrupoMenu(grupo) {
+  const toggleGrupoMenu = useCallback((grupo) => {
     setGruposMenu((atual) => ({ ...atual, [grupo]: !atual[grupo] }))
-  }
-
-  function ItemMenu({ tela, icon, label, onClick }) {
-    const ativo = tela && telaAtual === tela
-    return (
-      <button
-        className={ativo ? 'active' : ''}
-        title={label}
-        onClick={onClick || (() => navegarPara(tela))}
-      >
-        <span className="menu-icon">{icon}</span>
-        {!sidebarCompacta && <span className="menu-text">{label}</span>}
-      </button>
-    )
-  }
-
-  function GrupoMenu({ id, titulo, children }) {
-    return (
-      <div className="sidebar-group-clean">
-        <button className="sidebar-group-toggle" onClick={() => toggleGrupoMenu(id)} title={titulo}>
-          <span>{!sidebarCompacta ? titulo : '•'}</span>
-          {!sidebarCompacta && <strong>{gruposMenu[id] ? '−' : '+'}</strong>}
-        </button>
-        {(sidebarCompacta || gruposMenu[id]) && <nav className="desktop-sidebar-nav">{children}</nav>}
-      </div>
-    )
-  }
-
+  }, [setGruposMenu])
 
   const preloadTelaLazy = useCallback((tela) => {
     const lazyRouteName = getLazyRouteName(tela)
     if (lazyRouteName) preloadRoute(lazyRouteName)
   }, [])
+
+  const HeaderExpansivelComStyles = useCallback((props) => (
+    <HeaderExpansivel styles={styles} {...props} />
+  ), [])
 
   function renderSidebar() {
     return (
@@ -3229,10 +3204,10 @@ export default function App() {
         sidebarCompacta={sidebarCompacta}
         setSidebarCompacta={setSidebarCompacta}
         nomeUsuario={nomeUsuario}
-        nomeUsuarioAtual={nomeUsuario()}
+        nomeUsuarioAtual={nomeUsuarioAtual}
         normalizarPerfil={normalizarPerfil}
         perfilUsuario={perfilUsuario}
-        menuSections={menuSectionsVisiveis()}
+        menuSections={menuSectionsFiltradas}
         telaAtual={telaAtual}
         navegarPara={navegarPara}
         gruposMenu={gruposMenu}
@@ -3250,16 +3225,16 @@ export default function App() {
         styles={styles}
         setMenuNavegacaoAberto={setMenuNavegacaoAberto}
         nomeUsuario={nomeUsuario}
-        nomeUsuarioAtual={nomeUsuario()}
+        nomeUsuarioAtual={nomeUsuarioAtual}
         normalizarPerfil={normalizarPerfil}
         perfilUsuario={perfilUsuario}
-        menuSections={menuSectionsVisiveis()}
+        menuSections={menuSectionsFiltradas}
         navegarPara={navegarPara}
         sairDoSistema={sairDoSistema}
         canSwitchCompany={permissoesUsuario?.canSwitchCompany}
         empresasDisponiveis={empresasDisponiveis}
         empresaId={empresaId}
-        trocarEmpresaAtiva={trocarEmpresaAtiva}
+        trocarEmpresaAtiva={permissoesUsuario?.canSwitchCompany ? trocarEmpresaAtiva : undefined}
         trocandoEmpresa={trocandoEmpresa}
         abrirPerfilUsuario={abrirPerfilUsuario}
         onPreloadRoute={preloadTelaLazy}
@@ -3312,7 +3287,7 @@ export default function App() {
         total={total}
         formatarValor={formatarValor}
         loading={loading}
-        HeaderExpansivel={(props) => <HeaderExpansivel styles={styles} {...props} />}
+        HeaderExpansivel={HeaderExpansivelComStyles}
         mostrarContas={mostrarContas}
         setMostrarContas={setMostrarContas}
         estaVencida={estaVencida}

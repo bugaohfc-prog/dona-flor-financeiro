@@ -1,4 +1,63 @@
-export default function MobileMenu({
+import { memo, useCallback, useMemo } from 'react'
+
+const COMPANY_SWITCHER_STYLE = {
+  margin: '12px 0 18px',
+  padding: '12px 14px',
+  border: '1px solid rgba(20, 184, 166, 0.22)',
+  borderRadius: 18,
+  background: 'rgba(240, 253, 250, 0.9)',
+  display: 'grid',
+  gap: 8
+}
+
+const COMPANY_LABEL_STYLE = {
+  fontSize: 11,
+  fontWeight: 900,
+  color: '#0f766e',
+  textTransform: 'uppercase',
+  letterSpacing: '.08em'
+}
+
+const COMPANY_SELECT_STYLE = {
+  width: '100%',
+  border: '0',
+  background: 'transparent',
+  color: '#111827',
+  fontWeight: 900,
+  fontSize: 15,
+  outline: 'none'
+}
+
+const COMPANY_NAME_STYLE = {
+  color: '#111827',
+  fontSize: 15
+}
+
+const MobileMenuItem = memo(function MobileMenuItem({ item, styles, navegarPara, onPreloadRoute }) {
+  const handleClick = useCallback(() => {
+    navegarPara(item.tela)
+  }, [item.tela, navegarPara])
+
+  const handlePreload = useCallback(() => {
+    onPreloadRoute?.(item.tela)
+  }, [item.tela, onPreloadRoute])
+
+  return (
+    <button
+      type="button"
+      style={styles.menuNavItem}
+      onPointerEnter={handlePreload}
+      onFocus={handlePreload}
+      onTouchStart={handlePreload}
+      onClick={handleClick}
+    >
+      <span>{item.icon}</span>
+      <div><strong>{item.label}</strong><small>{item.desc}</small></div>
+    </button>
+  )
+})
+
+function MobileMenu({
   visible,
   styles,
   setMenuNavegacaoAberto,
@@ -17,31 +76,43 @@ export default function MobileMenu({
   abrirPerfilUsuario,
   onPreloadRoute
 }) {
-  if (!visible) return null
-
   const exibirSeletorEmpresa = canSwitchCompany && empresasDisponiveis.length > 0
-  const empresaAtual = empresasDisponiveis.find((empresa) => empresa.id === empresaId)
-  const nomeExibicao = nomeUsuarioAtual || (typeof nomeUsuario === 'function' ? nomeUsuario() : nomeUsuario) || 'usuário'
-
-  const item = (icon, titulo, desc, acao, tela) => (
-    <button
-      type="button"
-      style={styles.menuNavItem}
-      onPointerEnter={() => onPreloadRoute?.(tela)}
-      onFocus={() => onPreloadRoute?.(tela)}
-      onTouchStart={() => onPreloadRoute?.(tela)}
-      onClick={acao}
-    >
-      <span>{icon}</span>
-      <div><strong>{titulo}</strong><small>{desc}</small></div>
-    </button>
+  const empresaAtual = useMemo(
+    () => empresasDisponiveis.find((empresa) => empresa.id === empresaId),
+    [empresaId, empresasDisponiveis]
   )
+
+  const nomeExibicao = useMemo(() => {
+    if (nomeUsuarioAtual) return nomeUsuarioAtual
+    return (typeof nomeUsuario === 'function' ? nomeUsuario() : nomeUsuario) || 'usuário'
+  }, [nomeUsuario, nomeUsuarioAtual])
+
+  const perfilExibicao = useMemo(
+    () => normalizarPerfil(perfilUsuario || 'usuário'),
+    [normalizarPerfil, perfilUsuario]
+  )
+
+  const fecharMenu = useCallback(() => {
+    setMenuNavegacaoAberto(false)
+  }, [setMenuNavegacaoAberto])
+
+  const abrirPerfil = useCallback(() => {
+    fecharMenu()
+    abrirPerfilUsuario?.()
+  }, [abrirPerfilUsuario, fecharMenu])
+
+  const trocarEmpresa = useCallback((event) => {
+    trocarEmpresaAtiva?.(event.target.value)
+    fecharMenu()
+  }, [fecharMenu, trocarEmpresaAtiva])
+
+  if (!visible) return null
 
   return (
     <div
       className="no-print mobile-menu-backdrop"
       style={styles.menuBackdrop}
-      onClick={() => setMenuNavegacaoAberto(false)}
+      onClick={fecharMenu}
       onTouchMove={(e) => e.preventDefault()}
     >
       <div
@@ -55,60 +126,37 @@ export default function MobileMenu({
       >
         <div style={styles.menuPerfil}>
           <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.menuPerfilIcone} />
-          <div><strong>{nomeExibicao}</strong><small>{normalizarPerfil(perfilUsuario || 'usuário')}</small></div>
+          <div><strong>{nomeExibicao}</strong><small>{perfilExibicao}</small></div>
         </div>
 
         {exibirSeletorEmpresa && (
           <div
             className="mobile-company-switcher"
-            style={{
-              margin: '12px 0 18px',
-              padding: '12px 14px',
-              border: '1px solid rgba(20, 184, 166, 0.22)',
-              borderRadius: 18,
-              background: 'rgba(240, 253, 250, 0.9)',
-              display: 'grid',
-              gap: 8
-            }}
+            style={COMPANY_SWITCHER_STYLE}
           >
-            <span style={{ fontSize: 11, fontWeight: 900, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '.08em' }}>Empresa ativa</span>
+            <span style={COMPANY_LABEL_STYLE}>Empresa ativa</span>
             {empresasDisponiveis.length > 1 ? (
               <select
                 value={empresaId || ''}
                 disabled={trocandoEmpresa}
-                onChange={(event) => {
-                  trocarEmpresaAtiva?.(event.target.value)
-                  setMenuNavegacaoAberto(false)
-                }}
+                onChange={trocarEmpresa}
                 aria-label="Empresa ativa"
-                style={{
-                  width: '100%',
-                  border: '0',
-                  background: 'transparent',
-                  color: '#111827',
-                  fontWeight: 900,
-                  fontSize: 15,
-                  outline: 'none'
-                }}
+                style={COMPANY_SELECT_STYLE}
               >
                 {empresasDisponiveis.map((empresa) => (
                   <option key={empresa.id} value={empresa.id}>{empresa.nome || empresa.id}</option>
                 ))}
               </select>
             ) : (
-              <strong style={{ color: '#111827', fontSize: 15 }}>{empresaAtual?.nome || 'Empresa ativa'}</strong>
+              <strong style={COMPANY_NAME_STYLE}>{empresaAtual?.nome || 'Empresa ativa'}</strong>
             )}
           </div>
         )}
 
-
         <button
           type="button"
           style={styles.menuNavItem}
-          onClick={() => {
-            setMenuNavegacaoAberto(false)
-            abrirPerfilUsuario?.()
-          }}
+          onClick={abrirPerfil}
         >
           <span>👤</span>
           <div><strong>Meu perfil</strong><small>Editar nome do usuário</small></div>
@@ -118,7 +166,13 @@ export default function MobileMenu({
           <details className="mobile-menu-group" key={grupo.id} open={index === 0}>
             <summary>{grupo.titulo}</summary>
             {grupo.items.map((navItem) => (
-              item(navItem.icon, navItem.label, navItem.desc, () => navegarPara(navItem.tela), navItem.tela)
+              <MobileMenuItem
+                key={navItem.tela}
+                item={navItem}
+                styles={styles}
+                navegarPara={navegarPara}
+                onPreloadRoute={onPreloadRoute}
+              />
             ))}
             {grupo.id === 'sistema' && (
               <button type="button" style={styles.menuSairItem} onClick={sairDoSistema}><span>🚪</span><div><strong>Sair</strong><small>Encerrar sessão</small></div></button>
@@ -129,3 +183,5 @@ export default function MobileMenu({
     </div>
   )
 }
+
+export default memo(MobileMenu)

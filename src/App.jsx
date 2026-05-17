@@ -41,6 +41,7 @@ import { useContas } from './hooks/useContas'
 import { useNotas } from './hooks/useNotas'
 import { useAuthSession } from './hooks/useAuthSession'
 import { useAppNavigation } from './hooks/useAppNavigation'
+import { useEmpresaContext } from './hooks/useEmpresaContext'
 import { converterValor, formatarData, formatarDataParaBanco, formatarValor, limitarDataInput, primeiraLetraMaiuscula } from './utils/format'
 import { dataLocal, diferencaDias, mesmoMesAtual } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
@@ -191,15 +192,22 @@ export default function App() {
     setTelaAtualState,
     navegarPara
   } = useAppNavigation()
-  const [empresaId, setEmpresaId] = useState(null)
-  const [trocandoEmpresa, setTrocandoEmpresa] = useState(false)
-  const [perfilUsuario, setPerfilUsuario] = useState('')
-  const [permissoesUsuario, setPermissoesUsuario] = useState(() => criarPermissoesUsuario())
+  const {
+    empresaId,
+    setEmpresaId,
+    trocandoEmpresa,
+    setTrocandoEmpresa,
+    perfilUsuario,
+    setPerfilUsuario,
+    permissoesUsuario,
+    setPermissoesUsuario,
+    erroEmpresa,
+    setErroEmpresa
+  } = useEmpresaContext()
   const [nomeUsuarioPerfil, setNomeUsuarioPerfil] = useState('')
   const [modalPerfilUsuario, setModalPerfilUsuario] = useState(false)
   const [nomePerfilEditando, setNomePerfilEditando] = useState('')
   const [salvandoPerfilUsuario, setSalvandoPerfilUsuario] = useState(false)
-  const [erroEmpresa, setErroEmpresa] = useState('')
   const [usuariosEmpresa, setUsuariosEmpresa] = useState([])
   const [usuariosCarregando, setUsuariosCarregando] = useState(false)
   const [usuariosInicializados, setUsuariosInicializados] = useState(false)

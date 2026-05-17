@@ -26,14 +26,9 @@ import Sidebar from './components/layout/Sidebar.jsx'
 import MobileMenu from './components/layout/MobileMenu.jsx'
 import GlobalFab from './components/layout/GlobalFab.jsx'
 import DashboardHome from './components/dashboard/DashboardHome.jsx'
-import AccountModal from './components/modals/AccountModal.jsx'
-import NoteModal from './components/modals/NoteModal.jsx'
-import CostCenterModal from './components/modals/CostCenterModal.jsx'
-import ConfirmModal from './components/modals/ConfirmModal.jsx'
-import ProfileModal from './components/modals/ProfileModal.jsx'
 import HeaderExpansivel from './components/ui/HeaderExpansivel.jsx'
-import GlobalLoader from './components/feedback/GlobalLoader.jsx'
-import GlobalToast from './components/feedback/GlobalToast.jsx'
+import AppModalsLayer from './components/render/AppModalsLayer.jsx'
+import AppOverlaysLayer from './components/render/AppOverlaysLayer.jsx'
 import { CopilotProvider } from './components/copilot/core/CopilotProvider.jsx'
 import CopilotFloatingButton from './components/copilot/layout/CopilotFloatingButton.jsx'
 import CopilotDrawer from './components/copilot/layout/CopilotDrawer.jsx'
@@ -2079,97 +2074,103 @@ export default function App() {
 
   function renderModaisGlobais() {
     return (
-      <>
-        {modalConta && (
-          <AccountModal
-            styles={styles}
-            editandoContaId={editandoContaId}
-            descricao={descricao}
-            setDescricao={setDescricao}
-            valor={valor}
-            setValor={setValor}
-            dataVencimento={dataVencimento}
-            setDataVencimento={setDataVencimento}
-            centroCustoId={centroCustoId}
-            setCentroCustoId={setCentroCustoId}
-            centros={centros}
-            filialId={filialId}
-            setFilialId={setFilialId}
-            filiais={filiais}
-            observacaoConta={observacaoConta}
-            setObservacaoConta={setObservacaoConta}
-            contaRecorrente={contaRecorrente}
-            setContaRecorrente={setContaRecorrente}
-            tipoRecorrencia={tipoRecorrencia}
-            setTipoRecorrencia={setTipoRecorrencia}
-            diaVencimentoRecorrencia={diaVencimentoRecorrencia}
-            setDiaVencimentoRecorrencia={setDiaVencimentoRecorrencia}
-            fecharConta={fecharConta}
-            salvarConta={salvarConta}
-            primeiraLetraMaiuscula={primeiraLetraMaiuscula}
-            limitarDataInput={limitarDataInput}
-            formatarDataParaBanco={formatarDataParaBanco}
-            fecharNota={fecharNota}
-            setModalCentro={setModalCentro}
-            setMenuAberto={setMenuAberto}
-            setMenuNavegacaoAberto={setMenuNavegacaoAberto}
-          />
-        )}
+      <AppModalsLayer
+        styles={styles}
+        modalConta={modalConta}
+        contaProps={{
+          editandoContaId,
+          descricao,
+          setDescricao,
+          valor,
+          setValor,
+          dataVencimento,
+          setDataVencimento,
+          centroCustoId,
+          setCentroCustoId,
+          centros,
+          filialId,
+          setFilialId,
+          filiais,
+          observacaoConta,
+          setObservacaoConta,
+          contaRecorrente,
+          setContaRecorrente,
+          tipoRecorrencia,
+          setTipoRecorrencia,
+          diaVencimentoRecorrencia,
+          setDiaVencimentoRecorrencia,
+          fecharConta,
+          salvarConta,
+          primeiraLetraMaiuscula,
+          limitarDataInput,
+          formatarDataParaBanco,
+          fecharNota,
+          setModalCentro,
+          setMenuAberto,
+          setMenuNavegacaoAberto
+        }}
+        modalNota={modalNota}
+        notaProps={{
+          editandoNotaId,
+          tituloNota,
+          setTituloNota,
+          prioridadeNota,
+          setPrioridadeNota,
+          dataEventoNota,
+          setDataEventoNota,
+          conteudoNota,
+          setConteudoNota,
+          filialNotaId,
+          setFilialNotaId,
+          filiais,
+          salvarNota,
+          fecharNota,
+          fecharConta,
+          setModalCentro,
+          setMenuAberto,
+          setMenuNavegacaoAberto,
+          primeiraLetraMaiuscula,
+          limitarDataInput
+        }}
+        modalCentro={modalCentro}
+        centroProps={{
+          novoCentro,
+          setNovoCentro,
+          salvarCentro,
+          centros,
+          abrirConfirmacao,
+          excluirCentro,
+          fecharConta,
+          fecharNota,
+          setModalCentro,
+          setMenuAberto,
+          setMenuNavegacaoAberto
+        }}
+        modalPerfilUsuario={modalPerfilUsuario}
+        perfilProps={{
+          nome: nomePerfilEditando,
+          setNome: setNomePerfilEditando,
+          email: usuarioLogado?.email,
+          salvando: salvandoPerfilUsuario,
+          onClose: () => setModalPerfilUsuario(false),
+          onSave: salvarPerfilUsuario
+        }}
+      />
+    )
+  }
 
-        {modalNota && (
-          <NoteModal
-            styles={styles}
-            editandoNotaId={editandoNotaId}
-            tituloNota={tituloNota}
-            setTituloNota={setTituloNota}
-            prioridadeNota={prioridadeNota}
-            setPrioridadeNota={setPrioridadeNota}
-            dataEventoNota={dataEventoNota}
-            setDataEventoNota={setDataEventoNota}
-            conteudoNota={conteudoNota}
-            setConteudoNota={setConteudoNota}
-            filialNotaId={filialNotaId}
-            setFilialNotaId={setFilialNotaId}
-            filiais={filiais}
-            salvarNota={salvarNota}
-            fecharNota={fecharNota}
-            fecharConta={fecharConta}
-            setModalCentro={setModalCentro}
-            setMenuAberto={setMenuAberto}
-            setMenuNavegacaoAberto={setMenuNavegacaoAberto}
-            primeiraLetraMaiuscula={primeiraLetraMaiuscula}
-            limitarDataInput={limitarDataInput}
-          />
-        )}
 
-        {modalCentro && (
-          <CostCenterModal
-            styles={styles}
-            novoCentro={novoCentro}
-            setNovoCentro={setNovoCentro}
-            salvarCentro={salvarCentro}
-            centros={centros}
-            abrirConfirmacao={abrirConfirmacao}
-            excluirCentro={excluirCentro}
-            fecharConta={fecharConta}
-            fecharNota={fecharNota}
-            setModalCentro={setModalCentro}
-            setMenuAberto={setMenuAberto}
-            setMenuNavegacaoAberto={setMenuNavegacaoAberto}
-          />
-        )}
-
-        {modalPerfilUsuario && (
-          <ProfileModal
-            nome={nomePerfilEditando}
-            setNome={setNomePerfilEditando}
-            email={usuarioLogado?.email}
-            salvando={salvandoPerfilUsuario}
-            onClose={() => setModalPerfilUsuario(false)}
-            onSave={salvarPerfilUsuario}
-          />
-        )}
-      </>
+  function renderOverlaysLayer() {
+    return (
+      <AppOverlaysLayer
+        styles={styles}
+        globalLoading={globalLoading}
+        globalToast={globalToast}
+        hideToast={hideToast}
+        confirmacao={confirmacao}
+        fecharConfirmacao={fecharConfirmacao}
+        executarConfirmacao={executarConfirmacao}
+      />
     )
   }
 
@@ -3134,15 +3135,8 @@ export default function App() {
         {renderFabGlobal()}
       <CopilotFloatingButton />
       <CopilotDrawer />
-        <ConfirmModal
-          styles={styles}
-          confirmacao={confirmacao}
-          fecharConfirmacao={fecharConfirmacao}
-          executarConfirmacao={executarConfirmacao}
-        />
         {renderModaisGlobais()}
-        <GlobalLoader visible={globalLoading} />
-        <GlobalToast toast={globalToast} onClose={hideToast} />
+        {renderOverlaysLayer()}
       </div>
       </CopilotProvider>
     )
@@ -3316,15 +3310,8 @@ export default function App() {
         {renderFabGlobal()}
       <CopilotFloatingButton />
       <CopilotDrawer />
-        <ConfirmModal
-          styles={styles}
-          confirmacao={confirmacao}
-          fecharConfirmacao={fecharConfirmacao}
-          executarConfirmacao={executarConfirmacao}
-        />
         {renderModaisGlobais()}
-        <GlobalLoader visible={globalLoading} />
-        <GlobalToast toast={globalToast} onClose={hideToast} />
+        {renderOverlaysLayer()}
       </div>
     )
   }
@@ -5608,15 +5595,7 @@ export default function App() {
 
       {renderModaisGlobais()}
 
-      <GlobalLoader visible={globalLoading} />
-      <GlobalToast toast={globalToast} onClose={hideToast} />
-
-      <ConfirmModal
-        styles={styles}
-        confirmacao={confirmacao}
-        fecharConfirmacao={fecharConfirmacao}
-        executarConfirmacao={executarConfirmacao}
-      />
+      {renderOverlaysLayer()}
     </div>
     </CopilotProvider>
   )

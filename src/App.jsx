@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from './lib/supabase'
 import {
   adicionarUsuarioEmpresa as adicionarUsuarioEmpresaService,
@@ -57,7 +57,8 @@ import {
   LazyNotasPage,
   LazyOnboardingPage,
   LazyRelatorios,
-  LazyUsuariosPage
+  LazyUsuariosPage,
+  preloadRoutes
 } from './routes/lazyRoutes.js'
 
 function CopilotDrawerBoundary() {
@@ -457,6 +458,24 @@ export default function App() {
   }, [telaAtual, empresaId])
 
   useEffect(() => {
+    if (!usuarioLogado?.id || !empresaId) return
+
+    const rotasCriticas = telaAtual === 'dashboard'
+      ? ['contas', 'notas', 'relatorios']
+      : ['dashboard']
+
+    const agendarPreload = () => preloadRoutes(rotasCriticas)
+
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(agendarPreload, { timeout: 1800 })
+      return () => window.cancelIdleCallback?.(idleId)
+    }
+
+    const timeoutId = window.setTimeout(agendarPreload, 900)
+    return () => window.clearTimeout(timeoutId)
+  }, [usuarioLogado?.id, empresaId, telaAtual])
+
+  useEffect(() => {
     function fecharComEsc(event) {
       if (event.key !== 'Escape') return
 
@@ -588,13 +607,15 @@ export default function App() {
     return Boolean(permissoesUsuario?.canAccessSettings || temPermissao(['admin', 'gerente']))
   }
 
+  const menuSectionsFiltradas = useMemo(() => menuSections
+    .map((grupo) => ({
+      ...grupo,
+      items: grupo.items.filter((item) => !item.masterOnly || permissoesUsuario?.canManageCompanies)
+    }))
+    .filter((grupo) => grupo.items.length > 0), [permissoesUsuario?.canManageCompanies])
+
   function menuSectionsVisiveis() {
-    return menuSections
-      .map((grupo) => ({
-        ...grupo,
-        items: grupo.items.filter((item) => !item.masterOnly || permissoesUsuario?.canManageCompanies)
-      }))
-      .filter((grupo) => grupo.items.length > 0)
+    return menuSectionsFiltradas
   }
 
   async function recarregarEmpresasDisponiveis() {
@@ -1148,7 +1169,9 @@ export default function App() {
   // =========================
   // BLOCO 6 — FILTROS / RESUMOS
   // =========================
-  const contasFiltradas = contas
+  const termoBuscaContas = useMemo(() => busca.trim().toLowerCase(), [busca])
+
+  const contasFiltradas = useMemo(() => contas
     .filter((conta) => {
       if (filtroStatus === 'pendentes') return conta.status !== 'pago'
       if (filtroStatus === 'pagas') return conta.status === 'pago'
@@ -1164,8 +1187,7 @@ export default function App() {
       return true
     })
     .filter((conta) => {
-      const termo = busca.trim().toLowerCase()
-      if (!termo) return true
+      if (!termoBuscaContas) return true
 
       const centroNome = conta.df_centros_custo?.nome || ''
       const filialNome = conta.df_filiais?.nome || ''
@@ -1189,10 +1211,10 @@ export default function App() {
 
       return camposBusca
         .filter(Boolean)
-        .some((campo) => String(campo).toLowerCase().includes(termo))
-    })
+        .some((campo) => String(campo).toLowerCase().includes(termoBuscaContas))
+    }), [contas, dataFinal, dataInicial, filtroCentro, filtroFilial, filtroMes, filtroStatus, termoBuscaContas])
 
-  const contasOperacionaisFiliais = contas
+  const contasOperacionaisFiliais = useMemo(() => contas
     .filter((conta) => {
       if (filtroStatus === 'pendentes') return conta.status !== 'pago'
       if (filtroStatus === 'pagas') return conta.status === 'pago'
@@ -1207,8 +1229,7 @@ export default function App() {
       return true
     })
     .filter((conta) => {
-      const termo = busca.trim().toLowerCase()
-      if (!termo) return true
+      if (!termoBuscaContas) return true
 
       const centroNome = conta.df_centros_custo?.nome || ''
       const filialNome = conta.df_filiais?.nome || ''
@@ -1232,26 +1253,33 @@ export default function App() {
 
       return camposBusca
         .filter(Boolean)
-        .some((campo) => String(campo).toLowerCase().includes(termo))
-    })
+        .some((campo) => String(campo).toLowerCase().includes(termoBuscaContas))
+    }), [contas, dataFinal, dataInicial, filtroCentro, filtroMes, filtroStatus, termoBuscaContas])
 
-  const total = contasFiltradas.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+  const resumoFinanceiro = useMemo(() => {
+    const totalCalculado = contasFiltradas.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+    const pagoCalculado = contasFiltradas
+      .filter((conta) => conta.status === 'pago')
+      .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+    const vencidoCalculado = contasFiltradas
+      .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
+      .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
 
-  const pago = contasFiltradas
-    .filter((conta) => conta.status === 'pago')
-    .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+    return {
+      total: totalCalculado,
+      pago: pagoCalculado,
+      vencido: vencidoCalculado,
+      pendente: totalCalculado - pagoCalculado
+    }
+  }, [contasFiltradas])
 
-  const vencido = contasFiltradas
-    .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
-    .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+  const { total, pago, vencido, pendente } = resumoFinanceiro
 
-  const pendente = total - pago
-
-  const contasAbertasDashboard = contasFiltradas
+  const contasAbertasDashboard = useMemo(() => contasFiltradas
     .filter((conta) => conta.status !== 'pago')
-    .sort((a, b) => String(b.created_at || b.data_vencimento || '').localeCompare(String(a.created_at || a.data_vencimento || '')))
+    .sort((a, b) => String(b.created_at || b.data_vencimento || '').localeCompare(String(a.created_at || a.data_vencimento || ''))), [contasFiltradas])
 
-  const resumoPorCentro = centros
+  const resumoPorCentro = useMemo(() => centros
     .map((centro) => {
       const lista = contasFiltradas.filter((conta) => conta.centro_custo_id === centro.id)
       const totalCentro = lista.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
@@ -1271,15 +1299,17 @@ export default function App() {
         vencido: vencidoCentro
       }
     })
-    .filter((centro) => centro.total > 0 || centro.pago > 0 || centro.pendente > 0 || centro.vencido > 0)
+    .filter((centro) => centro.total > 0 || centro.pago > 0 || centro.pendente > 0 || centro.vencido > 0), [centros, contasFiltradas])
 
   const pesoPrioridadeNota = { critico: 0, urgente: 1, normal: 2 }
 
-  const notasFiltradas = notas
+  const termoBuscaNotas = useMemo(() => buscaNota.toLowerCase(), [buscaNota])
+
+  const notasFiltradas = useMemo(() => notas
     .filter((nota) =>
       (!filtroFilial || nota.filial_id === filtroFilial) && `${nota.titulo || ''} ${nota.conteudo || ''}`
         .toLowerCase()
-        .includes(buscaNota.toLowerCase())
+        .includes(termoBuscaNotas)
     )
     .sort((a, b) => {
       const concluidaA = a.concluida ? 1 : 0
@@ -1291,11 +1321,11 @@ export default function App() {
       const dataA = a.data_evento || '9999-12-31'
       const dataB = b.data_evento || '9999-12-31'
       return String(dataA).localeCompare(String(dataB))
-    })
+    }), [notas, filtroFilial, termoBuscaNotas])
 
-  const notasPendentes = notasFiltradas.filter((nota) => !nota.concluida)
-  const notasCriticas = notasPendentes.filter((nota) => nota.prioridade === 'critico').length
-  const notasUrgentes = notasPendentes.filter((nota) => nota.prioridade === 'urgente').length
+  const notasPendentes = useMemo(() => notasFiltradas.filter((nota) => !nota.concluida), [notasFiltradas])
+  const notasCriticas = useMemo(() => notasPendentes.filter((nota) => nota.prioridade === 'critico').length, [notasPendentes])
+  const notasUrgentes = useMemo(() => notasPendentes.filter((nota) => nota.prioridade === 'urgente').length, [notasPendentes])
 
   // =========================
   // BLOCO 7 — AÇÕES CONTAS

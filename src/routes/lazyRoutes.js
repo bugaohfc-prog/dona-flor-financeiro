@@ -23,3 +23,21 @@ export const LazyBillingPage = lazy(lazyRouteImports.billing)
 export const LazyFiliaisPage = lazy(lazyRouteImports.filiais)
 export const LazyUsuariosPage = lazy(lazyRouteImports.usuarios)
 export const LazyCopilotDrawer = lazy(lazyRouteImports.copilotDrawer)
+
+
+const preloadedRoutes = new Set()
+
+export function preloadRoute(routeName) {
+  const importer = lazyRouteImports[routeName]
+  if (!importer || preloadedRoutes.has(routeName)) return Promise.resolve()
+
+  preloadedRoutes.add(routeName)
+  return importer().catch((error) => {
+    preloadedRoutes.delete(routeName)
+    console.warn(`Falha ao pré-carregar módulo ${routeName}:`, error?.message || error)
+  })
+}
+
+export function preloadRoutes(routeNames = []) {
+  return Promise.allSettled(routeNames.map((routeName) => preloadRoute(routeName)))
+}

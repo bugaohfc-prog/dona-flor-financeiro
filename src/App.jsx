@@ -24,12 +24,14 @@ import Login from './pages/Login.jsx'
 import Topbar from './components/layout/Topbar.jsx'
 import Sidebar from './components/layout/Sidebar.jsx'
 import MobileMenu from './components/layout/MobileMenu.jsx'
+import GlobalFab from './components/layout/GlobalFab.jsx'
 import DashboardHome from './components/dashboard/DashboardHome.jsx'
 import AccountModal from './components/modals/AccountModal.jsx'
 import NoteModal from './components/modals/NoteModal.jsx'
 import CostCenterModal from './components/modals/CostCenterModal.jsx'
 import ConfirmModal from './components/modals/ConfirmModal.jsx'
 import ProfileModal from './components/modals/ProfileModal.jsx'
+import HeaderExpansivel from './components/ui/HeaderExpansivel.jsx'
 import GlobalLoader from './components/feedback/GlobalLoader.jsx'
 import GlobalToast from './components/feedback/GlobalToast.jsx'
 import { CopilotProvider } from './components/copilot/core/CopilotProvider.jsx'
@@ -2009,31 +2011,6 @@ export default function App() {
     await supabase.auth.signOut()
   }
 
-  function HeaderExpansivel({ titulo, aberto, onClick }) {
-    const partesTitulo = String(titulo || '').split(' ')
-    const iconeTitulo = partesTitulo[0] || ''
-    const textoTitulo = partesTitulo.slice(1).join(' ') || titulo
-
-    return (
-      <button style={styles.headerExpansivel} onClick={onClick}>
-        <span
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            color: '#0f172a',
-            fontWeight: 900,
-            lineHeight: 1.1
-          }}
-        >
-          <span style={{ fontSize: 24, lineHeight: 1 }}>{iconeTitulo}</span>
-          <span>{textoTitulo}</span>
-        </span>
-        <strong style={{ color: '#0f172a' }}>{aberto ? '−' : '+'}</strong>
-      </button>
-    )
-  }
-
   function voltarPainel() {
     navegarPara('dashboard')
   }
@@ -2099,37 +2076,6 @@ export default function App() {
       setSalvandoPerfilUsuario(false)
     }
   }
-
-  function renderConfirmacaoGlobal() {
-    if (!confirmacao.aberto) return null
-
-    return (
-      <div style={styles.overlayConfirmacao}>
-        <div style={styles.modalConfirmacao}>
-          <div style={styles.confirmacaoIcone}>
-            {confirmacao.tipo === 'perigo' ? '⚠️' : confirmacao.tipo === 'sucesso' ? '✅' : 'ℹ️'}
-          </div>
-
-          <h3 style={styles.confirmacaoTitulo}>{confirmacao.titulo}</h3>
-          <p style={styles.confirmacaoTexto}>{confirmacao.mensagem}</p>
-
-          <div style={styles.confirmacaoAcoes}>
-            <button style={styles.btnConfirmarCancelar} onClick={fecharConfirmacao}>Cancelar</button>
-            <button
-              style={{
-                ...styles.btnConfirmarAcao,
-                background: confirmacao.tipo === 'perigo' ? '#dc3545' : confirmacao.tipo === 'sucesso' ? '#14b8a6' : '#0d6efd'
-              }}
-              onClick={executarConfirmacao}
-            >
-              {confirmacao.textoConfirmar}
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
 
   function renderModaisGlobais() {
     return (
@@ -2250,27 +2196,15 @@ export default function App() {
 
   function renderFabGlobal() {
     return (
-      <>
-        {menuAberto && (
-          <div className="global-fab-menu" style={styles.menuFab} onClick={(e) => e.stopPropagation()}>
-            <button style={styles.menuItem} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaConta() }} aria-label="Nova conta">
-              <span style={styles.menuItemIcone}>💰</span>
-              <span style={styles.menuItemTexto}>Nova conta</span>
-            </button>
-            <button style={styles.menuItem} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); abrirNovaNota() }} aria-label="Nova nota">
-              <span style={styles.menuItemIcone}>📝</span>
-              <span style={styles.menuItemTexto}>Nova nota</span>
-            </button>
-          </div>
-        )}
-
-        <button className="global-fab" style={styles.fab} onClick={(e) => { e.stopPropagation(); setMenuAberto(!menuAberto) }}>
-          {menuAberto ? '×' : '+'}
-        </button>
-      </>
+      <GlobalFab
+        styles={styles}
+        menuAberto={menuAberto}
+        setMenuAberto={setMenuAberto}
+        abrirNovaConta={abrirNovaConta}
+        abrirNovaNota={abrirNovaNota}
+      />
     )
   }
-
 
   function renderMobileFinalStyle() {
     return (
@@ -3200,7 +3134,12 @@ export default function App() {
         {renderFabGlobal()}
       <CopilotFloatingButton />
       <CopilotDrawer />
-        {renderConfirmacaoGlobal()}
+        <ConfirmModal
+          styles={styles}
+          confirmacao={confirmacao}
+          fecharConfirmacao={fecharConfirmacao}
+          executarConfirmacao={executarConfirmacao}
+        />
         {renderModaisGlobais()}
         <GlobalLoader visible={globalLoading} />
         <GlobalToast toast={globalToast} onClose={hideToast} />
@@ -3377,7 +3316,12 @@ export default function App() {
         {renderFabGlobal()}
       <CopilotFloatingButton />
       <CopilotDrawer />
-        {renderConfirmacaoGlobal()}
+        <ConfirmModal
+          styles={styles}
+          confirmacao={confirmacao}
+          fecharConfirmacao={fecharConfirmacao}
+          executarConfirmacao={executarConfirmacao}
+        />
         {renderModaisGlobais()}
         <GlobalLoader visible={globalLoading} />
         <GlobalToast toast={globalToast} onClose={hideToast} />
@@ -3529,7 +3473,7 @@ export default function App() {
         total={total}
         formatarValor={formatarValor}
         loading={loading}
-        HeaderExpansivel={HeaderExpansivel}
+        HeaderExpansivel={(props) => <HeaderExpansivel styles={styles} {...props} />}
         mostrarContas={mostrarContas}
         setMostrarContas={setMostrarContas}
         estaVencida={estaVencida}
@@ -3838,6 +3782,7 @@ export default function App() {
 
         <section style={styles.cardConfiguracao}>
           <HeaderExpansivel
+            styles={styles}
             titulo="🔔 Notificações"
             aberto={mostrarConfigNotificacoes}
             onClick={() => setMostrarConfigNotificacoes(!mostrarConfigNotificacoes)}
@@ -3920,6 +3865,7 @@ export default function App() {
 
         <section style={styles.cardConfiguracao}>
           <HeaderExpansivel
+            styles={styles}
             titulo="🏢 Dados do negócio"
             aberto={mostrarConfigNegocio}
             onClick={() => setMostrarConfigNegocio(!mostrarConfigNegocio)}
@@ -3954,6 +3900,7 @@ export default function App() {
 
         <section style={styles.cardConfiguracao}>
           <HeaderExpansivel
+            styles={styles}
             titulo="🔁 Recorrências"
             aberto={mostrarConfigRecorrencias}
             onClick={() => setMostrarConfigRecorrencias(!mostrarConfigRecorrencias)}
@@ -3975,6 +3922,7 @@ export default function App() {
 
         <section style={styles.cardConfiguracao}>
           <HeaderExpansivel
+            styles={styles}
             titulo="🏷 Centros de custo"
             aberto={mostrarConfigCentros}
             onClick={() => setMostrarConfigCentros(!mostrarConfigCentros)}
@@ -4000,6 +3948,7 @@ export default function App() {
 
         <section style={styles.cardConfiguracao}>
           <HeaderExpansivel
+            styles={styles}
             titulo="🏬 Filiais / Unidades"
             aberto={mostrarConfigCentros}
             onClick={() => navegarPara('filiais')}

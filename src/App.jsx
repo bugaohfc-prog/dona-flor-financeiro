@@ -40,6 +40,7 @@ import { useApp } from './context/AppContext.jsx'
 import { useContas } from './hooks/useContas'
 import { useNotas } from './hooks/useNotas'
 import { useAuthSession } from './hooks/useAuthSession'
+import { useUiState } from './hooks/useUiState'
 import { useAppNavigation } from './hooks/useAppNavigation'
 import { useEmpresaContext } from './hooks/useEmpresaContext'
 import { converterValor, formatarData, formatarDataParaBanco, formatarValor, limitarDataInput, primeiraLetraMaiuscula } from './utils/format'
@@ -205,9 +206,38 @@ export default function App() {
     setErroEmpresa
   } = useEmpresaContext()
   const [nomeUsuarioPerfil, setNomeUsuarioPerfil] = useState('')
-  const [modalPerfilUsuario, setModalPerfilUsuario] = useState(false)
-  const [nomePerfilEditando, setNomePerfilEditando] = useState('')
-  const [salvandoPerfilUsuario, setSalvandoPerfilUsuario] = useState(false)
+  const {
+    modalPerfilUsuario,
+    setModalPerfilUsuario,
+    nomePerfilEditando,
+    setNomePerfilEditando,
+    salvandoPerfilUsuario,
+    setSalvandoPerfilUsuario,
+    mostrarFiltros,
+    setMostrarFiltros,
+    mostrarContas,
+    setMostrarContas,
+    mostrarContasDashboard,
+    setMostrarContasDashboard,
+    mostrarNotas,
+    setMostrarNotas,
+    mostrarConfigNegocio,
+    setMostrarConfigNegocio,
+    mostrarConfigNotificacoes,
+    setMostrarConfigNotificacoes,
+    mostrarConfigCentros,
+    setMostrarConfigCentros,
+    mostrarConfigRecorrencias,
+    setMostrarConfigRecorrencias,
+    confirmacao,
+    setConfirmacao,
+    arquivoImportacao,
+    setArquivoImportacao,
+    linhasImportacao,
+    setLinhasImportacao,
+    statusImportacao,
+    setStatusImportacao
+  } = useUiState()
   const [usuariosEmpresa, setUsuariosEmpresa] = useState([])
   const [usuariosCarregando, setUsuariosCarregando] = useState(false)
   const [usuariosInicializados, setUsuariosInicializados] = useState(false)
@@ -222,14 +252,6 @@ export default function App() {
   const [novoEmailUsuario, setNovoEmailUsuario] = useState('')
   const [novaSenhaUsuario, setNovaSenhaUsuario] = useState('')
   const [confirmarNovaSenhaUsuario, setConfirmarNovaSenhaUsuario] = useState('')
-  const [mostrarFiltros, setMostrarFiltros] = useState(false)
-  const [mostrarContas, setMostrarContas] = useState(true)
-  const [mostrarContasDashboard, setMostrarContasDashboard] = useState(true)
-  const [mostrarNotas, setMostrarNotas] = useState(() => typeof window === 'undefined' ? true : window.innerWidth >= 980)
-  const [mostrarConfigNegocio, setMostrarConfigNegocio] = useState(true)
-  const [mostrarConfigNotificacoes, setMostrarConfigNotificacoes] = useState(true)
-  const [mostrarConfigCentros, setMostrarConfigCentros] = useState(true)
-  const [mostrarConfigRecorrencias, setMostrarConfigRecorrencias] = useState(true)
   const [configuracoes, setConfiguracoes] = useState(null)
   const [notificacoesAtivas, setNotificacoesAtivas] = useState(true)
   const [configWhatsapp, setConfigWhatsapp] = useState(true)
@@ -244,17 +266,6 @@ export default function App() {
   const [nomeEmpresa, setNomeEmpresa] = useState('')
   const [whatsappPadrao, setWhatsappPadrao] = useState('')
   const [emailPadrao, setEmailPadrao] = useState('')
-  const [confirmacao, setConfirmacao] = useState({
-    aberto: false,
-    titulo: '',
-    mensagem: '',
-    textoConfirmar: 'Confirmar',
-    tipo: 'padrao',
-    acao: null
-  })
-  const [arquivoImportacao, setArquivoImportacao] = useState(null)
-  const [linhasImportacao, setLinhasImportacao] = useState([])
-  const [statusImportacao, setStatusImportacao] = useState('')
   function mostrarAviso(mensagem, tipo = 'info') {
     showToast(mensagem, tipo)
   }

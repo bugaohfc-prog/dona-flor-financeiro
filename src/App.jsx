@@ -40,6 +40,7 @@ import { useApp } from './context/AppContext.jsx'
 import { useContas } from './hooks/useContas'
 import { useNotas } from './hooks/useNotas'
 import { useAuthSession } from './hooks/useAuthSession'
+import { useAppNavigation } from './hooks/useAppNavigation'
 import { converterValor, formatarData, formatarDataParaBanco, formatarValor, limitarDataInput, primeiraLetraMaiuscula } from './utils/format'
 import { dataLocal, diferencaDias, mesmoMesAtual } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
@@ -175,13 +176,21 @@ export default function App() {
   const [novoCentro, setNovoCentro] = useState('')
 
   // =========================
-  // BLOCO 4 — MENU
+  // BLOCO 4 — NAVEGAÇÃO
   // =========================
-  const [menuAberto, setMenuAberto] = useState(false)
-  const [menuNavegacaoAberto, setMenuNavegacaoAberto] = useState(false)
-  const [sidebarCompacta, setSidebarCompacta] = useState(false)
-  const [gruposMenu, setGruposMenu] = useState({ principal: true, financeiro: true, analise: true, sistema: true })
-  const [telaAtual, setTelaAtualState] = useState('dashboard')
+  const {
+    menuAberto,
+    setMenuAberto,
+    menuNavegacaoAberto,
+    setMenuNavegacaoAberto,
+    sidebarCompacta,
+    setSidebarCompacta,
+    gruposMenu,
+    setGruposMenu,
+    telaAtual,
+    setTelaAtualState,
+    navegarPara
+  } = useAppNavigation()
   const [empresaId, setEmpresaId] = useState(null)
   const [trocandoEmpresa, setTrocandoEmpresa] = useState(false)
   const [perfilUsuario, setPerfilUsuario] = useState('')
@@ -410,21 +419,6 @@ export default function App() {
 
 
   useEffect(() => {
-    window.history.replaceState({ tela: telaAtual }, '', window.location.href)
-
-    function aoVoltar(event) {
-      const proximaTela = event.state?.tela || 'dashboard'
-      setMenuAberto(false)
-      setMenuNavegacaoAberto(false)
-      setTelaAtualState(proximaTela)
-    }
-
-    window.addEventListener('popstate', aoVoltar)
-    return () => window.removeEventListener('popstate', aoVoltar)
-  }, [])
-
-
-  useEffect(() => {
     if (telaAtual === 'usuarios' && empresaId) {
       buscarUsuariosEmpresa(empresaId)
     }
@@ -449,36 +443,6 @@ export default function App() {
     window.addEventListener('keydown', fecharComEsc)
     return () => window.removeEventListener('keydown', fecharComEsc)
   }, [confirmacao.aberto, modalConta, modalNota, modalCentro, menuAberto, menuNavegacaoAberto])
-
-  useEffect(() => {
-    const originalBodyOverflow = document.body.style.overflow
-    const originalHtmlOverflow = document.documentElement.style.overflow
-    const originalBodyPosition = document.body.style.position
-    const originalBodyWidth = document.body.style.width
-    const originalScrollY = window.scrollY
-
-    if (menuNavegacaoAberto) {
-      document.body.classList.add('mobile-nav-open')
-      document.documentElement.classList.add('mobile-nav-open')
-      document.body.style.overflow = 'hidden'
-      document.documentElement.style.overflow = 'hidden'
-      document.body.style.position = 'fixed'
-      document.body.style.width = '100%'
-      document.body.style.top = `-${originalScrollY}px`
-    }
-
-    return () => {
-      document.body.classList.remove('mobile-nav-open')
-      document.documentElement.classList.remove('mobile-nav-open')
-      document.body.style.overflow = originalBodyOverflow
-      document.documentElement.style.overflow = originalHtmlOverflow
-      document.body.style.position = originalBodyPosition
-      document.body.style.width = originalBodyWidth
-      document.body.style.top = ''
-      if (menuNavegacaoAberto) window.scrollTo(0, originalScrollY)
-    }
-  }, [menuNavegacaoAberto])
-
   async function carregarEmpresaDoUsuario(userId) {
     setLoading(true)
     setErroEmpresa('')
@@ -2049,17 +2013,6 @@ export default function App() {
         <strong style={{ color: '#0f172a' }}>{aberto ? '−' : '+'}</strong>
       </button>
     )
-  }
-
-
-  function navegarPara(tela) {
-    setMenuAberto(false)
-    setMenuNavegacaoAberto(false)
-    setTelaAtualState(tela)
-
-    if (window.history.state?.tela !== tela) {
-      window.history.pushState({ tela }, '', window.location.href)
-    }
   }
 
   function voltarPainel() {

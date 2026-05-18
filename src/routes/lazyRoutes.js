@@ -1,20 +1,6 @@
 import { lazy } from 'react'
 
-export const lazyRouteImports = {
-  dashboard: () => import('../components/routes/DashboardRouteComposition.jsx'),
-  contas: () => import('../pages/ContasPage.jsx'),
-  relatorios: () => import('../pages/Relatorios.jsx'),
-  notas: () => import('../pages/NotasPage.jsx'),
-  masterPanel: () => import('../pages/MasterPanelPage.jsx'),
-  onboarding: () => import('../pages/OnboardingPage.jsx'),
-  billing: () => import('../pages/BillingPage.jsx'),
-  filiais: () => import('../pages/FiliaisPage.jsx'),
-  usuarios: () => import('../pages/UsuariosPage.jsx'),
-  copilotDrawer: () => import('../components/copilot/layout/CopilotDrawer.jsx')
-}
-
-
-export const routeImportByScreen = {
+export const lazyRouteImports = export const routeImportByScreen = {
   dashboard: 'dashboard',
   contas: 'contas',
   relatorios: 'relatorios',

@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase'
 export function normalizarPerfilUsuario(perfil) {
   const valor = String(perfil || '').toLowerCase().trim()
 
-  if (['admin', 'adm', 'administrador', 'master', 'owner'].includes(valor)) return 'admin'
+  if (['master', 'owner', 'platform_master'].includes(valor)) return 'master'
+  if (['admin', 'adm', 'administrador'].includes(valor)) return 'admin'
   if (['gerente', 'gerencia', 'gestor', 'manager'].includes(valor)) return 'gerente'
   if (['financeiro', 'financas', 'finanças', 'financial'].includes(valor)) return 'financeiro'
   if (['operacional', 'operacao', 'operação', 'atendente'].includes(valor)) return 'operacional'
@@ -39,7 +40,11 @@ function normalizarListaUsuarios(usuarios = [], empresaId = null) {
       nome: existente.nome || usuario.nome,
       email: existente.email || usuario.email,
       user_id: existente.user_id || usuario.user_id,
-      perfil: existente.perfil === 'admin' ? existente.perfil : usuario.perfil,
+      perfil: existente.perfil === 'master' || usuario.perfil === 'master'
+        ? 'master'
+        : existente.perfil === 'admin'
+          ? existente.perfil
+          : usuario.perfil,
       created_at: existente.created_at || usuario.created_at
     })
   }
@@ -135,7 +140,15 @@ export async function adicionarUsuarioEmpresa({ empresaId, email, nome, perfil, 
 }
 
 export async function atualizarPerfilUsuarioEmpresa({ empresaId, usuario, perfil }) {
+  const perfilAtual = normalizarPerfilUsuario(usuario?.perfil)
+  if (perfilAtual === 'master') {
+    throw new Error('Usuário master não pode ter o perfil alterado pela empresa.')
+  }
+
   const perfilNormalizado = normalizarPerfilUsuario(perfil)
+  if (perfilNormalizado === 'master') {
+    throw new Error('Perfil master é reservado para administração da plataforma.')
+  }
 
   let consulta = supabase
     .from('df_usuarios_empresas')
@@ -155,6 +168,11 @@ export async function atualizarPerfilUsuarioEmpresa({ empresaId, usuario, perfil
 }
 
 export async function removerUsuarioEmpresa({ empresaId, usuario }) {
+  const perfilAtual = normalizarPerfilUsuario(usuario?.perfil)
+  if (perfilAtual === 'master') {
+    throw new Error('Usuário master não pode ser removido pela empresa.')
+  }
+
   let consulta = supabase
     .from('df_usuarios_empresas')
     .delete()

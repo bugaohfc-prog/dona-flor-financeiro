@@ -10,7 +10,7 @@ export async function listarContasAtivas(supabase, empresaId) {
   assertEmpresaId(empresaId)
   return selecionarPorEmpresa(supabase, 'df_contas', empresaId, '*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia)')
     .or('excluido.is.null,excluido.eq.false')
-    .order('data_vencimento')
+    .order('data_vencimento', { ascending: false })
 }
 
 export async function listarContasDoMesParaRecorrencia(supabase, empresaId, dataInicial, dataFinal) {

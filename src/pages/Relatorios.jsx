@@ -544,14 +544,14 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         </head>
         <body>
           <div class="cover">
-            <h1>PDF Executive Premium — Copilot IA 11.8</h1>
+            <h1>Relatório executivo financeiro</h1>
             <div class="meta">
               Gerado em ${new Date().toLocaleString('pt-BR')} • ${escapeHtml(nomeMes(filtroMes || mesAtualPadrao()))}<br />
               Centro: ${escapeHtml(filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos')} • Filial: ${escapeHtml(filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas')} • Status: ${escapeHtml(filtroStatus)}
             </div>
-            <div class="score">Score Copilot: ${copilotFinanceiro.score}/100 • ${escapeHtml(copilotFinanceiro.status.label)}</div>
+            <div class="score">Saúde financeira: ${copilotFinanceiro.score}/100 • ${escapeHtml(copilotFinanceiro.status.label)}</div>
           </div>
-          <h2>Executive AI Summary</h2>
+          <h2>Resumo executivo</h2>
           <div class="insight">${escapeHtml(copilotFinanceiro.executiveSummary)}</div>
           <h2>AI Narrative & Insights 11.8</h2>
           <div class="narrative"><strong>Parecer executivo contextual</strong>${escapeHtml(copilotFinanceiro.narrativa?.parecer || copilotFinanceiro.executiveSummary)}</div>
@@ -564,7 +564,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             <div class="card"><span class="label">Pendente</span><span class="numero">${formatarValor(totalPendente)}</span></div>
             <div class="card"><span class="label">Vencido</span><span class="numero">${formatarValor(totalVencido)}</span></div>
           </div>
-          <h2>Smart Priority Engine</h2>
+          <h2>Prioridades financeiras</h2>
           <table><thead><tr><th>Nível</th><th>Prioridade</th><th>Leitura</th><th>Impacto</th><th>Ação</th></tr></thead><tbody>${linhasPrioridadesCopilot || '<tr><td colspan="5">Nenhuma prioridade crítica encontrada.</td></tr>'}</tbody></table>
           <h2>Recomendações acionáveis</h2>
           ${linhasRecomendacoesCopilot}
@@ -614,9 +614,9 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
           ['Pago', totalPago],
           ['Pendente', totalPendente],
           ['Vencido', totalVencido],
-          ['Score Copilot IA', copilotFinanceiro.score],
-          ['Status Copilot IA', copilotFinanceiro.status.label],
-          ['Nível inteligência 11.3', inteligenciaFinanceira.nivel],
+          ['Saúde financeira', copilotFinanceiro.score],
+          ['Situação financeira', copilotFinanceiro.status.label],
+          ['Nível de inteligência financeira', inteligenciaFinanceira.nivel],
           ['Risco caixa %', inteligenciaFinanceira.riscoCaixa],
           ['Ticket médio', inteligenciaFinanceira.ticketMedio]
         ]
@@ -657,9 +657,9 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         ]
       },
       {
-        name: 'Copilot IA 11.8',
+        name: 'Assistente financeiro',
         rows: [
-          ['Executive AI Summary'],
+          ['Resumo executivo'],
           [copilotFinanceiro.executiveSummary],
           [],
           ['Score', copilotFinanceiro.score, copilotFinanceiro.status.label],
@@ -751,7 +751,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             <button style={styles.btnCSV} onClick={exportarCSV}>CSV</button>
           </div>
           <h1 style={styles.titulo}>📊 Relatórios Gerenciais</h1>
-          <p style={styles.descricaoTela}>Fase 11.8: AI Narrative & Insights com parecer executivo contextual, anomalias e recomendações inteligentes.</p>
+          <p style={styles.descricaoTela}>Relatórios financeiros com resumo executivo, comportamentos fora do padrão e recomendações práticas.</p>
         </div>
         <div style={styles.heroBadge}>
           <span>{statusSaude.emoji}</span>
@@ -780,9 +780,9 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             <option value="dre">Visão DRE</option>
             <option value="graficos">Visão Gráficos</option>
             <option value="filiais">Visão Filiais</option>
-            <option value="inteligencia">Inteligência 11.3</option>
-            <option value="preditiva">Preditiva 11.4</option>
-            <option value="copilot">Copilot IA 11.8</option>
+            <option value="inteligencia">Inteligência financeira</option>
+            <option value="preditiva">Projeções financeiras</option>
+            <option value="copilot">Assistente financeiro</option>
           </select>
           <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
         </div>
@@ -1488,9 +1488,7 @@ function Progress({ value, color }) {
 
 
 const cssAntiFlicker = `
-  /* FASE 11.0D — Anti Flicker real
-     O pisca-pisca vinha das animações globais herdadas da Fase 7.7
-     aplicadas em .relatorios-page > section a cada entrada na rota. */
+  /* Ajuste visual para evitar piscadas nas transições da página de relatórios. */
   .relatorios-page,
   .relatorios-page *,
   .relatorios-page > section,

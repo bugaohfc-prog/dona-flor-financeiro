@@ -16,7 +16,7 @@ export default function NotesPanel({
     <section className={`no-print dashboard-notes-card ${mostrarNotas ? 'notes-expanded' : 'notes-collapsed'}`}>
       <div style={styles.notasHeaderNovo} className="notes-header-clean dashboard-notes-content">
         <div className="notes-title-wrap">
-          <strong className="notes-title">📝 Bloco de Notas</strong>
+          <strong className="notes-title">📝 Notas</strong>
           <div className="notes-stats-row">
             <span className="note-stat note-stat-pendente">{notasPendentes.length} pendente(s)</span>
             <span className="note-stat note-stat-critico">{notasCriticas} crítica(s)</span>

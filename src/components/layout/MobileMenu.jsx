@@ -125,7 +125,7 @@ function MobileMenu({
         onTouchMove={(e) => e.stopPropagation()}
       >
         <div style={styles.menuPerfil}>
-          <img src="/icon-192.png" alt="DF Gestão Financeira" style={styles.menuPerfilIcone} />
+          <img src="/icon-192.png" alt="Dona Flor Financeiro" style={styles.menuPerfilIcone} />
           <div><strong>{nomeExibicao}</strong><small>{perfilExibicao}</small></div>
         </div>
 

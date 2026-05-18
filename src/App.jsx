@@ -1064,7 +1064,7 @@ export default function App() {
         enviar_email: true,
         enviar_push: false,
         dias_aviso_padrao: 1,
-        nome_empresa: 'DF Gestão Financeira',
+        nome_empresa: 'Dona Flor Financeiro',
         empresa_id: empresaAtual
       }])
       .select()
@@ -1735,7 +1735,7 @@ export default function App() {
             <header>
               <div>
                 <h1>Relatório de Contas</h1>
-                <div class="empresa">${escapeHtml(nomeEmpresa || 'DF Gestão Financeira')}</div>
+                <div class="empresa">${escapeHtml(nomeEmpresa || 'Dona Flor Financeiro')}</div>
               </div>
               <div class="data">Gerado em ${new Date().toLocaleDateString('pt-BR')}<br/>${contasFiltradas.length} conta(s) listada(s)</div>
             </header>
@@ -1748,7 +1748,7 @@ export default function App() {
             <div class="table-wrap">
               <table>
                 <thead>
-                  <tr><th>Conta</th><th>Filial</th><th>Centro</th><th>Vencimento</th><th>Status</th><th>Valor</th></tr>
+                  <tr><th>Conta</th><th>Filial</th><th>Centro</th><th>Vencimento</th><th>Situação</th><th>Valor</th></tr>
                 </thead>
                 <tbody>
                   ${linhas || '<tr><td colspan="6">Nenhuma conta encontrada.</td></tr>'}
@@ -1756,7 +1756,7 @@ export default function App() {
               </table>
             </div>
             <footer>
-              <span>Gerado pelo DF Gestão Financeira</span>
+              <span>Gerado pelo Dona Flor Financeiro</span>
               <span>${new Date().toLocaleString('pt-BR')}</span>
             </footer>
           </div>
@@ -3439,10 +3439,10 @@ export default function App() {
     if (!podeAcessarConfiguracoes()) {
       return renderAppFrame(
         <>
-          <h1 style={styles.titulo}>🚀 Onboarding SaaS</h1>
+          <h1 style={styles.titulo}>🚀 Implantação inicial</h1>
           <section style={styles.cardConfiguracao}>
             <h2 style={styles.subtitulo}>Acesso restrito</h2>
-            <p style={styles.textoNota}>Seu perfil atual não permite acessar o onboarding.</p>
+            <p style={styles.textoNota}>Seu perfil atual não permite acessar a implantação inicial.</p>
             <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
           </section>
         </>
@@ -3469,10 +3469,10 @@ export default function App() {
     if (!podeAcessarConfiguracoes()) {
       return renderAppFrame(
         <>
-          <h1 style={styles.titulo}>💼 Billing</h1>
+          <h1 style={styles.titulo}>💼 Plano comercial</h1>
           <section style={styles.cardConfiguracao}>
             <h2 style={styles.subtitulo}>Acesso restrito</h2>
-            <p style={styles.textoNota}>Seu perfil atual não permite acessar o billing.</p>
+            <p style={styles.textoNota}>Seu perfil atual não permite acessar o plano comercial.</p>
             <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
           </section>
         </>
@@ -4026,7 +4026,7 @@ export default function App() {
       </div>
 
       <div className="print-footer">
-        Relatório gerado pelo Sistema DF Gestão Financeira
+        Relatório gerado pelo Sistema Dona Flor Financeiro
       </div>
       {renderTopShell()}
 

@@ -206,7 +206,7 @@ export default function MasterPanelPage({
           <div className="master-list-header">
             <div>
               <h2 style={styles.subtitulo}>Empresas cadastradas</h2>
-              <p style={styles.textoNota}>Controle inicial das empresas disponíveis no SaaS.</p>
+              <p style={styles.textoNota}>Controle das empresas cadastradas na plataforma.</p>
             </div>
             <input
               style={styles.input}
@@ -383,9 +383,9 @@ export default function MasterPanelPage({
     <div className="master-panel-page">
       <div className="master-page-hero">
         <div>
-          <span className="master-kicker">Painel Master SaaS</span>
-          <h1 style={styles.titulo}>🏢 Painel Master</h1>
-          <p style={styles.textoNota}>Gerencie empresas e tenants da plataforma. Filiais ficam nas Configurações de cada empresa.</p>
+          <span className="master-kicker">Administração de empresas</span>
+          <h1 style={styles.titulo}>🏢 Empresas</h1>
+          <p style={styles.textoNota}>Gerencie as empresas da plataforma. As filiais ficam nas configurações de cada empresa.</p>
         </div>
         <button style={styles.btnCinza} type="button" onClick={voltarPainel}>← Dashboard</button>
       </div>
@@ -400,8 +400,8 @@ export default function MasterPanelPage({
           <strong>{empresaAtiva?.nome || '—'}</strong>
         </section>
         <section className="master-stat-card">
-          <small>Administração SaaS</small>
-          <strong>Tenants</strong>
+          <small>Administração</small>
+          <strong>Empresas</strong>
         </section>
       </div>
 

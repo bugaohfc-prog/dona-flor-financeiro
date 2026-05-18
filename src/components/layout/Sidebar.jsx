@@ -57,11 +57,11 @@ function Sidebar({
 
   return (
     <aside className={`desktop-sidebar no-print ${sidebarCompacta ? 'compacta' : ''}`}>
-      <div className="desktop-sidebar-brand sidebar-brand-clean" title="DF Gestão Financeira">
-        <img src="/icon-192.png" alt="DF Gestão Financeira" />
+      <div className="desktop-sidebar-brand sidebar-brand-clean" title="Dona Flor Financeiro">
+        <img src="/icon-192.png" alt="Dona Flor Financeiro" />
         {!sidebarCompacta && (
           <div>
-            <strong>DF Gestão</strong>
+            <strong>Dona Flor</strong>
             <small>Painel financeiro</small>
           </div>
         )}

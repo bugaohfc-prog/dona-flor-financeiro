@@ -22,7 +22,7 @@ export const PLANOS_BASE = [
   {
     codigo: 'enterprise',
     nome: 'Enterprise',
-    descricao: 'Estrutura avançada para redes, permissões e expansão SaaS.',
+    descricao: 'Estrutura avançada para redes, permissões e expansão da operação.',
     limite_filiais: null,
     limite_usuarios: null,
     valor_mensal: null,
@@ -147,6 +147,6 @@ function montarRecursosPlano(plano) {
   recursos.push(plano.limite_filiais ? `Até ${plano.limite_filiais} filial(is)` : 'Filiais ilimitadas')
   recursos.push(plano.limite_usuarios ? `Até ${plano.limite_usuarios} usuário(s)` : 'Usuários ilimitados')
   recursos.push('Dashboard operacional')
-  recursos.push('Base para billing SaaS')
+  recursos.push('Base para gestão do plano comercial')
   return recursos
 }

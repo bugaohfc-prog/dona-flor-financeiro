@@ -5,7 +5,7 @@ const menuSections = [
     items: [
       { tela: 'dashboard', icon: '🏠', label: 'Dashboard', desc: 'Resumo financeiro' },
       { tela: 'agenda', icon: '📅', label: 'Agenda', desc: 'Vencimentos e previsões' },
-      { tela: 'notas', icon: '📝', label: 'Bloco de Notas', desc: 'Pendências e histórico de notas' }
+      { tela: 'notas', icon: '📝', label: 'Notas', desc: 'Pendências e histórico de notas' }
     ]
   },
   {
@@ -26,7 +26,7 @@ const menuSections = [
     id: 'master',
     titulo: 'Master',
     items: [
-      { tela: 'master-empresas', icon: '🏢', label: 'Painel Master', desc: 'Empresas e tenants SaaS', masterOnly: true }
+      { tela: 'master-empresas', icon: '🏢', label: 'Empresas', desc: 'Administração de empresas', masterOnly: true }
     ]
   },
   {
@@ -36,8 +36,8 @@ const menuSections = [
       { tela: 'usuarios', icon: '👥', label: 'Usuários', desc: 'Perfis, acessos e senhas' },
       { tela: 'configuracoes', icon: '⚙️', label: 'Configurações', desc: 'Preferências da empresa' },
       { tela: 'filiais', icon: '🏬', label: 'Filiais', desc: 'Unidades da empresa' },
-      { tela: 'billing', icon: '💼', label: 'Billing', desc: 'Planos, limites e assinatura' },
-      { tela: 'onboarding', icon: '🚀', label: 'Onboarding', desc: 'Implantação inicial SaaS' },
+      { tela: 'billing', icon: '💼', label: 'Plano comercial', desc: 'Planos, limites e contratação' },
+      { tela: 'onboarding', icon: '🚀', label: 'Implantação inicial', desc: 'Primeiros passos da empresa' },
       { tela: 'importar', icon: '📥', label: 'Importar CSV', desc: 'Trazer histórico do Excel' },
       { tela: 'lixeira', icon: '🗑️', label: 'Lixeira', desc: 'Restaurar ou excluir definitivo' }
     ]

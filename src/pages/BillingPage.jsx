@@ -119,9 +119,9 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
         limiteFiliais: normalizarValorLimite(limiteFiliais),
         limiteUsuarios: normalizarValorLimite(limiteUsuarios)
       })
-      mostrarAviso?.('Billing atualizado com sucesso.', 'info')
+      mostrarAviso?.('Plano comercial atualizado com sucesso.', 'info')
     } catch (error) {
-      console.error('Erro ao salvar billing:', error)
+      console.error('Erro ao salvar plano comercial:', error)
       mostrarAviso?.('Erro ao salvar billing: ' + error.message, 'erro')
     } finally {
       setSalvando(false)
@@ -130,15 +130,15 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
 
   return (
     <>
-      <h1 style={styles.titulo}>💼 Billing Foundation</h1>
+      <h1 style={styles.titulo}>💼 Plano comercial</h1>
 
       <button style={styles.btnCinza} onClick={voltarPainel}>← Voltar</button>
 
       <section style={styles.cardConfiguracao} className="billing-hero">
         <div>
-          <h2 style={styles.subtitulo}>Base comercial SaaS</h2>
+          <h2 style={styles.subtitulo}>Base comercial da empresa</h2>
           <p style={styles.textoNota}>
-            Empresa: <strong>{empresaNome || 'Empresa atual'}</strong> • Status: <strong>{assinatura?.status || 'trial estrutural'}</strong>
+            Empresa: <strong>{empresaNome || 'Empresa atual'}</strong> • Situação: <strong>{assinatura?.status || 'em implantação'}</strong>
           </p>
           <p style={styles.textoAjuda}>
             Esta fase cria a fundação de planos, limites e assinatura. Ainda não bloqueia o uso do app; os bloqueios comerciais ficam para o hardening posterior.
@@ -198,7 +198,7 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
       <section style={styles.cardConfiguracao}>
         <div className="billing-section-header">
           <div>
-            <h2 style={styles.subtitulo}>Assinatura e limites</h2>
+            <h2 style={styles.subtitulo}>Plano e limites</h2>
             <p style={styles.textoNota}>Defina os limites comerciais da empresa sem alterar os dados operacionais já validados.</p>
           </div>
           {!podeEditar && <span className="billing-readonly">Somente leitura</span>}
@@ -240,7 +240,7 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
             disabled={loading || salvando || !alteracoesPendentes}
             onClick={salvarBilling}
           >
-            {salvando ? 'Salvando...' : alteracoesPendentes ? 'Salvar alterações do billing' : 'Billing salvo'}
+            {salvando ? 'Salvando...' : alteracoesPendentes ? 'Salvar alterações do plano' : 'Plano salvo'}
           </button>
         )}
       </section>

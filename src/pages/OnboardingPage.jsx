@@ -148,7 +148,7 @@ export default function OnboardingPage({
 
   return (
     <>
-      <h1 style={styles.titulo}>🚀 Onboarding SaaS</h1>
+      <h1 style={styles.titulo}>🚀 Implantação inicial</h1>
       <button style={styles.btnCinza} onClick={voltarPainel}>← Voltar</button>
 
       <section style={styles.cardConfiguracao} className="onboarding-hero">
@@ -209,7 +209,7 @@ export default function OnboardingPage({
         <StepCard
           numero="4"
           titulo="Primeira conta"
-          descricao="Registre uma conta inicial para alimentar KPIs, ranking e dashboard."
+          descricao="Registre uma conta inicial para alimentar indicadores, ranking e painel financeiro."
           concluido={status.conta}
           ativo={proximaEtapa === 'conta'}
         >
@@ -236,8 +236,8 @@ export default function OnboardingPage({
           concluido={onboardingCompleto}
           ativo={proximaEtapa === 'dashboard'}
         >
-          <p style={styles.textoNota}>Base inicial concluída. Revise os KPIs, ranking de unidades e filtros por filial.</p>
-          <button style={styles.btnSalvar} onClick={abrirDashboard}>Ir para o dashboard</button>
+          <p style={styles.textoNota}>Base inicial concluída. Revise os indicadores, ranking de unidades e filtros por filial.</p>
+          <button style={styles.btnSalvar} onClick={abrirDashboard}>Ir para o painel financeiro</button>
         </StepCard>
       </div>
     </>

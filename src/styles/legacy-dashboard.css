@@ -575,7 +575,7 @@
 }
 
 /* =========================================================
-   DF Gestão Financeira — Desktop final
+   Dona Flor Financeiro — Desktop final
    Escopo: somente telas >= 980px.
    Objetivo: manter o mobile validado e corrigir a área de contas
    para não invadir o bloco lateral de notas.
@@ -1313,7 +1313,7 @@
   }
 }
 
-/* ===== DF SaaS — Layout desktop profissional / menu modular / notas ===== */
+/* ===== Dona Flor — layout desktop profissional / menu modular / notas ===== */
 @media (min-width: 980px) {
   body { background: #f4f7f8 !important; }
 
@@ -2104,7 +2104,7 @@ button.danger {
 
 
 /* =========================================================
-   DF Gestão — Hotfix limpo mobile: notas + dashboard
+   Dona Flor — ajuste mobile: notas + painel
    ========================================================= */
 .dashboard-paid-button {
   min-width: 104px !important;
@@ -2403,7 +2403,7 @@ button.danger {
 }
 
 /* =========================================================
-   DF Gestão — HOTFIX MOBILE REAL 2026-05-07
+   Dona Flor — ajuste mobile
    Mantém desktop intacto e força o layout mobile depois dos
    estilos antigos/inline que estavam centralizando o botão Pago.
    ========================================================= */
@@ -2762,8 +2762,8 @@ body .note-card-action::before{
   }
 }
 
-/* Fase 6.3 — UX de data e recorrência em Contas
-   Mantém o layout atual e aproxima a leitura visual do padrão do Bloco de Notas. */
+/* UX de data e recorrência em Contas
+   Mantém o layout atual e aproxima a leitura visual do padrão de notas. */
 .account-date-badge,
 .account-recurring-badge,
 .account-center-label {
@@ -2823,7 +2823,7 @@ body .note-card-action::before{
   }
 }
 
-/* Fase 7.2 — feedback visual profissional */
+/* Feedback visual profissional */
 .global-loader-overlay {
   position: fixed;
   inset: 0;
@@ -2939,7 +2939,7 @@ body .note-card-action::before{
   }
 }
 
-/* Fase 7.3 — skeletons e carregamento inteligente */
+/* Skeletons e carregamento inteligente */
 .df-skeleton {
   position: relative;
   overflow: hidden;
@@ -3033,7 +3033,7 @@ body .note-card-action::before{
   .df-skeleton-line-title { width: 100%; }
 }
 
-/* Fase 7.5.5 — toast global visível em login, app e páginas */
+/* Toast global visível em login, app e páginas */
 .app-toast {
   position: fixed;
   top: 18px;
@@ -3962,7 +3962,7 @@ body:has(.desktop-sidebar.compacta) .dashboard-analytics-grid {
   }
 }
 
-/* FASE 8.4 — Dashboard polish final: KPIs, agenda e desktop balanceado */
+/* Polimento do painel: indicadores, agenda e desktop balanceado */
 .dashboard-title-row .summary-grid,
 .summary-grid {
   gap: 16px !important;
@@ -4724,7 +4724,7 @@ body {
   isolation: isolate;
 }
 
-/* Topbar: deixa de parecer placeholder e ganha presença SaaS */
+/* Topbar com presença visual mais profissional */
 .app-header,
 .topbar,
 .header-card,
@@ -5062,7 +5062,7 @@ button[title*="Adicionar"],
 /* =========================================================
    FASE 8.21 SAFE — Header Context sem alterar Topbar validada
    Base: build validado de 11/05 14h.
-   Objetivo: saudação discreta acima dos KPIs, sem ícones/command bar.
+   Objetivo: saudação discreta acima dos indicadores, sem ícones/command bar.
    ========================================================= */
 .dashboard-page-context {
   width: 100%;
@@ -5259,7 +5259,7 @@ button[title*="Adicionar"],
 /* =========================================================
    FASE 10.9A — Sidebar UX Harden
    Objetivo: tornar a navegação escalável, com rolagem interna
-   e compactação vertical para módulos como Billing/Onboarding.
+   e compactação vertical para módulos como plano comercial e implantação inicial.
    ========================================================= */
 @media (min-width: 980px) {
   .desktop-sidebar.no-print {

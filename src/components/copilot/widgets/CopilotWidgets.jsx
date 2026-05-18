@@ -56,7 +56,7 @@ export function AiInsightsCard() {
   return (
     <section className="copilot-card">
       <div className="copilot-card-head">
-        <span>Insights IA</span>
+        <span>Insights financeiros</span>
         <strong>Live</strong>
       </div>
       <div className="copilot-insights">

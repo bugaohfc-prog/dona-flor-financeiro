@@ -120,7 +120,7 @@ export default function DashboardHome({
           <div>
             <span className="analytics-kicker">Visão por filial</span>
             <strong>{filialSelecionada ? filialSelecionada.nome : 'Todas as filiais'}</strong>
-            <small>Os KPIs, gráficos e contas em aberto respeitam a filial selecionada.</small>
+            <small>Os indicadores, gráficos e contas em aberto respeitam a filial selecionada.</small>
           </div>
 
           <select

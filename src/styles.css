@@ -313,7 +313,7 @@
   }
 }
 
-/* FASE 10.8 — Billing Foundation */
+/* Plano comercial */
 .billing-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -494,7 +494,7 @@
   }
 }
 
-/* FASE 10.8A — Billing UX Harden */
+/* Refinamento visual do plano comercial */
 .billing-pending {
   display: inline-flex;
   align-items: center;
@@ -510,7 +510,7 @@
   letter-spacing: 0.05em;
 }
 
-/* FASE 10.9 — Onboarding SaaS */
+/* Implantação inicial */
 .app-toast.app-toast-global .app-toast-close,
 .app-toast-close {
   display: inline-flex !important;

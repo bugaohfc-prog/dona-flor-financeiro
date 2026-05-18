@@ -8,13 +8,13 @@ export default function CopilotDrawer() {
 
   return (
     <div className="copilot-shell no-print" onClick={(event) => event.stopPropagation()}>
-      <button className="copilot-backdrop" type="button" aria-label="Fechar Copilot" onClick={close} />
-      <aside className="copilot-drawer" aria-label="Painel Copilot IA">
+      <button className="copilot-backdrop" type="button" aria-label="Fechar assistente financeiro" onClick={close} />
+      <aside className="copilot-drawer" aria-label="Painel do assistente financeiro">
         <header className="copilot-header">
           <div>
-            <span>Copilot IA 11.8</span>
-            <h2>Sistema Operacional Financeiro Inteligente</h2>
-            <p>Status: {intelligence.status.label} · Score {intelligence.score}/100</p>
+            <span>Assistente financeiro</span>
+            <h2>Gestão financeira inteligente</h2>
+            <p>Status: {intelligence.status.label} · Saúde financeira {intelligence.score}/100</p>
             <div className="copilot-live-indicator"><b /> Analisando dados em tempo real</div>
           </div>
           <button type="button" onClick={close} aria-label="Fechar">×</button>
@@ -32,7 +32,7 @@ export default function CopilotDrawer() {
             <section className="copilot-card copilot-answer">
               <span className="copilot-mini-label">Pergunta selecionada</span>
               <strong>{lastQuestion}</strong>
-              <p>{intelligence.respostas?.[lastQuestion] || 'Resposta executiva gerada a partir dos KPIs atuais.'}</p>
+              <p>{intelligence.respostas?.[lastQuestion] || 'Resposta gerada a partir dos indicadores atuais.'}</p>
             </section>
           )}
           <QuickQuestions />

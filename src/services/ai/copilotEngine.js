@@ -99,7 +99,7 @@ function classificarScore(score) {
 
 function gerarParecerExecutivo({ total, pago, pendente, vencido, taxaPago, taxaVencido, score, status, centroCritico, vencemEm7Dias }) {
   if (!total) {
-    return 'Ainda não há volume financeiro suficiente para emitir um parecer executivo completo. Recomenda-se cadastrar contas ou ampliar o recorte de filtros antes da análise.'
+    return 'Ainda não há dados suficientes para gerar um resumo financeiro. Cadastre contas ou ajuste os filtros para acompanhar a análise.'
   }
 
   const abertura = `O recorte atual soma ${moeda(total)}, com ${moeda(pago)} realizado e ${moeda(pendente)} ainda em aberto.`
@@ -116,7 +116,7 @@ function gerarParecerExecutivo({ total, pago, pendente, vencido, taxaPago, taxaV
     ? `${vencemEm7Dias.length} obrigação(ões) vencem nos próximos 7 dias e devem entrar na rotina de caixa semanal.`
     : 'Não há concentração expressiva de vencimentos nos próximos 7 dias.'
 
-  return `${abertura} ${risco} ${eficiencia} ${foco} ${curtoPrazo} O score financeiro está em ${score}/100, classificado como ${status.label.toLowerCase()}.`
+  return `${abertura} ${risco} ${eficiencia} ${foco} ${curtoPrazo} O índice financeiro está em ${score}/100, classificado como ${status.label.toLowerCase()}.`
 }
 
 export function gerarCopilotFinanceiro({ contas = [], contasFiltradas = [] } = {}) {
@@ -205,7 +205,7 @@ export function gerarCopilotFinanceiro({ contas = [], contasFiltradas = [] } = {
       ? `O maior peso financeiro está em ${centroCritico.nome}, com ${moeda(centroCritico.total)} (${centroCritico.peso}% do recorte). Vale revisar recorrências, fornecedores e lançamentos desse centro.`
       : 'Ainda não há centro de custo dominante no recorte atual.',
     'Como melhorar meu caixa?': `Priorize três movimentos: reduzir vencidos (${moeda(vencido)}), reservar caixa para 7 dias (${moeda(total7Dias)}) e revisar o centro de maior peso${centroCritico ? ` (${centroCritico.nome})` : ''}.`,
-    'Gerar resumo executivo': executiveSummary
+    'Gerar resumo financeiro': executiveSummary
   }
 
   const insights = [

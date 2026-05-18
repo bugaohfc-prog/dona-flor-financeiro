@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabase'
 import { normalizarPerfilUsuario } from './usuariosService'
 
 export const TENANT_ERRORS = {
-  semEmpresa: 'Usuário sem empresa vinculada. Vincule este usuário em df_usuarios_empresas antes de continuar.'
+  semEmpresa: 'Usuário sem empresa vinculada. Peça ao administrador para liberar seu acesso.'
 }
 
 export function normalizarVinculoEmpresa(vinculo) {
@@ -85,7 +85,7 @@ export function assertEmpresaId(empresaId) {
 
 export function assertPayloadEmpresaId(payload) {
   if (!payload?.empresa_id) {
-    throw new Error('Operação bloqueada: empresa_id ausente no payload.')
+    throw new Error('Empresa não identificada para esta operação.')
   }
 
   return payload

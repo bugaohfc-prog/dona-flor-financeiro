@@ -9,7 +9,7 @@ export function hasSupabaseConfig() {
 
 export function getSupabaseConfigError() {
   if (hasSupabaseConfig()) return ''
-  return 'Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY antes de usar o sistema.'
+  return 'Configuração do sistema incompleta. Chame o suporte para liberar o acesso.'
 }
 
 export const supabase = createClient(

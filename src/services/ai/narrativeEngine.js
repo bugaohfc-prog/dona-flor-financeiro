@@ -15,12 +15,12 @@ function intensidade(score) {
 export function gerarNarrativaExecutiva({ total = 0, pago = 0, pendente = 0, vencido = 0, taxaPago = 0, taxaVencido = 0, score = 0, centroCritico = null, total7Dias = 0, tendenciaMensal = [] } = {}) {
   if (!total) {
     return {
-      parecer: 'A base atual ainda não possui volume financeiro suficiente para uma leitura narrativa confiável. O próximo passo é ampliar o recorte de dados antes de decisões executivas.',
+      parecer: 'Ainda não há dados suficientes para uma análise consistente. Cadastre mais contas ou ajuste os filtros.',
       liquidez: 'Sem volume suficiente para medir liquidez operacional.',
       concentracao: 'Sem centro de custo dominante identificado.',
       curtoPrazo: 'Sem pressão de curto prazo detectada no recorte atual.',
       comportamento: 'Histórico insuficiente para leitura comportamental.',
-      anomalias: ['Base financeira insuficiente para detectar anomalias.'],
+      anomalias: ['Dados insuficientes para identificar pontos de atenção.'],
       drivers: ['Ampliar base de contas e centros classificados.']
     }
   }
@@ -32,7 +32,7 @@ export function gerarNarrativaExecutiva({ total = 0, pago = 0, pendente = 0, ven
   const variacao = ultimo && anterior && anterior.total ? ((ultimo.total - anterior.total) / anterior.total) * 100 : null
 
   const parecer = vencido > 0
-    ? `O cenário financeiro está ${status}, com ${moeda(vencido)} vencido representando ${percentual(taxaVencido)} do recorte. A prioridade executiva deve ser preservar liquidez antes de novas despesas, renegociando obrigações vencidas e protegendo o caixa semanal.`
+    ? `O cenário financeiro está ${status}, com ${moeda(vencido)} vencido representando ${percentual(taxaVencido)} do recorte. A prioridade é preservar liquidez antes de novas despesas, renegociando obrigações vencidas e protegendo o caixa semanal.`
     : `O cenário financeiro está ${status}, sem vencidos relevantes no recorte. A recomendação é manter disciplina de baixa, revisar centros de maior peso e preservar previsibilidade para os próximos ciclos.`
 
   const liquidez = taxaPago < 35
@@ -60,14 +60,14 @@ export function gerarNarrativaExecutiva({ total = 0, pago = 0, pendente = 0, ven
         : `O comportamento mensal está relativamente estável, com variação de ${percentual(variacao)} frente ao mês anterior.`
 
   const anomalias = []
-  if (taxaVencido >= 40) anomalias.push(`Vencidos acima de 40% do recorte (${percentual(taxaVencido)}), sinalizando risco operacional elevado.`)
+  if (taxaVencido >= 40) anomalias.push(`Vencidos acima de 40% do recorte (${percentual(taxaVencido)}), com risco elevado para o caixa.`)
   if (taxaPago < 20) anomalias.push(`Realização abaixo de 20% (${percentual(taxaPago)}), indicando baixa conversão em pagamento/baixa.`)
-  if (centroCritico?.peso >= 60) anomalias.push(`Concentração extrema no centro ${centroCritico.nome} (${centroCritico.peso}%).`)
+  if (centroCritico?.peso >= 60) anomalias.push(`Concentração alta no centro ${centroCritico.nome} (${centroCritico.peso}%).`)
   if (total7Dias > pago && total7Dias > 0) anomalias.push(`Vencimentos de 7 dias (${moeda(total7Dias)}) superam o realizado atual (${moeda(pago)}).`)
-  if (!anomalias.length) anomalias.push('Nenhuma anomalia crítica detectada no recorte atual.')
+  if (!anomalias.length) anomalias.push('Nenhum ponto crítico identificado no recorte atual.')
 
   const drivers = [
-    vencido > 0 ? `Reduzir vencidos de ${moeda(vencido)} para aliviar o score.` : 'Preservar cenário sem vencidos críticos.',
+    vencido > 0 ? `Reduzir vencidos de ${moeda(vencido)} para melhorar o índice financeiro.` : 'Preservar cenário sem vencidos críticos.',
     centroCritico ? `Revisar o centro ${centroCritico.nome}, principal driver do recorte.` : 'Classificar centros para melhorar rastreabilidade.',
     total7Dias > 0 ? `Proteger ${moeda(total7Dias)} no caixa semanal.` : 'Usar a folga de curto prazo para planejamento.',
     pendente > 0 ? `Acelerar baixa/renegociação de ${moeda(pendente)} em aberto.` : 'Manter ritmo de realização.'

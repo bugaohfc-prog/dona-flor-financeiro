@@ -1,7 +1,7 @@
 @import './styles/base.css';
 @import './styles/legacy-dashboard.css';
 
-/* FASE 10.3B — Perfil do usuário */
+/* Perfil do usuário */
 .top-user-profile-button {
   border: 1px solid #d8eee9 !important;
   background: #ffffff !important;
@@ -147,7 +147,7 @@
 
 
 
-/* FASE 10.3D — Profile Sync + UX Polish */
+/* Modal de perfil */
 .profile-modal-header button {
   display: inline-flex !important;
   align-items: center !important;
@@ -195,7 +195,7 @@
   }
 }
 
-/* FASE 10.5D — filtro de filial no dashboard */
+/* Filtro de filial no painel */
 .dashboard-branch-filter {
   margin: 0 0 16px;
 }
@@ -232,7 +232,7 @@
   }
 }
 
-/* FASE 10.7 — Usuários e permissões por filial */
+/* Usuários e permissões por filial */
 .user-branch-scope {
   grid-column: 1 / -1;
   border: 1px solid rgba(15, 118, 110, .16);
@@ -687,7 +687,7 @@
   }
 }
 
-/* FASE 11.9.6A — Users UI cleanup after architecture stabilization */
+/* Ajustes visuais da gestão de usuários */
 .users-management-section {
   overflow: visible !important;
 }

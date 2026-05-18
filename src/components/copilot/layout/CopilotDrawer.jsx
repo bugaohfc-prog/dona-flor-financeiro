@@ -13,7 +13,7 @@ export default function CopilotDrawer() {
         <header className="copilot-header">
           <div>
             <span>Assistente financeiro</span>
-            <h2>Gestão financeira inteligente</h2>
+            <h2>Acompanhamento financeiro</h2>
             <p>Status: {intelligence.status.label} · Saúde financeira {intelligence.score}/100</p>
             <div className="copilot-live-indicator"><b /> Analisando dados em tempo real</div>
           </div>

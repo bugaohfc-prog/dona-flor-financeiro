@@ -83,7 +83,7 @@ export default function UsuariosPage({
       <section style={styles.cardConfiguracao} className="users-page-section">
         <h2 style={styles.subtitulo}>Minha conta</h2>
         <p style={styles.textoNota}>
-          Usuário conectado: <strong>{usuarioAtualEmail}</strong> • Perfil: <strong>{normalizarPerfil(perfilUsuario)}</strong>{permissoesUsuario?.isMaster ? <> • Global: <strong>master</strong></> : null}
+          Usuário conectado: <strong>{usuarioAtualEmail}</strong> • Perfil: <strong>{normalizarPerfil(perfilUsuario)}</strong>{permissoesUsuario?.isMaster ? <> • Acesso: <strong>administrador geral</strong></> : null}
         </p>
 
         <UserSecurityCards
@@ -104,7 +104,7 @@ export default function UsuariosPage({
           <div className="users-header-row">
             <div>
               <h2 style={styles.subtitulo}>🏢 Empresas disponíveis</h2>
-              <p style={styles.textoNota}>Troque a empresa ativa para recarregar os usuários e dados do tenant selecionado.</p>
+              <p style={styles.textoNota}>Troque a empresa ativa para atualizar usuários e informações da empresa selecionada.</p>
             </div>
             <span className="roleBadge admin">master</span>
           </div>
@@ -126,7 +126,7 @@ export default function UsuariosPage({
         <div className="users-header-row users-management-header">
           <div>
             <h2 style={styles.subtitulo}>Usuários da empresa</h2>
-            <p style={styles.textoNota}>Defina perfil e escopo por filial. Sem filial marcada = acesso a todas as filiais da empresa.</p>
+            <p style={styles.textoNota}>Defina o perfil e as filiais permitidas. Sem filial marcada, o usuário acessa todas.</p>
           </div>
           <button style={styles.btnCinza} onClick={() => buscarUsuariosEmpresa()}>Atualizar</button>
         </div>
@@ -177,7 +177,7 @@ export default function UsuariosPage({
             </select>
 
             <button style={styles.btnSalvar} onClick={adicionarUsuarioEmpresa} disabled={criandoUsuarioManual}>{criandoUsuarioManual ? 'Criando...' : 'Criar acesso'}</button>
-            <small style={styles.textoNota}>Sem envio de e-mail: o admin entrega o e-mail e a senha provisória manualmente.</small>
+            <small style={styles.textoNota}>Entregue o e-mail e a senha provisória ao usuário com segurança.</small>
           </div>
         )}
 
@@ -209,7 +209,7 @@ export default function UsuariosPage({
                     <small>{usuario.email || usuario.user_id || 'Sem e-mail vinculado'}</small>
                     <div className="users-user-status-row">
                       {atual && <span className="user-badge user-badge-self">Você</span>}
-                      {pendente && <span className="user-badge user-badge-pending">Pendente de vínculo</span>}
+                      {pendente && <span className="user-badge user-badge-pending">Cadastro pendente</span>}
                     </div>
                   </div>
 
@@ -271,7 +271,7 @@ export default function UsuariosPage({
                     <button
                       style={styles.btnSecundario}
                       onClick={() => enviarAcessoUsuarioEmpresa(usuario)}
-                      title="Fallback por e-mail. O acesso principal agora é criação manual com senha provisória."
+                      title="Enviar link de acesso por e-mail."
                     >
                       Enviar link
                     </button>

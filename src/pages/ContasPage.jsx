@@ -166,7 +166,7 @@ export default function ContasPage({
           <p style={styles.textoNota}>Consulte, filtre, exporte e administre as contas da empresa em uma página dedicada.</p>
         </div>
         <div className="page-actions-row">
-          <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Dashboard</button>
+          <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Painel</button>
         </div>
       </div>
       {renderListaContasConteudo()}

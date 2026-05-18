@@ -362,15 +362,15 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
 
     let nivel = 'baixo'
     let cor = '#12b886'
-    let titulo = 'Inteligência financeira saudável'
+    let titulo = 'Análise financeira saudável'
     if (scoreSaude < 45 || riscoCaixa >= 55 || taxaVencido >= 25) {
       nivel = 'alto'
       cor = '#dc3545'
-      titulo = 'Inteligência financeira em alerta'
+      titulo = 'Análise financeira em alerta'
     } else if (scoreSaude < 75 || riscoCaixa >= 30 || concentracaoCentro >= 50 || percentualClassificacao < 80) {
       nivel = 'medio'
       cor = '#f59f00'
-      titulo = 'Inteligência financeira em atenção'
+      titulo = 'Análise financeira em atenção'
     }
 
     const acoes = []
@@ -434,7 +434,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
     } : null
     const alertas = []
     if (riscoProjetado >= 65) alertas.push('Risco projetado alto para os próximos 30 dias. Priorize vencidos e reduza concentração.')
-    if (previsao90 > Math.max(mediaMovel, 1) * 1.25) alertas.push('Forecast 90 dias indica possível aceleração de despesas acima da média histórica.')
+    if (previsao90 > Math.max(mediaMovel, 1) * 1.25) alertas.push('A previsão de 90 dias indica possível aumento de despesas acima da média histórica.')
     if (metaForecast && metaForecast.percentualProjetado > 100) alertas.push('A previsão de 30 dias pode ultrapassar a meta mensal cadastrada.')
     if (percentualClassificacao < 80 && contasFiltradas.length > 0) alertas.push('A qualidade da previsão melhora após classificar contas sem centro de custo.')
     if (alertas.length === 0) alertas.push('Cenário projetado controlado para os filtros atuais.')
@@ -544,17 +544,17 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         </head>
         <body>
           <div class="cover">
-            <h1>Relatório executivo financeiro</h1>
+            <h1>Relatório financeiro</h1>
             <div class="meta">
               Gerado em ${new Date().toLocaleString('pt-BR')} • ${escapeHtml(nomeMes(filtroMes || mesAtualPadrao()))}<br />
               Centro: ${escapeHtml(filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos')} • Filial: ${escapeHtml(filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas')} • Status: ${escapeHtml(filtroStatus)}
             </div>
             <div class="score">Saúde financeira: ${copilotFinanceiro.score}/100 • ${escapeHtml(copilotFinanceiro.status.label)}</div>
           </div>
-          <h2>Resumo executivo</h2>
+          <h2>Resumo financeiro</h2>
           <div class="insight">${escapeHtml(copilotFinanceiro.executiveSummary)}</div>
-          <h2>AI Narrative & Insights 11.8</h2>
-          <div class="narrative"><strong>Parecer executivo contextual</strong>${escapeHtml(copilotFinanceiro.narrativa?.parecer || copilotFinanceiro.executiveSummary)}</div>
+          <h2>Análise financeira</h2>
+          <div class="narrative"><strong>Resumo do período</strong>${escapeHtml(copilotFinanceiro.narrativa?.parecer || copilotFinanceiro.executiveSummary)}</div>
           <div class="narrative"><strong>Liquidez</strong>${escapeHtml(copilotFinanceiro.narrativa?.liquidez || '')}</div>
           <div class="narrative"><strong>Concentração</strong>${escapeHtml(copilotFinanceiro.narrativa?.concentracao || '')}</div>
           <div class="narrative"><strong>Curto prazo</strong>${escapeHtml(copilotFinanceiro.narrativa?.curtoPrazo || '')}</div>
@@ -566,11 +566,11 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
           </div>
           <h2>Prioridades financeiras</h2>
           <table><thead><tr><th>Nível</th><th>Prioridade</th><th>Leitura</th><th>Impacto</th><th>Ação</th></tr></thead><tbody>${linhasPrioridadesCopilot || '<tr><td colspan="5">Nenhuma prioridade crítica encontrada.</td></tr>'}</tbody></table>
-          <h2>Recomendações acionáveis</h2>
+          <h2>Recomendações</h2>
           ${linhasRecomendacoesCopilot}
           <h2>DRE Gerencial</h2>
           <table><thead><tr><th>Linha</th><th>Valor</th><th>Descrição</th></tr></thead><tbody>${linhasDre}</tbody></table>
-          <h2>Insights executivos</h2>
+          <h2>Análises financeiras</h2>
           ${insights.map((insight) => `<div class="insight">${escapeHtml(insight.texto)}</div>`).join('')}
           <h2>Ranking por centro</h2>
           <table><thead><tr><th>Centro</th><th>Total</th><th>Pago</th><th>Pendente</th><th>Vencido</th><th>Participação</th></tr></thead><tbody>${linhasRanking || '<tr><td colspan="6">Nenhum centro encontrado.</td></tr>'}</tbody></table>
@@ -603,7 +603,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
       {
         name: 'Resumo',
         rows: [
-          ['Relatório Avançado 11.8 - AI Narrative & Insights'],
+          ['Relatório financeiro'],
           ['Gerado em', new Date().toLocaleString('pt-BR')],
           ['Mês', filtroMes || 'Todos'],
           ['Centro', filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos'],
@@ -616,7 +616,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
           ['Vencido', totalVencido],
           ['Saúde financeira', copilotFinanceiro.score],
           ['Situação financeira', copilotFinanceiro.status.label],
-          ['Nível de inteligência financeira', inteligenciaFinanceira.nivel],
+          ['Nível de atenção', inteligenciaFinanceira.nivel],
           ['Risco caixa %', inteligenciaFinanceira.riscoCaixa],
           ['Ticket médio', inteligenciaFinanceira.ticketMedio]
         ]
@@ -643,7 +643,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         ]
       },
       {
-        name: 'Inteligencia 11.3',
+        name: 'Analise',
         rows: [
           ['Indicador', 'Valor', 'Observação'],
           ['Nível', inteligenciaFinanceira.nivel, inteligenciaFinanceira.titulo],
@@ -659,19 +659,19 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
       {
         name: 'Assistente financeiro',
         rows: [
-          ['Resumo executivo'],
+          ['Resumo financeiro'],
           [copilotFinanceiro.executiveSummary],
           [],
-          ['Score', copilotFinanceiro.score, copilotFinanceiro.status.label],
+          ['Índice financeiro', copilotFinanceiro.score, copilotFinanceiro.status.label],
           [],
-          ['AI Narrative 11.8'],
-          ['Parecer contextual', copilotFinanceiro.narrativa?.parecer || ''],
+          ['Análise financeira'],
+          ['Resumo do período', copilotFinanceiro.narrativa?.parecer || ''],
           ['Liquidez', copilotFinanceiro.narrativa?.liquidez || ''],
           ['Concentração', copilotFinanceiro.narrativa?.concentracao || ''],
           ['Curto prazo', copilotFinanceiro.narrativa?.curtoPrazo || ''],
           ['Comportamento', copilotFinanceiro.narrativa?.comportamento || ''],
           [],
-          ['Anomalias contextuais'],
+          ['Pontos de atenção'],
           ...(copilotFinanceiro.narrativa?.anomalias || []).map((item, index) => [index + 1, item]),
           [],
           ['Total', copilotFinanceiro.totals.total],
@@ -679,36 +679,36 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
           ['Pendente', copilotFinanceiro.totals.pendente],
           ['Vencido', copilotFinanceiro.totals.vencido],
           [],
-          ['Smart Priority Engine'],
+          ['Prioridades'],
           ['Nível', 'Prioridade', 'Descrição', 'Impacto', 'Ação'],
           ...copilotFinanceiro.priorities.map((item) => [item.level, item.title, item.description, item.impact, item.action]),
           [],
-          ['Recomendações acionáveis'],
+          ['Recomendações'],
           ...copilotFinanceiro.recomendacoes.map((item, index) => [index + 1, item]),
           [],
-          ['Drill-down analytics'],
+          ['Centros de custo'],
           ['Centro', 'Total', 'Pendente', 'Vencido', 'Peso', 'Risco'],
           ...copilotFinanceiro.rankingCentros.map((item) => [item.nome, item.total, item.pendente, item.vencido, `${item.peso}%`, `${item.risco}%`])
         ]
       },
       {
-        name: 'Preditiva 11.4',
+        name: 'Projecoes',
         rows: [
           ['Indicador', 'Valor', 'Observação'],
-          ['Forecast 30 dias', camadaPreditiva.previsao30, camadaPreditiva.tendencia],
-          ['Forecast 60 dias', camadaPreditiva.previsao60, 'Projeção intermediária'],
-          ['Forecast 90 dias', camadaPreditiva.previsao90, 'Projeção estendida'],
+          ['Previsão 30 dias', camadaPreditiva.previsao30, camadaPreditiva.tendencia],
+          ['Previsão 60 dias', camadaPreditiva.previsao60, 'Projeção intermediária'],
+          ['Previsão 90 dias', camadaPreditiva.previsao90, 'Projeção estendida'],
           ['Risco projetado %', camadaPreditiva.riscoProjetado, camadaPreditiva.statusRisco],
           ['Média móvel', camadaPreditiva.mediaMovel, 'Histórico filtrado'],
           ['Variação base', camadaPreditiva.variacao, 'Último mês vs anterior'],
           [],
-          ['Alertas preditivos'],
+          ['Pontos de atenção'],
           ...camadaPreditiva.alertas.map((alerta, index) => [index + 1, alerta])
         ]
       }
     ]
 
-    downloadBlob('relatorio-avancado-dona-flor.xlsx', createXlsxBlob(sheets))
+    downloadBlob('relatorio-financeiro-dona-flor.xlsx', createXlsxBlob(sheets))
   }
 
   function limparFiltros() {
@@ -750,8 +750,8 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             <button style={styles.btnPDF} onClick={imprimirPDF}>PDF</button>
             <button style={styles.btnCSV} onClick={exportarCSV}>CSV</button>
           </div>
-          <h1 style={styles.titulo}>📊 Relatórios Gerenciais</h1>
-          <p style={styles.descricaoTela}>Relatórios financeiros com resumo executivo, comportamentos fora do padrão e recomendações práticas.</p>
+          <h1 style={styles.titulo}>Relatórios financeiros</h1>
+          <p style={styles.descricaoTela}>Acompanhe indicadores, tendências e análises financeiras da empresa.</p>
         </div>
         <div style={styles.heroBadge}>
           <span>{statusSaude.emoji}</span>
@@ -780,7 +780,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             <option value="dre">Visão DRE</option>
             <option value="graficos">Visão Gráficos</option>
             <option value="filiais">Visão Filiais</option>
-            <option value="inteligencia">Inteligência financeira</option>
+            <option value="inteligencia">Análise financeira</option>
             <option value="preditiva">Projeções financeiras</option>
             <option value="copilot">Assistente financeiro</option>
           </select>
@@ -810,10 +810,10 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
       <section style={styles.advancedPanel}>
         <div style={styles.widgetHeader}>
           <div>
-            <strong>📈 Relatórios Avançados 11.1</strong>
-            <p style={styles.muted}>DRE gerencial, gráficos executivos, tendência, multiunidade, inteligência 11.3, preditiva 11.4 e AI Narrative 11.8.</p>
+            <strong>Relatórios financeiros</strong>
+            <p style={styles.muted}>Visualize indicadores, tendências, filiais, projeções e recomendações em um só lugar.</p>
           </div>
-          <span style={styles.badge}>Enterprise</span>
+          <span style={styles.badge}>Completo</span>
         </div>
 
         {visaoExecutiva === 'dre' && (
@@ -878,7 +878,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
 
         {visaoExecutiva === 'filiais' && (
           <div style={styles.advancedGrid}>
-            <Widget titulo="Ranking multiunidade" emoji="🏢">
+            <Widget titulo="Ranking por filial" emoji="🏢">
               {rankingFiliais.length === 0 && <p style={styles.vazio}>Nenhuma filial encontrada nos filtros.</p>}
               {rankingFiliais.map((filial, index) => (
                 <div key={filial.id} style={styles.dreLinha}>
@@ -887,8 +887,8 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
                 </div>
               ))}
             </Widget>
-            <Widget titulo="Insight executivo" emoji="🧠">
-              <p style={styles.executivoTexto}>{rankingFiliais[0] ? `${rankingFiliais[0].nome} concentra ${formatarPercentual(rankingFiliais[0].percentual)} do total filtrado. Use esta leitura para comparar unidades e priorizar gestão.` : 'Sem dados multiunidade para o filtro atual.'}</p>
+            <Widget titulo="Análise por filial" emoji="🧠">
+              <p style={styles.executivoTexto}>{rankingFiliais[0] ? `${rankingFiliais[0].nome} concentra ${formatarPercentual(rankingFiliais[0].percentual)} do total filtrado. Compare as unidades e acompanhe onde há maior impacto financeiro.` : 'Sem dados por filial para o filtro atual.'}</p>
               <div style={styles.grid3Compacto}>
                 <MiniStat label="Filiais" value={rankingFiliais.length} />
                 <MiniStat label="Maior unidade" value={rankingFiliais[0]?.nome || '-'} />
@@ -902,7 +902,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         {visaoExecutiva === 'inteligencia' && (
           <div style={styles.advancedGrid}>
             <Widget titulo={inteligenciaFinanceira.titulo} emoji="🧠" badge={inteligenciaFinanceira.nivel.toUpperCase()} badgeColor={inteligenciaFinanceira.cor}>
-              <p style={styles.executivoTexto}>Análise financeira considerando risco de caixa, concentração, tendência, recorrência, Pareto e qualidade dos dados para os filtros atuais.</p>
+              <p style={styles.executivoTexto}>Análise dos principais sinais financeiros para os filtros atuais.</p>
               <Progress value={scoreSaude} color={inteligenciaFinanceira.cor} />
               <div style={styles.grid3Compacto}>
                 <MiniStat label="Ticket médio" value={formatarValor(inteligenciaFinanceira.ticketMedio)} />
@@ -911,7 +911,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
               </div>
             </Widget>
 
-            <Widget titulo="Previsões e Pareto" emoji="🔮">
+            <Widget titulo="Previsões e maiores despesas" emoji="🔮">
               <div style={styles.compareGrid}>
                 {inteligenciaFinanceira.previsoes.map((item) => (
                   <MiniStat key={item.label} label={item.label} value={formatarValor(item.value)} sub={item.sub} />
@@ -933,8 +933,8 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
               </div>
             </Widget>
 
-            <Widget titulo="Anomalias financeiras" emoji="🕵️">
-              {inteligenciaFinanceira.anomalias.length === 0 && <p style={styles.vazio}>Nenhuma anomalia acima de 2,5x o ticket médio foi encontrada.</p>}
+            <Widget titulo="Pontos de atenção" emoji="🕵️">
+              {inteligenciaFinanceira.anomalias.length === 0 && <p style={styles.vazio}>Nenhum lançamento fora do padrão foi encontrado.</p>}
               {inteligenciaFinanceira.anomalias.map((conta) => (
                 <div key={conta.id} style={styles.topItem}>
                   <div style={styles.medalha}>!</div>
@@ -952,7 +952,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
 
         {visaoExecutiva === 'copilot' && (
           <div style={styles.advancedGrid}>
-            <Widget titulo="Executive AI Summary" emoji="✨" badge={`${copilotFinanceiro.score}/100`} badgeColor={copilotFinanceiro.status.tone === 'danger' ? '#dc3545' : copilotFinanceiro.status.tone === 'warning' ? '#f59f00' : '#12b886'}>
+            <Widget titulo="Resumo financeiro" emoji="✨" badge={`${copilotFinanceiro.score}/100`} badgeColor={copilotFinanceiro.status.tone === 'danger' ? '#dc3545' : copilotFinanceiro.status.tone === 'warning' ? '#f59f00' : '#12b886'}>
               <p style={styles.executivoTexto}>{copilotFinanceiro.executiveSummary}</p>
               <div style={styles.grid3Compacto}>
                 <MiniStat label="Total" value={formatarValor(copilotFinanceiro.totals.total)} />
@@ -961,7 +961,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
               </div>
             </Widget>
 
-            <Widget titulo="AI Narrative & Insights 11.8" emoji="🧠" badge="Contextual" badgeColor="#7c3aed">
+            <Widget titulo="Análise financeira" emoji="🧠" badge="Atual" badgeColor="#7c3aed">
               <p style={styles.executivoTexto}>{copilotFinanceiro.narrativa?.parecer || copilotFinanceiro.executiveSummary}</p>
               <div style={styles.insightList}>
                 {[copilotFinanceiro.narrativa?.liquidez, copilotFinanceiro.narrativa?.concentracao, copilotFinanceiro.narrativa?.curtoPrazo, copilotFinanceiro.narrativa?.comportamento].filter(Boolean).map((item, index) => (
@@ -973,7 +973,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
               </div>
             </Widget>
 
-            <Widget titulo="Anomalias contextuais" emoji="⚠️" badge={`${copilotFinanceiro.narrativa?.anomalias?.length || 0} sinais`} badgeColor="#dc3545">
+            <Widget titulo="Pontos de atenção" emoji="⚠️" badge={`${copilotFinanceiro.narrativa?.anomalias?.length || 0} sinais`} badgeColor="#dc3545">
               <div style={styles.insightList}>
                 {(copilotFinanceiro.narrativa?.anomalias || []).map((item, index) => (
                   <div key={`${item}-${index}`} style={styles.insightItem}>
@@ -984,7 +984,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
               </div>
             </Widget>
 
-            <Widget titulo="Smart Priority Engine" emoji="🚦" badge={`${copilotFinanceiro.priorities.length} ações`} badgeColor="#0f766e">
+            <Widget titulo="Prioridades" emoji="🚦" badge={`${copilotFinanceiro.priorities.length} ações`} badgeColor="#0f766e">
               <div style={styles.insightList}>
                 {copilotFinanceiro.priorities.map((item, index) => (
                   <div key={`${item.title}-${index}`} style={styles.insightItem}>
@@ -995,7 +995,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
               </div>
             </Widget>
 
-            <Widget titulo="Recomendações acionáveis" emoji="✅">
+            <Widget titulo="Recomendações" emoji="✅">
               <div style={styles.insightList}>
                 {copilotFinanceiro.recomendacoes.map((item, index) => (
                   <div key={`${item}-${index}`} style={styles.insightItem}>
@@ -1006,7 +1006,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
               </div>
             </Widget>
 
-            <Widget titulo="Drill-down analytics" emoji="🔎">
+            <Widget titulo="Centros de custo" emoji="🔎">
               {copilotFinanceiro.rankingCentros.length === 0 && <p style={styles.vazio}>Sem centros suficientes para análise.</p>}
               {copilotFinanceiro.rankingCentros.map((centro) => (
                 <div key={centro.nome} style={styles.itemGrafico}>
@@ -1021,7 +1021,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
       </section>
 
       <section style={styles.dashboardGrid}>
-        <Widget titulo="Resumo executivo" emoji="📌" destaque>
+        <Widget titulo="Resumo financeiro" emoji="📌" destaque>
           <p style={styles.executivoTexto}>{resumoExecutivo}</p>
           <div style={styles.miniStats}>
             <MiniStat label="Mês" value={nomeMes(filtroMes || mesAtualPadrao())} />
@@ -1060,20 +1060,20 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
       <section style={styles.predictivePanel}>
         <div style={styles.widgetHeader}>
           <div>
-            <strong>🔮 Predictive Intelligence Layer 11.4</strong>
-            <p style={styles.muted}>Forecast financeiro 30/60/90 dias, risco projetado e leitura preditiva da meta.</p>
+            <strong>Projeções financeiras</strong>
+            <p style={styles.muted}>Estimativa para 30, 60 e 90 dias, com risco projetado e acompanhamento da meta.</p>
           </div>
           <span style={{ ...styles.badge, color: camadaPreditiva.corRisco }}>{camadaPreditiva.statusRisco}</span>
         </div>
         <div style={styles.predictiveGrid}>
-          <MiniStat label="Forecast 30d" value={formatarValor(camadaPreditiva.previsao30)} sub={camadaPreditiva.tendencia} />
-          <MiniStat label="Forecast 60d" value={formatarValor(camadaPreditiva.previsao60)} sub="projeção" />
-          <MiniStat label="Forecast 90d" value={formatarValor(camadaPreditiva.previsao90)} sub="cenário" />
+          <MiniStat label="Previsão 30d" value={formatarValor(camadaPreditiva.previsao30)} sub={camadaPreditiva.tendencia} />
+          <MiniStat label="Previsão 60d" value={formatarValor(camadaPreditiva.previsao60)} sub="projeção" />
+          <MiniStat label="Previsão 90d" value={formatarValor(camadaPreditiva.previsao90)} sub="cenário" />
           <MiniStat label="Risco projetado" value={`${formatarPercentual(camadaPreditiva.riscoProjetado)}`} sub={camadaPreditiva.statusRisco} />
         </div>
         <Progress value={camadaPreditiva.riscoProjetado} color={camadaPreditiva.corRisco} />
         <div style={styles.advancedGrid}>
-          <Widget titulo="Curva preditiva" emoji="📈">
+          <Widget titulo="Curva de previsão" emoji="📈">
             <div style={styles.chartBox}>
               <ResponsiveContainer width="100%" height={230}>
                 <LineChart data={camadaPreditiva.serie}>
@@ -1087,7 +1087,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
               </ResponsiveContainer>
             </div>
           </Widget>
-          <Widget titulo="Alertas preditivos" emoji="🚦">
+          <Widget titulo="Pontos de atenção" emoji="🚦">
             <div style={styles.insightList}>
               {camadaPreditiva.alertas.map((alerta, index) => (
                 <div key={index} style={styles.insightItem}>
@@ -1098,7 +1098,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
             </div>
             {camadaPreditiva.metaForecast && (
               <div style={styles.metaForecastBox}>
-                <strong>🎯 Meta forecast</strong>
+                <strong>Meta projetada</strong>
                 <small>Chance de cumprir: {camadaPreditiva.metaForecast.chance}</small>
                 <small>Falta: {formatarValor(camadaPreditiva.metaForecast.falta)}</small>
                 <Progress value={Math.min(camadaPreditiva.metaForecast.percentualProjetado, 100)} color={camadaPreditiva.metaForecast.percentualProjetado > 100 ? '#dc3545' : '#12b886'} />

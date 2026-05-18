@@ -71,7 +71,7 @@ export default function Login({ onLogin }) {
         </button>
 
         <small style={styles.ajuda}>
-          Login seguro via Supabase Auth.
+          Acesso seguro ao painel financeiro.
         </small>
       </form>
     </div>

@@ -3,30 +3,30 @@ import { supabase } from '../lib/supabase'
 export const PLANOS_BASE = [
   {
     codigo: 'starter',
-    nome: 'Starter',
-    descricao: 'Base para operação pequena com uma unidade.',
+    nome: 'Inicial',
+    descricao: 'Para empresas com uma filial.',
     limite_filiais: 1,
     limite_usuarios: 3,
     valor_mensal: 0,
-    recursos: ['1 filial', '3 usuários', 'Contas e notas', 'Dashboard básico']
+    recursos: ['1 filial', '3 usuários', 'Contas e notas', 'Painel financeiro']
   },
   {
     codigo: 'profissional',
     nome: 'Profissional',
-    descricao: 'Operação multiunidade com dashboard operacional.',
+    descricao: 'Para empresas com até cinco filiais.',
     limite_filiais: 5,
     limite_usuarios: 15,
     valor_mensal: 149,
-    recursos: ['Até 5 filiais', 'Até 15 usuários', 'Dashboard operacional', 'Relatórios gerenciais']
+    recursos: ['Até 5 filiais', 'Até 15 usuários', 'Painel financeiro', 'Relatórios gerenciais']
   },
   {
     codigo: 'enterprise',
-    nome: 'Enterprise',
-    descricao: 'Estrutura avançada para redes, permissões e expansão da operação.',
+    nome: 'Empresarial',
+    descricao: 'Para redes com mais usuários, filiais e suporte.',
     limite_filiais: null,
     limite_usuarios: null,
     valor_mensal: null,
-    recursos: ['Filiais ilimitadas', 'Usuários ilimitados', 'Permissões avançadas', 'Suporte prioritário']
+    recursos: ['Filiais ilimitadas', 'Usuários ilimitados', 'Permissões por perfil', 'Suporte prioritário']
   }
 ]
 
@@ -146,7 +146,7 @@ function montarRecursosPlano(plano) {
   const recursos = []
   recursos.push(plano.limite_filiais ? `Até ${plano.limite_filiais} filial(is)` : 'Filiais ilimitadas')
   recursos.push(plano.limite_usuarios ? `Até ${plano.limite_usuarios} usuário(s)` : 'Usuários ilimitados')
-  recursos.push('Dashboard operacional')
-  recursos.push('Base para gestão do plano comercial')
+  recursos.push('Painel financeiro')
+  recursos.push('Gestão do plano comercial')
   return recursos
 }

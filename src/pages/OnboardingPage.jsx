@@ -41,7 +41,7 @@ export default function OnboardingPage({
   const [salvando, setSalvando] = useState(false)
   const [nomeFilial, setNomeFilial] = useState('Loja Centro')
   const [nomeCentro, setNomeCentro] = useState('Operacional')
-  const [contaDescricao, setContaDescricao] = useState('Primeira conta de teste')
+  const [contaDescricao, setContaDescricao] = useState('Primeira conta')
   const [contaValor, setContaValor] = useState('100,00')
   const [contaData, setContaData] = useState(hojeISO())
   const [filialContaId, setFilialContaId] = useState('')
@@ -67,7 +67,7 @@ export default function OnboardingPage({
 
   async function criarPrimeiraFilial() {
     const nome = normalizarTexto(nomeFilial)
-    if (!empresaId) return mostrarAviso?.('Empresa não identificada para onboarding.', 'erro')
+    if (!empresaId) return mostrarAviso?.('Empresa não identificada para a configuração inicial.', 'erro')
     if (nome.length < 2) return mostrarAviso?.('Informe o nome da primeira filial.', 'erro')
 
     setSalvando(true)
@@ -80,7 +80,7 @@ export default function OnboardingPage({
       mostrarAviso?.('Primeira filial criada com sucesso.', 'info')
       await recarregar()
     } catch (error) {
-      mostrarAviso?.('Erro ao criar filial: ' + error.message, 'erro')
+      mostrarAviso?.('Não foi possível criar a filial: ' + error.message, 'erro')
     } finally {
       setSalvando(false)
     }
@@ -88,7 +88,7 @@ export default function OnboardingPage({
 
   async function criarPrimeiroCentro() {
     const nome = normalizarTexto(nomeCentro)
-    if (!empresaId) return mostrarAviso?.('Empresa não identificada para onboarding.', 'erro')
+    if (!empresaId) return mostrarAviso?.('Empresa não identificada para a configuração inicial.', 'erro')
     if (nome.length < 2) return mostrarAviso?.('Informe o nome do primeiro centro de custo.', 'erro')
 
     setSalvando(true)
@@ -101,14 +101,14 @@ export default function OnboardingPage({
       mostrarAviso?.('Centro de custo criado com sucesso.', 'info')
       await recarregar()
     } catch (error) {
-      mostrarAviso?.('Erro ao criar centro de custo: ' + error.message, 'erro')
+      mostrarAviso?.('Não foi possível criar o centro de custo: ' + error.message, 'erro')
     } finally {
       setSalvando(false)
     }
   }
 
   async function criarPrimeiraConta() {
-    if (!empresaId) return mostrarAviso?.('Empresa não identificada para onboarding.', 'erro')
+    if (!empresaId) return mostrarAviso?.('Empresa não identificada para a configuração inicial.', 'erro')
     const descricao = normalizarTexto(contaDescricao)
     const valorNumerico = converterValor(contaValor)
     const filialEscolhida = filialContaId || filiaisAtivas[0]?.id || null
@@ -137,10 +137,10 @@ export default function OnboardingPage({
         .insert([payload])
 
       if (error) throw error
-      mostrarAviso?.('Primeira conta criada. Dashboard pronto para uso.', 'info')
+      mostrarAviso?.('Primeira conta criada. Painel pronto para uso.', 'info')
       await recarregar()
     } catch (error) {
-      mostrarAviso?.('Erro ao criar primeira conta: ' + error.message, 'erro')
+      mostrarAviso?.('Não foi possível criar a primeira conta: ' + error.message, 'erro')
     } finally {
       setSalvando(false)
     }
@@ -148,7 +148,7 @@ export default function OnboardingPage({
 
   return (
     <>
-      <h1 style={styles.titulo}>🚀 Implantação inicial</h1>
+      <h1 style={styles.titulo}>Configuração inicial</h1>
       <button style={styles.btnCinza} onClick={voltarPainel}>← Voltar</button>
 
       <section style={styles.cardConfiguracao} className="onboarding-hero">
@@ -156,12 +156,12 @@ export default function OnboardingPage({
           <span className="onboarding-eyebrow">Configuração inicial</span>
           <h2 style={styles.subtitulo}>Deixe a empresa pronta para operar</h2>
           <p style={styles.textoNota}>
-            Empresa: <strong>{empresaNome || 'Empresa atual'}</strong>. Este fluxo prepara a primeira unidade, centro de custo e conta para liberar o dashboard operacional.
+            Empresa: <strong>{empresaNome || 'Empresa atual'}</strong>. Este fluxo prepara a primeira unidade, centro de custo e conta para ativar o painel financeiro.
           </p>
         </div>
         <div className="onboarding-progress-box">
           <span>{progresso}%</span>
-          <small>{onboardingCompleto ? 'Onboarding completo' : 'Em implantação'}</small>
+          <small>{onboardingCompleto ? 'Configuração completa' : 'Em andamento'}</small>
           <div className="onboarding-progress"><i style={{ width: `${progresso}%` }} /></div>
         </div>
       </section>
@@ -170,18 +170,18 @@ export default function OnboardingPage({
         <div><span>Filiais</span><strong>{filiaisAtivas.length}</strong></div>
         <div><span>Centros de custo</span><strong>{centros.length}</strong></div>
         <div><span>Contas ativas</span><strong>{contasAtivas.length}</strong></div>
-        <div><span>Status</span><strong>{onboardingCompleto ? 'Pronto' : 'Guiado'}</strong></div>
+        <div><span>Status</span><strong>{onboardingCompleto ? 'Pronto' : 'Em andamento'}</strong></div>
       </section>
 
       <div className="onboarding-steps-grid">
         <StepCard
           numero="1"
           titulo="Empresa ativa"
-          descricao="A empresa atual já está definida no tenant selecionado."
+          descricao="A empresa atual já está definida."
           concluido={status.empresa}
           ativo={proximaEtapa === 'empresa'}
         >
-          <p style={styles.textoNota}>Selecione ou crie uma empresa pelo Painel Master antes de continuar.</p>
+          <p style={styles.textoNota}>Selecione ou crie uma empresa pela administração antes de continuar.</p>
         </StepCard>
 
         <StepCard
@@ -231,8 +231,8 @@ export default function OnboardingPage({
 
         <StepCard
           numero="5"
-          titulo="Dashboard pronto"
-          descricao="A operação inicial já pode ser acompanhada no dashboard."
+          titulo="Painel pronto"
+          descricao="A operação inicial já pode ser acompanhada no painel financeiro."
           concluido={onboardingCompleto}
           ativo={proximaEtapa === 'dashboard'}
         >

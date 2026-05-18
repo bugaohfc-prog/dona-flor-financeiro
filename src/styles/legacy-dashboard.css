@@ -1802,7 +1802,7 @@ button.danger,
   }
 }
 
-/* === HOTFIX REAL: sessão/menu/botões/contas === */
+/* Ajustes de sessão, menu, botões e contas */
 @media (min-width: 980px) {
   .mobile-menu-trigger,
   .mobile-menu-panel {
@@ -2602,8 +2602,8 @@ button.danger {
   }
 }
 
-/* ===== DONA FLOR — HOTFIX FASE 2: PADRÃO ÚNICO DAS NOTAS =====
-   Escopo: igualar visual das notas no Dashboard e na página Notas.
+/* ===== DONA FLOR — PADRÃO VISUAL DAS NOTAS =====
+   Escopo: igualar visual das notas no painel e na página Notas.
    Não altera contas, auth, menus ou regras de negócio. */
 
 :root{
@@ -2724,8 +2724,8 @@ body .note-card-normal::before{
   }
 }
 
-/* ===== DONA FLOR — HOTFIX FINAL: LINHA DAS NOTAS IGUAL ÀS CONTAS =====
-   Base validada: mantém cores/sombras já aprovadas e ajusta apenas a espessura
+/* ===== DONA FLOR — LINHA DAS NOTAS IGUAL ÀS CONTAS =====
+   Mantém cores e sombras já aprovadas e ajusta apenas a espessura
    da faixa lateral das notas para o mesmo padrão visual dos cards de contas. */
 .dashboard-notes-card .note-card-action,
 .notes-page-grid .note-card-action,
@@ -3077,7 +3077,7 @@ body .note-card-action::before{
   }
 }
 
-/* HOTFIX — Toast global fixo e isolado
+/* Toast global fixo e isolado
    Escopo mínimo: corrige somente o visual/posicionamento do feedback.
    Não altera lógica, provider, handlers, animações ou renderização. */
 .app-toast.app-toast-global {
@@ -3179,7 +3179,7 @@ body .note-card-action::before{
 }
 
 
-/* FASE 7.6.1 — transições de navegação suaves */
+/* Transições de navegação suaves */
 .page-transition,
 .main-content,
 .dashboard-content,
@@ -3214,7 +3214,7 @@ body .note-card-action::before{
 }
 
 
-/* FASE 7.7 — entrada real das páginas */
+/* Entrada das páginas */
 @media (prefers-reduced-motion: no-preference) {
   .app-frame-content > h1,
   .app-frame-content > section,
@@ -3258,7 +3258,7 @@ body .note-card-action::before{
 }
 
 
-/* FASE 7.8 — microinterações de listas e ações */
+/* Microinterações de listas e ações */
 @media (prefers-reduced-motion: no-preference) {
   button,
   .btn,
@@ -3324,7 +3324,7 @@ textarea:focus-visible {
   outline-offset: 2px !important;
 }
 
-/* FASE 7.9 — Empty States profissionais */
+/* Estados vazios */
 .empty-state-card {
   width: 100%;
   min-height: 150px;
@@ -3405,7 +3405,7 @@ textarea:focus-visible {
 }
 
 
-/* FASE 8 — Dashboard Inteligente */
+/* Painel financeiro */
 
 .dashboard-card,
 .metric-card,
@@ -3477,7 +3477,7 @@ textarea:focus-visible {
   font-weight: 600;
 }
 
-/* FASE 8.1 — Dashboard perceptível (seletores reais) */
+/* Painel com indicadores destacados */
 .dashboard-title-row .summary-grid > div {
   position: relative !important;
   overflow: hidden !important;
@@ -3613,7 +3613,7 @@ textarea:focus-visible {
 }
 
 
-/* FASE 8.2 — Dashboard 2.0 com analytics reais */
+/* Grade de análises do painel */
 .dashboard-analytics-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
@@ -3874,7 +3874,7 @@ body:has(.desktop-sidebar.compacta) .dashboard-analytics-grid {
   }
 }
 
-/* FASE 8.3 — Desktop Executive Grid: correção dos gráficos no desktop */
+/* Grade de gráficos no desktop */
 @media (min-width: 1101px) {
   .dashboard-analytics-grid,
   body:has(.desktop-sidebar.compacta) .dashboard-analytics-grid {
@@ -4129,7 +4129,7 @@ body:has(.desktop-sidebar.compacta) .dashboard-analytics-grid {
   }
 }
 
-/* FASE 8.7 — Executive Agenda Card */
+/* Card de agenda financeira */
 .no-print.agenda-card-polished,
 .agenda-card-polished {
   position: relative !important;
@@ -4289,8 +4289,8 @@ body:has(.desktop-sidebar.compacta) .dashboard-analytics-grid {
 }
 
 /* =========================================================
-   FASE 8.12 — Dashboard System Consolidation
-   Escopo: camada visual/UX do dashboard. Não altera auth,
+   Painel financeiro
+   Escopo: camada visual do painel. Não altera auth,
    providers, context, handlers nem lógica financeira.
    ========================================================= */
 :root {
@@ -4689,8 +4689,8 @@ a:focus-visible,
 }
 
 /* =========================================================
-   FASE 8.13 — EXECUTIVE POLISH
-   Escopo: refinamento visual limpo do dashboard sem tocar no core.
+   Refinamento visual do painel
+   Escopo: refinamento visual limpo sem alterar regras da aplicação.
    ========================================================= */
 :root {
   --df-surface-page: #f3f7f8;
@@ -4991,7 +4991,7 @@ button[title*="Adicionar"],
 }
 
 /* =========================================================
-   FASE 8.15 — DASHBOARD EQUAL HEIGHT CONTRACT
+   Alturas consistentes no painel
    Escopo: corrigir desalinhamento entre Centros de Custo e Agenda
    sem alterar lógica, modal, auth, providers ou handlers.
    ========================================================= */
@@ -5060,9 +5060,8 @@ button[title*="Adicionar"],
 
 
 /* =========================================================
-   FASE 8.21 SAFE — Header Context sem alterar Topbar validada
-   Base: build validado de 11/05 14h.
-   Objetivo: saudação discreta acima dos indicadores, sem ícones/command bar.
+   Contexto do topo
+   Objetivo: saudação discreta acima dos indicadores.
    ========================================================= */
 .dashboard-page-context {
   width: 100%;
@@ -5134,7 +5133,7 @@ button[title*="Adicionar"],
     0 14px 32px rgba(15, 23, 42, 0.06) !important;
 }
 
-/* FASE 10.6 — Dashboard operacional por filial */
+/* Painel operacional por filial */
 .dashboard-operational-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5257,7 +5256,7 @@ button[title*="Adicionar"],
 }
 
 /* =========================================================
-   FASE 10.9A — Sidebar UX Harden
+   Ajuste visual da navegação lateral
    Objetivo: tornar a navegação escalável, com rolagem interna
    e compactação vertical para módulos como plano comercial e implantação inicial.
    ========================================================= */
@@ -5456,8 +5455,8 @@ button[title*="Adicionar"],
 }
 
 
-/* FASE 11.2B — Lixeira Empty State Stability
-   Empty states da lixeira não devem animar/reentrar a cada refresh silencioso. */
+/* Estados vazios da lixeira
+   Estados vazios da lixeira não devem animar a cada atualização silenciosa. */
 .trash-section .empty-state-card {
   animation: none !important;
   opacity: 1 !important;

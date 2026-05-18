@@ -115,7 +115,7 @@ export default function DashboardHome({
 
   return (
     <>
-      <section className="dashboard-branch-filter no-print" aria-label="Filtro de filial do dashboard">
+      <section className="dashboard-branch-filter no-print" aria-label="Filtro de filial do painel">
         <div className="dashboard-branch-filter-card">
           <div>
             <span className="analytics-kicker">Visão por filial</span>
@@ -127,7 +127,7 @@ export default function DashboardHome({
             style={styles.input}
             value={filtroFilial}
             onChange={(e) => setFiltroFilial(e.target.value)}
-            aria-label="Filtrar dashboard por filial"
+            aria-label="Filtrar painel por filial"
           >
             <option value="">Todas as filiais</option>
             {(filiais || []).map((filial) => (
@@ -166,7 +166,7 @@ export default function DashboardHome({
       </section>
 
       {!loading && (
-        <section className="dashboard-operational-grid no-print" aria-label="Dashboard operacional por filial">
+        <section className="dashboard-operational-grid no-print" aria-label="Painel operacional por filial">
           <article className="dashboard-operational-card highlight">
             <span className="analytics-kicker">Ranking de unidades</span>
             <strong>{filialMaiorVolume ? filialMaiorVolume.nome : 'Sem movimento'}</strong>
@@ -326,7 +326,7 @@ export default function DashboardHome({
           <div className="dashboard-analytics-card executive-agenda-widget">
             <div className="analytics-card-header">
               <div>
-                <span className="analytics-kicker">Agenda executiva</span>
+          <span className="analytics-kicker">Agenda financeira</span>
                 <strong>Próximos vencimentos</strong>
               </div>
               <span className="analytics-badge neutral">{contasAgenda.length} abertas</span>

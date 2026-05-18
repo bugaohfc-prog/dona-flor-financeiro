@@ -921,7 +921,7 @@ export default function App() {
     }
 
     setNovoEmailUsuario('')
-    mostrarAviso('Solicitação enviada. Confirme o novo e-mail conforme orientação do Supabase.', 'sucesso')
+    mostrarAviso('Solicitação enviada. Confirme o novo e-mail pelas instruções recebidas.', 'sucesso')
   }
 
   async function salvarMinhaSenha() {
@@ -1932,7 +1932,7 @@ export default function App() {
     const extensao = file.name.split('.').pop()?.toLowerCase()
 
     if (extensao !== 'csv') {
-      setStatusImportacao('Para evitar erro no deploy, esta versão importa CSV. No Excel, use: Arquivo > Salvar como > CSV UTF-8.')
+      setStatusImportacao('Importe um arquivo CSV. No Excel, use: Arquivo > Salvar como > CSV UTF-8.')
       return
     }
 
@@ -2978,7 +2978,7 @@ export default function App() {
           @media (max-width: 979px) { .app-frame { max-width: 430px; margin:auto; } }
           .note-card-action { transition:.2s; }
 
-          /* ===== DF GESTAO — LAYOUT LIMPO E BLINDADO ===== */
+          /* Ajustes de layout da área principal */
           @media (min-width: 980px) {
             .app-page, .app-frame {
               padding-left: 300px !important;
@@ -3406,7 +3406,7 @@ export default function App() {
     if (!permissoesUsuario?.canManageCompanies) {
       return renderAppFrame(
         <>
-          <h1 style={styles.titulo}>🏢 Painel Master</h1>
+          <h1 style={styles.titulo}>Administração</h1>
           <section style={styles.cardConfiguracao}>
             <h2 style={styles.subtitulo}>Acesso restrito</h2>
             <p style={styles.textoNota}>Seu perfil atual não permite acessar o painel master.</p>

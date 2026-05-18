@@ -62,8 +62,8 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
           limiteUsuarios: normalizarValorLimite(proximoLimiteUsuarios)
         })
       } catch (error) {
-        console.error('Erro ao carregar billing:', error)
-        if (ativo) mostrarAviso?.('Não foi possível carregar o billing: ' + error.message, 'erro')
+        console.error('Erro ao carregar plano comercial:', error)
+        if (ativo) mostrarAviso?.('Não foi possível carregar o plano comercial: ' + error.message, 'erro')
       } finally {
         if (ativo) setLoading(false)
       }
@@ -169,7 +169,7 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
         <div className="billing-kpi-card">
           <span>Status comercial</span>
           <strong>{statusSelecionado}</strong>
-          <small>{assinatura?.trial_fim ? `Trial até ${formatarDataBR(assinatura.trial_fim)}` : 'Trial preparado'}</small>
+          <small>{assinatura?.trial_fim ? `Período inicial até ${formatarDataBR(assinatura.trial_fim)}` : 'Período inicial preparado'}</small>
         </div>
       </section>
 
@@ -216,7 +216,7 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
           <label>
             <span>Status</span>
             <select style={styles.input} value={statusSelecionado} disabled={!podeEditar} onChange={(e) => setStatusSelecionado(e.target.value)}>
-              <option value="trial">Trial</option>
+              <option value="trial">Período inicial</option>
               <option value="ativa">Ativa</option>
               <option value="pausada">Pausada</option>
               <option value="cancelada">Cancelada</option>

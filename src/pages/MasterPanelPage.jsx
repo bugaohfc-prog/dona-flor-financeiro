@@ -189,7 +189,7 @@ export default function MasterPanelPage({
         <section style={styles.cardConfiguracao} className="master-create-card">
           <div>
             <h2 style={styles.subtitulo}>Nova empresa</h2>
-            <p style={styles.textoNota}>Crie um novo tenant e vincule automaticamente seu usuário master.</p>
+            <p style={styles.textoNota}>Cadastre uma empresa e defina seu acesso administrativo.</p>
           </div>
           <form className="master-create-form" onSubmit={criarEmpresa}>
             <input
@@ -206,7 +206,7 @@ export default function MasterPanelPage({
           <div className="master-list-header">
             <div>
               <h2 style={styles.subtitulo}>Empresas cadastradas</h2>
-              <p style={styles.textoNota}>Controle das empresas cadastradas na plataforma.</p>
+              <p style={styles.textoNota}>Consulte e edite as empresas cadastradas.</p>
             </div>
             <input
               style={styles.input}
@@ -246,7 +246,7 @@ export default function MasterPanelPage({
                         ) : (
                           <h3>{empresa.nome || 'Empresa sem nome'}</h3>
                         )}
-                        <small>ID: {empresa.id}</small>
+                        <small>Empresa cadastrada</small>
                       </div>
                     </div>
 
@@ -306,7 +306,7 @@ export default function MasterPanelPage({
           <div className="master-list-header">
             <div>
               <h2 style={styles.subtitulo}>Filiais da empresa ativa</h2>
-              <p style={styles.textoNota}>Foundation multiunidade: empresa → filial → centro de custo → conta.</p>
+              <p style={styles.textoNota}>Organize as filiais da empresa ativa.</p>
             </div>
             <input
               style={styles.input}
@@ -345,7 +345,7 @@ export default function MasterPanelPage({
                         ) : (
                           <h3>{filial.nome || 'Filial sem nome'}</h3>
                         )}
-                        <small>ID: {filial.id}</small>
+                        <small>Filial cadastrada</small>
                       </div>
                     </div>
 
@@ -385,9 +385,9 @@ export default function MasterPanelPage({
         <div>
           <span className="master-kicker">Administração de empresas</span>
           <h1 style={styles.titulo}>🏢 Empresas</h1>
-          <p style={styles.textoNota}>Gerencie as empresas da plataforma. As filiais ficam nas configurações de cada empresa.</p>
+          <p style={styles.textoNota}>Gerencie as empresas cadastradas. As filiais ficam nas configurações de cada empresa.</p>
         </div>
-        <button style={styles.btnCinza} type="button" onClick={voltarPainel}>← Dashboard</button>
+        <button style={styles.btnCinza} type="button" onClick={voltarPainel}>← Painel</button>
       </div>
 
       <div className="master-stats-grid">

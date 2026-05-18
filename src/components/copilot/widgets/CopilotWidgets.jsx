@@ -11,7 +11,7 @@ export function ExecutiveSummary() {
   return (
     <section className={`copilot-card copilot-score-${status.tone}`}>
       <div className="copilot-card-head">
-        <span>Executive AI Summary</span>
+        <span>Resumo financeiro</span>
         <strong>{score}/100</strong>
       </div>
       <p>{executiveSummary}</p>
@@ -30,7 +30,7 @@ export function SmartPriorityList() {
   return (
     <section className="copilot-card">
       <div className="copilot-card-head">
-        <span>Smart Priority Engine</span>
+        <span>Prioridades</span>
         <strong>{intelligence.priorities.length}</strong>
       </div>
       <div className="copilot-priority-list">
@@ -57,7 +57,7 @@ export function AiInsightsCard() {
     <section className="copilot-card">
       <div className="copilot-card-head">
         <span>Insights financeiros</span>
-        <strong>Live</strong>
+        <strong>Atual</strong>
       </div>
       <div className="copilot-insights">
         {intelligence.insights.map((insight) => <p key={insight}>✦ {insight}</p>)}
@@ -71,7 +71,7 @@ export function RecommendationsCard() {
   return (
     <section className="copilot-card">
       <div className="copilot-card-head">
-        <span>Recomendações acionáveis</span>
+        <span>Recomendações</span>
         <strong>{intelligence.recomendacoes.length}</strong>
       </div>
       <div className="copilot-recommendations">
@@ -90,7 +90,7 @@ export function DrillDownCard() {
   return (
     <section className="copilot-card">
       <div className="copilot-card-head">
-        <span>Drill-down analytics</span>
+        <span>Centros de custo</span>
         <strong>Top {centros.length || 0}</strong>
       </div>
       <div className="copilot-drilldown">
@@ -102,7 +102,7 @@ export function DrillDownCard() {
             </div>
             <span style={{ width: `${Math.max(6, centro.peso)}%` }} />
           </article>
-        )) : <p>Sem centros suficientes para drill-down no recorte atual.</p>}
+        )) : <p>Sem centros suficientes no recorte atual.</p>}
       </div>
     </section>
   )
@@ -121,8 +121,8 @@ export function NarrativeIntelligenceCard() {
   return (
     <section className="copilot-card copilot-narrative-card">
       <div className="copilot-card-head">
-        <span>AI Narrative 11.8</span>
-        <strong>Contextual</strong>
+        <span>Análise financeira</span>
+        <strong>Atual</strong>
       </div>
       <p>{narrativa.parecer || intelligence.executiveSummary}</p>
       <div className="copilot-insights">
@@ -138,7 +138,7 @@ export function AnomalyCard() {
   return (
     <section className="copilot-card">
       <div className="copilot-card-head">
-        <span>Anomalias contextuais</span>
+        <span>Pontos de atenção</span>
         <strong>{anomalias.length}</strong>
       </div>
       <div className="copilot-insights">

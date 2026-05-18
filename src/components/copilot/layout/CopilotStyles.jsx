@@ -114,7 +114,7 @@ export default function CopilotStyles() {
       }
 
 
-      /* Dona Flor 11.7.1 — Executive UX & Mobile Premium */
+/* Ajustes do painel financeiro */
       :root {
         --df-ease-premium: cubic-bezier(.22, 1, .36, 1);
         --df-shadow-premium: 0 18px 50px rgba(15, 23, 42, .10);

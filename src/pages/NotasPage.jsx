@@ -21,7 +21,7 @@ export default function NotasPage({
           <p style={styles.textoNota}>Central de notas e lembretes da empresa, separada do painel financeiro para reduzir poluição visual.</p>
         </div>
         <div className="page-actions-row">
-          <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Dashboard</button>
+          <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Painel</button>
         </div>
       </div>
 

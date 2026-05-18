@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build --configLoader runner",
     "preview": "vite preview",
     "supabase:deploy:auth": "supabase functions deploy criar-usuario-manual && supabase functions deploy listar-usuarios-empresa && supabase functions deploy convidar-usuario",
     "supabase:secrets:auth": "supabase secrets set SERVICE_ROLE_KEY=\"SUA_SERVICE_ROLE_KEY\"",

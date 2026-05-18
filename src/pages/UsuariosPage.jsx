@@ -1,7 +1,6 @@
 import UserSecurityCards from '../components/UserSecurityCards.jsx'
 
 const PROFILE_OPTIONS = [
-  { value: 'master', label: 'Master' },
   { value: 'admin', label: 'Admin' },
   { value: 'gerente', label: 'Gerente' },
   { value: 'financeiro', label: 'Financeiro' },
@@ -172,7 +171,7 @@ export default function UsuariosPage({
               value={perfilConviteUsuario}
               onChange={(event) => setPerfilConviteUsuario(event.target.value)}
             >
-              {PROFILE_OPTIONS.filter((perfil) => perfil.value !== 'master').slice().reverse().map((perfil) => (
+              {PROFILE_OPTIONS.slice().reverse().map((perfil) => (
                 <option key={perfil.value} value={perfil.value}>{perfil.label}</option>
               ))}
             </select>
@@ -199,7 +198,6 @@ export default function UsuariosPage({
             const atual = usuario.user_id && usuarioLogado?.id && usuario.user_id === usuarioLogado.id
             const pendente = !usuario.user_id
             const perfilNormalizado = normalizarPerfil(usuario.perfil)
-            const usuarioMaster = perfilNormalizado === 'master'
             const filiaisSelecionadas = filiaisUsuariosEmpresa[usuario.id] || []
             const acessoTotalFiliais = filiaisSelecionadas.length === 0
 
@@ -212,7 +210,6 @@ export default function UsuariosPage({
                     <div className="users-user-status-row">
                       {atual && <span className="user-badge user-badge-self">Você</span>}
                       {pendente && <span className="user-badge user-badge-pending">Cadastro pendente</span>}
-                      {usuarioMaster && <span className="user-badge user-badge-self">Master protegido</span>}
                     </div>
                   </div>
 
@@ -222,7 +219,7 @@ export default function UsuariosPage({
                       className="user-role-select users-role-select"
                       style={styles.input}
                       value={perfilNormalizado}
-                      disabled={!podeEditarUsuarios || usuarioMaster}
+                      disabled={!podeEditarUsuarios}
                       onChange={(event) => atualizarPerfilUsuarioEmpresa(usuario, event.target.value)}
                     >
                       {PROFILE_OPTIONS.map((perfil) => (
@@ -241,7 +238,7 @@ export default function UsuariosPage({
                     <button
                       type="button"
                       className="user-branch-clear"
-                      disabled={!podeEditarUsuarios || usuarioMaster || salvandoFilialUsuario === usuario.id}
+                      disabled={!podeEditarUsuarios || salvandoFilialUsuario === usuario.id}
                       onClick={() => liberarTodasFiliaisUsuario(usuario)}
                       title="Deixar o usuário com acesso a todas as filiais da empresa"
                     >
@@ -259,7 +256,7 @@ export default function UsuariosPage({
                           <input
                             type="checkbox"
                             checked={selecionada}
-                            disabled={!podeEditarUsuarios || usuarioMaster || salvandoFilialUsuario === usuario.id}
+                            disabled={!podeEditarUsuarios || salvandoFilialUsuario === usuario.id}
                             onChange={() => alternarFilialUsuario(usuario, filial.id)}
                           />
                           <span>{filial.nome || filial.nome_filial || filial.descricao || 'Filial'}</span>
@@ -279,22 +276,14 @@ export default function UsuariosPage({
                       Enviar link
                     </button>
 
-                    {!usuarioMaster && (
-                      <button
-                        style={styles.btnExcluir}
-                        disabled={atual}
-                        onClick={() => removerUsuarioEmpresa(usuario)}
-                        title={atual ? 'Você não pode remover o próprio acesso.' : 'Remover usuário'}
-                      >
-                        Remover
-                      </button>
-                    )}
-
-                    {usuarioMaster && (
-                      <span className="user-badge user-badge-self" title="Usuário master protegido da plataforma.">
-                        Protegido
-                      </span>
-                    )}
+                    <button
+                      style={styles.btnExcluir}
+                      disabled={atual}
+                      onClick={() => removerUsuarioEmpresa(usuario)}
+                      title={atual ? 'Você não pode remover o próprio acesso.' : 'Remover usuário'}
+                    >
+                      Remover
+                    </button>
                   </div>
                 )}
               </article>

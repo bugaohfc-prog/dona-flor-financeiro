@@ -19,7 +19,16 @@ export const PLANOS_BASE = [
     valor_mensal: 149,
     recursos: ['Até 5 filiais', 'Até 15 usuários', 'Painel financeiro', 'Relatórios gerenciais']
   },
-  ]
+  {
+    codigo: 'enterprise',
+    nome: 'Empresarial',
+    descricao: 'Para redes com mais usuários, filiais e suporte.',
+    limite_filiais: null,
+    limite_usuarios: null,
+    valor_mensal: null,
+    recursos: ['Filiais ilimitadas', 'Usuários ilimitados', 'Permissões por perfil', 'Suporte prioritário']
+  }
+]
 
 function isTabelaAusente(error) {
   const mensagem = String(error?.message || '').toLowerCase()
@@ -88,11 +97,20 @@ export async function buscarResumoBilling(empresaId) {
   }
 }
 
-export async function salvarAssinaturaEmpresa() {
+export async function salvarAssinaturaEmpresa({ empresaId, planoCodigo, limiteFiliais, limiteUsuarios, status = 'trial' }) {
   if (!empresaId) throw new Error('Empresa não identificada.')
   if (!planoCodigo) throw new Error('Selecione um plano.')
 
-  const payload = const { data: existente, error: erroBusca } = await supabase
+  const payload = {
+    empresa_id: empresaId,
+    plano_codigo: planoCodigo,
+    status,
+    limite_filiais: limiteFiliais,
+    limite_usuarios: limiteUsuarios,
+    updated_at: new Date().toISOString()
+  }
+
+  const { data: existente, error: erroBusca } = await supabase
     .from('df_assinaturas')
     .select('id')
     .eq('empresa_id', empresaId)

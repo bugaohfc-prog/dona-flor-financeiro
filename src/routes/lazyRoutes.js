@@ -1,17 +1,18 @@
 import { lazy } from 'react'
 
 export const lazyRouteImports = {
-  dashboard: () => import('./DashboardRouteComposition'),
-  contas: () => import('../pages/ContasPage'),
-  relatorios: () => import('../pages/Relatorios'),
-  notas: () => import('../pages/NotasPage'),
-  masterPanel: () => import('../pages/MasterPanelPage'),
-  onboarding: () => import('../pages/OnboardingPage'),
-  billing: () => import('../pages/BillingPage'),
-  filiais: () => import('../pages/FiliaisPage'),
-  usuarios: () => import('../pages/UsuariosPage'),
-  copilotDrawer: () => import('../components/copilot/CopilotDrawer')
+  dashboard: () => import('../components/routes/DashboardRouteComposition.jsx'),
+  contas: () => import('../pages/ContasPage.jsx'),
+  relatorios: () => import('../pages/Relatorios.jsx'),
+  notas: () => import('../pages/NotasPage.jsx'),
+  masterPanel: () => import('../pages/MasterPanelPage.jsx'),
+  onboarding: () => import('../pages/OnboardingPage.jsx'),
+  billing: () => import('../pages/BillingPage.jsx'),
+  filiais: () => import('../pages/FiliaisPage.jsx'),
+  usuarios: () => import('../pages/UsuariosPage.jsx'),
+  copilotDrawer: () => import('../components/copilot/layout/CopilotDrawer.jsx')
 }
+
 
 export const routeImportByScreen = {
   dashboard: 'dashboard',
@@ -19,6 +20,7 @@ export const routeImportByScreen = {
   relatorios: 'relatorios',
   notas: 'notas',
   master: 'masterPanel',
+  'master-empresas': 'masterPanel',
   onboarding: 'onboarding',
   billing: 'billing',
   filiais: 'filiais',
@@ -40,29 +42,20 @@ export const LazyFiliaisPage = lazy(lazyRouteImports.filiais)
 export const LazyUsuariosPage = lazy(lazyRouteImports.usuarios)
 export const LazyCopilotDrawer = lazy(lazyRouteImports.copilotDrawer)
 
+
 const preloadedRoutes = new Set()
 
 export function preloadRoute(routeName) {
   const importer = lazyRouteImports[routeName]
-
-  if (!importer || preloadedRoutes.has(routeName)) {
-    return Promise.resolve()
-  }
+  if (!importer || preloadedRoutes.has(routeName)) return Promise.resolve()
 
   preloadedRoutes.add(routeName)
-
   return importer().catch((error) => {
     preloadedRoutes.delete(routeName)
-
-    console.warn(
-      `Falha ao pré-carregar módulo ${routeName}:`,
-      error?.message || error
-    )
+    console.warn(`Falha ao pré-carregar módulo ${routeName}:`, error?.message || error)
   })
 }
 
 export function preloadRoutes(routeNames = []) {
-  return Promise.allSettled(
-    routeNames.map((routeName) => preloadRoute(routeName))
-  )
+  return Promise.allSettled(routeNames.map((routeName) => preloadRoute(routeName)))
 }

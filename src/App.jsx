@@ -76,6 +76,7 @@ function CopilotDrawerBoundary() {
 
 export default function App() {
   const sincronizacaoTenantRef = useRef(null)
+  const sessaoEncerradaRef = useRef(true)
   const { globalLoading, toast: globalToast, showToast, hideToast, empresaAtiva, setEmpresaAtiva, limparEmpresaAtiva, empresasDisponiveis, setEmpresasDisponiveis } = useApp()
   // =========================
   // BLOCO 0 — UTILITÁRIOS
@@ -326,6 +327,7 @@ export default function App() {
   }
 
   function limparEstadoAutenticacao() {
+    sessaoEncerradaRef.current = true
     limparDadosTenant()
     setEmpresasDisponiveis([])
     setEmpresaId(null)
@@ -372,6 +374,23 @@ export default function App() {
     onShowMessage: mostrarAvisoCallback,
     onSessionWarning: avisarSessaoQuaseExpirada
   })
+
+
+  useEffect(() => {
+    sessaoEncerradaRef.current = !usuarioLogado?.id
+  }, [usuarioLogado?.id])
+
+  async function podeContinuarOperacaoTenant(empresaAtual = empresaId) {
+    if (!empresaAtual || sessaoEncerradaRef.current) return false
+
+    try {
+      const { data } = await supabase.auth.getSession()
+      return Boolean(data?.session?.user?.id && !sessaoEncerradaRef.current)
+    } catch (error) {
+      console.warn('Não foi possível validar a sessão ativa:', error?.message || error)
+      return false
+    }
+  }
 
   async function sincronizarNomeUsuarioPerfil() {
     if (!usuarioLogado?.id) return
@@ -984,6 +1003,7 @@ export default function App() {
       .maybeSingle()
 
     if (error) {
+      if (!(await podeContinuarOperacaoTenant(empresaAtual))) return
       console.warn('Não foi possível carregar alertas globais:', error.message)
       return
     }
@@ -996,6 +1016,8 @@ export default function App() {
       setDestacarNotasUrgentes(data.destacar_notas_urgentes ?? true)
       return
     }
+
+    if (!(await podeContinuarOperacaoTenant(empresaAtual))) return
 
     const payload = {
       empresa_id: empresaAtual,
@@ -1036,6 +1058,7 @@ export default function App() {
       .limit(1)
 
     if (error) {
+      if (!(await podeContinuarOperacaoTenant(empresaAtual))) return
       avisarErro(error)
       return
     }
@@ -1055,6 +1078,8 @@ export default function App() {
       await carregarAlertasGlobais(empresaAtual)
       return
     }
+
+    if (!(await podeContinuarOperacaoTenant(empresaAtual))) return
 
     const { data: novaConfig, error: erroInsert } = await supabase
       .from('df_configuracoes')

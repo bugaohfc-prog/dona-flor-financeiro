@@ -8,7 +8,9 @@ export const PERFIS_GLOBAIS = {
   OPERADOR: 'operador'
 }
 
-const MASTER_EMAILS = new Set(['donafloradm@outlook.com'])
+// Master não deve ser definido por e-mail fixo.
+// A permissão global vem do banco para evitar que admins operacionais recebam painel master por engano.
+const MASTER_EMAILS = new Set()
 
 function normalizarEmail(email) {
   return String(email || '').trim().toLowerCase()
@@ -59,6 +61,35 @@ export async function buscarPermissoesUsuario({ userId, email, perfilEmpresa = '
   if (!userId && !emailNormalizado) return base
 
   try {
+    const filtrosUsuario = []
+    if (userId) filtrosUsuario.push(`id.eq.${userId}`)
+    if (emailNormalizado) filtrosUsuario.push(`email.eq.${emailNormalizado}`)
+
+    if (filtrosUsuario.length > 0) {
+      const { data: usuarios, error: usuarioError } = await supabase
+        .from('df_usuarios')
+        .select('id, email, tipo, ativo')
+        .or(filtrosUsuario.join(','))
+        .limit(10)
+
+      if (usuarioError) {
+        console.warn('Não foi possível consultar df_usuarios para permissões:', usuarioError.message)
+      } else {
+        const usuarioMaster = (usuarios || []).find((registro) => {
+          const mesmoUserId = userId && registro.id === userId
+          const mesmoEmail = emailNormalizado && normalizarEmail(registro.email) === emailNormalizado
+          return (mesmoUserId || mesmoEmail) && masterAtivo(registro) && normalizarPerfilGlobal(registro.tipo) === PERFIS_GLOBAIS.MASTER
+        })
+
+        if (usuarioMaster) {
+          return criarPermissoesUsuario({
+            perfilEmpresa,
+            master: { isMaster: true, perfil: PERFIS_GLOBAIS.MASTER }
+          })
+        }
+      }
+    }
+
     const { data, error } = await supabase
       .from('df_usuarios_master')
       .select('*')

@@ -1946,6 +1946,7 @@ export default function App() {
         const vencimentoExcel = obterCampoExcel(linha, ['vencimento', 'data vencimento', 'data_vencimento', 'data'])
         const statusExcel = String(obterCampoExcel(linha, ['status', 'situacao', 'situação']) || 'pendente').toLowerCase()
         const centroExcel = obterCampoExcel(linha, ['centro', 'centro de custo', 'categoria', 'setor'])
+        const filialExcel = obterCampoExcel(linha, ['filial', 'loja', 'unidade'])
 
         return {
           linha: index + 2,
@@ -1953,7 +1954,8 @@ export default function App() {
           valor: converterValorExcel(valorExcel),
           data_vencimento: converterDataExcel(vencimentoExcel),
           status: statusExcel.includes('pag') ? 'pago' : 'pendente',
-          centro: String(centroExcel || '').trim()
+          centro: String(centroExcel || '').trim(),
+          filial: String(filialExcel || '').trim()
         }
       }).filter((linha) => linha.descricao || linha.valor || linha.data_vencimento)
 
@@ -1977,8 +1979,24 @@ export default function App() {
     }
 
     const centrosCriados = { ...Object.fromEntries(centros.map((centro) => [centro.nome.toLowerCase(), centro.id])) }
+    const filiaisCriadas = { ...Object.fromEntries((filiais || []).map((filial) => [filial.nome.toLowerCase(), filial.id])) }
 
     for (const linha of linhasImportacao) {
+      if (linha.filial && !filiaisCriadas[linha.filial.toLowerCase()]) {
+        const { data, error } = await supabase
+          .from('df_filiais')
+          .insert([{ nome: primeiraLetraMaiuscula(linha.filial), empresa_id: empresaId }])
+          .select()
+
+        if (error) {
+          avisarErro(error)
+          return
+        }
+
+        const filialNova = Array.isArray(data) ? data[0] : data
+        filiaisCriadas[linha.filial.toLowerCase()] = filialNova?.id
+      }
+
       if (linha.centro && !centrosCriados[linha.centro.toLowerCase()]) {
         const { data, error } = await supabase
           .from('df_centros_custo')
@@ -2002,6 +2020,7 @@ export default function App() {
       vencimento: linha.data_vencimento,
       status: linha.status,
       centro_custo_id: linha.centro ? centrosCriados[linha.centro.toLowerCase()] || null : null,
+      filial_id: linha.filial ? filiaisCriadas[linha.filial.toLowerCase()] || null : null,
       enviar_whatsapp: configWhatsapp,
       enviar_email: configEmail,
       enviar_push: configPush,

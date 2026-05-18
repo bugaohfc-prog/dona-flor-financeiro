@@ -287,7 +287,7 @@ export default function MasterPanelPage({
         <section style={styles.cardConfiguracao} className="master-create-card">
           <div>
             <h2 style={styles.subtitulo}>Nova filial</h2>
-            <p style={styles.textoNota}>Cadastre unidades dentro da empresa ativa. Na próxima fase, contas poderão ser vinculadas a essas filiais.</p>
+            <p style={styles.textoNota}>Cadastre unidades dentro da empresa ativa para organizar melhor a operação.</p>
             <small style={styles.textoAjuda}>Empresa ativa: <strong>{empresaAtiva?.nome || '—'}</strong></small>
           </div>
           <form className="master-create-form" onSubmit={criarNovaFilial}>

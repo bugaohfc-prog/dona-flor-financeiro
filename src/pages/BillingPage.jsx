@@ -122,7 +122,7 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
       mostrarAviso?.('Plano comercial atualizado com sucesso.', 'info')
     } catch (error) {
       console.error('Erro ao salvar plano comercial:', error)
-      mostrarAviso?.('Erro ao salvar billing: ' + error.message, 'erro')
+      mostrarAviso?.('Não foi possível salvar o plano comercial: ' + error.message, 'erro')
     } finally {
       setSalvando(false)
     }
@@ -141,7 +141,7 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
             Empresa: <strong>{empresaNome || 'Empresa atual'}</strong> • Situação: <strong>{assinatura?.status || 'em implantação'}</strong>
           </p>
           <p style={styles.textoAjuda}>
-            Esta fase cria a fundação de planos, limites e assinatura. Ainda não bloqueia o uso do app; os bloqueios comerciais ficam para o hardening posterior.
+            Configure o plano comercial, os limites de uso e a situação da empresa em um só lugar.
           </p>
         </div>
         <div className="billing-current-plan">

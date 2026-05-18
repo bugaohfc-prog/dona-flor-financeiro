@@ -108,7 +108,7 @@ export default function FiliaisPage({
         <div>
           <span className="master-kicker">Configurações da empresa</span>
           <h1 style={styles.titulo}>🏬 Filiais / Unidades</h1>
-          <p style={styles.textoNota}>Cadastre unidades operacionais dentro da empresa ativa. As próximas fases ligarão contas e relatórios a essas filiais.</p>
+          <p style={styles.textoNota}>Cadastre unidades operacionais dentro da empresa ativa para organizar melhor a gestão.</p>
           <small style={styles.textoAjuda}>Empresa ativa: <strong>{empresaNome || '—'}</strong></small>
         </div>
         <button style={styles.btnCinza} type="button" onClick={voltarPainel}>← Configurações</button>

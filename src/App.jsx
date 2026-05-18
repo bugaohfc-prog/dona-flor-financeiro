@@ -3769,7 +3769,7 @@ export default function App() {
           />
 
           <p style={styles.textoNota}>
-            Cadastre lojas, unidades, produção ou delivery dentro da empresa ativa. Na próxima fase, contas poderão ser vinculadas a uma filial.
+            Cadastre lojas, unidades, produção ou delivery dentro da empresa ativa para organizar melhor a operação.
           </p>
 
           <div style={styles.configResumo}>

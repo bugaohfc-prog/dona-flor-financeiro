@@ -375,7 +375,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
 
     const acoes = []
     if (vencidas.length > 0) acoes.push(`Priorizar ${vencidas.length} conta(s) vencida(s), somando ${formatarValor(totalVencido)}.`)
-    if (percentualClassificacao < 80 && contasSemCentro > 0) acoes.push(`Classificar ${contasSemCentro} conta(s) sem centro para aumentar a confiabilidade do motor.`)
+    if (percentualClassificacao < 80 && contasSemCentro > 0) acoes.push(`Classificar ${contasSemCentro} conta(s) sem centro para aumentar a confiabilidade da análise.`)
     if (principalCentro && principalCentro.id !== 'sem-centro' && concentracaoCentro >= 50) acoes.push(`Revisar concentração em ${principalCentro.nome}, que representa ${formatarPercentual(concentracaoCentro)} do filtro.`)
     if (metaValida && percentualMeta >= 80) acoes.push(percentualMeta > 100 ? 'Revisar meta mensal: o limite foi ultrapassado.' : 'Acompanhar meta mensal: consumo acima de 80%.')
     if (anomalias.length > 0) acoes.push(`Auditar ${anomalias.length} lançamento(s) acima de 2,5x o ticket médio.`)
@@ -902,7 +902,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         {visaoExecutiva === 'inteligencia' && (
           <div style={styles.advancedGrid}>
             <Widget titulo={inteligenciaFinanceira.titulo} emoji="🧠" badge={inteligenciaFinanceira.nivel.toUpperCase()} badgeColor={inteligenciaFinanceira.cor}>
-              <p style={styles.executivoTexto}>Motor 11.3 analisando risco de caixa, concentração, tendência, recorrência, Pareto e qualidade dos dados para os filtros atuais.</p>
+              <p style={styles.executivoTexto}>Análise financeira considerando risco de caixa, concentração, tendência, recorrência, Pareto e qualidade dos dados para os filtros atuais.</p>
               <Progress value={scoreSaude} color={inteligenciaFinanceira.cor} />
               <div style={styles.grid3Compacto}>
                 <MiniStat label="Ticket médio" value={formatarValor(inteligenciaFinanceira.ticketMedio)} />

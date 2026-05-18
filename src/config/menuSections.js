@@ -35,7 +35,6 @@ const menuSections = [
     items: [
       { tela: 'usuarios', icon: '👥', label: 'Usuários', desc: 'Perfis, acessos e senhas' },
       { tela: 'configuracoes', icon: '⚙️', label: 'Configurações', desc: 'Preferências da empresa' },
-      { tela: 'filiais', icon: '🏬', label: 'Filiais', desc: 'Unidades da empresa' },
       { tela: 'billing', icon: '💼', label: 'Plano comercial', desc: 'Planos, limites e contratação' },
       { tela: 'onboarding', icon: '🚀', label: 'Configuração inicial', desc: 'Preparação da empresa' },
       { tela: 'importar', icon: '📥', label: 'Importar contas', desc: 'Trazer contas por planilha' },

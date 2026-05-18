@@ -5469,3 +5469,344 @@ button[title*="Adicionar"],
   opacity: 1 !important;
   transform: none !important;
 }
+
+/* =========================================================
+   Auditoria visual fina — homologação 2026-05-18
+   Escopo: somente polimento visual/responsivo, sem alterar regras.
+   ========================================================= */
+:root {
+  --df-radius-card: 20px;
+  --df-radius-control: 12px;
+  --df-focus-ring: 0 0 0 4px rgba(20, 184, 166, .12);
+}
+
+.app-frame-content > h1,
+.relatorios-page h1,
+.main-title {
+  letter-spacing: -0.025em !important;
+  line-height: 1.12 !important;
+}
+
+button,
+button.outline,
+.top-action-button,
+.top-exit-button,
+.dashboard-see-all-link,
+.filter-toggle-button,
+.note-toggle-small,
+.empty-state-action {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  line-height: 1.15 !important;
+  text-align: center !important;
+}
+
+.card,
+.content-block,
+.dashboard-open-accounts,
+.dashboard-notes-card,
+.notes-page-section,
+.users-page-section,
+.settings-card,
+.import-section,
+.billing-kpi-card,
+.billing-plan-card,
+.empty-state-card {
+  border-radius: var(--df-radius-card) !important;
+}
+
+.app-frame-content > section,
+.settings-card,
+.import-section,
+.users-page-section,
+.notes-page-section,
+.dashboard-open-accounts,
+.dashboard-notes-card {
+  margin-top: 14px !important;
+  margin-bottom: 14px !important;
+}
+
+.app-frame-content > h1 + button,
+.page-title-actions + button,
+.import-section + .import-section,
+.settings-card + .settings-card {
+  margin-top: 10px !important;
+}
+
+input,
+select,
+textarea,
+.profile-modal-field input,
+.users-security-card input,
+.relatorio-sticky-filtros input,
+.relatorio-sticky-filtros select {
+  min-height: 42px !important;
+  border-radius: var(--df-radius-control) !important;
+  line-height: 1.25 !important;
+}
+
+textarea {
+  line-height: 1.45 !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #14b8a6 !important;
+  box-shadow: var(--df-focus-ring) !important;
+  outline: none !important;
+}
+
+.badge,
+.status,
+.status-pill,
+.roleBadge,
+.user-badge,
+.note-stat,
+.note-priority-badge,
+.account-date-badge,
+.account-recurring-badge,
+.account-center-label,
+.billing-readonly,
+.billing-pending {
+  align-items: center !important;
+  gap: 5px !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+.import-section {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.import-columns-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+  gap: 8px !important;
+  margin: 12px 0 !important;
+}
+
+.import-columns-grid span {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 38px !important;
+  padding: 9px 11px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  background: #f8fafc !important;
+  color: #334155 !important;
+  font-weight: 850 !important;
+}
+
+.import-preview-row {
+  gap: 6px !important;
+  border-color: #e2e8f0 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+}
+
+.import-preview-row strong,
+.dashboard-account-row strong,
+.user-main-info strong,
+.master-company-main strong {
+  line-height: 1.2 !important;
+}
+
+.import-preview-row small,
+.dashboard-account-row small,
+.user-main-info small,
+.master-company-main small {
+  line-height: 1.35 !important;
+}
+
+.settings-card {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.settings-card button[style*="justify-content: space-between"],
+.settings-card > button:first-child {
+  min-height: 48px !important;
+}
+
+.settings-branches-card {
+  border-color: rgba(20, 184, 166, .22) !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%) !important;
+}
+
+.users-add-card,
+.users-user-card,
+.master-create-form,
+.billing-form-grid,
+.recurrence-fields {
+  align-items: start !important;
+}
+
+.user-branch-scope-header small,
+.users-permission-guide span,
+.users-security-card-header small,
+.billing-plan-card small {
+  line-height: 1.35 !important;
+}
+
+.dashboard-section-header,
+.users-header-row,
+.billing-section-header,
+.master-list-header {
+  align-items: flex-start !important;
+}
+
+.dashboard-section-actions,
+.export-actions,
+.page-actions-row,
+.user-actions,
+.master-company-actions {
+  gap: 8px !important;
+}
+
+.relatorios-page header.no-print,
+.relatorio-sticky-filtros,
+.relatorios-page section[style] {
+  border-radius: var(--df-radius-card) !important;
+}
+
+.relatorio-sticky-filtros {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.relatorio-sticky-filtros button {
+  min-height: 40px !important;
+}
+
+.relatorios-page .recharts-wrapper,
+.relatorios-page .recharts-responsive-container {
+  max-width: 100% !important;
+}
+
+@media (min-width: 980px) {
+  .advanced-filters {
+    grid-template-columns: minmax(220px, 1.2fr) repeat(4, minmax(130px, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .users-add-card.users-add-card-compact {
+    grid-template-columns: minmax(150px, .9fr) minmax(210px, 1.15fr) minmax(150px, .85fr) minmax(140px, .8fr) auto !important;
+  }
+
+  .users-add-card.users-add-card-compact small {
+    grid-column: 1 / -1 !important;
+    margin-top: -2px !important;
+  }
+
+  .desktop-sidebar-nav button,
+  .mobile-menu-group button {
+    letter-spacing: -0.01em !important;
+  }
+
+  .summary-grid > div,
+  .billing-kpi-card,
+  .dashboard-account-row,
+  .account-card-desktop,
+  .user-card,
+  .master-company-card {
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 979px) {
+  .app-frame-content > h1,
+  .relatorios-page h1,
+  .main-title {
+    font-size: clamp(24px, 7vw, 30px) !important;
+  }
+
+  .app-frame-content > section,
+  .settings-card,
+  .import-section,
+  .users-page-section,
+  .notes-page-section,
+  .dashboard-open-accounts,
+  .dashboard-notes-card {
+    padding: 16px !important;
+    margin-top: 12px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .mobile-menu-backdrop {
+    padding: max(72px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .mobile-menu-panel {
+    width: min(380px, calc(100vw - 24px)) !important;
+    max-height: calc(100dvh - 92px) !important;
+    border-radius: 22px !important;
+  }
+
+  .mobile-menu-group button {
+    grid-template-columns: 30px minmax(0, 1fr) !important;
+    column-gap: 11px !important;
+  }
+
+  .mobile-menu-group button span:first-child {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 10px !important;
+    background: rgba(20, 184, 166, .09) !important;
+  }
+
+  .import-columns-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .users-add-card.users-add-card-compact,
+  .users-user-card,
+  .user-branch-scope-header,
+  .billing-section-header,
+  .billing-hero,
+  .master-page-hero,
+  .master-list-header,
+  .dashboard-section-header {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .user-branch-clear,
+  .master-company-actions button,
+  .billing-section-header span,
+  .dashboard-section-actions button {
+    width: 100% !important;
+  }
+
+  .relatorio-sticky-filtros [style*="display: flex"],
+  .relatorio-sticky-filtros [style*="display:flex"] {
+    flex-wrap: wrap !important;
+  }
+
+  .app-toast.app-toast-global {
+    border-radius: 18px !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .app-frame-content > section,
+  .settings-card,
+  .import-section,
+  .users-page-section,
+  .notes-page-section {
+    padding: 14px !important;
+  }
+
+  button,
+  .account-actions button,
+  .dashboard-section-actions button,
+  .export-actions button {
+    font-size: 13px !important;
+  }
+}

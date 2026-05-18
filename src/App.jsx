@@ -3367,7 +3367,7 @@ export default function App() {
           ← Voltar
         </button>
 
-        <section style={styles.cardConfiguracao}>
+        <section style={styles.cardConfiguracao} className="import-section import-upload-section">
           <h2 style={styles.subtitulo}>1. Enviar arquivo</h2>
           <p style={styles.textoNota}>
             Importe sua planilha do ano em CSV para alimentar o histórico e liberar os relatórios do app.
@@ -3383,9 +3383,9 @@ export default function App() {
           {statusImportacao && <p style={styles.alertaSucesso}>{statusImportacao}</p>}
         </section>
 
-        <section style={styles.cardConfiguracao}>
+        <section style={styles.cardConfiguracao} className="import-section import-columns-section">
           <h2 style={styles.subtitulo}>2. Colunas esperadas</h2>
-          <div style={styles.importDicasGrid}>
+          <div style={styles.importDicasGrid} className="import-columns-grid">
             <span>Descrição</span>
             <span>Valor</span>
             <span>Vencimento</span>
@@ -3398,11 +3398,11 @@ export default function App() {
         </section>
 
         {linhasImportacao.length > 0 && (
-          <section style={styles.cardConfiguracao}>
+          <section style={styles.cardConfiguracao} className="import-section import-preview-section">
             <h2 style={styles.subtitulo}>3. Revisar dados</h2>
             <div style={styles.previewImportacao}>
               {linhasImportacao.slice(0, 8).map((linha) => (
-                <div key={linha.linha} style={styles.previewLinha}>
+                <div key={linha.linha} style={styles.previewLinha} className="import-preview-row">
                   <strong>{linha.descricao || `Linha ${linha.linha}`}</strong>
                   <small>{formatarData(linha.data_vencimento)} • {formatarValor(linha.valor)} • {linha.status} • {linha.centro || 'Sem centro'}</small>
                 </div>
@@ -3613,7 +3613,7 @@ export default function App() {
           ← Voltar
         </button>
 
-        <section style={styles.cardConfiguracao}>
+        <section style={styles.cardConfiguracao} className="settings-card settings-notifications-card">
           <HeaderExpansivel
             styles={styles}
             titulo="🔔 Notificações"
@@ -3696,7 +3696,7 @@ export default function App() {
           )}
         </section>
 
-        <section style={styles.cardConfiguracao}>
+        <section style={styles.cardConfiguracao} className="settings-card settings-business-card">
           <HeaderExpansivel
             styles={styles}
             titulo="🏢 Dados do negócio"
@@ -3731,7 +3731,7 @@ export default function App() {
         </section>
 
 
-        <section style={styles.cardConfiguracao}>
+        <section style={styles.cardConfiguracao} className="settings-card settings-recurrence-card">
           <HeaderExpansivel
             styles={styles}
             titulo="🔁 Recorrências"
@@ -3753,7 +3753,7 @@ export default function App() {
           )}
         </section>
 
-        <section style={styles.cardConfiguracao}>
+        <section style={styles.cardConfiguracao} className="settings-card settings-costcenter-card">
           <HeaderExpansivel
             styles={styles}
             titulo="🏷 Centros de custo"
@@ -3779,7 +3779,7 @@ export default function App() {
           )}
         </section>
 
-        <section style={styles.cardConfiguracao}>
+        <section style={styles.cardConfiguracao} className="settings-card settings-branches-card">
           <HeaderExpansivel
             styles={styles}
             titulo="🏬 Filiais / Unidades"
@@ -3801,7 +3801,7 @@ export default function App() {
           </button>
         </section>
 
-        <section style={styles.cardConfiguracao}>
+        <section style={styles.cardConfiguracao} className="settings-card settings-usage-card">
           <h2 style={styles.subtitulo}>🧠 Como o sistema vai usar</h2>
 
           <p style={styles.textoNota}>

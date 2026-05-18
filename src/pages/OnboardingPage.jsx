@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { converterValor } from '../utils/format'
+import { mensagemSeguraErro } from '../utils/session'
 
 function hojeISO() {
   return new Date().toISOString().slice(0, 10)
@@ -80,7 +81,8 @@ export default function OnboardingPage({
       mostrarAviso?.('Primeira filial criada com sucesso.', 'info')
       await recarregar()
     } catch (error) {
-      mostrarAviso?.('Não foi possível criar a filial: ' + error.message, 'erro')
+      console.warn('Falha ao criar filial inicial:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível criar a filial.'), 'erro')
     } finally {
       setSalvando(false)
     }
@@ -101,7 +103,8 @@ export default function OnboardingPage({
       mostrarAviso?.('Centro de custo criado com sucesso.', 'info')
       await recarregar()
     } catch (error) {
-      mostrarAviso?.('Não foi possível criar o centro de custo: ' + error.message, 'erro')
+      console.warn('Falha ao criar centro de custo inicial:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível criar o centro de custo.'), 'erro')
     } finally {
       setSalvando(false)
     }
@@ -140,7 +143,8 @@ export default function OnboardingPage({
       mostrarAviso?.('Primeira conta criada. Painel pronto para uso.', 'info')
       await recarregar()
     } catch (error) {
-      mostrarAviso?.('Não foi possível criar a primeira conta: ' + error.message, 'erro')
+      console.warn('Falha ao criar primeira conta:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível criar a primeira conta.'), 'erro')
     } finally {
       setSalvando(false)
     }

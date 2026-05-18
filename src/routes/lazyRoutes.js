@@ -1,7 +1,7 @@
 import { lazy } from 'react'
 
 export const lazyRouteImports = {
-  dashboard: () => import('../pages/DashboardRouteComposition'),
+  dashboard: () => import('./DashboardRouteComposition'),
   contas: () => import('../pages/ContasPage'),
   relatorios: () => import('../pages/Relatorios'),
   notas: () => import('../pages/NotasPage'),

@@ -7,6 +7,7 @@ import {
   listarUsuariosEmpresa,
   normalizarPerfilUsuario,
   removerUsuarioEmpresa as removerUsuarioEmpresaService,
+  usuarioEhMasterProtegido,
   atualizarNomeUsuarioLogado,
   listarFiliaisUsuariosEmpresa,
   atualizarFiliaisUsuarioEmpresa
@@ -777,6 +778,11 @@ export default function App() {
       return
     }
 
+    if (!permissoesUsuario?.isMaster && usuarioEhMasterProtegido(usuario)) {
+      mostrarAviso('Usuário master não pode ser alterado por admin comum.', 'erro')
+      return
+    }
+
     const nome = usuario.nome || usuario.email || 'este usuário'
 
     abrirConfirmacao({
@@ -785,6 +791,11 @@ export default function App() {
       textoConfirmar: 'Enviar link',
       tipo: 'padrao',
       acao: async () => {
+        if (!permissoesUsuario?.isMaster && usuarioEhMasterProtegido(usuario)) {
+          mostrarAviso('Usuário master não pode ser alterado por admin comum.', 'erro')
+          return
+        }
+
         try {
           const resultado = await enviarAcessoUsuarioEmpresaService({ usuario })
           mostrarAviso(resultado.mensagem, 'info')
@@ -803,6 +814,11 @@ export default function App() {
 
     const perfil = normalizarPerfil(novoPerfil)
     const usuarioAtual = usuario.user_id && usuarioLogado?.id && usuario.user_id === usuarioLogado.id
+
+    if (!permissoesUsuario?.isMaster && usuarioEhMasterProtegido(usuario)) {
+      mostrarAviso('Usuário master não pode ser alterado por admin comum.', 'erro')
+      return
+    }
 
     if (usuarioAtual && perfil !== 'admin') {
       const admins = usuariosEmpresa.filter((u) => normalizarPerfil(u.perfil) === 'admin')
@@ -823,6 +839,11 @@ export default function App() {
       textoConfirmar: 'Confirmar alteração',
       tipo: perfil === 'admin' ? 'perigo' : 'padrao',
       acao: async () => {
+        if (!permissoesUsuario?.isMaster && usuarioEhMasterProtegido(usuario)) {
+          mostrarAviso('Usuário master não pode ser alterado por admin comum.', 'erro')
+          return
+        }
+
         try {
           await atualizarPerfilUsuarioEmpresaService({ empresaId, usuario, perfil })
         } catch (error) {
@@ -842,6 +863,11 @@ export default function App() {
       return
     }
 
+    if (!permissoesUsuario?.isMaster && usuarioEhMasterProtegido(usuario)) {
+      mostrarAviso('Usuário master não pode ser alterado por admin comum.', 'erro')
+      return
+    }
+
     if (!usuario?.id) {
       mostrarAviso('Este usuário precisa estar cadastrado na empresa para receber filiais.', 'erro')
       return
@@ -851,6 +877,11 @@ export default function App() {
     setSalvandoFilialUsuario(chaveSalvamento)
 
     try {
+      if (!permissoesUsuario?.isMaster && usuarioEhMasterProtegido(usuario)) {
+        mostrarAviso('Usuário master não pode ser alterado por admin comum.', 'erro')
+        return
+      }
+
       await atualizarFiliaisUsuarioEmpresa({
         empresaId,
         usuario,
@@ -890,6 +921,11 @@ export default function App() {
 
     const usuarioAtual = usuario.user_id && usuarioLogado?.id && usuario.user_id === usuarioLogado.id
 
+    if (!permissoesUsuario?.isMaster && usuarioEhMasterProtegido(usuario)) {
+      mostrarAviso('Usuário master não pode ser alterado por admin comum.', 'erro')
+      return
+    }
+
     if (usuarioAtual) {
       mostrarAviso('Você não pode remover o próprio acesso por aqui.', 'erro')
       return
@@ -909,6 +945,11 @@ export default function App() {
       textoConfirmar: 'Remover',
       tipo: 'perigo',
       acao: async () => {
+        if (!permissoesUsuario?.isMaster && usuarioEhMasterProtegido(usuario)) {
+          mostrarAviso('Usuário master não pode ser alterado por admin comum.', 'erro')
+          return
+        }
+
         try {
           await removerUsuarioEmpresaService({ empresaId, usuario })
         } catch (error) {

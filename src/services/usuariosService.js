@@ -1,5 +1,8 @@
 import { supabase } from '../lib/supabase'
 
+const MASTER_EMAIL_FALLBACK = 'bugaohfc@gmail.com'
+const MASTER_VALUES = new Set(['master', 'owner', 'superadmin', 'super_admin', 'super admin'])
+
 export function normalizarPerfilUsuario(perfil) {
   const valor = String(perfil || '').toLowerCase().trim()
 
@@ -13,11 +16,28 @@ export function normalizarPerfilUsuario(perfil) {
   return 'operador'
 }
 
+export function usuarioEhMasterProtegido(usuario = {}) {
+  const email = String(usuario.email || '').trim().toLowerCase()
+  const flagsMaster = [usuario.owner, usuario.superadmin, usuario.super_admin].some((valor) => valor === true)
+  const valores = [
+    usuario.perfil,
+    usuario.perfil_original,
+    usuario.role,
+    usuario.tipo,
+    usuario.owner,
+    usuario.superadmin,
+    usuario.super_admin
+  ].map((valor) => String(valor || '').toLowerCase().trim())
+
+  return flagsMaster || email === MASTER_EMAIL_FALLBACK || valores.some((valor) => MASTER_VALUES.has(valor))
+}
+
 function normalizarListaUsuarios(usuarios = [], empresaId = null) {
   const usuariosNormalizados = (usuarios || []).map((usuario) => ({
     ...usuario,
     empresa_id: usuario.empresa_id || empresaId,
     email: String(usuario.email || '').trim().toLowerCase(),
+    perfil_original: usuario.perfil_original ?? usuario.perfil,
     perfil: normalizarPerfilUsuario(usuario.perfil)
   })).filter((usuario) => !empresaId || usuario.empresa_id === empresaId)
 
@@ -39,6 +59,7 @@ function normalizarListaUsuarios(usuarios = [], empresaId = null) {
       nome: existente.nome || usuario.nome,
       email: existente.email || usuario.email,
       user_id: existente.user_id || usuario.user_id,
+      perfil_original: existente.perfil_original || usuario.perfil_original || existente.perfil || usuario.perfil,
       perfil: existente.perfil === 'admin' ? existente.perfil : usuario.perfil,
       created_at: existente.created_at || usuario.created_at
     })

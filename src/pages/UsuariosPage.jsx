@@ -1,4 +1,5 @@
 import UserSecurityCards from '../components/UserSecurityCards.jsx'
+import { usuarioEhMasterProtegido } from '../services/usuariosService'
 
 const PROFILE_OPTIONS = [
   { value: 'admin', label: 'Admin' },
@@ -198,6 +199,9 @@ export default function UsuariosPage({
             const atual = usuario.user_id && usuarioLogado?.id && usuario.user_id === usuarioLogado.id
             const pendente = !usuario.user_id
             const perfilNormalizado = normalizarPerfil(usuario.perfil)
+            const masterProtegido = usuarioEhMasterProtegido(usuario)
+            const masterBloqueadoParaAdmin = podeEditarUsuarios && !permissoesUsuario?.isMaster && masterProtegido
+            const perfilExibido = masterProtegido ? 'master' : perfilNormalizado
             const filiaisSelecionadas = filiaisUsuariosEmpresa[usuario.id] || []
             const acessoTotalFiliais = filiaisSelecionadas.length === 0
 
@@ -214,12 +218,12 @@ export default function UsuariosPage({
                   </div>
 
                   <div className="users-user-controls">
-                    <span className={`roleBadge ${perfilNormalizado}`}>{perfilNormalizado}</span>
+                    <span className={`roleBadge ${perfilNormalizado}`}>{perfilExibido}</span>
                     <select
                       className="user-role-select users-role-select"
                       style={styles.input}
                       value={perfilNormalizado}
-                      disabled={!podeEditarUsuarios}
+                      disabled={!podeEditarUsuarios || masterBloqueadoParaAdmin}
                       onChange={(event) => atualizarPerfilUsuarioEmpresa(usuario, event.target.value)}
                     >
                       {PROFILE_OPTIONS.map((perfil) => (
@@ -238,9 +242,9 @@ export default function UsuariosPage({
                     <button
                       type="button"
                       className="user-branch-clear"
-                      disabled={!podeEditarUsuarios || salvandoFilialUsuario === usuario.id}
+                      disabled={!podeEditarUsuarios || masterBloqueadoParaAdmin || salvandoFilialUsuario === usuario.id}
                       onClick={() => liberarTodasFiliaisUsuario(usuario)}
-                      title="Deixar o usuário com acesso a todas as filiais da empresa"
+                      title={masterBloqueadoParaAdmin ? 'Usuário master não pode ser alterado por admin comum.' : 'Deixar o usuário com acesso a todas as filiais da empresa'}
                     >
                       Todas
                     </button>
@@ -256,7 +260,7 @@ export default function UsuariosPage({
                           <input
                             type="checkbox"
                             checked={selecionada}
-                            disabled={!podeEditarUsuarios || salvandoFilialUsuario === usuario.id}
+                            disabled={!podeEditarUsuarios || masterBloqueadoParaAdmin || salvandoFilialUsuario === usuario.id}
                             onChange={() => alternarFilialUsuario(usuario, filial.id)}
                           />
                           <span>{filial.nome || filial.nome_filial || filial.descricao || 'Filial'}</span>
@@ -270,17 +274,18 @@ export default function UsuariosPage({
                   <div className="user-actions users-user-actions">
                     <button
                       style={styles.btnSecundario}
+                      disabled={masterBloqueadoParaAdmin}
                       onClick={() => enviarAcessoUsuarioEmpresa(usuario)}
-                      title="Enviar link de acesso por e-mail."
+                      title={masterBloqueadoParaAdmin ? 'Usuário master não pode ser alterado por admin comum.' : 'Enviar link de acesso por e-mail.'}
                     >
                       Enviar link
                     </button>
 
                     <button
                       style={styles.btnExcluir}
-                      disabled={atual}
+                      disabled={atual || masterBloqueadoParaAdmin}
                       onClick={() => removerUsuarioEmpresa(usuario)}
-                      title={atual ? 'Você não pode remover o próprio acesso.' : 'Remover usuário'}
+                      title={masterBloqueadoParaAdmin ? 'Usuário master não pode ser alterado por admin comum.' : atual ? 'Você não pode remover o próprio acesso.' : 'Remover usuário'}
                     >
                       Remover
                     </button>

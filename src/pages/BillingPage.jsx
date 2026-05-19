@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { PLANOS_BASE, buscarResumoBilling, salvarAssinaturaEmpresa } from '../services/billingService'
-import { mensagemSeguraErro } from '../utils/session'
 
 function formatarLimite(valor, singular, plural) {
   if (valor === null || valor === undefined || valor === '') return 'Ilimitado'
@@ -64,7 +63,7 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
         })
       } catch (error) {
         console.error('Erro ao carregar plano comercial:', error)
-        if (ativo) mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível carregar o plano comercial.'), 'erro')
+        if (ativo) mostrarAviso?.('Não foi possível carregar o plano comercial: ' + error.message, 'erro')
       } finally {
         if (ativo) setLoading(false)
       }
@@ -123,7 +122,7 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
       mostrarAviso?.('Plano comercial atualizado com sucesso.', 'info')
     } catch (error) {
       console.error('Erro ao salvar plano comercial:', error)
-      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível salvar o plano comercial.'), 'erro')
+      mostrarAviso?.('Não foi possível salvar o plano comercial: ' + error.message, 'erro')
     } finally {
       setSalvando(false)
     }

@@ -37,7 +37,7 @@ import { dataLocal, diferencaDias, mesmoMesAtual } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
 import { estaVencida, pegarMes } from './utils/contasStatus'
 import { atualizarListaLixeiraEstavel, diasNaLixeira, podeExcluirDefinitivo } from './utils/lixeira'
-import { erroEhSessaoExpirada, mensagemSeguraErro } from './utils/session'
+import { erroEhSessaoExpirada } from './utils/session'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
 import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario } from './services/permissoesService'
 import { listarFiliaisPorEmpresa } from './services/filiaisService'
@@ -287,13 +287,14 @@ export default function App() {
   }
 
   function avisarErro(erro, fallback = 'Não foi possível concluir a operação.') {
+    const mensagem = erro?.message || erro || fallback
+
     if (erroEhSessaoExpirada(erro)) {
       encerrarSessao('Sua sessão expirou. Faça login novamente.')
       return
     }
 
-    console.warn('Erro técnico capturado:', erro)
-    mostrarAviso(mensagemSeguraErro(erro, fallback), 'erro')
+    mostrarAviso(String(mensagem), 'erro')
   }
 
   function limparDadosTenant() {
@@ -571,8 +572,7 @@ export default function App() {
         setUsuarioLogado(null)
         mostrarAviso('Sua sessão expirou. Faça login novamente.', 'erro')
       } else {
-        console.warn('Falha ao carregar empresa do usuário:', error)
-        mostrarAviso(mensagemSeguraErro(error, 'Não foi possível carregar sua empresa. Tente novamente.'), 'erro')
+        mostrarAviso(error.message, 'erro')
       }
     } finally {
       setLoading(false)
@@ -710,7 +710,7 @@ export default function App() {
       setUsuariosEmpresa([])
       setFiliaisUsuariosEmpresa({})
       setUsuariosInicializados(true)
-      setUsuariosErro(mensagemSeguraErro(error, 'Não foi possível carregar os usuários da empresa.'))
+      setUsuariosErro(error?.message || 'Não foi possível carregar os usuários da empresa.')
     } finally {
       if (!silencioso) setUsuariosCarregando(false)
     }
@@ -1511,8 +1511,7 @@ export default function App() {
       }], { onConflict: 'empresa_id' })
 
     if (erroAlertas) {
-      console.warn('Falha ao salvar alertas globais:', erroAlertas)
-      mostrarAviso(mensagemSeguraErro(erroAlertas, 'Configurações principais salvas, mas os alertas globais não foram atualizados. Tente novamente.'), 'erro')
+      mostrarAviso('Configurações principais salvas, mas os alertas globais não foram atualizados: ' + erroAlertas.message, 'erro')
       return
     }
 
@@ -3809,7 +3808,7 @@ export default function App() {
           <HeaderExpansivel
             styles={styles}
             titulo="🏬 Filiais / Unidades"
-            aberto={false}
+            aberto={mostrarConfigCentros}
             onClick={() => navegarPara('filiais')}
           />
 

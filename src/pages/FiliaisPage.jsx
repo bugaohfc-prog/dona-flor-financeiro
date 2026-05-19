@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import { alternarStatusFilial, criarFilial, listarFiliaisPorEmpresa, renomearFilial } from '../services/filiaisService'
-import { mensagemSeguraErro } from '../utils/session'
 
 function formatarDataCurta(data) {
   if (!data) return '—'
@@ -38,8 +37,7 @@ export default function FiliaisPage({
       const dados = await listarFiliaisPorEmpresa(empresaId)
       setFiliais(dados)
     } catch (error) {
-      console.warn('Falha ao carregar filiais:', error)
-      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível carregar filiais.'), 'erro')
+      mostrarAviso?.(error?.message || 'Não foi possível carregar filiais.', 'erro')
     } finally {
       setCarregando(false)
     }
@@ -66,8 +64,7 @@ export default function FiliaisPage({
       await carregarFiliais()
       mostrarAviso?.('Filial criada com sucesso.', 'sucesso')
     } catch (error) {
-      console.warn('Falha ao criar filial:', error)
-      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível criar a filial.'), 'erro')
+      mostrarAviso?.(error?.message || 'Não foi possível criar a filial.', 'erro')
     } finally {
       setSalvando(false)
     }
@@ -84,8 +81,7 @@ export default function FiliaisPage({
       await carregarFiliais()
       mostrarAviso?.('Filial atualizada com sucesso.', 'sucesso')
     } catch (error) {
-      console.warn('Falha ao atualizar filial:', error)
-      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível atualizar a filial.'), 'erro')
+      mostrarAviso?.(error?.message || 'Não foi possível atualizar a filial.', 'erro')
     } finally {
       setSalvando(false)
     }
@@ -100,8 +96,7 @@ export default function FiliaisPage({
       await carregarFiliais()
       mostrarAviso?.(filial.ativo ? 'Filial desativada.' : 'Filial ativada.', 'sucesso')
     } catch (error) {
-      console.warn('Falha ao alterar filial:', error)
-      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível alterar a filial.'), 'erro')
+      mostrarAviso?.(error?.message || 'Não foi possível alterar a filial.', 'erro')
     } finally {
       setSalvando(false)
     }

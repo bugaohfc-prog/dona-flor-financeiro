@@ -17,8 +17,8 @@ import {
   validarFilialDaEmpresa,
   vincularRecorrenciaNaConta
 } from '../services/contasService'
+import { dataLocal } from '../utils/dates'
 import { deveGerarRecorrenciaNoMes, montarDataRecorrente } from '../utils/recorrencia'
-import { mensagemSeguraErro } from '../utils/session'
 
 export function useContas() {
   const [contas, setContas] = useState([])
@@ -360,24 +360,21 @@ export function useContas() {
             const { error: erroRecorrencia } = await atualizarRecorrencia(supabase, recorrenciaContaId, empresaId, payloadRecorrencia)
 
             if (erroRecorrencia) {
-              console.warn('Falha ao atualizar recorrência da conta:', erroRecorrencia)
-              mostrarAviso(mensagemSeguraErro(erroRecorrencia, 'A conta foi atualizada, mas a recorrência não foi salva.'), 'erro')
+              mostrarAviso('A conta foi atualizada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
               return
             }
 
             const { error: erroVinculoRecorrencia } = await vincularRecorrenciaNaConta(supabase, editandoContaId, empresaId, recorrenciaContaId)
 
             if (erroVinculoRecorrencia) {
-              console.warn('Falha ao vincular recorrência atualizada:', erroVinculoRecorrencia)
-              mostrarAviso(mensagemSeguraErro(erroVinculoRecorrencia, 'A recorrência foi atualizada, mas não foi vinculada à conta.'), 'erro')
+              mostrarAviso('A recorrência foi atualizada, mas não foi vinculada à conta: ' + erroVinculoRecorrencia.message, 'erro')
               return
             }
           } else {
             const { data: dataRecorrencia, error: erroRecorrencia } = await criarRecorrencia(supabase, payloadRecorrencia)
 
             if (erroRecorrencia) {
-              console.warn('Falha ao criar recorrência da conta atualizada:', erroRecorrencia)
-              mostrarAviso(mensagemSeguraErro(erroRecorrencia, 'A conta foi atualizada, mas a recorrência não foi salva.'), 'erro')
+              mostrarAviso('A conta foi atualizada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
               return
             }
 
@@ -408,8 +405,7 @@ export function useContas() {
             const { error: erroVinculoRecorrencia } = await vincularRecorrenciaNaConta(supabase, editandoContaId, empresaId, recorrenciaIdCriada)
 
             if (erroVinculoRecorrencia) {
-              console.warn('Falha ao vincular recorrência criada:', erroVinculoRecorrencia)
-              mostrarAviso(mensagemSeguraErro(erroVinculoRecorrencia, 'A recorrência foi criada, mas não foi vinculada à conta.'), 'erro')
+              mostrarAviso('A recorrência foi criada, mas não foi vinculada à conta: ' + erroVinculoRecorrencia.message, 'erro')
               return
             }
 
@@ -449,8 +445,7 @@ export function useContas() {
         })
 
         if (erroRecorrencia) {
-          console.warn('Falha ao criar recorrência da nova conta:', erroRecorrencia)
-          mostrarAviso(mensagemSeguraErro(erroRecorrencia, 'A conta foi criada, mas a recorrência não foi salva.'), 'erro')
+          mostrarAviso('A conta foi criada, mas a recorrência não foi salva: ' + erroRecorrencia.message, 'erro')
         } else {
           const recorrenciaCriada = Array.isArray(dataRecorrencia) ? dataRecorrencia[0] : dataRecorrencia
           const contaCriada = Array.isArray(resposta.data) ? resposta.data[0] : resposta.data
@@ -471,8 +466,7 @@ export function useContas() {
             const { error: erroVinculoRecorrencia } = await vincularRecorrenciaNaConta(supabase, contaCriada.id, empresaId, recorrenciaIdCriada)
 
             if (erroVinculoRecorrencia) {
-              console.warn('Falha ao vincular recorrência da nova conta:', erroVinculoRecorrencia)
-              mostrarAviso(mensagemSeguraErro(erroVinculoRecorrencia, 'A recorrência foi criada, mas não foi vinculada à conta.'), 'erro')
+              mostrarAviso('A recorrência foi criada, mas não foi vinculada à conta: ' + erroVinculoRecorrencia.message, 'erro')
               return
             }
           }
@@ -487,8 +481,7 @@ export function useContas() {
         setUsuarioLogado(null)
         mostrarAviso('Sua sessão expirou. Faça login novamente.', 'erro')
       } else {
-        console.warn('Falha ao salvar conta:', error)
-        mostrarAviso(mensagemSeguraErro(error), 'erro')
+        mostrarAviso(error.message, 'erro')
       }
       return
     }

@@ -313,6 +313,101 @@
   }
 }
 
+/* Navegacao lateral */
+@media (min-width: 980px) {
+  .desktop-sidebar.no-print .desktop-sidebar-scroll {
+    gap: 6px !important;
+  }
+
+  .desktop-sidebar.no-print .sidebar-group-clean {
+    gap: 4px !important;
+    margin-bottom: 5px !important;
+  }
+
+  .desktop-sidebar.no-print .sidebar-group-toggle {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    width: 100% !important;
+    text-align: left !important;
+  }
+
+  .desktop-sidebar.no-print .sidebar-group-toggle > span {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    line-height: 1.2 !important;
+    text-align: left !important;
+  }
+
+  .desktop-sidebar.no-print .sidebar-group-toggle > strong {
+    flex: 0 0 auto !important;
+  }
+
+  .desktop-sidebar.no-print .desktop-sidebar-nav {
+    width: 100% !important;
+    gap: 5px !important;
+  }
+
+  .desktop-sidebar.no-print .desktop-sidebar-nav button {
+    display: grid !important;
+    grid-template-columns: 24px minmax(0, 1fr) !important;
+    align-items: center !important;
+    justify-content: stretch !important;
+    justify-items: start !important;
+    gap: 0 10px !important;
+    width: 100% !important;
+    min-height: 38px !important;
+    padding: 8px 10px !important;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+
+  .desktop-sidebar.no-print .desktop-sidebar-nav .menu-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 24px !important;
+    min-width: 24px !important;
+    height: 24px !important;
+    font-size: 16px !important;
+    line-height: 1 !important;
+    text-align: center !important;
+  }
+
+  .desktop-sidebar.no-print .desktop-sidebar-nav .menu-text,
+  .desktop-sidebar.no-print .desktop-sidebar-nav button > span:not(.menu-icon) {
+    display: block !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    line-height: 1.2 !important;
+    text-align: left !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .desktop-sidebar.no-print.compacta .sidebar-group-toggle {
+    justify-content: center !important;
+  }
+
+  .desktop-sidebar.no-print.compacta .sidebar-group-toggle > span {
+    flex: 0 0 auto !important;
+    text-align: center !important;
+  }
+
+  .desktop-sidebar.no-print.compacta .desktop-sidebar-nav button {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    grid-template-columns: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    text-align: center !important;
+  }
+}
+
 /* Plano comercial */
 .billing-hero {
   display: grid;
@@ -397,12 +492,22 @@
 .billing-plan-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
   gap: 14px;
   margin-top: 14px;
 }
 
 .billing-plan-card {
+  display: grid !important;
+  grid-template-rows: auto auto auto 1fr;
+  align-content: start !important;
+  align-items: start !important;
+  justify-content: stretch !important;
+  justify-items: start !important;
+  gap: 10px !important;
   width: 100%;
+  min-width: 0;
+  height: 100%;
   text-align: left;
   padding: 18px;
   border: 1px solid #e2e8f0;
@@ -425,29 +530,54 @@
 
 .billing-plan-card span {
   display: block;
+  width: 100%;
   color: #0f766e;
   font-weight: 800;
+  line-height: 1.2;
+  text-align: left;
+  white-space: normal;
 }
 
 .billing-plan-card strong {
   display: block;
-  margin: 8px 0;
+  width: 100%;
+  margin: 0;
   color: #0f172a;
   font-size: 1.4rem;
+  line-height: 1.15;
+  text-align: left;
+  white-space: normal;
 }
 
 .billing-plan-card small {
   display: block;
+  width: 100%;
   min-height: 42px;
   color: #64748b;
   line-height: 1.4;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .billing-plan-card ul {
-  margin: 14px 0 0;
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  margin: 4px 0 0;
   padding-left: 18px;
   color: #334155;
   font-size: 0.9rem;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+}
+
+.billing-plan-card li {
+  min-width: 0;
+  padding-left: 2px;
+  overflow-wrap: anywhere;
 }
 
 .billing-section-header {
@@ -491,6 +621,15 @@
 
   .billing-current-plan {
     min-width: 0;
+  }
+
+  .billing-plan-card {
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .billing-plan-card small {
+    min-height: 0;
   }
 }
 

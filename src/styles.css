@@ -375,8 +375,7 @@
     text-align: center !important;
   }
 
-  .desktop-sidebar.no-print .desktop-sidebar-nav .menu-text,
-  .desktop-sidebar.no-print .desktop-sidebar-nav button > span:not(.menu-icon) {
+  .desktop-sidebar.no-print .desktop-sidebar-nav .menu-text {
     display: block !important;
     min-width: 0 !important;
     max-width: 100% !important;
@@ -406,6 +405,100 @@
     padding-right: 0 !important;
     text-align: center !important;
   }
+}
+
+/* Topo do app */
+.top-shell.top-shell-clean {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.top-shell-clean .top-shell-context {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.top-shell-clean .top-shell-logo {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  min-width: 0;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: #064e3b !important;
+  line-height: 1 !important;
+  text-align: left !important;
+}
+
+.top-shell-clean .top-shell-logo > img {
+  flex: 0 0 48px;
+}
+
+.top-shell-clean .top-shell-logo > span {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 2px !important;
+  min-width: 0;
+  line-height: 1.05 !important;
+  text-align: left !important;
+}
+
+.top-shell-clean .top-shell-logo > span strong,
+.top-shell-clean .top-shell-logo > span small {
+  display: block !important;
+  max-width: 100%;
+  overflow: hidden;
+  line-height: 1.1 !important;
+  text-align: left !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-shell-clean .top-shell-logo > span strong {
+  color: #0f172a !important;
+}
+
+.top-shell-clean .top-shell-logo > span small {
+  color: #64748b !important;
+}
+
+/* Configuracoes */
+.settings-card > button[style*="justify-content: space-between"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  width: 100% !important;
+  text-align: left !important;
+}
+
+.settings-card > button[style*="justify-content: space-between"] > span:first-child {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+  color: #0f172a !important;
+  line-height: 1.1 !important;
+  text-align: left !important;
+}
+
+.settings-card > button[style*="justify-content: space-between"] > span:first-child > span:last-child {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.settings-card > button[style*="justify-content: space-between"] > strong {
+  flex: 0 0 auto !important;
+  color: #0f172a !important;
 }
 
 /* Plano comercial */

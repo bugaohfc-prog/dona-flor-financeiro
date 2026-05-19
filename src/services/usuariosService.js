@@ -13,44 +13,13 @@ export function normalizarPerfilUsuario(perfil) {
   return 'operador'
 }
 
-export function perfilIndicaMaster(perfil) {
-  const valor = String(perfil || '').toLowerCase().trim()
-  return ['master', 'owner', 'superadmin', 'super_admin'].includes(valor)
-}
-
-function flagIndicaMaster(valor) {
-  return valor === true || String(valor || '').toLowerCase().trim() === 'true'
-}
-
-export function usuarioEmpresaEhMaster(usuario = {}) {
-  return Boolean(
-    flagIndicaMaster(usuario?.isMaster) ||
-    flagIndicaMaster(usuario?.is_master) ||
-    flagIndicaMaster(usuario?.master) ||
-    perfilIndicaMaster(usuario?.perfil_original) ||
-    perfilIndicaMaster(usuario?.perfilOriginal) ||
-    perfilIndicaMaster(usuario?.perfil_bruto) ||
-    perfilIndicaMaster(usuario?.perfil) ||
-    perfilIndicaMaster(usuario?.tipo) ||
-    perfilIndicaMaster(usuario?.role)
-  )
-}
-
 function normalizarListaUsuarios(usuarios = [], empresaId = null) {
-  const usuariosNormalizados = (usuarios || []).map((usuario) => {
-    const perfilOriginal = usuario.perfil
-    return {
-      ...usuario,
-      empresa_id: usuario.empresa_id || empresaId,
-      email: String(usuario.email || '').trim().toLowerCase(),
-      perfil_original: usuario.perfil_original || perfilOriginal,
-      perfil: normalizarPerfilUsuario(perfilOriginal),
-      isMaster: usuarioEmpresaEhMaster({
-        ...usuario,
-        perfil_original: usuario.perfil_original || perfilOriginal
-      })
-    }
-  }).filter((usuario) => !empresaId || usuario.empresa_id === empresaId)
+  const usuariosNormalizados = (usuarios || []).map((usuario) => ({
+    ...usuario,
+    empresa_id: usuario.empresa_id || empresaId,
+    email: String(usuario.email || '').trim().toLowerCase(),
+    perfil: normalizarPerfilUsuario(usuario.perfil)
+  })).filter((usuario) => !empresaId || usuario.empresa_id === empresaId)
 
   const mapa = new Map()
 
@@ -71,59 +40,11 @@ function normalizarListaUsuarios(usuarios = [], empresaId = null) {
       email: existente.email || usuario.email,
       user_id: existente.user_id || usuario.user_id,
       perfil: existente.perfil === 'admin' ? existente.perfil : usuario.perfil,
-      perfil_original: existente.perfil_original || usuario.perfil_original,
-      isMaster: Boolean(existente.isMaster || usuario.isMaster),
       created_at: existente.created_at || usuario.created_at
     })
   }
 
   return Array.from(mapa.values())
-}
-
-function chaveUsuario(usuario = {}) {
-  return usuario.id || usuario.user_id || usuario.email || ''
-}
-
-function mesclarPerfilOriginalUsuarios(usuarios = [], vinculos = []) {
-  const perfisPorChave = new Map()
-
-  ;(vinculos || []).forEach((vinculo) => {
-    const email = String(vinculo.email || '').trim().toLowerCase()
-    ;[vinculo.id, vinculo.user_id, email].filter(Boolean).forEach((chave) => {
-      perfisPorChave.set(chave, vinculo.perfil)
-    })
-  })
-
-  return (usuarios || []).map((usuario) => {
-    const perfilOriginal = perfisPorChave.get(chaveUsuario(usuario)) ||
-      perfisPorChave.get(usuario.user_id) ||
-      perfisPorChave.get(usuario.email) ||
-      usuario.perfil_original ||
-      usuario.perfil
-
-    return {
-      ...usuario,
-      perfil_original: perfilOriginal,
-      isMaster: usuarioEmpresaEhMaster({
-        ...usuario,
-        perfil_original: perfilOriginal
-      })
-    }
-  })
-}
-
-async function listarPerfisOriginaisUsuariosEmpresa(empresaId) {
-  const { data, error } = await supabase
-    .from('df_usuarios_empresas')
-    .select('id, user_id, email, perfil')
-    .eq('empresa_id', empresaId)
-
-  if (error) {
-    console.warn('Não foi possível carregar perfis originais dos usuários:', error.message)
-    return []
-  }
-
-  return data || []
 }
 
 async function listarUsuariosEmpresaViaFunction(empresaId) {
@@ -134,9 +55,7 @@ async function listarUsuariosEmpresaViaFunction(empresaId) {
   if (error) throw error
   if (data?.ok === false) throw new Error(data?.message || 'Não foi possível carregar os usuários da empresa.')
 
-  const usuarios = normalizarListaUsuarios(data?.usuarios || [], empresaId)
-  const perfisOriginais = await listarPerfisOriginaisUsuariosEmpresa(empresaId)
-  return mesclarPerfilOriginalUsuarios(usuarios, perfisOriginais)
+  return normalizarListaUsuarios(data?.usuarios || [], empresaId)
 }
 
 export async function listarUsuariosEmpresa(empresaId) {

@@ -14,7 +14,6 @@ export default function UsuariosPage({
   EmptyState,
   podeAcessarConfiguracoes,
   podeAdministrarUsuarios,
-  podeGerenciarUsuarioEmpresa,
   navegarPara,
   usuarioLogado,
   normalizarPerfil,
@@ -201,9 +200,6 @@ export default function UsuariosPage({
             const perfilNormalizado = normalizarPerfil(usuario.perfil)
             const filiaisSelecionadas = filiaisUsuariosEmpresa[usuario.id] || []
             const acessoTotalFiliais = filiaisSelecionadas.length === 0
-            const podeGerenciarUsuario = typeof podeGerenciarUsuarioEmpresa === 'function'
-              ? podeGerenciarUsuarioEmpresa(usuario)
-              : podeEditarUsuarios
 
             return (
               <article key={usuario.id || usuario.user_id || usuario.email} className="user-card userCard users-user-card">
@@ -223,7 +219,7 @@ export default function UsuariosPage({
                       className="user-role-select users-role-select"
                       style={styles.input}
                       value={perfilNormalizado}
-                      disabled={!podeGerenciarUsuario}
+                      disabled={!podeEditarUsuarios}
                       onChange={(event) => atualizarPerfilUsuarioEmpresa(usuario, event.target.value)}
                     >
                       {PROFILE_OPTIONS.map((perfil) => (
@@ -242,7 +238,7 @@ export default function UsuariosPage({
                     <button
                       type="button"
                       className="user-branch-clear"
-                      disabled={!podeGerenciarUsuario || salvandoFilialUsuario === usuario.id}
+                      disabled={!podeEditarUsuarios || salvandoFilialUsuario === usuario.id}
                       onClick={() => liberarTodasFiliaisUsuario(usuario)}
                       title="Deixar o usuário com acesso a todas as filiais da empresa"
                     >
@@ -260,7 +256,7 @@ export default function UsuariosPage({
                           <input
                             type="checkbox"
                             checked={selecionada}
-                            disabled={!podeGerenciarUsuario || salvandoFilialUsuario === usuario.id}
+                            disabled={!podeEditarUsuarios || salvandoFilialUsuario === usuario.id}
                             onChange={() => alternarFilialUsuario(usuario, filial.id)}
                           />
                           <span>{filial.nome || filial.nome_filial || filial.descricao || 'Filial'}</span>
@@ -270,7 +266,7 @@ export default function UsuariosPage({
                   </div>
                 </div>
 
-                {podeEditarUsuarios && podeGerenciarUsuario && (
+                {podeEditarUsuarios && (
                   <div className="user-actions users-user-actions">
                     <button
                       style={styles.btnSecundario}

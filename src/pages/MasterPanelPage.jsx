@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { criarEmpresaMaster, listarEmpresasMaster, renomearEmpresaMaster } from '../services/empresasService'
 import { alternarStatusFilial, criarFilial, listarFiliaisPorEmpresa, renomearFilial } from '../services/filiaisService'
+import { mensagemSeguraErro } from '../utils/session'
 
 function formatarDataCurta(data) {
   if (!data) return '—'
@@ -50,7 +51,8 @@ export default function MasterPanelPage({
       const dados = await listarEmpresasMaster()
       setEmpresas(dados)
     } catch (error) {
-      mostrarAviso?.(error?.message || 'Não foi possível carregar empresas.', 'erro')
+      console.warn('Falha ao carregar empresas:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível carregar empresas.'), 'erro')
     } finally {
       setCarregando(false)
     }
@@ -67,7 +69,8 @@ export default function MasterPanelPage({
       const dados = await listarFiliaisPorEmpresa(empresaId)
       setFiliais(dados)
     } catch (error) {
-      mostrarAviso?.(error?.message || 'Não foi possível carregar filiais.', 'erro')
+      console.warn('Falha ao carregar filiais:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível carregar filiais.'), 'erro')
     } finally {
       setCarregandoFiliais(false)
     }
@@ -110,7 +113,8 @@ export default function MasterPanelPage({
       await onEmpresasAtualizadas?.()
       mostrarAviso?.('Empresa criada com sucesso.', 'sucesso')
     } catch (error) {
-      mostrarAviso?.(error?.message || 'Não foi possível criar a empresa.', 'erro')
+      console.warn('Falha ao criar empresa:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível criar a empresa.'), 'erro')
     } finally {
       setSalvando(false)
     }
@@ -127,7 +131,8 @@ export default function MasterPanelPage({
       await carregarFiliais()
       mostrarAviso?.('Filial criada com sucesso.', 'sucesso')
     } catch (error) {
-      mostrarAviso?.(error?.message || 'Não foi possível criar a filial.', 'erro')
+      console.warn('Falha ao criar filial:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível criar a filial.'), 'erro')
     } finally {
       setSalvando(false)
     }
@@ -145,7 +150,8 @@ export default function MasterPanelPage({
       await onEmpresasAtualizadas?.()
       mostrarAviso?.('Empresa atualizada com sucesso.', 'sucesso')
     } catch (error) {
-      mostrarAviso?.(error?.message || 'Não foi possível atualizar a empresa.', 'erro')
+      console.warn('Falha ao atualizar empresa:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível atualizar a empresa.'), 'erro')
     } finally {
       setSalvando(false)
     }
@@ -162,7 +168,8 @@ export default function MasterPanelPage({
       await carregarFiliais()
       mostrarAviso?.('Filial atualizada com sucesso.', 'sucesso')
     } catch (error) {
-      mostrarAviso?.(error?.message || 'Não foi possível atualizar a filial.', 'erro')
+      console.warn('Falha ao atualizar filial:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível atualizar a filial.'), 'erro')
     } finally {
       setSalvando(false)
     }
@@ -177,7 +184,8 @@ export default function MasterPanelPage({
       await carregarFiliais()
       mostrarAviso?.(filial.ativo ? 'Filial desativada.' : 'Filial ativada.', 'sucesso')
     } catch (error) {
-      mostrarAviso?.(error?.message || 'Não foi possível alterar a filial.', 'erro')
+      console.warn('Falha ao alterar filial:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível alterar a filial.'), 'erro')
     } finally {
       setSalvando(false)
     }

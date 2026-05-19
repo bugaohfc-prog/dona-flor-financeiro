@@ -910,3 +910,58 @@
     max-width: calc(100vw - 130px) !important;
   }
 }
+
+/* Ajuste fino de alinhamento da gestão de usuários após bloqueio de master */
+.users-user-card-header {
+  align-items: center !important;
+}
+
+.users-user-controls {
+  min-width: 232px !important;
+}
+
+.users-role-select,
+.user-role-select.users-role-select {
+  box-sizing: border-box !important;
+  height: 38px !important;
+  line-height: 1.2 !important;
+}
+
+.users-role-select:disabled,
+.user-role-select.users-role-select:disabled {
+  opacity: .62 !important;
+  cursor: not-allowed !important;
+}
+
+.users-branch-header-compact {
+  align-items: center !important;
+}
+
+.user-branch-clear,
+.users-branch-header-compact .user-branch-clear {
+  min-width: 76px !important;
+  min-height: 34px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+}
+
+.users-branch-chip.user-branch-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  line-height: 1.2 !important;
+}
+
+.users-branch-chip.user-branch-chip input:disabled,
+.users-branch-chip.user-branch-chip:has(input:disabled) {
+  cursor: not-allowed !important;
+}
+
+@media (max-width: 980px) {
+  .users-user-controls {
+    min-width: 0 !important;
+  }
+}

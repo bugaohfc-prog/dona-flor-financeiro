@@ -6,10 +6,12 @@ import {
   enviarAcessoUsuarioEmpresa as enviarAcessoUsuarioEmpresaService,
   listarUsuariosEmpresa,
   normalizarPerfilUsuario,
+  perfilIndicaMaster,
   removerUsuarioEmpresa as removerUsuarioEmpresaService,
   atualizarNomeUsuarioLogado,
   listarFiliaisUsuariosEmpresa,
-  atualizarFiliaisUsuarioEmpresa
+  atualizarFiliaisUsuarioEmpresa,
+  usuarioEmpresaEhMaster
 } from './services/usuariosService'
 import Topbar from './components/layout/Topbar.jsx'
 import Sidebar from './components/layout/Sidebar.jsx'
@@ -604,6 +606,21 @@ export default function App() {
     return Boolean(permissoesUsuario?.canManageUsers || temPermissao(['admin']))
   }, [permissoesUsuario?.canManageUsers, temPermissao])
 
+  const podeGerenciarUsuarioEmpresa = useCallback((usuario) => {
+    if (!podeAdministrarUsuarios()) return false
+    if (permissoesUsuario?.isMaster) return true
+    return !usuarioEmpresaEhMaster(usuario)
+  }, [podeAdministrarUsuarios, permissoesUsuario?.isMaster])
+
+  function bloquearUsuarioMasterParaAdmin(usuario) {
+    if (podeGerenciarUsuarioEmpresa(usuario)) return false
+    if (usuarioEmpresaEhMaster(usuario)) {
+      mostrarAviso('Usuário master não pode ser alterado por admin comum.', 'erro')
+      return true
+    }
+    return false
+  }
+
   const podeAcessarConfiguracoes = useCallback(() => {
     return Boolean(permissoesUsuario?.canAccessSettings || temPermissao(['admin', 'gerente']))
   }, [permissoesUsuario?.canAccessSettings, temPermissao])
@@ -729,6 +746,11 @@ export default function App() {
       return
     }
 
+    if (!permissoesUsuario?.isMaster && perfilIndicaMaster(perfilConviteUsuario)) {
+      mostrarAviso('Usuário master não pode ser alterado por admin comum.', 'erro')
+      return
+    }
+
     const email = emailConviteUsuario.trim().toLowerCase()
 
     if (!email || !email.includes('@')) {
@@ -777,6 +799,8 @@ export default function App() {
       return
     }
 
+    if (bloquearUsuarioMasterParaAdmin(usuario)) return
+
     const nome = usuario.nome || usuario.email || 'este usuário'
 
     abrirConfirmacao({
@@ -798,6 +822,13 @@ export default function App() {
   async function atualizarPerfilUsuarioEmpresa(usuario, novoPerfil) {
     if (!podeAdministrarUsuarios()) {
       mostrarAviso('Apenas administradores podem alterar perfis.', 'erro')
+      return
+    }
+
+    if (bloquearUsuarioMasterParaAdmin(usuario)) return
+
+    if (!permissoesUsuario?.isMaster && perfilIndicaMaster(novoPerfil)) {
+      mostrarAviso('Usuário master não pode ser alterado por admin comum.', 'erro')
       return
     }
 
@@ -841,6 +872,8 @@ export default function App() {
       mostrarAviso('Apenas administradores podem alterar filiais dos usuários.', 'erro')
       return
     }
+
+    if (bloquearUsuarioMasterParaAdmin(usuario)) return
 
     if (!usuario?.id) {
       mostrarAviso('Este usuário precisa estar cadastrado na empresa para receber filiais.', 'erro')
@@ -887,6 +920,8 @@ export default function App() {
       mostrarAviso('Apenas administradores podem remover usuários.', 'erro')
       return
     }
+
+    if (bloquearUsuarioMasterParaAdmin(usuario)) return
 
     const usuarioAtual = usuario.user_id && usuarioLogado?.id && usuario.user_id === usuarioLogado.id
 
@@ -3572,6 +3607,7 @@ export default function App() {
         EmptyState={EmptyState}
         podeAcessarConfiguracoes={podeAcessarConfiguracoes}
         podeAdministrarUsuarios={podeAdministrarUsuarios}
+        podeGerenciarUsuarioEmpresa={podeGerenciarUsuarioEmpresa}
         navegarPara={navegarPara}
         usuarioLogado={usuarioLogado}
         normalizarPerfil={normalizarPerfil}

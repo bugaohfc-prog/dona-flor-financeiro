@@ -9,32 +9,11 @@ const PROFILE_OPTIONS = [
   { value: 'operador', label: 'Operador' }
 ]
 
-const PERFIS_MASTER = new Set(['master', 'owner', 'superadmin', 'super_admin'])
-
-function perfilEhMasterLocal(perfil) {
-  return PERFIS_MASTER.has(String(perfil || '').toLowerCase().trim())
-}
-
-function usuarioEhMasterLocal(usuario = {}) {
-  return Boolean(
-    usuario?.isMaster === true ||
-    usuario?.is_master === true ||
-    usuario?.master === true ||
-    perfilEhMasterLocal(usuario?.perfil_original) ||
-    perfilEhMasterLocal(usuario?.perfilOriginal) ||
-    perfilEhMasterLocal(usuario?.perfil_bruto) ||
-    perfilEhMasterLocal(usuario?.perfil) ||
-    perfilEhMasterLocal(usuario?.tipo) ||
-    perfilEhMasterLocal(usuario?.role)
-  )
-}
-
 export default function UsuariosPage({
   styles,
   EmptyState,
   podeAcessarConfiguracoes,
   podeAdministrarUsuarios,
-  podeGerenciarUsuarioEmpresa,
   navegarPara,
   usuarioLogado,
   normalizarPerfil,
@@ -219,14 +198,8 @@ export default function UsuariosPage({
             const atual = usuario.user_id && usuarioLogado?.id && usuario.user_id === usuarioLogado.id
             const pendente = !usuario.user_id
             const perfilNormalizado = normalizarPerfil(usuario.perfil)
-            const usuarioMaster = usuarioEhMasterLocal(usuario)
-            const perfilVisual = usuarioMaster ? 'master' : perfilNormalizado
-            const perfilLabelVisual = usuarioMaster ? 'Master' : primeiraLetraMaiuscula(perfilNormalizado)
             const filiaisSelecionadas = filiaisUsuariosEmpresa[usuario.id] || []
             const acessoTotalFiliais = filiaisSelecionadas.length === 0
-            const podeGerenciarUsuario = typeof podeGerenciarUsuarioEmpresa === 'function'
-              ? podeGerenciarUsuarioEmpresa(usuario)
-              : podeEditarUsuarios
 
             return (
               <article key={usuario.id || usuario.user_id || usuario.email} className="user-card userCard users-user-card">
@@ -241,44 +214,18 @@ export default function UsuariosPage({
                   </div>
 
                   <div className="users-user-controls">
-                    <span
-                      className={`roleBadge ${perfilVisual === 'master' ? 'admin' : perfilVisual}`}
-                      style={perfilVisual === 'master' ? { background: '#fef3c7', color: '#92400e' } : undefined}
+                    <span className={`roleBadge ${perfilNormalizado}`}>{perfilNormalizado}</span>
+                    <select
+                      className="user-role-select users-role-select"
+                      style={styles.input}
+                      value={perfilNormalizado}
+                      disabled={!podeEditarUsuarios}
+                      onChange={(event) => atualizarPerfilUsuarioEmpresa(usuario, event.target.value)}
                     >
-                      {perfilLabelVisual}
-                    </span>
-
-                    {usuarioMaster ? (
-                      <div
-                        className="user-role-select users-role-select"
-                        style={{
-                          ...styles.input,
-                          display: 'flex',
-                          alignItems: 'center',
-                          minHeight: 38,
-                          opacity: 0.72,
-                          cursor: 'not-allowed',
-                          background: '#f8fafc',
-                          color: '#64748b'
-                        }}
-                        aria-label="Perfil protegido: Master"
-                        title="Usuário master protegido"
-                      >
-                        Master
-                      </div>
-                    ) : (
-                      <select
-                        className="user-role-select users-role-select"
-                        style={styles.input}
-                        value={perfilNormalizado}
-                        disabled={!podeGerenciarUsuario}
-                        onChange={(event) => atualizarPerfilUsuarioEmpresa(usuario, event.target.value)}
-                      >
-                        {PROFILE_OPTIONS.map((perfil) => (
-                          <option key={perfil.value} value={perfil.value}>{perfil.label}</option>
-                        ))}
-                      </select>
-                    )}
+                      {PROFILE_OPTIONS.map((perfil) => (
+                        <option key={perfil.value} value={perfil.value}>{perfil.label}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -291,7 +238,7 @@ export default function UsuariosPage({
                     <button
                       type="button"
                       className="user-branch-clear"
-                      disabled={!podeGerenciarUsuario || salvandoFilialUsuario === usuario.id}
+                      disabled={!podeEditarUsuarios || salvandoFilialUsuario === usuario.id}
                       onClick={() => liberarTodasFiliaisUsuario(usuario)}
                       title="Deixar o usuário com acesso a todas as filiais da empresa"
                     >
@@ -309,7 +256,7 @@ export default function UsuariosPage({
                           <input
                             type="checkbox"
                             checked={selecionada}
-                            disabled={!podeGerenciarUsuario || salvandoFilialUsuario === usuario.id}
+                            disabled={!podeEditarUsuarios || salvandoFilialUsuario === usuario.id}
                             onChange={() => alternarFilialUsuario(usuario, filial.id)}
                           />
                           <span>{filial.nome || filial.nome_filial || filial.descricao || 'Filial'}</span>
@@ -320,32 +267,24 @@ export default function UsuariosPage({
                 </div>
 
                 {podeEditarUsuarios && (
-                  podeGerenciarUsuario ? (
-                    <div className="user-actions users-user-actions">
-                      <button
-                        style={styles.btnSecundario}
-                        onClick={() => enviarAcessoUsuarioEmpresa(usuario)}
-                        title="Enviar link de acesso por e-mail."
-                      >
-                        Enviar link
-                      </button>
+                  <div className="user-actions users-user-actions">
+                    <button
+                      style={styles.btnSecundario}
+                      onClick={() => enviarAcessoUsuarioEmpresa(usuario)}
+                      title="Enviar link de acesso por e-mail."
+                    >
+                      Enviar link
+                    </button>
 
-                      <button
-                        style={styles.btnExcluir}
-                        disabled={atual}
-                        onClick={() => removerUsuarioEmpresa(usuario)}
-                        title={atual ? 'Você não pode remover o próprio acesso.' : 'Remover usuário'}
-                      >
-                        Remover
-                      </button>
-                    </div>
-                  ) : (
-                    <div
-                      className="user-actions users-user-actions"
-                      style={{ minHeight: 34, paddingTop: 0 }}
-                      aria-hidden="true"
-                    />
-                  )
+                    <button
+                      style={styles.btnExcluir}
+                      disabled={atual}
+                      onClick={() => removerUsuarioEmpresa(usuario)}
+                      title={atual ? 'Você não pode remover o próprio acesso.' : 'Remover usuário'}
+                    >
+                      Remover
+                    </button>
+                  </div>
                 )}
               </article>
             )

@@ -194,8 +194,15 @@ export async function removerUsuarioEmpresa({ empresaId, usuario }) {
 }
 
 
-export async function enviarAcessoUsuarioEmpresa({ usuario }) {
+const MENSAGEM_ENVIO_ACESSO = 'Envio solicitado. Se o usuário estiver apto, receberá o link por e-mail.'
+
+export async function enviarAcessoUsuarioEmpresa({ empresaId, usuario }) {
+  const empresa = String(empresaId || '').trim()
   const email = String(usuario?.email || '').trim().toLowerCase()
+
+  if (!empresa) {
+    throw new Error('Empresa não identificada para envio de acesso.')
+  }
 
   if (!email || !email.includes('@')) {
     throw new Error('Este usuário não possui e-mail válido para envio de acesso.')
@@ -205,28 +212,25 @@ export async function enviarAcessoUsuarioEmpresa({ usuario }) {
 
   const { data: conviteData, error: conviteError } = await supabase.functions.invoke('convidar-usuario', {
     body: {
+      empresaId: empresa,
       email,
       nome: usuario.nome || '',
       redirectTo
     }
   })
 
-  if (!conviteError) {
-    return {
-      tipo: 'convite',
-      mensagem: conviteData?.message || 'Convite enviado para o e-mail do usuário.'
-    }
+  if (conviteError) {
+    console.warn('Não foi possível solicitar envio de acesso:', conviteError)
+    throw new Error(MENSAGEM_ENVIO_ACESSO)
   }
 
-  const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo
-  })
-
-  if (resetError) throw resetError
+  if (conviteData?.ok === false) {
+    console.warn('Envio de acesso retornou status não conclusivo.')
+  }
 
   return {
-    tipo: 'reset',
-    mensagem: 'Envio solicitado. Se este e-mail já existir no Auth, o usuário receberá o link para criar/redefinir a senha.'
+    tipo: 'convite',
+    mensagem: conviteData?.message || MENSAGEM_ENVIO_ACESSO
   }
 }
 

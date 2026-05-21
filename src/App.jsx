@@ -773,6 +773,11 @@ export default function App() {
   }
 
   async function enviarAcessoUsuarioEmpresa(usuario) {
+    if (!empresaId) {
+      mostrarAviso('Empresa não identificada.', 'erro')
+      return
+    }
+
     if (!podeAdministrarUsuarios()) {
       mostrarAviso('Apenas administradores podem enviar acesso ou reset de senha.', 'erro')
       return
@@ -797,7 +802,7 @@ export default function App() {
         }
 
         try {
-          const resultado = await enviarAcessoUsuarioEmpresaService({ usuario })
+          const resultado = await enviarAcessoUsuarioEmpresaService({ empresaId, usuario })
           mostrarAviso(resultado.mensagem, 'info')
         } catch (error) {
           avisarErro(error)

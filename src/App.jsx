@@ -1929,38 +1929,115 @@ export default function App() {
     return ''
   }
 
-  function converterDataExcel(valor) {
-    if (!valor) return null
+  function normalizarTextoImportacao(valor) {
+    return String(valor || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
 
+  function normalizarNomeImportacao(valor) {
+    return String(valor || '').trim().replace(/\s+/g, ' ')
+  }
+
+  function chaveNomeImportacao(valor) {
+    return normalizarTextoImportacao(valor)
+  }
+
+  function dataIsoValida(valor) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(valor || ''))) return false
+
+    const [ano, mes, dia] = String(valor).split('-').map(Number)
+    const data = new Date(Date.UTC(ano, mes - 1, dia))
+
+    return data.getUTCFullYear() === ano
+      && data.getUTCMonth() === mes - 1
+      && data.getUTCDate() === dia
+  }
+
+  function converterDataExcel(valor) {
+    if (valor === null || valor === undefined || valor === '') return null
+
+    let dataBanco = null
     if (typeof valor === 'number') {
       const base = new Date(Date.UTC(1899, 11, 30))
       base.setUTCDate(base.getUTCDate() + valor)
-      return base.toISOString().slice(0, 10)
+      dataBanco = base.toISOString().slice(0, 10)
+      return dataIsoValida(dataBanco) ? dataBanco : null
     }
 
     const texto = String(valor).trim()
     if (!texto) return null
 
-    if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) return texto
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(texto)) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+      dataBanco = texto
+    } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(texto)) {
       const [dia, mes, ano] = texto.split('/')
-      return `${ano}-${mes}-${dia}`
+      dataBanco = `${ano}-${mes}-${dia}`
+    } else {
+      dataBanco = formatarDataParaBanco(texto)
     }
 
-    return formatarDataParaBanco(texto)
+    return dataIsoValida(dataBanco) ? dataBanco : null
   }
 
   function converterValorExcel(valor) {
-    if (typeof valor === 'number') return valor
-    const texto = String(valor || '')
-      .replace(/R\$/gi, '')
-      .replace(/\./g, '')
-      .replace(',', '.')
-      .trim()
-    return Number(texto || 0)
+    if (typeof valor === 'number') {
+      return Number.isFinite(valor) && valor !== 0 ? valor : null
+    }
+
+    const texto = String(valor || '').replace(/[^\d,.-]/g, '').trim()
+    if (!texto || texto === '-' || texto === ',' || texto === '.') return null
+
+    const ultimaVirgula = texto.lastIndexOf(',')
+    const ultimoPonto = texto.lastIndexOf('.')
+    let normalizado = texto
+
+    if (ultimaVirgula >= 0 && ultimoPonto >= 0) {
+      normalizado = ultimaVirgula > ultimoPonto
+        ? texto.replace(/\./g, '').replace(/,/g, '.')
+        : texto.replace(/,/g, '')
+    } else if (ultimaVirgula >= 0) {
+      normalizado = texto.replace(',', '.')
+    } else if (ultimoPonto >= 0) {
+      const partes = texto.split('.')
+      const pontosParecemMilhar = partes.length > 1 && partes.slice(1).every((parte) => /^\d{3}$/.test(parte))
+      normalizado = pontosParecemMilhar ? texto.replace(/\./g, '') : texto
+    }
+
+    const numero = Number(normalizado)
+    return Number.isFinite(numero) && numero !== 0 ? numero : null
   }
 
-  function separarLinhaCsv(linha) {
+  function converterStatusImportacao(valor) {
+    const status = normalizarTextoImportacao(valor)
+    if (!status) return 'pendente'
+
+    if (['pago', 'paga', 'quitado', 'quitada', 'recebido', 'recebida'].includes(status)) {
+      return 'pago'
+    }
+
+    if (['pendente', 'a pagar', 'nao pago', 'aberto', 'em aberto'].includes(status)) {
+      return 'pendente'
+    }
+
+    return null
+  }
+
+  function detectarDelimitadorCsv(texto) {
+    const linhas = String(texto || '')
+      .replace(/^\uFEFF/, '')
+      .replace(/^﻿/, '')
+      .split(/\r?\n/)
+      .filter((linha) => linha.trim())
+
+    const linhaComPontoEVirgula = linhas.find((linha) => linha.includes(';'))
+    return linhaComPontoEVirgula ? ';' : ','
+  }
+
+  function separarLinhaCsv(linha, delimitador) {
     const resultado = []
     let atual = ''
     let dentroDeAspas = false
@@ -1980,7 +2057,7 @@ export default function App() {
         continue
       }
 
-      if ((char === ';' || char === ',') && !dentroDeAspas) {
+      if (char === delimitador && !dentroDeAspas) {
         resultado.push(atual.trim())
         atual = ''
         continue
@@ -1994,22 +2071,65 @@ export default function App() {
   }
 
   function csvParaJson(texto) {
-    const linhas = String(texto || '')
+    const textoLimpo = String(texto || '')
+      .replace(/^\uFEFF/, '')
       .replace(/^﻿/, '')
+
+    const linhas = textoLimpo
       .split(/\r?\n/)
       .filter((linha) => linha.trim())
 
     if (linhas.length < 2) return []
 
-    const cabecalho = separarLinhaCsv(linhas[0])
+    const delimitador = detectarDelimitadorCsv(textoLimpo)
+    const cabecalho = separarLinhaCsv(linhas[0], delimitador)
 
     return linhas.slice(1).map((linha) => {
-      const valores = separarLinhaCsv(linha)
+      const valores = separarLinhaCsv(linha, delimitador)
       return cabecalho.reduce((obj, chave, index) => {
         obj[chave] = valores[index] || ''
         return obj
       }, {})
     })
+  }
+
+  function descreverErroLinhaImportacao(linha) {
+    const problemas = []
+    if (!linha.descricao) problemas.push('descrição')
+    if (!Number.isFinite(linha.valor) || linha.valor === 0) problemas.push('valor')
+    if (!linha.data_vencimento) problemas.push('vencimento')
+    if (!linha.status) problemas.push('status')
+
+    return problemas.length > 0
+      ? `Linha ${linha.linha}: confira ${problemas.join(', ')}.`
+      : ''
+  }
+
+  function prepararLinhaImportacao(linha, index) {
+    const descricaoExcel = obterCampoExcel(linha, ['descricao', 'descrição', 'conta', 'nome', 'fornecedor'])
+    const valorExcel = obterCampoExcel(linha, ['valor', 'valor pago', 'total'])
+    const vencimentoExcel = obterCampoExcel(linha, ['vencimento', 'data vencimento', 'data_vencimento', 'data'])
+    const statusExcel = obterCampoExcel(linha, ['status', 'situacao', 'situação'])
+    const centroExcel = obterCampoExcel(linha, ['centro', 'centro de custo', 'categoria', 'setor'])
+    const filialExcel = obterCampoExcel(linha, ['filial', 'loja', 'unidade'])
+
+    const preparada = {
+      linha: index + 2,
+      descricao: primeiraLetraMaiuscula(normalizarNomeImportacao(descricaoExcel)),
+      valor: converterValorExcel(valorExcel),
+      data_vencimento: converterDataExcel(vencimentoExcel),
+      status: converterStatusImportacao(statusExcel),
+      centro: normalizarNomeImportacao(centroExcel),
+      filial: normalizarNomeImportacao(filialExcel)
+    }
+
+    const erro = descreverErroLinhaImportacao(preparada)
+
+    return {
+      ...preparada,
+      valida: !erro,
+      erro
+    }
   }
 
   async function lerArquivoExcel(event) {
@@ -2031,27 +2151,18 @@ export default function App() {
     reader.onload = (e) => {
       const linhas = csvParaJson(e.target.result)
 
-      const preparadas = linhas.map((linha, index) => {
-        const descricaoExcel = obterCampoExcel(linha, ['descricao', 'descrição', 'conta', 'nome', 'fornecedor'])
-        const valorExcel = obterCampoExcel(linha, ['valor', 'valor pago', 'total'])
-        const vencimentoExcel = obterCampoExcel(linha, ['vencimento', 'data vencimento', 'data_vencimento', 'data'])
-        const statusExcel = String(obterCampoExcel(linha, ['status', 'situacao', 'situação']) || 'pendente').toLowerCase()
-        const centroExcel = obterCampoExcel(linha, ['centro', 'centro de custo', 'categoria', 'setor'])
-        const filialExcel = obterCampoExcel(linha, ['filial', 'loja', 'unidade'])
-
-        return {
-          linha: index + 2,
-          descricao: primeiraLetraMaiuscula(String(descricaoExcel || '').trim()),
-          valor: converterValorExcel(valorExcel),
-          data_vencimento: converterDataExcel(vencimentoExcel),
-          status: statusExcel.includes('pag') ? 'pago' : 'pendente',
-          centro: String(centroExcel || '').trim(),
-          filial: String(filialExcel || '').trim()
-        }
-      }).filter((linha) => linha.descricao || linha.valor || linha.data_vencimento)
+      const preparadas = linhas
+        .filter((linha) => Object.values(linha || {}).some((valor) => String(valor || '').trim()))
+        .map(prepararLinhaImportacao)
 
       setLinhasImportacao(preparadas)
-      setStatusImportacao(`${preparadas.length} linha(s) preparada(s) para revisão.`)
+
+      const primeiraInvalida = preparadas.find((linha) => !linha.valida)
+      if (primeiraInvalida) {
+        setStatusImportacao(`Planilha com erro. ${primeiraInvalida.erro}`)
+      } else {
+        setStatusImportacao(`${preparadas.length} linha(s) preparada(s) para revisão.`)
+      }
     }
 
     reader.readAsText(file, 'UTF-8')
@@ -2063,17 +2174,29 @@ export default function App() {
       return
     }
 
-    const invalidas = linhasImportacao.filter((linha) => !linha.descricao || !linha.valor || !linha.data_vencimento)
-    if (invalidas.length > 0) {
-      mostrarAviso(`Existem ${invalidas.length} linha(s) sem descrição, valor ou vencimento. Corrija a planilha e importe novamente.`, 'erro')
+    if (linhasImportacao.length === 0) {
+      mostrarAviso('Nenhuma linha válida encontrada para importar.', 'erro')
       return
     }
 
-    const centrosCriados = { ...Object.fromEntries(centros.map((centro) => [centro.nome.toLowerCase(), centro.id])) }
-    const filiaisCriadas = { ...Object.fromEntries((filiais || []).map((filial) => [filial.nome.toLowerCase(), filial.id])) }
+    const invalidas = linhasImportacao.filter((linha) => !linha.valida)
+    if (invalidas.length > 0) {
+      mostrarAviso(`Há erro na planilha. ${invalidas[0].erro} Corrija e importe novamente.`, 'erro')
+      return
+    }
+
+    const centrosCriados = {
+      ...Object.fromEntries(centros.map((centro) => [chaveNomeImportacao(centro.nome), centro.id]).filter(([chave, id]) => chave && id))
+    }
+    const filiaisCriadas = {
+      ...Object.fromEntries((filiais || []).map((filial) => [chaveNomeImportacao(filial.nome), filial.id]).filter(([chave, id]) => chave && id))
+    }
 
     for (const linha of linhasImportacao) {
-      if (linha.filial && !filiaisCriadas[linha.filial.toLowerCase()]) {
+      const chaveFilial = chaveNomeImportacao(linha.filial)
+      const chaveCentro = chaveNomeImportacao(linha.centro)
+
+      if (linha.filial && !filiaisCriadas[chaveFilial]) {
         const { data, error } = await supabase
           .from('df_filiais')
           .insert([{ nome: primeiraLetraMaiuscula(linha.filial), empresa_id: empresaId }])
@@ -2085,10 +2208,15 @@ export default function App() {
         }
 
         const filialNova = Array.isArray(data) ? data[0] : data
-        filiaisCriadas[linha.filial.toLowerCase()] = filialNova?.id
+        if (!filialNova?.id) {
+          mostrarAviso(`Não foi possível preparar a filial informada na linha ${linha.linha}.`, 'erro')
+          return
+        }
+
+        filiaisCriadas[chaveFilial] = filialNova.id
       }
 
-      if (linha.centro && !centrosCriados[linha.centro.toLowerCase()]) {
+      if (linha.centro && !centrosCriados[chaveCentro]) {
         const { data, error } = await supabase
           .from('df_centros_custo')
           .insert([{ nome: primeiraLetraMaiuscula(linha.centro), empresa_id: empresaId }])
@@ -2100,8 +2228,25 @@ export default function App() {
         }
 
         const centroNovo = Array.isArray(data) ? data[0] : data
-        centrosCriados[linha.centro.toLowerCase()] = centroNovo?.id
+        if (!centroNovo?.id) {
+          mostrarAviso(`Não foi possível preparar o centro de custo informado na linha ${linha.linha}.`, 'erro')
+          return
+        }
+
+        centrosCriados[chaveCentro] = centroNovo.id
       }
+    }
+
+    const linhaSemCentroResolvido = linhasImportacao.find((linha) => linha.centro && !centrosCriados[chaveNomeImportacao(linha.centro)])
+    if (linhaSemCentroResolvido) {
+      mostrarAviso(`Não foi possível vincular o centro de custo informado na linha ${linhaSemCentroResolvido.linha}.`, 'erro')
+      return
+    }
+
+    const linhaSemFilialResolvida = linhasImportacao.find((linha) => linha.filial && !filiaisCriadas[chaveNomeImportacao(linha.filial)])
+    if (linhaSemFilialResolvida) {
+      mostrarAviso(`Não foi possível vincular a filial informada na linha ${linhaSemFilialResolvida.linha}.`, 'erro')
+      return
     }
 
     const payload = linhasImportacao.map((linha) => ({
@@ -2110,8 +2255,8 @@ export default function App() {
       data_vencimento: linha.data_vencimento,
       vencimento: linha.data_vencimento,
       status: linha.status,
-      centro_custo_id: linha.centro ? centrosCriados[linha.centro.toLowerCase()] || null : null,
-      filial_id: linha.filial ? filiaisCriadas[linha.filial.toLowerCase()] || null : null,
+      centro_custo_id: linha.centro ? centrosCriados[chaveNomeImportacao(linha.centro)] : null,
+      filial_id: linha.filial ? filiaisCriadas[chaveNomeImportacao(linha.filial)] : null,
       enviar_whatsapp: configWhatsapp,
       enviar_email: configEmail,
       enviar_push: configPush,

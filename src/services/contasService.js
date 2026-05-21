@@ -42,6 +42,33 @@ export async function validarCentroCustoDaEmpresa(supabase, centroCustoId, empre
   return data.id
 }
 
+async function contarUsoCentroCusto(supabase, tabela, centroCustoId, empresaId) {
+  const { count, error } = await supabase
+    .from(tabela)
+    .select('id', { count: 'exact', head: true })
+    .eq('empresa_id', empresaId)
+    .eq('centro_custo_id', centroCustoId)
+
+  if (error) throw error
+  return count || 0
+}
+
+export async function verificarUsoCentroCusto(supabase, centroCustoId, empresaId) {
+  if (!centroCustoId) throw new Error('Centro de custo não identificado.')
+  assertEmpresaId(empresaId)
+
+  const [contas, recorrencias] = await Promise.all([
+    contarUsoCentroCusto(supabase, 'df_contas', centroCustoId, empresaId),
+    contarUsoCentroCusto(supabase, 'df_contas_recorrentes', centroCustoId, empresaId)
+  ])
+
+  return {
+    contas,
+    recorrencias,
+    emUso: contas > 0 || recorrencias > 0
+  }
+}
+
 
 export async function validarFilialDaEmpresa(supabase, filialId, empresaId) {
   if (!filialId) return null

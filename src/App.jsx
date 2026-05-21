@@ -42,6 +42,7 @@ import { erroEhSessaoExpirada, mensagemSeguraErro } from './utils/session'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
 import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario } from './services/permissoesService'
 import { listarFiliaisPorEmpresa } from './services/filiaisService'
+import { verificarUsoCentroCusto } from './services/contasService'
 import './styles.css'
 import styles from './styles/appStyles.js'
 import menuSections from './config/menuSections.js'
@@ -1673,6 +1674,24 @@ export default function App() {
   }
 
   async function excluirCentro(id) {
+    if (!empresaId) {
+      mostrarAviso('Usuário sem empresa vinculada.', 'erro')
+      return
+    }
+
+    try {
+      const usoCentro = await verificarUsoCentroCusto(supabase, id, empresaId)
+
+      if (usoCentro.emUso) {
+        mostrarAviso('Este centro de custo não pode ser excluído porque existem contas ou recorrências vinculadas.', 'erro')
+        return
+      }
+    } catch (error) {
+      console.warn('Falha ao verificar uso do centro de custo:', error)
+      mostrarAviso('Não foi possível verificar se o centro de custo está em uso. Tente novamente.', 'erro')
+      return
+    }
+
     const { error } = await supabase
       .from('df_centros_custo')
       .delete()

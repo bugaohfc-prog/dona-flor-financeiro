@@ -20,6 +20,8 @@ import {
 import { deveGerarRecorrenciaNoMes, montarDataRecorrente } from '../utils/recorrencia'
 import { mensagemSeguraErro } from '../utils/session'
 
+const CENTRO_CUSTO_INVALIDO_MENSAGEM = 'Centro de custo indisponível. Atualize a página ou selecione outro centro de custo.'
+
 export function useContas() {
   const [contas, setContas] = useState([])
   const [contasLixeira, setContasLixeira] = useState([])
@@ -68,9 +70,15 @@ export function useContas() {
   }
 
 
-  async function resolverCentroCustoSeguro(supabase, empresaId, centroCustoId) {
+  async function resolverCentroCustoSeguro(supabase, empresaId, centroCustoId, opcoes = {}) {
     if (!centroCustoId) return null
-    return validarCentroCustoDaEmpresa(supabase, centroCustoId, empresaId)
+
+    const centroValidado = await validarCentroCustoDaEmpresa(supabase, centroCustoId, empresaId)
+    if (!centroValidado && opcoes.bloquearInvalido) {
+      throw new Error(CENTRO_CUSTO_INVALIDO_MENSAGEM)
+    }
+
+    return centroValidado
   }
 
   async function resolverFilialSegura(supabase, empresaId, filialId) {
@@ -310,7 +318,15 @@ export function useContas() {
       return
     }
 
-    const centroCustoSeguro = await resolverCentroCustoSeguro(supabase, empresaId, centroCustoId)
+    let centroCustoSeguro = null
+
+    try {
+      centroCustoSeguro = await resolverCentroCustoSeguro(supabase, empresaId, centroCustoId, { bloquearInvalido: true })
+    } catch (error) {
+      mostrarAviso(error?.message || CENTRO_CUSTO_INVALIDO_MENSAGEM, 'erro')
+      return
+    }
+
     const filialSegura = await resolverFilialSegura(supabase, empresaId, filialId)
 
     const payload = {

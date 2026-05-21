@@ -9,11 +9,13 @@ Este diretório reúne os SQLs, conferências, relatórios e rollbacks versionad
 - Migration principal aplicada: versão corrigida sem dependência de `df_usuarios_empresas.status` / `ue.status`.
 - Saneamento complementar de `df_usuarios_empresas`: aplicado e validado em homologação.
 - Saneamento complementar de `df_usuarios_empresas`: aplicado e validado em produção.
+- Correção de segurança de `convidar-usuario` com `empresaId`: aplicada e validada em homologação.
 
 ## Documentos principais
 
 - `../RLS_HOMOLOGACAO_STATUS.md`: registro consolidado da aplicação, validação, produção e observações de segurança.
 - `2026-05-19-df-usuarios-empresas/`: pacote do saneamento complementar de `df_usuarios_empresas`.
+- `2026-05-21-convidar-usuario-empresa-id.md`: registro técnico da correção de autorização por empresa na Edge Function `convidar-usuario`.
 
 ## Pacote 2026-05-19 - df_usuarios_empresas
 

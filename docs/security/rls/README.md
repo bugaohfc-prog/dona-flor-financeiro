@@ -11,6 +11,7 @@ Este diretório reúne os SQLs, conferências, relatórios e rollbacks versionad
 - Saneamento complementar de `df_usuarios_empresas`: aplicado e validado em produção.
 - Correção de segurança de `convidar-usuario` com `empresaId`: aplicada e validada em homologação.
 - Guardrails de centro de custo: aplicados e validados sem alteração de SQL/RLS.
+- Guardrails do importador CSV: aplicados e validados sem alteração de SQL/RLS, permissões, duplicidade ou transação.
 
 ## Documentos principais
 
@@ -18,6 +19,7 @@ Este diretório reúne os SQLs, conferências, relatórios e rollbacks versionad
 - `2026-05-19-df-usuarios-empresas/`: pacote do saneamento complementar de `df_usuarios_empresas`.
 - `2026-05-21-convidar-usuario-empresa-id.md`: registro técnico da correção de autorização por empresa na Edge Function `convidar-usuario`.
 - `2026-05-21-centro-custo-guardrails.md`: registro técnico dos guardrails de exclusão e salvamento de centro de custo.
+- `2026-05-21-importador-csv-guardrails.md`: registro técnico dos guardrails mínimos aplicados ao importador CSV.
 
 ## Pacote 2026-05-19 - df_usuarios_empresas
 

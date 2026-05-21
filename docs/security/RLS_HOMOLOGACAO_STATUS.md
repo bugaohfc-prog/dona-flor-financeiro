@@ -1,9 +1,10 @@
-# Dona Flor Financeiro — Registro de Homologação RLS
+# Dona Flor Financeiro — Registro de Homologação e Produção RLS
 
 **Data:** 2026-05-19  
-**Status:** Homologação RLS validada  
-**Ambiente:** Supabase de homologação  
-**Produção:** Não aplicada ainda  
+**Atualização:** 2026-05-20  
+**Status:** RLS principal aplicada e validada em homologação e produção  
+**Ambientes:** Supabase de homologação e produção  
+**Produção:** Aplicada e validada  
 
 ---
 
@@ -12,6 +13,8 @@
 Este documento registra a fase de saneamento e validação de Row Level Security (RLS) do projeto **Dona Flor Financeiro**.
 
 A base frontend atual já havia sido validada e subida ao Git antes da aplicação da RLS em homologação. A etapa de RLS foi tratada como fase separada de segurança, sem alteração de frontend, CSS, autenticação, rotas, automações, importador CSV ou regras de negócio.
+
+Após validação em homologação, a RLS principal foi aplicada e validada também em produção. Em seguida, houve saneamento complementar específico de `df_usuarios_empresas`, igualmente aplicado e validado em homologação e produção.
 
 ---
 
@@ -26,11 +29,11 @@ Antes da aplicação da migration RLS em homologação, a versão validada conti
 - Proteção frontend contra admin comum remover/editar usuário master;
 - Build validado;
 - Pipedream e envio automático de e-mail validados;
-- RLS ainda não aplicada em produção.
+- RLS ainda não aplicada em produção naquele momento.
 
 ---
 
-## 3. Escopo da migration RLS homologada
+## 3. Escopo da migration RLS homologada e aplicada
 
 A migration validada teve como objetivo sanear policies permissivas reais do Supabase, principalmente nas tabelas:
 
@@ -85,7 +88,7 @@ df_usuarios_empresas.status
 
 O banco real não possuía essa coluna. A migration foi ajustada para não depender de `ue.status`.
 
-Após o ajuste, a versão corrigida da migration foi aplicada em homologação com sucesso.
+Após o ajuste, a versão corrigida sem dependência de `ue.status` foi aplicada e validada em homologação. A mesma versão corrigida foi posteriormente aplicada e validada em produção.
 
 ---
 
@@ -113,11 +116,41 @@ A conferência negativa final retornou sucesso, sem ocorrência de:
 - uso real de `is_admin()`;
 - uso real de `get_empresa_usuario()`.
 
+Os SQLs e documentos versionados da etapa RLS ficam em `docs/security/rls`. O índice geral está em `docs/security/rls/README.md`, e o pacote complementar de `df_usuarios_empresas` está em `docs/security/rls/2026-05-19-df-usuarios-empresas/`.
+
 ---
 
-## 7. Testes funcionais validados
+## 7. Saneamento complementar de df_usuarios_empresas
 
-Após a aplicação da RLS em homologação, os seguintes testes foram validados:
+Após a RLS principal, foi executado saneamento complementar específico de `public.df_usuarios_empresas`.
+
+Objetivo do complemento:
+
+- Remover policies antigas de escrita que poderiam contornar a proteção contra alteração/remoção de usuário master;
+- Recriar policies saneadas de `SELECT`, `INSERT`, `UPDATE` e `DELETE`;
+- Validar ausência de policies perigosas remanescentes;
+- Manter rollback emergencial documentado.
+
+Status do complemento:
+
+- Homologação: aplicado e validado;
+- Produção: aplicado e validado.
+
+Documentos do complemento:
+
+- `docs/security/rls/2026-05-19-df-usuarios-empresas/README.md`
+- `docs/security/rls/2026-05-19-df-usuarios-empresas/01_backup_df_usuarios_empresas.sql`
+- `docs/security/rls/2026-05-19-df-usuarios-empresas/02_migration_df_usuarios_empresas_cleanup.sql`
+- `docs/security/rls/2026-05-19-df-usuarios-empresas/03_conferencia_df_usuarios_empresas.sql`
+- `docs/security/rls/2026-05-19-df-usuarios-empresas/04_conferencia_negativa_df_usuarios_empresas.sql`
+- `docs/security/rls/2026-05-19-df-usuarios-empresas/05_rollback_df_usuarios_empresas.sql`
+- `docs/security/rls/2026-05-19-df-usuarios-empresas/relatorio_impacto_rls_df_usuarios_empresas.md`
+
+---
+
+## 8. Testes funcionais validados
+
+Após a aplicação da RLS, os seguintes testes foram validados em homologação e produção:
 
 ### Usuário admin Dona Flor
 
@@ -159,9 +192,9 @@ Após a aplicação da RLS em homologação, os seguintes testes foram validados
 
 ---
 
-## 8. Status final da homologação
+## 9. Status final
 
-A fase de RLS em homologação foi considerada **validada**.
+A fase de RLS foi considerada **validada em homologação e produção**.
 
 Estado final registrado:
 
@@ -170,35 +203,37 @@ Estado final registrado:
 - Menu, Billing e Configurações funcionando;
 - Proteção master frontend validada;
 - Pipedream/e-mail validado;
-- Migration RLS aplicada em homologação;
+- Migration RLS principal corrigida, sem dependência de `ue.status`, aplicada em homologação;
+- Migration RLS principal corrigida, sem dependência de `ue.status`, aplicada em produção;
+- Saneamento complementar de `df_usuarios_empresas` aplicado e validado em homologação;
+- Saneamento complementar de `df_usuarios_empresas` aplicado e validado em produção;
 - Conferências SQL aprovadas;
 - Testes funcionais RLS aprovados.
 
 ---
 
-## 9. Produção
+## 10. Produção
 
-Esta homologação **não significa aplicação automática em produção**.
+A etapa de produção foi concluída.
 
-Para produção, seguir obrigatoriamente esta ordem:
+Registro de produção:
 
-1. Fazer backup do Supabase produção;
-2. Salvar policies atuais de produção;
-3. Gerar e salvar SQL de rollback;
-4. Confirmar helpers existentes;
-5. Aplicar a migration RLS final corrigida;
-6. Rodar conferência negativa;
-7. Testar admin, master e usuário comum;
-8. Testar notas, billing, filiais e relatórios;
-9. Validar acesso cruzado entre empresas;
-10. Registrar evidências.
+1. Backup e conferências foram tratados antes da aplicação;
+2. A migration RLS final corrigida, sem `ue.status`, foi aplicada;
+3. As conferências negativas foram executadas;
+4. Os fluxos de admin, master e usuário comum foram testados;
+5. Notas, billing, filiais e relatórios foram validados;
+6. Acesso cruzado entre empresas foi validado;
+7. O saneamento complementar de `df_usuarios_empresas` foi aplicado e validado.
 
 ---
 
-## 10. Observações finais
+## 11. Observações finais
 
-A draft RLS antiga foi superada pela versão final corrigida sem dependência de `df_usuarios_empresas.status`.
+A draft RLS antiga foi superada pela versão final corrigida sem dependência de `df_usuarios_empresas.status` / `ue.status`.
 
-O SQL final aplicado em homologação deve ser preservado junto com o rollback gerado antes da aplicação.
+Os SQLs, conferências, relatórios e rollbacks versionados da etapa RLS devem permanecer em `docs/security/rls`.
 
-Este documento deve ser versionado no Git como registro de auditoria e homologação da etapa RLS.
+Rollbacks são apenas emergenciais. Eles devem ser usados somente após análise explícita do risco, pois podem restaurar permissões antigas já saneadas.
+
+Este documento deve ser versionado no Git como registro de auditoria, homologação e produção da etapa RLS.

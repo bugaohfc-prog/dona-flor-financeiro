@@ -35,48 +35,26 @@ export async function listarEmpresasMaster() {
   }))
 }
 
-export async function criarEmpresaMaster({ nome, masterUserId, masterEmail, masterNome }) {
+export async function criarEmpresaMaster({ nome, masterNome }) {
   const nomeLimpo = normalizarNomeEmpresa(nome)
   if (nomeLimpo.length < 2) throw new Error('Informe o nome da empresa.')
 
-  const { data: existente, error: erroConsulta } = await supabase
-    .from('df_empresas')
-    .select('id, nome')
-    .ilike('nome', nomeLimpo)
-    .limit(1)
+  const { data, error } = await supabase.functions.invoke('criar-empresa-master', {
+    body: {
+      nome: nomeLimpo,
+      masterNome
+    }
+  })
 
-  if (erroConsulta) throw erroConsulta
-  if (Array.isArray(existente) && existente.length > 0) {
-    throw new Error('Já existe uma empresa com esse nome.')
+  if (error) {
+    console.warn('Falha ao chamar criar-empresa-master:', error)
+    throw new Error('Não foi possível criar a empresa.')
+  }
+  if (!data?.ok || !data?.empresa?.id) {
+    throw new Error(data?.message || 'Não foi possível criar a empresa.')
   }
 
-  const { data: empresa, error } = await supabase
-    .from('df_empresas')
-    .insert([{ nome: nomeLimpo }])
-    .select('id, nome, created_at')
-    .single()
-
-  if (error) throw error
-
-  if (masterEmail || masterUserId) {
-    const payloadVinculo = {
-      empresa_id: empresa.id,
-      user_id: masterUserId || null,
-      email: String(masterEmail || '').trim().toLowerCase() || null,
-      nome: normalizarNomeEmpresa(masterNome) || String(masterEmail || '').split('@')[0] || 'Administrador',
-      perfil: 'admin'
-    }
-
-    const { error: vinculoError } = await supabase
-      .from('df_usuarios_empresas')
-      .insert([payloadVinculo])
-
-    if (vinculoError) {
-      console.warn('Empresa criada, mas não foi possível vincular o master automaticamente:', vinculoError.message)
-    }
-  }
-
-  return empresa
+  return data.empresa
 }
 
 export async function renomearEmpresaMaster({ empresaId, nome }) {

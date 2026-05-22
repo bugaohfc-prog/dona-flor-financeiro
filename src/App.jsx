@@ -610,12 +610,19 @@ export default function App() {
     return Boolean(permissoesUsuario?.canAccessSettings || temPermissao(['admin', 'gerente']))
   }, [permissoesUsuario?.canAccessSettings, temPermissao])
 
+  const podeImportarContas = useCallback(() => {
+    return podeAcessarConfiguracoes()
+  }, [podeAcessarConfiguracoes])
+
   const menuSectionsFiltradas = useMemo(() => menuSections
     .map((grupo) => ({
       ...grupo,
-      items: grupo.items.filter((item) => !item.masterOnly || permissoesUsuario?.canManageCompanies)
+      items: grupo.items.filter((item) => {
+        if (item.tela === 'importar') return podeImportarContas()
+        return !item.masterOnly || permissoesUsuario?.canManageCompanies
+      })
     }))
-    .filter((grupo) => grupo.items.length > 0), [permissoesUsuario?.canManageCompanies])
+    .filter((grupo) => grupo.items.length > 0), [permissoesUsuario?.canManageCompanies, podeImportarContas])
 
   async function recarregarEmpresasDisponiveis() {
     if (!usuarioLogado) return
@@ -2169,6 +2176,11 @@ export default function App() {
   }
 
   async function importarExcelParaContas() {
+    if (!podeImportarContas()) {
+      mostrarAviso('Seu perfil atual não permite importar contas.', 'erro')
+      return
+    }
+
     if (!empresaId) {
       mostrarAviso('Usuário sem empresa vinculada.', 'erro')
       return
@@ -3595,6 +3607,19 @@ export default function App() {
 
 
   if (telaAtual === 'importar') {
+    if (!podeImportarContas()) {
+      return renderAppFrame(
+        <>
+          <h1 style={styles.titulo}>Importar planilha</h1>
+          <section style={styles.cardConfiguracao}>
+            <h2 style={styles.subtitulo}>Acesso restrito</h2>
+            <p style={styles.textoNota}>Seu perfil atual não permite importar contas.</p>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
+          </section>
+        </>
+      )
+    }
+
     return renderAppFrame(
       <>
         <h1 style={styles.titulo}>📥 Importar planilha</h1>

@@ -1,14 +1,15 @@
 # Guardrails do importador CSV
 
 Data: 2026-05-21
+Atualização de permissão frontend: 2026-05-22
 
 ## Status
 
-Correção mínima aplicada e validada no fluxo de importação CSV.
+Correções mínimas aplicadas e validadas no fluxo de importação CSV.
 
-O ciclo não alterou RLS, policies, SQL, CSS/layout, Pipedream, billing, menu lateral, configurações/topo, `convidar-usuario`, centro de custo, notas, relatórios/dashboard ou onboarding.
+Os ciclos não alteraram RLS, policies, SQL, CSS/layout, Pipedream, billing, menu lateral estrutural, configurações/topo, `convidar-usuario`, centro de custo, notas, relatórios/dashboard ou onboarding.
 
-Arquivo funcional alterado no ciclo da correção:
+Arquivo funcional alterado nos ciclos da correção:
 
 - `src/App.jsx`
 
@@ -35,14 +36,38 @@ Reduzir risco de importação errada e perda silenciosa de classificação no im
 - Conta com filial informada não deve ser salva com `filial_id` nulo.
 - Conta sem centro continua permitida, mantendo o comportamento validado.
 
+## Permissão frontend
+
+O acesso ao importador CSV passou a ser permitido somente para perfis que podem acessar configurações:
+
+- master;
+- admin;
+- gerente.
+
+A regra frontend usa o helper `podeImportarContas()`, definido em `src/App.jsx`.
+
+`podeImportarContas()` reutiliza `podeAcessarConfiguracoes()`, preservando a regra já validada para master, admin e gerente.
+
+Guardrails de permissão aplicados:
+
+- operador/usuário comum não vê o item de menu `Importar contas`;
+- acesso direto à tela `importar` renderiza mensagem de `Acesso restrito`;
+- `importarExcelParaContas` valida permissão no início da função;
+- sem permissão, nenhuma criação ou inserção de centro, filial ou conta é executada;
+- a correção não alterou `src/config/menuSections.js`;
+- a correção não alterou o parser nem os guardrails de validação do CSV.
+
+Este é um guardrail frontend. Ele não substitui RLS/policies no Supabase.
+
 ## Fora do ciclo
 
 - Não foi implementado bloqueio de duplicidade de lançamentos.
-- Não houve alteração de permissão para acessar ou executar importação.
+- Não houve alteração de SQL/RLS/policies.
+- Não houve alteração do parser/guardrails CSV no ciclo de permissão frontend.
 - Não foi criada Edge Function.
 - Não foi criada RPC.
 - Não foi implementada transação.
-- Não houve alteração de SQL, constraint ou FK.
+- Não houve alteração de constraint ou FK.
 
 ## Risco residual conhecido
 
@@ -65,3 +90,9 @@ Duplicidade de contas também permanece fora deste ciclo: reimportar a mesma pla
 - Se centro informado não resolver/criar, a conta não é salva com centro nulo.
 - Conta sem centro continua permitida.
 - Se houver erro de validação em uma linha, centros e filiais de outras linhas não são criados por causa desse erro evidente.
+- Master vê `Importar contas` e consegue importar.
+- Admin vê `Importar contas` e consegue importar.
+- Gerente vê `Importar contas` e consegue importar.
+- Operador/usuário comum não vê `Importar contas`.
+- Operador/usuário comum em acesso direto à tela `importar` recebe `Acesso restrito`.
+- Operador/usuário comum não executa `importarExcelParaContas` sem permissão.

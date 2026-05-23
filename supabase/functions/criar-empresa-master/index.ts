@@ -72,13 +72,11 @@ serve(async (req) => {
       return resposta(401, { ok: false, message: GENERIC_ERROR_MESSAGE })
     }
 
-    const authorizationHeader = `Bearer ${accessToken}`
     const supabaseUser = createClient(supabaseUrl, anonKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
-      },
-      global: { headers: { Authorization: authorizationHeader } }
+      }
     })
 
     const { data: callerData, error: callerError } = await supabaseUser.auth.getUser(accessToken)
@@ -88,26 +86,39 @@ serve(async (req) => {
     }
 
     console.info('[criar-empresa-master] Usuario autenticado encontrado.', {
-      callerId: callerData.user.id
+      callerId: callerData.user.id,
+      email: callerData.user.email || null
     })
 
-    const { data: isMaster, error: masterError } = await supabaseUser.rpc('is_master')
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
+
+    const { data: vinculoMaster, error: masterError } = await supabaseAdmin
+      .from('df_usuarios_empresas')
+      .select('user_id, email, empresa_id, perfil')
+      .eq('user_id', callerData.user.id)
+      .eq('perfil', 'master')
+      .limit(1)
+      .maybeSingle()
+
     if (masterError) {
-      console.warn('[criar-empresa-master] Erro ao validar is_master.', {
+      console.warn('[criar-empresa-master] Erro ao consultar df_usuarios_empresas para validar master.', {
         callerId: callerData.user.id,
+        email: callerData.user.email || null,
         error: resumirErro(masterError)
       })
-      return resposta(403, { ok: false, message: GENERIC_ERROR_MESSAGE })
+      return resposta(500, { ok: false, message: GENERIC_ERROR_MESSAGE })
     }
 
-    console.info('[criar-empresa-master] Resultado de is_master.', {
+    console.info('[criar-empresa-master] Resultado da validacao master direta.', {
       callerId: callerData.user.id,
-      isMaster: Boolean(isMaster)
+      email: callerData.user.email || null,
+      isMaster: Boolean(vinculoMaster)
     })
 
-    if (!isMaster) {
+    if (!vinculoMaster) {
       console.warn('[criar-empresa-master] Bloqueio por usuario nao master.', {
-        callerId: callerData.user.id
+        callerId: callerData.user.id,
+        email: callerData.user.email || null
       })
       return resposta(403, { ok: false, message: GENERIC_ERROR_MESSAGE })
     }
@@ -118,8 +129,6 @@ serve(async (req) => {
     if (nomeLimpo.length < 2) {
       return resposta(200, { ok: false, message: 'Informe o nome da empresa.' })
     }
-
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
 
     const { data: empresasExistentes, error: erroConsulta } = await supabaseAdmin
       .from('df_empresas')
@@ -183,6 +192,11 @@ serve(async (req) => {
           callerId: callerData.user.id,
           empresaId: empresa.id,
           error: resumirErro(rollbackError)
+        })
+      } else {
+        console.info('[criar-empresa-master] Rollback da empresa realizado.', {
+          callerId: callerData.user.id,
+          empresaId: empresa.id
         })
       }
 

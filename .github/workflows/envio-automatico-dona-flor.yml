@@ -16,14 +16,19 @@ permissions:
   contents: read
 
 jobs:
-  dry-run:
-    name: DRY_RUN envio automatico
+  envio-automatico:
+    name: Envio automatico
     runs-on: ubuntu-latest
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       DRY_RUN: ${{ secrets.DRY_RUN }}
       MAIL_TO_FALLBACK: ${{ secrets.MAIL_TO_FALLBACK }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      MAIL_FROM: ${{ secrets.MAIL_FROM }}
       ALERTA_TIPO: ${{ github.event.inputs.tipo || 'AUTO' }}
       TZ: America/Sao_Paulo
     steps:
@@ -35,5 +40,5 @@ jobs:
         with:
           node-version: 20
 
-      - name: Run DRY_RUN
+      - name: Run envio automatico
         run: node scripts/envio-automatico-dona-flor.mjs

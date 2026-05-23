@@ -309,16 +309,16 @@ function montarMensagemDryRun({ tipo, empresaNome, resumoContas, notasResumo, no
       : resumoContas.hoje
 
   const tituloPrincipal = tipo === 'VENCIDAS'
-    ? '🔴 Contas vencidas'
+    ? 'Contas vencidas'
     : tipo === 'AMANHA'
-      ? '📆 Contas que vencem amanha'
-      : '📅 Contas que vencem hoje'
+      ? 'Contas que vencem amanha'
+      : 'Contas que vencem hoje'
 
   const vazioPrincipal = tipo === 'VENCIDAS'
-    ? '✅ Nenhuma conta vencida.'
+    ? 'Nenhuma conta vencida.'
     : tipo === 'AMANHA'
-      ? '✅ Nenhuma conta vencendo amanha.'
-      : '✅ Nenhuma conta vencendo hoje.'
+      ? 'Nenhuma conta vencendo amanha.'
+      : 'Nenhuma conta vencendo hoje.'
 
   const deveEnviar = contasPrincipal.length > 0 || notasResumo.urgentes.length > 0
 
@@ -355,6 +355,7 @@ function montarMensagemDryRun({ tipo, empresaNome, resumoContas, notasResumo, no
     tituloPrincipal,
     contasPrincipal,
     resumoContas,
+    notas,
     notasResumo,
     totais,
     vazioPrincipal
@@ -385,36 +386,43 @@ function montarHtmlDryRun({
   const totalPrincipal = totalContas(contasPrincipal)
   const blocoAlerta = temSomenteNotaUrgente
     ? `
-        <div style="background:#f59e0b; color:#fff; padding:16px; margin-top:18px; border-radius:14px; font-weight:bold;">
-          📝 Notas urgentes<br><br>
-          📝 Total: ${notasResumo.urgentes.length}<br>
+        <div style="background:#f59e0b; color:#fff; padding:18px; margin-top:18px; border-radius:14px; font-weight:bold; line-height:1.65;">
+          Notas urgentes<br>
+          Total: ${notasResumo.urgentes.length}
         </div>
       `
     : temAlerta
       ? `
-          <div style="background:#e74c3c; color:#fff; padding:16px; margin-top:18px; border-radius:14px; font-weight:bold;">
-            🚨 ALERTA CRITICO<br><br>
-            ${resumoContas.vencidas.length > 0 ? `🔴 Vencidas: ${resumoContas.vencidas.length} — ${moeda(totais.vencidas)}<br>` : ''}
-            ${resumoContas.hoje.length > 0 ? `📅 Vencem hoje: ${resumoContas.hoje.length} — ${moeda(totais.hoje)}<br>` : ''}
-            ${resumoContas.amanha.length > 0 ? `📆 Vencem amanha: ${resumoContas.amanha.length} — ${moeda(totais.amanha)}<br>` : ''}
-            ${resumoContas.altoValor.length > 0 ? `🟡 Alto valor: ${resumoContas.altoValor.length}<br>` : ''}
-            ${notasResumo.urgentes.length > 0 ? `📝 Notas urgentes: ${notasResumo.urgentes.length}<br>` : ''}
+          <div style="background:#e74c3c; color:#fff; padding:18px; margin-top:18px; border-radius:14px; font-weight:bold; line-height:1.7;">
+            <div style="font-size:17px; margin-bottom:8px;">ALERTA CRITICO</div>
+            ${resumoContas.vencidas.length > 0 ? `<div>Vencidas: ${resumoContas.vencidas.length} — ${moeda(totais.vencidas)}</div>` : ''}
+            ${resumoContas.hoje.length > 0 ? `<div>Vencem hoje: ${resumoContas.hoje.length} — ${moeda(totais.hoje)}</div>` : ''}
+            ${resumoContas.amanha.length > 0 ? `<div>Vencem amanha: ${resumoContas.amanha.length} — ${moeda(totais.amanha)}</div>` : ''}
+            ${resumoContas.altoValor.length > 0 ? `<div>Alto valor: ${resumoContas.altoValor.length}</div>` : ''}
+            ${notasResumo.urgentes.length > 0 ? `<div>Notas urgentes: ${notasResumo.urgentes.length}</div>` : ''}
           </div>
         `
       : `
-          <div style="background:#16a34a; color:#fff; padding:16px; margin-top:18px; border-radius:14px; font-weight:bold;">
-            ✅ Situacao sob controle<br>
-            💰 Total: ${moeda(totalPrincipal)}
+          <div style="background:#16a34a; color:#fff; padding:16px; margin-top:18px; border-radius:14px; font-weight:bold; line-height:1.6;">
+            Situacao sob controle<br>
+            Total: ${moeda(totalPrincipal)}
           </div>
         `
 
-  const blocoContasPrincipal = contasPrincipal.length === 0
-    ? `<div style="background:#d4edda; padding:14px; border-radius:12px;">${escapeHtml(vazioPrincipal)}</div>`
-    : contasPrincipal.slice(0, 15).map(cardConta).join('')
+  const blocoPrincipal = contasPrincipal.length === 0
+    ? `<p style="font-size:13px; color:#666; margin:18px 0 6px 0;">${escapeHtml(vazioPrincipal)}</p>`
+    : `
+        <h3 style="font-size:22px;">${escapeHtml(tituloPrincipal)}</h3>
+        <div style="background:#fff; padding:14px; border-radius:12px; margin-bottom:14px;">
+          Quantidade: <b>${contasPrincipal.length}</b><br>
+          Total: <b>${moeda(totalPrincipal)}</b>
+        </div>
+        ${contasPrincipal.slice(0, 15).map(cardConta).join('')}
+      `
 
   const blocoVencidas = tipo !== 'VENCIDAS' && resumoContas.vencidas.length > 0
     ? `
-        <h3 style="font-size:22px; margin-top:24px;">🔴 Contas vencidas</h3>
+        <h3 style="font-size:22px; margin-top:24px;">Contas vencidas</h3>
         <div style="background:#fff; padding:14px; border-radius:12px; margin-bottom:14px;">
           Quantidade: <b>${resumoContas.vencidas.length}</b><br>
           Total: <b>${moeda(totais.vencidas)}</b>
@@ -438,23 +446,16 @@ function montarHtmlDryRun({
 
       <p style="font-size:13px; color:#333;">Atualizado em ${escapeHtml(nowSaoPaulo())}</p>
 
-      <h3 style="font-size:22px;">${escapeHtml(tituloPrincipal)}</h3>
-
-      <div style="background:#fff; padding:14px; border-radius:12px; margin-bottom:14px;">
-        Quantidade: <b>${contasPrincipal.length}</b><br>
-        Total: <b>${moeda(totalPrincipal)}</b>
-      </div>
-
-      ${blocoContasPrincipal}
+      ${blocoPrincipal}
 
       ${blocoVencidas}
 
-      <h3 style="font-size:22px; margin-top:24px;">📝 Bloco de notas</h3>
+      <h3 style="font-size:22px; margin-top:24px;">Bloco de notas</h3>
       ${blocoNotas}
 
       <br>
-      <a href="${APP_URL}" style="background:#0f5c4d; color:#fff; padding:12px 22px; text-decoration:none; border-radius:10px; display:inline-block; font-weight:bold;">
-        📊 Acessar sistema
+      <a href="${APP_URL}" style="background:#0f5c4d; color:#fff; padding:15px 26px; text-decoration:none; border-radius:10px; display:inline-block; font-weight:bold; font-size:16px; line-height:1.2;">
+        Acessar sistema
       </a>
 
       <p style="font-size:12px; color:#999; margin-top:28px;">
@@ -473,41 +474,41 @@ function notaPendente(nota, dataLimite) {
 
 function cardConta(conta) {
   const descricao = escapeHtml(getField(conta, ['descricao', 'nome', 'conta', 'titulo']))
-  const filial = escapeHtml(getField(conta, ['filial_nome', 'filial', 'loja', 'unidade']))
-  const centro = escapeHtml(getField(conta, ['centro_custo_nome', 'centro_custo', 'centro', 'categoria']))
+  const filial = getOptionalField(conta, ['filial_nome', 'filial', 'loja', 'unidade'])
+  const centro = getOptionalField(conta, ['centro_custo_nome', 'centro_custo', 'centro', 'categoria'])
   const vencimento = formatarData(dataConta(conta))
   const status = escapeHtml(getField(conta, ['status'], 'Pendente'))
   const valor = moeda(conta?.valor)
 
   return `
-    <div style="background:#fff; margin-top:12px; padding:14px; border-radius:12px;">
-      <b style="font-size:16px;">${descricao}</b><br>
-      🏢 ${filial}<br>
-      🧾 ${centro}<br>
-      📅 ${vencimento}<br>
-      🔖 ${status}<br>
-      <b>${valor}</b>
+    <div style="background:#fff; margin-top:12px; padding:15px; border-radius:12px; line-height:1.55;">
+      <div style="font-size:16px; font-weight:bold; color:#111; margin-bottom:8px;">${descricao}</div>
+      ${filial ? `<div style="font-size:14px; color:#444;">Filial: ${escapeHtml(filial)}</div>` : ''}
+      ${centro ? `<div style="font-size:14px; color:#444;">Centro: ${escapeHtml(centro)}</div>` : ''}
+      <div style="font-size:14px; color:#444;">Vencimento: ${vencimento}</div>
+      <div style="font-size:14px; color:#444;">Status: ${status}</div>
+      <div style="font-size:15px; color:#111; font-weight:bold; margin-top:6px;">Valor: ${valor}</div>
     </div>
   `
 }
 
 function cardNota(nota) {
-  const titulo = escapeHtml(getField(nota, ['titulo', 'nome'], 'Sem titulo'))
+  const titulo = escapeHtml(tituloNota(nota))
   const prioridade = escapeHtml(getField(nota, ['prioridade'], 'Normal'))
-  const textoNota = escapeHtml(getField(nota, ['texto', 'recado', 'descricao', 'observacao']))
+  const textoNota = getOptionalField(nota, ['texto', 'conteudo', 'observacao', 'mensagem', 'recado', 'descricao'])
   const data = formatarData(getField(nota, ['data_evento', 'data_lembrete', 'data', 'created_at'], ''))
 
   return `
-    <div style="background:#fff; padding:14px; border-radius:12px; margin-top:12px;">
-      <b>${titulo}</b><br>
-      📌 ${prioridade}<br>
-      ✏️ ${textoNota}<br>
-      📅 ${data}
+    <div style="background:#fff; padding:14px; border-radius:12px; margin-top:12px; line-height:1.55;">
+      <div style="font-weight:bold; color:#111; margin-bottom:6px;">${titulo}</div>
+      <div style="font-size:14px; color:#444;">Prioridade: ${prioridade}</div>
+      ${textoNota ? `<div style="font-size:14px; color:#444;">Resumo: ${escapeHtml(textoNota)}</div>` : ''}
+      <div style="font-size:14px; color:#444;">Data: ${data}</div>
     </div>
   `
 }
 
-function montarTextoResumo({ tipo, tituloPrincipal, contasPrincipal, resumoContas, notasResumo, totais, vazioPrincipal }) {
+function montarTextoResumo({ tipo, tituloPrincipal, contasPrincipal, resumoContas, notas, notasResumo, totais, vazioPrincipal }) {
   const linhas = []
   const labelPrincipal = tipo === 'VENCIDAS'
     ? 'Contas vencidas'
@@ -549,6 +550,16 @@ function montarTextoResumo({ tipo, tituloPrincipal, contasPrincipal, resumoConta
     linhas.push('Contas vencidas:')
     for (const conta of resumoContas.vencidas.slice(0, 10)) {
       linhas.push(`- ${getField(conta, ['descricao', 'nome', 'conta', 'titulo'])} | ${moeda(conta?.valor)} | ${formatarData(dataConta(conta))}`)
+    }
+  }
+
+  if ((notas || []).length > 0) {
+    linhas.push('')
+    linhas.push('Bloco de notas:')
+    for (const nota of notas.slice(0, 10)) {
+      const textoNota = getOptionalField(nota, ['texto', 'conteudo', 'observacao', 'mensagem', 'recado', 'descricao'])
+      const detalhe = textoNota ? ` | ${textoNota}` : ''
+      linhas.push(`- ${tituloNota(nota)} | ${getField(nota, ['prioridade'], 'Normal')} | ${formatarData(getField(nota, ['data_evento', 'data_lembrete', 'data', 'created_at'], ''))}${detalhe}`)
     }
   }
 
@@ -596,6 +607,19 @@ function getField(obj, fields, fallback = '-') {
     if (value !== undefined && value !== null && value !== '') return value
   }
   return fallback
+}
+
+function getOptionalField(obj, fields) {
+  const value = getField(obj, fields, '')
+  return value === '-' ? '' : cleanString(value)
+}
+
+function tituloNota(nota) {
+  const titulo = getOptionalField(nota, ['titulo', 'title', 'descricao', 'texto', 'conteudo', 'observacao', 'mensagem', 'nome', 'assunto'])
+  if (titulo) return titulo
+
+  const prioridade = normalizeText(nota?.prioridade)
+  return prioridade === 'urgente' ? 'Nota urgente' : 'Nota sem titulo'
 }
 
 async function sendEmail({ to, subject, html, text }) {

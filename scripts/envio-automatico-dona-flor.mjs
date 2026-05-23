@@ -92,7 +92,8 @@ async function processarEmpresa(config, empresa, alertas) {
     tipo: ALERTA_TIPO,
     empresaNome: empresa?.nome || config.nome_empresa || 'Empresa',
     resumoContas,
-    notasResumo
+    notasResumo,
+    notas
   })
 
   if (!mensagem.enviar) {
@@ -300,7 +301,7 @@ function resumirNotas(notas, dataLimite) {
   return { pendentes, urgentes }
 }
 
-function montarMensagemDryRun({ tipo, empresaNome, resumoContas, notasResumo }) {
+function montarMensagemDryRun({ tipo, empresaNome, resumoContas, notasResumo, notas }) {
   const contasPrincipal = tipo === 'VENCIDAS'
     ? resumoContas.vencidas
     : tipo === 'AMANHA'
@@ -308,16 +309,16 @@ function montarMensagemDryRun({ tipo, empresaNome, resumoContas, notasResumo }) 
       : resumoContas.hoje
 
   const tituloPrincipal = tipo === 'VENCIDAS'
-    ? 'Contas vencidas'
+    ? '🔴 Contas vencidas'
     : tipo === 'AMANHA'
-      ? 'Contas que vencem amanha'
-      : 'Contas que vencem hoje'
+      ? '📆 Contas que vencem amanha'
+      : '📅 Contas que vencem hoje'
 
   const vazioPrincipal = tipo === 'VENCIDAS'
-    ? 'Nenhuma conta vencida.'
+    ? '✅ Nenhuma conta vencida.'
     : tipo === 'AMANHA'
-      ? 'Nenhuma conta vencendo amanha.'
-      : 'Nenhuma conta vencendo hoje.'
+      ? '✅ Nenhuma conta vencendo amanha.'
+      : '✅ Nenhuma conta vencendo hoje.'
 
   const deveEnviar = contasPrincipal.length > 0 || notasResumo.urgentes.length > 0
 
@@ -335,15 +336,27 @@ function montarMensagemDryRun({ tipo, empresaNome, resumoContas, notasResumo }) 
       ? 'Contas de amanha - Dona Flor'
       : 'Alerta financeiro - Dona Flor'
 
+  const totais = calcularTotaisContas(resumoContas)
+
   const html = montarHtmlDryRun({
     empresaNome,
     tituloPrincipal,
-    contasPrincipal: contasPrincipal.length,
-    contasHoje: resumoContas.hoje.length,
-    contasAmanha: resumoContas.amanha.length,
-    contasVencidas: resumoContas.vencidas.length,
-    contasAltoValor: resumoContas.altoValor.length,
-    notasUrgentes: notasResumo.urgentes.length,
+    tipo,
+    contasPrincipal,
+    resumoContas,
+    notas,
+    notasResumo,
+    totais,
+    vazioPrincipal
+  })
+
+  const texto = montarTextoResumo({
+    tipo,
+    tituloPrincipal,
+    contasPrincipal,
+    resumoContas,
+    notasResumo,
+    totais,
     vazioPrincipal
   })
 
@@ -352,57 +365,67 @@ function montarMensagemDryRun({ tipo, empresaNome, resumoContas, notasResumo }) 
     tipo,
     subject,
     html,
-    texto: [
-      `Dona Flor Gestao Financeira - ${safeName(empresaNome)}`,
-      '',
-      `Tipo: ${tipo || 'HOJE'}`,
-      `Contas hoje: ${resumoContas.hoje.length}`,
-      `Contas amanha: ${resumoContas.amanha.length}`,
-      `Contas vencidas: ${resumoContas.vencidas.length}`,
-      `Contas alto valor: ${resumoContas.altoValor.length}`,
-      `Notas urgentes: ${notasResumo.urgentes.length}`,
-      '',
-      APP_URL
-    ].join('\n')
+    texto
   }
 }
 
 function montarHtmlDryRun({
   empresaNome,
   tituloPrincipal,
+  tipo,
   contasPrincipal,
-  contasHoje,
-  contasAmanha,
-  contasVencidas,
-  contasAltoValor,
-  notasUrgentes,
+  resumoContas,
+  notas,
+  notasResumo,
+  totais,
   vazioPrincipal
 }) {
-  const temSomenteNotaUrgente = contasVencidas === 0 && contasAltoValor === 0 && contasPrincipal === 0 && notasUrgentes > 0
-  const temAlerta = contasVencidas > 0 || contasAltoValor > 0 || contasPrincipal > 0 || notasUrgentes > 0
+  const temSomenteNotaUrgente = resumoContas.vencidas.length === 0 && resumoContas.altoValor.length === 0 && contasPrincipal.length === 0 && notasResumo.urgentes.length > 0
+  const temAlerta = resumoContas.vencidas.length > 0 || resumoContas.altoValor.length > 0 || contasPrincipal.length > 0 || notasResumo.urgentes.length > 0
+  const totalPrincipal = totalContas(contasPrincipal)
   const blocoAlerta = temSomenteNotaUrgente
     ? `
         <div style="background:#f59e0b; color:#fff; padding:16px; margin-top:18px; border-radius:14px; font-weight:bold;">
-          Notas urgentes<br><br>
-          Total: ${notasUrgentes}<br>
+          📝 Notas urgentes<br><br>
+          📝 Total: ${notasResumo.urgentes.length}<br>
         </div>
       `
     : temAlerta
       ? `
           <div style="background:#e74c3c; color:#fff; padding:16px; margin-top:18px; border-radius:14px; font-weight:bold;">
-            ALERTA CRITICO<br><br>
-            ${contasVencidas > 0 ? `Vencidas: ${contasVencidas}<br>` : ''}
-            ${contasHoje > 0 ? `Vencem hoje: ${contasHoje}<br>` : ''}
-            ${contasAmanha > 0 ? `Vencem amanha: ${contasAmanha}<br>` : ''}
-            ${contasAltoValor > 0 ? `Alto valor: ${contasAltoValor}<br>` : ''}
-            ${notasUrgentes > 0 ? `Notas urgentes: ${notasUrgentes}<br>` : ''}
+            🚨 ALERTA CRITICO<br><br>
+            ${resumoContas.vencidas.length > 0 ? `🔴 Vencidas: ${resumoContas.vencidas.length} — ${moeda(totais.vencidas)}<br>` : ''}
+            ${resumoContas.hoje.length > 0 ? `📅 Vencem hoje: ${resumoContas.hoje.length} — ${moeda(totais.hoje)}<br>` : ''}
+            ${resumoContas.amanha.length > 0 ? `📆 Vencem amanha: ${resumoContas.amanha.length} — ${moeda(totais.amanha)}<br>` : ''}
+            ${resumoContas.altoValor.length > 0 ? `🟡 Alto valor: ${resumoContas.altoValor.length}<br>` : ''}
+            ${notasResumo.urgentes.length > 0 ? `📝 Notas urgentes: ${notasResumo.urgentes.length}<br>` : ''}
           </div>
         `
       : `
           <div style="background:#16a34a; color:#fff; padding:16px; margin-top:18px; border-radius:14px; font-weight:bold;">
-            Situacao sob controle
+            ✅ Situacao sob controle<br>
+            💰 Total: ${moeda(totalPrincipal)}
           </div>
         `
+
+  const blocoContasPrincipal = contasPrincipal.length === 0
+    ? `<div style="background:#d4edda; padding:14px; border-radius:12px;">${escapeHtml(vazioPrincipal)}</div>`
+    : contasPrincipal.slice(0, 15).map(cardConta).join('')
+
+  const blocoVencidas = tipo !== 'VENCIDAS' && resumoContas.vencidas.length > 0
+    ? `
+        <h3 style="font-size:22px; margin-top:24px;">🔴 Contas vencidas</h3>
+        <div style="background:#fff; padding:14px; border-radius:12px; margin-bottom:14px;">
+          Quantidade: <b>${resumoContas.vencidas.length}</b><br>
+          Total: <b>${moeda(totais.vencidas)}</b>
+        </div>
+        ${resumoContas.vencidas.slice(0, 15).map(cardConta).join('')}
+      `
+    : ''
+
+  const blocoNotas = (notas || []).length === 0
+    ? '<div style="background:#fff; padding:14px; border-radius:12px;">Nenhuma nota ativa cadastrada.</div>'
+    : notas.slice(0, 10).map(cardNota).join('')
 
   return `
     <div style="font-family: Arial, sans-serif; background:#f4f4f4; padding:20px">
@@ -418,17 +441,20 @@ function montarHtmlDryRun({
       <h3 style="font-size:22px;">${escapeHtml(tituloPrincipal)}</h3>
 
       <div style="background:#fff; padding:14px; border-radius:12px; margin-bottom:14px;">
-        Quantidade: <b>${contasPrincipal}</b>
+        Quantidade: <b>${contasPrincipal.length}</b><br>
+        Total: <b>${moeda(totalPrincipal)}</b>
       </div>
 
-      ${contasPrincipal === 0 ? `<div style="background:#d4edda; padding:14px; border-radius:12px;">${escapeHtml(vazioPrincipal)}</div>` : ''}
+      ${blocoContasPrincipal}
 
-      <h3 style="font-size:22px; margin-top:24px;">Bloco de notas</h3>
-      <div style="background:#fff; padding:14px; border-radius:12px;">Notas urgentes: <b>${notasUrgentes}</b></div>
+      ${blocoVencidas}
+
+      <h3 style="font-size:22px; margin-top:24px;">📝 Bloco de notas</h3>
+      ${blocoNotas}
 
       <br>
       <a href="${APP_URL}" style="background:#0f5c4d; color:#fff; padding:12px 22px; text-decoration:none; border-radius:10px; display:inline-block; font-weight:bold;">
-        Acessar sistema
+        📊 Acessar sistema
       </a>
 
       <p style="font-size:12px; color:#999; margin-top:28px;">
@@ -443,6 +469,133 @@ function notaPendente(nota, dataLimite) {
   if (nota?.excluido === true || nota?.deletado === true || nota?.concluida === true || statusConcluido(nota?.status)) return false
   const data = cleanString(nota?.data_evento || nota?.data_lembrete)
   return !data || data <= dataLimite
+}
+
+function cardConta(conta) {
+  const descricao = escapeHtml(getField(conta, ['descricao', 'nome', 'conta', 'titulo']))
+  const filial = escapeHtml(getField(conta, ['filial_nome', 'filial', 'loja', 'unidade']))
+  const centro = escapeHtml(getField(conta, ['centro_custo_nome', 'centro_custo', 'centro', 'categoria']))
+  const vencimento = formatarData(dataConta(conta))
+  const status = escapeHtml(getField(conta, ['status'], 'Pendente'))
+  const valor = moeda(conta?.valor)
+
+  return `
+    <div style="background:#fff; margin-top:12px; padding:14px; border-radius:12px;">
+      <b style="font-size:16px;">${descricao}</b><br>
+      🏢 ${filial}<br>
+      🧾 ${centro}<br>
+      📅 ${vencimento}<br>
+      🔖 ${status}<br>
+      <b>${valor}</b>
+    </div>
+  `
+}
+
+function cardNota(nota) {
+  const titulo = escapeHtml(getField(nota, ['titulo', 'nome'], 'Sem titulo'))
+  const prioridade = escapeHtml(getField(nota, ['prioridade'], 'Normal'))
+  const textoNota = escapeHtml(getField(nota, ['texto', 'recado', 'descricao', 'observacao']))
+  const data = formatarData(getField(nota, ['data_evento', 'data_lembrete', 'data', 'created_at'], ''))
+
+  return `
+    <div style="background:#fff; padding:14px; border-radius:12px; margin-top:12px;">
+      <b>${titulo}</b><br>
+      📌 ${prioridade}<br>
+      ✏️ ${textoNota}<br>
+      📅 ${data}
+    </div>
+  `
+}
+
+function montarTextoResumo({ tipo, tituloPrincipal, contasPrincipal, resumoContas, notasResumo, totais, vazioPrincipal }) {
+  const linhas = []
+  const labelPrincipal = tipo === 'VENCIDAS'
+    ? 'Contas vencidas'
+    : tipo === 'AMANHA'
+      ? 'Contas amanha'
+      : 'Contas hoje'
+  const labelTotalPrincipal = tipo === 'VENCIDAS'
+    ? 'Total vencido'
+    : tipo === 'AMANHA'
+      ? 'Total amanha'
+      : 'Total hoje'
+
+  linhas.push('Dona Flor Gestao Financeira')
+  linhas.push('')
+  linhas.push(resumoContas.vencidas.length > 0 || resumoContas.altoValor.length > 0 || contasPrincipal.length > 0 ? 'ALERTA CRITICO' : 'Situacao sob controle')
+  linhas.push('')
+  linhas.push(`${labelPrincipal}: ${contasPrincipal.length}`)
+  linhas.push(`${labelTotalPrincipal}: ${moeda(totalContas(contasPrincipal))}`)
+  linhas.push(`Vencidas: ${resumoContas.vencidas.length}`)
+  linhas.push(`Total vencido: ${moeda(totais.vencidas)}`)
+  linhas.push('')
+
+  if (notasResumo.urgentes.length > 0) {
+    linhas.push(`Notas urgentes: ${notasResumo.urgentes.length}`)
+    linhas.push('')
+  }
+
+  if (contasPrincipal.length === 0) {
+    linhas.push(vazioPrincipal)
+  } else {
+    linhas.push(`${tituloPrincipal.replace(/[📅📆🔴]/g, '').trim()}:`)
+    for (const conta of contasPrincipal.slice(0, 10)) {
+      linhas.push(`- ${getField(conta, ['descricao', 'nome', 'conta', 'titulo'])} | ${moeda(conta?.valor)} | ${formatarData(dataConta(conta))}`)
+    }
+  }
+
+  if (tipo !== 'VENCIDAS' && resumoContas.vencidas.length > 0) {
+    linhas.push('')
+    linhas.push('Contas vencidas:')
+    for (const conta of resumoContas.vencidas.slice(0, 10)) {
+      linhas.push(`- ${getField(conta, ['descricao', 'nome', 'conta', 'titulo'])} | ${moeda(conta?.valor)} | ${formatarData(dataConta(conta))}`)
+    }
+  }
+
+  linhas.push('')
+  linhas.push('Acessar sistema:')
+  linhas.push(APP_URL)
+  linhas.push('')
+  linhas.push(`Atualizado em ${nowSaoPaulo()}`)
+
+  return linhas.join('\n')
+}
+
+function calcularTotaisContas(resumoContas) {
+  return {
+    hoje: totalContas(resumoContas.hoje),
+    amanha: totalContas(resumoContas.amanha),
+    vencidas: totalContas(resumoContas.vencidas)
+  }
+}
+
+function totalContas(contas) {
+  return (contas || []).reduce((total, conta) => total + Number(conta?.valor || 0), 0)
+}
+
+function moeda(valor) {
+  return Number(valor || 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  })
+}
+
+function formatarData(data) {
+  const dataLimpa = cleanString(data).split('T')[0]
+  if (!dataLimpa) return '-'
+
+  const [ano, mes, dia] = dataLimpa.split('-')
+  if (!ano || !mes || !dia) return dataLimpa
+
+  return `${dia}/${mes}/${ano}`
+}
+
+function getField(obj, fields, fallback = '-') {
+  for (const field of fields) {
+    const value = obj?.[field]
+    if (value !== undefined && value !== null && value !== '') return value
+  }
+  return fallback
 }
 
 async function sendEmail({ to, subject, html, text }) {

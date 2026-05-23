@@ -41,13 +41,14 @@ O minuto 7 evita o topo da hora, quando jobs agendados podem atrasar mais.
 
 Nenhum secret deve ser escrito no codigo ou impresso em log.
 
-Configuracao SMTP validada para o proximo teste real:
+Configuracao SMTP validada:
 
 - `SMTP_HOST=smtp.gmail.com`
 - `SMTP_PORT=587`
-- `SMTP_USER=suporte.donaflor@gmail.com`
+- `SMTP_USER=donaflor.suporte@gmail.com`
 - `SMTP_PASS`: senha de app do Google
-- `MAIL_FROM=Dona Flor Financeiro <suporte.donaflor@gmail.com>`
+- `MAIL_FROM=Dona Flor Financeiro <donaflor.suporte@gmail.com>`
+- `MAIL_TO_FALLBACK=donafloradm@outlook.com` usado no teste controlado.
 
 Para Gmail, `SMTP_PASS` deve ser uma App Password, nao a senha normal da conta.
 
@@ -81,6 +82,38 @@ Quando `DRY_RUN=false`, o script:
 - registra somente resumo seguro.
 
 Se o SMTP falhar, a execucao falha com erro seguro, sem expor senha, corpo do e-mail ou secrets.
+
+## Validacao realizada
+
+O fluxo GitHub Actions foi validado em duas etapas:
+
+1. `DRY_RUN=true`:
+   - workflow executou com sucesso;
+   - avaliou as empresas Dona Flor Financeiro e Choco Arte;
+   - detectou corretamente conta para amanha, nota urgente, contas vencidas e empresa com alerta;
+   - nenhum e-mail real foi enviado.
+2. `DRY_RUN=false` em teste manual controlado:
+   - envio real por Gmail SMTP funcionou;
+   - e-mail foi enviado para `donafloradm@outlook.com`;
+   - log registrou status `enviado`;
+   - log registrou `message_id`;
+   - apos o teste, `DRY_RUN` foi retornado para `true`.
+
+Durante o primeiro teste real, o Gmail retornou erro SMTP `535`.
+
+Causa identificada:
+
+- o script estava usando `suporte.donaflor@gmail.com`;
+- a senha de app havia sido gerada na conta `donaflor.suporte@gmail.com`.
+
+Correcao aplicada nos GitHub Secrets:
+
+- `SMTP_USER=donaflor.suporte@gmail.com`;
+- `MAIL_FROM=Dona Flor Financeiro <donaflor.suporte@gmail.com>`.
+
+Depois da correcao, o envio real controlado foi validado com sucesso.
+
+Se o erro SMTP `535` voltar a ocorrer, conferir se a senha de app foi gerada na mesma conta Google configurada em `SMTP_USER` e `MAIL_FROM`.
 
 ## Referencia Pipedream
 
@@ -171,8 +204,27 @@ Teste real controlado:
 - confirmar secrets SMTP no GitHub Actions;
 - alterar apenas o secret `DRY_RUN` para `false`;
 - executar manualmente com o tipo desejado;
-- conferir logs com status `enviado`;
-- voltar `DRY_RUN` para `true` apos o teste, se quiser retornar ao modo seguro.
+- conferir o recebimento do e-mail;
+- conferir logs com status `enviado`, destinatarios mascarados e `message_id`;
+- voltar `DRY_RUN` para `true` imediatamente apos o teste.
+
+Estado seguro atual:
+
+- `DRY_RUN=true`;
+- Pipedream pode permanecer como backup ate decisao final de troca;
+- GitHub Actions esta tecnicamente validado, mas envio real automatico definitivo ainda depende de decisao operacional.
+
+## Cuidados operacionais
+
+- Nunca commitar secrets no repositorio.
+- Nunca imprimir `SMTP_PASS` em log.
+- Nunca imprimir e-mails completos em log.
+- Manter mascaramento de destinatarios.
+- `SMTP_PASS` deve ser senha de app do Google.
+- `SMTP_PASS` nao deve ser a senha normal da conta Gmail.
+- O schedule do GitHub Actions usa UTC.
+- O cron atual ja esta convertido para horarios equivalentes em Sao Paulo.
+- Pipedream deve ser mantido como backup ate a decisao final de corte.
 
 ## TODO futuro
 

@@ -1,0 +1,39 @@
+name: Envio automatico Dona Flor
+
+on:
+  workflow_dispatch:
+    inputs:
+      tipo:
+        description: 'AUTO, HOJE, AMANHA ou VENCIDAS'
+        required: false
+        default: 'AUTO'
+  schedule:
+    # 08:00, 09:00 e 20:00 America/Sao_Paulo = 11:00, 12:00 e 23:00 UTC.
+    # Minuto 7 evita o topo da hora, quando o GitHub Actions pode atrasar mais.
+    - cron: '7 11,12,23 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    name: DRY_RUN envio automatico
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      DRY_RUN: ${{ secrets.DRY_RUN }}
+      MAIL_TO_FALLBACK: ${{ secrets.MAIL_TO_FALLBACK }}
+      ALERTA_TIPO: ${{ github.event.inputs.tipo || 'AUTO' }}
+      TZ: America/Sao_Paulo
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run DRY_RUN
+        run: node scripts/envio-automatico-dona-flor.mjs

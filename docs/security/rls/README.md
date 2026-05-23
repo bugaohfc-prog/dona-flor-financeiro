@@ -13,6 +13,8 @@ Este diretório reúne os SQLs, conferências, relatórios e rollbacks versionad
 - Guardrails de centro de custo: aplicados e validados sem alteração de SQL/RLS.
 - Guardrails do importador CSV: parser, validação de dados e permissão frontend aplicados e validados sem alteração de SQL/RLS.
 
+- Edge Function `criar-empresa-master`: aplicada, deployada e validada para criacao segura de empresas pelo painel Master.
+
 ## Documentos principais
 
 - `../RLS_HOMOLOGACAO_STATUS.md`: registro consolidado da aplicação, validação, produção e observações de segurança.
@@ -20,6 +22,8 @@ Este diretório reúne os SQLs, conferências, relatórios e rollbacks versionad
 - `2026-05-21-convidar-usuario-empresa-id.md`: registro técnico da correção de autorização por empresa na Edge Function `convidar-usuario`.
 - `2026-05-21-centro-custo-guardrails.md`: registro técnico dos guardrails de exclusão e salvamento de centro de custo.
 - `2026-05-21-importador-csv-guardrails.md`: registro técnico dos guardrails mínimos e da permissão frontend aplicados ao importador CSV.
+
+- `2026-05-22-criar-empresa-master.md`: registro tecnico da Edge Function `criar-empresa-master` para criacao segura de empresas com validacao master direta.
 
 ## Pacote 2026-05-19 - df_usuarios_empresas
 

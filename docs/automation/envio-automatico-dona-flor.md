@@ -81,6 +81,16 @@ Tabelas consultadas:
 - `df_contas`;
 - `df_notas`.
 
+Para `df_usuarios_empresas`, a consulta usa somente colunas confirmadas no schema atual:
+
+- `user_id`;
+- `email`;
+- `nome`;
+- `perfil`;
+- `empresa_id`.
+
+Colunas opcionais do Pipedream antigo, como `role` e `receber_email`, não são consultadas neste ciclo para evitar erro HTTP 400 quando não existirem no banco.
+
 Campos atuais preferidos:
 
 - contas: `data_vencimento`, `vencimento`, `status`, `excluido`;

@@ -161,22 +161,6 @@ async function buscarAlertasPorEmpresa(empresaIds) {
 async function buscarDestinatariosUsuariosEmpresa(empresaId) {
   try {
     const usuarios = await fetchSupabase('df_usuarios_empresas', {
-      select: 'user_id,email,nome,perfil,role,receber_email,empresa_id',
-      empresa_id: `eq.${empresaId}`
-    })
-
-    return filtrarDestinatariosUsuarios(usuarios)
-  } catch (error) {
-    if (!isSchemaError(error)) throw error
-
-    console.warn('[envio-automatico] aviso_usuarios_schema_reduzido', JSON.stringify({
-      empresa_id: empresaId,
-      erro: safeError(error)
-    }))
-  }
-
-  try {
-    const usuarios = await fetchSupabase('df_usuarios_empresas', {
       select: 'user_id,email,nome,perfil,empresa_id',
       empresa_id: `eq.${empresaId}`
     })
@@ -267,14 +251,13 @@ function filtrarDestinatariosUsuarios(usuarios) {
     .map((usuario) => ({
       email: cleanString(usuario?.email).toLowerCase(),
       nome: cleanString(usuario?.nome),
-      perfil: normalizeText(usuario?.perfil || usuario?.role),
-      receberEmail: usuario?.receber_email
+      perfil: normalizeText(usuario?.perfil)
     }))
     .filter((usuario) => {
       if (!usuario.email) return false
       if (EMAILS_BLOQUEADOS.has(usuario.email)) return false
       if (['master', 'superadmin', 'super_admin'].includes(usuario.perfil)) return false
-      return usuario.receberEmail === undefined || usuario.receberEmail === null || usuario.receberEmail === true
+      return true
     })
 }
 

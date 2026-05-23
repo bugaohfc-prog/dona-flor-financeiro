@@ -1953,6 +1953,32 @@ export default function App() {
     return normalizarTextoImportacao(valor)
   }
 
+  function valorEmCentavosImportacao(valor) {
+    const numero = Number(valor)
+    if (!Number.isFinite(numero)) return null
+    return Math.round(numero * 100)
+  }
+
+  function chaveDuplicidadeImportacao(conta, empresaIdFallback = empresaId) {
+    const empresa = String(conta?.empresa_id || empresaIdFallback || '').trim()
+    const descricao = normalizarTextoImportacao(conta?.descricao)
+    const valorCentavos = valorEmCentavosImportacao(conta?.valor)
+    const dataVencimento = String(conta?.data_vencimento || conta?.vencimento || '').trim()
+    const centroCustoId = conta?.centro_custo_id || 'sem-centro'
+    const filialId = conta?.filial_id || 'sem-filial'
+
+    if (!empresa || !descricao || valorCentavos === null || !dataVencimento) return null
+
+    return [
+      empresa,
+      descricao,
+      valorCentavos,
+      dataVencimento,
+      centroCustoId,
+      filialId
+    ].join('|')
+  }
+
   function dataIsoValida(valor) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(valor || ''))) return false
 
@@ -2261,20 +2287,87 @@ export default function App() {
       return
     }
 
-    const payload = linhasImportacao.map((linha) => ({
-      descricao: linha.descricao,
-      valor: linha.valor,
-      data_vencimento: linha.data_vencimento,
-      vencimento: linha.data_vencimento,
-      status: linha.status,
-      centro_custo_id: linha.centro ? centrosCriados[chaveNomeImportacao(linha.centro)] : null,
-      filial_id: linha.filial ? filiaisCriadas[chaveNomeImportacao(linha.filial)] : null,
-      enviar_whatsapp: configWhatsapp,
-      enviar_email: configEmail,
-      enviar_push: configPush,
-      dias_aviso: Number(diasAvisoPadrao || 1),
-      empresa_id: empresaId
-    }))
+    const itensImportacao = linhasImportacao.map((linha) => {
+      const conta = {
+        descricao: linha.descricao,
+        valor: linha.valor,
+        data_vencimento: linha.data_vencimento,
+        vencimento: linha.data_vencimento,
+        status: linha.status,
+        centro_custo_id: linha.centro ? centrosCriados[chaveNomeImportacao(linha.centro)] : null,
+        filial_id: linha.filial ? filiaisCriadas[chaveNomeImportacao(linha.filial)] : null,
+        enviar_whatsapp: configWhatsapp,
+        enviar_email: configEmail,
+        enviar_push: configPush,
+        dias_aviso: Number(diasAvisoPadrao || 1),
+        empresa_id: empresaId
+      }
+
+      return {
+        linha,
+        conta,
+        chaveDuplicidade: chaveDuplicidadeImportacao(conta, empresaId)
+      }
+    })
+
+    const itemSemChaveDuplicidade = itensImportacao.find((item) => !item.chaveDuplicidade)
+    if (itemSemChaveDuplicidade) {
+      mostrarAviso(`Não foi possível verificar duplicidade na linha ${itemSemChaveDuplicidade.linha.linha}. Corrija e importe novamente.`, 'erro')
+      return
+    }
+
+    const chavesCsv = new Set()
+    const itensUnicosCsv = []
+    let duplicadasInternas = 0
+
+    for (const item of itensImportacao) {
+      if (chavesCsv.has(item.chaveDuplicidade)) {
+        duplicadasInternas += 1
+        continue
+      }
+
+      chavesCsv.add(item.chaveDuplicidade)
+      itensUnicosCsv.push(item)
+    }
+
+    const datasImportacao = [...new Set(itensUnicosCsv.map((item) => item.conta.data_vencimento).filter(Boolean))].sort()
+    let consultaDuplicidades = supabase
+      .from('df_contas')
+      .select('id, descricao, valor, data_vencimento, centro_custo_id, filial_id, empresa_id')
+      .eq('empresa_id', empresaId)
+      .or('excluido.is.null,excluido.eq.false')
+
+    if (datasImportacao[0]) {
+      consultaDuplicidades = consultaDuplicidades.gte('data_vencimento', datasImportacao[0])
+    }
+
+    if (datasImportacao[datasImportacao.length - 1]) {
+      consultaDuplicidades = consultaDuplicidades.lte('data_vencimento', datasImportacao[datasImportacao.length - 1])
+    }
+
+    const { data: contasExistentes, error: erroDuplicidades } = await consultaDuplicidades
+    if (erroDuplicidades) {
+      mostrarAviso('Não foi possível verificar duplicidades. Tente novamente.', 'erro')
+      return
+    }
+
+    const chavesExistentes = new Set(
+      (contasExistentes || [])
+        .map((conta) => chaveDuplicidadeImportacao(conta, empresaId))
+        .filter(Boolean)
+    )
+
+    const itensNovos = itensUnicosCsv.filter((item) => !chavesExistentes.has(item.chaveDuplicidade))
+    const duplicadasBanco = itensUnicosCsv.length - itensNovos.length
+    const totalDuplicadas = duplicadasInternas + duplicadasBanco
+    const payload = itensNovos.map((item) => item.conta)
+
+    if (payload.length === 0) {
+      const mensagemSemNovas = 'Nenhuma conta nova para importar. Todas as linhas já existiam ou estavam duplicadas.'
+      setStatusImportacao(mensagemSemNovas)
+      mostrarAviso(mensagemSemNovas, 'info')
+      return
+    }
 
     const { error } = await supabase.from('df_contas').insert(payload)
     if (error) {
@@ -2282,7 +2375,12 @@ export default function App() {
       return
     }
 
-    setStatusImportacao(`${payload.length} conta(s) importada(s) com sucesso.`)
+    const mensagemSucesso = totalDuplicadas > 0
+      ? `Importação concluída: ${payload.length} conta(s) importada(s), ${totalDuplicadas} duplicada(s) ignorada(s).`
+      : `${payload.length} conta(s) importada(s) com sucesso.`
+
+    setStatusImportacao(mensagemSucesso)
+    mostrarAviso(mensagemSucesso, totalDuplicadas > 0 ? 'info' : 'sucesso')
     setArquivoImportacao(null)
     setLinhasImportacao([])
     await carregarTudo(empresaId)

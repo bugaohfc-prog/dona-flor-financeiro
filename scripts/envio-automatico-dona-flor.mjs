@@ -1,3 +1,8 @@
+import net from 'node:net'
+import tls from 'node:tls'
+import { randomUUID } from 'node:crypto'
+import { once } from 'node:events'
+
 const TIME_ZONE = process.env.TZ || 'America/Sao_Paulo'
 const SUPABASE_URL = requiredEnv('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = requiredEnv('SUPABASE_SERVICE_ROLE_KEY')
@@ -7,10 +12,6 @@ const ALERTA_TIPO = resolveTipoAlerta(process.env.ALERTA_TIPO, new Date(), TIME_
 const APP_URL = 'https://dona-flor-financeiro.vercel.app/'
 const LIMITE_ALTO_VALOR = 1000
 const EMAILS_BLOQUEADOS = new Set(['bugaohfc@gmail.com'])
-
-if (!DRY_RUN) {
-  throw new Error('Envio real ainda nao foi implementado neste ciclo. Defina DRY_RUN=true.')
-}
 
 const supabaseBaseUrl = SUPABASE_URL.replace(/\/+$/, '')
 const hoje = dateInTimeZone(new Date(), TIME_ZONE)
@@ -105,12 +106,22 @@ async function processarEmpresa(config, empresa, alertas) {
     return { enviar: false }
   }
 
-  await sendEmail({
-    to: destinatarios,
-    subject: mensagem.subject,
-    html: mensagem.html,
-    text: mensagem.texto
-  })
+  let envio
+  try {
+    envio = await sendEmail({
+      to: destinatarios,
+      subject: mensagem.subject,
+      html: mensagem.html,
+      text: mensagem.texto
+    })
+  } catch (error) {
+    console.error('[envio-automatico] erro_smtp', JSON.stringify({
+      empresa_id: empresaId,
+      empresa_nome: safeName(empresa?.nome || config.nome_empresa),
+      erro: safeError(error)
+    }))
+    throw error
+  }
 
   console.log('[envio-automatico] empresa_processada', JSON.stringify({
     empresa_id: empresaId,
@@ -124,8 +135,10 @@ async function processarEmpresa(config, empresa, alertas) {
     notas_urgentes: notasResumo.urgentes.length,
     notas_pendentes: notasResumo.pendentes.length,
     destinatario: maskEmail(destinatarios[0]?.email || destinatarios[0]),
+    destinatarios: destinatarios.map((destinatario) => maskEmail(destinatario?.email || destinatario)),
     destinatarios_total: destinatarios.length,
-    status: 'dry_run_ok'
+    message_id: envio?.messageId || null,
+    status: envio?.dryRun ? 'dry_run_ok' : 'enviado'
   }))
 
   return { enviar: true }
@@ -433,17 +446,296 @@ function notaPendente(nota, dataLimite) {
 }
 
 async function sendEmail({ to, subject, html, text }) {
+  const recipients = normalizeRecipients(to)
+
+  if (recipients.length === 0) {
+    throw new Error('Nenhum destinatario valido para envio.')
+  }
+
   if (DRY_RUN) {
     return {
       dryRun: true,
-      recipients: Array.isArray(to) ? to.length : 1,
+      recipients: recipients.length,
       subject,
       htmlLength: cleanString(html).length,
       textLength: cleanString(text).length
     }
   }
 
-  throw new Error('Envio real ainda nao foi implementado neste ciclo.')
+  const smtpConfig = readSmtpConfig()
+  return sendSmtpMail({
+    ...smtpConfig,
+    to: recipients,
+    subject,
+    html,
+    text
+  })
+}
+
+async function sendSmtpMail({ host, port, user, pass, from, fromEmail, to, subject, html, text }) {
+  const messageId = `<${randomUUID()}@dona-flor-financeiro.github-actions>`
+  const message = buildMimeMessage({ from, fromEmail, to, subject, html, text, messageId })
+  const session = await SmtpSession.connect({ host, port })
+
+  try {
+    await session.expect([220])
+    await session.command(`EHLO ${smtpClientName()}`, [250])
+
+    if (!session.secure) {
+      await session.command('STARTTLS', [220])
+      await session.upgradeToTls(host)
+      await session.command(`EHLO ${smtpClientName()}`, [250])
+    }
+
+    const auth = Buffer.from(`\u0000${user}\u0000${pass}`).toString('base64')
+    await session.command(`AUTH PLAIN ${auth}`, [235])
+    await session.command(`MAIL FROM:<${fromEmail}>`, [250])
+
+    for (const recipient of to) {
+      await session.command(`RCPT TO:<${recipient}>`, [250, 251])
+    }
+
+    await session.command('DATA', [354])
+    session.write(`${dotStuff(message)}\r\n.\r\n`)
+    const dataResponse = await session.expect([250])
+    const providerMessageId = extractProviderMessageId(dataResponse.lines) || messageId
+
+    await session.command('QUIT', [221]).catch(() => null)
+
+    return {
+      dryRun: false,
+      recipients: to.length,
+      messageId: providerMessageId
+    }
+  } finally {
+    session.destroy()
+  }
+}
+
+class SmtpSession {
+  static async connect({ host, port }) {
+    const secure = Number(port) === 465
+    const socket = secure
+      ? tls.connect({ host, port, servername: host })
+      : net.createConnection({ host, port })
+
+    const session = new SmtpSession(socket, secure)
+    await once(socket, secure ? 'secureConnect' : 'connect')
+    return session
+  }
+
+  constructor(socket, secure = false) {
+    this.socket = null
+    this.secure = secure
+    this.buffer = ''
+    this.currentLines = []
+    this.responses = []
+    this.waiters = []
+    this.onData = (chunk) => this.handleData(chunk)
+    this.onError = (error) => this.rejectWaiters(error)
+    this.onEnd = () => this.rejectWaiters(new Error('Conexao SMTP encerrada.'))
+    this.setSocket(socket)
+  }
+
+  setSocket(socket) {
+    if (this.socket) {
+      this.socket.off('data', this.onData)
+      this.socket.off('error', this.onError)
+      this.socket.off('end', this.onEnd)
+    }
+
+    this.socket = socket
+    this.socket.on('data', this.onData)
+    this.socket.on('error', this.onError)
+    this.socket.on('end', this.onEnd)
+  }
+
+  async upgradeToTls(host) {
+    const secureSocket = tls.connect({ socket: this.socket, servername: host })
+    await once(secureSocket, 'secureConnect')
+    this.secure = true
+    this.buffer = ''
+    this.currentLines = []
+    this.setSocket(secureSocket)
+  }
+
+  write(data) {
+    this.socket.write(data)
+  }
+
+  async command(command, expectedCodes) {
+    this.write(`${command}\r\n`)
+    return this.expect(expectedCodes)
+  }
+
+  async expect(expectedCodes) {
+    const response = await this.nextResponse()
+    const expected = Array.isArray(expectedCodes) ? expectedCodes : [expectedCodes]
+    if (!expected.includes(response.code)) {
+      throw new Error(`SMTP retornou codigo inesperado ${response.code}.`)
+    }
+    return response
+  }
+
+  nextResponse() {
+    if (this.responses.length > 0) {
+      return Promise.resolve(this.responses.shift())
+    }
+
+    return new Promise((resolve, reject) => {
+      this.waiters.push({ resolve, reject })
+    })
+  }
+
+  handleData(chunk) {
+    this.buffer += chunk.toString('utf8')
+
+    let index = this.buffer.indexOf('\n')
+    while (index >= 0) {
+      const line = this.buffer.slice(0, index).replace(/\r$/, '')
+      this.buffer = this.buffer.slice(index + 1)
+      this.handleLine(line)
+      index = this.buffer.indexOf('\n')
+    }
+  }
+
+  handleLine(line) {
+    if (!/^\d{3}[ -]/.test(line)) return
+
+    this.currentLines.push(line)
+
+    if (line[3] === ' ') {
+      const response = {
+        code: Number(line.slice(0, 3)),
+        lines: this.currentLines
+      }
+      this.currentLines = []
+      const waiter = this.waiters.shift()
+      if (waiter) {
+        waiter.resolve(response)
+      } else {
+        this.responses.push(response)
+      }
+    }
+  }
+
+  rejectWaiters(error) {
+    while (this.waiters.length > 0) {
+      this.waiters.shift().reject(error)
+    }
+  }
+
+  destroy() {
+    this.socket.destroy()
+  }
+}
+
+function readSmtpConfig() {
+  const host = requiredEnv('SMTP_HOST')
+  const port = normalizePort(requiredEnv('SMTP_PORT'))
+  const user = requiredEnv('SMTP_USER')
+  const pass = requiredEnv('SMTP_PASS')
+  const from = requiredEnv('MAIL_FROM')
+  const fromEmail = extractEmail(from)
+
+  if (!fromEmail) {
+    throw new Error('MAIL_FROM precisa conter um e-mail valido.')
+  }
+
+  return {
+    host,
+    port,
+    user,
+    pass,
+    from: safeHeader(from),
+    fromEmail
+  }
+}
+
+function normalizePort(value) {
+  const port = Number.parseInt(String(value || ''), 10)
+  if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+    throw new Error('SMTP_PORT invalido.')
+  }
+  return port
+}
+
+function normalizeRecipients(to) {
+  const list = Array.isArray(to) ? to : [to]
+  return unique(
+    list
+      .map((recipient) => extractEmail(typeof recipient === 'string' ? recipient : recipient?.email))
+      .filter(Boolean)
+  )
+}
+
+function extractEmail(value) {
+  const text = cleanString(value)
+  const match = text.match(/<([^>]+)>/)
+  const email = cleanString(match ? match[1] : text).toLowerCase()
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : ''
+}
+
+function buildMimeMessage({ from, fromEmail, to, subject, html, text, messageId }) {
+  const boundary = `dona-flor-${randomUUID()}`
+  const safeSubject = encodeMimeHeader(subject || 'Alerta financeiro - Dona Flor')
+  const safeText = cleanString(text) || 'Resumo automatico Dona Flor.'
+  const safeHtml = cleanString(html) || `<p>${escapeHtml(safeText)}</p>`
+
+  return [
+    `From: ${from}`,
+    `To: ${to.map((email) => `<${email}>`).join(', ')}`,
+    `Subject: ${safeSubject}`,
+    `Date: ${new Date().toUTCString()}`,
+    `Message-ID: ${messageId}`,
+    'MIME-Version: 1.0',
+    `Reply-To: <${fromEmail}>`,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    '',
+    `--${boundary}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: 8bit',
+    '',
+    normalizeBody(safeText),
+    '',
+    `--${boundary}`,
+    'Content-Type: text/html; charset=UTF-8',
+    'Content-Transfer-Encoding: 8bit',
+    '',
+    normalizeBody(safeHtml),
+    '',
+    `--${boundary}--`,
+    ''
+  ].join('\r\n')
+}
+
+function encodeMimeHeader(value) {
+  const header = safeHeader(value)
+  return /^[\x00-\x7F]*$/.test(header)
+    ? header
+    : `=?UTF-8?B?${Buffer.from(header, 'utf8').toString('base64')}?=`
+}
+
+function safeHeader(value) {
+  return cleanString(value).replace(/[\r\n]+/g, ' ')
+}
+
+function normalizeBody(value) {
+  return String(value || '').replace(/\r?\n/g, '\r\n')
+}
+
+function dotStuff(message) {
+  return normalizeBody(message).replace(/^\./gm, '..')
+}
+
+function smtpClientName() {
+  return 'github-actions.dona-flor-financeiro.local'
+}
+
+function extractProviderMessageId(lines) {
+  const joined = (lines || []).join(' ')
+  const match = joined.match(/<[^>]+>/)
+  return match ? match[0] : ''
 }
 
 async function fetchSupabase(table, params) {
@@ -484,8 +776,7 @@ function requiredEnv(name) {
 
 function parseDryRun(value) {
   const normalized = normalizeText(value)
-  if (!normalized) return true
-  return !['false', '0', 'no', 'nao', 'off'].includes(normalized)
+  return normalized !== 'false'
 }
 
 function resolveTipoAlerta(value, date, timeZone) {

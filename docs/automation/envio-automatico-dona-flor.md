@@ -1,10 +1,10 @@
-# Envio automatico Dona Flor - GitHub Actions DRY_RUN
+# Envio automatico Dona Flor - GitHub Actions
 
 Data: 2026-05-23
 
 ## Objetivo
 
-Criar a primeira versao da migracao do workflow Pipedream `Envio automatico Dona flor` para GitHub Actions, mantendo o ciclo em `DRY_RUN` e sem envio real de e-mail.
+Migrar o workflow Pipedream `Envio automatico Dona flor` para GitHub Actions, mantendo `DRY_RUN` como padrao seguro e habilitando envio real por SMTP somente quando `DRY_RUN=false` estiver explicitamente configurado.
 
 ## Arquivos
 
@@ -33,12 +33,27 @@ O minuto 7 evita o topo da hora, quando jobs agendados podem atrasar mais.
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `DRY_RUN`
 - `MAIL_TO_FALLBACK`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `MAIL_FROM`
 
 Nenhum secret deve ser escrito no codigo ou impresso em log.
 
+Configuracao SMTP validada para o proximo teste real:
+
+- `SMTP_HOST=smtp.gmail.com`
+- `SMTP_PORT=587`
+- `SMTP_USER=suporte.donaflor@gmail.com`
+- `SMTP_PASS`: senha de app do Google
+- `MAIL_FROM=Dona Flor Financeiro <suporte.donaflor@gmail.com>`
+
+Para Gmail, `SMTP_PASS` deve ser uma App Password, nao a senha normal da conta.
+
 ## DRY_RUN
 
-Neste ciclo, `DRY_RUN` deve permanecer ativo.
+`DRY_RUN` e o modo seguro padrao.
 
 Com `DRY_RUN=true`:
 
@@ -48,7 +63,24 @@ Com `DRY_RUN=true`:
 - nenhum e-mail real e enviado;
 - os logs mostram apenas resumo seguro.
 
-Se `DRY_RUN=false`, o script falha de forma intencional informando que envio real ainda nao foi habilitado neste ciclo.
+Envio real so ocorre quando o secret `DRY_RUN` for exatamente `false`.
+
+Qualquer outro valor, incluindo vazio, `true`, `0`, `no`, `off` ou erro de digitacao, e tratado como `DRY_RUN=true`.
+
+Para voltar ao modo seguro, alterar o secret `DRY_RUN` para `true` ou remover o valor `false`.
+
+## Envio real SMTP
+
+Quando `DRY_RUN=false`, o script:
+
+- valida `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` e `MAIL_FROM`;
+- conecta no SMTP com STARTTLS quando usado `SMTP_PORT=587`;
+- autentica com `AUTH PLAIN`;
+- envia o HTML e texto ja montados pelo script;
+- usa `MAIL_FROM` como remetente e reply-to;
+- registra somente resumo seguro.
+
+Se o SMTP falhar, a execucao falha com erro seguro, sem expor senha, corpo do e-mail ou secrets.
 
 ## Referencia Pipedream
 
@@ -65,7 +97,6 @@ Regras reaproveitadas no script:
 - o HTML preserva a estrutura geral do cabecalho Dona Flor, bloco de alerta, resumo principal, bloco de notas e link do app;
 - notas urgentes continuam sendo consideradas como gatilho de envio;
 - usuarios com perfil `master`, `superadmin`, `super_admin` ou e-mail bloqueado nao entram como destinatarios;
-- usuarios com `receber_email=false` nao entram como destinatarios;
 - destinatarios sao mascarados nos logs.
 
 ## Consultas
@@ -112,8 +143,10 @@ Os logs registram somente:
 - assunto gerado;
 - quantidades de contas e notas;
 - primeiro destinatario mascarado;
+- lista de destinatarios mascarados;
 - total de destinatarios;
-- status `dry_run_ok`, `dry_run_sem_envio` ou aviso seguro.
+- message id quando disponivel;
+- status `dry_run_ok`, `dry_run_sem_envio`, `enviado` ou aviso seguro.
 
 Os logs nao registram:
 
@@ -124,13 +157,27 @@ Os logs nao registram:
 - HTML ou texto completo do e-mail;
 - e-mails completos.
 
-## TODO para envio real
+## Como testar
 
-Antes de habilitar envio real:
+Teste seguro:
 
-- decidir provedor final, como SendGrid, SMTP ou outro;
-- criar secret do provedor somente no GitHub Actions;
-- implementar `sendEmail()` real;
+- manter `DRY_RUN=true`;
+- executar manualmente pelo GitHub Actions;
+- conferir logs com `dry_run_ok` ou `dry_run_sem_envio`;
+- confirmar que nenhum e-mail real foi enviado.
+
+Teste real controlado:
+
+- confirmar secrets SMTP no GitHub Actions;
+- alterar apenas o secret `DRY_RUN` para `false`;
+- executar manualmente com o tipo desejado;
+- conferir logs com status `enviado`;
+- voltar `DRY_RUN` para `true` apos o teste, se quiser retornar ao modo seguro.
+
+## TODO futuro
+
+Antes de manter envio real recorrente:
+
 - adicionar idempotencia para evitar duplicidade em rerun manual;
 - confirmar se alerta de alto valor deve olhar todos os vencimentos futuros, como no Pipedream, ou apenas a janela de alerta do app;
 - confirmar os campos reais para filial e centro no e-mail detalhado antes de reativar cards completos de contas;

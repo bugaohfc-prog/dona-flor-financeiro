@@ -420,6 +420,9 @@ function montarHtmlDryRun({
         ${contasPrincipal.slice(0, 15).map(cardConta).join('')}
       `
 
+  const contasVencidasExibidas = resumoContas.vencidas.slice(0, 6)
+  const contasVencidasOcultas = Math.max(resumoContas.vencidas.length - contasVencidasExibidas.length, 0)
+
   const blocoVencidas = tipo !== 'VENCIDAS' && resumoContas.vencidas.length > 0
     ? `
         <h3 style="font-size:22px; margin-top:24px;">Contas vencidas</h3>
@@ -427,7 +430,10 @@ function montarHtmlDryRun({
           Quantidade: <b>${resumoContas.vencidas.length}</b><br>
           Total: <b>${moeda(totais.vencidas)}</b>
         </div>
-        ${resumoContas.vencidas.slice(0, 15).map(cardConta).join('')}
+        ${contasVencidasExibidas.map(cardConta).join('')}
+        ${contasVencidasOcultas > 0
+          ? `<p style="font-size:13px; color:#666; margin:12px 0 0 0;">+ ${contasVencidasOcultas} conta(s) vencida(s) nao exibida(s) neste resumo.</p>`
+          : ''}
       `
     : ''
 
@@ -495,7 +501,7 @@ function cardConta(conta) {
 function cardNota(nota) {
   const titulo = escapeHtml(tituloNota(nota))
   const prioridade = escapeHtml(getField(nota, ['prioridade'], 'Normal'))
-  const textoNota = getOptionalField(nota, ['texto', 'conteudo', 'observacao', 'mensagem', 'recado', 'descricao'])
+  const textoNota = limitarTexto(getOptionalField(nota, ['texto', 'conteudo', 'observacao', 'mensagem', 'recado', 'descricao']), 140)
   const data = formatarData(getField(nota, ['data_evento', 'data_lembrete', 'data', 'created_at'], ''))
 
   return `
@@ -548,8 +554,15 @@ function montarTextoResumo({ tipo, tituloPrincipal, contasPrincipal, resumoConta
   if (tipo !== 'VENCIDAS' && resumoContas.vencidas.length > 0) {
     linhas.push('')
     linhas.push('Contas vencidas:')
-    for (const conta of resumoContas.vencidas.slice(0, 10)) {
+    const vencidasExibidas = resumoContas.vencidas.slice(0, 6)
+    const vencidasOcultas = Math.max(resumoContas.vencidas.length - vencidasExibidas.length, 0)
+
+    for (const conta of vencidasExibidas) {
       linhas.push(`- ${getField(conta, ['descricao', 'nome', 'conta', 'titulo'])} | ${moeda(conta?.valor)} | ${formatarData(dataConta(conta))}`)
+    }
+
+    if (vencidasOcultas > 0) {
+      linhas.push(`+ ${vencidasOcultas} conta(s) vencida(s) nao exibida(s) neste resumo.`)
     }
   }
 
@@ -557,7 +570,7 @@ function montarTextoResumo({ tipo, tituloPrincipal, contasPrincipal, resumoConta
     linhas.push('')
     linhas.push('Bloco de notas:')
     for (const nota of notas.slice(0, 10)) {
-      const textoNota = getOptionalField(nota, ['texto', 'conteudo', 'observacao', 'mensagem', 'recado', 'descricao'])
+      const textoNota = limitarTexto(getOptionalField(nota, ['texto', 'conteudo', 'observacao', 'mensagem', 'recado', 'descricao']), 120)
       const detalhe = textoNota ? ` | ${textoNota}` : ''
       linhas.push(`- ${tituloNota(nota)} | ${getField(nota, ['prioridade'], 'Normal')} | ${formatarData(getField(nota, ['data_evento', 'data_lembrete', 'data', 'created_at'], ''))}${detalhe}`)
     }
@@ -614,12 +627,18 @@ function getOptionalField(obj, fields) {
   return value === '-' ? '' : cleanString(value)
 }
 
+function limitarTexto(value, maxLength) {
+  const text = cleanString(value).replace(/\s+/g, ' ').trim()
+  if (!text || text.length <= maxLength) return text
+  return `${text.slice(0, Math.max(0, maxLength - 3)).trim()}...`
+}
+
 function tituloNota(nota) {
   const titulo = getOptionalField(nota, ['titulo', 'title', 'descricao', 'texto', 'conteudo', 'observacao', 'mensagem', 'nome', 'assunto'])
   if (titulo) return titulo
 
   const prioridade = normalizeText(nota?.prioridade)
-  return prioridade === 'urgente' ? 'Nota urgente' : 'Nota sem titulo'
+  return prioridade === 'urgente' ? 'Nota urgente' : 'Nota pendente'
 }
 
 async function sendEmail({ to, subject, html, text }) {

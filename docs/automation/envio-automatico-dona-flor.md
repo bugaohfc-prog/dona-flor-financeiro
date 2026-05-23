@@ -11,6 +11,10 @@ Migrar o workflow Pipedream `Envio automatico Dona flor` para GitHub Actions, ma
 - `.github/workflows/envio-automatico-dona-flor.yml`
 - `scripts/envio-automatico-dona-flor.mjs`
 
+## Runtime
+
+O workflow usa Node 24 via `actions/setup-node` e define `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` como manutencao preventiva contra avisos de deprecacao do Node 20 no GitHub Actions.
+
 ## Agenda
 
 O Pipedream roda com cron `0 8,9,20 * * *` em `America/Sao_Paulo`.

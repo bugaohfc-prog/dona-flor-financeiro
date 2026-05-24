@@ -2002,7 +2002,7 @@ export default function App() {
             <header>
               <div>
                 <h1>Relatório de Contas</h1>
-                <div class="empresa">${escapeHtml(nomeEmpresa || 'Dona Flor Financeiro')}</div>
+                <div class="empresa">${escapeHtml(nomeEmpresa || 'Empresa não identificada')}</div>
               </div>
               <div class="data">Gerado em ${new Date().toLocaleDateString('pt-BR')}<br/>${contasFiltradas.length} conta(s) listada(s)</div>
             </header>
@@ -2023,7 +2023,7 @@ export default function App() {
               </table>
             </div>
             <footer>
-              <span>Gerado pelo Dona Flor Financeiro</span>
+              <span>Gerado pelo DNA Gestão</span>
               <span>${new Date().toLocaleString('pt-BR')}</span>
             </footer>
           </div>
@@ -4615,7 +4615,7 @@ export default function App() {
       </div>
 
       <div className="print-footer">
-        Relatório gerado pelo Sistema Dona Flor Financeiro
+        Relatório gerado pelo DNA Gestão
       </div>
       {renderTopShell()}
 

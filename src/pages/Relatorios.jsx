@@ -584,7 +584,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
           <table><thead><tr><th>Centro</th><th>Total</th><th>Pago</th><th>Pendente</th><th>Vencido</th><th>Participação</th></tr></thead><tbody>${linhasRanking || '<tr><td colspan="6">Nenhum centro encontrado.</td></tr>'}</tbody></table>
           <h2>Contas filtradas</h2>
           <table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Centro</th><th>Filial</th><th>Recorrência</th></tr></thead><tbody>${linhasContas || '<tr><td colspan="7">Nenhuma conta encontrada.</td></tr>'}</tbody></table>
-          <div class="footer">Relatório gerado pelo Sistema Dona Flor Financeiro.</div>
+          <div class="footer">Relatório gerado pelo DNA Gestão.</div>
         </body>
       </html>`
 
@@ -758,7 +758,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
         <p>Gerado em {new Date().toLocaleDateString('pt-BR')}</p>
         <p>Centro: {filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos'} • Filial: {filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas'} • Mês: {filtroMes || 'Todos'} • Status: {filtroStatus}</p>
       </div>
-      <div className="relatorio-print-footer">Relatório gerado pelo Sistema Dona Flor Financeiro</div>
+      <div className="relatorio-print-footer">Relatório gerado pelo DNA Gestão</div>
 
       <header className="no-print" style={styles.hero}>
         <div>

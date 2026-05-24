@@ -176,7 +176,8 @@ export function useContas() {
       configEmail,
       configPush,
       diasAlertaContas,
-      diasAvisoPadrao
+      diasAvisoPadrao,
+      permitirGerarRecorrencias = false
     } = contexto
 
     if (!empresaAtual) return
@@ -189,6 +190,12 @@ export function useContas() {
     }
 
     const contasAtuais = data || []
+
+    if (!permitirGerarRecorrencias) {
+      setContas(contasAtuais)
+      return
+    }
+
     const contasComRecorrencias = await garantirContasRecorrentesDoMes({
       supabase,
       empresaAtual,
@@ -516,14 +523,28 @@ export function useContas() {
 
   async function marcarComoPago(contexto) {
     const { supabase, id, empresaId, buscarContas, mostrarAviso } = contexto
-    await atualizarStatusConta(supabase, id, empresaId, 'pago')
+    const { error } = await atualizarStatusConta(supabase, id, empresaId, 'pago')
+
+    if (error) {
+      console.warn('Falha ao marcar conta como paga:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível marcar a conta como paga.'), 'erro')
+      return
+    }
+
     await buscarContas()
     mostrarAviso?.('Conta marcada como paga.', 'sucesso')
   }
 
   async function voltarParaPendente(contexto) {
     const { supabase, id, empresaId, buscarContas, mostrarAviso } = contexto
-    await atualizarStatusConta(supabase, id, empresaId, 'pendente')
+    const { error } = await atualizarStatusConta(supabase, id, empresaId, 'pendente')
+
+    if (error) {
+      console.warn('Falha ao voltar conta para pendente:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível voltar a conta para pendente.'), 'erro')
+      return
+    }
+
     await buscarContas()
     mostrarAviso?.('Conta voltou para pendente.', 'sucesso')
   }

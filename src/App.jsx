@@ -327,6 +327,11 @@ export default function App() {
     setStatusImportacao('')
   }
 
+  function limparLixeiraLocal() {
+    setContasLixeira([])
+    setNotasLixeira([])
+  }
+
   function limparEstadoAutenticacao() {
     sessaoEncerradaRef.current = true
     limparDadosTenant()
@@ -426,12 +431,20 @@ export default function App() {
       if (cancelado) return
 
       try {
-        await Promise.allSettled([
+        const permitirCarregarLixeira = podeGerenciarLixeira()
+        const tarefas = [
           buscarContas(empresaId),
           buscarCentros(empresaId),
-          buscarFiliais(empresaId),
-          buscarLixeira(empresaId)
-        ])
+          buscarFiliais(empresaId)
+        ]
+
+        if (permitirCarregarLixeira) {
+          tarefas.push(buscarLixeira(empresaId, { permitirCarregarLixeira: true }))
+        } else {
+          limparLixeiraLocal()
+        }
+
+        await Promise.allSettled(tarefas)
       } catch (error) {
         console.warn('Falha ao sincronizar dados do tenant:', error?.message || error)
       }
@@ -565,7 +578,11 @@ export default function App() {
       setPerfilUsuario(perfilSelecionado)
       setPermissoesUsuario(permissoes)
       setNomeUsuarioPerfil(nomePerfil || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name || '')
-      await carregarTudo(empresaSelecionada.id)
+      const podeOperarFinanceiro = Boolean(permissoes?.isMaster || ['admin', 'gerente'].includes(normalizarPerfil(perfilSelecionado)))
+      await carregarTudo(empresaSelecionada.id, {
+        permitirGerarRecorrencias: podeOperarFinanceiro,
+        permitirCarregarLixeira: podeOperarFinanceiro
+      })
     } catch (error) {
       if (erroEhSessaoExpirada(error)) {
         await supabase.auth.signOut()
@@ -581,17 +598,27 @@ export default function App() {
     }
   }
 
-  async function carregarTudo(empresaAtual = empresaId) {
+  async function carregarTudo(empresaAtual = empresaId, opcoes = {}) {
     if (!empresaAtual) return
 
-    await Promise.all([
-      buscarContas(empresaAtual),
+    const permitirGerarRecorrencias = opcoes.permitirGerarRecorrencias ?? podeEditarFinanceiro()
+    const permitirCarregarLixeira = opcoes.permitirCarregarLixeira ?? podeGerenciarLixeira()
+
+    const tarefas = [
+      buscarContas(empresaAtual, { permitirGerarRecorrencias }),
       buscarNotas(empresaAtual),
       buscarCentros(empresaAtual),
       buscarFiliais(empresaAtual),
-      buscarLixeira(empresaAtual),
       buscarConfiguracoes(empresaAtual)
-    ])
+    ]
+
+    if (permitirCarregarLixeira) {
+      tarefas.push(buscarLixeira(empresaAtual, { permitirCarregarLixeira: true }))
+    } else {
+      limparLixeiraLocal()
+    }
+
+    await Promise.all(tarefas)
   }
 
   const normalizarPerfil = useCallback((perfil) => normalizarPerfilUsuario(perfil), [])
@@ -713,7 +740,11 @@ export default function App() {
       setPerfilUsuario(perfilSelecionado)
       setPermissoesUsuario(permissoesAtualizadas)
       setTelaAtualState('dashboard')
-      await carregarTudo(empresaSelecionada.id)
+      const podeOperarFinanceiro = Boolean(permissoesAtualizadas?.isMaster || ['admin', 'gerente'].includes(normalizarPerfil(perfilSelecionado)))
+      await carregarTudo(empresaSelecionada.id, {
+        permitirGerarRecorrencias: podeOperarFinanceiro,
+        permitirCarregarLixeira: podeOperarFinanceiro
+      })
       mostrarAviso(`Empresa ativa: ${empresaSelecionada.nome || 'Empresa'}`, 'sucesso')
     } catch (error) {
       avisarErro(error, 'Não foi possível trocar a empresa ativa.')
@@ -1054,7 +1085,7 @@ export default function App() {
   // =========================
   // BLOCO 5 — BUSCAS SUPABASE
   // =========================
-  async function buscarContas(empresaAtual = empresaId) {
+  async function buscarContas(empresaAtual = empresaId, opcoes = {}) {
     return buscarContasHook({
       supabase,
       empresaAtual,
@@ -1063,7 +1094,8 @@ export default function App() {
       configEmail,
       configPush,
       diasAlertaContas,
-      diasAvisoPadrao
+      diasAvisoPadrao,
+      permitirGerarRecorrencias: opcoes.permitirGerarRecorrencias ?? podeEditarFinanceiro()
     })
   }
 
@@ -1197,8 +1229,15 @@ export default function App() {
     await carregarAlertasGlobais(empresaAtual)
   }
 
-  async function buscarLixeira(empresaAtual = empresaId) {
+  async function buscarLixeira(empresaAtual = empresaId, opcoes = {}) {
     if (!empresaAtual) return
+
+    const permitirCarregarLixeira = opcoes.permitirCarregarLixeira ?? podeGerenciarLixeira()
+
+    if (!permitirCarregarLixeira) {
+      limparLixeiraLocal()
+      return
+    }
 
     const { data: contasExcluidas, error: erroContas } = await supabase
       .from('df_contas')

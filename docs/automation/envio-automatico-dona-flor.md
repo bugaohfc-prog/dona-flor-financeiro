@@ -2,26 +2,38 @@
 
 Data: 2026-05-23
 
-## Objetivo
+## Estado oficial
 
-Migrar o workflow Pipedream `Envio automatico Dona flor` para GitHub Actions, mantendo `DRY_RUN` como padrao seguro e habilitando envio real por SMTP somente quando `DRY_RUN=false` estiver explicitamente configurado.
+O envio automatico financeiro da Dona Flor foi migrado do Pipedream para GitHub Actions.
 
-## Arquivos
+Estado final validado:
 
-- `.github/workflows/envio-automatico-dona-flor.yml`
-- `scripts/envio-automatico-dona-flor.mjs`
-
-## Runtime
-
-O workflow usa Node 24 via `actions/setup-node` e define `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` como manutencao preventiva contra avisos de deprecacao do Node 20 no GitHub Actions.
+- Pipedream desligado.
+- GitHub Actions e o fluxo oficial de envio automatico.
+- Workflow: `.github/workflows/envio-automatico-dona-flor.yml`.
+- Script: `scripts/envio-automatico-dona-flor.mjs`.
+- Envio real ativo com `DRY_RUN=false`.
+- SMTP Gmail validado.
+- Conta correta de envio: `donaflor.suporte@gmail.com`.
+- `MAIL_FROM=Dona Flor Financeiro <donaflor.suporte@gmail.com>`.
+- E-mail real enviado com sucesso.
+- `message_id` gerado nos logs.
+- Logs mascaram destinatarios.
+- Template final validado visualmente no Outlook mobile.
+- Node 24 aplicado e validado.
+- `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` aplicado.
 
 ## Agenda
 
-O Pipedream roda com cron `0 8,9,20 * * *` em `America/Sao_Paulo`.
+Cron oficial em horario de Sao Paulo:
+
+- 08:07;
+- 09:07;
+- 20:07.
 
 No GitHub Actions, o schedule usa UTC:
 
-- `7 11,12,23 * * *`
+- `7 11,12,23 * * *`.
 
 Equivalencia:
 
@@ -31,7 +43,19 @@ Equivalencia:
 
 O minuto 7 evita o topo da hora, quando jobs agendados podem atrasar mais.
 
+## Runtime
+
+O workflow usa Node 24 via `actions/setup-node`.
+
+Tambem define:
+
+- `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true`.
+
+Essa configuracao foi aplicada como manutencao preventiva contra avisos de deprecacao do Node 20 no GitHub Actions.
+
 ## Secrets necessarios
+
+Secrets usados pelo workflow:
 
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
@@ -43,8 +67,6 @@ O minuto 7 evita o topo da hora, quando jobs agendados podem atrasar mais.
 - `SMTP_PASS`
 - `MAIL_FROM`
 
-Nenhum secret deve ser escrito no codigo ou impresso em log.
-
 Configuracao SMTP validada:
 
 - `SMTP_HOST=smtp.gmail.com`
@@ -54,11 +76,16 @@ Configuracao SMTP validada:
 - `MAIL_FROM=Dona Flor Financeiro <donaflor.suporte@gmail.com>`
 - `MAIL_TO_FALLBACK=donafloradm@outlook.com` usado no teste controlado.
 
-Para Gmail, `SMTP_PASS` deve ser uma App Password, nao a senha normal da conta.
+Nenhum secret deve ser escrito no codigo ou impresso em log.
 
 ## DRY_RUN
 
-`DRY_RUN` e o modo seguro padrao.
+`DRY_RUN` controla se o envio real fica ativo.
+
+Estado oficial atual:
+
+- `DRY_RUN=false`.
+- Envio real ativo pelo GitHub Actions.
 
 Com `DRY_RUN=true`:
 
@@ -72,7 +99,7 @@ Envio real so ocorre quando o secret `DRY_RUN` for exatamente `false`.
 
 Qualquer outro valor, incluindo vazio, `true`, `0`, `no`, `off` ou erro de digitacao, e tratado como `DRY_RUN=true`.
 
-Para voltar ao modo seguro, alterar o secret `DRY_RUN` para `true` ou remover o valor `false`.
+Para pausar envio real em emergencia, alterar o secret `DRY_RUN` para `true`.
 
 ## Envio real SMTP
 
@@ -81,7 +108,7 @@ Quando `DRY_RUN=false`, o script:
 - valida `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` e `MAIL_FROM`;
 - conecta no SMTP com STARTTLS quando usado `SMTP_PORT=587`;
 - autentica com `AUTH PLAIN`;
-- envia o HTML e texto ja montados pelo script;
+- envia o HTML e texto montados pelo script;
 - usa `MAIL_FROM` como remetente e reply-to;
 - registra somente resumo seguro.
 
@@ -89,25 +116,35 @@ Se o SMTP falhar, a execucao falha com erro seguro, sem expor senha, corpo do e-
 
 ## Validacao realizada
 
-O fluxo GitHub Actions foi validado em duas etapas:
+O fluxo GitHub Actions foi validado nas etapas abaixo.
 
-1. `DRY_RUN=true`:
-   - workflow executou com sucesso;
-   - avaliou as empresas Dona Flor Financeiro e Choco Arte;
-   - detectou corretamente conta para amanha, nota urgente, contas vencidas e empresa com alerta;
-   - nenhum e-mail real foi enviado.
-2. `DRY_RUN=false` em teste manual controlado:
-   - envio real por Gmail SMTP funcionou;
-   - e-mail foi enviado para `donafloradm@outlook.com`;
-   - log registrou status `enviado`;
-   - log registrou `message_id`;
-   - apos o teste, `DRY_RUN` foi retornado para `true`.
+`DRY_RUN=true`:
+
+- workflow executou com sucesso;
+- avaliou as empresas Dona Flor Financeiro e Choco Arte;
+- detectou corretamente conta para amanha, nota urgente, contas vencidas e empresa com alerta;
+- nenhum e-mail real foi enviado.
+
+`DRY_RUN=false` em teste manual controlado:
+
+- envio real por Gmail SMTP funcionou;
+- e-mail foi enviado para `donafloradm@outlook.com`;
+- log registrou status `enviado`;
+- log registrou `message_id`.
+
+Estado oficial final:
+
+- Pipedream desligado;
+- GitHub Actions ativo como fluxo oficial;
+- `DRY_RUN=false` ativo para envio real.
+
+## Erro SMTP 535
 
 Durante o primeiro teste real, o Gmail retornou erro SMTP `535`.
 
 Causa identificada:
 
-- o script estava usando `suporte.donaflor@gmail.com`;
+- estava sendo usado `suporte.donaflor@gmail.com`;
 - a senha de app havia sido gerada na conta `donaflor.suporte@gmail.com`.
 
 Correcao aplicada nos GitHub Secrets:
@@ -119,9 +156,26 @@ Depois da correcao, o envio real controlado foi validado com sucesso.
 
 Se o erro SMTP `535` voltar a ocorrer, conferir se a senha de app foi gerada na mesma conta Google configurada em `SMTP_USER` e `MAIL_FROM`.
 
+## Template final validado
+
+O template final foi validado visualmente no Outlook mobile.
+
+Elementos validados:
+
+- cabecalho `Dona Flor Gestao Financeira`;
+- bloco `Alerta Critico`;
+- total financeiro de contas vencidas;
+- conta de amanha;
+- nota urgente;
+- lista de contas vencidas limitada a 6 cards;
+- linha `+ X conta(s) vencida(s) nao exibida(s) neste resumo.`;
+- notas sem fallback visual de `Sem titulo`;
+- botao `Acessar sistema`;
+- rodape de mensagem automatica.
+
 ## Referencia Pipedream
 
-Foram usados como referencia os steps atuais:
+Foram usados como referencia os steps antigos:
 
 - `montar_email`;
 - `envio_email`.
@@ -157,7 +211,7 @@ Para `df_usuarios_empresas`, a consulta usa somente colunas confirmadas no schem
 - `perfil`;
 - `empresa_id`.
 
-Colunas opcionais do Pipedream antigo, como `role` e `receber_email`, não são consultadas neste ciclo para evitar erro HTTP 400 quando não existirem no banco.
+Colunas opcionais do Pipedream antigo, como `role` e `receber_email`, nao sao consultadas para evitar erro HTTP 400 quando nao existirem no banco.
 
 Campos atuais preferidos:
 
@@ -182,7 +236,7 @@ Os logs registram somente:
 - primeiro destinatario mascarado;
 - lista de destinatarios mascarados;
 - total de destinatarios;
-- message id quando disponivel;
+- `message_id` quando disponivel;
 - status `dry_run_ok`, `dry_run_sem_envio`, `enviado` ou aviso seguro.
 
 Os logs nao registram:
@@ -194,29 +248,29 @@ Os logs nao registram:
 - HTML ou texto completo do e-mail;
 - e-mails completos.
 
-## Como testar
+## Procedimento de emergencia
 
-Teste seguro:
+Para pausar envio real:
 
-- manter `DRY_RUN=true`;
-- executar manualmente pelo GitHub Actions;
-- conferir logs com `dry_run_ok` ou `dry_run_sem_envio`;
-- confirmar que nenhum e-mail real foi enviado.
+1. Acessar GitHub Actions secrets.
+2. Alterar `DRY_RUN` para `true`.
+3. Executar manualmente o workflow, se necessario, para confirmar que o log mostra modo seguro.
+4. Conferir que nenhum e-mail real foi enviado.
 
-Teste real controlado:
+Para testar manualmente:
 
-- confirmar secrets SMTP no GitHub Actions;
-- alterar apenas o secret `DRY_RUN` para `false`;
-- executar manualmente com o tipo desejado;
-- conferir o recebimento do e-mail;
-- conferir logs com status `enviado`, destinatarios mascarados e `message_id`;
-- voltar `DRY_RUN` para `true` imediatamente apos o teste.
+1. Acessar GitHub Actions.
+2. Abrir o workflow `Envio automatico Dona Flor`.
+3. Usar `Run workflow`.
+4. Escolher o tipo desejado, se necessario.
+5. Conferir logs com destinatarios mascarados.
 
-Estado seguro atual:
+Para reativar envio real:
 
-- `DRY_RUN=true`;
-- Pipedream pode permanecer como backup ate decisao final de troca;
-- GitHub Actions esta tecnicamente validado, mas envio real automatico definitivo ainda depende de decisao operacional.
+1. Alterar `DRY_RUN` para `false`.
+2. Executar manualmente o workflow.
+3. Conferir recebimento do e-mail.
+4. Conferir log com status `enviado` e `message_id`.
 
 ## Cuidados operacionais
 
@@ -226,18 +280,10 @@ Estado seguro atual:
 - Manter mascaramento de destinatarios.
 - `SMTP_PASS` deve ser senha de app do Google.
 - `SMTP_PASS` nao deve ser a senha normal da conta Gmail.
+- Se erro SMTP `535` ocorrer, conferir `SMTP_USER` e a senha de app da mesma conta Google.
 - O schedule do GitHub Actions usa UTC.
 - O cron atual ja esta convertido para horarios equivalentes em Sao Paulo.
-- Pipedream deve ser mantido como backup ate a decisao final de corte.
-
-## TODO futuro
-
-Antes de manter envio real recorrente:
-
-- adicionar idempotencia para evitar duplicidade em rerun manual;
-- confirmar se alerta de alto valor deve olhar todos os vencimentos futuros, como no Pipedream, ou apenas a janela de alerta do app;
-- confirmar os campos reais para filial e centro no e-mail detalhado antes de reativar cards completos de contas;
-- confirmar os campos reais de texto/observacao das notas antes de reativar detalhes completos no corpo do e-mail.
+- Nao religar Pipedream sem necessidade, para evitar duplicidade de e-mails.
 
 ## Execucao manual
 
@@ -255,3 +301,8 @@ Em `AUTO`, o script infere o tipo pelo horario em Sao Paulo:
 - 20h: `VENCIDAS`;
 - 9h: `AMANHA`;
 - demais horarios: hoje/padrao.
+
+## Melhorias futuras opcionais
+
+- adicionar idempotencia para evitar duplicidade em rerun manual;
+- confirmar se alerta de alto valor deve olhar todos os vencimentos futuros, como no Pipedream, ou apenas a janela de alerta do app.

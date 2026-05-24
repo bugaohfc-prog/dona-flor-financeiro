@@ -283,10 +283,6 @@ export function useContas() {
       setRecorrenciaContaId(recorrenciaEncontrada.id)
       setTipoRecorrencia(recorrenciaEncontrada.frequencia || recorrenciaEncontrada.tipo_recorrencia || 'mensal')
       setDiaVencimentoRecorrencia(String(recorrenciaEncontrada.dia_vencimento || diaPadrao || ''))
-
-      if (!conta.recorrencia_id && recorrenciaEncontrada.id) {
-        await vincularRecorrenciaNaConta(supabase, conta.id, empresaId, recorrenciaEncontrada.id)
-      }
     }
   }
 
@@ -335,12 +331,19 @@ export function useContas() {
     }
 
     const filialSegura = await resolverFilialSegura(supabase, empresaId, filialId)
+    const dataBanco = formatarDataParaBanco(dataVencimento)
+    const diaRecorrencia = contaRecorrente ? Number(diaVencimentoRecorrencia || String(dataBanco).slice(8, 10)) : null
+
+    if (contaRecorrente && (!diaRecorrencia || diaRecorrencia < 1 || diaRecorrencia > 31)) {
+      mostrarAviso('Informe um dia válido para a recorrência.', 'erro')
+      return
+    }
 
     const payload = {
       descricao: primeiraLetraMaiuscula(descricao.trim()),
       valor: converterValor(valor),
-      data_vencimento: formatarDataParaBanco(dataVencimento),
-      vencimento: formatarDataParaBanco(dataVencimento),
+      data_vencimento: dataBanco,
+      vencimento: dataBanco,
       centro_custo_id: centroCustoSeguro,
       filial_id: filialSegura,
       observacao: observacaoConta.trim() || null,
@@ -351,48 +354,40 @@ export function useContas() {
       empresa_id: empresaId
     }
 
+    const payloadRecorrencia = contaRecorrente ? {
+      empresa_id: empresaId,
+      descricao: primeiraLetraMaiuscula(descricao.trim()),
+      valor: converterValor(valor),
+      centro_custo_id: centroCustoSeguro,
+      filial_id: filialSegura,
+      tipo_recorrencia: tipoRecorrencia || 'mensal',
+      dia_vencimento: diaRecorrencia,
+      data_inicio: dataBanco,
+      ativo: true
+    } : null
+
     let error
 
     if (editandoContaId) {
-      const resposta = await atualizarConta(supabase, editandoContaId, empresaId, payload)
+      const payloadConta = { ...payload }
+
+      if (contaRecorrente && recorrenciaContaId) {
+        payloadConta.recorrencia_id = recorrenciaContaId
+      } else if (!contaRecorrente && recorrenciaContaId) {
+        payloadConta.recorrencia_id = null
+      }
+
+      const resposta = await atualizarConta(supabase, editandoContaId, empresaId, payloadConta)
       error = resposta.error
 
       if (!error) {
-        const dataBanco = formatarDataParaBanco(dataVencimento)
-        const diaRecorrencia = Number(diaVencimentoRecorrencia || String(dataBanco).slice(8, 10))
-
         if (contaRecorrente) {
-          if (!diaRecorrencia || diaRecorrencia < 1 || diaRecorrencia > 31) {
-            mostrarAviso('Informe um dia válido para a recorrência.', 'erro')
-            return
-          }
-
-          const payloadRecorrencia = {
-            empresa_id: empresaId,
-            descricao: primeiraLetraMaiuscula(descricao.trim()),
-            valor: converterValor(valor),
-            centro_custo_id: centroCustoSeguro,
-            filial_id: filialSegura,
-            tipo_recorrencia: tipoRecorrencia || 'mensal',
-            dia_vencimento: diaRecorrencia,
-            data_inicio: dataBanco,
-            ativo: true
-          }
-
           if (recorrenciaContaId) {
             const { error: erroRecorrencia } = await atualizarRecorrencia(supabase, recorrenciaContaId, empresaId, payloadRecorrencia)
 
             if (erroRecorrencia) {
               console.warn('Falha ao atualizar recorrência da conta:', erroRecorrencia)
               mostrarAviso(mensagemSeguraErro(erroRecorrencia, 'A conta foi atualizada, mas a recorrência não foi salva.'), 'erro')
-              return
-            }
-
-            const { error: erroVinculoRecorrencia } = await vincularRecorrenciaNaConta(supabase, editandoContaId, empresaId, recorrenciaContaId)
-
-            if (erroVinculoRecorrencia) {
-              console.warn('Falha ao vincular recorrência atualizada:', erroVinculoRecorrencia)
-              mostrarAviso(mensagemSeguraErro(erroVinculoRecorrencia, 'A recorrência foi atualizada, mas não foi vinculada à conta.'), 'erro')
               return
             }
           } else {
@@ -442,8 +437,13 @@ export function useContas() {
             ))
           }
         } else if (recorrenciaContaId) {
-          await desativarRecorrencia(supabase, recorrenciaContaId, empresaId)
-          await vincularRecorrenciaNaConta(supabase, editandoContaId, empresaId, null)
+          const { error: erroDesativarRecorrencia } = await desativarRecorrencia(supabase, recorrenciaContaId, empresaId)
+
+          if (erroDesativarRecorrencia) {
+            console.warn('Falha ao desativar recorrência da conta:', erroDesativarRecorrencia)
+            mostrarAviso(mensagemSeguraErro(erroDesativarRecorrencia, 'A conta foi atualizada, mas a recorrência não foi desativada.'), 'erro')
+            return
+          }
         }
       }
     } else {
@@ -451,29 +451,12 @@ export function useContas() {
       error = resposta.error
 
       if (!error && contaRecorrente) {
-        const dataBanco = formatarDataParaBanco(dataVencimento)
-        const diaRecorrencia = Number(diaVencimentoRecorrencia || String(dataBanco).slice(8, 10))
-
-        if (!diaRecorrencia || diaRecorrencia < 1 || diaRecorrencia > 31) {
-          mostrarAviso('Informe um dia válido para a recorrência.', 'erro')
-          return
-        }
-
-        const { data: dataRecorrencia, error: erroRecorrencia } = await criarRecorrencia(supabase, {
-          empresa_id: empresaId,
-          descricao: primeiraLetraMaiuscula(descricao.trim()),
-          valor: converterValor(valor),
-          centro_custo_id: centroCustoSeguro,
-          filial_id: filialSegura,
-          tipo_recorrencia: tipoRecorrencia || 'mensal',
-          dia_vencimento: diaRecorrencia,
-          data_inicio: dataBanco,
-          ativo: true
-        })
+        const { data: dataRecorrencia, error: erroRecorrencia } = await criarRecorrencia(supabase, payloadRecorrencia)
 
         if (erroRecorrencia) {
           console.warn('Falha ao criar recorrência da nova conta:', erroRecorrencia)
           mostrarAviso(mensagemSeguraErro(erroRecorrencia, 'A conta foi criada, mas a recorrência não foi salva.'), 'erro')
+          return
         } else {
           const recorrenciaCriada = Array.isArray(dataRecorrencia) ? dataRecorrencia[0] : dataRecorrencia
           const contaCriada = Array.isArray(resposta.data) ? resposta.data[0] : resposta.data
@@ -490,14 +473,22 @@ export function useContas() {
             recorrenciaIdCriada = recorrenciaEncontrada?.id
           }
 
-          if (recorrenciaIdCriada && contaCriada?.id) {
-            const { error: erroVinculoRecorrencia } = await vincularRecorrenciaNaConta(supabase, contaCriada.id, empresaId, recorrenciaIdCriada)
+          if (!recorrenciaIdCriada) {
+            mostrarAviso('A recorrência foi criada, mas o sistema não conseguiu localizar o vínculo.', 'erro')
+            return
+          }
 
-            if (erroVinculoRecorrencia) {
-              console.warn('Falha ao vincular recorrência da nova conta:', erroVinculoRecorrencia)
-              mostrarAviso(mensagemSeguraErro(erroVinculoRecorrencia, 'A recorrência foi criada, mas não foi vinculada à conta.'), 'erro')
-              return
-            }
+          if (!contaCriada?.id) {
+            mostrarAviso('A conta foi criada, mas o sistema não conseguiu localizar o vínculo da recorrência.', 'erro')
+            return
+          }
+
+          const { error: erroVinculoRecorrencia } = await vincularRecorrenciaNaConta(supabase, contaCriada.id, empresaId, recorrenciaIdCriada)
+
+          if (erroVinculoRecorrencia) {
+            console.warn('Falha ao vincular recorrência da nova conta:', erroVinculoRecorrencia)
+            mostrarAviso(mensagemSeguraErro(erroVinculoRecorrencia, 'A recorrência foi criada, mas não foi vinculada à conta.'), 'erro')
+            return
           }
         }
       }

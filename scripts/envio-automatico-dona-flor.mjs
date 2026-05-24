@@ -330,11 +330,12 @@ function montarMensagemDryRun({ tipo, empresaNome, resumoContas, notasResumo, no
     }
   }
 
+  const empresaAssunto = safeName(empresaNome) || 'Empresa'
   const subject = tipo === 'VENCIDAS'
-    ? 'Contas vencidas - Dona Flor'
+    ? `Contas vencidas - ${empresaAssunto}`
     : tipo === 'AMANHA'
-      ? 'Contas de amanha - Dona Flor'
-      : 'Alerta financeiro - Dona Flor'
+      ? `Contas de amanhã - ${empresaAssunto}`
+      : `Alerta financeiro - ${empresaAssunto}`
 
   const totais = calcularTotaisContas(resumoContas)
 
@@ -444,8 +445,8 @@ function montarHtmlDryRun({
   return `
     <div style="font-family: Arial, sans-serif; background:#f4f4f4; padding:20px">
       <div style="background:#0f5c4d; color:#fff; padding:22px; border-radius:14px">
-        <h2 style="margin:0; font-size:24px; line-height:1.18;">Dona Flor<br>Gestao Financeira</h2>
-        <p style="margin:10px 0 0 0; font-size:15px; line-height:1.35;">Painel financeiro automatico</p>
+        <h2 style="margin:0; font-size:24px; line-height:1.18;">DNA Gestão</h2>
+        <p style="margin:10px 0 0 0; font-size:15px; line-height:1.35;">Alertas financeiros automáticos</p>
       </div>
 
       ${blocoAlerta}
@@ -465,7 +466,7 @@ function montarHtmlDryRun({
       </a>
 
       <p style="font-size:12px; color:#999; margin-top:28px;">
-        Mensagem automatica enviada pelo sistema Dona Flor Gestao Financeira.
+        Mensagem automática enviada pelo DNA Gestão.
       </p>
       <p style="font-size:12px; color:#999;">Empresa: ${escapeHtml(safeName(empresaNome))}</p>
     </div>
@@ -527,7 +528,7 @@ function montarTextoResumo({ tipo, tituloPrincipal, contasPrincipal, resumoConta
       ? 'Total amanha'
       : 'Total hoje'
 
-  linhas.push('Dona Flor Gestao Financeira')
+  linhas.push('DNA Gestão')
   linhas.push('')
   linhas.push(resumoContas.vencidas.length > 0 || resumoContas.altoValor.length > 0 || contasPrincipal.length > 0 ? 'ALERTA CRITICO' : 'Situacao sob controle')
   linhas.push('')
@@ -874,8 +875,8 @@ function extractEmail(value) {
 
 function buildMimeMessage({ from, fromEmail, to, subject, html, text, messageId }) {
   const boundary = `dona-flor-${randomUUID()}`
-  const safeSubject = encodeMimeHeader(subject || 'Alerta financeiro - Dona Flor')
-  const safeText = cleanString(text) || 'Resumo automatico Dona Flor.'
+  const safeSubject = encodeMimeHeader(subject || 'Alerta financeiro - Empresa')
+  const safeText = cleanString(text) || 'Resumo automático DNA Gestão.'
   const safeHtml = cleanString(html) || `<p>${escapeHtml(safeText)}</p>`
 
   return [

@@ -12,6 +12,20 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
     return `${Number(valor || 0).toFixed(1)}%`
   }
 
+  function slugEmpresa(nome) {
+    return String(nome || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+  }
+
+  function nomeArquivoRelatorio(extensao) {
+    const slug = slugEmpresa(empresaNome)
+    return slug ? `relatorio-financeiro-${slug}.${extensao}` : `relatorio-financeiro.${extensao}`
+  }
+
   function estaVencida(data, status) {
     if (!data || status === 'pago') return false
     const hoje = new Date()
@@ -608,7 +622,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       linha[6]
     ])
 
-    exportCsv({ filename: 'relatorio-financeiro-dona-flor.csv', headers, rows })
+    exportCsv({ filename: nomeArquivoRelatorio('csv'), headers, rows })
   }
 
   function exportarExcel() {
@@ -726,7 +740,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       }
     ]
 
-    downloadBlob('relatorio-financeiro-dona-flor.xlsx', createXlsxBlob(sheets))
+    downloadBlob(nomeArquivoRelatorio('xlsx'), createXlsxBlob(sheets))
   }
 
   function limparFiltros() {

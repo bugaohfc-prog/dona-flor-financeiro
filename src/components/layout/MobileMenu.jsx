@@ -125,8 +125,8 @@ function MobileMenu({
         onTouchMove={(e) => e.stopPropagation()}
       >
         <div style={styles.menuPerfil}>
-          <img src="/icon-192.png" alt="Dona Flor Financeiro" style={styles.menuPerfilIcone} />
-          <div><strong>{nomeExibicao}</strong><small>{perfilExibicao}</small></div>
+          <img src="/icon-192.png" alt="DNA Gestão" style={styles.menuPerfilIcone} />
+          <div><strong>DNA Gestão</strong><small>{nomeExibicao} • {perfilExibicao}</small></div>
         </div>
 
         {exibirSeletorEmpresa && (

@@ -47,9 +47,9 @@ function Topbar({
     <section className="no-print top-shell top-shell-clean" style={styles.usuarioTopo}>
       <div className="top-shell-context">
         <button className="top-shell-logo" style={styles.logoMarca} onClick={abrirDashboard} title="Ir para o painel">
-          <img src="/icon-192.png" alt="Dona Flor Financeiro" style={styles.logoImagem} />
+          <img src="/icon-192.png" alt="DNA Gestão" style={styles.logoImagem} />
           <span>
-            <strong>Dona Flor Financeiro</strong>
+            <strong>DNA Gestão</strong>
             <small>{nomeEmpresaAtiva} &bull; Gestão Financeira</small>
           </span>
         </button>

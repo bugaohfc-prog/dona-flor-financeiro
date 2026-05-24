@@ -47,7 +47,7 @@ export default function Login({ onLogin }) {
   return (
     <div style={styles.page}>
       <form style={styles.card} onSubmit={handleLogin}>
-        <h1 style={styles.titulo}>Dona Flor Financeiro</h1>
+        <h1 style={styles.titulo}>DNA Gestão</h1>
         <p style={styles.subtitulo}>Acesse sua conta para continuar</p>
 
         <input

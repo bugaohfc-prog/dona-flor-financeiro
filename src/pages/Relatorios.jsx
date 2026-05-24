@@ -5,7 +5,9 @@ import { money as formatarValor, dateBR as formatarData } from '../utils/format'
 import { createXlsxBlob, downloadBlob, exportCsv, printHtmlReport } from '../services/export/reportExportService'
 import { gerarCopilotFinanceiro } from '../services/ai/copilotEngine.js'
 
-export default function Relatorios({ voltar, empresaId, mostrarAviso, podeExportarDados = true }) {
+export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAviso, podeExportarDados = true }) {
+  const nomeEmpresaRelatorio = String(empresaNome || '').trim() || 'Empresa ativa'
+
   function formatarPercentual(valor) {
     return `${Number(valor || 0).toFixed(1)}%`
   }
@@ -519,7 +521,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso, podeExport
       <html lang="pt-BR">
         <head>
           <meta charset="utf-8" />
-          <title>Relatório Financeiro - Dona Flor</title>
+          <title>Relatório Financeiro - ${escapeHtml(nomeEmpresaRelatorio)}</title>
           <style>
             * { box-sizing: border-box; }
             body { font-family: Arial, sans-serif; color: #0f172a; margin: 28px; background: #fff; }
@@ -551,6 +553,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso, podeExport
           <div class="cover">
             <h1>Relatório financeiro</h1>
             <div class="meta">
+              Empresa: ${escapeHtml(nomeEmpresaRelatorio)}<br />
               Gerado em ${new Date().toLocaleString('pt-BR')} • ${escapeHtml(nomeMes(filtroMes || mesAtualPadrao()))}<br />
               Centro: ${escapeHtml(filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos')} • Filial: ${escapeHtml(filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas')} • Status: ${escapeHtml(filtroStatus)}
             </div>
@@ -751,7 +754,7 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso, podeExport
 
       <div className="relatorio-print-header">
         <h1>Relatório Financeiro Gerencial</h1>
-        <p>Empresa: Dona Flor</p>
+        <p>Empresa: {nomeEmpresaRelatorio}</p>
         <p>Gerado em {new Date().toLocaleDateString('pt-BR')}</p>
         <p>Centro: {filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos'} • Filial: {filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas'} • Mês: {filtroMes || 'Todos'} • Status: {filtroStatus}</p>
       </div>

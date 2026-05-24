@@ -3844,7 +3844,7 @@ export default function App() {
 
   if (telaAtual === 'relatorios') {
     return renderAppFrame(
-      <LazyRelatorios voltar={() => navegarPara('contas')} empresaId={empresaId} usuario={usuarioLogado} mostrarAviso={mostrarAviso} podeExportarDados={podeExportarDados()} />
+      <LazyRelatorios voltar={() => navegarPara('contas')} empresaId={empresaId} empresaNome={empresaAtiva?.nome} usuario={usuarioLogado} mostrarAviso={mostrarAviso} podeExportarDados={podeExportarDados()} />
     )
   }
 

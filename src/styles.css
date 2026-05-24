@@ -29,6 +29,14 @@
   font-size: 16px !important;
   line-height: 1 !important;
 }
+.top-user-profile-text {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  white-space: nowrap !important;
+}
 .profile-modal-backdrop {
   position: fixed;
   inset: 0;

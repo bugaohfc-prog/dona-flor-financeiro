@@ -3,6 +3,7 @@ import { memo, useCallback, useMemo } from 'react'
 function Topbar({
   styles,
   nomeEmpresa,
+  empresaAtivaNome,
   navegarPara,
   menuNavegacaoAberto,
   setMenuNavegacaoAberto,
@@ -20,6 +21,10 @@ function Topbar({
     () => empresasDisponiveis.find((empresa) => empresa.id === empresaId),
     [empresaId, empresasDisponiveis]
   )
+  const nomeEmpresaAtiva = useMemo(() => {
+    const nome = String(empresaAtivaNome || empresaAtual?.nome || nomeEmpresa || '').trim()
+    return nome || 'Empresa não identificada'
+  }, [empresaAtivaNome, empresaAtual?.nome, nomeEmpresa])
 
   const tituloPerfil = useMemo(() => {
     const nome = nomeUsuarioAtual || (typeof nomeUsuario === 'function' ? nomeUsuario() : '')
@@ -44,8 +49,8 @@ function Topbar({
         <button className="top-shell-logo" style={styles.logoMarca} onClick={abrirDashboard} title="Ir para o painel">
           <img src="/icon-192.png" alt="Dona Flor Financeiro" style={styles.logoImagem} />
           <span>
-            <strong>{nomeEmpresa || 'Dona Flor'}</strong>
-            <small>Gestão Financeira</small>
+            <strong>Dona Flor Financeiro</strong>
+            <small>{nomeEmpresaAtiva} &bull; Gestão Financeira</small>
           </span>
         </button>
       </div>
@@ -76,12 +81,12 @@ function Topbar({
         )}
         <button
           type="button"
-          className="top-user-profile-button top-user-profile-icon"
+          className="top-user-profile-button top-user-profile-text"
           title={tituloPerfil}
           onClick={abrirPerfil}
-          aria-label="Abrir meu perfil"
+          aria-label={tituloPerfil}
         >
-          <span aria-hidden="true">👤</span>
+          Meu perfil
         </button>
         <button className="mobile-menu-trigger" style={styles.btnMenuTopo} onClick={alternarMenuMobile} aria-expanded={menuNavegacaoAberto}>☰</button>
       </div>

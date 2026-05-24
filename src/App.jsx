@@ -2742,6 +2742,7 @@ export default function App() {
       <Topbar
         styles={styles}
         nomeEmpresa={nomeEmpresa}
+        empresaAtivaNome={empresaAtiva?.nome}
         navegarPara={navegarPara}
         menuNavegacaoAberto={menuNavegacaoAberto}
         setMenuNavegacaoAberto={setMenuNavegacaoAberto}

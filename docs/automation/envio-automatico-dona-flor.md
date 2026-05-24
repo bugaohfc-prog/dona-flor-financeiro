@@ -19,9 +19,41 @@ Estado final validado:
 - E-mail real enviado com sucesso.
 - `message_id` gerado nos logs.
 - Logs mascaram destinatarios.
-- Template final validado visualmente no Outlook mobile.
+- Template final validado visualmente no Outlook mobile com branding DNA Gestao.
+- Subject usa a empresa ativa processada.
+- Corpo do e-mail preserva `Empresa: nome da empresa processada`.
 - Node 24 aplicado e validado.
 - `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` aplicado.
+
+## Estado atual apos branding DNA Gestao
+
+O produto/sistema passou a ser apresentado como DNA Gestao. Dona Flor Financeiro, Choco Arte e futuras empresas devem ser tratadas como empresas/tenants processadas pelo envio automatico.
+
+Estado operacional validado:
+
+- cabecalho do e-mail mostra `DNA Gestao`;
+- subtitulo mostra `Alertas financeiros automaticos`;
+- rodape mostra `Mensagem automatica enviada pelo DNA Gestao.`;
+- subject usa a empresa ativa, por exemplo `Alerta financeiro - Dona Flor Financeiro`;
+- corpo preserva a empresa correta em `Empresa: nome da empresa processada`;
+- botao `Acessar sistema` continua aparecendo e funcionando;
+- layout mobile foi aprovado;
+- logs continuam mascarando destinatarios e nao imprimem secrets.
+
+Validacao multiempresa registrada:
+
+- Dona Flor Financeiro: envio validado, subject com empresa ativa e e-mail enviado quando havia alerta.
+- Choco Arte: empresa avaliada pelo workflow, destinatario encontrado e envio corretamente pulado por ausencia de alerta elegivel.
+- Motivo registrado para Choco Arte: `Nenhuma conta vencendo hoje. Sem notas urgentes.`
+- Status registrado: `dry_run_sem_envio`.
+
+Ausencia de alerta em uma empresa nao e falha. O comportamento esperado e avaliar a empresa, registrar o motivo seguro e nao enviar e-mail real quando nao houver conta/nota elegivel.
+
+Atencao residual:
+
+- `MAIL_FROM` e remetente visual podem ainda aparecer como Dona Flor Financeiro enquanto o secret/env nao for alterado e validado.
+- Se `MAIL_FROM` ja estiver configurado como `DNA Gestao <donaflor.suporte@gmail.com>`, registrar a validacao visual do remetente em ciclo proprio.
+- Nao alterar `MAIL_FROM`, secrets, SMTP, workflow ou script sem ciclo operacional especifico.
 
 ## Agenda
 
@@ -75,6 +107,8 @@ Configuracao SMTP validada:
 - `SMTP_PASS`: senha de app do Google
 - `MAIL_FROM=Dona Flor Financeiro <donaflor.suporte@gmail.com>`
 - `MAIL_TO_FALLBACK=donafloradm@outlook.com` usado no teste controlado.
+
+Atencao: `MAIL_FROM` controla o remetente visual e o reply-to usado pelo script. A troca para `DNA Gestao <donaflor.suporte@gmail.com>` deve ser feita apenas via secret/env em ciclo operacional proprio, mantendo `SMTP_USER` e `SMTP_PASS` inalterados.
 
 Nenhum secret deve ser escrito no codigo ou impresso em log.
 
@@ -158,11 +192,12 @@ Se o erro SMTP `535` voltar a ocorrer, conferir se a senha de app foi gerada na 
 
 ## Template final validado
 
-O template final foi validado visualmente no Outlook mobile.
+O template final foi validado visualmente no Outlook mobile apos branding DNA Gestao.
 
 Elementos validados:
 
-- cabecalho `Dona Flor Gestao Financeira`;
+- cabecalho `DNA Gestao`;
+- subtitulo `Alertas financeiros automaticos`;
 - bloco `Alerta Critico`;
 - total financeiro de contas vencidas;
 - conta de amanha;
@@ -171,7 +206,8 @@ Elementos validados:
 - linha `+ X conta(s) vencida(s) nao exibida(s) neste resumo.`;
 - notas sem fallback visual de `Sem titulo`;
 - botao `Acessar sistema`;
-- rodape de mensagem automatica.
+- rodape `Mensagem automatica enviada pelo DNA Gestao.`;
+- empresa correta no corpo do e-mail.
 
 ## Referencia Pipedream
 
@@ -180,12 +216,13 @@ Foram usados como referencia os steps antigos:
 - `montar_email`;
 - `envio_email`.
 
-Regras reaproveitadas no script:
+Regras reaproveitadas e atualizadas no script:
 
-- tipo `VENCIDAS` gera assunto `Contas vencidas - Dona Flor`;
-- tipo `AMANHA` gera assunto `Contas de amanha - Dona Flor`;
-- tipo padrao gera assunto `Alerta financeiro - Dona Flor`;
-- o HTML preserva a estrutura geral do cabecalho Dona Flor, bloco de alerta, resumo principal, bloco de notas e link do app;
+- tipo `VENCIDAS` gera assunto `Contas vencidas - nome da empresa`;
+- tipo `AMANHA` gera assunto `Contas de amanha - nome da empresa`;
+- tipo padrao gera assunto `Alerta financeiro - nome da empresa`;
+- o HTML preserva a estrutura geral do cabecalho, bloco de alerta, resumo principal, bloco de notas e link do app, usando DNA Gestao como produto;
+- o corpo do e-mail preserva `Empresa: nome da empresa processada`;
 - notas urgentes continuam sendo consideradas como gatilho de envio;
 - usuarios com perfil `master`, `superadmin`, `super_admin` ou e-mail bloqueado nao entram como destinatarios;
 - destinatarios sao mascarados nos logs.

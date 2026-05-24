@@ -11,7 +11,7 @@ function EmptyState({ icon, title, description }) {
 export default function NotasPage({
   styles, navegarPara, notasFiltradas, notasPendentes, notasCriticas, notasUrgentes,
   buscaNota, setBuscaNota, formatarData, alternarNotaConcluida, abrirEdicaoNota,
-  abrirConfirmacao, excluirNota, filtroFilial, setFiltroFilial, filiais
+  abrirConfirmacao, excluirNota, filtroFilial, setFiltroFilial, filiais, podeEditarFinanceiro = true
 }) {
   return (
     <>
@@ -75,11 +75,13 @@ export default function NotasPage({
                 {nota.df_filiais?.nome && <small className="note-event-date">🏢 {nota.df_filiais.nome}</small>}
                 {nota.conteudo && <p style={styles.textoNota}>{nota.conteudo}</p>}
 
+                {podeEditarFinanceiro && (
                 <div style={styles.acoes}>
                   <button style={styles.btnPago} onClick={() => alternarNotaConcluida(nota)}>{nota.concluida ? 'Reabrir' : 'Concluir'}</button>
                   <button style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
                   <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>Excluir</button>
                 </div>
+                )}
               </div>
             )
           })}

@@ -5,7 +5,7 @@ import { money as formatarValor, dateBR as formatarData } from '../utils/format'
 import { createXlsxBlob, downloadBlob, exportCsv, printHtmlReport } from '../services/export/reportExportService'
 import { gerarCopilotFinanceiro } from '../services/ai/copilotEngine.js'
 
-export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
+export default function Relatorios({ voltar, empresaId, mostrarAviso, podeExportarDados = true }) {
   function formatarPercentual(valor) {
     return `${Number(valor || 0).toFixed(1)}%`
   }
@@ -473,6 +473,11 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
 
 
   function imprimirPDF() {
+    if (!podeExportarDados) {
+      mostrarAviso?.('Você não tem permissão para realizar esta ação.', 'erro')
+      return
+    }
+
     const linhasDre = dreGerencial.map((linha) => `
       <tr>
         <td>${escapeHtml(linha.linha)}</td>
@@ -584,6 +589,11 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
   }
 
   function exportarCSV() {
+    if (!podeExportarDados) {
+      mostrarAviso?.('Você não tem permissão para realizar esta ação.', 'erro')
+      return
+    }
+
     const headers = ['Descrição', 'Valor', 'Vencimento', 'Status', 'Centro', 'Filial', 'Recorrência']
     const rows = criarLinhasContasExportacao().map((linha) => [
       linha[0],
@@ -599,6 +609,11 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
   }
 
   function exportarExcel() {
+    if (!podeExportarDados) {
+      mostrarAviso?.('Você não tem permissão para realizar esta ação.', 'erro')
+      return
+    }
+
     const sheets = [
       {
         name: 'Resumo',
@@ -746,9 +761,13 @@ export default function Relatorios({ voltar, empresaId, mostrarAviso }) {
         <div>
           <div style={styles.actionsTop}>
             <button style={styles.btnVoltar} onClick={voltar}>← Voltar</button>
-            <button style={styles.btnExcel} onClick={exportarExcel}>Excel</button>
-            <button style={styles.btnPDF} onClick={imprimirPDF}>PDF</button>
-            <button style={styles.btnCSV} onClick={exportarCSV}>CSV</button>
+            {podeExportarDados && (
+              <>
+                <button style={styles.btnExcel} onClick={exportarExcel}>Excel</button>
+                <button style={styles.btnPDF} onClick={imprimirPDF}>PDF</button>
+                <button style={styles.btnCSV} onClick={exportarCSV}>CSV</button>
+              </>
+            )}
           </div>
           <h1 style={styles.titulo}>Relatórios financeiros</h1>
           <p style={styles.descricaoTela}>Acompanhe indicadores, tendências e análises financeiras da empresa.</p>

@@ -12,7 +12,8 @@ export default function OpenAccountsList({
   estaVencida,
   formatarData,
   abrirConfirmacao,
-  marcarComoPago
+  marcarComoPago,
+  podeEditarFinanceiro = true
 }) {
 
 
@@ -71,7 +72,9 @@ export default function OpenAccountsList({
                   <div className="dashboard-account-row-actions">
                     <span className="dashboard-account-value">{formatarValor(conta.valor)}</span>
                     <span className={`status-pill ${vencida ? 'status-vencido' : 'status-pendente'}`}>{vencida ? 'Vencido' : 'Pendente'}</span>
-                    <button className="dashboard-paid-button" style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>Pago</button>
+                    {podeEditarFinanceiro && (
+                      <button className="dashboard-paid-button" style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>Pago</button>
+                    )}
                   </div>
                 </div>
               )

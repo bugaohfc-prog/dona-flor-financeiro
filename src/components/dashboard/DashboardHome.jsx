@@ -22,6 +22,7 @@ export default function DashboardHome({
   formatarData,
   abrirConfirmacao,
   marcarComoPago,
+  podeEditarFinanceiro = true,
   notasPendentes,
   notasCriticas,
   notasUrgentes,
@@ -382,6 +383,7 @@ export default function DashboardHome({
         formatarData={formatarData}
         abrirConfirmacao={abrirConfirmacao}
         marcarComoPago={marcarComoPago}
+        podeEditarFinanceiro={podeEditarFinanceiro}
       />
       )}
 
@@ -409,6 +411,7 @@ export default function DashboardHome({
         abrirEdicaoNota={abrirEdicaoNota}
         abrirConfirmacao={abrirConfirmacao}
         excluirNota={excluirNota}
+        podeEditarFinanceiro={podeEditarFinanceiro}
       />
       )}
     </>

@@ -18,7 +18,7 @@ export default function ContasPage({
   dataInicial, setDataInicial, dataFinal, setDataFinal, limitarDataInput, contasFiltradas, total, formatarValor,
   loading, HeaderExpansivel, mostrarContas, setMostrarContas, estaVencida, formatarData, formatarTipoRecorrencia,
   obterTipoRecorrenciaConta, abrirConfirmacao, marcarComoPago, voltarParaPendente, abrirEdicaoConta, excluirConta,
-  navegarPara
+  navegarPara, podeEditarFinanceiro = true, podeExportarDados = true
 }) {
   function renderListaContasConteudo() {
     return (
@@ -37,8 +37,12 @@ export default function ContasPage({
 
         <div className="export-actions" style={styles.acoes}>
           <button style={styles.btnCinza} onClick={limparFiltros}>Limpar</button>
-          <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
-          <button style={styles.btnVerde} onClick={exportarCSV}>CSV</button>
+          {podeExportarDados && (
+            <>
+              <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
+              <button style={styles.btnVerde} onClick={exportarCSV}>CSV</button>
+            </>
+          )}
         </div>
 
         {mostrarFiltros && (
@@ -130,7 +134,8 @@ export default function ContasPage({
                 </span>
               </div>
 
-              <div className="account-actions" style={styles.acoes}>
+              {podeEditarFinanceiro && (
+                <div className="account-actions" style={styles.acoes}>
                 {conta.status !== 'pago' ? (
                   <button style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>
                     Pago
@@ -148,7 +153,8 @@ export default function ContasPage({
                 <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
                   Excluir
                 </button>
-              </div>
+                </div>
+              )}
             </div>
           )
         })}

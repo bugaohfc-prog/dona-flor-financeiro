@@ -614,15 +614,45 @@ export default function App() {
     return podeAcessarConfiguracoes()
   }, [podeAcessarConfiguracoes])
 
+  const podeEditarFinanceiro = useCallback(() => {
+    return temPermissao(['admin', 'gerente'])
+  }, [temPermissao])
+
+  const podeExportarDados = useCallback(() => {
+    return temPermissao(['admin', 'gerente'])
+  }, [temPermissao])
+
+  const podeEditarConfiguracoes = useCallback(() => {
+    return temPermissao(['admin'])
+  }, [temPermissao])
+
+  const podeGerenciarLixeira = useCallback(() => {
+    return temPermissao(['admin', 'gerente'])
+  }, [temPermissao])
+
+  const podeExcluirDefinitivoFinanceiro = useCallback(() => {
+    return temPermissao(['admin'])
+  }, [temPermissao])
+
+  const podeGerenciarCentroCusto = useCallback(() => {
+    return temPermissao(['admin'])
+  }, [temPermissao])
+
+  const bloquearAcaoSemPermissao = useCallback(() => {
+    mostrarAviso('Você não tem permissão para realizar esta ação.', 'erro')
+  }, [mostrarAviso])
+
   const menuSectionsFiltradas = useMemo(() => menuSections
     .map((grupo) => ({
       ...grupo,
       items: grupo.items.filter((item) => {
         if (item.tela === 'importar') return podeImportarContas()
+        if (item.tela === 'lixeira') return podeGerenciarLixeira()
+        if (['usuarios', 'configuracoes', 'billing', 'filiais', 'onboarding'].includes(item.tela)) return podeAcessarConfiguracoes()
         return !item.masterOnly || permissoesUsuario?.canManageCompanies
       })
     }))
-    .filter((grupo) => grupo.items.length > 0), [permissoesUsuario?.canManageCompanies, podeImportarContas])
+    .filter((grupo) => grupo.items.length > 0), [permissoesUsuario?.canManageCompanies, podeAcessarConfiguracoes, podeGerenciarLixeira, podeImportarContas])
 
   async function recarregarEmpresasDisponiveis() {
     if (!usuarioLogado) return
@@ -1388,6 +1418,11 @@ export default function App() {
   // BLOCO 7 — AÇÕES CONTAS
   // =========================
   function abrirNovaConta() {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     return abrirNovaContaHook({
       setMenuAberto,
       setMenuNavegacaoAberto,
@@ -1399,6 +1434,11 @@ export default function App() {
   }
 
   async function abrirEdicaoConta(conta) {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     return abrirEdicaoContaHook({
       conta,
       supabase,
@@ -1413,6 +1453,11 @@ export default function App() {
   }
 
   async function salvarConta() {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     return salvarContaHook({
       supabase,
       empresaId,
@@ -1434,14 +1479,29 @@ export default function App() {
   }
 
   async function marcarComoPago(id) {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     return marcarComoPagoHook({ supabase, id, empresaId, buscarContas, mostrarAviso })
   }
 
   async function voltarParaPendente(id) {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     return voltarParaPendenteHook({ supabase, id, empresaId, buscarContas, mostrarAviso })
   }
 
   async function excluirConta(id) {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     return excluirContaHook({ supabase, id, empresaId, avisarErro, buscarContas, buscarLixeira, mostrarAviso })
   }
 
@@ -1449,6 +1509,11 @@ export default function App() {
   // BLOCO 8 — AÇÕES NOTAS
   // =========================
   function abrirNovaNota() {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     return abrirNovaNotaHook({
       setMenuAberto,
       setMenuNavegacaoAberto
@@ -1456,6 +1521,11 @@ export default function App() {
   }
 
   function abrirEdicaoNota(nota) {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     return abrirEdicaoNotaHook(nota)
   }
 
@@ -1464,6 +1534,11 @@ export default function App() {
   }
 
   async function salvarNota() {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     return salvarNotaHook({
       supabase,
       empresaId,
@@ -1474,6 +1549,11 @@ export default function App() {
   }
 
   async function excluirNota(id) {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     return excluirNotaHook({
       supabase,
       id,
@@ -1487,6 +1567,11 @@ export default function App() {
 
 
   async function alternarNotaConcluida(nota) {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     return alternarNotaConcluidaHook({
       supabase,
       nota,
@@ -1503,6 +1588,11 @@ export default function App() {
   // BLOCO — AÇÕES CONFIGURAÇÕES
   // =========================
   async function salvarConfiguracoes() {
+    if (!podeEditarConfiguracoes()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     if (!empresaId) {
       mostrarAviso('Usuário sem empresa vinculada.', 'erro')
       return
@@ -1577,6 +1667,11 @@ export default function App() {
   // BLOCO 9 — AÇÕES LIXEIRA
   // =========================
   async function restaurarConta(id) {
+    if (!podeGerenciarLixeira()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     const { error } = await supabase
       .from('df_contas')
       .update({
@@ -1597,6 +1692,11 @@ export default function App() {
   }
 
   async function restaurarNota(id) {
+    if (!podeGerenciarLixeira()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     return restaurarNotaHook({
       supabase,
       id,
@@ -1609,6 +1709,11 @@ export default function App() {
   }
 
   async function excluirContaDefinitivo(conta) {
+    if (!podeExcluirDefinitivoFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     const { error } = await supabase
       .from('df_contas')
       .delete()
@@ -1625,6 +1730,11 @@ export default function App() {
   }
 
   async function excluirNotaDefinitivo(nota) {
+    if (!podeExcluirDefinitivoFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     return excluirNotaDefinitivoHook({
       supabase,
       nota,
@@ -1639,6 +1749,11 @@ export default function App() {
   // BLOCO 10 — AÇÕES CENTROS
   // =========================
   async function salvarCentro() {
+    if (!podeGerenciarCentroCusto()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     if (!empresaId) {
       mostrarAviso('Usuário sem empresa vinculada.', 'erro')
       return
@@ -1681,6 +1796,11 @@ export default function App() {
   }
 
   async function excluirCentro(id) {
+    if (!podeGerenciarCentroCusto()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     if (!empresaId) {
       mostrarAviso('Usuário sem empresa vinculada.', 'erro')
       return
@@ -1718,6 +1838,11 @@ export default function App() {
   // BLOCO 10 — EXPORTAÇÕES
   // =========================
   function exportarCSV() {
+    if (!podeExportarDados()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     const cabecalho = ['Descricao', 'Valor', 'Vencimento', 'Status', 'Filial', 'Centro']
     const linhas = contasFiltradas.map((conta) => [
       conta.descricao || '',
@@ -1744,6 +1869,11 @@ export default function App() {
   }
 
   function imprimirPDF() {
+    if (!podeExportarDados()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
     const escapeHtml = (valor) => String(valor ?? '')
       .replaceAll('&', '&amp;')
       .replaceAll('<', '&lt;')
@@ -2589,6 +2719,8 @@ export default function App() {
   }
 
   function renderFabGlobal() {
+    if (!podeEditarFinanceiro()) return null
+
     return (
       <GlobalFab
         styles={styles}
@@ -3633,6 +3765,8 @@ export default function App() {
         limparFiltros={limparFiltros}
         imprimirPDF={imprimirPDF}
         exportarCSV={exportarCSV}
+        podeEditarFinanceiro={podeEditarFinanceiro()}
+        podeExportarDados={podeExportarDados()}
         filtroStatus={filtroStatus}
         setFiltroStatus={setFiltroStatus}
         centros={centros}
@@ -3671,7 +3805,7 @@ export default function App() {
 
   if (telaAtual === 'relatorios') {
     return renderAppFrame(
-      <LazyRelatorios voltar={() => navegarPara('contas')} empresaId={empresaId} usuario={usuarioLogado} mostrarAviso={mostrarAviso} />
+      <LazyRelatorios voltar={() => navegarPara('contas')} empresaId={empresaId} usuario={usuarioLogado} mostrarAviso={mostrarAviso} podeExportarDados={podeExportarDados()} />
     )
   }
 
@@ -3693,6 +3827,7 @@ export default function App() {
         abrirEdicaoNota={abrirEdicaoNota}
         abrirConfirmacao={abrirConfirmacao}
         excluirNota={excluirNota}
+        podeEditarFinanceiro={podeEditarFinanceiro()}
         loading={loading}
         nomeUsuario={nomeUsuario()}
         filiais={filiais}
@@ -3899,6 +4034,19 @@ export default function App() {
 
 
   if (telaAtual === 'usuarios') {
+    if (!podeAcessarConfiguracoes()) {
+      return renderAppFrame(
+        <>
+          <h1 style={styles.titulo}>Usuários</h1>
+          <section style={styles.cardConfiguracao}>
+            <h2 style={styles.subtitulo}>Acesso restrito</h2>
+            <p style={styles.textoNota}>Seu perfil atual não permite acessar usuários.</p>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
+          </section>
+        </>
+      )
+    }
+
     return renderAppFrame(
       <LazyUsuariosPage
         styles={styles}
@@ -4131,9 +4279,11 @@ export default function App() {
                 <span>Uso nos filtros e relatórios</span>
               </div>
 
-              <button style={styles.btnSalvar} onClick={() => setModalCentro(true)}>
-                Gerenciar centros
-              </button>
+              {podeGerenciarCentroCusto() && (
+                <button style={styles.btnSalvar} onClick={() => setModalCentro(true)}>
+                  Gerenciar centros
+                </button>
+              )}
             </>
           )}
         </section>
@@ -4176,9 +4326,11 @@ export default function App() {
           </div>
         </section>
 
-        <button style={styles.btnSalvar} onClick={salvarConfiguracoes}>
-          Salvar configurações
-        </button>
+        {podeEditarConfiguracoes() && (
+          <button style={styles.btnSalvar} onClick={salvarConfiguracoes}>
+            Salvar configurações
+          </button>
+        )}
       </>
     )
   }
@@ -4239,9 +4391,11 @@ export default function App() {
                 <div style={styles.agendaDireita}>
                   <strong>{formatarValor(conta.valor)}</strong>
 
-                  <button style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>
-                    Pago
-                  </button>
+                  {podeEditarFinanceiro() && (
+                    <button style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>
+                      Pago
+                    </button>
+                  )}
                 </div>
               </div>
             )
@@ -4291,6 +4445,19 @@ export default function App() {
   }
 
   if (telaAtual === 'lixeira') {
+    if (!podeGerenciarLixeira()) {
+      return renderAppFrame(
+        <>
+          <h1 style={styles.titulo}>Lixeira</h1>
+          <section style={styles.cardConfiguracao}>
+            <h2 style={styles.subtitulo}>Acesso restrito</h2>
+            <p style={styles.textoNota}>Seu perfil atual não permite acessar a lixeira.</p>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
+          </section>
+        </>
+      )
+    }
+
     return renderAppFrame(
       <>
         <h1 style={styles.titulo}>🗑️ Lixeira</h1>
@@ -4332,9 +4499,11 @@ export default function App() {
                     Restaurar
                   </button>
 
-                  <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir definitivamente', mensagem: `Excluir definitivamente a conta ${conta.descricao}? Essa ação não poderá ser desfeita.`, textoConfirmar: 'Excluir definitivo', tipo: 'perigo', acao: () => excluirContaDefinitivo(conta) })}>
-                    Excluir definitivo
-                  </button>
+                  {podeExcluirDefinitivoFinanceiro() && (
+                    <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir definitivamente', mensagem: `Excluir definitivamente a conta ${conta.descricao}? Essa ação não poderá ser desfeita.`, textoConfirmar: 'Excluir definitivo', tipo: 'perigo', acao: () => excluirContaDefinitivo(conta) })}>
+                      Excluir definitivo
+                    </button>
+                  )}
                 </div>
               </div>
             )
@@ -4369,9 +4538,11 @@ export default function App() {
                     Restaurar
                   </button>
 
-                  <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir definitivamente', mensagem: `Excluir definitivamente a nota ${nota.titulo}? Essa ação não poderá ser desfeita.`, textoConfirmar: 'Excluir definitivo', tipo: 'perigo', acao: () => excluirNotaDefinitivo(nota) })}>
-                    Excluir definitivo
-                  </button>
+                  {podeExcluirDefinitivoFinanceiro() && (
+                    <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir definitivamente', mensagem: `Excluir definitivamente a nota ${nota.titulo}? Essa ação não poderá ser desfeita.`, textoConfirmar: 'Excluir definitivo', tipo: 'perigo', acao: () => excluirNotaDefinitivo(nota) })}>
+                      Excluir definitivo
+                    </button>
+                  )}
                 </div>
               </div>
             )
@@ -4440,6 +4611,7 @@ export default function App() {
           formatarData,
           abrirConfirmacao,
           marcarComoPago,
+          podeEditarFinanceiro: podeEditarFinanceiro(),
           notasPendentes,
           notasCriticas,
           notasUrgentes,

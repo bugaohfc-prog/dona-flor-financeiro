@@ -20,6 +20,7 @@ export default function DashboardRoute({
   formatarData,
   abrirConfirmacao,
   marcarComoPago,
+  podeEditarFinanceiro = true,
   notasPendentes,
   notasCriticas,
   notasUrgentes,
@@ -59,6 +60,7 @@ export default function DashboardRoute({
         formatarData={formatarData}
         abrirConfirmacao={abrirConfirmacao}
         marcarComoPago={marcarComoPago}
+        podeEditarFinanceiro={podeEditarFinanceiro}
         notasPendentes={notasPendentes}
         notasCriticas={notasCriticas}
         notasUrgentes={notasUrgentes}

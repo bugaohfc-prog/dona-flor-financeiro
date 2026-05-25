@@ -19,6 +19,8 @@ const STATUS = {
 
 const COLUMNS = [
   'Perfil',
+  'Empresa propria',
+  'Outra empresa',
   'SELECT propria',
   'SELECT outra',
   'INSERT',
@@ -80,6 +82,47 @@ function getFirstEnv(names) {
   }
 
   return ''
+}
+
+function upperProfileKey(profile) {
+  return profile.key.toUpperCase()
+}
+
+function companyLabel(config, empresaId) {
+  if (!empresaId) return 'nao definida'
+  if (empresaId === config.empresaDonaId) return 'Dona Flor'
+  if (empresaId === config.empresaChocoId) return 'Choco Arte'
+  return `Empresa ${empresaId.slice(0, 8)}`
+}
+
+function resolveOtherFilialId(config, empresaId) {
+  if (empresaId === config.empresaDonaId) return config.filialDonaId
+  if (empresaId === config.empresaChocoId) return config.filialChocoId
+  return ''
+}
+
+function resolveProfileCompanies(profile, config) {
+  const prefix = upperProfileKey(profile)
+  const ownEnv = `TESTE_${prefix}_EMPRESA_ID`
+  const otherEnv = `TESTE_${prefix}_OUTRA_EMPRESA_ID`
+  const ownEmpresaId = getEnv(ownEnv) || config.empresaDonaId
+  const otherEmpresaId = getEnv(otherEnv) || config.empresaChocoId
+
+  if (!ownEmpresaId || !otherEmpresaId) {
+    throw new Error(`${profile.label}: empresa propria/outra empresa nao configurada.`)
+  }
+
+  if (ownEmpresaId === otherEmpresaId) {
+    throw new Error(
+      `${profile.label}: configuracao invalida; empresa propria e outra empresa sao iguais.`,
+    )
+  }
+
+  return {
+    ownEmpresaId,
+    otherEmpresaId,
+    otherFilialId: resolveOtherFilialId(config, otherEmpresaId),
+  }
 }
 
 function decodeJwtPayload(token) {
@@ -157,7 +200,7 @@ function validateConfig() {
     throw new Error(`Variaveis de teste ausentes: ${missing.join(', ')}.`)
   }
 
-  return {
+  const config = {
     url,
     anonKey,
     empresaDonaId: getEnv('TESTE_EMPRESA_DONA_ID'),
@@ -165,6 +208,12 @@ function validateConfig() {
     filialDonaId: getEnv('TESTE_FILIAL_DONA_ID'),
     filialChocoId: getEnv('TESTE_FILIAL_CHOCO_ID'),
   }
+
+  config.profileCompanies = Object.fromEntries(
+    PROFILES.map((profile) => [profile.key, resolveProfileCompanies(profile, config)]),
+  )
+
+  return config
 }
 
 function createSupabaseClient(url, anonKey) {
@@ -209,9 +258,11 @@ function safeError(error) {
   return `${code}: ${message}`
 }
 
-function newResult(profileLabel) {
+function newResult(profileLabel, config, profileCompanies) {
   return {
     Perfil: profileLabel,
+    'Empresa propria': companyLabel(config, profileCompanies.ownEmpresaId),
+    'Outra empresa': companyLabel(config, profileCompanies.otherEmpresaId),
     'SELECT propria': STATUS.skip,
     'SELECT outra': STATUS.skip,
     INSERT: STATUS.skip,
@@ -299,6 +350,8 @@ function requireFixture(fixture, result, columns) {
 async function testBlockedProfile({
   client,
   label,
+  config,
+  profileCompanies,
   empresaOwnId,
   empresaOtherId,
   fixtureOwn,
@@ -307,7 +360,7 @@ async function testBlockedProfile({
   failures,
   createdRows,
 }) {
-  const result = newResult(label)
+  const result = newResult(label, config, profileCompanies)
 
   if (fixtureOwn?.id) {
     const selectOwn = await selectFuncionario(client, empresaOwnId)
@@ -333,9 +386,15 @@ async function testBlockedProfile({
 
   const insertOwn = await insertFuncionario(client, empresaOwnId)
   const insertBlocked = Boolean(insertOwn.error) || !insertOwn.data?.id
-  mark(result, 'INSERT', insertBlocked, failures, `${label} conseguiu criar funcionario`)
+  mark(
+    result,
+    'INSERT',
+    insertBlocked,
+    failures,
+    `${label} conseguiu criar funcionario em ${companyLabel(config, empresaOwnId)}`,
+  )
   if (!insertBlocked && insertOwn.data?.id) {
-    createdRows.push({ id: insertOwn.data.id, empresaId: empresaOwnId, cleanup: 'admin' })
+    createdRows.push({ id: insertOwn.data.id, empresaId: empresaOwnId, cleanup: 'master' })
   }
 
   if (!requireFixture(fixtureOwn, result, ['UPDATE', 'ARQUIVAR', 'DELETE', 'empresa_id imutavel'])) {
@@ -378,6 +437,8 @@ async function testManagerProfile(args) {
   const {
     client,
     label,
+    config,
+    profileCompanies,
     empresaOwnId,
     empresaOtherId,
     fixtureOwn,
@@ -386,7 +447,7 @@ async function testManagerProfile(args) {
     failures,
     createdRows,
   } = args
-  const result = newResult(label)
+  const result = newResult(label, config, profileCompanies)
 
   if (fixtureOwn?.id) {
     const selectOwn = await selectFuncionario(client, empresaOwnId)
@@ -412,9 +473,15 @@ async function testManagerProfile(args) {
 
   const insertOwn = await insertFuncionario(client, empresaOwnId)
   const insertBlocked = Boolean(insertOwn.error) || !insertOwn.data?.id
-  mark(result, 'INSERT', insertBlocked, failures, `${label} conseguiu criar funcionario`)
+  mark(
+    result,
+    'INSERT',
+    insertBlocked,
+    failures,
+    `${label} conseguiu criar funcionario em ${companyLabel(config, empresaOwnId)}`,
+  )
   if (!insertBlocked) {
-    createdRows.push({ id: insertOwn.data.id, empresaId: empresaOwnId, cleanup: 'admin' })
+    createdRows.push({ id: insertOwn.data.id, empresaId: empresaOwnId, cleanup: 'master' })
   }
 
   if (!requireFixture(fixtureOwn, result, ['UPDATE', 'ARQUIVAR', 'DELETE', 'empresa_id imutavel'])) {
@@ -456,6 +523,8 @@ async function testManagerProfile(args) {
 async function testAdminLikeProfile({
   client,
   label,
+  config,
+  profileCompanies,
   empresaOwnId,
   empresaOtherId,
   fixtureOwn,
@@ -466,7 +535,7 @@ async function testAdminLikeProfile({
   cleanup,
   expectOtherBlocked,
 }) {
-  const result = newResult(label)
+  const result = newResult(label, config, profileCompanies)
 
   const insertOwn = fixtureOwn?.id ? { data: fixtureOwn, error: null } : await insertFuncionario(client, empresaOwnId)
   mark(
@@ -474,7 +543,7 @@ async function testAdminLikeProfile({
     'INSERT',
     !insertOwn.error && Boolean(insertOwn.data?.id),
     failures,
-    `${label} nao conseguiu criar funcionario`,
+    `${label} nao conseguiu criar funcionario em ${companyLabel(config, empresaOwnId)}; confira vinculo/perfil`,
   )
 
   const own = insertOwn.data
@@ -605,43 +674,101 @@ function renderFailures(failures) {
   }
 }
 
+function renderCompanyPlan(config) {
+  console.log('')
+  console.log('Empresas usadas por perfil:')
+  for (const profile of PROFILES) {
+    const profileCompanies = config.profileCompanies[profile.key]
+    console.log(
+      `- ${profile.label}: propria=${companyLabel(
+        config,
+        profileCompanies.ownEmpresaId,
+      )}; outra=${companyLabel(config, profileCompanies.otherEmpresaId)}`,
+    )
+  }
+}
+
 async function main() {
   const config = validateConfig()
   const clients = {}
   const failures = []
   const createdRows = []
   const rows = []
+  const fixturesByCompany = new Map()
 
   console.log('Validacao RLS df_funcionarios')
   console.log('Usando anon/publishable key. Tokens nao serao impressos.')
+  renderCompanyPlan(config)
 
   for (const profile of PROFILES) {
     clients[profile.key] = await loginProfile(config, profile)
   }
 
-  const adminFixture = await insertFuncionario(clients.admin, config.empresaDonaId)
-  if (adminFixture.error || !adminFixture.data?.id) {
-    failures.push(`Admin nao criou fixture inicial (${safeError(adminFixture.error)})`)
-  } else {
-    createdRows.push({ id: adminFixture.data.id, empresaId: config.empresaDonaId, cleanup: 'admin' })
+  async function createFixture({ client, empresaId, cleanup, failurePrefix }) {
+    const response = await insertFuncionario(client, empresaId)
+    if (response.error || !response.data?.id) {
+      failures.push(
+        `${failurePrefix} em ${companyLabel(config, empresaId)} (${safeError(
+          response.error,
+        )}); confira vinculo/perfil`,
+      )
+      return null
+    }
+
+    const fixture = response.data
+    createdRows.push({ id: fixture.id, empresaId, cleanup })
+    if (!fixturesByCompany.has(empresaId)) fixturesByCompany.set(empresaId, fixture)
+    return fixture
   }
 
-  const masterFixture = await insertFuncionario(clients.master, config.empresaChocoId)
-  if (masterFixture.error || !masterFixture.data?.id) {
-    failures.push(`Master nao criou fixture cross-tenant (${safeError(masterFixture.error)})`)
-  } else {
-    createdRows.push({ id: masterFixture.data.id, empresaId: config.empresaChocoId, cleanup: 'master' })
+  const adminCompanies = config.profileCompanies.admin
+  const masterCompanies = config.profileCompanies.master
+  const operadorCompanies = config.profileCompanies.operador
+  const gerenteCompanies = config.profileCompanies.gerente
+
+  const adminFixture = await createFixture({
+    client: clients.admin,
+    empresaId: adminCompanies.ownEmpresaId,
+    cleanup: 'admin',
+    failurePrefix: 'Admin nao criou fixture inicial',
+  })
+
+  const masterFixture = await createFixture({
+    client: clients.master,
+    empresaId: masterCompanies.ownEmpresaId,
+    cleanup: 'master',
+    failurePrefix: 'Master nao criou fixture principal',
+  })
+
+  const neededCompanyIds = new Set(
+    Object.values(config.profileCompanies).flatMap((profileCompanies) => [
+      profileCompanies.ownEmpresaId,
+      profileCompanies.otherEmpresaId,
+    ]),
+  )
+
+  for (const empresaId of neededCompanyIds) {
+    if (fixturesByCompany.has(empresaId)) continue
+
+    await createFixture({
+      client: clients.master,
+      empresaId,
+      cleanup: 'master',
+      failurePrefix: 'Master nao criou fixture de apoio',
+    })
   }
 
   rows.push(
     await testBlockedProfile({
       client: clients.operador,
       label: 'Operador',
-      empresaOwnId: config.empresaDonaId,
-      empresaOtherId: config.empresaChocoId,
-      fixtureOwn: adminFixture.data,
-      fixtureOther: masterFixture.data,
-      filialOtherId: config.filialChocoId,
+      config,
+      profileCompanies: operadorCompanies,
+      empresaOwnId: operadorCompanies.ownEmpresaId,
+      empresaOtherId: operadorCompanies.otherEmpresaId,
+      fixtureOwn: fixturesByCompany.get(operadorCompanies.ownEmpresaId),
+      fixtureOther: fixturesByCompany.get(operadorCompanies.otherEmpresaId),
+      filialOtherId: operadorCompanies.otherFilialId,
       failures,
       createdRows,
     }),
@@ -651,11 +778,13 @@ async function main() {
     await testManagerProfile({
       client: clients.gerente,
       label: 'Gerente',
-      empresaOwnId: config.empresaDonaId,
-      empresaOtherId: config.empresaChocoId,
-      fixtureOwn: adminFixture.data,
-      fixtureOther: masterFixture.data,
-      filialOtherId: config.filialChocoId,
+      config,
+      profileCompanies: gerenteCompanies,
+      empresaOwnId: gerenteCompanies.ownEmpresaId,
+      empresaOtherId: gerenteCompanies.otherEmpresaId,
+      fixtureOwn: fixturesByCompany.get(gerenteCompanies.ownEmpresaId),
+      fixtureOther: fixturesByCompany.get(gerenteCompanies.otherEmpresaId),
+      filialOtherId: gerenteCompanies.otherFilialId,
       failures,
       createdRows,
     }),
@@ -665,11 +794,13 @@ async function main() {
     await testAdminLikeProfile({
       client: clients.admin,
       label: 'Admin',
-      empresaOwnId: config.empresaDonaId,
-      empresaOtherId: config.empresaChocoId,
-      fixtureOwn: adminFixture.data,
-      fixtureOther: masterFixture.data,
-      filialOtherId: config.filialChocoId,
+      config,
+      profileCompanies: adminCompanies,
+      empresaOwnId: adminCompanies.ownEmpresaId,
+      empresaOtherId: adminCompanies.otherEmpresaId,
+      fixtureOwn: adminFixture,
+      fixtureOther: fixturesByCompany.get(adminCompanies.otherEmpresaId),
+      filialOtherId: adminCompanies.otherFilialId,
       failures,
       createdRows,
       cleanup: 'admin',
@@ -681,11 +812,13 @@ async function main() {
     await testAdminLikeProfile({
       client: clients.master,
       label: 'Master',
-      empresaOwnId: config.empresaChocoId,
-      empresaOtherId: config.empresaDonaId,
-      fixtureOwn: masterFixture.data,
-      fixtureOther: adminFixture.data,
-      filialOtherId: config.filialDonaId,
+      config,
+      profileCompanies: masterCompanies,
+      empresaOwnId: masterCompanies.ownEmpresaId,
+      empresaOtherId: masterCompanies.otherEmpresaId,
+      fixtureOwn: masterFixture,
+      fixtureOther: fixturesByCompany.get(masterCompanies.otherEmpresaId),
+      filialOtherId: masterCompanies.otherFilialId,
       failures,
       createdRows,
       cleanup: 'master',

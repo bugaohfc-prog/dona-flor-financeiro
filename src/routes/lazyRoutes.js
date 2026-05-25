@@ -9,6 +9,7 @@ export const lazyRouteImports = {
   onboarding: () => import('../pages/OnboardingPage.jsx'),
   billing: () => import('../pages/BillingPage.jsx'),
   filiais: () => import('../pages/FiliaisPage.jsx'),
+  funcionarios: () => import('../pages/FuncionariosPage.jsx'),
   usuarios: () => import('../pages/UsuariosPage.jsx'),
   copilotDrawer: () => import('../components/copilot/layout/CopilotDrawer.jsx')
 }
@@ -24,6 +25,7 @@ export const routeImportByScreen = {
   onboarding: 'onboarding',
   billing: 'billing',
   filiais: 'filiais',
+  funcionarios: 'funcionarios',
   usuarios: 'usuarios'
 }
 
@@ -39,6 +41,7 @@ export const LazyMasterPanelPage = lazy(lazyRouteImports.masterPanel)
 export const LazyOnboardingPage = lazy(lazyRouteImports.onboarding)
 export const LazyBillingPage = lazy(lazyRouteImports.billing)
 export const LazyFiliaisPage = lazy(lazyRouteImports.filiais)
+export const LazyFuncionariosPage = lazy(lazyRouteImports.funcionarios)
 export const LazyUsuariosPage = lazy(lazyRouteImports.usuarios)
 export const LazyCopilotDrawer = lazy(lazyRouteImports.copilotDrawer)
 

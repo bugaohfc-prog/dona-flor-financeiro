@@ -55,6 +55,7 @@ import {
   LazyCopilotDrawer,
   LazyDashboardRouteComposition,
   LazyFiliaisPage,
+  LazyFuncionariosPage,
   LazyMasterPanelPage,
   LazyNotasPage,
   LazyOnboardingPage,
@@ -653,6 +654,10 @@ export default function App() {
     return temPermissao(['admin'])
   }, [temPermissao])
 
+  const podeAcessarGestaoPessoas = useCallback(() => {
+    return temPermissao(['admin'])
+  }, [temPermissao])
+
   const podeGerenciarLixeira = useCallback(() => {
     return temPermissao(['admin', 'gerente'])
   }, [temPermissao])
@@ -675,11 +680,12 @@ export default function App() {
       items: grupo.items.filter((item) => {
         if (item.tela === 'importar') return podeImportarContas()
         if (item.tela === 'lixeira') return podeGerenciarLixeira()
+        if (item.peopleOnly) return podeAcessarGestaoPessoas()
         if (['usuarios', 'configuracoes', 'billing', 'filiais', 'onboarding'].includes(item.tela)) return podeAcessarConfiguracoes()
         return !item.masterOnly || permissoesUsuario?.canManageCompanies
       })
     }))
-    .filter((grupo) => grupo.items.length > 0), [permissoesUsuario?.canManageCompanies, podeAcessarConfiguracoes, podeGerenciarLixeira, podeImportarContas])
+    .filter((grupo) => grupo.items.length > 0), [permissoesUsuario?.canManageCompanies, podeAcessarConfiguracoes, podeAcessarGestaoPessoas, podeGerenciarLixeira, podeImportarContas])
 
   async function recarregarEmpresasDisponiveis() {
     if (!usuarioLogado) return
@@ -3875,6 +3881,33 @@ export default function App() {
         filtroFilial={filtroFilial}
         setFiltroFilial={setFiltroFilial}
         contasOperacionaisFiliais={contasOperacionaisFiliais}
+      />
+    )
+  }
+
+  if (telaAtual === 'funcionarios') {
+    if (!podeAcessarGestaoPessoas()) {
+      return renderAppFrame(
+        <>
+          <h1 style={styles.titulo}>Funcionários</h1>
+          <section style={styles.cardConfiguracao}>
+            <h2 style={styles.subtitulo}>Acesso restrito</h2>
+            <p style={styles.textoNota}>Seu perfil atual não permite acessar Gestão de Pessoas.</p>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
+          </section>
+        </>
+      )
+    }
+
+    return renderAppFrame(
+      <LazyFuncionariosPage
+        styles={styles}
+        empresaId={empresaId}
+        empresaNome={empresaAtiva?.nome || nomeEmpresa}
+        filiais={filiais}
+        mostrarAviso={mostrarAviso}
+        podeEditar={podeAcessarGestaoPessoas()}
+        voltarPainel={() => navegarPara('dashboard')}
       />
     )
   }

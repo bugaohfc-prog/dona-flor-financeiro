@@ -18,6 +18,13 @@ const menuSections = [
     ]
   },
   {
+    id: 'pessoas',
+    titulo: 'Gestão de Pessoas',
+    items: [
+      { tela: 'funcionarios', icon: '👥', label: 'Funcionários', desc: 'Cadastro de colaboradores', peopleOnly: true }
+    ]
+  },
+  {
     id: 'administracao',
     titulo: 'Administração',
     items: [

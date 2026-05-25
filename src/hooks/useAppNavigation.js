@@ -3,6 +3,7 @@ import { startTransition, useCallback, useEffect, useState } from 'react'
 const GRUPOS_MENU_PADRAO = {
   dashboard: true,
   financeiro: true,
+  pessoas: true,
   administracao: true,
   conta: true
 }

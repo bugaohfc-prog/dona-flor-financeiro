@@ -21,8 +21,24 @@ const STATUS_LABELS = {
   desligado: 'Desligado'
 }
 
+const CONECTIVOS_NOME_CARGO = new Set(['de', 'da', 'do', 'das', 'dos', 'e'])
+
 function apenasDigitos(valor) {
   return String(valor || '').replace(/\D/g, '')
+}
+
+function normalizarCapitalizacao(valor) {
+  return String(valor || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((palavra, indice) => {
+      const palavraNormalizada = palavra.toLocaleLowerCase('pt-BR')
+      if (indice > 0 && CONECTIVOS_NOME_CARGO.has(palavraNormalizada)) return palavraNormalizada
+      return palavraNormalizada.charAt(0).toLocaleUpperCase('pt-BR') + palavraNormalizada.slice(1)
+    })
+    .join(' ')
 }
 
 function normalizarTextoBusca(valor) {
@@ -62,8 +78,8 @@ function montarFormulario(funcionario) {
 
 function montarPayloadFormulario(formulario) {
   return {
-    nome: formulario.nome,
-    cargo: formulario.cargo,
+    nome: normalizarCapitalizacao(formulario.nome),
+    cargo: normalizarCapitalizacao(formulario.cargo),
     telefone: formulario.telefone,
     email: formulario.email,
     cpf: apenasDigitos(formulario.cpf),
@@ -142,6 +158,14 @@ export default function FuncionariosPage({
     setFormulario((atual) => ({
       ...atual,
       [campo]: campo === 'cpf' ? apenasDigitos(valor).slice(0, 11) : valor
+    }))
+  }
+
+  function normalizarCampoCapitalizado(campo) {
+    if (!['nome', 'cargo'].includes(campo)) return
+    setFormulario((atual) => ({
+      ...atual,
+      [campo]: normalizarCapitalizacao(atual[campo])
     }))
   }
 
@@ -448,6 +472,7 @@ export default function FuncionariosPage({
                   style={styles.input}
                   value={formulario.nome}
                   onChange={(event) => atualizarCampo('nome', event.target.value)}
+                  onBlur={() => normalizarCampoCapitalizado('nome')}
                   required
                   autoFocus
                 />
@@ -458,6 +483,7 @@ export default function FuncionariosPage({
                   style={styles.input}
                   value={formulario.cargo}
                   onChange={(event) => atualizarCampo('cargo', event.target.value)}
+                  onBlur={() => normalizarCampoCapitalizado('cargo')}
                 />
               </label>
               <label>

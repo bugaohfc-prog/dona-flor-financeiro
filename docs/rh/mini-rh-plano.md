@@ -177,6 +177,8 @@ Regras obrigatorias:
 
 RLS e obrigatoria antes de liberar qualquer UI do Mini RH.
 
+Atualizacao em 2026-05-24: a primeira tabela do Mini RH, `df_funcionarios`, ja foi criada e teve RLS validada com script real usando anon/auth. A validacao final esta documentada em `docs/security/rls/df_funcionarios_rls_validacao_20260524.md`.
+
 Diretrizes:
 
 - Nenhuma tabela de RH deve ser criada sem RLS completa.
@@ -246,6 +248,8 @@ Regra de seguranca para ciclos futuros:
 - Validar isolamento multiempresa.
 - Criar rollback/conferencia.
 
+Estado em 2026-05-24: fase de banco/RLS de `df_funcionarios` aplicada e validada no Supabase principal com seguranca controlada. Resultado final do script anon/auth: APROVADO. O frontend ainda nao foi iniciado.
+
 ### Fase RH 2 - frontend cadastro de funcionarios
 
 - Criar service de funcionarios.
@@ -290,18 +294,19 @@ Regra de seguranca para ciclos futuros:
 
 ## Proximo ciclo recomendado
 
-Proximo ciclo minimo recomendado: auditoria/desenho SQL + RLS apenas para `df_funcionarios`, ainda antes do frontend.
+Proximo ciclo minimo recomendado: iniciar service/hook do Mini RH apenas para `df_funcionarios`, usando a RLS ja validada como base e sem criar exportacoes, documentos/anexos ou acesso de operador.
 
 Escopo sugerido:
 
-- desenhar schema de `df_funcionarios`;
-- desenhar indices;
-- desenhar policies RLS;
-- definir conferencias positivas e negativas;
-- definir rollback;
-- revisar impactos LGPD;
-- nao criar UI ainda.
+- criar service/hook com filtro obrigatorio por empresa ativa;
+- usar somente anon/auth no cliente;
+- respeitar matriz validada: operador sem acesso, gerente leitura, admin escrita, master conforme regra validada;
+- manter arquivamento por UPDATE;
+- nao criar exportacao;
+- nao criar documentos, anexos, base64 ou storage;
+- nao expor dados pessoais em logs;
+- iniciar UI somente depois do service/hook revisado.
 
-Codex recomendado para o proximo ciclo de banco/RLS: ALTISSIMO.
+Codex recomendado para o proximo ciclo de service/hook/frontend inicial: ALTISSIMO.
 
 Atualizacao de classificacao: por envolver dados pessoais e potencialmente sensiveis de funcionarios, o Codex recomendado para qualquer ciclo de banco, RLS, policies, services, logs, exportacoes ou frontend do Mini RH e ALTISSIMO.

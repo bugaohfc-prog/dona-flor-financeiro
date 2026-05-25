@@ -290,6 +290,20 @@ function safeError(error) {
   return `${code}: ${message}`
 }
 
+function maskId(id) {
+  const value = String(id || '').trim()
+  if (!value) return 'indisponivel'
+  return `${value.slice(0, 8)}...`
+}
+
+function summarizeMasterDiagnostic(diagnostic) {
+  if (!diagnostic) return 'diagnostico master nao executado'
+  if (!diagnostic.loginOk) return 'login master nao confirmado'
+  if (diagnostic.rpcStatus === 'true') return 'is_master=true no contexto anon/auth'
+  if (diagnostic.rpcStatus === 'false') return 'is_master=false no contexto anon/auth'
+  return `is_master indisponivel (${diagnostic.rpcStatus})`
+}
+
 function newResult(profileLabel, config, profileCompanies) {
   return {
     Perfil: profileLabel,
@@ -725,6 +739,49 @@ function renderCompanyPlan(config) {
   }
 }
 
+async function diagnoseMasterContext(client) {
+  const diagnostic = {
+    loginOk: false,
+    userIdPrefix: 'indisponivel',
+    rpcStatus: 'nao executado',
+    rpcError: '',
+  }
+
+  const { data: userData, error: userError } = await client.auth.getUser()
+
+  if (userError || !userData?.user?.id) {
+    diagnostic.rpcStatus = 'nao executado'
+    diagnostic.rpcError = safeError(userError)
+    return diagnostic
+  }
+
+  diagnostic.loginOk = true
+  diagnostic.userIdPrefix = maskId(userData.user.id)
+
+  const { data, error } = await client.rpc('is_master')
+
+  if (error) {
+    diagnostic.rpcStatus = 'indisponivel'
+    diagnostic.rpcError = safeError(error)
+    return diagnostic
+  }
+
+  diagnostic.rpcStatus = data === true ? 'true' : 'false'
+  return diagnostic
+}
+
+function renderMasterDiagnostic(diagnostic) {
+  console.log('')
+  console.log('Diagnostico seguro do master:')
+  console.log(`- login master: ${diagnostic.loginOk ? 'OK' : 'FALHOU'}`)
+  console.log(`- auth user id: ${diagnostic.userIdPrefix}`)
+  console.log(`- rpc is_master: ${diagnostic.rpcStatus}`)
+
+  if (diagnostic.rpcError) {
+    console.log(`- detalhe resumido: ${diagnostic.rpcError}`)
+  }
+}
+
 async function main() {
   const config = validateConfig()
   const clients = {}
@@ -741,13 +798,17 @@ async function main() {
     clients[profile.key] = await loginProfile(config, profile)
   }
 
-  async function createFixture({ client, empresaId, cleanup, failurePrefix }) {
+  const masterDiagnostic = await diagnoseMasterContext(clients.master)
+  renderMasterDiagnostic(masterDiagnostic)
+
+  async function createFixture({ client, empresaId, cleanup, failurePrefix, context = '' }) {
     const response = await insertFuncionario(client, empresaId)
     if (response.error || !response.data?.id) {
+      const contextSuffix = context ? `; ${context}` : ''
       failures.push(
         `${failurePrefix} em ${companyLabel(config, empresaId)} (${safeError(
           response.error,
-        )}); confira vinculo/perfil`,
+        )}); confira vinculo/perfil${contextSuffix}`,
       )
       return null
     }
@@ -775,6 +836,7 @@ async function main() {
     empresaId: masterCompanies.ownEmpresaId,
     cleanup: 'master',
     failurePrefix: 'Master nao criou fixture principal',
+    context: summarizeMasterDiagnostic(masterDiagnostic),
   })
 
   const neededCompanyIds = new Set(
@@ -792,6 +854,7 @@ async function main() {
       empresaId,
       cleanup: 'master',
       failurePrefix: 'Master nao criou fixture de apoio',
+      context: summarizeMasterDiagnostic(masterDiagnostic),
     })
   }
 

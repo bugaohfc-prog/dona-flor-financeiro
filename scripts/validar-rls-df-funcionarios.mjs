@@ -105,11 +105,36 @@ function resolveOtherFilialId(config, empresaId) {
   return ''
 }
 
+function resolveCompanyEnvValue({ envName, fallbackEnvName, fallbackValue }) {
+  const explicitValue = getEnv(envName)
+  if (explicitValue) {
+    return {
+      value: explicitValue,
+      source: envName,
+      usedFallback: false,
+    }
+  }
+
+  return {
+    value: fallbackValue,
+    source: fallbackEnvName,
+    usedFallback: true,
+  }
+}
+
 function resolveProfileCompanies(profile, config) {
-  const ownEnv = profile.companyEnv
-  const otherEnv = profile.otherCompanyEnv
-  const ownEmpresaId = getEnv(ownEnv) || config.empresaDonaId
-  const otherEmpresaId = getEnv(otherEnv) || config.empresaChocoId
+  const own = resolveCompanyEnvValue({
+    envName: profile.companyEnv,
+    fallbackEnvName: 'TESTE_EMPRESA_DONA_ID',
+    fallbackValue: config.empresaDonaId,
+  })
+  const other = resolveCompanyEnvValue({
+    envName: profile.otherCompanyEnv,
+    fallbackEnvName: 'TESTE_EMPRESA_CHOCO_ID',
+    fallbackValue: config.empresaChocoId,
+  })
+  const ownEmpresaId = own.value
+  const otherEmpresaId = other.value
 
   if (!ownEmpresaId || !otherEmpresaId) {
     throw new Error(`${profile.label}: empresa propria/outra empresa nao configurada.`)
@@ -124,6 +149,10 @@ function resolveProfileCompanies(profile, config) {
   return {
     ownEmpresaId,
     otherEmpresaId,
+    ownSource: own.source,
+    otherSource: other.source,
+    ownUsedFallback: own.usedFallback,
+    otherUsedFallback: other.usedFallback,
     otherFilialId: resolveOtherFilialId(config, otherEmpresaId),
   }
 }
@@ -682,11 +711,16 @@ function renderCompanyPlan(config) {
   console.log('Empresas usadas por perfil:')
   for (const profile of PROFILES) {
     const profileCompanies = config.profileCompanies[profile.key]
+    const ownFallback = profileCompanies.ownUsedFallback ? 'fallback ' : ''
+    const otherFallback = profileCompanies.otherUsedFallback ? 'fallback ' : ''
     console.log(
       `- ${profile.label}: propria=${companyLabel(
         config,
         profileCompanies.ownEmpresaId,
-      )}; outra=${companyLabel(config, profileCompanies.otherEmpresaId)}`,
+      )} (${ownFallback}${profileCompanies.ownSource}); outra=${companyLabel(
+        config,
+        profileCompanies.otherEmpresaId,
+      )} (${otherFallback}${profileCompanies.otherSource})`,
     )
   }
 }

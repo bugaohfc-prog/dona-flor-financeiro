@@ -1,0 +1,315 @@
+# Gestão de Pessoas - Funcionários: estado atual
+
+Data: 2026-05-25
+
+## Visão geral
+
+Gestão de Pessoas é o módulo do DNA Gestão voltado ao cadastro e ao controle operacional básico de colaboradores por empresa ativa.
+
+Nesta fase inicial, o módulo contempla apenas a tela de Funcionários. O objetivo é organizar dados estruturados de colaboradores com isolamento multiempresa, RLS validada e cuidado LGPD. A nomenclatura de produto/interface é Gestão de Pessoas; a expressão Mini RH fica apenas como referência histórica em documentação técnica anterior.
+
+Empresas/tenants atuais:
+
+- Dona Flor Financeiro;
+- Choco Arte.
+
+## Estado atual da tela Funcionários
+
+Implementado e validado:
+
+- menu Gestão de Pessoas > Funcionários;
+- Topbar exibindo `Empresa ativa • Gestão de Pessoas`;
+- listagem sempre baseada na empresa ativa;
+- cadastro de funcionário;
+- edição de funcionário;
+- arquivamento lógico;
+- reativação;
+- checkbox/filtro de arquivados;
+- limpeza visual ao trocar empresa ativa;
+- nome e cargo normalizados/capitalizados;
+- CPF fora da listagem principal;
+- data do exame admissional como data opcional;
+- ausência de exportações, relatórios, documentos, anexos e uploads.
+
+Arquivos funcionais relacionados:
+
+- `src/services/funcionariosService.js`;
+- `src/hooks/useFuncionarios.js`;
+- `src/pages/FuncionariosPage.jsx`.
+
+## Campos atuais controlados
+
+Tabela principal:
+
+- `public.df_funcionarios`.
+
+Campos principais:
+
+- `id`;
+- `empresa_id`;
+- `filial_id`;
+- `nome`;
+- `cpf`;
+- `cargo`;
+- `telefone`;
+- `email`;
+- `data_nascimento`;
+- `data_admissao`;
+- `data_exame_admissional`;
+- `status`;
+- `observacoes`;
+- `arquivado`;
+- `arquivado_em`;
+- `created_at`;
+- `updated_at`.
+
+Observações:
+
+- `empresa_id` é obrigatório.
+- `filial_id` é opcional e deve pertencer à mesma empresa.
+- `cpf` é opcional e não aparece na listagem.
+- `data_exame_admissional` é `date`, opcional, sem default.
+- `arquivado` e `arquivado_em` sustentam arquivamento lógico.
+
+## Permissões atuais
+
+Regra conservadora validada:
+
+- Admin: acessa e opera Funcionários na empresa ativa.
+- Master: acessa e opera Funcionários conforme regra validada.
+- Operador: não acessa Gestão de Pessoas neste momento.
+- Gerente: não acessa Gestão de Pessoas neste momento.
+
+Não ampliar acesso sem ciclo próprio de segurança, validação por perfil e revisão de LGPD.
+
+## Segurança e LGPD
+
+Regras atuais:
+
+- empresa ativa é obrigatória;
+- RLS é a barreira real de segurança;
+- frontend não contorna RLS;
+- não usar service role no frontend;
+- não usar secrets no frontend;
+- não logar dados pessoais;
+- não logar payload completo de funcionário;
+- CPF não deve aparecer na listagem principal;
+- DELETE físico não é usado;
+- arquivamento é feito por UPDATE;
+- dados não podem cruzar tenants;
+- troca de empresa deve limpar/recarregar a lista para evitar vazamento visual.
+
+Dados pessoais envolvidos:
+
+- CPF;
+- telefone;
+- e-mail;
+- data de nascimento;
+- data de admissão;
+- data do exame admissional;
+- observações.
+
+## RLS e isolamento multiempresa
+
+Estado validado:
+
+- RLS habilitada e forçada em `public.df_funcionarios`;
+- policies SELECT/INSERT/UPDATE criadas;
+- nenhuma policy DELETE/ALL;
+- DELETE físico bloqueado por trigger;
+- `empresa_id` imutável após INSERT;
+- filial cross-tenant bloqueada;
+- arquivamento por UPDATE funcionando;
+- validação real com anon/auth aprovada.
+
+Resultado final da validação RLS real:
+
+- Operador: OK;
+- Gerente: OK;
+- Admin: OK;
+- Master: OK;
+- DELETE físico bloqueado;
+- `empresa_id` imutável;
+- filial cross-tenant bloqueada;
+- arquivamento funcionando;
+- status final: APROVADO.
+
+Observação técnica:
+
+- `rpc is_master` ainda retorna `false` no contexto do script;
+- isso não bloqueia `df_funcionarios`, pois a escrita final passa por `public.df_funcionarios_pode_escrever(uuid)`;
+- a evidência principal de RLS por perfil é o script real com anon/auth, não o SQL Editor.
+
+## Arquivamento lógico
+
+Funcionários não devem ser excluídos fisicamente nesta fase.
+
+Fluxo validado:
+
+- funcionário ativo aparece na lista principal;
+- ao arquivar, sai da lista principal;
+- ao marcar o filtro de arquivados, o funcionário arquivado aparece;
+- ao reativar, volta para a lista principal;
+- DELETE físico permanece bloqueado.
+
+## Exame admissional
+
+Regra oficial: o DNA Gestão controla exames ocupacionais somente por datas.
+
+Implementado:
+
+- `data_exame_admissional`;
+- tipo `date`;
+- opcional;
+- sem default;
+- exibido e editado na tela Funcionários;
+- salva somente a data.
+
+Permitido futuramente, em ciclo próprio:
+
+- data do último exame periódico;
+- previsão do próximo periódico;
+- cálculo visual de próximo periódico, preferencialmente não persistido inicialmente.
+
+Proibido:
+
+- laudo;
+- resultado;
+- documento;
+- anexo;
+- upload;
+- base64;
+- link público;
+- observação médica;
+- condição de saúde;
+- informação clínica.
+
+## Fora do escopo atual
+
+Não existe nesta fase:
+
+- documentos de colaboradores;
+- holerites;
+- informes de rendimento;
+- contratos;
+- laudos;
+- resultados;
+- anexos;
+- uploads;
+- links públicos;
+- exportação de Funcionários;
+- relatório de pessoas;
+- relatório de exames;
+- fechamento de folha;
+- controle de vales;
+- férias;
+- aniversariantes;
+- automações de RH.
+
+Documentos sensíveis devem permanecer fora do Supabase, no OneDrive oficial da empresa, até existir política própria de acesso, retenção e exclusão.
+
+## Fechamento de folha - contexto futuro
+
+O usuário utiliza atualmente dois Excel como referência operacional:
+
+- Controle Vales;
+- Fechamento Folha.
+
+Fluxo futuro previsto:
+
+1. Controle de vales/compras por loja.
+2. Validação dos valores com colaboradores via WhatsApp da loja.
+3. Fechamento mensal da folha.
+4. Exportação Excel para contabilidade.
+5. PDF/relatório para donos.
+
+Natureza dos valores futuros:
+
+- a favor do colaborador: premiação, horas extras 50% ou 60%, horas extras 100%;
+- descontos/negativos: compras/vales, plano de saúde, faltas, pensão alimentícia.
+
+Importante:
+
+- nada disso foi implementado nesta fase;
+- fechamento de folha exige ciclos próprios para banco, RLS, rollback, service/hook, tela, validação e exportação;
+- não deve ser apresentado como folha de pagamento completa sem desenho específico.
+
+## Relatórios futuros
+
+Possíveis próximos relatórios, todos dependentes de ciclos próprios:
+
+- aniversariantes;
+- admissões;
+- férias;
+- exames a vencer;
+- fechamento mensal;
+- PDF para donos;
+- Excel para contabilidade.
+
+Nenhum relatório de pessoas foi criado nesta fase.
+
+## Validações realizadas
+
+Validações funcionais:
+
+- cadastro/edição funcionando;
+- arquivar/reativar funcionando;
+- filtro de arquivados funcionando;
+- capitalização de nome/cargo validada;
+- CPF fora da listagem;
+- data do exame admissional validada;
+- troca de empresa sem manter lista anterior visível.
+
+Validações de segurança:
+
+- RLS real com anon/auth aprovada;
+- operador e gerente sem acesso ao módulo;
+- admin e master com acesso;
+- DELETE físico bloqueado;
+- `empresa_id` imutável;
+- filial cross-tenant bloqueada;
+- ausência de policy DELETE/ALL;
+- sem documentos, anexos, uploads ou exportações.
+
+## Riscos residuais
+
+- Dados de colaboradores seguem sendo dados pessoais sob LGPD.
+- Qualquer exportação futura precisa de permissão explícita e revisão de escopo.
+- Observações podem conter conteúdo sensível se usadas sem orientação operacional.
+- Fechamento de folha envolve dados financeiros/trabalhistas e deve ser tratado como ALTÍSSIMO risco.
+- Exames ocupacionais devem permanecer restritos a datas; qualquer dado clínico é proibido.
+
+## Próximos ciclos recomendados
+
+Ordem segura sugerida:
+
+1. Revisar e documentar orientação de uso do campo `observacoes`.
+2. Planejar férias em ciclo próprio de banco/RLS antes de qualquer tela.
+3. Planejar relatórios simples somente após matriz de permissões e dados validados.
+4. Planejar controle de vales e fechamento mensal com modelagem dedicada.
+5. Avaliar exportações apenas depois de permissão explícita, auditoria de dados e validação LGPD.
+
+Codex recomendado para ciclos que envolvam dados reais, banco, RLS, services, frontend, logs ou exportações de Gestão de Pessoas: ALTÍSSIMO.
+
+## O que não implementar sem ciclo próprio
+
+- nova tabela;
+- nova migration;
+- nova policy;
+- novo trigger;
+- exportação CSV/XLSX/PDF;
+- importação;
+- relatório;
+- alerta automático;
+- upload;
+- anexo;
+- documento;
+- laudo;
+- resultado;
+- link público;
+- base64;
+- informações clínicas;
+- ampliação de acesso para operador ou gerente;
+- fechamento de folha;
+- controle de vales;
+- férias.

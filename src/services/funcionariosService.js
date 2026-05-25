@@ -17,6 +17,7 @@ const FUNCIONARIO_SELECT = [
   'email',
   'data_nascimento',
   'data_admissao',
+  'data_exame_admissional',
   'status',
   'observacoes',
   'arquivado',
@@ -113,6 +114,10 @@ function montarPayloadFuncionario(dados = {}, opcoes = {}) {
 
   if (Object.prototype.hasOwnProperty.call(entrada, 'data_admissao')) {
     payload.data_admissao = normalizarData(entrada.data_admissao)
+  }
+
+  if (Object.prototype.hasOwnProperty.call(entrada, 'data_exame_admissional')) {
+    payload.data_exame_admissional = normalizarData(entrada.data_exame_admissional)
   }
 
   if (opcoes.criacao || Object.prototype.hasOwnProperty.call(entrada, 'status')) {

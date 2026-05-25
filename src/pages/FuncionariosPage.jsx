@@ -10,6 +10,7 @@ const FORMULARIO_INICIAL = {
   cpf: '',
   data_nascimento: '',
   data_admissao: '',
+  data_exame_admissional: '',
   status: 'ativo',
   filial_id: '',
   observacoes: ''
@@ -70,6 +71,7 @@ function montarFormulario(funcionario) {
     cpf: funcionario.cpf || '',
     data_nascimento: funcionario.data_nascimento || '',
     data_admissao: funcionario.data_admissao || '',
+    data_exame_admissional: funcionario.data_exame_admissional || '',
     status: funcionario.status || 'ativo',
     filial_id: funcionario.filial_id || '',
     observacoes: funcionario.observacoes || ''
@@ -85,6 +87,7 @@ function montarPayloadFormulario(formulario) {
     cpf: apenasDigitos(formulario.cpf),
     data_nascimento: formulario.data_nascimento,
     data_admissao: formulario.data_admissao,
+    data_exame_admissional: formulario.data_exame_admissional,
     status: formulario.status,
     filial_id: formulario.filial_id,
     observacoes: formulario.observacoes
@@ -427,6 +430,9 @@ export default function FuncionariosPage({
                     <span className={`funcionario-status ${status}`}>{funcionario.arquivado ? 'Arquivado' : STATUS_LABELS[status] || status}</span>
                     <small>Filial: {filialNome}</small>
                     <small>Admissão: {formatarDataCurta(funcionario.data_admissao)}</small>
+                    {funcionario.data_exame_admissional && (
+                      <small>Exame admissional: {formatarDataCurta(funcionario.data_exame_admissional)}</small>
+                    )}
                   </div>
 
                   <div className="funcionario-actions">
@@ -544,6 +550,16 @@ export default function FuncionariosPage({
                   onChange={(event) => atualizarCampo('data_admissao', event.target.value)}
                   type="date"
                 />
+              </label>
+              <label>
+                Data do exame admissional
+                <input
+                  style={styles.input}
+                  value={formulario.data_exame_admissional}
+                  onChange={(event) => atualizarCampo('data_exame_admissional', event.target.value)}
+                  type="date"
+                />
+                <small style={styles.textoAjuda}>Controle de periodicidade; salva somente a data.</small>
               </label>
               <label className="span-2">
                 Filial

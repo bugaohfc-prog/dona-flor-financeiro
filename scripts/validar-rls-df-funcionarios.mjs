@@ -50,24 +50,32 @@ const PROFILES = [
     label: 'Operador',
     emailEnv: 'TESTE_OPERADOR_EMAIL',
     passwordEnv: 'TESTE_OPERADOR_PASSWORD',
+    companyEnv: 'TESTE_OPERADOR_EMPRESA_ID',
+    otherCompanyEnv: 'TESTE_OPERADOR_OUTRA_EMPRESA_ID',
   },
   {
     key: 'gerente',
     label: 'Gerente',
     emailEnv: 'TESTE_GERENTE_EMAIL',
     passwordEnv: 'TESTE_GERENTE_PASSWORD',
+    companyEnv: 'TESTE_GERENTE_EMPRESA_ID',
+    otherCompanyEnv: 'TESTE_GERENTE_OUTRA_EMPRESA_ID',
   },
   {
     key: 'admin',
     label: 'Admin',
     emailEnv: 'TESTE_ADMIN_EMAIL',
     passwordEnv: 'TESTE_ADMIN_PASSWORD',
+    companyEnv: 'TESTE_ADMIN_EMPRESA_ID',
+    otherCompanyEnv: 'TESTE_ADMIN_OUTRA_EMPRESA_ID',
   },
   {
     key: 'master',
     label: 'Master',
     emailEnv: 'TESTE_MASTER_EMAIL',
     passwordEnv: 'TESTE_MASTER_PASSWORD',
+    companyEnv: 'TESTE_MASTER_EMPRESA_ID',
+    otherCompanyEnv: 'TESTE_MASTER_OUTRA_EMPRESA_ID',
   },
 ]
 
@@ -84,10 +92,6 @@ function getFirstEnv(names) {
   return ''
 }
 
-function upperProfileKey(profile) {
-  return profile.key.toUpperCase()
-}
-
 function companyLabel(config, empresaId) {
   if (!empresaId) return 'nao definida'
   if (empresaId === config.empresaDonaId) return 'Dona Flor'
@@ -102,9 +106,8 @@ function resolveOtherFilialId(config, empresaId) {
 }
 
 function resolveProfileCompanies(profile, config) {
-  const prefix = upperProfileKey(profile)
-  const ownEnv = `TESTE_${prefix}_EMPRESA_ID`
-  const otherEnv = `TESTE_${prefix}_OUTRA_EMPRESA_ID`
+  const ownEnv = profile.companyEnv
+  const otherEnv = profile.otherCompanyEnv
   const ownEmpresaId = getEnv(ownEnv) || config.empresaDonaId
   const otherEmpresaId = getEnv(otherEnv) || config.empresaChocoId
 

@@ -2751,9 +2751,6 @@ export default function App() {
         empresaId={empresaId}
         trocarEmpresaAtiva={permissoesUsuario?.canSwitchCompany ? trocarEmpresaAtiva : undefined}
         trocandoEmpresa={trocandoEmpresa}
-        nomeUsuario={nomeUsuario}
-        nomeUsuarioAtual={nomeUsuarioAtual}
-        abrirPerfilUsuario={abrirPerfilUsuario}
       />
     )
   }
@@ -3750,6 +3747,7 @@ export default function App() {
         gruposMenu={gruposMenu}
         toggleGrupoMenu={toggleGrupoMenu}
         sairDoSistema={sairDoSistema}
+        abrirPerfilUsuario={abrirPerfilUsuario}
         onPreloadRoute={preloadTelaLazy}
       />
     )

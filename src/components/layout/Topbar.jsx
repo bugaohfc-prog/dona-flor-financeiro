@@ -11,10 +11,7 @@ function Topbar({
   empresasDisponiveis = [],
   empresaId = '',
   trocarEmpresaAtiva,
-  trocandoEmpresa = false,
-  nomeUsuario,
-  nomeUsuarioAtual,
-  abrirPerfilUsuario
+  trocandoEmpresa = false
 }) {
   const exibirSeletorEmpresa = canSwitchCompany && empresasDisponiveis.length > 0
   const empresaAtual = useMemo(
@@ -26,11 +23,6 @@ function Topbar({
     return nome || 'Empresa não identificada'
   }, [empresaAtivaNome, empresaAtual?.nome, nomeEmpresa])
 
-  const tituloPerfil = useMemo(() => {
-    const nome = nomeUsuarioAtual || (typeof nomeUsuario === 'function' ? nomeUsuario() : '')
-    return `Meu perfil${nome ? `: ${nome}` : ''}`
-  }, [nomeUsuario, nomeUsuarioAtual])
-
   const abrirDashboard = useCallback(() => {
     navegarPara('dashboard')
   }, [navegarPara])
@@ -38,10 +30,6 @@ function Topbar({
   const alternarMenuMobile = useCallback(() => {
     setMenuNavegacaoAberto((aberto) => !aberto)
   }, [setMenuNavegacaoAberto])
-
-  const abrirPerfil = useCallback(() => {
-    abrirPerfilUsuario?.()
-  }, [abrirPerfilUsuario])
 
   return (
     <section className="no-print top-shell top-shell-clean" style={styles.usuarioTopo}>
@@ -79,15 +67,6 @@ function Topbar({
             </div>
           )
         )}
-        <button
-          type="button"
-          className="top-user-profile-button top-user-profile-text"
-          title={tituloPerfil}
-          onClick={abrirPerfil}
-          aria-label={tituloPerfil}
-        >
-          Meu perfil
-        </button>
         <button className="mobile-menu-trigger" style={styles.btnMenuTopo} onClick={alternarMenuMobile} aria-expanded={menuNavegacaoAberto}>☰</button>
       </div>
     </section>

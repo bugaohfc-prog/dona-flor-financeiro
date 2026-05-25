@@ -1,10 +1,10 @@
 import { startTransition, useCallback, useEffect, useState } from 'react'
 
 const GRUPOS_MENU_PADRAO = {
-  principal: true,
+  dashboard: true,
   financeiro: true,
-  analise: true,
-  sistema: true
+  administracao: true,
+  conta: true
 }
 
 export function useAppNavigation(telaInicial = 'dashboard') {

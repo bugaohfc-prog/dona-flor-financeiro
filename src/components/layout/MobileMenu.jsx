@@ -153,15 +153,6 @@ function MobileMenu({
           </div>
         )}
 
-        <button
-          type="button"
-          style={styles.menuNavItem}
-          onClick={abrirPerfil}
-        >
-          <span>👤</span>
-          <div><strong>Meu perfil</strong><small>Editar nome do usuário</small></div>
-        </button>
-
         {menuSections.map((grupo, index) => (
           <details className="mobile-menu-group" key={grupo.id} open={index === 0}>
             <summary>{grupo.titulo}</summary>
@@ -174,11 +165,24 @@ function MobileMenu({
                 onPreloadRoute={onPreloadRoute}
               />
             ))}
-            {grupo.id === 'sistema' && (
-              <button type="button" style={styles.menuSairItem} onClick={sairDoSistema}><span>🚪</span><div><strong>Sair</strong><small>Encerrar sessão</small></div></button>
-            )}
           </details>
         ))}
+
+        <details className="mobile-menu-group" open>
+          <summary>Conta</summary>
+          <button
+            type="button"
+            style={styles.menuNavItem}
+            onClick={abrirPerfil}
+          >
+            <span>👤</span>
+            <div><strong>Meu perfil</strong><small>Editar nome do usuário</small></div>
+          </button>
+          <button type="button" style={styles.menuSairItem} onClick={sairDoSistema}>
+            <span>🚪</span>
+            <div><strong>Sair</strong><small>Encerrar sessão</small></div>
+          </button>
+        </details>
       </div>
     </div>
   )

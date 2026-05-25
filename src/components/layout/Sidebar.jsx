@@ -17,14 +17,25 @@ const MenuItem = memo(function MenuItem({ tela, icon, label, telaAtual, sidebarC
   )
 })
 
+const ActionItem = memo(function ActionItem({ icon, label, sidebarCompacta, onClick }) {
+  return (
+    <button type="button" title={label} onClick={onClick}>
+      <span className="menu-icon">{icon}</span>
+      {!sidebarCompacta && <span className="menu-text">{label}</span>}
+    </button>
+  )
+})
+
 const MenuGroup = memo(function MenuGroup({ id, titulo, children, sidebarCompacta, gruposMenu, toggleGrupoMenu }) {
+  const aberto = sidebarCompacta || Boolean(gruposMenu[id])
+
   return (
     <div className="sidebar-group-clean">
       <button className="sidebar-group-toggle" onClick={() => toggleGrupoMenu(id)} title={titulo}>
         <span>{!sidebarCompacta ? titulo : '•'}</span>
-        {!sidebarCompacta && <strong>{gruposMenu[id] ? '−' : '+'}</strong>}
+        {!sidebarCompacta && <strong>{aberto ? '−' : '+'}</strong>}
       </button>
-      {(sidebarCompacta || gruposMenu[id]) && <nav className="desktop-sidebar-nav">{children}</nav>}
+      {aberto && <nav className="desktop-sidebar-nav">{children}</nav>}
     </div>
   )
 })
@@ -42,6 +53,7 @@ function Sidebar({
   gruposMenu,
   toggleGrupoMenu,
   sairDoSistema,
+  abrirPerfilUsuario,
   onPreloadRoute
 }) {
   const nome = useMemo(() => {
@@ -54,6 +66,10 @@ function Sidebar({
   const alternarSidebarCompacta = useCallback(() => {
     setSidebarCompacta((compacta) => !compacta)
   }, [setSidebarCompacta])
+
+  const abrirPerfil = useCallback(() => {
+    abrirPerfilUsuario?.()
+  }, [abrirPerfilUsuario])
 
   return (
     <aside className={`desktop-sidebar no-print ${sidebarCompacta ? 'compacta' : ''}`}>
@@ -108,9 +124,16 @@ function Sidebar({
       </div>
 
       <div className="desktop-sidebar-spacer" />
-      <nav className="desktop-sidebar-nav sidebar-exit">
-        <button onClick={sairDoSistema} title="Sair"><span className="menu-icon">🚪</span>{!sidebarCompacta && <span>Sair</span>}</button>
-      </nav>
+      <MenuGroup
+        id="conta"
+        titulo="Conta"
+        sidebarCompacta={sidebarCompacta}
+        gruposMenu={gruposMenu}
+        toggleGrupoMenu={toggleGrupoMenu}
+      >
+        <ActionItem icon="👤" label="Meu perfil" sidebarCompacta={sidebarCompacta} onClick={abrirPerfil} />
+        <ActionItem icon="🚪" label="Sair" sidebarCompacta={sidebarCompacta} onClick={sairDoSistema} />
+      </MenuGroup>
     </aside>
   )
 }

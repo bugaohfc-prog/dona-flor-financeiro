@@ -299,9 +299,17 @@ function maskId(id) {
 function summarizeMasterDiagnostic(diagnostic) {
   if (!diagnostic) return 'diagnostico master nao executado'
   if (!diagnostic.loginOk) return 'login master nao confirmado'
-  if (diagnostic.rpcStatus === 'true') return 'is_master=true no contexto anon/auth'
-  if (diagnostic.rpcStatus === 'false') return 'is_master=false no contexto anon/auth'
-  return `is_master indisponivel (${diagnostic.rpcStatus})`
+
+  const isMasterStatus =
+    diagnostic.rpcStatus === 'true' || diagnostic.rpcStatus === 'false'
+      ? `is_master=${diagnostic.rpcStatus}`
+      : `is_master indisponivel (${diagnostic.rpcStatus})`
+  const writeStatus =
+    diagnostic.writeRpcStatus === 'true' || diagnostic.writeRpcStatus === 'false'
+      ? `df_funcionarios_pode_escrever=${diagnostic.writeRpcStatus}`
+      : `df_funcionarios_pode_escrever indisponivel (${diagnostic.writeRpcStatus})`
+
+  return `${isMasterStatus}; ${writeStatus}`
 }
 
 function newResult(profileLabel, config, profileCompanies) {
@@ -739,12 +747,14 @@ function renderCompanyPlan(config) {
   }
 }
 
-async function diagnoseMasterContext(client) {
+async function diagnoseMasterContext(client, masterEmpresaId) {
   const diagnostic = {
     loginOk: false,
     userIdPrefix: 'indisponivel',
     rpcStatus: 'nao executado',
     rpcError: '',
+    writeRpcStatus: 'nao executado',
+    writeRpcError: '',
   }
 
   const { data: userData, error: userError } = await client.auth.getUser()
@@ -752,6 +762,7 @@ async function diagnoseMasterContext(client) {
   if (userError || !userData?.user?.id) {
     diagnostic.rpcStatus = 'nao executado'
     diagnostic.rpcError = safeError(userError)
+    diagnostic.writeRpcStatus = 'nao executado'
     return diagnostic
   }
 
@@ -763,10 +774,28 @@ async function diagnoseMasterContext(client) {
   if (error) {
     diagnostic.rpcStatus = 'indisponivel'
     diagnostic.rpcError = safeError(error)
+  } else {
+    diagnostic.rpcStatus = data === true ? 'true' : 'false'
+  }
+
+  if (!masterEmpresaId) {
+    diagnostic.writeRpcStatus = 'nao executado'
+    diagnostic.writeRpcError = 'empresa master nao configurada'
     return diagnostic
   }
 
-  diagnostic.rpcStatus = data === true ? 'true' : 'false'
+  const { data: writeData, error: writeError } = await client.rpc(
+    'df_funcionarios_pode_escrever',
+    { p_empresa_id: masterEmpresaId },
+  )
+
+  if (writeError) {
+    diagnostic.writeRpcStatus = 'indisponivel'
+    diagnostic.writeRpcError = safeError(writeError)
+    return diagnostic
+  }
+
+  diagnostic.writeRpcStatus = writeData === true ? 'true' : 'false'
   return diagnostic
 }
 
@@ -776,9 +805,14 @@ function renderMasterDiagnostic(diagnostic) {
   console.log(`- login master: ${diagnostic.loginOk ? 'OK' : 'FALHOU'}`)
   console.log(`- auth user id: ${diagnostic.userIdPrefix}`)
   console.log(`- rpc is_master: ${diagnostic.rpcStatus}`)
+  console.log(`- rpc df_funcionarios_pode_escrever: ${diagnostic.writeRpcStatus}`)
 
   if (diagnostic.rpcError) {
-    console.log(`- detalhe resumido: ${diagnostic.rpcError}`)
+    console.log(`- detalhe is_master: ${diagnostic.rpcError}`)
+  }
+
+  if (diagnostic.writeRpcError) {
+    console.log(`- detalhe df_funcionarios_pode_escrever: ${diagnostic.writeRpcError}`)
   }
 }
 
@@ -798,7 +832,8 @@ async function main() {
     clients[profile.key] = await loginProfile(config, profile)
   }
 
-  const masterDiagnostic = await diagnoseMasterContext(clients.master)
+  const masterCompanies = config.profileCompanies.master
+  const masterDiagnostic = await diagnoseMasterContext(clients.master, masterCompanies.ownEmpresaId)
   renderMasterDiagnostic(masterDiagnostic)
 
   async function createFixture({ client, empresaId, cleanup, failurePrefix, context = '' }) {
@@ -820,7 +855,6 @@ async function main() {
   }
 
   const adminCompanies = config.profileCompanies.admin
-  const masterCompanies = config.profileCompanies.master
   const operadorCompanies = config.profileCompanies.operador
   const gerenteCompanies = config.profileCompanies.gerente
 

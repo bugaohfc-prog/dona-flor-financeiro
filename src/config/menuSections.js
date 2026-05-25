@@ -31,4 +31,41 @@ const menuSections = [
   }
 ]
 
+export const MODULOS_TOPBAR = {
+  financeiro: 'Gestão Financeira',
+  administracao: 'Administração',
+  conta: 'Conta',
+  pessoas: 'Gestão de Pessoas'
+}
+
+const CONTEXTO_MODULO_POR_TELA = {
+  dashboard: MODULOS_TOPBAR.financeiro,
+  agenda: MODULOS_TOPBAR.financeiro,
+  contas: MODULOS_TOPBAR.financeiro,
+  notas: MODULOS_TOPBAR.financeiro,
+  relatorios: MODULOS_TOPBAR.financeiro,
+  importar: MODULOS_TOPBAR.financeiro,
+
+  usuarios: MODULOS_TOPBAR.administracao,
+  'master-empresas': MODULOS_TOPBAR.administracao,
+  configuracoes: MODULOS_TOPBAR.administracao,
+  billing: MODULOS_TOPBAR.administracao,
+  onboarding: MODULOS_TOPBAR.administracao,
+  filiais: MODULOS_TOPBAR.administracao,
+  lixeira: MODULOS_TOPBAR.administracao,
+
+  perfil: MODULOS_TOPBAR.conta,
+  'meu-perfil': MODULOS_TOPBAR.conta,
+
+  funcionarios: MODULOS_TOPBAR.pessoas,
+  ferias: MODULOS_TOPBAR.pessoas,
+  'fechamento-mensal': MODULOS_TOPBAR.pessoas,
+  'relatorios-pessoas': MODULOS_TOPBAR.pessoas
+}
+
+export function resolverContextoModulo(tela) {
+  const chaveTela = String(tela || '').trim()
+  return CONTEXTO_MODULO_POR_TELA[chaveTela] || MODULOS_TOPBAR.financeiro
+}
+
 export default menuSections

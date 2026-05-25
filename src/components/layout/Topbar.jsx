@@ -11,7 +11,8 @@ function Topbar({
   empresasDisponiveis = [],
   empresaId = '',
   trocarEmpresaAtiva,
-  trocandoEmpresa = false
+  trocandoEmpresa = false,
+  contextoModulo = 'Gestão Financeira'
 }) {
   const exibirSeletorEmpresa = canSwitchCompany && empresasDisponiveis.length > 0
   const empresaAtual = useMemo(
@@ -22,6 +23,10 @@ function Topbar({
     const nome = String(empresaAtivaNome || empresaAtual?.nome || nomeEmpresa || '').trim()
     return nome || 'Empresa não identificada'
   }, [empresaAtivaNome, empresaAtual?.nome, nomeEmpresa])
+  const contextoModuloAtual = useMemo(() => {
+    const contexto = String(contextoModulo || '').trim()
+    return contexto || 'Gestão Financeira'
+  }, [contextoModulo])
 
   const abrirDashboard = useCallback(() => {
     navegarPara('dashboard')
@@ -38,7 +43,7 @@ function Topbar({
           <img src="/icon-192.png" alt="DNA Gestão" style={styles.logoImagem} />
           <span>
             <strong>DNA Gestão</strong>
-            <small>{nomeEmpresaAtiva} &bull; Gestão Financeira</small>
+            <small>{nomeEmpresaAtiva} &bull; {contextoModuloAtual}</small>
           </span>
         </button>
       </div>

@@ -45,7 +45,7 @@ import { listarFiliaisPorEmpresa } from './services/filiaisService'
 import { verificarUsoCentroCusto } from './services/contasService'
 import './styles.css'
 import styles from './styles/appStyles.js'
-import menuSections from './config/menuSections.js'
+import menuSections, { resolverContextoModulo } from './config/menuSections.js'
 import {
   limparSessaoSegura
 } from './services/sessionSecurityService.js'
@@ -2738,11 +2738,14 @@ export default function App() {
 
 
   function renderTopShell() {
+    const contextoModuloTopbar = resolverContextoModulo(modalPerfilUsuario ? 'perfil' : telaAtual)
+
     return (
       <Topbar
         styles={styles}
         nomeEmpresa={nomeEmpresa}
         empresaAtivaNome={empresaAtiva?.nome}
+        contextoModulo={contextoModuloTopbar}
         navegarPara={navegarPara}
         menuNavegacaoAberto={menuNavegacaoAberto}
         setMenuNavegacaoAberto={setMenuNavegacaoAberto}

@@ -29,6 +29,8 @@ Implementado e validado:
 - nome e cargo normalizados/capitalizados;
 - CPF fora da listagem principal;
 - data do exame admissional como data opcional;
+- seção de exames periódicos realizados no formulário de funcionário;
+- cadastro, edição, arquivamento e reativação de datas de exames periódicos;
 - relatórios internos visuais sem exportação;
 - ausência de PDF, Excel, CSV, documentos, anexos e uploads.
 
@@ -36,6 +38,8 @@ Arquivos funcionais relacionados:
 
 - `src/services/funcionariosService.js`;
 - `src/hooks/useFuncionarios.js`;
+- `src/services/funcionariosExamesPeriodicosService.js`;
+- `src/hooks/useFuncionariosExamesPeriodicos.js`;
 - `src/pages/FuncionariosPage.jsx`.
 - `src/pages/RelatoriosPessoasPage.jsx`.
 
@@ -72,6 +76,28 @@ Observações:
 - `cpf` é opcional e não aparece na listagem.
 - `data_exame_admissional` é `date`, opcional, sem default.
 - `arquivado` e `arquivado_em` sustentam arquivamento lógico.
+
+Tabela de exames periódicos:
+
+- `public.df_funcionarios_exames_periodicos`.
+
+Campos principais:
+
+- `id`;
+- `empresa_id`;
+- `funcionario_id`;
+- `data_exame`;
+- `arquivado`;
+- `arquivado_em`;
+- `criado_em`;
+- `atualizado_em`.
+
+Observações:
+
+- `data_exame` guarda somente a data do exame periódico realizado.
+- `funcionario_id` deve pertencer à mesma `empresa_id`.
+- não existe campo de laudo, resultado, documento, anexo, upload, link público, observação médica ou dado clínico.
+- não existe `data_proximo_periodico` persistida.
 
 ## Permissões atuais
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useFuncionariosExamesPeriodicos } from '../hooks/useFuncionariosExamesPeriodicos'
 import { useFuncionarios } from '../hooks/useFuncionarios'
 import { mensagemSeguraErro } from '../utils/session'
 
@@ -109,6 +110,10 @@ export default function FuncionariosPage({
   const [modalAberto, setModalAberto] = useState(false)
   const [funcionarioEditando, setFuncionarioEditando] = useState(null)
   const [formulario, setFormulario] = useState(FORMULARIO_INICIAL)
+  const [mostrarExamesArquivados, setMostrarExamesArquivados] = useState(false)
+  const [dataExamePeriodico, setDataExamePeriodico] = useState('')
+  const [exameEditandoId, setExameEditandoId] = useState('')
+  const [dataExameEditando, setDataExameEditando] = useState('')
 
   const {
     funcionarios,
@@ -124,6 +129,25 @@ export default function FuncionariosPage({
   } = useFuncionarios({
     empresaId,
     incluirArquivados
+  })
+
+  const {
+    exames,
+    loading: loadingExames,
+    salvando: salvandoExames,
+    erro: erroExames,
+    criarExamePeriodico,
+    atualizarExamePeriodico,
+    arquivarExamePeriodico,
+    reativarExamePeriodico,
+    carregarExamesPeriodicos,
+    calcularProximoPeriodico,
+    limparErro: limparErroExames
+  } = useFuncionariosExamesPeriodicos({
+    empresaId,
+    funcionarioId: funcionarioEditando?.id,
+    incluirArquivados: mostrarExamesArquivados,
+    autoCarregar: modalAberto && Boolean(funcionarioEditando?.id)
   })
 
   const filiaisPorId = useMemo(() => {
@@ -150,11 +174,30 @@ export default function FuncionariosPage({
     })
   }, [busca, filiaisPorId, funcionarios, statusFiltro])
 
+  const examesAtivos = useMemo(() => {
+    return (exames || [])
+      .filter((exame) => !exame.arquivado)
+      .sort((a, b) => String(b.data_exame || '').localeCompare(String(a.data_exame || '')))
+  }, [exames])
+
+  const dataBaseProximoPeriodico = examesAtivos[0]?.data_exame || formulario.data_exame_admissional
+  const proximoPeriodicoPrevisto = dataBaseProximoPeriodico
+    ? calcularProximoPeriodico(dataBaseProximoPeriodico)
+    : null
+  const origemProximoPeriodico = examesAtivos[0]?.data_exame
+    ? 'último exame periódico registrado'
+    : formulario.data_exame_admissional
+      ? 'exame admissional'
+      : ''
+
   useEffect(() => {
     setModalAberto(false)
     setFuncionarioEditando(null)
     setFormulario(FORMULARIO_INICIAL)
+    setMostrarExamesArquivados(false)
+    limparFormularioExamePeriodico()
     limparErro?.()
+    limparErroExames?.()
   }, [empresaId])
 
   function atualizarCampo(campo, valor) {
@@ -175,16 +218,22 @@ export default function FuncionariosPage({
   function abrirNovoFuncionario() {
     if (!empresaId || !podeEditar) return
     limparErro?.()
+    limparErroExames?.()
     setFuncionarioEditando(null)
     setFormulario(FORMULARIO_INICIAL)
+    setMostrarExamesArquivados(false)
+    limparFormularioExamePeriodico()
     setModalAberto(true)
   }
 
   function abrirEdicaoFuncionario(funcionario) {
     if (!funcionario?.id || !podeEditar) return
     limparErro?.()
+    limparErroExames?.()
     setFuncionarioEditando(funcionario)
     setFormulario(montarFormulario(funcionario))
+    setMostrarExamesArquivados(false)
+    limparFormularioExamePeriodico()
     setModalAberto(true)
   }
 
@@ -192,6 +241,15 @@ export default function FuncionariosPage({
     setModalAberto(false)
     setFuncionarioEditando(null)
     setFormulario(FORMULARIO_INICIAL)
+    setMostrarExamesArquivados(false)
+    limparFormularioExamePeriodico()
+    limparErroExames?.()
+  }
+
+  function limparFormularioExamePeriodico() {
+    setDataExamePeriodico('')
+    setExameEditandoId('')
+    setDataExameEditando('')
   }
 
   async function salvarFormulario(event) {
@@ -225,6 +283,74 @@ export default function FuncionariosPage({
     }
 
     mostrarAviso?.(funcionario.arquivado ? 'Funcionário reativado.' : 'Funcionário arquivado.', 'sucesso')
+  }
+
+  async function adicionarExamePeriodico() {
+    if (!empresaId || !funcionarioEditando?.id || !podeEditar || salvandoExames) return
+
+    if (!dataExamePeriodico) {
+      mostrarAviso?.('Informe a data do exame periódico.', 'erro')
+      return
+    }
+
+    const resposta = await criarExamePeriodico(dataExamePeriodico, {
+      funcionarioId: funcionarioEditando.id
+    })
+
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível salvar o exame periódico.'), 'erro')
+      return
+    }
+
+    setDataExamePeriodico('')
+    mostrarAviso?.('Exame periódico registrado.', 'sucesso')
+  }
+
+  function iniciarEdicaoExame(exame) {
+    if (!exame?.id || !podeEditar) return
+    limparErroExames?.()
+    setExameEditandoId(exame.id)
+    setDataExameEditando(exame.data_exame || '')
+  }
+
+  function cancelarEdicaoExame() {
+    setExameEditandoId('')
+    setDataExameEditando('')
+  }
+
+  async function salvarEdicaoExame(exame) {
+    if (!exame?.id || !empresaId || !podeEditar || salvandoExames) return
+
+    if (!dataExameEditando) {
+      mostrarAviso?.('Informe a data do exame periódico.', 'erro')
+      return
+    }
+
+    const resposta = await atualizarExamePeriodico(exame.id, dataExameEditando)
+
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível atualizar o exame periódico.'), 'erro')
+      return
+    }
+
+    cancelarEdicaoExame()
+    mostrarAviso?.('Exame periódico atualizado.', 'sucesso')
+  }
+
+  async function alternarArquivamentoExame(exame) {
+    if (!exame?.id || !empresaId || !podeEditar || salvandoExames) return
+
+    const resposta = exame.arquivado
+      ? await reativarExamePeriodico(exame.id)
+      : await arquivarExamePeriodico(exame.id)
+
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível atualizar o exame periódico.'), 'erro')
+      return
+    }
+
+    if (exameEditandoId === exame.id) cancelarEdicaoExame()
+    mostrarAviso?.(exame.arquivado ? 'Exame periódico reativado.' : 'Exame periódico arquivado.', 'sucesso')
   }
 
   return (
@@ -320,13 +446,85 @@ export default function FuncionariosPage({
         .funcionario-form-grid label { display: grid; gap: 6px; color: #475569; font-size: 12px; font-weight: 900; }
         .funcionario-form-grid .span-2 { grid-column: 1 / -1; }
         .funcionario-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+        .funcionario-exames-section {
+          margin-top: 18px;
+          border: 1px solid rgba(15, 23, 42, .08);
+          border-radius: 18px;
+          background: #f8fafc;
+          padding: 14px;
+          display: grid;
+          gap: 12px;
+        }
+        .funcionario-exames-header {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: flex-start;
+        }
+        .funcionario-exames-header h3 { margin: 0 0 5px; color: #0f172a; font-size: 16px; }
+        .funcionario-exames-header p { margin: 0; color: #64748b; font-size: 12px; line-height: 1.45; }
+        .funcionario-exames-add {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 10px;
+          align-items: end;
+        }
+        .funcionario-exames-add label { display: grid; gap: 6px; color: #475569; font-size: 12px; font-weight: 900; }
+        .funcionario-exames-list { display: grid; gap: 10px; }
+        .funcionario-exame-row {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 10px;
+          align-items: center;
+          border: 1px solid rgba(15, 23, 42, .07);
+          border-radius: 14px;
+          background: #ffffff;
+          padding: 10px;
+        }
+        .funcionario-exame-main { display: grid; gap: 5px; min-width: 0; }
+        .funcionario-exame-main strong { color: #0f172a; font-size: 14px; }
+        .funcionario-exame-main small { color: #64748b; line-height: 1.35; }
+        .funcionario-exame-status {
+          width: fit-content;
+          border-radius: 999px;
+          padding: 4px 8px;
+          background: #ecfdf5;
+          color: #0f766e;
+          font-size: 11px;
+          font-weight: 900;
+          text-transform: uppercase;
+        }
+        .funcionario-exame-status.arquivado { background: #fee2e2; color: #b91c1c; }
+        .funcionario-exame-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+        .funcionario-exame-actions button,
+        .funcionario-exames-add button { min-height: 34px !important; padding: 8px 11px !important; margin: 0 !important; }
+        .funcionario-exame-edit {
+          display: grid;
+          grid-template-columns: minmax(0, 180px) auto auto;
+          gap: 8px;
+          align-items: center;
+        }
+        .funcionario-exames-empty {
+          border: 1px dashed rgba(15, 23, 42, .14);
+          border-radius: 14px;
+          background: #ffffff;
+          color: #64748b;
+          padding: 12px;
+          font-size: 13px;
+          line-height: 1.4;
+        }
         @media (max-width: 860px) {
           .funcionarios-toolbar,
           .funcionario-card,
-          .funcionario-form-grid {
+          .funcionario-form-grid,
+          .funcionario-exames-add,
+          .funcionario-exame-row,
+          .funcionario-exame-edit {
             grid-template-columns: 1fr;
           }
           .funcionario-actions { justify-content: flex-start; }
+          .funcionario-exames-header { display: grid; }
+          .funcionario-exame-actions { justify-content: flex-start; }
           .funcionario-modal-backdrop { align-items: flex-end; padding: 10px; }
           .funcionario-modal { max-height: calc(100vh - 20px); border-radius: 22px; }
         }
@@ -580,9 +778,151 @@ export default function FuncionariosPage({
                   style={{ ...styles.input, minHeight: 90, resize: 'vertical' }}
                   value={formulario.observacoes}
                   onChange={(event) => atualizarCampo('observacoes', event.target.value)}
+                  placeholder="Ex.: informação administrativa interna. Não inserir dados médicos ou documentos."
                 />
+                <small style={styles.textoAjuda}>
+                  Use apenas observações administrativas. Não registre laudos, diagnósticos,
+                  resultados de exames, documentos ou informações clínicas.
+                </small>
               </label>
             </div>
+
+            <section className="funcionario-exames-section">
+              <div className="funcionario-exames-header">
+                <div>
+                  <h3>Exames periódicos</h3>
+                  <p>Registre somente as datas dos exames periódicos realizados. Não registre laudos, resultados, documentos ou informações clínicas.</p>
+                </div>
+                {funcionarioEditando?.id && (
+                  <label className="funcionarios-switch">
+                    <input
+                      type="checkbox"
+                      checked={mostrarExamesArquivados}
+                      onChange={(event) => {
+                        setMostrarExamesArquivados(event.target.checked)
+                        cancelarEdicaoExame()
+                      }}
+                      disabled={loadingExames || salvandoExames}
+                    />
+                    Mostrar arquivados
+                  </label>
+                )}
+              </div>
+
+              {!funcionarioEditando?.id ? (
+                <div className="funcionario-exames-empty">
+                  Salve o funcionário antes de registrar exames periódicos.
+                </div>
+              ) : (
+                <>
+                  <div className="funcionario-exames-add">
+                    <label>
+                      Data do exame periódico
+                      <input
+                        style={styles.input}
+                        value={dataExamePeriodico}
+                        onChange={(event) => setDataExamePeriodico(event.target.value)}
+                        type="date"
+                        disabled={salvandoExames}
+                      />
+                    </label>
+                    <button
+                      style={styles.btnSalvar}
+                      type="button"
+                      disabled={salvandoExames || !dataExamePeriodico}
+                      onClick={adicionarExamePeriodico}
+                    >
+                      Adicionar exame
+                    </button>
+                  </div>
+
+                  <div className="funcionario-exames-empty">
+                    <strong>Próximo periódico previsto: {proximoPeriodicoPrevisto ? formatarDataCurta(proximoPeriodicoPrevisto) : 'Não informado'}</strong>
+                    <br />
+                    <span>
+                      {origemProximoPeriodico
+                        ? `Cálculo visual baseado no ${origemProximoPeriodico}. Este valor não é salvo no banco.`
+                        : 'Informe o exame admissional ou registre um periódico para calcular a previsão.'}
+                    </span>
+                  </div>
+
+                  {loadingExames ? (
+                    <p style={styles.textoNota}>Carregando exames periódicos...</p>
+                  ) : erroExames ? (
+                    <div className="funcionario-exames-empty">
+                      <strong>Não foi possível carregar os exames.</strong>
+                      <p>{erroExames}</p>
+                      <button style={styles.btnCinza} type="button" onClick={() => carregarExamesPeriodicos()}>
+                        Tentar novamente
+                      </button>
+                    </div>
+                  ) : exames.length === 0 ? (
+                    <div className="funcionario-exames-empty">
+                      Nenhum exame periódico registrado para este funcionário.
+                    </div>
+                  ) : (
+                    <div className="funcionario-exames-list">
+                      {exames.map((exame) => (
+                        <article key={exame.id} className="funcionario-exame-row">
+                          <div className="funcionario-exame-main">
+                            {exameEditandoId === exame.id ? (
+                              <div className="funcionario-exame-edit">
+                                <input
+                                  style={styles.input}
+                                  value={dataExameEditando}
+                                  onChange={(event) => setDataExameEditando(event.target.value)}
+                                  type="date"
+                                  disabled={salvandoExames}
+                                />
+                                <button
+                                  style={styles.btnSalvar}
+                                  type="button"
+                                  disabled={salvandoExames || !dataExameEditando}
+                                  onClick={() => salvarEdicaoExame(exame)}
+                                >
+                                  Salvar
+                                </button>
+                                <button style={styles.btnCinza} type="button" disabled={salvandoExames} onClick={cancelarEdicaoExame}>
+                                  Cancelar
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <strong>{formatarDataCurta(exame.data_exame)}</strong>
+                                <small>Data do exame periódico realizado.</small>
+                              </>
+                            )}
+                            <span className={`funcionario-exame-status ${exame.arquivado ? 'arquivado' : ''}`}>
+                              {exame.arquivado ? 'Arquivado' : 'Ativo'}
+                            </span>
+                          </div>
+                          <div className="funcionario-exame-actions">
+                            {exameEditandoId !== exame.id && (
+                              <button
+                                style={styles.btnCinza}
+                                type="button"
+                                disabled={salvandoExames || exame.arquivado}
+                                onClick={() => iniciarEdicaoExame(exame)}
+                              >
+                                Editar
+                              </button>
+                            )}
+                            <button
+                              style={exame.arquivado ? styles.btnSalvar : styles.btnCinza}
+                              type="button"
+                              disabled={salvandoExames}
+                              onClick={() => alternarArquivamentoExame(exame)}
+                            >
+                              {exame.arquivado ? 'Reativar' : 'Arquivar'}
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
 
             <div className="funcionario-modal-actions">
               <button style={styles.btnCinza} type="button" onClick={fecharFormulario} disabled={salvando}>Cancelar</button>

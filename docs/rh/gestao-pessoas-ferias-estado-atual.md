@@ -105,6 +105,20 @@ Funcionalidades atuais:
 A Gestão de Férias possui uma tela inicial de relatórios internos:
 
 - Gestão de Pessoas > Relatórios de Férias.
+- rota/view `relatorios-ferias`.
+
+Estado de validação:
+
+- ciclo validado manualmente como APROVADO.
+- Topbar esperado: Empresa ativa • Gestão de Pessoas.
+- menu validado em Gestão de Pessoas.
+
+Regras de acesso:
+
+- Admin/Master acessam;
+- Operador/Gerente não acessam;
+- `peopleOnly` preservado no menu;
+- permissões de Gestão de Pessoas preservadas.
 
 Os relatórios são apenas visuais e internos, sem exportação, PDF, Excel, CSV, impressão, documentos, anexos ou integração financeira.
 
@@ -128,7 +142,33 @@ Critérios usados:
 
 O status "Concluída (calculado)" é apenas visual. A tela de relatórios não atualiza status no banco automaticamente, não cria job e não executa automação.
 
-Os relatórios não exibem CPF, observações sensíveis, dados médicos, documentos, anexos, valores financeiros ou dados de pagamento.
+Os relatórios não exibem:
+
+- CPF;
+- observações sensíveis;
+- dados médicos;
+- documentos;
+- anexos;
+- uploads;
+- valores financeiros;
+- dados de pagamento;
+- conta a pagar;
+- vínculo financeiro.
+
+Validação manual aprovada:
+
+- cards de resumo aparecem corretamente;
+- férias vencidas aparecem vazias quando não há dados;
+- férias a vencer aparecem vazias quando não há dados;
+- férias agendadas aparecem vazias quando não há dados;
+- férias concluídas listam parcelas corretamente;
+- saldos por colaborador mostram direito, lançado, saldo e status;
+- CPF não aparece;
+- observações não aparecem;
+- não existe PDF, Excel, CSV ou exportação;
+- não existe integração financeira;
+- não existe conta a pagar;
+- não há atualização automática de status no banco.
 
 ## Regras Funcionais Atuais
 
@@ -246,6 +286,7 @@ Pontos observados para melhoria futura, sem bloquear o estado atual:
 
 - "Criar novo ciclo" poderia iniciar recolhido quando já existe ciclo;
 - "Nova parcela" poderia ficar recolhida ou ainda mais compacta quando saldo = 0;
+- quando houver muitos funcionários/ciclos, considerar filtros ou recolher seções vazias para reduzir rolagem;
 - exportação/PDF ainda não existe;
 - integração Férias → Financeiro ainda não foi implementada;
 - faltas injustificadas ainda não cruzam com Fechamento de Folha;
@@ -277,17 +318,15 @@ Não existe neste estado atual:
 
 ## Roadmap Futuro Recomendado
 
-### 1. Relatórios de Férias internos
+### 1. Evolução dos Relatórios de Férias internos
 
-Relatórios futuros possíveis:
+Os Relatórios de Férias internos já existem. Melhorias futuras possíveis:
 
-- férias vencidas;
-- férias a vencer;
-- férias agendadas;
-- férias concluídas;
-- saldo por colaborador;
-- retorno ao trabalho;
-- histórico de ciclos e parcelas.
+- filtros avançados se a base crescer;
+- recolhimento automático de seções vazias;
+- agrupamentos por loja/filial, se houver regra segura;
+- ordenações adicionais por vencimento, saldo ou retorno;
+- indicadores internos adicionais sem exportação.
 
 ### 2. Integração futura com Fechamento de Folha
 

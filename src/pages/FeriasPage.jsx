@@ -4,9 +4,6 @@ import { useFuncionariosFerias } from '../hooks/useFuncionariosFerias'
 import { mensagemSeguraErro } from '../utils/session'
 
 const FORMULARIO_CICLO_INICIAL = {
-  periodo_aquisitivo_inicio: '',
-  periodo_aquisitivo_fim: '',
-  data_limite_gozo: '',
   dias_direito: '30',
   status: 'pendente'
 }
@@ -61,6 +58,53 @@ function formatarDataCurta(data) {
   }).format(dataLocal)
 }
 
+function formatarDataISO(dataUTC) {
+  return [
+    dataUTC.getUTCFullYear(),
+    String(dataUTC.getUTCMonth() + 1).padStart(2, '0'),
+    String(dataUTC.getUTCDate()).padStart(2, '0')
+  ].join('-')
+}
+
+function normalizarDataISO(data) {
+  const texto = String(data || '').slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(texto)) return ''
+
+  const [ano, mes, dia] = texto.split('-').map(Number)
+  const dataUTC = new Date(Date.UTC(ano, mes - 1, dia))
+
+  if (
+    Number.isNaN(dataUTC.getTime()) ||
+    dataUTC.getUTCFullYear() !== ano ||
+    dataUTC.getUTCMonth() !== mes - 1 ||
+    dataUTC.getUTCDate() !== dia
+  ) {
+    return ''
+  }
+
+  return texto
+}
+
+function somarDiasISO(dataISO, dias) {
+  const texto = normalizarDataISO(dataISO)
+  if (!texto) return ''
+
+  const [ano, mes, dia] = texto.split('-').map(Number)
+  const dataUTC = new Date(Date.UTC(ano, mes - 1, dia))
+  dataUTC.setUTCDate(dataUTC.getUTCDate() + dias)
+  return formatarDataISO(dataUTC)
+}
+
+function somarAnosISO(dataISO, anos) {
+  const texto = normalizarDataISO(dataISO)
+  if (!texto) return ''
+
+  const [ano, mes, dia] = texto.split('-').map(Number)
+  const dataUTC = new Date(Date.UTC(ano, mes - 1, dia))
+  dataUTC.setUTCFullYear(dataUTC.getUTCFullYear() + anos)
+  return formatarDataISO(dataUTC)
+}
+
 function normalizarTexto(valor) {
   return String(valor || '').trim()
 }
@@ -101,6 +145,62 @@ function calcularNumeroParcelaPrevisto(periodosAtivos = []) {
   }, 0)
 
   return maiorParcela + 1
+}
+
+function obterCicloMaisRecente(ciclos = []) {
+  return [...(ciclos || [])]
+    .filter((ciclo) => normalizarDataISO(ciclo.periodo_aquisitivo_fim))
+    .sort((a, b) => String(b.periodo_aquisitivo_fim || '').localeCompare(String(a.periodo_aquisitivo_fim || '')))[0] || null
+}
+
+function calcularCicloPorInicio(dataInicio) {
+  const inicio = normalizarDataISO(dataInicio)
+  if (!inicio) return null
+
+  const fim = somarDiasISO(somarAnosISO(inicio, 1), -1)
+  const limite = somarAnosISO(fim, 1)
+
+  if (!fim || !limite) return null
+
+  return {
+    periodo_aquisitivo_inicio: inicio,
+    periodo_aquisitivo_fim: fim,
+    data_limite_gozo: limite
+  }
+}
+
+function sugerirProximoCicloFerias(funcionario, ciclos = []) {
+  const admissao = normalizarDataISO(funcionario?.data_admissao)
+
+  if (!funcionario?.id) {
+    return {
+      ciclo: null,
+      origem: '',
+      erro: 'Selecione um funcionário para sugerir o ciclo de férias.'
+    }
+  }
+
+  if (!admissao) {
+    return {
+      ciclo: null,
+      origem: '',
+      erro: 'Informe a data de admissão do funcionário para sugerir o ciclo de férias.'
+    }
+  }
+
+  const cicloMaisRecente = obterCicloMaisRecente(ciclos)
+  const inicio = cicloMaisRecente?.periodo_aquisitivo_fim
+    ? somarDiasISO(cicloMaisRecente.periodo_aquisitivo_fim, 1)
+    : admissao
+  const ciclo = calcularCicloPorInicio(inicio)
+
+  return {
+    ciclo,
+    origem: cicloMaisRecente
+      ? `Sugestão baseada no ciclo mais recente, encerrado em ${formatarDataCurta(cicloMaisRecente.periodo_aquisitivo_fim)}.`
+      : 'Sugestão baseada na data de admissão do funcionário.',
+    erro: ciclo ? '' : 'Não foi possível calcular o próximo ciclo de férias.'
+  }
 }
 
 function EmptyState({ titulo, descricao }) {
@@ -163,16 +263,38 @@ export default function FeriasPage({
     empresaId,
     funcionarioId: funcionarioSelecionadoId,
     cicloId: cicloSelecionadoId,
-    incluirArquivados,
+    incluirArquivados: true,
     autoCarregarCiclos: Boolean(funcionarioSelecionadoId),
     autoCarregarPeriodos: Boolean(cicloSelecionadoId)
   })
+
+  const ciclosVisiveis = useMemo(() => {
+    return incluirArquivados ? ciclos : (ciclos || []).filter((ciclo) => !ciclo.arquivado)
+  }, [ciclos, incluirArquivados])
+
+  const periodosVisiveis = useMemo(() => {
+    return incluirArquivados ? periodos : (periodos || []).filter((periodo) => !periodo.arquivado)
+  }, [incluirArquivados, periodos])
 
   const cicloSelecionado = useMemo(() => {
     return (ciclos || []).find((ciclo) => ciclo.id === cicloSelecionadoId) || null
   }, [cicloSelecionadoId, ciclos])
 
   const periodosAtivos = useMemo(() => obterPeriodosAtivos(periodos), [periodos])
+
+  const sugestaoCiclo = useMemo(() => {
+    return sugerirProximoCicloFerias(funcionarioSelecionado, ciclos)
+  }, [ciclos, funcionarioSelecionado])
+
+  const cicloDuplicadoSugerido = useMemo(() => {
+    const cicloSugerido = sugestaoCiclo.ciclo
+    if (!cicloSugerido) return false
+
+    return (ciclos || []).some((ciclo) => (
+      ciclo.periodo_aquisitivo_inicio === cicloSugerido.periodo_aquisitivo_inicio &&
+      ciclo.periodo_aquisitivo_fim === cicloSugerido.periodo_aquisitivo_fim
+    ))
+  }, [ciclos, sugestaoCiclo.ciclo])
 
   const saldoSelecionado = useMemo(() => {
     if (!cicloSelecionado) return null
@@ -204,6 +326,14 @@ export default function FeriasPage({
   const numeroParcelaPrevisto = useMemo(() => calcularNumeroParcelaPrevisto(periodosAtivos), [periodosAtivos])
   const limiteParcelasAtingido = numeroParcelaPrevisto > 3
   const semSaldoDisponivel = saldoSelecionado !== null && saldoSelecionado <= 0
+  const diasLancados = useMemo(() => {
+    return periodosAtivos.reduce((total, periodo) => total + Number(periodo.quantidade_dias || 0), 0)
+  }, [periodosAtivos])
+  const quantidadePeriodo = Number(formularioPeriodo.quantidadeDias || 0)
+  const quantidadeMaiorQueSaldo = Boolean(quantidadePeriodo && saldoSelecionado !== null && quantidadePeriodo > saldoSelecionado)
+  const saldoAposLancamento = quantidadePeriodo && saldoSelecionado !== null
+    ? Math.max(saldoSelecionado - quantidadePeriodo, 0)
+    : saldoSelecionado
 
   const previsaoPeriodo = useMemo(() => criarPrevisaoPeriodo({
     formularioPeriodo,
@@ -226,9 +356,9 @@ export default function FeriasPage({
       return
     }
 
-    if (cicloSelecionadoId && ciclos.some((ciclo) => ciclo.id === cicloSelecionadoId)) return
-    setCicloSelecionadoId(ciclos[0]?.id || '')
-  }, [cicloSelecionadoId, ciclos, funcionarioSelecionadoId])
+    if (cicloSelecionadoId && ciclosVisiveis.some((ciclo) => ciclo.id === cicloSelecionadoId)) return
+    setCicloSelecionadoId(ciclosVisiveis[0]?.id || '')
+  }, [cicloSelecionadoId, ciclosVisiveis, funcionarioSelecionadoId])
 
   useEffect(() => {
     setFormularioPeriodo(criarFormularioPeriodoInicial())
@@ -259,7 +389,26 @@ export default function FeriasPage({
     event.preventDefault()
     if (!empresaId || !funcionarioSelecionadoId || !podeEditar || salvando) return
 
-    const resposta = await criarCicloFerias(formularioCiclo, {
+    if (loadingCiclos) {
+      mostrarAviso?.('Aguarde o carregamento do histórico de ciclos antes de criar um novo ciclo.', 'erro')
+      return
+    }
+
+    if (sugestaoCiclo.erro || !sugestaoCiclo.ciclo) {
+      mostrarAviso?.(sugestaoCiclo.erro || 'Não foi possível sugerir o ciclo de férias.', 'erro')
+      return
+    }
+
+    if (cicloDuplicadoSugerido) {
+      mostrarAviso?.('Já existe um ciclo com o mesmo período aquisitivo para este funcionário.', 'erro')
+      return
+    }
+
+    const resposta = await criarCicloFerias({
+      ...sugestaoCiclo.ciclo,
+      dias_direito: formularioCiclo.dias_direito,
+      status: formularioCiclo.status
+    }, {
       funcionarioId: funcionarioSelecionadoId
     })
 
@@ -268,7 +417,10 @@ export default function FeriasPage({
       return
     }
 
-    setFormularioCiclo(criarFormularioCicloInicial())
+    setFormularioCiclo((atual) => ({
+      ...criarFormularioCicloInicial(),
+      dias_direito: atual.dias_direito || '30'
+    }))
     if (resposta?.data?.id) setCicloSelecionadoId(resposta.data.id)
     mostrarAviso?.('Ciclo de férias criado.', 'sucesso')
   }
@@ -284,6 +436,11 @@ export default function FeriasPage({
 
     if (limiteParcelasAtingido) {
       mostrarAviso?.('O limite planejado de 3 parcelas para este ciclo foi atingido.', 'erro')
+      return
+    }
+
+    if (quantidadeMaiorQueSaldo) {
+      mostrarAviso?.('A quantidade de dias informada é maior que o saldo disponível do ciclo.', 'erro')
       return
     }
 
@@ -461,7 +618,7 @@ export default function FeriasPage({
         }
         .ferias-summary-grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
           gap: 10px;
           margin-top: 14px;
         }
@@ -525,10 +682,36 @@ export default function FeriasPage({
           line-height: 1.45;
           margin-top: 12px;
         }
+        .ferias-calculated-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+          margin-top: 14px;
+        }
+        .ferias-calculated-field {
+          border: 1px solid rgba(15, 23, 42, .08);
+          border-radius: 15px;
+          background: #f8fafc;
+          padding: 12px;
+          display: grid;
+          gap: 4px;
+        }
+        .ferias-calculated-field span {
+          color: #64748b;
+          font-size: 11px;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: .04em;
+        }
+        .ferias-calculated-field strong {
+          color: #0f172a;
+          font-size: 15px;
+        }
         @media (max-width: 980px) {
           .ferias-page-grid,
           .ferias-form-grid,
           .ferias-summary-grid,
+          .ferias-calculated-grid,
           .ferias-cycle-card,
           .ferias-period-card {
             grid-template-columns: 1fr;
@@ -637,37 +820,44 @@ export default function FeriasPage({
             ) : (
               <>
                 <form onSubmit={salvarCiclo}>
+                  {sugestaoCiclo.erro ? (
+                    <div className="ferias-warning">
+                      {sugestaoCiclo.erro}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="ferias-calculated-grid">
+                        <div className="ferias-calculated-field">
+                          <span>Início calculado</span>
+                          <strong>{formatarDataCurta(sugestaoCiclo.ciclo?.periodo_aquisitivo_inicio)}</strong>
+                        </div>
+                        <div className="ferias-calculated-field">
+                          <span>Fim calculado</span>
+                          <strong>{formatarDataCurta(sugestaoCiclo.ciclo?.periodo_aquisitivo_fim)}</strong>
+                        </div>
+                        <div className="ferias-calculated-field">
+                          <span>Limite de gozo</span>
+                          <strong>{formatarDataCurta(sugestaoCiclo.ciclo?.data_limite_gozo)}</strong>
+                        </div>
+                      </div>
+
+                      <div className="ferias-preview">
+                        <strong>Ciclo sugerido automaticamente.</strong>
+                        <br />
+                        <span>{sugestaoCiclo.origem}</span>
+                        <br />
+                        <span>A data limite de gozo é calculada pelo sistema e não fica editável no fluxo normal.</span>
+                      </div>
+
+                      {cicloDuplicadoSugerido && (
+                        <div className="ferias-warning">
+                          Já existe um ciclo com o mesmo período aquisitivo para este funcionário.
+                        </div>
+                      )}
+                    </>
+                  )}
+
                   <div className="ferias-form-grid">
-                    <label>
-                      Período aquisitivo início
-                      <input
-                        style={styles.input}
-                        type="date"
-                        value={formularioCiclo.periodo_aquisitivo_inicio}
-                        onChange={(event) => atualizarFormularioCiclo('periodo_aquisitivo_inicio', event.target.value)}
-                        required
-                      />
-                    </label>
-                    <label>
-                      Período aquisitivo fim
-                      <input
-                        style={styles.input}
-                        type="date"
-                        value={formularioCiclo.periodo_aquisitivo_fim}
-                        onChange={(event) => atualizarFormularioCiclo('periodo_aquisitivo_fim', event.target.value)}
-                        required
-                      />
-                    </label>
-                    <label>
-                      Data limite de gozo
-                      <input
-                        style={styles.input}
-                        type="date"
-                        value={formularioCiclo.data_limite_gozo}
-                        onChange={(event) => atualizarFormularioCiclo('data_limite_gozo', event.target.value)}
-                        required
-                      />
-                    </label>
                     <label>
                       Dias de direito
                       <input
@@ -700,7 +890,15 @@ export default function FeriasPage({
                     <button
                       style={styles.btnSalvar}
                       type="submit"
-                      disabled={!podeEditar || salvando || !funcionarioSelecionadoId}
+                      disabled={
+                        !podeEditar ||
+                        salvando ||
+                        loadingCiclos ||
+                        !funcionarioSelecionadoId ||
+                        Boolean(sugestaoCiclo.erro) ||
+                        !sugestaoCiclo.ciclo ||
+                        cicloDuplicadoSugerido
+                      }
                     >
                       {salvando ? 'Salvando...' : 'Criar ciclo'}
                     </button>
@@ -711,14 +909,14 @@ export default function FeriasPage({
                   <p style={{ ...styles.textoNota, marginTop: 12 }}>Carregando ciclos...</p>
                 ) : erro ? (
                   <EmptyState titulo="Não foi possível carregar férias" descricao={erro} />
-                ) : ciclos.length === 0 ? (
+                ) : ciclosVisiveis.length === 0 ? (
                   <EmptyState
-                    titulo="Nenhum ciclo cadastrado"
-                    descricao="Crie o primeiro ciclo de férias para este funcionário."
+                    titulo={ciclos.length > 0 ? 'Nenhum ciclo visível' : 'Nenhum ciclo cadastrado'}
+                    descricao={ciclos.length > 0 ? 'Ative Mostrar arquivados para ver ciclos arquivados.' : 'Crie o primeiro ciclo de férias para este funcionário.'}
                   />
                 ) : (
                   <div className="ferias-cycle-list">
-                    {ciclos.map((ciclo) => {
+                    {ciclosVisiveis.map((ciclo) => {
                       const selecionado = ciclo.id === cicloSelecionadoId
                       const status = ciclo.arquivado ? 'Arquivado' : formatarStatus(ciclo.status, STATUS_CICLO_LABELS)
 
@@ -775,8 +973,20 @@ export default function FeriasPage({
 
           <div className="ferias-summary-grid">
             <div className="ferias-summary-box">
-              <span>Saldo calculado</span>
-              <strong>{saldoSelecionado ?? 'N/I'} dia(s)</strong>
+              <span>Dias de direito</span>
+              <strong>{cicloSelecionado.dias_direito || 30}</strong>
+            </div>
+            <div className="ferias-summary-box">
+              <span>Dias já lançados</span>
+              <strong>{diasLancados}</strong>
+            </div>
+            <div className="ferias-summary-box">
+              <span>Saldo restante</span>
+              <strong>{saldoSelecionado ?? 'N/I'}</strong>
+            </div>
+            <div className="ferias-summary-box">
+              <span>Saldo após lançamento</span>
+              <strong>{quantidadePeriodo ? saldoAposLancamento : 'N/I'}</strong>
             </div>
             <div className="ferias-summary-box">
               <span>Status calculado</span>
@@ -859,6 +1069,12 @@ export default function FeriasPage({
               </div>
             )}
 
+            {quantidadeMaiorQueSaldo && (
+              <div className="ferias-warning">
+                A quantidade de dias informada é maior que o saldo disponível do ciclo.
+              </div>
+            )}
+
             <div className="ferias-form-actions">
               <button
                 style={styles.btnSalvar}
@@ -868,6 +1084,7 @@ export default function FeriasPage({
                   salvando ||
                   limiteParcelasAtingido ||
                   semSaldoDisponivel ||
+                  quantidadeMaiorQueSaldo ||
                   Boolean(previsaoPeriodo?.erro) ||
                   !formularioPeriodo.dataInicio ||
                   !formularioPeriodo.quantidadeDias
@@ -880,14 +1097,14 @@ export default function FeriasPage({
 
           {loadingPeriodos ? (
             <p style={{ ...styles.textoNota, marginTop: 12 }}>Carregando parcelas...</p>
-          ) : periodos.length === 0 ? (
+          ) : periodosVisiveis.length === 0 ? (
             <EmptyState
-              titulo="Nenhuma parcela cadastrada"
-              descricao="Adicione a primeira parcela de férias deste ciclo."
+              titulo={periodos.length > 0 ? 'Nenhuma parcela visível' : 'Nenhuma parcela cadastrada'}
+              descricao={periodos.length > 0 ? 'Ative Mostrar arquivados para ver parcelas arquivadas.' : 'Adicione a primeira parcela de férias deste ciclo.'}
             />
           ) : (
             <div className="ferias-period-list">
-              {periodos.map((periodo) => (
+              {periodosVisiveis.map((periodo) => (
                 <article key={periodo.id} className={`ferias-period-card ${periodo.arquivado ? 'archived' : ''}`}>
                   <div className="ferias-period-main">
                     <strong>Parcela {periodo.numero_parcela || '-'} - {formatarDataCurta(periodo.data_inicio)}</strong>

@@ -15,6 +15,7 @@ A Gestão de Férias já possui estrutura inicial completa para controle operaci
 - banco criado e validado estruturalmente;
 - service e hook criados;
 - tela visual em Gestão de Pessoas;
+- relatórios internos de férias;
 - seleção de funcionário;
 - ciclos de férias;
 - períodos ou parcelas de férias;
@@ -98,6 +99,36 @@ Funcionalidades atuais:
 - edição de parcela;
 - blocos expansíveis e recolhíveis;
 - KPIs/widgets reorganizados no resumo do ciclo selecionado.
+
+## Relatórios de Férias
+
+A Gestão de Férias possui uma tela inicial de relatórios internos:
+
+- Gestão de Pessoas > Relatórios de Férias.
+
+Os relatórios são apenas visuais e internos, sem exportação, PDF, Excel, CSV, impressão, documentos, anexos ou integração financeira.
+
+Relatórios atuais:
+
+- cards de resumo;
+- férias vencidas;
+- férias a vencer;
+- férias agendadas;
+- férias concluídas;
+- saldos por colaborador/ciclo.
+
+Critérios usados:
+
+- férias vencidas: ciclo ativo, com saldo restante maior que zero e `data_limite_gozo` anterior à data atual;
+- férias a vencer: ciclo ativo, com saldo restante maior que zero e `data_limite_gozo` futura;
+- atenção a partir de: `data_limite_gozo - 30 dias`;
+- férias agendadas: período/parcela ativo com status `agendada` e retorno ao trabalho ainda não ultrapassado;
+- férias concluídas: período/parcela com status `concluida` ou status visual "Concluída (calculado)";
+- saldos: dias de direito, dias lançados, saldo restante e status calculado por ciclo.
+
+O status "Concluída (calculado)" é apenas visual. A tela de relatórios não atualiza status no banco automaticamente, não cria job e não executa automação.
+
+Os relatórios não exibem CPF, observações sensíveis, dados médicos, documentos, anexos, valores financeiros ou dados de pagamento.
 
 ## Regras Funcionais Atuais
 
@@ -215,7 +246,6 @@ Pontos observados para melhoria futura, sem bloquear o estado atual:
 
 - "Criar novo ciclo" poderia iniciar recolhido quando já existe ciclo;
 - "Nova parcela" poderia ficar recolhida ou ainda mais compacta quando saldo = 0;
-- Relatórios de Férias ainda não foram criados;
 - exportação/PDF ainda não existe;
 - integração Férias → Financeiro ainda não foi implementada;
 - faltas injustificadas ainda não cruzam com Fechamento de Folha;

@@ -12,6 +12,7 @@ export const lazyRouteImports = {
   funcionarios: () => import('../pages/FuncionariosPage.jsx'),
   ferias: () => import('../pages/FeriasPage.jsx'),
   relatoriosPessoas: () => import('../pages/RelatoriosPessoasPage.jsx'),
+  relatoriosFerias: () => import('../pages/RelatoriosFeriasPage.jsx'),
   usuarios: () => import('../pages/UsuariosPage.jsx'),
   copilotDrawer: () => import('../components/copilot/layout/CopilotDrawer.jsx')
 }
@@ -30,6 +31,7 @@ export const routeImportByScreen = {
   funcionarios: 'funcionarios',
   ferias: 'ferias',
   'relatorios-pessoas': 'relatoriosPessoas',
+  'relatorios-ferias': 'relatoriosFerias',
   usuarios: 'usuarios'
 }
 
@@ -48,6 +50,7 @@ export const LazyFiliaisPage = lazy(lazyRouteImports.filiais)
 export const LazyFuncionariosPage = lazy(lazyRouteImports.funcionarios)
 export const LazyFeriasPage = lazy(lazyRouteImports.ferias)
 export const LazyRelatoriosPessoasPage = lazy(lazyRouteImports.relatoriosPessoas)
+export const LazyRelatoriosFeriasPage = lazy(lazyRouteImports.relatoriosFerias)
 export const LazyUsuariosPage = lazy(lazyRouteImports.usuarios)
 export const LazyCopilotDrawer = lazy(lazyRouteImports.copilotDrawer)
 

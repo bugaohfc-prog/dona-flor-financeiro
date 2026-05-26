@@ -61,6 +61,7 @@ import {
   LazyNotasPage,
   LazyOnboardingPage,
   LazyRelatorios,
+  LazyRelatoriosFeriasPage,
   LazyRelatoriosPessoasPage,
   LazyUsuariosPage,
   getLazyRouteName,
@@ -3946,6 +3947,30 @@ export default function App() {
 
     return renderAppFrame(
       <LazyRelatoriosPessoasPage
+        styles={styles}
+        empresaId={empresaId}
+        empresaNome={empresaAtiva?.nome || nomeEmpresa}
+        voltarPainel={() => navegarPara('dashboard')}
+      />
+    )
+  }
+
+  if (telaAtual === 'relatorios-ferias') {
+    if (!podeAcessarGestaoPessoas()) {
+      return renderAppFrame(
+        <>
+          <h1 style={styles.titulo}>Relatórios de Férias</h1>
+          <section style={styles.cardConfiguracao}>
+            <h2 style={styles.subtitulo}>Acesso restrito</h2>
+            <p style={styles.textoNota}>Seu perfil atual não permite acessar Gestão de Pessoas.</p>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
+          </section>
+        </>
+      )
+    }
+
+    return renderAppFrame(
+      <LazyRelatoriosFeriasPage
         styles={styles}
         empresaId={empresaId}
         empresaNome={empresaAtiva?.nome || nomeEmpresa}

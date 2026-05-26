@@ -972,6 +972,96 @@ Checklist obrigatório para o ciclo real de banco/RLS:
 - validação Admin;
 - validação Gerente e Operador sem acesso, se essa for a regra inicial.
 
+### Estado Final Validado do Núcleo Banco/RLS
+
+Atualização em 2026-05-26: a primeira migration real do núcleo do Fechamento de Folha foi aplicada manualmente no Supabase principal e validada.
+
+Tabelas criadas:
+
+- `public.df_folha_competencias`;
+- `public.df_folha_lancamentos`.
+
+Tabelas não criadas neste ciclo:
+
+- `public.df_folha_vales_compras`;
+- `public.df_folha_colaboradores_snapshot`;
+- `public.df_folha_conferencias`.
+
+Validação estrutural aprovada:
+
+- tabelas criadas;
+- constraints principais criadas;
+- triggers criados;
+- RLS habilitada;
+- RLS forçada;
+- sem policy DELETE;
+- sem policy ALL;
+- DELETE físico bloqueado;
+- `empresa_id` protegido contra alteração;
+- validação de vínculo entre competência, funcionário, filial e empresa.
+
+Validação real anon/auth via PowerShell aprovada, primeira rodada sem filial.
+
+Resultado validado para Admin:
+
+- login OK;
+- operou Choco Arte;
+- criou competência própria;
+- listou competência própria;
+- atualizou competência própria;
+- alteração de `empresa_id` bloqueada;
+- criou lançamento próprio sem filial;
+- listou lançamento próprio;
+- atualizou lançamento próprio;
+- arquivou lançamento próprio;
+- DELETE físico bloqueado;
+- alteração de `empresa_id` do lançamento bloqueada;
+- funcionário de outra empresa bloqueado.
+
+Resultado validado para Master:
+
+- login OK;
+- operou Dona Flor;
+- criou competência própria;
+- listou competência própria;
+- atualizou competência própria;
+- alteração de `empresa_id` bloqueada;
+- criou lançamento próprio sem filial;
+- listou lançamento próprio;
+- atualizou lançamento próprio;
+- DELETE físico bloqueado;
+- alteração de `empresa_id` do lançamento bloqueada;
+- funcionário de outra empresa bloqueado.
+
+Resultado validado para Gerente:
+
+- login OK;
+- sem acesso inicial;
+- SELECT sem dados/bloqueado;
+- INSERT bloqueado;
+- UPDATE sem dados/bloqueado.
+
+Resultado validado para Operador:
+
+- login OK;
+- sem acesso inicial;
+- SELECT sem dados/bloqueado;
+- INSERT bloqueado;
+- UPDATE sem dados/bloqueado.
+
+Observação sobre a validação: houve um falso erro inicial na primeira rodada porque os IDs dos funcionários de Choco Arte e Dona Flor estavam invertidos no script local. Após corrigir os IDs, a validação passou.
+
+IDs corretos usados na validação:
+
+- Funcionário Dona Flor: `1be2dff2-dc19-461d-8915-ea744768a48e`;
+- Funcionário Choco Arte: `aff2f4ae-0145-4908-b4ab-6a102b6e39be`.
+
+Status final:
+
+- Fechamento de Folha — Núcleo Banco/RLS: APROVADO.
+
+Alerta de segurança: senhas de usuários de teste foram expostas durante a validação manual e devem ser trocadas.
+
 ## Sugestão Futura de Telas
 
 Telas conceituais futuras, sem implementação neste ciclo:
@@ -1245,18 +1335,12 @@ Antes de transformar este planejamento em banco, RLS, service/hook ou tela, vali
 
 Ordem segura sugerida:
 
-1. Validar com o usuário o mapeamento das colunas das planilhas reais.
-2. Consolidar requisitos finais a partir do Controle de Vales e Fechamento Folha.
-3. Validar a matriz oficial inicial de categorias documentada neste arquivo.
-4. Validar o planejamento técnico de banco/RLS.
-5. Definir a estratégia da primeira migration.
-6. Criar migration + rollback em ciclo próprio.
-7. Validar estruturalmente no Supabase.
-8. Rodar validação real com anon/auth.
-9. Criar service/hook em ciclo próprio.
-10. Criar primeira tela de Fechamento de Folha.
-11. Criar fluxo de Controle de Vales/compras internas.
-12. Criar exportações em ciclo próprio.
-13. Criar integrações futuras com Gestão de Férias e Gestão Financeira somente depois.
+1. Não avançar frontend ainda.
+2. Não avançar service/hook sem ciclo próprio.
+3. Criar service/hook do Fechamento de Folha em próximo ciclo, quando houver cota disponível.
+4. Depois criar a primeira tela de Fechamento de Folha.
+5. Criar Controle de Vales/compras internas em ciclo próprio.
+6. Criar exportações para contabilidade somente em ciclo próprio.
+7. Criar integrações futuras com Gestão de Férias e Gestão Financeira somente depois.
 
 Antes de qualquer implementação, validar o layout esperado das planilhas atuais, as categorias de lançamento, o fluxo real de conferência com loja/colaborador/contabilidade e os limites de exposição de dados pessoais.

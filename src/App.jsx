@@ -45,7 +45,7 @@ import { listarFiliaisPorEmpresa } from './services/filiaisService'
 import { verificarUsoCentroCusto } from './services/contasService'
 import './styles.css'
 import styles from './styles/appStyles.js'
-import menuSections, { resolverContextoModulo } from './config/menuSections.js'
+import menuSections, { MODULOS_TOPBAR, resolverContextoModulo } from './config/menuSections.js'
 import {
   limparSessaoSegura
 } from './services/sessionSecurityService.js'
@@ -2596,6 +2596,13 @@ export default function App() {
 
   const nomeUsuarioCompleto = useCallback(() => nomeUsuarioCompletoAtual, [nomeUsuarioCompletoAtual])
 
+  const contextoModuloAtual = resolverContextoModulo(modalPerfilUsuario ? 'perfil' : telaAtual)
+  const exibirAcoesRapidasFinanceiras = contextoModuloAtual === MODULOS_TOPBAR.financeiro
+
+  useEffect(() => {
+    if (!exibirAcoesRapidasFinanceiras) setMenuAberto(false)
+  }, [exibirAcoesRapidasFinanceiras, setMenuAberto])
+
   const abrirPerfilUsuario = useCallback(() => {
     setNomePerfilEditando(nomeUsuarioCompletoAtual)
     setModalPerfilUsuario(true)
@@ -2746,14 +2753,12 @@ export default function App() {
 
 
   function renderTopShell() {
-    const contextoModuloTopbar = resolverContextoModulo(modalPerfilUsuario ? 'perfil' : telaAtual)
-
     return (
       <Topbar
         styles={styles}
         nomeEmpresa={nomeEmpresa}
         empresaAtivaNome={empresaAtiva?.nome}
-        contextoModulo={contextoModuloTopbar}
+        contextoModulo={contextoModuloAtual}
         navegarPara={navegarPara}
         menuNavegacaoAberto={menuNavegacaoAberto}
         setMenuNavegacaoAberto={setMenuNavegacaoAberto}
@@ -2767,6 +2772,7 @@ export default function App() {
   }
 
   function renderFabGlobal() {
+    if (!exibirAcoesRapidasFinanceiras) return null
     if (!podeEditarFinanceiro()) return null
 
     return (
@@ -2777,6 +2783,17 @@ export default function App() {
         abrirNovaConta={abrirNovaConta}
         abrirNovaNota={abrirNovaNota}
       />
+    )
+  }
+
+  function renderCopilotFinanceiro() {
+    if (!exibirAcoesRapidasFinanceiras) return null
+
+    return (
+      <>
+        <CopilotFloatingButton onPreload={() => preloadRoute('copilotDrawer')} />
+        <CopilotDrawerBoundary />
+      </>
     )
   }
 
@@ -3710,8 +3727,7 @@ export default function App() {
           </AppSuspenseBoundary>
         </main>
         {renderFabGlobal()}
-      <CopilotFloatingButton onPreload={() => preloadRoute('copilotDrawer')} />
-      <CopilotDrawerBoundary />
+        {renderCopilotFinanceiro()}
         {renderModaisGlobais()}
         {renderOverlaysLayer()}
       </div>
@@ -4710,8 +4726,7 @@ export default function App() {
       {renderMobileMenu()}
 
       {renderFabGlobal()}
-      <CopilotFloatingButton onPreload={() => preloadRoute('copilotDrawer')} />
-      <CopilotDrawerBoundary />
+      {renderCopilotFinanceiro()}
 
       
 

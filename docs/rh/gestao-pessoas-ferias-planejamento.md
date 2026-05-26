@@ -264,6 +264,29 @@ A implementação futura deve validar:
 
 Não implementar validações legais complexas sem ciclo próprio de análise.
 
+## Alerta interno, status visual e edições seguras
+
+A tela de férias deve separar claramente a data limite de gozo do prazo operacional interno de atenção.
+
+- `data_limite_gozo` representa o limite do ciclo.
+- A data "Atenção a partir de" deve ser calculada visualmente como `data_limite_gozo - 30 dias`.
+- A data de atenção não substitui o limite de gozo.
+- A data de atenção não deve ser persistida no banco neste ciclo.
+- A data de atenção não deve gerar automação, e-mail, notificação ou alerta externo sem ciclo próprio.
+
+O status calculado por data pode ser exibido apenas como informação visual. Por exemplo, uma parcela com status `agendada` e `data_retorno_trabalho` já passada pode aparecer como "Concluída (calculado)" na tela. Essa indicação não deve atualizar o status no banco automaticamente, não deve criar job e não deve alterar dados silenciosamente.
+
+Edições operacionais devem ser restritas:
+
+- parcelas podem permitir correção de `data_inicio`, `quantidade_dias` e `status`;
+- ao editar parcela, o sistema deve recalcular `data_fim_calculada` e `data_retorno_trabalho`;
+- o saldo disponível na edição deve considerar os dias da própria parcela que está sendo ajustada;
+- ciclos podem permitir edição segura de `dias_direito` e `status`;
+- o fluxo normal não deve permitir edição manual de `periodo_aquisitivo_inicio`, `periodo_aquisitivo_fim` ou `data_limite_gozo`;
+- se o saldo do ciclo estiver zerado, o lançamento de nova parcela deve ficar bloqueado visualmente.
+
+Essas edições não substituem RLS, triggers, validações de banco ou validações legais futuras. São apenas controles operacionais para reduzir erros de lançamento.
+
 ## Roadmap futuro: faltas e afastamentos
 
 Faltas injustificadas e afastamentos pelo INSS devem ser tratados em ciclos próprios, porque podem impactar regras trabalhistas e exigem validação administrativa cuidadosa.

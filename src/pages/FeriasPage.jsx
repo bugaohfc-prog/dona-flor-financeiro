@@ -14,6 +14,11 @@ const FORMULARIO_PERIODO_INICIAL = {
   status: 'agendada'
 }
 
+const FORMULARIO_EDICAO_CICLO_INICIAL = {
+  dias_direito: '30',
+  status: 'pendente'
+}
+
 const STATUS_CICLO_LABELS = {
   pendente: 'Pendente',
   parcial: 'Parcial',
@@ -35,6 +40,10 @@ function criarFormularioCicloInicial() {
 
 function criarFormularioPeriodoInicial() {
   return { ...FORMULARIO_PERIODO_INICIAL }
+}
+
+function criarFormularioEdicaoCicloInicial() {
+  return { ...FORMULARIO_EDICAO_CICLO_INICIAL }
 }
 
 function criarDataLocal(data) {
@@ -105,6 +114,15 @@ function somarAnosISO(dataISO, anos) {
   return formatarDataISO(dataUTC)
 }
 
+function obterHojeISO() {
+  const hoje = new Date()
+  return [
+    hoje.getFullYear(),
+    String(hoje.getMonth() + 1).padStart(2, '0'),
+    String(hoje.getDate()).padStart(2, '0')
+  ].join('-')
+}
+
 function normalizarTexto(valor) {
   return String(valor || '').trim()
 }
@@ -145,6 +163,10 @@ function calcularNumeroParcelaPrevisto(periodosAtivos = []) {
   }, 0)
 
   return maiorParcela + 1
+}
+
+function calcularDataAtencaoLimite(dataLimiteGozo) {
+  return somarDiasISO(dataLimiteGozo, -30)
 }
 
 function obterCicloMaisRecente(ciclos = []) {
@@ -212,6 +234,32 @@ function EmptyState({ titulo, descricao }) {
   )
 }
 
+function montarFormularioEdicaoPeriodo(periodo) {
+  return {
+    dataInicio: periodo?.data_inicio || '',
+    quantidadeDias: String(periodo?.quantidade_dias || ''),
+    status: periodo?.status || 'agendada'
+  }
+}
+
+function obterStatusVisualPeriodo(periodo) {
+  if (!periodo) return 'Não informado'
+  if (periodo.arquivado) return 'Arquivada'
+  if (periodo.status === 'concluida') return 'Concluída'
+  if (periodo.status === 'cancelada') return 'Cancelada'
+
+  const retorno = normalizarDataISO(periodo.data_retorno_trabalho)
+  if (periodo.status === 'agendada' && retorno && retorno < obterHojeISO()) {
+    return 'Concluída (calculado)'
+  }
+
+  return formatarStatus(periodo.status, STATUS_PERIODO_LABELS)
+}
+
+function periodoConsomeSaldo(periodo) {
+  return periodo && !periodo.arquivado && periodo.status !== 'cancelada'
+}
+
 export default function FeriasPage({
   styles,
   empresaId,
@@ -225,6 +273,10 @@ export default function FeriasPage({
   const [incluirArquivados, setIncluirArquivados] = useState(false)
   const [formularioCiclo, setFormularioCiclo] = useState(criarFormularioCicloInicial)
   const [formularioPeriodo, setFormularioPeriodo] = useState(criarFormularioPeriodoInicial)
+  const [editandoCiclo, setEditandoCiclo] = useState(false)
+  const [formularioEdicaoCiclo, setFormularioEdicaoCiclo] = useState(criarFormularioEdicaoCicloInicial)
+  const [periodoEditandoId, setPeriodoEditandoId] = useState('')
+  const [formularioEdicaoPeriodo, setFormularioEdicaoPeriodo] = useState(criarFormularioPeriodoInicial)
 
   const {
     funcionarios,
@@ -249,9 +301,11 @@ export default function FeriasPage({
     salvando,
     erro,
     criarCicloFerias,
+    atualizarCicloFerias,
     arquivarCicloFerias,
     reativarCicloFerias,
     criarPeriodoFerias,
+    atualizarPeriodoFerias,
     arquivarPeriodoFerias,
     reativarPeriodoFerias,
     calcularFimFerias,
@@ -334,6 +388,12 @@ export default function FeriasPage({
   const saldoAposLancamento = quantidadePeriodo && saldoSelecionado !== null
     ? Math.max(saldoSelecionado - quantidadePeriodo, 0)
     : saldoSelecionado
+  const proximaParcelaTexto = semSaldoDisponivel
+    ? 'Ciclo concluído'
+    : limiteParcelasAtingido
+      ? 'Limite atingido'
+      : numeroParcelaPrevisto
+  const dataAtencaoCicloSelecionado = calcularDataAtencaoLimite(cicloSelecionado?.data_limite_gozo)
 
   const previsaoPeriodo = useMemo(() => criarPrevisaoPeriodo({
     formularioPeriodo,
@@ -347,6 +407,10 @@ export default function FeriasPage({
     setIncluirArquivados(false)
     setFormularioCiclo(criarFormularioCicloInicial())
     setFormularioPeriodo(criarFormularioPeriodoInicial())
+    setEditandoCiclo(false)
+    setFormularioEdicaoCiclo(criarFormularioEdicaoCicloInicial())
+    setPeriodoEditandoId('')
+    setFormularioEdicaoPeriodo(criarFormularioPeriodoInicial())
     limparErro?.()
   }, [empresaId])
 
@@ -362,6 +426,10 @@ export default function FeriasPage({
 
   useEffect(() => {
     setFormularioPeriodo(criarFormularioPeriodoInicial())
+    setEditandoCiclo(false)
+    setFormularioEdicaoCiclo(criarFormularioEdicaoCicloInicial())
+    setPeriodoEditandoId('')
+    setFormularioEdicaoPeriodo(criarFormularioPeriodoInicial())
   }, [cicloSelecionadoId])
 
   function atualizarFormularioCiclo(campo, valor) {
@@ -378,11 +446,53 @@ export default function FeriasPage({
     }))
   }
 
+  function atualizarFormularioEdicaoCiclo(campo, valor) {
+    setFormularioEdicaoCiclo((atual) => ({
+      ...atual,
+      [campo]: campo === 'dias_direito' ? String(valor).replace(/\D/g, '') : valor
+    }))
+  }
+
+  function atualizarFormularioEdicaoPeriodo(campo, valor) {
+    setFormularioEdicaoPeriodo((atual) => ({
+      ...atual,
+      [campo]: campo === 'quantidadeDias' ? String(valor).replace(/\D/g, '') : valor
+    }))
+  }
+
   function selecionarFuncionario(valor) {
     setFuncionarioSelecionadoId(valor)
     setCicloSelecionadoId('')
     setFormularioPeriodo(criarFormularioPeriodoInicial())
+    setEditandoCiclo(false)
+    setPeriodoEditandoId('')
+    setFormularioEdicaoPeriodo(criarFormularioPeriodoInicial())
     limparErro?.()
+  }
+
+  function iniciarEdicaoCiclo() {
+    if (!cicloSelecionado || !podeEditar) return
+    setEditandoCiclo(true)
+    setFormularioEdicaoCiclo({
+      dias_direito: String(cicloSelecionado.dias_direito || 30),
+      status: cicloSelecionado.status || 'pendente'
+    })
+  }
+
+  function cancelarEdicaoCiclo() {
+    setEditandoCiclo(false)
+    setFormularioEdicaoCiclo(criarFormularioEdicaoCicloInicial())
+  }
+
+  function iniciarEdicaoPeriodo(periodo) {
+    if (!periodo?.id || !podeEditar || periodo.arquivado) return
+    setPeriodoEditandoId(periodo.id)
+    setFormularioEdicaoPeriodo(montarFormularioEdicaoPeriodo(periodo))
+  }
+
+  function cancelarEdicaoPeriodo() {
+    setPeriodoEditandoId('')
+    setFormularioEdicaoPeriodo(criarFormularioPeriodoInicial())
   }
 
   async function salvarCiclo(event) {
@@ -461,6 +571,69 @@ export default function FeriasPage({
     mostrarAviso?.('Período de férias registrado.', 'sucesso')
   }
 
+  async function salvarEdicaoCiclo(event) {
+    event.preventDefault()
+    if (!empresaId || !funcionarioSelecionadoId || !cicloSelecionado?.id || !podeEditar || salvando) return
+
+    const diasDireito = Number(formularioEdicaoCiclo.dias_direito || 0)
+
+    if (!Number.isInteger(diasDireito) || diasDireito <= 0) {
+      mostrarAviso?.('Dias de direito deve ser maior que zero.', 'erro')
+      return
+    }
+
+    if (diasDireito < diasLancados) {
+      mostrarAviso?.('Dias de direito não pode ser menor que os dias já lançados no ciclo.', 'erro')
+      return
+    }
+
+    const resposta = await atualizarCicloFerias(cicloSelecionado.id, {
+      dias_direito: diasDireito,
+      status: formularioEdicaoCiclo.status
+    })
+
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível atualizar o ciclo de férias.'), 'erro')
+      return
+    }
+
+    cancelarEdicaoCiclo()
+    mostrarAviso?.('Ciclo de férias atualizado.', 'sucesso')
+  }
+
+  async function salvarEdicaoPeriodo(periodo) {
+    if (!periodo?.id || !empresaId || !funcionarioSelecionadoId || !cicloSelecionadoId || !podeEditar || salvando) return
+
+    const quantidadeDias = Number(formularioEdicaoPeriodo.quantidadeDias || 0)
+
+    if (!formularioEdicaoPeriodo.dataInicio || !Number.isInteger(quantidadeDias) || quantidadeDias <= 0) {
+      mostrarAviso?.('Informe a data de início e uma quantidade de dias positiva.', 'erro')
+      return
+    }
+
+    const diasAtuais = periodoConsomeSaldo(periodo) ? Number(periodo.quantidade_dias || 0) : 0
+    const saldoDisponivelParaEdicao = (saldoSelecionado ?? 0) + diasAtuais
+
+    if (formularioEdicaoPeriodo.status !== 'cancelada' && quantidadeDias > saldoDisponivelParaEdicao) {
+      mostrarAviso?.('A quantidade de dias informada é maior que o saldo disponível para esta edição.', 'erro')
+      return
+    }
+
+    const resposta = await atualizarPeriodoFerias(periodo.id, {
+      dataInicio: formularioEdicaoPeriodo.dataInicio,
+      quantidadeDias,
+      status: formularioEdicaoPeriodo.status
+    })
+
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível atualizar o período de férias.'), 'erro')
+      return
+    }
+
+    cancelarEdicaoPeriodo()
+    mostrarAviso?.('Período de férias atualizado.', 'sucesso')
+  }
+
   async function alternarArquivamentoCiclo(ciclo) {
     if (!ciclo?.id || !empresaId || !podeEditar || salvando) return
 
@@ -473,6 +646,7 @@ export default function FeriasPage({
       return
     }
 
+    if (cicloSelecionado?.id === ciclo.id) cancelarEdicaoCiclo()
     mostrarAviso?.(ciclo.arquivado ? 'Ciclo reativado.' : 'Ciclo arquivado.', 'sucesso')
   }
 
@@ -488,6 +662,7 @@ export default function FeriasPage({
       return
     }
 
+    if (periodoEditandoId === periodo.id) cancelarEdicaoPeriodo()
     mostrarAviso?.(periodo.arquivado ? 'Período reativado.' : 'Período arquivado.', 'sucesso')
   }
 
@@ -839,6 +1014,10 @@ export default function FeriasPage({
                           <span>Limite de gozo</span>
                           <strong>{formatarDataCurta(sugestaoCiclo.ciclo?.data_limite_gozo)}</strong>
                         </div>
+                        <div className="ferias-calculated-field">
+                          <span>Atenção a partir de</span>
+                          <strong>{formatarDataCurta(calcularDataAtencaoLimite(sugestaoCiclo.ciclo?.data_limite_gozo))}</strong>
+                        </div>
                       </div>
 
                       <div className="ferias-preview">
@@ -847,6 +1026,8 @@ export default function FeriasPage({
                         <span>{sugestaoCiclo.origem}</span>
                         <br />
                         <span>A data limite de gozo é calculada pelo sistema e não fica editável no fluxo normal.</span>
+                        <br />
+                        <span>A data de atenção é um prazo operacional interno calculado 30 dias antes do limite de gozo.</span>
                       </div>
 
                       {cicloDuplicadoSugerido && (
@@ -928,6 +1109,7 @@ export default function FeriasPage({
                           <div className="ferias-cycle-main">
                             <strong>{formatarDataCurta(ciclo.periodo_aquisitivo_inicio)} a {formatarDataCurta(ciclo.periodo_aquisitivo_fim)}</strong>
                             <small>Limite de gozo: {formatarDataCurta(ciclo.data_limite_gozo)}</small>
+                            <small>Atenção a partir de: {formatarDataCurta(calcularDataAtencaoLimite(ciclo.data_limite_gozo))}</small>
                             <small>Dias de direito: {ciclo.dias_direito || 30}</small>
                             <span className={`ferias-status ${ciclo.arquivado ? 'archived' : ''}`}>{status}</span>
                           </div>
@@ -973,6 +1155,14 @@ export default function FeriasPage({
 
           <div className="ferias-summary-grid">
             <div className="ferias-summary-box">
+              <span>Limite de gozo</span>
+              <strong>{formatarDataCurta(cicloSelecionado.data_limite_gozo)}</strong>
+            </div>
+            <div className="ferias-summary-box">
+              <span>Atenção a partir de</span>
+              <strong>{formatarDataCurta(dataAtencaoCicloSelecionado)}</strong>
+            </div>
+            <div className="ferias-summary-box">
               <span>Dias de direito</span>
               <strong>{cicloSelecionado.dias_direito || 30}</strong>
             </div>
@@ -994,9 +1184,87 @@ export default function FeriasPage({
             </div>
             <div className="ferias-summary-box">
               <span>Proxima parcela</span>
-              <strong>{limiteParcelasAtingido ? 'Limite' : numeroParcelaPrevisto}</strong>
+              <strong>{proximaParcelaTexto}</strong>
             </div>
           </div>
+
+          <div className="ferias-preview">
+            A data de atenção é um prazo operacional interno calculado 30 dias antes do limite de gozo.
+            Ela não substitui o limite de gozo e não gera automação.
+          </div>
+
+          {podeEditar && (
+            <div className="ferias-form-actions">
+              {!editandoCiclo && (
+                <button
+                  style={styles.btnCinza}
+                  type="button"
+                  disabled={salvando || cicloSelecionado.arquivado}
+                  onClick={iniciarEdicaoCiclo}
+                >
+                  Editar ciclo
+                </button>
+              )}
+            </div>
+          )}
+
+          {editandoCiclo && (
+            <form onSubmit={salvarEdicaoCiclo}>
+              <div className="ferias-form-grid">
+                <label>
+                  Dias de direito
+                  <input
+                    style={styles.input}
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={formularioEdicaoCiclo.dias_direito}
+                    onChange={(event) => atualizarFormularioEdicaoCiclo('dias_direito', event.target.value)}
+                    required
+                  />
+                </label>
+                <label className="span-2">
+                  Status
+                  <select
+                    style={styles.input}
+                    value={formularioEdicaoCiclo.status}
+                    onChange={(event) => atualizarFormularioEdicaoCiclo('status', event.target.value)}
+                  >
+                    <option value="pendente">Pendente</option>
+                    <option value="agendada">Agendada</option>
+                    <option value="parcial">Parcial</option>
+                    <option value="concluida">Concluída</option>
+                    <option value="vencida">Vencida</option>
+                    <option value="cancelada">Cancelada</option>
+                  </select>
+                </label>
+              </div>
+
+              {Number(formularioEdicaoCiclo.dias_direito || 0) < diasLancados && (
+                <div className="ferias-warning">
+                  Dias de direito não pode ser menor que os dias já lançados neste ciclo.
+                </div>
+              )}
+
+              <div className="ferias-form-actions">
+                <button
+                  style={styles.btnSalvar}
+                  type="submit"
+                  disabled={salvando || Number(formularioEdicaoCiclo.dias_direito || 0) < diasLancados}
+                >
+                  {salvando ? 'Salvando...' : 'Salvar ciclo'}
+                </button>
+                <button
+                  style={styles.btnCinza}
+                  type="button"
+                  disabled={salvando}
+                  onClick={cancelarEdicaoCiclo}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          )}
 
           <div className="ferias-warning">
             Não existe seleção manual de férias integral ou parcelada. A situação e o saldo são calculados pela soma
@@ -1012,6 +1280,7 @@ export default function FeriasPage({
                   type="date"
                   value={formularioPeriodo.dataInicio}
                   onChange={(event) => atualizarFormularioPeriodo('dataInicio', event.target.value)}
+                  disabled={semSaldoDisponivel || limiteParcelasAtingido}
                   required
                 />
               </label>
@@ -1024,6 +1293,7 @@ export default function FeriasPage({
                   max={saldoSelecionado ?? 30}
                   value={formularioPeriodo.quantidadeDias}
                   onChange={(event) => atualizarFormularioPeriodo('quantidadeDias', event.target.value)}
+                  disabled={semSaldoDisponivel || limiteParcelasAtingido}
                   required
                 />
               </label>
@@ -1033,6 +1303,7 @@ export default function FeriasPage({
                   style={styles.input}
                   value={formularioPeriodo.status}
                   onChange={(event) => atualizarFormularioPeriodo('status', event.target.value)}
+                  disabled={semSaldoDisponivel || limiteParcelasAtingido}
                 >
                   <option value="agendada">Agendada</option>
                   <option value="concluida">Concluída</option>
@@ -1104,29 +1375,147 @@ export default function FeriasPage({
             />
           ) : (
             <div className="ferias-period-list">
-              {periodosVisiveis.map((periodo) => (
-                <article key={periodo.id} className={`ferias-period-card ${periodo.arquivado ? 'archived' : ''}`}>
-                  <div className="ferias-period-main">
-                    <strong>Parcela {periodo.numero_parcela || '-'} - {formatarDataCurta(periodo.data_inicio)}</strong>
-                    <small>{periodo.quantidade_dias} dia(s) - fim {formatarDataCurta(periodo.data_fim_calculada)} - retorno {formatarDataCurta(periodo.data_retorno_trabalho)}</small>
-                    <span className={`ferias-status ${periodo.arquivado ? 'archived' : ''}`}>
-                      {periodo.arquivado ? 'Arquivada' : formatarStatus(periodo.status, STATUS_PERIODO_LABELS)}
-                    </span>
-                  </div>
-                  <div className="ferias-actions">
-                    {podeEditar && (
-                      <button
-                        style={periodo.arquivado ? styles.btnSalvar : styles.btnCinza}
-                        type="button"
-                        disabled={salvando}
-                        onClick={() => alternarArquivamentoPeriodo(periodo)}
-                      >
-                        {periodo.arquivado ? 'Reativar' : 'Arquivar'}
-                      </button>
-                    )}
-                  </div>
-                </article>
-              ))}
+              {periodosVisiveis.map((periodo) => {
+                const editandoPeriodo = periodoEditandoId === periodo.id
+                const previsaoEdicao = editandoPeriodo
+                  ? criarPrevisaoPeriodo({
+                    formularioPeriodo: formularioEdicaoPeriodo,
+                    calcularFimFerias,
+                    calcularRetornoTrabalho
+                  })
+                  : null
+                const diasAtuais = periodoConsomeSaldo(periodo) ? Number(periodo.quantidade_dias || 0) : 0
+                const saldoDisponivelEdicao = (saldoSelecionado ?? 0) + diasAtuais
+                const quantidadeEdicao = Number(formularioEdicaoPeriodo.quantidadeDias || 0)
+                const edicaoMaiorQueSaldo =
+                  editandoPeriodo &&
+                  formularioEdicaoPeriodo.status !== 'cancelada' &&
+                  quantidadeEdicao > saldoDisponivelEdicao
+
+                return (
+                  <article key={periodo.id} className={`ferias-period-card ${periodo.arquivado ? 'archived' : ''}`}>
+                    <div className="ferias-period-main">
+                      {!editandoPeriodo ? (
+                        <>
+                          <strong>Parcela {periodo.numero_parcela || '-'} - {formatarDataCurta(periodo.data_inicio)}</strong>
+                          <small>{periodo.quantidade_dias} dia(s) - fim {formatarDataCurta(periodo.data_fim_calculada)} - retorno {formatarDataCurta(periodo.data_retorno_trabalho)}</small>
+                          <span className={`ferias-status ${periodo.arquivado ? 'archived' : ''}`}>
+                            {obterStatusVisualPeriodo(periodo)}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <strong>Editar parcela {periodo.numero_parcela || '-'}</strong>
+                          <div className="ferias-form-grid">
+                            <label>
+                              Data de início
+                              <input
+                                style={styles.input}
+                                type="date"
+                                value={formularioEdicaoPeriodo.dataInicio}
+                                onChange={(event) => atualizarFormularioEdicaoPeriodo('dataInicio', event.target.value)}
+                                required
+                              />
+                            </label>
+                            <label>
+                              Quantidade de dias
+                              <input
+                                style={styles.input}
+                                type="number"
+                                min="1"
+                                max={saldoDisponivelEdicao || 1}
+                                value={formularioEdicaoPeriodo.quantidadeDias}
+                                onChange={(event) => atualizarFormularioEdicaoPeriodo('quantidadeDias', event.target.value)}
+                                required
+                              />
+                            </label>
+                            <label className="span-2">
+                              Status
+                              <select
+                                style={styles.input}
+                                value={formularioEdicaoPeriodo.status}
+                                onChange={(event) => atualizarFormularioEdicaoPeriodo('status', event.target.value)}
+                              >
+                                <option value="agendada">Agendada</option>
+                                <option value="concluida">Concluída</option>
+                                <option value="cancelada">Cancelada</option>
+                              </select>
+                            </label>
+                          </div>
+
+                          {previsaoEdicao && (
+                            <div className={previsaoEdicao.erro ? 'ferias-warning' : 'ferias-preview'}>
+                              {previsaoEdicao.erro ? (
+                                <strong>{previsaoEdicao.erro}</strong>
+                              ) : (
+                                <>
+                                  <strong>Fim recalculado: {formatarDataCurta(previsaoEdicao.dataFim)}</strong>
+                                  <br />
+                                  <span>Retorno ao trabalho: {formatarDataCurta(previsaoEdicao.dataRetorno)}</span>
+                                </>
+                              )}
+                            </div>
+                          )}
+
+                          {edicaoMaiorQueSaldo && (
+                            <div className="ferias-warning">
+                              A quantidade de dias informada é maior que o saldo disponível considerando esta parcela.
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <div className="ferias-actions">
+                      {podeEditar && !editandoPeriodo && (
+                        <button
+                          style={styles.btnCinza}
+                          type="button"
+                          disabled={salvando || periodo.arquivado}
+                          onClick={() => iniciarEdicaoPeriodo(periodo)}
+                        >
+                          Editar
+                        </button>
+                      )}
+                      {podeEditar && editandoPeriodo && (
+                        <>
+                          <button
+                            style={styles.btnSalvar}
+                            type="button"
+                            disabled={
+                              salvando ||
+                              edicaoMaiorQueSaldo ||
+                              Boolean(previsaoEdicao?.erro) ||
+                              !formularioEdicaoPeriodo.dataInicio ||
+                              !formularioEdicaoPeriodo.quantidadeDias
+                            }
+                            onClick={() => salvarEdicaoPeriodo(periodo)}
+                          >
+                            {salvando ? 'Salvando...' : 'Salvar'}
+                          </button>
+                          <button
+                            style={styles.btnCinza}
+                            type="button"
+                            disabled={salvando}
+                            onClick={cancelarEdicaoPeriodo}
+                          >
+                            Cancelar
+                          </button>
+                        </>
+                      )}
+                      {podeEditar && !editandoPeriodo && (
+                        <button
+                          style={periodo.arquivado ? styles.btnSalvar : styles.btnCinza}
+                          type="button"
+                          disabled={salvando}
+                          onClick={() => alternarArquivamentoPeriodo(periodo)}
+                        >
+                          {periodo.arquivado ? 'Reativar' : 'Arquivar'}
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                )
+              })}
             </div>
           )}
         </section>

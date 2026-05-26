@@ -234,6 +234,22 @@ function EmptyState({ titulo, descricao }) {
   )
 }
 
+function SectionHeader({ titulo, descricao, resumo, aberto, onToggle, acao }) {
+  return (
+    <div className="ferias-section-header">
+      <button className="ferias-section-toggle" type="button" onClick={onToggle} aria-expanded={aberto}>
+        <span aria-hidden="true">{aberto ? '−' : '+'}</span>
+        <span>
+          <strong>{titulo}</strong>
+          {descricao && <small>{descricao}</small>}
+          {!aberto && resumo && <em>{resumo}</em>}
+        </span>
+      </button>
+      {acao}
+    </div>
+  )
+}
+
 function montarFormularioEdicaoPeriodo(periodo) {
   return {
     dataInicio: periodo?.data_inicio || '',
@@ -277,6 +293,14 @@ export default function FeriasPage({
   const [formularioEdicaoCiclo, setFormularioEdicaoCiclo] = useState(criarFormularioEdicaoCicloInicial)
   const [periodoEditandoId, setPeriodoEditandoId] = useState('')
   const [formularioEdicaoPeriodo, setFormularioEdicaoPeriodo] = useState(criarFormularioPeriodoInicial)
+  const [secoesAbertas, setSecoesAbertas] = useState({
+    funcionario: true,
+    criarCiclo: true,
+    ciclos: true,
+    resumoCiclo: true,
+    novaParcela: true,
+    parcelas: true
+  })
 
   const {
     funcionarios,
@@ -394,6 +418,20 @@ export default function FeriasPage({
       ? 'Limite atingido'
       : numeroParcelaPrevisto
   const dataAtencaoCicloSelecionado = calcularDataAtencaoLimite(cicloSelecionado?.data_limite_gozo)
+  const resumoFuncionario = funcionarioSelecionado
+    ? `${funcionarioSelecionado.nome || 'Funcionário selecionado'}${funcionarioSelecionado.cargo ? ` · ${funcionarioSelecionado.cargo}` : ''}`
+    : 'Nenhum funcionário selecionado'
+  const resumoCicloSelecionado = cicloSelecionado
+    ? `${formatarDataCurta(cicloSelecionado.periodo_aquisitivo_inicio)} a ${formatarDataCurta(cicloSelecionado.periodo_aquisitivo_fim)}`
+    : 'Nenhum ciclo selecionado'
+  const novaParcelaBloqueada = semSaldoDisponivel || limiteParcelasAtingido
+  const textoBotaoNovaParcela = semSaldoDisponivel
+    ? 'Sem saldo disponível'
+    : limiteParcelasAtingido
+      ? 'Limite de parcelas atingido'
+      : salvando
+        ? 'Salvando...'
+        : 'Adicionar parcela'
 
   const previsaoPeriodo = useMemo(() => criarPrevisaoPeriodo({
     formularioPeriodo,
@@ -411,6 +449,14 @@ export default function FeriasPage({
     setFormularioEdicaoCiclo(criarFormularioEdicaoCicloInicial())
     setPeriodoEditandoId('')
     setFormularioEdicaoPeriodo(criarFormularioPeriodoInicial())
+    setSecoesAbertas({
+      funcionario: true,
+      criarCiclo: true,
+      ciclos: true,
+      resumoCiclo: true,
+      novaParcela: true,
+      parcelas: true
+    })
     limparErro?.()
   }, [empresaId])
 
@@ -431,6 +477,21 @@ export default function FeriasPage({
     setPeriodoEditandoId('')
     setFormularioEdicaoPeriodo(criarFormularioPeriodoInicial())
   }, [cicloSelecionadoId])
+
+  useEffect(() => {
+    setSecoesAbertas((atual) => ({
+      ...atual,
+      criarCiclo: Boolean(funcionarioSelecionadoId) && ciclosVisiveis.length === 0,
+      novaParcela: Boolean(cicloSelecionadoId) && !novaParcelaBloqueada
+    }))
+  }, [cicloSelecionadoId, ciclosVisiveis.length, funcionarioSelecionadoId, novaParcelaBloqueada])
+
+  function alternarSecao(secao) {
+    setSecoesAbertas((atual) => ({
+      ...atual,
+      [secao]: !atual[secao]
+    }))
+  }
 
   function atualizarFormularioCiclo(campo, valor) {
     setFormularioCiclo((atual) => ({
@@ -467,6 +528,15 @@ export default function FeriasPage({
     setEditandoCiclo(false)
     setPeriodoEditandoId('')
     setFormularioEdicaoPeriodo(criarFormularioPeriodoInicial())
+    setSecoesAbertas((atual) => ({
+      ...atual,
+      funcionario: true,
+      criarCiclo: true,
+      ciclos: true,
+      resumoCiclo: true,
+      novaParcela: true,
+      parcelas: true
+    }))
     limparErro?.()
   }
 
@@ -672,22 +742,78 @@ export default function FeriasPage({
         .ferias-page { display: grid; gap: 18px; }
         .ferias-page-grid {
           display: grid;
-          grid-template-columns: minmax(260px, .86fr) minmax(0, 1.3fr);
+          grid-template-columns: minmax(220px, .68fr) minmax(0, 1.55fr);
           gap: 16px;
           align-items: start;
         }
+        .ferias-main-column {
+          display: grid;
+          gap: 16px;
+          min-width: 0;
+        }
         .ferias-card {
           border: 1px solid rgba(15, 23, 42, .08);
-          border-radius: 20px;
+          border-radius: 16px;
           background: #ffffff;
-          padding: 16px;
+          padding: 14px;
           box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
           min-width: 0;
+        }
+        .ferias-card.is-compact {
+          padding: 12px;
         }
         .ferias-card h2,
         .ferias-card h3 {
           margin: 0 0 6px;
           color: #0f172a;
+        }
+        .ferias-section-header {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: flex-start;
+        }
+        .ferias-section-toggle {
+          border: 0;
+          background: transparent;
+          padding: 0;
+          margin: 0;
+          display: inline-flex;
+          align-items: flex-start;
+          gap: 10px;
+          color: #0f172a;
+          text-align: left;
+          cursor: pointer;
+          min-width: 0;
+        }
+        .ferias-section-toggle > span:first-child {
+          width: 24px;
+          height: 24px;
+          border-radius: 999px;
+          display: inline-grid;
+          place-items: center;
+          background: #f1f5f9;
+          color: #0f766e;
+          font-size: 18px;
+          font-weight: 900;
+          line-height: 1;
+          flex: 0 0 auto;
+        }
+        .ferias-section-toggle strong {
+          display: block;
+          color: #0f172a;
+          font-size: 16px;
+          line-height: 1.2;
+        }
+        .ferias-section-toggle small,
+        .ferias-section-toggle em {
+          display: block;
+          color: #64748b;
+          font-size: 12px;
+          font-style: normal;
+          font-weight: 600;
+          line-height: 1.35;
+          margin-top: 3px;
         }
         .ferias-card p {
           margin: 0;
@@ -771,6 +897,16 @@ export default function FeriasPage({
           gap: 8px;
           flex-wrap: wrap;
         }
+        .ferias-selected-pill {
+          width: fit-content;
+          border-radius: 999px;
+          padding: 6px 9px;
+          background: #ccfbf1;
+          color: #115e59;
+          font-size: 11px;
+          font-weight: 900;
+          text-transform: uppercase;
+        }
         .ferias-actions button,
         .ferias-form-actions button {
           min-height: 34px !important;
@@ -793,7 +929,7 @@ export default function FeriasPage({
         }
         .ferias-summary-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
           gap: 10px;
           margin-top: 14px;
         }
@@ -859,7 +995,7 @@ export default function FeriasPage({
         }
         .ferias-calculated-grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
           gap: 10px;
           margin-top: 14px;
         }
@@ -884,6 +1020,7 @@ export default function FeriasPage({
         }
         @media (max-width: 980px) {
           .ferias-page-grid,
+          .ferias-main-column,
           .ferias-form-grid,
           .ferias-summary-grid,
           .ferias-calculated-grid,
@@ -917,75 +1054,79 @@ export default function FeriasPage({
         </section>
       ) : (
         <div className="ferias-page-grid">
-          <section className="ferias-card">
-            <h2>Funcionário</h2>
-            <p>Selecione um colaborador da empresa ativa. CPF e observações não aparecem nesta tela.</p>
+          <section className="ferias-card is-compact">
+            <SectionHeader
+              titulo="Funcionário"
+              descricao="Colaborador da empresa ativa."
+              resumo={resumoFuncionario}
+              aberto={secoesAbertas.funcionario}
+              onToggle={() => alternarSecao('funcionario')}
+            />
 
-            {loadingFuncionarios ? (
-              <p style={{ ...styles.textoNota, marginTop: 12 }}>Carregando funcionários...</p>
-            ) : erroFuncionarios ? (
-              <EmptyState titulo="Não foi possível carregar" descricao={erroFuncionarios} />
-            ) : (
+            {secoesAbertas.funcionario && (
               <>
-                <div className="ferias-form-row">
-                  <label>
-                    Colaborador
-                    <select
-                      style={styles.input}
-                      value={funcionarioSelecionadoId}
-                      onChange={(event) => selecionarFuncionario(event.target.value)}
-                    >
-                      <option value="">Selecione um funcionário</option>
-                      {funcionariosOrdenados.map((funcionario) => (
-                        <option key={funcionario.id} value={funcionario.id}>
-                          {funcionario.nome || 'Funcionário sem nome'}{funcionario.cargo ? ` - ${funcionario.cargo}` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+                <p style={{ marginTop: 10 }}>CPF e observações não aparecem nesta tela.</p>
 
-                {funcionariosOrdenados.length === 0 && (
-                  <EmptyState
-                    titulo="Nenhum funcionário ativo"
-                    descricao="Cadastre um funcionário antes de registrar ciclos de férias."
-                  />
+                {loadingFuncionarios ? (
+                  <p style={{ ...styles.textoNota, marginTop: 12 }}>Carregando funcionários...</p>
+                ) : erroFuncionarios ? (
+                  <EmptyState titulo="Não foi possível carregar" descricao={erroFuncionarios} />
+                ) : (
+                  <>
+                    <div className="ferias-form-row">
+                      <label>
+                        Colaborador
+                        <select
+                          style={styles.input}
+                          value={funcionarioSelecionadoId}
+                          onChange={(event) => selecionarFuncionario(event.target.value)}
+                        >
+                          <option value="">Selecione um funcionário</option>
+                          {funcionariosOrdenados.map((funcionario) => (
+                            <option key={funcionario.id} value={funcionario.id}>
+                              {funcionario.nome || 'Funcionário sem nome'}{funcionario.cargo ? ` - ${funcionario.cargo}` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    {funcionariosOrdenados.length === 0 && (
+                      <EmptyState
+                        titulo="Nenhum funcionário ativo"
+                        descricao="Cadastre um funcionário antes de registrar ciclos de férias."
+                      />
+                    )}
+                  </>
                 )}
+
+                {funcionarioSelecionado && (
+                  <div className="ferias-preview">
+                    <strong>{funcionarioSelecionado.nome || 'Funcionário selecionado'}</strong>
+                    <br />
+                    <span>{funcionarioSelecionado.cargo || 'Cargo não informado'}</span>
+                    <br />
+                    <span>Admissão: {formatarDataCurta(funcionarioSelecionado.data_admissao)}</span>
+                  </div>
+                )}
+
+                <div className="ferias-warning">
+                  Esta tela registra apenas dados trabalhistas estruturados de férias. Não há documentos, anexos,
+                  exportação ou integração financeira neste ciclo.
+                </div>
               </>
             )}
-
-            {funcionarioSelecionado && (
-              <div className="ferias-preview">
-                <strong>{funcionarioSelecionado.nome || 'Funcionário selecionado'}</strong>
-                <br />
-                <span>{funcionarioSelecionado.cargo || 'Cargo não informado'}</span>
-                <br />
-                <span>Admissão: {formatarDataCurta(funcionarioSelecionado.data_admissao)}</span>
-              </div>
-            )}
-
-            <div className="ferias-warning">
-              Esta tela registra apenas dados trabalhistas estruturados de férias. Não há documentos, anexos,
-              exportação ou integração financeira neste ciclo.
-            </div>
           </section>
 
+          <div className="ferias-main-column">
           <section className="ferias-card">
-            <div className="master-list-header">
-              <div>
-                <h2>Ciclos de férias</h2>
-                <p>Histórico de períodos aquisitivos do funcionário selecionado.</p>
-              </div>
-              <label className="ferias-switch">
-                <input
-                  type="checkbox"
-                  checked={incluirArquivados}
-                  onChange={(event) => setIncluirArquivados(event.target.checked)}
-                  disabled={!funcionarioSelecionadoId || loading}
-                />
-                Mostrar arquivados
-              </label>
-            </div>
+            <SectionHeader
+              titulo="Criar novo ciclo"
+              descricao="O sistema sugere o período aquisitivo e o limite de gozo."
+              resumo={sugestaoCiclo.erro || sugestaoCiclo.origem || 'Aguardando funcionário'}
+              aberto={secoesAbertas.criarCiclo}
+              onToggle={() => alternarSecao('criarCiclo')}
+            />
 
             {!funcionarioSelecionadoId ? (
               <EmptyState
@@ -994,6 +1135,7 @@ export default function FeriasPage({
               />
             ) : (
               <>
+                {secoesAbertas.criarCiclo && (
                 <form onSubmit={salvarCiclo}>
                   {sugestaoCiclo.erro ? (
                     <div className="ferias-warning">
@@ -1085,7 +1227,29 @@ export default function FeriasPage({
                     </button>
                   </div>
                 </form>
+                )}
 
+                <SectionHeader
+                  titulo="Ciclos de férias"
+                  descricao="Histórico de períodos aquisitivos do funcionário selecionado."
+                  resumo={`${ciclosVisiveis.length} ciclo(s) visível(is)`}
+                  aberto={secoesAbertas.ciclos}
+                  onToggle={() => alternarSecao('ciclos')}
+                  acao={(
+                    <label className="ferias-switch">
+                      <input
+                        type="checkbox"
+                        checked={incluirArquivados}
+                        onChange={(event) => setIncluirArquivados(event.target.checked)}
+                        disabled={!funcionarioSelecionadoId || loading}
+                      />
+                      Mostrar arquivados
+                    </label>
+                  )}
+                />
+
+                {secoesAbertas.ciclos && (
+                  <>
                 {loadingCiclos ? (
                   <p style={{ ...styles.textoNota, marginTop: 12 }}>Carregando ciclos...</p>
                 ) : erro ? (
@@ -1114,14 +1278,18 @@ export default function FeriasPage({
                             <span className={`ferias-status ${ciclo.arquivado ? 'archived' : ''}`}>{status}</span>
                           </div>
                           <div className="ferias-actions">
-                            <button
-                              style={selecionado ? styles.btnSalvar : styles.btnCinza}
-                              type="button"
-                              disabled={loading || salvando}
-                              onClick={() => setCicloSelecionadoId(ciclo.id)}
-                            >
-                              {selecionado ? 'Selecionado' : 'Selecionar'}
-                            </button>
+                            {selecionado ? (
+                              <span className="ferias-selected-pill">Selecionado</span>
+                            ) : (
+                              <button
+                                style={styles.btnCinza}
+                                type="button"
+                                disabled={loading || salvando}
+                                onClick={() => setCicloSelecionadoId(ciclo.id)}
+                              >
+                                Selecionar
+                              </button>
+                            )}
                             {podeEditar && (
                               <button
                                 style={ciclo.arquivado ? styles.btnSalvar : styles.btnCinza}
@@ -1138,21 +1306,37 @@ export default function FeriasPage({
                     })}
                   </div>
                 )}
+                  </>
+                )}
               </>
             )}
           </section>
+          </div>
         </div>
       )}
 
       {empresaId && funcionarioSelecionadoId && cicloSelecionado && (
         <section className="ferias-card">
-          <div className="master-list-header">
-            <div>
-              <h2>Parcelas do ciclo selecionado</h2>
-              <p>Informe apenas data de início e quantidade de dias. O sistema calcula fim e retorno.</p>
-            </div>
-          </div>
+          <SectionHeader
+            titulo="Resumo do ciclo selecionado"
+            descricao="Datas, saldo e situação calculada do ciclo."
+            resumo={resumoCicloSelecionado}
+            aberto={secoesAbertas.resumoCiclo}
+            onToggle={() => alternarSecao('resumoCiclo')}
+            acao={podeEditar && !editandoCiclo ? (
+              <button
+                style={styles.btnCinza}
+                type="button"
+                disabled={salvando || cicloSelecionado.arquivado}
+                onClick={iniciarEdicaoCiclo}
+              >
+                Editar ciclo
+              </button>
+            ) : null}
+          />
 
+          {secoesAbertas.resumoCiclo && (
+            <>
           <div className="ferias-summary-grid">
             <div className="ferias-summary-box">
               <span>Limite de gozo</span>
@@ -1183,7 +1367,7 @@ export default function FeriasPage({
               <strong>{formatarStatus(statusCalculadoSelecionado, STATUS_CICLO_LABELS)}</strong>
             </div>
             <div className="ferias-summary-box">
-              <span>Proxima parcela</span>
+              <span>Próxima ação</span>
               <strong>{proximaParcelaTexto}</strong>
             </div>
           </div>
@@ -1192,21 +1376,6 @@ export default function FeriasPage({
             A data de atenção é um prazo operacional interno calculado 30 dias antes do limite de gozo.
             Ela não substitui o limite de gozo e não gera automação.
           </div>
-
-          {podeEditar && (
-            <div className="ferias-form-actions">
-              {!editandoCiclo && (
-                <button
-                  style={styles.btnCinza}
-                  type="button"
-                  disabled={salvando || cicloSelecionado.arquivado}
-                  onClick={iniciarEdicaoCiclo}
-                >
-                  Editar ciclo
-                </button>
-              )}
-            </div>
-          )}
 
           {editandoCiclo && (
             <form onSubmit={salvarEdicaoCiclo}>
@@ -1270,7 +1439,26 @@ export default function FeriasPage({
             Não existe seleção manual de férias integral ou parcelada. A situação e o saldo são calculados pela soma
             das parcelas ativas deste ciclo.
           </div>
+            </>
+          )}
 
+          <SectionHeader
+            titulo="Nova parcela"
+            descricao="Informe início e quantidade de dias; fim e retorno são calculados."
+            resumo={novaParcelaBloqueada ? proximaParcelaTexto : 'Pronta para lançamento'}
+            aberto={secoesAbertas.novaParcela}
+            onToggle={() => alternarSecao('novaParcela')}
+          />
+
+          {secoesAbertas.novaParcela && (
+            <>
+          {novaParcelaBloqueada ? (
+            <div className="ferias-warning">
+              {semSaldoDisponivel
+                ? 'O saldo calculado deste ciclo está zerado. Não há dias disponíveis para nova parcela.'
+                : 'O limite planejado de 3 parcelas ativas foi atingido para este ciclo.'}
+            </div>
+          ) : (
           <form onSubmit={salvarPeriodo}>
             <div className="ferias-form-grid">
               <label>
@@ -1280,7 +1468,7 @@ export default function FeriasPage({
                   type="date"
                   value={formularioPeriodo.dataInicio}
                   onChange={(event) => atualizarFormularioPeriodo('dataInicio', event.target.value)}
-                  disabled={semSaldoDisponivel || limiteParcelasAtingido}
+                  disabled={novaParcelaBloqueada}
                   required
                 />
               </label>
@@ -1293,7 +1481,7 @@ export default function FeriasPage({
                   max={saldoSelecionado ?? 30}
                   value={formularioPeriodo.quantidadeDias}
                   onChange={(event) => atualizarFormularioPeriodo('quantidadeDias', event.target.value)}
-                  disabled={semSaldoDisponivel || limiteParcelasAtingido}
+                  disabled={novaParcelaBloqueada}
                   required
                 />
               </label>
@@ -1303,7 +1491,7 @@ export default function FeriasPage({
                   style={styles.input}
                   value={formularioPeriodo.status}
                   onChange={(event) => atualizarFormularioPeriodo('status', event.target.value)}
-                  disabled={semSaldoDisponivel || limiteParcelasAtingido}
+                  disabled={novaParcelaBloqueada}
                 >
                   <option value="agendada">Agendada</option>
                   <option value="concluida">Concluída</option>
@@ -1353,20 +1541,31 @@ export default function FeriasPage({
                 disabled={
                   !podeEditar ||
                   salvando ||
-                  limiteParcelasAtingido ||
-                  semSaldoDisponivel ||
+                  novaParcelaBloqueada ||
                   quantidadeMaiorQueSaldo ||
                   Boolean(previsaoPeriodo?.erro) ||
                   !formularioPeriodo.dataInicio ||
                   !formularioPeriodo.quantidadeDias
                 }
               >
-                {salvando ? 'Salvando...' : 'Adicionar parcela'}
+                {textoBotaoNovaParcela}
               </button>
             </div>
           </form>
+          )}
+            </>
+          )}
 
-          {loadingPeriodos ? (
+          <SectionHeader
+            titulo="Parcelas do ciclo selecionado"
+            descricao="Histórico de parcelas lançadas para o ciclo."
+            resumo={`${periodosVisiveis.length} parcela(s) visível(is)`}
+            aberto={secoesAbertas.parcelas}
+            onToggle={() => alternarSecao('parcelas')}
+          />
+
+          {secoesAbertas.parcelas && (
+          loadingPeriodos ? (
             <p style={{ ...styles.textoNota, marginTop: 12 }}>Carregando parcelas...</p>
           ) : periodosVisiveis.length === 0 ? (
             <EmptyState
@@ -1517,7 +1716,7 @@ export default function FeriasPage({
                 )
               })}
             </div>
-          )}
+          ))}
         </section>
       )}
     </div>

@@ -22,7 +22,8 @@ const menuSections = [
     titulo: 'Gestão de Pessoas',
     items: [
       { tela: 'funcionarios', icon: '👥', label: 'Funcionários', desc: 'Cadastro de colaboradores', peopleOnly: true },
-      { tela: 'relatorios-pessoas', icon: '📋', label: 'Relatórios', desc: 'Indicadores internos de pessoas', peopleOnly: true }
+      { tela: 'relatorios-pessoas', icon: '📋', label: 'Relatórios', desc: 'Indicadores internos de pessoas', peopleOnly: true },
+      { tela: 'ferias', icon: '🌴', label: 'Férias', desc: 'Ciclos e parcelas de férias', peopleOnly: true }
     ]
   },
   {

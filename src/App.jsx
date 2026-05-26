@@ -55,6 +55,7 @@ import {
   LazyCopilotDrawer,
   LazyDashboardRouteComposition,
   LazyFiliaisPage,
+  LazyFeriasPage,
   LazyFuncionariosPage,
   LazyMasterPanelPage,
   LazyNotasPage,
@@ -3932,6 +3933,32 @@ export default function App() {
         styles={styles}
         empresaId={empresaId}
         empresaNome={empresaAtiva?.nome || nomeEmpresa}
+        voltarPainel={() => navegarPara('dashboard')}
+      />
+    )
+  }
+
+  if (telaAtual === 'ferias') {
+    if (!podeAcessarGestaoPessoas()) {
+      return renderAppFrame(
+        <>
+          <h1 style={styles.titulo}>Férias</h1>
+          <section style={styles.cardConfiguracao}>
+            <h2 style={styles.subtitulo}>Acesso restrito</h2>
+            <p style={styles.textoNota}>Seu perfil atual não permite acessar Gestão de Pessoas.</p>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
+          </section>
+        </>
+      )
+    }
+
+    return renderAppFrame(
+      <LazyFeriasPage
+        styles={styles}
+        empresaId={empresaId}
+        empresaNome={empresaAtiva?.nome || nomeEmpresa}
+        mostrarAviso={mostrarAviso}
+        podeEditar={podeAcessarGestaoPessoas()}
         voltarPainel={() => navegarPara('dashboard')}
       />
     )

@@ -239,7 +239,7 @@ Implementado:
 - aniversariantes do mês;
 - admissões do mês;
 - exames admissionais cadastrados;
-- próximo periódico previsto apenas como cálculo visual.
+- próximo periódico previsto apenas como cálculo visual, usando o último exame periódico ativo quando existir.
 
 Regras de exposição dos relatórios:
 
@@ -253,7 +253,13 @@ Regras de exposição dos relatórios:
 - não há impressão;
 - não há automação ou alerta.
 
-O próximo periódico previsto é calculado visualmente a partir de `data_exame_admissional + 1 ano`. Esse valor não é persistido no banco.
+O próximo periódico previsto é calculado visualmente assim:
+
+1. se houver exames periódicos ativos, usa a maior `data_exame` ativa + 1 ano;
+2. se não houver exame periódico ativo, usa `data_exame_admissional + 1 ano`;
+3. se não houver nenhuma dessas datas, exibe ausência de informação.
+
+Esse valor não é persistido no banco, e exames periódicos arquivados não entram no cálculo principal.
 
 ## Exame admissional
 
@@ -268,11 +274,11 @@ Implementado:
 - exibido e editado na tela Funcionários;
 - salva somente a data.
 
-Permitido futuramente, em ciclo próprio:
+Implementado para exames periódicos:
 
-- data do último exame periódico;
-- previsão do próximo periódico;
-- cálculo visual de próximo periódico, preferencialmente não persistido inicialmente.
+- registro apenas da data do exame periódico realizado;
+- arquivamento lógico do registro;
+- cálculo visual de próximo periódico sem persistir `data_proximo_periodico`.
 
 Proibido:
 

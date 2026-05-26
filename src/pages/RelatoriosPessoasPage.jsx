@@ -1,5 +1,11 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useFuncionarios } from '../hooks/useFuncionarios'
+import { supabase } from '../lib/supabase'
+import {
+  calcularProximoPeriodico,
+  listarExamesPeriodicos
+} from '../services/funcionariosExamesPeriodicosService'
+import { mensagemSeguraErro } from '../utils/session'
 
 const STATUS_LABELS = {
   ativo: 'Ativos',
@@ -41,15 +47,6 @@ function formatarDiaMes(data) {
   }).format(dataLocal)
 }
 
-function calcularProximoPeriodico(dataExameAdmissional) {
-  const dataLocal = criarDataLocal(dataExameAdmissional)
-  if (!dataLocal) return null
-
-  const proximaData = new Date(dataLocal)
-  proximaData.setFullYear(proximaData.getFullYear() + 1)
-  return proximaData
-}
-
 function normalizarTexto(valor) {
   return String(valor || '').trim()
 }
@@ -81,6 +78,42 @@ function estaNoMesAtual(data, compararAno = false) {
   const mesmoMes = dataLocal.getMonth() === hoje.getMonth()
   if (!compararAno) return mesmoMes
   return mesmoMes && dataLocal.getFullYear() === hoje.getFullYear()
+}
+
+function obterUltimoExamePeriodicoAtivo(exames = []) {
+  return [...exames]
+    .filter((exame) => exame?.data_exame && !exame.arquivado)
+    .sort((a, b) => String(b.data_exame || '').localeCompare(String(a.data_exame || '')))[0] || null
+}
+
+function montarPrevisaoPeriodico(funcionario, examesPeriodicos = []) {
+  const ultimoPeriodico = obterUltimoExamePeriodicoAtivo(examesPeriodicos)
+  const dataBase = ultimoPeriodico?.data_exame || funcionario.data_exame_admissional
+  const origem = ultimoPeriodico?.data_exame
+    ? 'periodico'
+    : funcionario.data_exame_admissional
+      ? 'admissional'
+      : null
+
+  return {
+    dataBase,
+    origem,
+    ultimoPeriodico,
+    proximoPeriodico: dataBase ? calcularProximoPeriodico(dataBase) : null
+  }
+}
+
+function ordenarPrevisoesPeriodicas(lista) {
+  return [...lista].sort((a, b) => {
+    const dataA = criarDataLocal(a.previsao.proximoPeriodico)
+    const dataB = criarDataLocal(b.previsao.proximoPeriodico)
+    if (!dataA && !dataB) {
+      return normalizarTexto(a.funcionario.nome).localeCompare(normalizarTexto(b.funcionario.nome), 'pt-BR')
+    }
+    if (!dataA) return 1
+    if (!dataB) return -1
+    return dataA.getTime() - dataB.getTime()
+  })
 }
 
 function PessoaResumoCard({ label, valor, detalhe }) {
@@ -133,6 +166,10 @@ export default function RelatoriosPessoasPage({
   empresaNome,
   voltarPainel
 }) {
+  const [examesPorFuncionario, setExamesPorFuncionario] = useState({})
+  const [loadingExamesPeriodicos, setLoadingExamesPeriodicos] = useState(false)
+  const [erroExamesPeriodicos, setErroExamesPeriodicos] = useState(null)
+
   const {
     funcionarios,
     loading,
@@ -143,9 +180,68 @@ export default function RelatoriosPessoasPage({
     incluirArquivados: true
   })
 
+  const funcionariosNaoArquivados = useMemo(() => {
+    return (Array.isArray(funcionarios) ? funcionarios : []).filter((funcionario) => !funcionario.arquivado)
+  }, [funcionarios])
+
+  useEffect(() => {
+    let cancelado = false
+
+    setExamesPorFuncionario({})
+    setErroExamesPeriodicos(null)
+
+    if (!empresaId || loading || funcionariosNaoArquivados.length === 0) {
+      setLoadingExamesPeriodicos(false)
+      return () => {
+        cancelado = true
+      }
+    }
+
+    async function carregarExamesPeriodicosAtivos() {
+      setLoadingExamesPeriodicos(true)
+
+      try {
+        const resultados = await Promise.all(
+          funcionariosNaoArquivados
+            .filter((funcionario) => funcionario?.id)
+            .map(async (funcionario) => {
+              const { data, error } = await listarExamesPeriodicos({
+                supabase,
+                empresaId,
+                funcionarioId: funcionario.id,
+                incluirArquivados: false
+              })
+
+              if (error) throw error
+              return [funcionario.id, data || []]
+            })
+        )
+
+        if (!cancelado) {
+          setExamesPorFuncionario(Object.fromEntries(resultados))
+        }
+      } catch (error) {
+        if (!cancelado) {
+          setExamesPorFuncionario({})
+          setErroExamesPeriodicos(mensagemSeguraErro(error, 'Não foi possível carregar os exames periódicos.'))
+        }
+      } finally {
+        if (!cancelado) {
+          setLoadingExamesPeriodicos(false)
+        }
+      }
+    }
+
+    carregarExamesPeriodicosAtivos()
+
+    return () => {
+      cancelado = true
+    }
+  }, [empresaId, funcionariosNaoArquivados, loading])
+
   const dadosRelatorio = useMemo(() => {
     const lista = Array.isArray(funcionarios) ? funcionarios : []
-    const naoArquivados = lista.filter((funcionario) => !funcionario.arquivado)
+    const naoArquivados = funcionariosNaoArquivados
 
     const resumo = {
       ativo: naoArquivados.filter((funcionario) => funcionario.status === 'ativo').length,
@@ -165,9 +261,13 @@ export default function RelatoriosPessoasPage({
       'data_admissao'
     )
 
-    const exames = ordenarPorData(
-      naoArquivados.filter((funcionario) => Boolean(funcionario.data_exame_admissional)),
-      'data_exame_admissional'
+    const exames = ordenarPrevisoesPeriodicas(
+      naoArquivados
+        .map((funcionario) => ({
+          funcionario,
+          previsao: montarPrevisaoPeriodico(funcionario, examesPorFuncionario[funcionario.id] || [])
+        }))
+        .filter((item) => Boolean(item.previsao.dataBase))
     )
 
     return {
@@ -176,7 +276,7 @@ export default function RelatoriosPessoasPage({
       admissoes,
       exames
     }
-  }, [funcionarios])
+  }, [examesPorFuncionario, funcionarios, funcionariosNaoArquivados])
 
   return (
     <div className="pessoas-report-page">
@@ -387,22 +487,35 @@ export default function RelatoriosPessoasPage({
           </div>
 
           <PessoaListaSecao
-            titulo="Exames admissionais cadastrados"
-            descricao="Exibe somente a data cadastrada e calcula visualmente o próximo periódico previsto."
-            vazio="Nenhum exame admissional cadastrado para colaboradores ativos nesta empresa."
+            titulo="Exames ocupacionais cadastrados"
+            descricao="Usa o último periódico ativo quando existir; senão usa o exame admissional."
+            vazio="Nenhum exame admissional ou periódico ativo encontrado para colaboradores ativos nesta empresa."
           >
-            {dadosRelatorio.exames.length > 0 && (
+            {loadingExamesPeriodicos ? (
+              <div className="pessoas-report-empty">
+                <strong>Carregando exames periódicos</strong>
+                <p>As previsões serão calculadas depois da consulta dos periódicos ativos.</p>
+              </div>
+            ) : erroExamesPeriodicos ? (
+              <div className="pessoas-report-empty">
+                <strong>Não foi possível carregar os exames periódicos</strong>
+                <p>{erroExamesPeriodicos}</p>
+              </div>
+            ) : dadosRelatorio.exames.length > 0 && (
               <div className="pessoas-report-list">
-                {dadosRelatorio.exames.map((funcionario) => {
-                  const proximoPeriodico = calcularProximoPeriodico(funcionario.data_exame_admissional)
+                {dadosRelatorio.exames.map(({ funcionario, previsao }) => {
+                  const baseTexto = previsao.origem === 'periodico'
+                    ? `Último periódico: ${formatarDataCurta(previsao.ultimoPeriodico?.data_exame)}`
+                    : `Exame admissional: ${formatarDataCurta(funcionario.data_exame_admissional)}`
+                  const origemTexto = previsao.origem === 'periodico' ? 'Base: periódico' : 'Base: admissional'
 
                   return (
                     <PessoaLinha
                       key={funcionario.id}
                       nome={funcionario.nome}
                       cargo={funcionario.cargo}
-                      detalhe={`Exame admissional: ${formatarDataCurta(funcionario.data_exame_admissional)}`}
-                      complemento={proximoPeriodico ? `Próximo periódico previsto: ${formatarDataCurta(proximoPeriodico)}` : null}
+                      detalhe={`Próximo periódico previsto: ${formatarDataCurta(previsao.proximoPeriodico)}`}
+                      complemento={`${baseTexto} • ${origemTexto}`}
                     />
                   )
                 })}

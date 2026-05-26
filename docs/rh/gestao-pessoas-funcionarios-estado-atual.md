@@ -6,7 +6,7 @@ Data: 2026-05-25
 
 Gestão de Pessoas é o módulo do DNA Gestão voltado ao cadastro e ao controle operacional básico de colaboradores por empresa ativa.
 
-Nesta fase inicial, o módulo contempla apenas a tela de Funcionários. O objetivo é organizar dados estruturados de colaboradores com isolamento multiempresa, RLS validada e cuidado LGPD. A nomenclatura de produto/interface é Gestão de Pessoas; a expressão Mini RH fica apenas como referência histórica em documentação técnica anterior.
+Nesta fase inicial, o módulo contempla a tela de Funcionários e relatórios internos visuais de pessoas. O objetivo é organizar dados estruturados de colaboradores com isolamento multiempresa, RLS validada e cuidado LGPD. A nomenclatura de produto/interface é Gestão de Pessoas; a expressão Mini RH fica apenas como referência histórica em documentação técnica anterior.
 
 Empresas/tenants atuais:
 
@@ -29,13 +29,15 @@ Implementado e validado:
 - nome e cargo normalizados/capitalizados;
 - CPF fora da listagem principal;
 - data do exame admissional como data opcional;
-- ausência de exportações, relatórios, documentos, anexos e uploads.
+- relatórios internos visuais sem exportação;
+- ausência de PDF, Excel, CSV, documentos, anexos e uploads.
 
 Arquivos funcionais relacionados:
 
 - `src/services/funcionariosService.js`;
 - `src/hooks/useFuncionarios.js`;
 - `src/pages/FuncionariosPage.jsx`.
+- `src/pages/RelatoriosPessoasPage.jsx`.
 
 ## Campos atuais controlados
 
@@ -109,6 +111,50 @@ Dados pessoais envolvidos:
 - data do exame admissional;
 - observações.
 
+## Uso seguro do campo Observações
+
+O campo `observacoes` existe apenas para registros administrativos simples. Ele não deve ser usado para guardar dados sensíveis, documentos, laudos, resultados de exames ou informações clínicas.
+
+Texto orientativo exibido na tela Funcionários:
+
+> Use apenas observações administrativas. Não registre laudos, diagnósticos, resultados de exames, documentos ou informações clínicas.
+
+Permitido em observações:
+
+- informação administrativa simples;
+- referência operacional não sensível;
+- observação de cadastro;
+- dado interno de rotina que não envolva saúde, documento ou informação sensível.
+
+Exemplos permitidos:
+
+- "Preferência de contato pelo WhatsApp."
+- "Cadastro revisado em maio/2026."
+- "Atua principalmente na loja X."
+
+Proibido em observações:
+
+- doenças;
+- diagnósticos;
+- CID;
+- motivo médico de afastamento;
+- resultado de exame;
+- laudo;
+- dados de saúde;
+- documento pessoal;
+- foto ou documento digitalizado;
+- link de arquivo;
+- informação trabalhista sensível detalhada;
+- informações discriminatórias;
+- qualquer informação clínica.
+
+Regra específica para exames ocupacionais:
+
+- exame admissional é controlado somente por data;
+- não registrar laudo, resultado, diagnóstico, condição médica ou observação médica em `observacoes`;
+- não anexar documentos;
+- não criar links para documentos externos.
+
 ## RLS e isolamento multiempresa
 
 Estado validado:
@@ -151,6 +197,37 @@ Fluxo validado:
 - ao marcar o filtro de arquivados, o funcionário arquivado aparece;
 - ao reativar, volta para a lista principal;
 - DELETE físico permanece bloqueado.
+
+## Relatórios internos de Pessoas
+
+A tela `Relatórios de Pessoas` foi adicionada como consulta visual interna, sem exportação de dados.
+
+Implementado:
+
+- menu `Gestão de Pessoas > Relatórios`;
+- Topbar mantendo `Empresa ativa • Gestão de Pessoas`;
+- uso obrigatório da empresa ativa;
+- uso do hook `useFuncionarios` com RLS validada;
+- resumo de funcionários por status;
+- contagem de arquivados;
+- aniversariantes do mês;
+- admissões do mês;
+- exames admissionais cadastrados;
+- próximo periódico previsto apenas como cálculo visual.
+
+Regras de exposição dos relatórios:
+
+- CPF não aparece;
+- observações não aparecem;
+- dados médicos, laudos, resultados, documentos e anexos não aparecem;
+- não há PDF;
+- não há Excel;
+- não há CSV;
+- não há botão de exportação;
+- não há impressão;
+- não há automação ou alerta.
+
+O próximo periódico previsto é calculado visualmente a partir de `data_exame_admissional + 1 ano`. Esse valor não é persistido no banco.
 
 ## Exame admissional
 
@@ -198,12 +275,14 @@ Não existe nesta fase:
 - uploads;
 - links públicos;
 - exportação de Funcionários;
-- relatório de pessoas;
-- relatório de exames;
+- relatório externo de pessoas;
+- relatório externo de exames;
+- PDF;
+- Excel;
+- CSV;
 - fechamento de folha;
 - controle de vales;
 - férias;
-- aniversariantes;
 - automações de RH.
 
 Documentos sensíveis devem permanecer fora do Supabase, no OneDrive oficial da empresa, até existir política própria de acesso, retenção e exclusão.
@@ -246,7 +325,7 @@ Possíveis próximos relatórios, todos dependentes de ciclos próprios:
 - PDF para donos;
 - Excel para contabilidade.
 
-Nenhum relatório de pessoas foi criado nesta fase.
+Os relatórios internos visuais atuais não substituem relatórios formais, PDF para donos ou Excel para contabilidade.
 
 ## Validações realizadas
 
@@ -258,6 +337,8 @@ Validações funcionais:
 - capitalização de nome/cargo validada;
 - CPF fora da listagem;
 - data do exame admissional validada;
+- relatórios internos visuais criados sem CPF e sem observações;
+- ausência de exportação/PDF/Excel/CSV nos relatórios de pessoas;
 - troca de empresa sem manter lista anterior visível.
 
 Validações de segurança:
@@ -275,7 +356,7 @@ Validações de segurança:
 
 - Dados de colaboradores seguem sendo dados pessoais sob LGPD.
 - Qualquer exportação futura precisa de permissão explícita e revisão de escopo.
-- Observações podem conter conteúdo sensível se usadas sem orientação operacional.
+- Observações continuam sendo campo livre e dependem de orientação operacional contínua para evitar conteúdo sensível.
 - Fechamento de folha envolve dados financeiros/trabalhistas e deve ser tratado como ALTÍSSIMO risco.
 - Exames ocupacionais devem permanecer restritos a datas; qualquer dado clínico é proibido.
 
@@ -283,9 +364,9 @@ Validações de segurança:
 
 Ordem segura sugerida:
 
-1. Revisar e documentar orientação de uso do campo `observacoes`.
+1. Validar periodicamente o uso correto do campo `observacoes`.
 2. Planejar férias em ciclo próprio de banco/RLS antes de qualquer tela.
-3. Planejar relatórios simples somente após matriz de permissões e dados validados.
+3. Evoluir relatórios de pessoas apenas em ciclos próprios, sem exportação automática.
 4. Planejar controle de vales e fechamento mensal com modelagem dedicada.
 5. Avaliar exportações apenas depois de permissão explícita, auditoria de dados e validação LGPD.
 

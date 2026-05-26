@@ -21,7 +21,8 @@ const menuSections = [
     id: 'pessoas',
     titulo: 'Gestão de Pessoas',
     items: [
-      { tela: 'funcionarios', icon: '👥', label: 'Funcionários', desc: 'Cadastro de colaboradores', peopleOnly: true }
+      { tela: 'funcionarios', icon: '👥', label: 'Funcionários', desc: 'Cadastro de colaboradores', peopleOnly: true },
+      { tela: 'relatorios-pessoas', icon: '📋', label: 'Relatórios', desc: 'Indicadores internos de pessoas', peopleOnly: true }
     ]
   },
   {

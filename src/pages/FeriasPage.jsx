@@ -295,10 +295,10 @@ export default function FeriasPage({
   const [formularioEdicaoPeriodo, setFormularioEdicaoPeriodo] = useState(criarFormularioPeriodoInicial)
   const [secoesAbertas, setSecoesAbertas] = useState({
     funcionario: true,
-    criarCiclo: true,
+    criarCiclo: false,
     ciclos: true,
     resumoCiclo: true,
-    novaParcela: true,
+    novaParcela: false,
     parcelas: true
   })
 
@@ -451,10 +451,10 @@ export default function FeriasPage({
     setFormularioEdicaoPeriodo(criarFormularioPeriodoInicial())
     setSecoesAbertas({
       funcionario: true,
-      criarCiclo: true,
+      criarCiclo: false,
       ciclos: true,
       resumoCiclo: true,
-      novaParcela: true,
+      novaParcela: false,
       parcelas: true
     })
     limparErro?.()
@@ -531,10 +531,10 @@ export default function FeriasPage({
     setSecoesAbertas((atual) => ({
       ...atual,
       funcionario: true,
-      criarCiclo: true,
+      criarCiclo: false,
       ciclos: true,
       resumoCiclo: true,
-      novaParcela: true,
+      novaParcela: false,
       parcelas: true
     }))
     limparErro?.()

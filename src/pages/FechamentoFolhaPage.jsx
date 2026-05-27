@@ -111,6 +111,12 @@ const estilosLocais = {
     gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
     gap: 12
   },
+  competenciaGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+    gap: 12,
+    alignItems: 'start'
+  },
   formPanel: {
     border: '1px solid #e5e7eb',
     borderRadius: 8,
@@ -144,6 +150,8 @@ const estilosLocais = {
     border: '1px solid #d1d5db',
     borderRadius: 8,
     padding: '10px 12px',
+    minHeight: 42,
+    boxSizing: 'border-box',
     font: 'inherit',
     background: '#fff'
   },
@@ -152,6 +160,8 @@ const estilosLocais = {
     border: '1px solid #d1d5db',
     borderRadius: 8,
     padding: '10px 12px',
+    minHeight: 42,
+    boxSizing: 'border-box',
     font: 'inherit',
     background: '#f3f4f6',
     color: '#374151'
@@ -545,41 +555,44 @@ export default function FechamentoFolhaPage({
         <p style={styles.textoNota}>Crie e selecione uma competência mensal no formato AAAA-MM.</p>
 
         <form onSubmit={salvarCompetencia} style={estilosLocais.formPanel}>
-          <div style={estilosLocais.formGrid}>
-          <label style={estilosLocais.formField}>
-            <span style={estilosLocais.label}>Competência</span>
-            <input
-              type="month"
-              value={formCompetencia.competencia}
-              onChange={(event) => setFormCompetencia((atual) => ({ ...atual, competencia: event.target.value }))}
-              style={estilosLocais.input}
-              disabled={!empresaId || !podeEditar || salvando}
-              placeholder="2026-05"
-              required
-            />
-            <small style={estilosLocais.helperText}>
-              Escolha o mês de referência. O sistema salva no formato AAAA-MM, por exemplo 2026-05.
-            </small>
-            {formCompetencia.competencia && (
-              <span style={{ ...estilosLocais.badge, justifySelf: 'start' }}>
-                Valor selecionado: {formCompetencia.competencia}
-              </span>
-            )}
-          </label>
+          <div style={estilosLocais.competenciaGrid}>
+            <label style={estilosLocais.formField}>
+              <span style={estilosLocais.label}>Competência</span>
+              <input
+                type="month"
+                value={formCompetencia.competencia}
+                onChange={(event) => setFormCompetencia((atual) => ({ ...atual, competencia: event.target.value }))}
+                style={estilosLocais.input}
+                disabled={!empresaId || !podeEditar || salvando}
+                placeholder="2026-05"
+                required
+              />
+              <small style={estilosLocais.helperText}>
+                Escolha o mês de referência. O sistema salva no formato AAAA-MM, por exemplo 2026-05.
+              </small>
+              {formCompetencia.competencia && (
+                <span style={{ ...estilosLocais.badge, justifySelf: 'start' }}>
+                  Valor selecionado: {formCompetencia.competencia}
+                </span>
+              )}
+            </label>
 
-          <label style={estilosLocais.formField}>
-            <span style={estilosLocais.label}>Status inicial</span>
-            <select
-              value={formCompetencia.status}
-              onChange={(event) => setFormCompetencia((atual) => ({ ...atual, status: event.target.value }))}
-              style={estilosLocais.input}
-              disabled={!empresaId || !podeEditar || salvando}
-            >
-              {STATUS_COMPETENCIA_FOLHA.map((status) => (
-                <option key={status} value={status}>{LABELS_STATUS_COMPETENCIA[status] || status}</option>
-              ))}
-            </select>
-          </label>
+            <label style={estilosLocais.formField}>
+              <span style={estilosLocais.label}>Status inicial</span>
+              <select
+                value={formCompetencia.status}
+                onChange={(event) => setFormCompetencia((atual) => ({ ...atual, status: event.target.value }))}
+                style={estilosLocais.input}
+                disabled={!empresaId || !podeEditar || salvando}
+              >
+                {STATUS_COMPETENCIA_FOLHA.map((status) => (
+                  <option key={status} value={status}>{LABELS_STATUS_COMPETENCIA[status] || status}</option>
+                ))}
+              </select>
+              <small style={estilosLocais.helperText}>
+                Define o status inicial da competência criada.
+              </small>
+            </label>
           </div>
 
           <label style={{ ...estilosLocais.formField, gridColumn: '1 / -1' }}>

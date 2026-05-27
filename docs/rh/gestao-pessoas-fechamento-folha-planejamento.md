@@ -1331,16 +1331,253 @@ Antes de transformar este planejamento em banco, RLS, service/hook ou tela, vali
 - Quais etapas de conferência precisam ficar registradas antes do fechamento?
 - Quais perfis poderão visualizar pensão alimentícia e outros descontos sensíveis?
 
+## Estado Final Validado — Ciclo Inicial do Fechamento de Folha
+
+Esta seção registra o estado final aprovado do ciclo inicial do Fechamento de Folha dentro da Gestão de Pessoas.
+
+O status geral do ciclo inicial é: **APROVADO**.
+
+### 1. Banco/RLS Núcleo
+
+Status: **APROVADO**.
+
+Foi aplicada e validada manualmente no Supabase principal a primeira migration real do núcleo do Fechamento de Folha.
+
+Tabelas criadas:
+
+- `public.df_folha_competencias`;
+- `public.df_folha_lancamentos`.
+
+Tabelas não criadas neste ciclo:
+
+- `public.df_folha_vales_compras`;
+- `public.df_folha_colaboradores_snapshot`;
+- `public.df_folha_conferencias`.
+
+Validação estrutural aprovada:
+
+- tabelas criadas;
+- constraints principais criadas;
+- triggers criados;
+- RLS habilitada;
+- RLS forçada;
+- sem policy `DELETE`;
+- sem policy `ALL`;
+- DELETE físico bloqueado;
+- `empresa_id` protegido contra alteração;
+- validação de vínculo entre competência, funcionário, filial e empresa.
+
+Validação real `anon/auth` via PowerShell aprovada:
+
+Admin:
+
+- login OK;
+- operou Choco Arte;
+- criou competência própria;
+- listou competência própria;
+- atualizou competência própria;
+- alteração de `empresa_id` bloqueada;
+- criou lançamento próprio sem filial;
+- listou lançamento próprio;
+- atualizou lançamento próprio;
+- arquivou lançamento próprio;
+- DELETE físico bloqueado;
+- alteração de `empresa_id` do lançamento bloqueada;
+- funcionário de outra empresa bloqueado.
+
+Master:
+
+- login OK;
+- operou Rede Dona Flor;
+- criou competência própria;
+- listou competência própria;
+- atualizou competência própria;
+- alteração de `empresa_id` bloqueada;
+- criou lançamento próprio sem filial;
+- listou lançamento próprio;
+- atualizou lançamento próprio;
+- DELETE físico bloqueado;
+- alteração de `empresa_id` do lançamento bloqueada;
+- funcionário de outra empresa bloqueado.
+
+Gerente:
+
+- login OK;
+- sem acesso inicial;
+- SELECT sem dados/bloqueado;
+- INSERT bloqueado;
+- UPDATE sem dados/bloqueado.
+
+Operador:
+
+- login OK;
+- sem acesso inicial;
+- SELECT sem dados/bloqueado;
+- INSERT bloqueado;
+- UPDATE sem dados/bloqueado.
+
+Observação da validação:
+
+- houve um falso erro inicial porque os IDs dos funcionários de Choco Arte e Dona Flor estavam invertidos no script local;
+- após corrigir os IDs, a validação passou.
+
+IDs corretos usados na validação:
+
+- Funcionário Rede Dona Flor: `1be2dff2-dc19-461d-8915-ea744768a48e`;
+- Funcionário Choco Arte: `aff2f4ae-0145-4908-b4ab-6a102b6e39be`.
+
+### 2. Service/Hook
+
+Status: **APROVADO**.
+
+Arquivos criados e validados:
+
+- `src/services/folhaService.js`;
+- `src/hooks/useFolha.js`.
+
+O service/hook contempla:
+
+- listar, criar, atualizar, arquivar e reativar competências;
+- listar, criar, atualizar, arquivar e reativar lançamentos;
+- resumo local da competência, sem persistir no banco;
+- validação de `empresaId`;
+- validação de `competenciaId`;
+- validação de `funcionarioId`;
+- validação de natureza/categoria/valor;
+- bloqueio de campos perigosos, médicos, documentos, anexos, upload, base64 e link público;
+- arquivamento lógico por update;
+- ausência de DELETE físico;
+- ausência de service role.
+
+Build aprovado no ciclo de service/hook.
+
+### 3. Tela Inicial
+
+Status: **APROVADA E VALIDADA MANUALMENTE**.
+
+Arquivo principal:
+
+- `src/pages/FechamentoFolhaPage.jsx`.
+
+Arquivos de navegação criados/alterados no ciclo da tela:
+
+- `src/config/menuSections.js`;
+- `src/routes/lazyRoutes.js`;
+- `src/App.jsx`.
+
+Funcionalidades validadas:
+
+- menu Gestão de Pessoas > Fechamento de Folha;
+- rota/view `fechamento-folha`;
+- Topbar exibindo Gestão de Pessoas;
+- empresa ativa exibida corretamente, incluindo Rede Dona Flor;
+- listagem de competências;
+- criação de competência mensal;
+- seleção de competência;
+- arquivar/reativar competência;
+- resumo local da competência;
+- criação de lançamento manual;
+- edição de lançamento manual;
+- arquivar/reativar lançamento;
+- tabela de lançamentos;
+- avisos LGPD;
+- sem exibição de CPF;
+- sem exportação;
+- sem integração financeira;
+- sem integração com férias;
+- sem upload, anexos ou documentos.
+
+Validação visual aprovada após refinamento de UX:
+
+- campo de competência com orientação clara de formato `AAAA-MM`;
+- lista de competências mais legível;
+- cards de resumo com melhor respiro visual;
+- formulário reorganizado em blocos;
+- tabela com melhor contraste e espaçamento;
+- microajuste final alinhando Competência e Status inicial.
+
+Build aprovado.
+
+### 4. Acesso por Perfil
+
+Status: **APROVADO**.
+
+Regra validada:
+
+- Admin acessa e opera;
+- Master acessa e opera;
+- Gerente não acessa Fechamento de Folha;
+- Operador não acessa Fechamento de Folha.
+
+Validação visual:
+
+- Operador não vê Gestão de Pessoas e não vê Fechamento de Folha;
+- Gerente não vê Gestão de Pessoas e não vê Fechamento de Folha.
+
+Observação futura:
+
+- foi observado que o perfil Gerente visualiza alguns itens de Administração, como Usuários, Configurações, Plano comercial, Configuração inicial e Lixeira;
+- essa observação não impactou o ciclo do Fechamento de Folha;
+- a revisão deve ser feita em ciclo próprio futuro de permissões/menu.
+
+### 5. Fora do Escopo Validado
+
+Não foram implementados no ciclo inicial aprovado:
+
+- Controle de Vales/compras internas;
+- importação de planilha;
+- exportação para contabilidade;
+- PDF;
+- Excel;
+- CSV;
+- integração financeira;
+- geração de contas a pagar;
+- integração com férias;
+- cálculo automático de férias;
+- cálculo trabalhista complexo;
+- snapshot de colaborador;
+- conferências detalhadas;
+- upload;
+- anexos;
+- documentos;
+- dados médicos;
+- CID;
+- laudos;
+- diagnósticos;
+- informações clínicas.
+
+### 6. Segurança/LGPD
+
+Permanecem como regras oficiais:
+
+- não exibir CPF em listagens;
+- não registrar dados médicos;
+- não registrar CID;
+- não registrar laudos;
+- não registrar diagnósticos;
+- não registrar documentos ou informações clínicas;
+- não criar upload/anexos;
+- não gerar exportação sem ciclo próprio;
+- não gerar financeiro automaticamente;
+- não alterar férias automaticamente;
+- respeitar empresa ativa;
+- respeitar RLS;
+- manter Fechamento de Folha como ALTÍSSIMO risco.
+
+Alerta de segurança:
+
+- as senhas dos usuários de teste usadas durante a validação manual foram expostas no chat e devem ser trocadas.
+
 ## Próximos Ciclos Recomendados
 
-Ordem segura sugerida:
+Após a aprovação do ciclo inicial, a ordem segura sugerida é:
 
-1. Não avançar frontend ainda.
-2. Não avançar service/hook sem ciclo próprio.
-3. Criar service/hook do Fechamento de Folha em próximo ciclo, quando houver cota disponível.
-4. Depois criar a primeira tela de Fechamento de Folha.
-5. Criar Controle de Vales/compras internas em ciclo próprio.
-6. Criar exportações para contabilidade somente em ciclo próprio.
-7. Criar integrações futuras com Gestão de Férias e Gestão Financeira somente depois.
+1. Pausar a frente após o ciclo inicial aprovado.
+2. Em ciclo próprio, revisar permissões/menu de Administração do Gerente.
+3. Em ciclo próprio, planejar Controle de Vales/compras internas.
+4. Em ciclo próprio, planejar exportações para contabilidade.
+5. Em ciclo próprio, planejar integração futura com Gestão Financeira.
+6. Em ciclo próprio, planejar integração futura com Gestão de Férias/faltas.
+7. Qualquer avanço de Folha deve continuar com ciclos pequenos, reversíveis e validados.
 
-Antes de qualquer implementação, validar o layout esperado das planilhas atuais, as categorias de lançamento, o fluxo real de conferência com loja/colaborador/contabilidade e os limites de exposição de dados pessoais.
+Antes de qualquer novo avanço, validar o layout esperado das planilhas atuais, as categorias de lançamento, o fluxo real de conferência com loja/colaborador/contabilidade e os limites de exposição de dados pessoais.

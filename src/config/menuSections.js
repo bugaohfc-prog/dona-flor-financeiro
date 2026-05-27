@@ -4,7 +4,8 @@ const menuSections = [
     titulo: 'Dashboard',
     items: [
       { tela: 'dashboard', icon: '🏠', label: 'Painel', desc: 'Resumo financeiro' },
-      { tela: 'agenda', icon: '📅', label: 'Agenda', desc: 'Vencimentos e previsões' }
+      { tela: 'agenda', icon: '📅', label: 'Agenda', desc: 'Vencimentos e previsões' },
+      { tela: 'notas', icon: '📝', label: 'Notas', desc: 'Pendências e histórico de notas' }
     ]
   },
   {
@@ -12,7 +13,6 @@ const menuSections = [
     titulo: 'Financeiro',
     items: [
       { tela: 'contas', icon: '💳', label: 'Contas', desc: 'Contas a pagar e filtros' },
-      { tela: 'notas', icon: '📝', label: 'Notas', desc: 'Pendências e histórico de notas' },
       { tela: 'relatorios', icon: '📊', label: 'Relatórios', desc: 'Análises e indicadores' },
       { tela: 'importar', icon: '📥', label: 'Importar contas', desc: 'Trazer contas por planilha' }
     ]

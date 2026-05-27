@@ -78,7 +78,7 @@ function Sidebar({
         {!sidebarCompacta && (
           <div>
             <strong>DNA Gestão</strong>
-            <small>Painel financeiro</small>
+            <small>Plataforma de gestão</small>
           </div>
         )}
       </div>

@@ -126,7 +126,10 @@ function MobileMenu({
       >
         <div style={styles.menuPerfil}>
           <img src="/icon-192.png" alt="DNA Gestão" style={styles.menuPerfilIcone} />
-          <div><strong>DNA Gestão</strong><small>{nomeExibicao} • {perfilExibicao}</small></div>
+          <div style={{ display: 'grid', gap: 2 }}>
+            <strong>DNA Gestão</strong>
+            <small>{nomeExibicao} • {perfilExibicao}</small>
+          </div>
         </div>
 
         {exibirSeletorEmpresa && (

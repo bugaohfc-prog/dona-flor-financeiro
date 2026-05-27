@@ -87,8 +87,9 @@ const estilosLocais = {
   resumoCard: {
     border: '1px solid #e5e7eb',
     borderRadius: 8,
-    padding: 12,
-    background: '#fff'
+    padding: 14,
+    background: '#fff',
+    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
   },
   lista: {
     display: 'grid',
@@ -110,6 +111,25 @@ const estilosLocais = {
     gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
     gap: 12
   },
+  formPanel: {
+    border: '1px solid #e5e7eb',
+    borderRadius: 8,
+    padding: 14,
+    background: '#f9fafb',
+    display: 'grid',
+    gap: 12
+  },
+  formSectionTitle: {
+    margin: 0,
+    fontSize: 14,
+    color: '#111827'
+  },
+  formActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap'
+  },
   formField: {
     display: 'grid',
     gap: 6
@@ -126,6 +146,15 @@ const estilosLocais = {
     padding: '10px 12px',
     font: 'inherit',
     background: '#fff'
+  },
+  inputReadOnly: {
+    width: '100%',
+    border: '1px solid #d1d5db',
+    borderRadius: 8,
+    padding: '10px 12px',
+    font: 'inherit',
+    background: '#f3f4f6',
+    color: '#374151'
   },
   textarea: {
     width: '100%',
@@ -162,26 +191,51 @@ const estilosLocais = {
     padding: 12,
     margin: '12px 0'
   },
+  helperText: {
+    margin: 0,
+    color: '#6b7280',
+    fontSize: 12,
+    lineHeight: 1.4
+  },
   tableWrap: {
     overflowX: 'auto',
-    marginTop: 12
+    marginTop: 12,
+    border: '1px solid #e5e7eb',
+    borderRadius: 8,
+    background: '#fff'
   },
   table: {
     width: '100%',
-    borderCollapse: 'collapse',
-    minWidth: 920
+    borderCollapse: 'separate',
+    borderSpacing: 0,
+    minWidth: 980
   },
   th: {
     textAlign: 'left',
-    borderBottom: '1px solid #e5e7eb',
-    padding: '10px 8px',
+    borderBottom: '1px solid #d1d5db',
+    padding: '12px 10px',
     fontSize: 12,
-    color: '#4b5563'
+    color: '#111827',
+    background: '#f3f4f6',
+    whiteSpace: 'nowrap'
   },
   td: {
     borderBottom: '1px solid #f3f4f6',
-    padding: '10px 8px',
-    verticalAlign: 'top'
+    padding: '12px 10px',
+    verticalAlign: 'top',
+    color: '#1f2937',
+    lineHeight: 1.35
+  },
+  tdTexto: {
+    maxWidth: 220,
+    whiteSpace: 'normal',
+    overflowWrap: 'anywhere'
+  },
+  acoesTabela: {
+    display: 'flex',
+    gap: 6,
+    flexWrap: 'wrap',
+    alignItems: 'center'
   }
 }
 
@@ -490,7 +544,8 @@ export default function FechamentoFolhaPage({
         <h2 style={styles.subtitulo}>Competências</h2>
         <p style={styles.textoNota}>Crie e selecione uma competência mensal no formato AAAA-MM.</p>
 
-        <form onSubmit={salvarCompetencia} style={estilosLocais.formGrid}>
+        <form onSubmit={salvarCompetencia} style={estilosLocais.formPanel}>
+          <div style={estilosLocais.formGrid}>
           <label style={estilosLocais.formField}>
             <span style={estilosLocais.label}>Competência</span>
             <input
@@ -499,8 +554,17 @@ export default function FechamentoFolhaPage({
               onChange={(event) => setFormCompetencia((atual) => ({ ...atual, competencia: event.target.value }))}
               style={estilosLocais.input}
               disabled={!empresaId || !podeEditar || salvando}
+              placeholder="2026-05"
               required
             />
+            <small style={estilosLocais.helperText}>
+              Escolha o mês de referência. O sistema salva no formato AAAA-MM, por exemplo 2026-05.
+            </small>
+            {formCompetencia.competencia && (
+              <span style={{ ...estilosLocais.badge, justifySelf: 'start' }}>
+                Valor selecionado: {formCompetencia.competencia}
+              </span>
+            )}
           </label>
 
           <label style={estilosLocais.formField}>
@@ -516,6 +580,7 @@ export default function FechamentoFolhaPage({
               ))}
             </select>
           </label>
+          </div>
 
           <label style={{ ...estilosLocais.formField, gridColumn: '1 / -1' }}>
             <span style={estilosLocais.label}>Observação administrativa</span>
@@ -531,7 +596,7 @@ export default function FechamentoFolhaPage({
             />
           </label>
 
-          <div style={{ display: 'flex', alignItems: 'end', gap: 8, flexWrap: 'wrap' }}>
+          <div style={estilosLocais.formActions}>
             <button
               type="submit"
               style={styles.btnPrimario}
@@ -567,13 +632,18 @@ export default function FechamentoFolhaPage({
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-                    <div>
-                      <strong>{competencia.competencia}</strong>
+                    <div style={{ minWidth: 190 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <strong style={{ fontSize: 18 }}>{competencia.competencia}</strong>
+                        <span style={estilosLocais.badge}>
+                          {LABELS_STATUS_COMPETENCIA[competencia.status] || competencia.status}
+                        </span>
+                      </div>
                       <p style={styles.textoNota}>
-                        {LABELS_STATUS_COMPETENCIA[competencia.status] || competencia.status} • Atualizada em {formatarDataHora(competencia.atualizado_em)}
+                        Atualizada em {formatarDataHora(competencia.atualizado_em)}
                       </p>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ ...estilosLocais.formActions, justifyContent: 'flex-end' }}>
                       {competencia.arquivado && <span style={estilosLocais.badge}>Arquivada</span>}
                       {selecionada ? (
                         <span style={estilosLocais.badge}>Selecionada</span>
@@ -643,134 +713,147 @@ export default function FechamentoFolhaPage({
         {!competenciaSelecionada ? (
           <p style={styles.textoNota}>Selecione uma competência antes de criar lançamentos.</p>
         ) : (
-          <form onSubmit={salvarLancamento} style={estilosLocais.formGrid}>
-            <label style={estilosLocais.formField}>
-              <span style={estilosLocais.label}>Funcionário</span>
-              <select
-                value={formLancamento.funcionario_id}
-                onChange={(event) => setFormLancamento((atual) => ({ ...atual, funcionario_id: event.target.value }))}
-                style={estilosLocais.input}
-                disabled={!empresaId || !podeEditar || salvando || Boolean(lancamentoEditandoId)}
-                required={!lancamentoEditandoId}
-              >
-                <option value="">Selecione</option>
-                {funcionariosOrdenados.map((funcionario) => (
-                  <option key={funcionario.id} value={funcionario.id}>
-                    {[funcionario.nome, funcionario.cargo].filter(Boolean).join(' • ')}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label style={estilosLocais.formField}>
-              <span style={estilosLocais.label}>Categoria</span>
-              <select
-                value={formLancamento.categoria}
-                onChange={(event) => definirCategoria(event.target.value)}
-                style={estilosLocais.input}
-                disabled={!empresaId || !podeEditar || salvando}
-              >
-                {CATEGORIAS_OPCOES.map((grupo) => (
-                  <optgroup key={grupo.grupo} label={grupo.grupo}>
-                    {grupo.itens.map((categoria) => (
-                      <option key={categoria} value={categoria}>
-                        {LABELS_CATEGORIA[categoria] || categoria}
+          <form onSubmit={salvarLancamento} style={{ display: 'grid', gap: 12 }}>
+            <div style={estilosLocais.formPanel}>
+              <h3 style={estilosLocais.formSectionTitle}>Dados principais</h3>
+              <div style={estilosLocais.formGrid}>
+                <label style={estilosLocais.formField}>
+                  <span style={estilosLocais.label}>Funcionário</span>
+                  <select
+                    value={formLancamento.funcionario_id}
+                    onChange={(event) => setFormLancamento((atual) => ({ ...atual, funcionario_id: event.target.value }))}
+                    style={estilosLocais.input}
+                    disabled={!empresaId || !podeEditar || salvando || Boolean(lancamentoEditandoId)}
+                    required={!lancamentoEditandoId}
+                  >
+                    <option value="">Selecione</option>
+                    {funcionariosOrdenados.map((funcionario) => (
+                      <option key={funcionario.id} value={funcionario.id}>
+                        {[funcionario.nome, funcionario.cargo].filter(Boolean).join(' • ')}
                       </option>
                     ))}
-                  </optgroup>
-                ))}
-              </select>
-            </label>
+                  </select>
+                </label>
 
-            <label style={estilosLocais.formField}>
-              <span style={estilosLocais.label}>Natureza</span>
-              <input
-                value={LABELS_NATUREZA[formLancamento.natureza] || formLancamento.natureza}
-                style={{ ...estilosLocais.input, background: '#f9fafb' }}
-                disabled
-                readOnly
-              />
-            </label>
+                <label style={estilosLocais.formField}>
+                  <span style={estilosLocais.label}>Categoria</span>
+                  <select
+                    value={formLancamento.categoria}
+                    onChange={(event) => definirCategoria(event.target.value)}
+                    style={estilosLocais.input}
+                    disabled={!empresaId || !podeEditar || salvando}
+                  >
+                    {CATEGORIAS_OPCOES.map((grupo) => (
+                      <optgroup key={grupo.grupo} label={grupo.grupo}>
+                        {grupo.itens.map((categoria) => (
+                          <option key={categoria} value={categoria}>
+                            {LABELS_CATEGORIA[categoria] || categoria}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </label>
 
-            <label style={estilosLocais.formField}>
-              <span style={estilosLocais.label}>Data de referência</span>
-              <input
-                type="date"
-                value={formLancamento.data_referencia}
-                onChange={(event) => setFormLancamento((atual) => ({ ...atual, data_referencia: event.target.value }))}
-                style={estilosLocais.input}
-                disabled={!empresaId || !podeEditar || salvando}
-              />
-            </label>
+                <label style={estilosLocais.formField}>
+                  <span style={estilosLocais.label}>Natureza</span>
+                  <input
+                    value={LABELS_NATUREZA[formLancamento.natureza] || formLancamento.natureza}
+                    style={estilosLocais.inputReadOnly}
+                    disabled
+                    readOnly
+                  />
+                </label>
+              </div>
+            </div>
 
-            <label style={estilosLocais.formField}>
-              <span style={estilosLocais.label}>Quantidade</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={formLancamento.quantidade}
-                onChange={(event) => setFormLancamento((atual) => ({ ...atual, quantidade: event.target.value }))}
-                style={estilosLocais.input}
-                disabled={!empresaId || !podeEditar || salvando}
-              />
-            </label>
+            <div style={estilosLocais.formPanel}>
+              <h3 style={estilosLocais.formSectionTitle}>Valores e referência</h3>
+              <div style={estilosLocais.formGrid}>
+                <label style={estilosLocais.formField}>
+                  <span style={estilosLocais.label}>Data de referência</span>
+                  <input
+                    type="date"
+                    value={formLancamento.data_referencia}
+                    onChange={(event) => setFormLancamento((atual) => ({ ...atual, data_referencia: event.target.value }))}
+                    style={estilosLocais.input}
+                    disabled={!empresaId || !podeEditar || salvando}
+                  />
+                </label>
 
-            <label style={estilosLocais.formField}>
-              <span style={estilosLocais.label}>Percentual</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={formLancamento.percentual}
-                onChange={(event) => setFormLancamento((atual) => ({ ...atual, percentual: event.target.value }))}
-                style={estilosLocais.input}
-                disabled={!empresaId || !podeEditar || salvando}
-              />
-            </label>
+                <label style={estilosLocais.formField}>
+                  <span style={estilosLocais.label}>Quantidade</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formLancamento.quantidade}
+                    onChange={(event) => setFormLancamento((atual) => ({ ...atual, quantidade: event.target.value }))}
+                    style={estilosLocais.input}
+                    disabled={!empresaId || !podeEditar || salvando}
+                  />
+                </label>
 
-            <label style={estilosLocais.formField}>
-              <span style={estilosLocais.label}>Valor</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={formLancamento.valor}
-                onChange={(event) => setFormLancamento((atual) => ({ ...atual, valor: event.target.value }))}
-                style={estilosLocais.input}
-                disabled={!empresaId || !podeEditar || salvando}
-              />
-            </label>
+                <label style={estilosLocais.formField}>
+                  <span style={estilosLocais.label}>Percentual</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formLancamento.percentual}
+                    onChange={(event) => setFormLancamento((atual) => ({ ...atual, percentual: event.target.value }))}
+                    style={estilosLocais.input}
+                    disabled={!empresaId || !podeEditar || salvando}
+                  />
+                </label>
 
-            <label style={{ ...estilosLocais.formField, gridColumn: '1 / -1' }}>
-              <span style={estilosLocais.label}>Descrição</span>
-              <input
-                value={formLancamento.descricao}
-                onChange={(event) => setFormLancamento((atual) => ({ ...atual, descricao: event.target.value }))}
-                style={estilosLocais.input}
-                disabled={!empresaId || !podeEditar || salvando}
-                placeholder="Obrigatória para outro crédito/outro desconto."
-              />
-            </label>
+                <label style={estilosLocais.formField}>
+                  <span style={estilosLocais.label}>Valor</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formLancamento.valor}
+                    onChange={(event) => setFormLancamento((atual) => ({ ...atual, valor: event.target.value }))}
+                    style={estilosLocais.input}
+                    disabled={!empresaId || !podeEditar || salvando}
+                  />
+                </label>
+              </div>
+            </div>
 
-            <label style={{ ...estilosLocais.formField, gridColumn: '1 / -1' }}>
-              <span style={estilosLocais.label}>Observação administrativa</span>
-              <textarea
-                value={formLancamento.observacao_administrativa}
-                onChange={(event) => setFormLancamento((atual) => ({
-                  ...atual,
-                  observacao_administrativa: event.target.value
-                }))}
-                style={estilosLocais.textarea}
-                disabled={!empresaId || !podeEditar || salvando}
-                placeholder="Use apenas observações administrativas."
-              />
-              <small style={styles.textoNota}>
-                Não registre dados médicos, CID, laudos, diagnósticos, documentos ou informações clínicas.
-              </small>
-            </label>
+            <div style={estilosLocais.formPanel}>
+              <h3 style={estilosLocais.formSectionTitle}>Descrição e conferência</h3>
+              <label style={estilosLocais.formField}>
+                <span style={estilosLocais.label}>Descrição</span>
+                <input
+                  value={formLancamento.descricao}
+                  onChange={(event) => setFormLancamento((atual) => ({ ...atual, descricao: event.target.value }))}
+                  style={estilosLocais.input}
+                  disabled={!empresaId || !podeEditar || salvando}
+                  placeholder="Obrigatória para outro crédito/outro desconto."
+                />
+              </label>
 
-            <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
+              <label style={estilosLocais.formField}>
+                <span style={estilosLocais.label}>Observação administrativa</span>
+                <textarea
+                  value={formLancamento.observacao_administrativa}
+                  onChange={(event) => setFormLancamento((atual) => ({
+                    ...atual,
+                    observacao_administrativa: event.target.value
+                  }))}
+                  style={estilosLocais.textarea}
+                  disabled={!empresaId || !podeEditar || salvando}
+                  placeholder="Use apenas observações administrativas."
+                />
+                <small style={estilosLocais.helperText}>
+                  Não registre dados médicos, CID, laudos, diagnósticos, documentos ou informações clínicas.
+                </small>
+              </label>
+            </div>
+
+            <div style={estilosLocais.formActions}>
               <button
                 type="submit"
                 style={styles.btnPrimario}
@@ -832,10 +915,12 @@ export default function FechamentoFolhaPage({
               <tbody>
                 {lancamentos.map((lancamento) => (
                   <tr key={lancamento.id}>
-                    <td style={estilosLocais.td}>{obterNomeFuncionario(funcionariosPorId, lancamento.funcionario_id)}</td>
+                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdTexto }}>
+                      {obterNomeFuncionario(funcionariosPorId, lancamento.funcionario_id)}
+                    </td>
                     <td style={estilosLocais.td}>{LABELS_NATUREZA[lancamento.natureza] || lancamento.natureza}</td>
                     <td style={estilosLocais.td}>{LABELS_CATEGORIA[lancamento.categoria] || lancamento.categoria}</td>
-                    <td style={estilosLocais.td}>{lancamento.descricao || '-'}</td>
+                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdTexto }}>{lancamento.descricao || '-'}</td>
                     <td style={estilosLocais.td}>{formatarData(lancamento.data_referencia)}</td>
                     <td style={estilosLocais.td}>{formatarNumero(lancamento.quantidade)}</td>
                     <td style={estilosLocais.td}>{formatarNumero(lancamento.percentual)}</td>
@@ -843,7 +928,7 @@ export default function FechamentoFolhaPage({
                     <td style={estilosLocais.td}>{lancamento.conferido ? 'Sim' : 'Não'}</td>
                     <td style={estilosLocais.td}>{lancamento.arquivado ? 'Arquivado' : 'Ativo'}</td>
                     <td style={estilosLocais.td}>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <div style={estilosLocais.acoesTabela}>
                         <button
                           type="button"
                           style={styles.btnCinza}

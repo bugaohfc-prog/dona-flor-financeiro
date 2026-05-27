@@ -71,7 +71,7 @@ export default function Login({ onLogin }) {
         </button>
 
         <small style={styles.ajuda}>
-          Acesso seguro ao painel financeiro.
+          Acesso seguro à plataforma de gestão.
         </small>
       </form>
     </div>

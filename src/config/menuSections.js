@@ -24,7 +24,8 @@ const menuSections = [
       { tela: 'funcionarios', icon: '👥', label: 'Funcionários', desc: 'Cadastro de colaboradores', peopleOnly: true },
       { tela: 'relatorios-pessoas', icon: '📋', label: 'Relatórios', desc: 'Indicadores internos de pessoas', peopleOnly: true },
       { tela: 'ferias', icon: '🌴', label: 'Férias', desc: 'Ciclos e parcelas de férias', peopleOnly: true },
-      { tela: 'relatorios-ferias', icon: '📆', label: 'Relatórios de Férias', desc: 'Vencimentos, saldos e retornos', peopleOnly: true }
+      { tela: 'relatorios-ferias', icon: '📆', label: 'Relatórios de Férias', desc: 'Vencimentos, saldos e retornos', peopleOnly: true },
+      { tela: 'fechamento-folha', icon: '🧾', label: 'Fechamento de Folha', desc: 'Competências e lançamentos mensais', peopleOnly: true }
     ]
   },
   {
@@ -70,6 +71,7 @@ const CONTEXTO_MODULO_POR_TELA = {
   funcionarios: MODULOS_TOPBAR.pessoas,
   ferias: MODULOS_TOPBAR.pessoas,
   'fechamento-mensal': MODULOS_TOPBAR.pessoas,
+  'fechamento-folha': MODULOS_TOPBAR.pessoas,
   'relatorios-pessoas': MODULOS_TOPBAR.pessoas,
   'relatorios-ferias': MODULOS_TOPBAR.pessoas
 }

@@ -11,6 +11,7 @@ export const lazyRouteImports = {
   filiais: () => import('../pages/FiliaisPage.jsx'),
   funcionarios: () => import('../pages/FuncionariosPage.jsx'),
   ferias: () => import('../pages/FeriasPage.jsx'),
+  fechamentoFolha: () => import('../pages/FechamentoFolhaPage.jsx'),
   relatoriosPessoas: () => import('../pages/RelatoriosPessoasPage.jsx'),
   relatoriosFerias: () => import('../pages/RelatoriosFeriasPage.jsx'),
   usuarios: () => import('../pages/UsuariosPage.jsx'),
@@ -30,6 +31,7 @@ export const routeImportByScreen = {
   filiais: 'filiais',
   funcionarios: 'funcionarios',
   ferias: 'ferias',
+  'fechamento-folha': 'fechamentoFolha',
   'relatorios-pessoas': 'relatoriosPessoas',
   'relatorios-ferias': 'relatoriosFerias',
   usuarios: 'usuarios'
@@ -49,6 +51,7 @@ export const LazyBillingPage = lazy(lazyRouteImports.billing)
 export const LazyFiliaisPage = lazy(lazyRouteImports.filiais)
 export const LazyFuncionariosPage = lazy(lazyRouteImports.funcionarios)
 export const LazyFeriasPage = lazy(lazyRouteImports.ferias)
+export const LazyFechamentoFolhaPage = lazy(lazyRouteImports.fechamentoFolha)
 export const LazyRelatoriosPessoasPage = lazy(lazyRouteImports.relatoriosPessoas)
 export const LazyRelatoriosFeriasPage = lazy(lazyRouteImports.relatoriosFerias)
 export const LazyUsuariosPage = lazy(lazyRouteImports.usuarios)

@@ -54,6 +54,7 @@ import {
   LazyContasPage,
   LazyCopilotDrawer,
   LazyDashboardRouteComposition,
+  LazyFechamentoFolhaPage,
   LazyFiliaisPage,
   LazyFeriasPage,
   LazyFuncionariosPage,
@@ -3999,6 +4000,31 @@ export default function App() {
         empresaId={empresaId}
         empresaNome={empresaAtiva?.nome || nomeEmpresa}
         mostrarAviso={mostrarAviso}
+        podeEditar={podeAcessarGestaoPessoas()}
+        voltarPainel={() => navegarPara('dashboard')}
+      />
+    )
+  }
+
+  if (telaAtual === 'fechamento-folha') {
+    if (!podeAcessarGestaoPessoas()) {
+      return renderAppFrame(
+        <>
+          <h1 style={styles.titulo}>Fechamento de Folha</h1>
+          <section style={styles.cardConfiguracao}>
+            <h2 style={styles.subtitulo}>Acesso restrito</h2>
+            <p style={styles.textoNota}>Seu perfil atual não permite acessar Gestão de Pessoas.</p>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
+          </section>
+        </>
+      )
+    }
+
+    return renderAppFrame(
+      <LazyFechamentoFolhaPage
+        styles={styles}
+        empresaId={empresaId}
+        empresaNome={empresaAtiva?.nome || nomeEmpresa}
         podeEditar={podeAcessarGestaoPessoas()}
         voltarPainel={() => navegarPara('dashboard')}
       />

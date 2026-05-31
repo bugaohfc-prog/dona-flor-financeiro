@@ -3,9 +3,9 @@ const menuSections = [
     id: 'dashboard',
     titulo: 'Dashboard',
     items: [
-      { tela: 'dashboard', icon: '🏠', label: 'Painel', desc: 'Resumo financeiro' },
-      { tela: 'agenda', icon: '📅', label: 'Agenda', desc: 'Vencimentos e previsões' },
-      { tela: 'notas', icon: '📝', label: 'Notas', desc: 'Pendências e histórico de notas' }
+      { tela: 'dashboard', icon: '🏠', label: 'Painel', desc: 'Área de trabalho da empresa' },
+      { tela: 'agenda', icon: '📅', label: 'Agenda', desc: 'Compromissos e prazos' },
+      { tela: 'notas', icon: '📝', label: 'Notas', desc: 'Pendências e histórico' }
     ]
   },
   {

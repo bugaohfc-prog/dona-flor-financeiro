@@ -1,6 +1,5 @@
-import OpenAccountsList from './OpenAccountsList.jsx'
 import NotesPanel from './NotesPanel.jsx'
-import { SummarySkeleton, AccountListSkeleton, NotesSkeleton } from '../feedback/Skeletons.jsx'
+import { SummarySkeleton, NotesSkeleton } from '../feedback/Skeletons.jsx'
 
 export default function DashboardHome({
   styles,
@@ -12,15 +11,8 @@ export default function DashboardHome({
   contas,
   diferencaDias,
   navegarPara,
-  contasAbertasDashboard,
-  mostrarContasDashboard,
-  setMostrarContasDashboard,
-  busca,
-  setBusca,
-  estaVencida,
   formatarData,
   abrirConfirmacao,
-  marcarComoPago,
   podeEditarFinanceiro = true,
   notasPendentes,
   notasCriticas,
@@ -31,48 +23,12 @@ export default function DashboardHome({
   abrirEdicaoNota,
   excluirNota,
   loading = false,
-  nomeUsuario = 'usuário',
   filiais = [],
   filtroFilial = '',
   setFiltroFilial = () => {},
-  contasOperacionaisFiliais = []
 }) {
   const valorSeguro = (valor) => Number(valor || 0)
   const filialSelecionada = (filiais || []).find((filial) => filial.id === filtroFilial)
-  const contasPagas = contas.filter((conta) => conta.status === 'pago')
-  const contasPendentes = contas.filter((conta) => conta.status !== 'pago')
-  const baseOperacionalFiliais = (contasOperacionaisFiliais && contasOperacionaisFiliais.length > 0)
-    ? contasOperacionaisFiliais
-    : contas
-
-  const resumoFiliais = (filiais || [])
-    .map((filial) => {
-      const contasFilial = baseOperacionalFiliais.filter((conta) => conta.filial_id === filial.id)
-      const totalFilial = contasFilial.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
-      const pagoFilial = contasFilial
-        .filter((conta) => conta.status === 'pago')
-        .reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
-      const vencidoFilial = contasFilial
-        .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
-        .reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
-      const pendenteFilial = totalFilial - pagoFilial
-
-      return {
-        id: filial.id,
-        nome: filial.nome || 'Filial sem nome',
-        total: totalFilial,
-        pago: pagoFilial,
-        pendente: pendenteFilial,
-        vencido: vencidoFilial,
-        contas: contasFilial.length
-      }
-    })
-    .filter((filial) => filial.total > 0 || filial.contas > 0)
-    .sort((a, b) => b.total - a.total)
-
-  const filialMaiorVolume = resumoFiliais[0]
-  const filialMaiorPendente = [...resumoFiliais].sort((a, b) => b.pendente - a.pendente)[0]
-  const filialMaiorRisco = [...resumoFiliais].sort((a, b) => b.vencido - a.vencido)[0]
 
   const contasAgenda = contas
     .filter((conta) => conta.status !== 'pago')
@@ -94,7 +50,7 @@ export default function DashboardHome({
           <div>
             <span className="analytics-kicker">Visão por filial</span>
             <strong>{filialSelecionada ? filialSelecionada.nome : 'Todas as filiais'}</strong>
-            <small>Os indicadores, gráficos e contas em aberto respeitam a filial selecionada.</small>
+            <small>O resumo e os próximos vencimentos respeitam a filial selecionada.</small>
           </div>
 
           <select
@@ -174,63 +130,11 @@ export default function DashboardHome({
       </section>
 
       {!loading && (
-        <section className="dashboard-operational-grid no-print" aria-label="Painel operacional por filial">
-          <article className="dashboard-operational-card highlight">
-            <span className="analytics-kicker">Ranking de unidades</span>
-            <strong>{filialMaiorVolume ? filialMaiorVolume.nome : 'Sem movimento'}</strong>
-            <small>{filialMaiorVolume ? `${formatarValor(filialMaiorVolume.total)} em volume financeiro` : 'Cadastre contas vinculadas às filiais.'}</small>
-          </article>
-
-          <article className="dashboard-operational-card">
-            <span className="analytics-kicker">Maior pendência</span>
-            <strong>{filialMaiorPendente ? filialMaiorPendente.nome : 'Sem pendências'}</strong>
-            <small>{filialMaiorPendente ? formatarValor(filialMaiorPendente.pendente) : 'Nenhuma conta pendente encontrada.'}</small>
-          </article>
-
-          <article className="dashboard-operational-card">
-            <span className="analytics-kicker">Risco vencido</span>
-            <strong>{filialMaiorRisco && filialMaiorRisco.vencido > 0 ? filialMaiorRisco.nome : 'Sem vencidos'}</strong>
-            <small>{filialMaiorRisco && filialMaiorRisco.vencido > 0 ? formatarValor(filialMaiorRisco.vencido) : 'Operação sem vencidos no filtro atual.'}</small>
-          </article>
-
-          <article className="dashboard-operational-card" style={{ padding: 16, gap: 12 }}>
-            <div className="analytics-card-header compact" style={{ alignItems: 'flex-start', gap: 12 }}>
-              <div>
-                <span className="analytics-kicker">Análise Financeira</span>
-                <strong>Indicadores e comparativos</strong>
-                <small style={{ color: '#64748b', display: 'block', lineHeight: 1.45, marginTop: 4 }}>
-                  Gráficos, rankings, centros de custo e leitura gerencial estão disponíveis na área financeira.
-                </small>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => navegarPara('relatorios')}
-              style={{
-                alignSelf: 'flex-start',
-                background: '#ecfdf5',
-                border: '1px solid #bbf7d0',
-                borderRadius: 999,
-                color: '#0f766e',
-                cursor: 'pointer',
-                fontSize: 12,
-                fontWeight: 700,
-                padding: '7px 12px'
-              }}
-            >
-              Ver Análise Financeira
-            </button>
-          </article>
-        </section>
-      )}
-
-      {!loading && (
         <section className="dashboard-analytics-grid no-print">
           <div className="dashboard-analytics-card executive-agenda-widget">
             <div className="analytics-card-header">
               <div>
-          <span className="analytics-kicker">Agenda financeira</span>
+                <span className="analytics-kicker">Agenda</span>
                 <strong>Próximos vencimentos</strong>
               </div>
               <span className="analytics-badge neutral">{contasAgenda.length} abertas</span>
@@ -257,37 +161,9 @@ export default function DashboardHome({
               <div className="analytics-empty executive-agenda-empty">Agenda financeira limpa.</div>
             )}
 
-            <button className="executive-agenda-cta" onClick={() => navegarPara('agenda')}>Abrir agenda completa</button>
+            <button className="executive-agenda-cta" onClick={() => navegarPara('contas')}>Ver contas</button>
           </div>
         </section>
-      )}
-
-      {loading ? (
-        <section className="content-block" style={styles.bloco}>
-          <div className="dashboard-section-header-accounts">
-            <div>
-              <h2 style={styles.subtitulo}>💰 Contas em aberto</h2>
-              <p style={styles.textoNota}>Carregando contas e vencimentos...</p>
-            </div>
-          </div>
-          <AccountListSkeleton items={2} />
-        </section>
-      ) : (
-      <OpenAccountsList
-        styles={styles}
-        formatarValor={formatarValor}
-        navegarPara={navegarPara}
-        contasAbertasDashboard={contasAbertasDashboard}
-        mostrarContasDashboard={mostrarContasDashboard}
-        setMostrarContasDashboard={setMostrarContasDashboard}
-        busca={busca}
-        setBusca={setBusca}
-        estaVencida={estaVencida}
-        formatarData={formatarData}
-        abrirConfirmacao={abrirConfirmacao}
-        marcarComoPago={marcarComoPago}
-        podeEditarFinanceiro={podeEditarFinanceiro}
-      />
       )}
 
       {loading ? (

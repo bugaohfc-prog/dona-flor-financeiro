@@ -2,6 +2,7 @@ import { AccountListSkeleton } from '../components/feedback/Skeletons.jsx'
 
 const CONTAS_EXPANDABLE_HEADER_STYLE = {
   width: '100%',
+  boxSizing: 'border-box',
   background: '#fff',
   border: '1px solid #e5e5e5',
   borderRadius: 14,
@@ -12,8 +13,6 @@ const CONTAS_EXPANDABLE_HEADER_STYLE = {
   alignItems: 'center',
   gap: 16,
   textAlign: 'left',
-  fontSize: 20,
-  fontWeight: 'bold',
   boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
 }
 
@@ -21,17 +20,27 @@ const CONTAS_EXPANDABLE_TITLE_STYLE = {
   display: 'flex',
   alignItems: 'center',
   gap: 10,
+  flex: '1 1 auto',
   minWidth: 0,
   color: '#0f172a',
+  fontSize: 20,
   fontWeight: 900,
   lineHeight: 1.1
 }
 
-const CONTAS_EXPANDABLE_ACTION_STYLE = {
+const CONTAS_EXPANDABLE_BUTTON_STYLE = {
   flex: '0 0 auto',
+  marginLeft: 'auto',
+  border: '1px solid rgba(15, 23, 42, 0.12)',
+  borderRadius: 999,
+  padding: '8px 12px',
+  background: '#f8fafc',
   color: '#0f172a',
   fontSize: 14,
-  fontWeight: 900
+  fontWeight: 900,
+  lineHeight: 1,
+  whiteSpace: 'nowrap',
+  cursor: 'pointer'
 }
 
 function EmptyState({ icon, title, description, actionLabel, onAction }) {
@@ -120,20 +129,20 @@ export default function ContasPage({
       <section className="content-block" style={styles.bloco}>
         {loading && <AccountListSkeleton items={3} />}
 
-        <button
-          type="button"
-          style={CONTAS_EXPANDABLE_HEADER_STYLE}
-          onClick={() => setMostrarContas(!mostrarContas)}
-          aria-expanded={mostrarContas}
-        >
+        <div style={CONTAS_EXPANDABLE_HEADER_STYLE}>
           <span style={CONTAS_EXPANDABLE_TITLE_STYLE}>
             <span style={{ fontSize: 24, lineHeight: 1 }}>💰</span>
             <span>Contas</span>
           </span>
-          <span style={CONTAS_EXPANDABLE_ACTION_STYLE}>
+          <button
+            type="button"
+            style={CONTAS_EXPANDABLE_BUTTON_STYLE}
+            onClick={() => setMostrarContas(!mostrarContas)}
+            aria-expanded={mostrarContas}
+          >
             {mostrarContas ? 'Recolher' : 'Expandir'}
-          </span>
-        </button>
+          </button>
+        </div>
 
         {!loading && mostrarContas && contasFiltradas.length === 0 && (
           <EmptyState

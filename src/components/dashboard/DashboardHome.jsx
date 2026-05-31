@@ -2,6 +2,7 @@ import OpenAccountsList from './OpenAccountsList.jsx'
 import NotesPanel from './NotesPanel.jsx'
 import { SummarySkeleton, AccountListSkeleton, NotesSkeleton } from '../feedback/Skeletons.jsx'
 import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts'
+import { useState } from 'react'
 
 export default function DashboardHome({
   styles,
@@ -38,6 +39,7 @@ export default function DashboardHome({
   setFiltroFilial = () => {},
   contasOperacionaisFiliais = []
 }) {
+  const [mostrarComparativoFilial, setMostrarComparativoFilial] = useState(false)
   const valorSeguro = (valor) => Number(valor || 0)
   const filialSelecionada = (filiais || []).find((filial) => filial.id === filtroFilial)
   const contasPagas = contas.filter((conta) => conta.status === 'pago')
@@ -220,31 +222,51 @@ export default function DashboardHome({
             <small>{filialMaiorRisco && filialMaiorRisco.vencido > 0 ? formatarValor(filialMaiorRisco.vencido) : 'Operação sem vencidos no filtro atual.'}</small>
           </article>
 
-          <article className="dashboard-operational-card ranking" style={{ padding: 14 }}>
-            <div className="analytics-card-header compact">
+          <article className="dashboard-operational-card ranking" style={{ padding: 14, gap: 10 }}>
+            <div className="analytics-card-header compact" style={{ alignItems: 'center', gap: 10 }}>
               <div>
                 <span className="analytics-kicker">Comparativo por filial</span>
                 <strong>Top unidades</strong>
+                <small style={{ color: '#64748b', display: 'block', marginTop: 3 }}>Disponível em detalhes na Análise Financeira</small>
               </div>
-              <button
-                type="button"
-                onClick={() => navegarPara('relatorios')}
-                style={{
-                  background: '#ecfdf5',
-                  border: '1px solid #bbf7d0',
-                  borderRadius: 999,
-                  color: '#0f766e',
-                  cursor: 'pointer',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  padding: '6px 10px'
-                }}
-              >
-                Ver Análise Financeira
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <button
+                  type="button"
+                  aria-expanded={mostrarComparativoFilial}
+                  onClick={() => setMostrarComparativoFilial((atual) => !atual)}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #dbe7e3',
+                    borderRadius: 999,
+                    color: '#334155',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    padding: '6px 10px'
+                  }}
+                >
+                  {mostrarComparativoFilial ? 'Recolher' : 'Expandir resumo'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navegarPara('relatorios')}
+                  style={{
+                    background: '#ecfdf5',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: 999,
+                    color: '#0f766e',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    padding: '6px 10px'
+                  }}
+                >
+                  Ver Análise Financeira
+                </button>
+              </div>
             </div>
 
-            {resumoFiliais.length > 0 ? (
+            {mostrarComparativoFilial && resumoFiliais.length > 0 ? (
               <div className="branch-ranking-list" style={{ gap: 8 }}>
                 {resumoFiliais.slice(0, 3).map((filial, index) => {
                   return (
@@ -267,8 +289,12 @@ export default function DashboardHome({
                   )
                 })}
               </div>
-            ) : (
+            ) : mostrarComparativoFilial ? (
               <div className="analytics-empty">Sem contas com filial no filtro atual.</div>
+            ) : (
+              <div style={{ color: '#64748b', fontSize: 13, lineHeight: 1.4 }}>
+                {resumoFiliais.length > 0 ? `${resumoFiliais.length} unidade(s) com movimento no filtro atual.` : 'Sem contas com filial no filtro atual.'}
+              </div>
             )}
           </article>
         </section>

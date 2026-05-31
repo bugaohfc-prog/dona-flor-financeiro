@@ -143,27 +143,53 @@ export default function DashboardHome({
           <SummarySkeleton items={4} />
         ) : (
           <div
-            className="summary-grid"
-            style={{ ...styles.resumo, gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 6, marginBottom: 8 }}
+            style={{
+              background: '#ffffff',
+              border: '1px solid #e5e7eb',
+              borderRadius: 10,
+              padding: '8px 10px',
+              marginBottom: 8,
+              boxShadow: 'none'
+            }}
           >
-            <div style={{ ...styles.boxTotal, padding: 10, borderRadius: 10, gap: 2 }}>
-              <span style={{ fontSize: 12 }}>Total</span>
-              <strong style={{ fontSize: 18, lineHeight: 1.15 }}>{formatarValor(total)}</strong>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+              <span style={{ color: '#64748b', fontSize: 12, fontWeight: 700 }}>Resumo financeiro rápido</span>
+              <button
+                type="button"
+                onClick={() => navegarPara('relatorios')}
+                style={{ background: 'transparent', border: 0, color: '#0f766e', cursor: 'pointer', fontSize: 12, fontWeight: 700, padding: 0 }}
+              >
+                Ver Análise Financeira
+              </button>
             </div>
 
-            <div style={{ ...styles.boxPago, padding: 10, borderRadius: 10, gap: 2 }}>
-              <span style={{ fontSize: 12 }}>Pago</span>
-              <strong style={{ fontSize: 18, lineHeight: 1.15 }}>{formatarValor(pago)}</strong>
-            </div>
-
-            <div style={{ ...styles.boxPendente, padding: 10, borderRadius: 10, gap: 2 }}>
-              <span style={{ fontSize: 12 }}>Pendente</span>
-              <strong style={{ fontSize: 18, lineHeight: 1.15 }}>{formatarValor(pendente)}</strong>
-            </div>
-
-            <div style={{ ...styles.boxVencido, padding: 10, borderRadius: 10, gap: 2 }}>
-              <span style={{ fontSize: 12 }}>Vencido</span>
-              <strong style={{ fontSize: 18, lineHeight: 1.15 }}>{formatarValor(vencido)}</strong>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                gap: 1,
+                background: '#e5e7eb',
+                border: '1px solid #e5e7eb',
+                borderRadius: 8,
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{ background: '#f8fafc', padding: '7px 9px', minWidth: 0 }}>
+                <span style={{ color: '#64748b', display: 'block', fontSize: 11, lineHeight: 1.2 }}>Total</span>
+                <strong style={{ color: '#111827', display: 'block', fontSize: 14, lineHeight: 1.25, marginTop: 2 }}>{formatarValor(total)}</strong>
+              </div>
+              <div style={{ background: '#f8fafc', padding: '7px 9px', minWidth: 0 }}>
+                <span style={{ color: '#64748b', display: 'block', fontSize: 11, lineHeight: 1.2 }}>Pago</span>
+                <strong style={{ color: '#166534', display: 'block', fontSize: 14, lineHeight: 1.25, marginTop: 2 }}>{formatarValor(pago)}</strong>
+              </div>
+              <div style={{ background: '#f8fafc', padding: '7px 9px', minWidth: 0 }}>
+                <span style={{ color: '#64748b', display: 'block', fontSize: 11, lineHeight: 1.2 }}>Pendente</span>
+                <strong style={{ color: '#92400e', display: 'block', fontSize: 14, lineHeight: 1.25, marginTop: 2 }}>{formatarValor(pendente)}</strong>
+              </div>
+              <div style={{ background: '#f8fafc', padding: '7px 9px', minWidth: 0 }}>
+                <span style={{ color: '#64748b', display: 'block', fontSize: 11, lineHeight: 1.2 }}>Vencido</span>
+                <strong style={{ color: '#991b1b', display: 'block', fontSize: 14, lineHeight: 1.25, marginTop: 2 }}>{formatarValor(vencido)}</strong>
+              </div>
             </div>
           </div>
         )}

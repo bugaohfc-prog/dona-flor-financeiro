@@ -1,5 +1,39 @@
 import { AccountListSkeleton } from '../components/feedback/Skeletons.jsx'
 
+const CONTAS_EXPANDABLE_HEADER_STYLE = {
+  width: '100%',
+  background: '#fff',
+  border: '1px solid #e5e5e5',
+  borderRadius: 14,
+  padding: '12px 14px',
+  margin: '12px 0',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 16,
+  textAlign: 'left',
+  fontSize: 20,
+  fontWeight: 'bold',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+}
+
+const CONTAS_EXPANDABLE_TITLE_STYLE = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  minWidth: 0,
+  color: '#0f172a',
+  fontWeight: 900,
+  lineHeight: 1.1
+}
+
+const CONTAS_EXPANDABLE_ACTION_STYLE = {
+  flex: '0 0 auto',
+  color: '#0f172a',
+  fontSize: 14,
+  fontWeight: 900
+}
+
 function EmptyState({ icon, title, description, actionLabel, onAction }) {
   return (
     <div className="empty-state-card">
@@ -16,7 +50,7 @@ export default function ContasPage({
   styles, busca, setBusca, mostrarFiltros, setMostrarFiltros, limparFiltros, imprimirPDF, exportarCSV,
   filtroStatus, setFiltroStatus, centros, filtroCentro, setFiltroCentro, filiais, filtroFilial, setFiltroFilial, filtroMes, setFiltroMes,
   dataInicial, setDataInicial, dataFinal, setDataFinal, limitarDataInput, contasFiltradas, total, formatarValor,
-  loading, HeaderExpansivel, mostrarContas, setMostrarContas, estaVencida, formatarData, formatarTipoRecorrencia,
+  loading, mostrarContas, setMostrarContas, estaVencida, formatarData, formatarTipoRecorrencia,
   obterTipoRecorrenciaConta, abrirConfirmacao, marcarComoPago, voltarParaPendente, abrirEdicaoConta, excluirConta,
   navegarPara, podeEditarFinanceiro = true, podeExportarDados = true
 }) {
@@ -86,11 +120,20 @@ export default function ContasPage({
       <section className="content-block" style={styles.bloco}>
         {loading && <AccountListSkeleton items={3} />}
 
-        <HeaderExpansivel
-          titulo="💰 Contas"
-          aberto={mostrarContas}
+        <button
+          type="button"
+          style={CONTAS_EXPANDABLE_HEADER_STYLE}
           onClick={() => setMostrarContas(!mostrarContas)}
-        />
+          aria-expanded={mostrarContas}
+        >
+          <span style={CONTAS_EXPANDABLE_TITLE_STYLE}>
+            <span style={{ fontSize: 24, lineHeight: 1 }}>💰</span>
+            <span>Contas</span>
+          </span>
+          <span style={CONTAS_EXPANDABLE_ACTION_STYLE}>
+            {mostrarContas ? 'Recolher' : 'Expandir'}
+          </span>
+        </button>
 
         {!loading && mostrarContas && contasFiltradas.length === 0 && (
           <EmptyState

@@ -220,34 +220,48 @@ export default function DashboardHome({
             <small>{filialMaiorRisco && filialMaiorRisco.vencido > 0 ? formatarValor(filialMaiorRisco.vencido) : 'Operação sem vencidos no filtro atual.'}</small>
           </article>
 
-          <article className="dashboard-operational-card ranking">
+          <article className="dashboard-operational-card ranking" style={{ padding: 14 }}>
             <div className="analytics-card-header compact">
               <div>
                 <span className="analytics-kicker">Comparativo por filial</span>
                 <strong>Top unidades</strong>
               </div>
-              <span className="analytics-badge neutral">{resumoFiliais.length}</span>
+              <button
+                type="button"
+                onClick={() => navegarPara('relatorios')}
+                style={{
+                  background: '#ecfdf5',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: 999,
+                  color: '#0f766e',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  padding: '6px 10px'
+                }}
+              >
+                Ver Análise Financeira
+              </button>
             </div>
 
             {resumoFiliais.length > 0 ? (
-              <div className="branch-ranking-list">
-                {resumoFiliais.slice(0, 5).map((filial, index) => {
-                  const percentual = filialMaiorVolume?.total > 0
-                    ? Math.max(5, Math.round((filial.total / filialMaiorVolume.total) * 100))
-                    : 0
-
+              <div className="branch-ranking-list" style={{ gap: 8 }}>
+                {resumoFiliais.slice(0, 3).map((filial, index) => {
                   return (
-                    <div key={filial.id} className="branch-ranking-row">
+                    <div
+                      key={filial.id}
+                      className="branch-ranking-row"
+                      style={{ border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px' }}
+                    >
                       <div className="branch-ranking-info">
-                        <span>{index + 1}</span>
+                        <span style={{ width: 24, height: 24, fontSize: 12 }}>{index + 1}</span>
                         <div>
-                          <strong>{filial.nome}</strong>
+                          <strong style={{ fontSize: 14 }}>{filial.nome}</strong>
                           <small>{filial.contas} conta(s) • pendente {formatarValor(filial.pendente)}</small>
                         </div>
                       </div>
-                      <div className="branch-ranking-value">
-                        <strong>{formatarValor(filial.total)}</strong>
-                        <div className="cost-center-track"><span style={{ width: `${percentual}%` }} /></div>
+                      <div className="branch-ranking-value" style={{ alignItems: 'flex-end' }}>
+                        <strong style={{ fontSize: 14 }}>{formatarValor(filial.total)}</strong>
                       </div>
                     </div>
                   )

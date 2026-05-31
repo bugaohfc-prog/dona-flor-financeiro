@@ -40,6 +40,9 @@ export default function DashboardHome({
   contasOperacionaisFiliais = []
 }) {
   const [mostrarComparativoFilial, setMostrarComparativoFilial] = useState(false)
+  const [mostrarSaudeFinanceira, setMostrarSaudeFinanceira] = useState(false)
+  const [mostrarFluxoAtual, setMostrarFluxoAtual] = useState(false)
+  const [mostrarCentrosCusto, setMostrarCentrosCusto] = useState(false)
   const valorSeguro = (valor) => Number(valor || 0)
   const filialSelecionada = (filiais || []).find((filial) => filial.id === filtroFilial)
   const contasPagas = contas.filter((conta) => conta.status === 'pago')
@@ -302,16 +305,60 @@ export default function DashboardHome({
 
       {!loading && (
         <section className="dashboard-analytics-grid no-print">
-          <div className="dashboard-analytics-card dashboard-analytics-card-primary">
-            <div className="analytics-card-header">
+          <div className="dashboard-analytics-card dashboard-analytics-card-primary" style={{ padding: 16 }}>
+            <div className="analytics-card-header" style={{ alignItems: 'center', gap: 10 }}>
               <div>
                 <span className="analytics-kicker">Saúde financeira</span>
                 <strong>Distribuição das contas</strong>
+                <small style={{ color: '#64748b', display: 'block', marginTop: 3 }}>{percentualPago}% pago no filtro atual</small>
               </div>
-              <span className="analytics-badge">{percentualPago}% pago</span>
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <button
+                  type="button"
+                  aria-expanded={mostrarSaudeFinanceira}
+                  onClick={() => setMostrarSaudeFinanceira((atual) => !atual)}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #dbe7e3',
+                    borderRadius: 999,
+                    color: '#334155',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    padding: '6px 10px'
+                  }}
+                >
+                  {mostrarSaudeFinanceira ? 'Recolher' : 'Expandir'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navegarPara('relatorios')}
+                  style={{
+                    background: '#ecfdf5',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: 999,
+                    color: '#0f766e',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    padding: '6px 10px'
+                  }}
+                >
+                  Ver Análise Financeira
+                </button>
+              </div>
             </div>
 
-            {statusChartData.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, marginTop: 10 }}>
+              {statusChartData.map((item) => (
+                <div key={item.name} style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px' }}>
+                  <small style={{ color: '#64748b', display: 'block', fontSize: 11 }}>{item.name}</small>
+                  <strong style={{ color: '#111827', display: 'block', fontSize: 14, marginTop: 3 }}>{formatarValor(item.value)}</strong>
+                </div>
+              ))}
+            </div>
+
+            {mostrarSaudeFinanceira && statusChartData.length > 0 ? (
               <div className="analytics-chart-row">
                 <div className="donut-chart-wrap">
                   <ResponsiveContainer width="100%" height={190}>
@@ -340,43 +387,109 @@ export default function DashboardHome({
                   ))}
                 </div>
               </div>
-            ) : (
+            ) : mostrarSaudeFinanceira ? (
               <div className="analytics-empty">Sem dados financeiros para montar o gráfico.</div>
-            )}
+            ) : null}
           </div>
 
-          <div className="dashboard-analytics-card">
-            <div className="analytics-card-header">
+          <div className="dashboard-analytics-card" style={{ padding: 16 }}>
+            <div className="analytics-card-header" style={{ alignItems: 'center', gap: 10 }}>
               <div>
                 <span className="analytics-kicker">Fluxo atual</span>
                 <strong>Pago x Aberto x Vencido</strong>
+                <small style={{ color: '#64748b', display: 'block', marginTop: 3 }}>Resumo dos valores por status</small>
               </div>
-              <span className={percentualRisco > 0 ? 'analytics-badge danger' : 'analytics-badge success'}>
-                {percentualRisco}% risco
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <span className={percentualRisco > 0 ? 'analytics-badge danger' : 'analytics-badge success'}>
+                  {percentualRisco}% risco
+                </span>
+                <button
+                  type="button"
+                  aria-expanded={mostrarFluxoAtual}
+                  onClick={() => setMostrarFluxoAtual((atual) => !atual)}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #dbe7e3',
+                    borderRadius: 999,
+                    color: '#334155',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    padding: '6px 10px'
+                  }}
+                >
+                  {mostrarFluxoAtual ? 'Recolher' : 'Expandir'}
+                </button>
+              </div>
             </div>
 
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={fluxoChartData} margin={{ top: 14, right: 18, left: 24, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                <YAxis width={82} tickLine={false} axisLine={false} tickMargin={10} tickFormatter={(value) => `R$ ${Math.round(value / 1000)}k`} />
-                <Tooltip formatter={(value) => formatarValor(value)} />
-                <Bar dataKey="valor" radius={[10, 10, 4, 4]} fill="#0f766e" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 8, marginTop: 10 }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px' }}>
+                <small style={{ color: '#64748b', display: 'block', fontSize: 11 }}>Pago</small>
+                <strong style={{ color: '#166534', display: 'block', fontSize: 14, marginTop: 3 }}>{formatarValor(pago)}</strong>
+              </div>
+              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px' }}>
+                <small style={{ color: '#64748b', display: 'block', fontSize: 11 }}>Aberto</small>
+                <strong style={{ color: '#92400e', display: 'block', fontSize: 14, marginTop: 3 }}>{formatarValor(pendente)}</strong>
+              </div>
+              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px' }}>
+                <small style={{ color: '#64748b', display: 'block', fontSize: 11 }}>Vencido</small>
+                <strong style={{ color: '#991b1b', display: 'block', fontSize: 14, marginTop: 3 }}>{formatarValor(vencido)}</strong>
+              </div>
+            </div>
+
+            {mostrarFluxoAtual && (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={fluxoChartData} margin={{ top: 14, right: 18, left: 24, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                  <YAxis width={82} tickLine={false} axisLine={false} tickMargin={10} tickFormatter={(value) => `R$ ${Math.round(value / 1000)}k`} />
+                  <Tooltip formatter={(value) => formatarValor(value)} />
+                  <Bar dataKey="valor" radius={[10, 10, 4, 4]} fill="#0f766e" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
-          <div className="dashboard-analytics-card dashboard-cost-center-card">
-            <div className="analytics-card-header">
+          <div className="dashboard-analytics-card dashboard-cost-center-card" style={{ padding: 16 }}>
+            <div className="analytics-card-header" style={{ alignItems: 'center', gap: 10 }}>
               <div>
                 <span className="analytics-kicker">Centros de custo</span>
                 <strong>Top 5 por volume financeiro</strong>
+                <small style={{ color: '#64748b', display: 'block', marginTop: 3 }}>
+                  {centroChartData[0] ? `Principal: ${centroChartData[0].name}` : 'Sem centros no filtro atual'}
+                </small>
               </div>
-              <span className="analytics-badge neutral">{centroChartData.length} centros</span>
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <span className="analytics-badge neutral">{centroChartData.length} centros</span>
+                <button
+                  type="button"
+                  aria-expanded={mostrarCentrosCusto}
+                  onClick={() => setMostrarCentrosCusto((atual) => !atual)}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #dbe7e3',
+                    borderRadius: 999,
+                    color: '#334155',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    padding: '6px 10px'
+                  }}
+                >
+                  {mostrarCentrosCusto ? 'Recolher' : 'Expandir'}
+                </button>
+              </div>
             </div>
 
-            {centroChartData.length > 0 ? (
+            {centroChartData[0] && (
+              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, marginTop: 10, padding: '9px 10px' }}>
+                <small style={{ color: '#64748b', display: 'block', fontSize: 11 }}>Maior volume</small>
+                <strong style={{ color: '#111827', display: 'block', fontSize: 14, marginTop: 3 }}>{formatarValor(centroChartData[0].valor)}</strong>
+              </div>
+            )}
+
+            {mostrarCentrosCusto && centroChartData.length > 0 ? (
               <div className="cost-center-bars">
                 {centroChartData.map((centro) => {
                   const percentual = total > 0 ? Math.max(4, Math.round((centro.valor / total) * 100)) : 0
@@ -393,9 +506,9 @@ export default function DashboardHome({
                   )
                 })}
               </div>
-            ) : (
+            ) : mostrarCentrosCusto ? (
               <div className="analytics-empty">Cadastre centros de custo para visualizar o ranking.</div>
-            )}
+            ) : null}
           </div>
 
           <div className="dashboard-analytics-card executive-agenda-widget">

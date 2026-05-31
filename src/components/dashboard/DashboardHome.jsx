@@ -1,5 +1,5 @@
-import NotesPanel from './NotesPanel.jsx'
 import { SummarySkeleton, NotesSkeleton } from '../feedback/Skeletons.jsx'
+import { useEffect } from 'react'
 
 export default function DashboardHome({
   styles,
@@ -29,6 +29,52 @@ export default function DashboardHome({
 }) {
   const valorSeguro = (valor) => Number(valor || 0)
   const filialSelecionada = (filiais || []).find((filial) => filial.id === filtroFilial)
+  const LIMITE_NOTAS_PAINEL = 5
+
+  useEffect(() => {
+    setMostrarNotas(true)
+  }, [setMostrarNotas])
+
+  function criarDataLocal(data) {
+    const texto = String(data || '').slice(0, 10)
+    if (!texto) return null
+    const dataLocal = new Date(`${texto}T00:00:00`)
+    return Number.isNaN(dataLocal.getTime()) ? null : dataLocal
+  }
+
+  function diferencaDiasNota(data) {
+    const dataLocal = criarDataLocal(data)
+    if (!dataLocal) return null
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+    dataLocal.setHours(0, 0, 0, 0)
+    return Math.round((dataLocal.getTime() - hoje.getTime()) / 86400000)
+  }
+
+  function dataRecenteNota(nota) {
+    return criarDataLocal(nota.atualizado_em || nota.updated_at || nota.criado_em || nota.created_at)
+  }
+
+  function prioridadeNotaPainel(nota, indice) {
+    const prioridade = nota.prioridade || 'normal'
+    const dias = diferencaDiasNota(nota.data_evento)
+    const recente = dataRecenteNota(nota)?.getTime() || 0
+
+    let grupo = 6
+    if (prioridade === 'critico') grupo = 1
+    else if (prioridade === 'urgente') grupo = 2
+    else if (dias !== null && dias < 0) grupo = 3
+    else if (dias === 0) grupo = 4
+    else if (dias !== null && dias > 0 && dias <= 7) grupo = 5
+
+    return {
+      nota,
+      grupo,
+      dias: dias ?? 9999,
+      recente,
+      indice
+    }
+  }
 
   const contasAgenda = contas
     .filter((conta) => conta.status !== 'pago')
@@ -42,6 +88,16 @@ export default function DashboardHome({
   const proximaConta = contasAgenda.find((conta) => diferencaDias(conta.data_vencimento) >= 0) || contasAgenda[0]
   const totalHoje = contasHoje.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
   const totalSemana = contasSemana.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
+  const notasPainel = notasPendentes
+    .map(prioridadeNotaPainel)
+    .sort((a, b) => {
+      if (a.grupo !== b.grupo) return a.grupo - b.grupo
+      if (a.grupo <= 5 && a.dias !== b.dias) return a.dias - b.dias
+      if (a.recente !== b.recente) return b.recente - a.recente
+      return a.indice - b.indice
+    })
+    .slice(0, LIMITE_NOTAS_PAINEL)
+    .map((item) => item.nota)
 
   return (
     <>
@@ -177,21 +233,64 @@ export default function DashboardHome({
           <NotesSkeleton items={2} />
         </section>
       ) : (
-      <NotesPanel
-        styles={styles}
-        navegarPara={navegarPara}
-        notasPendentes={notasPendentes}
-        notasCriticas={notasCriticas}
-        notasUrgentes={notasUrgentes}
-        mostrarNotas={mostrarNotas}
-        setMostrarNotas={setMostrarNotas}
-        formatarData={formatarData}
-        alternarNotaConcluida={alternarNotaConcluida}
-        abrirEdicaoNota={abrirEdicaoNota}
-        abrirConfirmacao={abrirConfirmacao}
-        excluirNota={excluirNota}
-        podeEditarFinanceiro={podeEditarFinanceiro}
-      />
+        <section className={`no-print dashboard-notes-card ${mostrarNotas ? 'notes-expanded' : 'notes-collapsed'}`}>
+          <div style={styles.notasHeaderNovo} className="notes-header-clean dashboard-notes-content">
+            <div className="notes-title-wrap">
+              <strong className="notes-title">{'Notas e pend\u00eancias'}</strong>
+              <div className="notes-stats-row">
+                <span className="note-stat note-stat-pendente">{notasPendentes.length} pendente(s)</span>
+                <span className="note-stat note-stat-critico">{notasCriticas} {'cr\u00edtica(s)'}</span>
+                <span className="note-stat note-stat-urgente">{notasUrgentes} urgente(s)</span>
+              </div>
+            </div>
+            <div className="notes-header-actions">
+              <button className="dashboard-see-all-link" type="button" onClick={() => navegarPara('notas')}>Ver notas</button>
+              <button
+                className="note-toggle-small"
+                type="button"
+                onClick={() => setMostrarNotas(!mostrarNotas)}
+                title={mostrarNotas ? 'Recolher bloco de notas' : 'Expandir bloco de notas'}
+                aria-label={mostrarNotas ? 'Recolher bloco de notas' : 'Expandir bloco de notas'}
+              >
+                {mostrarNotas ? '-' : '+'}
+              </button>
+            </div>
+          </div>
+
+          {mostrarNotas && notasPainel.length === 0 && (
+            <p style={styles.mensagemVazia}>{'Nenhuma nota cr\u00edtica ou urgente nos pr\u00f3ximos dias.'}</p>
+          )}
+
+          {mostrarNotas && notasPainel.length > 0 && (
+            <div style={styles.notasListaNova} className="notes-list-dashboard">
+              {notasPainel.map((nota) => {
+                const prioridade = nota.prioridade || 'normal'
+                return (
+                  <div key={nota.id} className={`note-card-action note-card-${prioridade}`} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
+                    <div style={styles.cardTopo}>
+                      <strong style={{ textDecoration: nota.concluida ? 'line-through' : 'none' }}>{nota.titulo}</strong>
+                      <span className={`note-priority-badge note-priority-${prioridade}`} style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
+                        {prioridade === 'critico' ? 'Cr\u00edtico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
+                      </span>
+                    </div>
+
+                    {nota.data_evento && <small className="note-event-date">Data: {formatarData(nota.data_evento)}</small>}
+
+                    {nota.conteudo && <p style={styles.textoNota}>{nota.conteudo}</p>}
+
+                    {podeEditarFinanceiro && (
+                      <div style={styles.acoes}>
+                        <button style={styles.btnPago} onClick={() => alternarNotaConcluida(nota)}>{nota.concluida ? 'Reabrir' : 'Concluir'}</button>
+                        <button style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
+                        <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficar\u00e1 em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>Excluir</button>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </section>
       )}
     </>
   )

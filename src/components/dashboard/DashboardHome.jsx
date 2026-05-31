@@ -138,29 +138,32 @@ export default function DashboardHome({
         </div>
       </section>
 
-      <section className="dashboard-kpi-row" aria-label="Resumo financeiro">
+      <section className="dashboard-kpi-row" aria-label="Resumo financeiro rápido">
         {loading ? (
           <SummarySkeleton items={4} />
         ) : (
-          <div className="summary-grid" style={styles.resumo}>
-            <div style={styles.boxTotal}>
-              <span>Total</span>
-              <strong>{formatarValor(total)}</strong>
+          <div
+            className="summary-grid"
+            style={{ ...styles.resumo, gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 6, marginBottom: 8 }}
+          >
+            <div style={{ ...styles.boxTotal, padding: 10, borderRadius: 10, gap: 2 }}>
+              <span style={{ fontSize: 12 }}>Total</span>
+              <strong style={{ fontSize: 18, lineHeight: 1.15 }}>{formatarValor(total)}</strong>
             </div>
 
-            <div style={styles.boxPago}>
-              <span>Pago</span>
-              <strong>{formatarValor(pago)}</strong>
+            <div style={{ ...styles.boxPago, padding: 10, borderRadius: 10, gap: 2 }}>
+              <span style={{ fontSize: 12 }}>Pago</span>
+              <strong style={{ fontSize: 18, lineHeight: 1.15 }}>{formatarValor(pago)}</strong>
             </div>
 
-            <div style={styles.boxPendente}>
-              <span>Pendente</span>
-              <strong>{formatarValor(pendente)}</strong>
+            <div style={{ ...styles.boxPendente, padding: 10, borderRadius: 10, gap: 2 }}>
+              <span style={{ fontSize: 12 }}>Pendente</span>
+              <strong style={{ fontSize: 18, lineHeight: 1.15 }}>{formatarValor(pendente)}</strong>
             </div>
 
-            <div style={styles.boxVencido}>
-              <span>Vencido</span>
-              <strong>{formatarValor(vencido)}</strong>
+            <div style={{ ...styles.boxVencido, padding: 10, borderRadius: 10, gap: 2 }}>
+              <span style={{ fontSize: 12 }}>Vencido</span>
+              <strong style={{ fontSize: 18, lineHeight: 1.15 }}>{formatarValor(vencido)}</strong>
             </div>
           </div>
         )}

@@ -43,6 +43,7 @@ const menuSections = [
 ]
 
 export const MODULOS_TOPBAR = {
+  geral: 'Geral',
   financeiro: 'Gestão Financeira',
   administracao: 'Administração',
   conta: 'Conta',
@@ -50,10 +51,11 @@ export const MODULOS_TOPBAR = {
 }
 
 const CONTEXTO_MODULO_POR_TELA = {
-  dashboard: MODULOS_TOPBAR.financeiro,
-  agenda: MODULOS_TOPBAR.financeiro,
+  dashboard: MODULOS_TOPBAR.geral,
+  agenda: MODULOS_TOPBAR.geral,
+  notas: MODULOS_TOPBAR.geral,
+
   contas: MODULOS_TOPBAR.financeiro,
-  notas: MODULOS_TOPBAR.financeiro,
   relatorios: MODULOS_TOPBAR.financeiro,
   importar: MODULOS_TOPBAR.financeiro,
 

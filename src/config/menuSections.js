@@ -43,7 +43,7 @@ const menuSections = [
 ]
 
 export const MODULOS_TOPBAR = {
-  geral: 'Geral',
+  geral: 'Área de trabalho',
   financeiro: 'Gestão Financeira',
   administracao: 'Administração',
   conta: 'Conta',

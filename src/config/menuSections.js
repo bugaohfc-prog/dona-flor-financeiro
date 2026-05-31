@@ -13,7 +13,7 @@ const menuSections = [
     titulo: 'Financeiro',
     items: [
       { tela: 'contas', icon: '💳', label: 'Contas', desc: 'Contas a pagar e filtros' },
-      { tela: 'relatorios', icon: '📊', label: 'Relatórios', desc: 'Análises e indicadores' },
+      { tela: 'relatorios', icon: '📊', label: 'Análise Financeira', desc: 'Indicadores e comparativos' },
       { tela: 'importar', icon: '📥', label: 'Importar contas', desc: 'Trazer contas por planilha' }
     ]
   },

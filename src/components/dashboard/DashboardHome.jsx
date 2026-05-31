@@ -1,8 +1,6 @@
 import OpenAccountsList from './OpenAccountsList.jsx'
 import NotesPanel from './NotesPanel.jsx'
 import { SummarySkeleton, AccountListSkeleton, NotesSkeleton } from '../feedback/Skeletons.jsx'
-import { BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts'
-import { useState } from 'react'
 
 export default function DashboardHome({
   styles,
@@ -39,10 +37,6 @@ export default function DashboardHome({
   setFiltroFilial = () => {},
   contasOperacionaisFiliais = []
 }) {
-  const [mostrarComparativoFilial, setMostrarComparativoFilial] = useState(false)
-  const [mostrarSaudeFinanceira, setMostrarSaudeFinanceira] = useState(false)
-  const [mostrarFluxoAtual, setMostrarFluxoAtual] = useState(false)
-  const [mostrarCentrosCusto, setMostrarCentrosCusto] = useState(false)
   const valorSeguro = (valor) => Number(valor || 0)
   const filialSelecionada = (filiais || []).find((filial) => filial.id === filtroFilial)
   const contasPagas = contas.filter((conta) => conta.status === 'pago')
@@ -79,32 +73,6 @@ export default function DashboardHome({
   const filialMaiorVolume = resumoFiliais[0]
   const filialMaiorPendente = [...resumoFiliais].sort((a, b) => b.pendente - a.pendente)[0]
   const filialMaiorRisco = [...resumoFiliais].sort((a, b) => b.vencido - a.vencido)[0]
-
-  const statusChartData = [
-    { name: 'Pago', value: valorSeguro(pago), color: '#22c55e' },
-    { name: 'Pendente', value: Math.max(valorSeguro(pendente) - valorSeguro(vencido), 0), color: '#f59e0b' },
-    { name: 'Vencido', value: valorSeguro(vencido), color: '#ef4444' }
-  ].filter((item) => item.value > 0)
-
-  const fluxoChartData = [
-    { name: 'Pago', valor: valorSeguro(pago) },
-    { name: 'Aberto', valor: valorSeguro(pendente) },
-    { name: 'Vencido', valor: valorSeguro(vencido) }
-  ]
-
-  const centroChartData = Object.values(
-    contas.reduce((acc, conta) => {
-      const centro = conta.df_centros_custo?.nome || 'Sem centro'
-      if (!acc[centro]) acc[centro] = { name: centro, valor: 0 }
-      acc[centro].valor += valorSeguro(conta.valor)
-      return acc
-    }, {})
-  )
-    .sort((a, b) => b.valor - a.valor)
-    .slice(0, 5)
-
-  const percentualPago = total > 0 ? Math.round((pago / total) * 100) : 0
-  const percentualRisco = total > 0 ? Math.round((vencido / total) * 100) : 0
 
   const contasAgenda = contas
     .filter((conta) => conta.status !== 'pago')
@@ -225,292 +193,40 @@ export default function DashboardHome({
             <small>{filialMaiorRisco && filialMaiorRisco.vencido > 0 ? formatarValor(filialMaiorRisco.vencido) : 'Operação sem vencidos no filtro atual.'}</small>
           </article>
 
-          <article className="dashboard-operational-card ranking" style={{ padding: 14, gap: 10 }}>
-            <div className="analytics-card-header compact" style={{ alignItems: 'center', gap: 10 }}>
+          <article className="dashboard-operational-card" style={{ padding: 16, gap: 12 }}>
+            <div className="analytics-card-header compact" style={{ alignItems: 'flex-start', gap: 12 }}>
               <div>
-                <span className="analytics-kicker">Comparativo por filial</span>
-                <strong>Top unidades</strong>
-                <small style={{ color: '#64748b', display: 'block', marginTop: 3 }}>Disponível em detalhes na Análise Financeira</small>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                <button
-                  type="button"
-                  aria-expanded={mostrarComparativoFilial}
-                  onClick={() => setMostrarComparativoFilial((atual) => !atual)}
-                  style={{
-                    background: '#ffffff',
-                    border: '1px solid #dbe7e3',
-                    borderRadius: 999,
-                    color: '#334155',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    padding: '6px 10px'
-                  }}
-                >
-                  {mostrarComparativoFilial ? 'Recolher' : 'Expandir resumo'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navegarPara('relatorios')}
-                  style={{
-                    background: '#ecfdf5',
-                    border: '1px solid #bbf7d0',
-                    borderRadius: 999,
-                    color: '#0f766e',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    padding: '6px 10px'
-                  }}
-                >
-                  Ver Análise Financeira
-                </button>
+                <span className="analytics-kicker">Análise Financeira</span>
+                <strong>Indicadores e comparativos</strong>
+                <small style={{ color: '#64748b', display: 'block', lineHeight: 1.45, marginTop: 4 }}>
+                  Gráficos, rankings, centros de custo e leitura gerencial estão disponíveis na área financeira.
+                </small>
               </div>
             </div>
 
-            {mostrarComparativoFilial && resumoFiliais.length > 0 ? (
-              <div className="branch-ranking-list" style={{ gap: 8 }}>
-                {resumoFiliais.slice(0, 3).map((filial, index) => {
-                  return (
-                    <div
-                      key={filial.id}
-                      className="branch-ranking-row"
-                      style={{ border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px' }}
-                    >
-                      <div className="branch-ranking-info">
-                        <span style={{ width: 24, height: 24, fontSize: 12 }}>{index + 1}</span>
-                        <div>
-                          <strong style={{ fontSize: 14 }}>{filial.nome}</strong>
-                          <small>{filial.contas} conta(s) • pendente {formatarValor(filial.pendente)}</small>
-                        </div>
-                      </div>
-                      <div className="branch-ranking-value" style={{ alignItems: 'flex-end' }}>
-                        <strong style={{ fontSize: 14 }}>{formatarValor(filial.total)}</strong>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : mostrarComparativoFilial ? (
-              <div className="analytics-empty">Sem contas com filial no filtro atual.</div>
-            ) : (
-              <div style={{ color: '#64748b', fontSize: 13, lineHeight: 1.4 }}>
-                {resumoFiliais.length > 0 ? `${resumoFiliais.length} unidade(s) com movimento no filtro atual.` : 'Sem contas com filial no filtro atual.'}
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={() => navegarPara('relatorios')}
+              style={{
+                alignSelf: 'flex-start',
+                background: '#ecfdf5',
+                border: '1px solid #bbf7d0',
+                borderRadius: 999,
+                color: '#0f766e',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 700,
+                padding: '7px 12px'
+              }}
+            >
+              Ver Análise Financeira
+            </button>
           </article>
         </section>
       )}
 
       {!loading && (
         <section className="dashboard-analytics-grid no-print">
-          <div className="dashboard-analytics-card dashboard-analytics-card-primary" style={{ padding: 16 }}>
-            <div className="analytics-card-header" style={{ alignItems: 'center', gap: 10 }}>
-              <div>
-                <span className="analytics-kicker">Saúde financeira</span>
-                <strong>Distribuição das contas</strong>
-                <small style={{ color: '#64748b', display: 'block', marginTop: 3 }}>{percentualPago}% pago no filtro atual</small>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                <button
-                  type="button"
-                  aria-expanded={mostrarSaudeFinanceira}
-                  onClick={() => setMostrarSaudeFinanceira((atual) => !atual)}
-                  style={{
-                    background: '#ffffff',
-                    border: '1px solid #dbe7e3',
-                    borderRadius: 999,
-                    color: '#334155',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    padding: '6px 10px'
-                  }}
-                >
-                  {mostrarSaudeFinanceira ? 'Recolher' : 'Expandir'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navegarPara('relatorios')}
-                  style={{
-                    background: '#ecfdf5',
-                    border: '1px solid #bbf7d0',
-                    borderRadius: 999,
-                    color: '#0f766e',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    padding: '6px 10px'
-                  }}
-                >
-                  Ver Análise Financeira
-                </button>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8, marginTop: 10 }}>
-              {statusChartData.map((item) => (
-                <div key={item.name} style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px' }}>
-                  <small style={{ color: '#64748b', display: 'block', fontSize: 11 }}>{item.name}</small>
-                  <strong style={{ color: '#111827', display: 'block', fontSize: 14, marginTop: 3 }}>{formatarValor(item.value)}</strong>
-                </div>
-              ))}
-            </div>
-
-            {mostrarSaudeFinanceira && statusChartData.length > 0 ? (
-              <div className="analytics-chart-row">
-                <div className="donut-chart-wrap">
-                  <ResponsiveContainer width="100%" height={190}>
-                    <PieChart>
-                      <Pie data={statusChartData} dataKey="value" nameKey="name" innerRadius={54} outerRadius={82} paddingAngle={3}>
-                        {statusChartData.map((entry) => (
-                          <Cell key={entry.name} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => formatarValor(value)} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="donut-center-label">
-                    <strong>{percentualPago}%</strong>
-                    <span>quitado</span>
-                  </div>
-                </div>
-
-                <div className="analytics-legend">
-                  {statusChartData.map((item) => (
-                    <div key={item.name}>
-                      <span style={{ background: item.color }} />
-                      <small>{item.name}</small>
-                      <strong>{formatarValor(item.value)}</strong>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : mostrarSaudeFinanceira ? (
-              <div className="analytics-empty">Sem dados financeiros para montar o gráfico.</div>
-            ) : null}
-          </div>
-
-          <div className="dashboard-analytics-card" style={{ padding: 16 }}>
-            <div className="analytics-card-header" style={{ alignItems: 'center', gap: 10 }}>
-              <div>
-                <span className="analytics-kicker">Fluxo atual</span>
-                <strong>Pago x Aberto x Vencido</strong>
-                <small style={{ color: '#64748b', display: 'block', marginTop: 3 }}>Resumo dos valores por status</small>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                <span className={percentualRisco > 0 ? 'analytics-badge danger' : 'analytics-badge success'}>
-                  {percentualRisco}% risco
-                </span>
-                <button
-                  type="button"
-                  aria-expanded={mostrarFluxoAtual}
-                  onClick={() => setMostrarFluxoAtual((atual) => !atual)}
-                  style={{
-                    background: '#ffffff',
-                    border: '1px solid #dbe7e3',
-                    borderRadius: 999,
-                    color: '#334155',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    padding: '6px 10px'
-                  }}
-                >
-                  {mostrarFluxoAtual ? 'Recolher' : 'Expandir'}
-                </button>
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 8, marginTop: 10 }}>
-              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px' }}>
-                <small style={{ color: '#64748b', display: 'block', fontSize: 11 }}>Pago</small>
-                <strong style={{ color: '#166534', display: 'block', fontSize: 14, marginTop: 3 }}>{formatarValor(pago)}</strong>
-              </div>
-              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px' }}>
-                <small style={{ color: '#64748b', display: 'block', fontSize: 11 }}>Aberto</small>
-                <strong style={{ color: '#92400e', display: 'block', fontSize: 14, marginTop: 3 }}>{formatarValor(pendente)}</strong>
-              </div>
-              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px' }}>
-                <small style={{ color: '#64748b', display: 'block', fontSize: 11 }}>Vencido</small>
-                <strong style={{ color: '#991b1b', display: 'block', fontSize: 14, marginTop: 3 }}>{formatarValor(vencido)}</strong>
-              </div>
-            </div>
-
-            {mostrarFluxoAtual && (
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={fluxoChartData} margin={{ top: 14, right: 18, left: 24, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                  <YAxis width={82} tickLine={false} axisLine={false} tickMargin={10} tickFormatter={(value) => `R$ ${Math.round(value / 1000)}k`} />
-                  <Tooltip formatter={(value) => formatarValor(value)} />
-                  <Bar dataKey="valor" radius={[10, 10, 4, 4]} fill="#0f766e" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-
-          <div className="dashboard-analytics-card dashboard-cost-center-card" style={{ padding: 16 }}>
-            <div className="analytics-card-header" style={{ alignItems: 'center', gap: 10 }}>
-              <div>
-                <span className="analytics-kicker">Centros de custo</span>
-                <strong>Top 5 por volume financeiro</strong>
-                <small style={{ color: '#64748b', display: 'block', marginTop: 3 }}>
-                  {centroChartData[0] ? `Principal: ${centroChartData[0].name}` : 'Sem centros no filtro atual'}
-                </small>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                <span className="analytics-badge neutral">{centroChartData.length} centros</span>
-                <button
-                  type="button"
-                  aria-expanded={mostrarCentrosCusto}
-                  onClick={() => setMostrarCentrosCusto((atual) => !atual)}
-                  style={{
-                    background: '#ffffff',
-                    border: '1px solid #dbe7e3',
-                    borderRadius: 999,
-                    color: '#334155',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    padding: '6px 10px'
-                  }}
-                >
-                  {mostrarCentrosCusto ? 'Recolher' : 'Expandir'}
-                </button>
-              </div>
-            </div>
-
-            {centroChartData[0] && (
-              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, marginTop: 10, padding: '9px 10px' }}>
-                <small style={{ color: '#64748b', display: 'block', fontSize: 11 }}>Maior volume</small>
-                <strong style={{ color: '#111827', display: 'block', fontSize: 14, marginTop: 3 }}>{formatarValor(centroChartData[0].valor)}</strong>
-              </div>
-            )}
-
-            {mostrarCentrosCusto && centroChartData.length > 0 ? (
-              <div className="cost-center-bars">
-                {centroChartData.map((centro) => {
-                  const percentual = total > 0 ? Math.max(4, Math.round((centro.valor / total) * 100)) : 0
-                  return (
-                    <div key={centro.name} className="cost-center-row">
-                      <div>
-                        <strong>{centro.name}</strong>
-                        <span>{formatarValor(centro.valor)}</span>
-                      </div>
-                      <div className="cost-center-track">
-                        <span style={{ width: `${percentual}%` }} />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : mostrarCentrosCusto ? (
-              <div className="analytics-empty">Cadastre centros de custo para visualizar o ranking.</div>
-            ) : null}
-          </div>
-
           <div className="dashboard-analytics-card executive-agenda-widget">
             <div className="analytics-card-header">
               <div>

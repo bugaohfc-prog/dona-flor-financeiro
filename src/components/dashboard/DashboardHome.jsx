@@ -145,19 +145,28 @@ export default function DashboardHome({
           <div
             style={{
               background: '#ffffff',
-              border: '1px solid #e5e7eb',
-              borderRadius: 10,
-              padding: '8px 10px',
-              marginBottom: 8,
-              boxShadow: 'none'
+              border: '1px solid #dbe7e3',
+              borderRadius: 18,
+              padding: 14,
+              marginBottom: 12,
+              boxShadow: '0 10px 24px rgba(15, 23, 42, 0.05)'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
-              <span style={{ color: '#64748b', fontSize: 12, fontWeight: 700 }}>Resumo financeiro rápido</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+              <span style={{ color: '#0f766e', fontSize: 12, fontWeight: 800, letterSpacing: 0, textTransform: 'uppercase' }}>Resumo financeiro rápido</span>
               <button
                 type="button"
                 onClick={() => navegarPara('relatorios')}
-                style={{ background: 'transparent', border: 0, color: '#0f766e', cursor: 'pointer', fontSize: 12, fontWeight: 700, padding: 0 }}
+                style={{
+                  background: '#ecfdf5',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: 999,
+                  color: '#0f766e',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  padding: '6px 10px'
+                }}
               >
                 Ver Análise Financeira
               </button>
@@ -166,29 +175,25 @@ export default function DashboardHome({
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-                gap: 1,
-                background: '#e5e7eb',
-                border: '1px solid #e5e7eb',
-                borderRadius: 8,
-                overflow: 'hidden'
+                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                gap: 8
               }}
             >
-              <div style={{ background: '#f8fafc', padding: '7px 9px', minWidth: 0 }}>
-                <span style={{ color: '#64748b', display: 'block', fontSize: 11, lineHeight: 1.2 }}>Total</span>
-                <strong style={{ color: '#111827', display: 'block', fontSize: 14, lineHeight: 1.25, marginTop: 2 }}>{formatarValor(total)}</strong>
+              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px', minWidth: 0 }}>
+                <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700, lineHeight: 1.2 }}>Total</span>
+                <strong style={{ color: '#111827', display: 'block', fontSize: 15, lineHeight: 1.25, marginTop: 3 }}>{formatarValor(total)}</strong>
               </div>
-              <div style={{ background: '#f8fafc', padding: '7px 9px', minWidth: 0 }}>
-                <span style={{ color: '#64748b', display: 'block', fontSize: 11, lineHeight: 1.2 }}>Pago</span>
-                <strong style={{ color: '#166534', display: 'block', fontSize: 14, lineHeight: 1.25, marginTop: 2 }}>{formatarValor(pago)}</strong>
+              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px', minWidth: 0 }}>
+                <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700, lineHeight: 1.2 }}>Pago</span>
+                <strong style={{ color: '#166534', display: 'block', fontSize: 15, lineHeight: 1.25, marginTop: 3 }}>{formatarValor(pago)}</strong>
               </div>
-              <div style={{ background: '#f8fafc', padding: '7px 9px', minWidth: 0 }}>
-                <span style={{ color: '#64748b', display: 'block', fontSize: 11, lineHeight: 1.2 }}>Pendente</span>
-                <strong style={{ color: '#92400e', display: 'block', fontSize: 14, lineHeight: 1.25, marginTop: 2 }}>{formatarValor(pendente)}</strong>
+              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px', minWidth: 0 }}>
+                <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700, lineHeight: 1.2 }}>Pendente</span>
+                <strong style={{ color: '#92400e', display: 'block', fontSize: 15, lineHeight: 1.25, marginTop: 3 }}>{formatarValor(pendente)}</strong>
               </div>
-              <div style={{ background: '#f8fafc', padding: '7px 9px', minWidth: 0 }}>
-                <span style={{ color: '#64748b', display: 'block', fontSize: 11, lineHeight: 1.2 }}>Vencido</span>
-                <strong style={{ color: '#991b1b', display: 'block', fontSize: 14, lineHeight: 1.25, marginTop: 2 }}>{formatarValor(vencido)}</strong>
+              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px', minWidth: 0 }}>
+                <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700, lineHeight: 1.2 }}>Vencido</span>
+                <strong style={{ color: '#991b1b', display: 'block', fontSize: 15, lineHeight: 1.25, marginTop: 3 }}>{formatarValor(vencido)}</strong>
               </div>
             </div>
           </div>

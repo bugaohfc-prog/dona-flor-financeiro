@@ -5,20 +5,24 @@ import {
   listarCiclosFerias,
   listarPeriodosFerias
 } from '../services/funcionariosFeriasService'
+import { calcularProximoPeriodico } from '../services/funcionariosExamesPeriodicosService'
 import { mensagemSeguraErro } from '../utils/session'
 
 const RESUMO_VAZIO = Object.freeze({
   funcionariosAtivos: 0,
   feriasProximas: 0,
   feriasVencidas: 0,
+  examesVencidos: 0,
+  examesAVencer: 0,
   folhaEmAberto: null,
   aniversariosSemana: 0
 })
 
 const STATUS_FOLHA_EM_ABERTO = new Set(['aberta', 'em_conferencia'])
 
-const SELECT_FUNCIONARIOS_PAINEL = 'id, status, arquivado, data_nascimento'
+const SELECT_FUNCIONARIOS_PAINEL = 'id, status, arquivado, data_nascimento, data_exame_admissional'
 const SELECT_FOLHA_PAINEL = 'competencia, status, arquivado'
+const SELECT_EXAMES_PERIODICOS_PAINEL = 'funcionario_id, data_exame, arquivado'
 
 function normalizarId(valor) {
   return String(valor || '').trim()
@@ -81,6 +85,24 @@ function contarAniversariosSemana(funcionarios = []) {
   }).length
 }
 
+function obterUltimoExamePeriodicoAtivo(exames = []) {
+  return [...exames]
+    .filter((exame) => exame?.data_exame && !estaArquivado(exame))
+    .sort((a, b) => String(b.data_exame || '').localeCompare(String(a.data_exame || '')))[0] || null
+}
+
+function agruparExamesPorFuncionario(exames = []) {
+  return (exames || []).reduce((grupos, exame) => {
+    const funcionarioId = normalizarId(exame?.funcionario_id)
+    if (!funcionarioId) return grupos
+
+    if (!grupos[funcionarioId]) grupos[funcionarioId] = []
+    grupos[funcionarioId].push(exame)
+
+    return grupos
+  }, {})
+}
+
 function periodoConsomeSaldo(periodo) {
   return periodo && !estaArquivado(periodo) && periodo.status !== 'cancelada'
 }
@@ -107,17 +129,6 @@ function criarAlerta({ id, tipo, titulo, descricao, prioridade, rotaDestino }) {
 function montarAlertas(resumo) {
   const alertas = []
 
-  if (resumo.feriasVencidas > 0) {
-    alertas.push(criarAlerta({
-      id: 'ferias-vencidas',
-      tipo: 'ferias',
-      titulo: 'Férias vencidas',
-      descricao: `${resumo.feriasVencidas} ${resumo.feriasVencidas === 1 ? 'ciclo' : 'ciclos'} com limite de gozo ultrapassado.`,
-      prioridade: 'alta',
-      rotaDestino: 'relatorios-ferias'
-    }))
-  }
-
   if (resumo.folhaEmAberto) {
     alertas.push(criarAlerta({
       id: 'folha-em-aberto',
@@ -129,6 +140,28 @@ function montarAlertas(resumo) {
     }))
   }
 
+  if (resumo.feriasVencidas > 0) {
+    alertas.push(criarAlerta({
+      id: 'ferias-vencidas',
+      tipo: 'ferias',
+      titulo: 'Férias vencidas',
+      descricao: `${resumo.feriasVencidas} ${resumo.feriasVencidas === 1 ? 'ciclo' : 'ciclos'} com limite de gozo ultrapassado.`,
+      prioridade: 'alta',
+      rotaDestino: 'relatorios-ferias'
+    }))
+  }
+
+  if (resumo.examesVencidos > 0) {
+    alertas.push(criarAlerta({
+      id: 'exames-vencidos',
+      tipo: 'exames',
+      titulo: 'Exames vencidos',
+      descricao: `${resumo.examesVencidos} ${resumo.examesVencidos === 1 ? 'periódico vencido' : 'periódicos vencidos'}.`,
+      prioridade: 'alta',
+      rotaDestino: 'relatorios-pessoas'
+    }))
+  }
+
   if (resumo.feriasProximas > 0) {
     alertas.push(criarAlerta({
       id: 'ferias-proximas',
@@ -137,6 +170,17 @@ function montarAlertas(resumo) {
       descricao: `${resumo.feriasProximas} ${resumo.feriasProximas === 1 ? 'período agendado' : 'períodos agendados'} nos próximos 30 dias.`,
       prioridade: 'media',
       rotaDestino: 'ferias'
+    }))
+  }
+
+  if (resumo.examesAVencer > 0) {
+    alertas.push(criarAlerta({
+      id: 'exames-a-vencer',
+      tipo: 'exames',
+      titulo: 'Exames a vencer',
+      descricao: `${resumo.examesAVencer} ${resumo.examesAVencer === 1 ? 'periódico' : 'periódicos'} nos próximos 30 dias.`,
+      prioridade: 'media',
+      rotaDestino: 'relatorios-pessoas'
     }))
   }
 
@@ -213,6 +257,40 @@ async function carregarResumoFerias({ supabase, empresaId, funcionariosAtivos })
   return { feriasProximas, feriasVencidas }
 }
 
+async function carregarResumoExames({ supabase, empresaId, funcionariosAtivos }) {
+  const hoje = hojeISO()
+  const limiteProximo = somarDiasISO(hoje, 30)
+  let examesVencidos = 0
+  let examesAVencer = 0
+
+  const { data, error } = await supabase
+    .from('df_funcionarios_exames_periodicos')
+    .select(SELECT_EXAMES_PERIODICOS_PAINEL)
+    .eq('empresa_id', empresaId)
+    .eq('arquivado', false)
+
+  if (error) throw error
+
+  const examesPorFuncionario = agruparExamesPorFuncionario(data || [])
+
+  funcionariosAtivos.forEach((funcionario) => {
+    const examesFuncionario = examesPorFuncionario[funcionario.id] || []
+    const ultimoPeriodico = obterUltimoExamePeriodicoAtivo(examesFuncionario)
+    const dataBase = ultimoPeriodico?.data_exame || funcionario.data_exame_admissional
+    const proximoPeriodico = dataBase ? calcularProximoPeriodico(dataBase) : null
+
+    if (!proximoPeriodico) return
+
+    if (proximoPeriodico < hoje) {
+      examesVencidos += 1
+    } else if (limiteProximo && proximoPeriodico <= limiteProximo) {
+      examesAVencer += 1
+    }
+  })
+
+  return { examesVencidos, examesAVencer }
+}
+
 async function carregarFolhaEmAberto({ supabase, empresaId }) {
   const { data, error } = await supabase
     .from('df_folha_competencias')
@@ -276,8 +354,13 @@ export function useResumoGestaoPessoasPainel({
         if (erroFuncionarios) throw erroFuncionarios
 
         const ativos = (funcionarios || []).filter(funcionarioAtivo)
-        const [resumoFerias, folhaEmAberto] = await Promise.all([
+        const [resumoFerias, resumoExames, folhaEmAberto] = await Promise.all([
           carregarResumoFerias({
+            supabase: supabasePadrao,
+            empresaId: empresaAtual,
+            funcionariosAtivos: ativos
+          }),
+          carregarResumoExames({
             supabase: supabasePadrao,
             empresaId: empresaAtual,
             funcionariosAtivos: ativos
@@ -294,6 +377,8 @@ export function useResumoGestaoPessoasPainel({
           funcionariosAtivos: ativos.length,
           feriasProximas: resumoFerias.feriasProximas,
           feriasVencidas: resumoFerias.feriasVencidas,
+          examesVencidos: resumoExames.examesVencidos,
+          examesAVencer: resumoExames.examesAVencer,
           folhaEmAberto,
           aniversariosSemana: contarAniversariosSemana(ativos)
         }

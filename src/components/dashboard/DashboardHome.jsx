@@ -156,6 +156,14 @@ export default function DashboardHome({
       return `${resumoPessoas.feriasProximas} ${resumoPessoas.feriasProximas === 1 ? 'per\u00edodo agendado nos pr\u00f3ximos 30 dias' : 'per\u00edodos agendados nos pr\u00f3ximos 30 dias'}`
     }
 
+    if (alerta.id === 'exames-vencidos') {
+      return `${resumoPessoas.examesVencidos} ${resumoPessoas.examesVencidos === 1 ? 'peri\u00f3dico vencido' : 'peri\u00f3dicos vencidos'}`
+    }
+
+    if (alerta.id === 'exames-a-vencer') {
+      return `${resumoPessoas.examesAVencer} ${resumoPessoas.examesAVencer === 1 ? 'peri\u00f3dico nos pr\u00f3ximos 30 dias' : 'peri\u00f3dicos nos pr\u00f3ximos 30 dias'}`
+    }
+
     if (alerta.tipo === 'aniversarios') {
       return `${resumoPessoas.aniversariosSemana} ${resumoPessoas.aniversariosSemana === 1 ? 'anivers\u00e1rio' : 'anivers\u00e1rios'} nos pr\u00f3ximos 7 dias`
     }
@@ -180,15 +188,23 @@ export default function DashboardHome({
   const totalHoje = contasHoje.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
   const totalSemana = contasSemana.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
   const itensPessoas = useMemo(() => {
-    const prioridadeTipo = { folha: 1, ferias: 2, aniversarios: 3, funcionarios: 4 }
+    const prioridadeAlerta = {
+      'folha-em-aberto': 1,
+      'ferias-vencidas': 2,
+      'exames-vencidos': 3,
+      'ferias-proximas': 4,
+      'exames-a-vencer': 5,
+      'aniversarios-semana': 6,
+      'funcionarios-ativos': 7
+    }
     const tiposSelecionados = new Set()
-    const alertas = (alertasPessoas || [])
+    const alertas = [...(alertasPessoas || [])]
+      .sort((a, b) => (prioridadeAlerta[a.id] || 99) - (prioridadeAlerta[b.id] || 99))
       .filter((alerta) => {
         if (tiposSelecionados.has(alerta.tipo)) return false
         tiposSelecionados.add(alerta.tipo)
         return true
       })
-      .sort((a, b) => (prioridadeTipo[a.tipo] || 9) - (prioridadeTipo[b.tipo] || 9))
       .map((alerta) => ({
         id: alerta.id,
         tipo: alerta.tipo,
@@ -220,6 +236,16 @@ export default function DashboardHome({
       })
     }
 
+    if (!tiposJaExibidos.has('exames') && resumoPessoas.examesVencidos > 0) {
+      itens.push({
+        id: 'contador-exames-vencidos',
+        tipo: 'exames',
+        titulo: 'Exames vencidos',
+        descricao: `${resumoPessoas.examesVencidos} ${resumoPessoas.examesVencidos === 1 ? 'peri\u00f3dico vencido' : 'peri\u00f3dicos vencidos'}`,
+        rotaDestino: 'relatorios-pessoas'
+      })
+    }
+
     if (!tiposJaExibidos.has('ferias') && resumoPessoas.feriasProximas > 0) {
       itens.push({
         id: 'contador-ferias-proximas',
@@ -227,6 +253,16 @@ export default function DashboardHome({
         titulo: 'F\u00e9rias pr\u00f3ximas',
         descricao: `${resumoPessoas.feriasProximas} ${resumoPessoas.feriasProximas === 1 ? 'per\u00edodo agendado nos pr\u00f3ximos 30 dias' : 'per\u00edodos agendados nos pr\u00f3ximos 30 dias'}`,
         rotaDestino: 'ferias'
+      })
+    }
+
+    if (!tiposJaExibidos.has('exames') && resumoPessoas.examesAVencer > 0) {
+      itens.push({
+        id: 'contador-exames-a-vencer',
+        tipo: 'exames',
+        titulo: 'Exames a vencer',
+        descricao: `${resumoPessoas.examesAVencer} ${resumoPessoas.examesAVencer === 1 ? 'peri\u00f3dico nos pr\u00f3ximos 30 dias' : 'peri\u00f3dicos nos pr\u00f3ximos 30 dias'}`,
+        rotaDestino: 'relatorios-pessoas'
       })
     }
 

@@ -1150,3 +1150,25 @@
     max-width: calc(100vw - 130px) !important;
   }
 }
+
+.dashboard-operational-grid.dashboard-analytics-grid {
+  align-items: flex-start !important;
+  grid-auto-rows: auto !important;
+}
+
+.dashboard-operational-grid .dashboard-people-card.dashboard-analytics-card {
+  align-self: flex-start !important;
+  flex: 0 0 auto !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+}
+
+.dashboard-operational-grid .dashboard-people-card .dashboard-people-item {
+  align-items: flex-start !important;
+  height: auto !important;
+  justify-content: flex-start !important;
+  min-height: 0 !important;
+  padding: 9px 11px !important;
+  text-align: left !important;
+}

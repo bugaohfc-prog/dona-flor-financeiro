@@ -46,7 +46,12 @@ export default function DashboardHome({
   const gestaoPessoasCardStyle = {
     ...operacionalCardStyle,
     alignSelf: 'flex-start',
+    flex: '0 0 auto',
     gap: 10,
+    gridRow: 'auto',
+    height: 'auto',
+    maxHeight: 'none',
+    minHeight: 0,
     width: '100%'
   }
   const operacionalHeaderStyle = {
@@ -345,7 +350,7 @@ export default function DashboardHome({
       </section>
 
       {!loading && (
-        <section className="dashboard-analytics-grid no-print" style={{ alignItems: 'start' }}>
+        <section className="dashboard-operational-grid dashboard-analytics-grid no-print" style={{ alignItems: 'flex-start' }}>
           <div className="dashboard-analytics-card executive-agenda-widget" style={agendaCardStyle}>
             <div className="analytics-card-header" style={operacionalHeaderStyle}>
               <div>
@@ -380,7 +385,7 @@ export default function DashboardHome({
           </div>
 
           {podeVisualizarResumoPessoas && (
-            <div className="dashboard-analytics-card" style={gestaoPessoasCardStyle} aria-label={'Resumo de Gest\u00e3o de Pessoas'}>
+            <div className="dashboard-people-card dashboard-analytics-card" style={gestaoPessoasCardStyle} aria-label={'Resumo de Gest\u00e3o de Pessoas'}>
               <div className="analytics-card-header" style={operacionalHeaderStyle}>
                 <div>
                   <span className="analytics-kicker">{'Gest\u00e3o de Pessoas'}</span>
@@ -390,17 +395,18 @@ export default function DashboardHome({
               </div>
 
               {loadingResumoPessoas ? (
-                <div className="analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>Carregando resumo de pessoas...</div>
+                <div className="dashboard-people-item analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>Carregando resumo de pessoas...</div>
               ) : erroResumoPessoas ? (
-                <div className="analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>{'N\u00e3o foi poss\u00edvel carregar o resumo de Gest\u00e3o de Pessoas.'}</div>
+                <div className="dashboard-people-item analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>{'N\u00e3o foi poss\u00edvel carregar o resumo de Gest\u00e3o de Pessoas.'}</div>
               ) : (
                 <>
                   {itensPessoas.length === 0 ? (
-                    <div className="analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>{'Nenhuma pend\u00eancia cr\u00edtica de pessoas no momento.'}</div>
+                    <div className="dashboard-people-item analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>{'Nenhuma pend\u00eancia cr\u00edtica de pessoas no momento.'}</div>
                   ) : (
                     <div style={{ display: 'grid', gap: 8 }}>
                       {itensPessoas.map((item) => (
                         <button
+                          className="dashboard-people-item"
                           key={item.id}
                           type="button"
                           onClick={() => item.rotaDestino && navegarPara(item.rotaDestino)}

@@ -599,9 +599,10 @@ export default function App() {
       setPermissoesUsuario(permissoes)
       setNomeUsuarioPerfil(nomePerfil || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name || '')
       const podeOperarFinanceiro = Boolean(permissoes?.isMaster || ['admin', 'gerente'].includes(normalizarPerfil(perfilSelecionado)))
+      const podeCarregarLixeira = Boolean(permissoes?.isMaster || normalizarPerfil(perfilSelecionado) === 'admin')
       await carregarTudo(empresaSelecionada.id, {
         permitirGerarRecorrencias: podeOperarFinanceiro,
-        permitirCarregarLixeira: podeOperarFinanceiro
+        permitirCarregarLixeira: podeCarregarLixeira
       })
     } catch (error) {
       if (erroEhSessaoExpirada(error)) {
@@ -658,8 +659,8 @@ export default function App() {
   }, [permissoesUsuario?.canAccessSettings, temPermissao])
 
   const podeImportarContas = useCallback(() => {
-    return podeAcessarConfiguracoes()
-  }, [podeAcessarConfiguracoes])
+    return temPermissao(['admin'])
+  }, [temPermissao])
 
   const podeEditarFinanceiro = useCallback(() => {
     return temPermissao(['admin', 'gerente'])
@@ -678,7 +679,7 @@ export default function App() {
   }, [temPermissao])
 
   const podeGerenciarLixeira = useCallback(() => {
-    return temPermissao(['admin', 'gerente'])
+    return temPermissao(['admin'])
   }, [temPermissao])
 
   const podeExcluirDefinitivoFinanceiro = useCallback(() => {
@@ -849,9 +850,10 @@ export default function App() {
       setPermissoesUsuario(permissoesAtualizadas)
       setTelaAtualState('dashboard')
       const podeOperarFinanceiro = Boolean(permissoesAtualizadas?.isMaster || ['admin', 'gerente'].includes(normalizarPerfil(perfilSelecionado)))
+      const podeCarregarLixeira = Boolean(permissoesAtualizadas?.isMaster || normalizarPerfil(perfilSelecionado) === 'admin')
       await carregarTudo(empresaSelecionada.id, {
         permitirGerarRecorrencias: podeOperarFinanceiro,
-        permitirCarregarLixeira: podeOperarFinanceiro
+        permitirCarregarLixeira: podeCarregarLixeira
       })
       mostrarAviso(`Empresa ativa: ${empresaSelecionada.nome || 'Empresa'}`, 'sucesso')
     } catch (error) {

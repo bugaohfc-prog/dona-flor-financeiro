@@ -1,31 +1,31 @@
-# Matriz de permissões frontend — Dona Flor Financeiro
+# Matriz de permissoes frontend - DNA Gestao
 
-Data: 2026-05-24
+Data: 2026-06-01
 
-Estado: validado após aplicação das permissões operacionais frontend e build aprovado.
+Estado: atualizado apos revisao das permissoes administrativas do perfil Gerente.
 
 ## Escopo
 
-Esta documentação descreve os guardrails frontend por perfil no app Dona Flor Financeiro.
+Esta documentacao descreve os guardrails frontend por perfil no app DNA Gestao.
 
-As regras abaixo controlam exibição de menus, botões e bloqueios diretos em ações sensíveis do frontend. Elas reduzem risco operacional e evitam que perfis sem autorização executem ações pela interface.
+As regras abaixo controlam exibicao de menus, botoes e bloqueios diretos em acoes sensiveis do frontend. Elas reduzem risco operacional e evitam que perfis sem autorizacao executem acoes pela interface.
 
-Importante: guardrails frontend não substituem RLS, policies, validações backend ou Edge Functions. Qualquer mudança futura em rotas, botões ou chamadas diretas deve respeitar esta matriz e continuar protegida por validações server-side quando aplicável.
+Importante: guardrails frontend nao substituem RLS, policies, validacoes backend ou Edge Functions. Qualquer mudanca futura em rotas, botoes ou chamadas diretas deve respeitar esta matriz e continuar protegida por validacoes server-side quando aplicavel.
 
 ## Perfis
 
 ### Operador
 
 - Apenas visualiza.
-- Não cria contas ou notas.
-- Não edita contas ou notas.
-- Não exclui contas ou notas.
-- Não paga contas.
-- Não volta conta para pendente.
-- Não exporta PDF, CSV ou Excel.
-- Não importa contas.
-- Não acessa Lixeira.
-- Não acessa áreas administrativas.
+- Nao cria contas ou notas.
+- Nao edita contas ou notas.
+- Nao exclui contas ou notas.
+- Nao paga contas.
+- Nao volta conta para pendente.
+- Nao exporta PDF, CSV ou Excel.
+- Nao importa contas.
+- Nao acessa Lixeira.
+- Nao acessa areas administrativas.
 
 ### Gerente
 
@@ -34,98 +34,111 @@ Importante: guardrails frontend não substituem RLS, policies, validações back
 - Marca contas como pagas.
 - Volta contas para pendente.
 - Cria, edita e conclui notas.
-- Importa contas.
 - Exporta dados.
-- Acessa relatórios.
-- Acessa Lixeira para restauração.
-- Não exclui definitivamente na Lixeira.
-- Não administra usuários.
-- Não edita Billing/plano comercial.
+- Acessa relatorios.
+- Continua vendo Configuracoes, sem edicao sensivel.
+- Nao acessa Filiais/Unidades.
+- Nao importa contas.
+- Nao acessa Lixeira.
+- Nao administra usuarios.
+- Nao acessa plano comercial/Billing.
+- Nao acessa Configuracao inicial.
 
 ### Admin
 
-- Operação financeira completa.
+- Operacao financeira completa.
 - Importa e exporta dados.
-- Acessa e administra usuários, respeitando proteção de master.
-- Edita Billing/plano comercial.
-- Acessa Configurações.
-- Gerencia Filiais.
+- Acessa e administra usuarios, respeitando protecao de master.
+- Edita plano comercial/Billing.
+- Acessa e edita Configuracoes.
+- Gerencia Filiais/Unidades.
 - Gerencia centro de custo.
 - Acessa Lixeira completa.
-- Pode excluir definitivamente.
+- Pode restaurar e excluir definitivamente.
 
 ### Master
 
 - Tudo que admin pode fazer.
-- Acesso adicional à área Empresas/Master.
+- Acesso adicional a area Empresas/Master.
 
-## Matriz por área/tela
+## Matriz por area/tela
 
-| Área/tela | Operador | Gerente | Admin | Master |
+| Area/tela | Operador | Gerente | Admin | Master |
 | --- | --- | --- | --- | --- |
-| Painel | Visualiza | Visualiza e opera ações financeiras | Acesso completo | Acesso completo |
+| Painel | Visualiza | Visualiza e opera acoes financeiras | Acesso completo | Acesso completo |
 | Agenda | Visualiza | Pode marcar conta como paga | Acesso completo | Acesso completo |
 | Notas | Visualiza | Cria, edita, conclui e exclui | Acesso completo | Acesso completo |
 | Contas | Visualiza | Cria, edita, paga, volta para pendente e exclui | Acesso completo | Acesso completo |
-| Relatórios | Visualiza | Visualiza e exporta | Acesso completo | Acesso completo |
-| Exportações | Não acessa | PDF, CSV e Excel | PDF, CSV e Excel | PDF, CSV e Excel |
-| Importar contas | Não acessa | Acessa e importa | Acessa e importa | Acessa e importa |
-| Lixeira | Não acessa | Acessa e restaura | Acessa, restaura e exclui definitivamente | Acessa, restaura e exclui definitivamente |
-| Configurações | Não acessa | Acessa conforme regra atual, sem edição sensível | Acessa e edita | Acessa e edita |
-| Usuários | Não acessa | Acesso sem administração de usuários | Administra usuários com proteção de master | Administra usuários |
-| Billing/plano comercial | Não acessa | Visualiza conforme regra atual, sem edição | Edita | Edita |
-| Filiais | Não acessa | Acessa conforme regra atual | Gerencia | Gerencia |
-| Empresas/Master | Não acessa | Não acessa | Não acessa | Acessa |
+| Relatorios | Visualiza | Visualiza e exporta | Acesso completo | Acesso completo |
+| Exportacoes | Nao acessa | PDF, CSV e Excel | PDF, CSV e Excel | PDF, CSV e Excel |
+| Importar contas | Nao acessa | Nao acessa | Acessa e importa | Acessa e importa |
+| Lixeira | Nao acessa | Nao acessa | Acessa, restaura e exclui definitivamente | Acessa, restaura e exclui definitivamente |
+| Configuracoes | Nao acessa | Acessa sem edicao sensivel | Acessa e edita | Acessa e edita |
+| Usuarios | Nao acessa | Nao acessa | Administra usuarios com protecao de master | Administra usuarios |
+| Billing/plano comercial | Nao acessa | Nao acessa | Edita | Edita |
+| Configuracao inicial | Nao acessa | Nao acessa | Edita | Edita |
+| Filiais/Unidades | Nao acessa | Nao acessa | Gerencia | Gerencia |
+| Empresas/Master | Nao acessa | Nao acessa | Nao acessa | Acessa |
 
-## Matriz por ação sensível
+## Matriz por acao sensivel
 
-| Ação | Operador | Gerente | Admin | Master |
+| Acao | Operador | Gerente | Admin | Master |
 | --- | --- | --- | --- | --- |
-| Criar conta/nota | Não | Sim | Sim | Sim |
-| Editar conta/nota | Não | Sim | Sim | Sim |
-| Excluir conta/nota | Não | Sim | Sim | Sim |
-| Pagar conta | Não | Sim | Sim | Sim |
-| Voltar conta para pendente | Não | Sim | Sim | Sim |
-| Exportar PDF/CSV/Excel | Não | Sim | Sim | Sim |
-| Importar contas | Não | Sim | Sim | Sim |
-| Restaurar da lixeira | Não | Sim | Sim | Sim |
-| Excluir definitivamente | Não | Não | Sim | Sim |
-| Convidar usuário | Não | Não | Sim, com proteção de master | Sim |
-| Administrar usuários | Não | Não | Sim, com proteção de master | Sim |
-| Editar Billing/plano comercial | Não | Não | Sim | Sim |
-| Gerenciar centro de custo | Não | Não | Sim | Sim |
-| Criar/gerenciar empresas | Não | Não | Não | Sim |
+| Criar conta/nota | Nao | Sim | Sim | Sim |
+| Editar conta/nota | Nao | Sim | Sim | Sim |
+| Excluir conta/nota | Nao | Sim | Sim | Sim |
+| Pagar conta | Nao | Sim | Sim | Sim |
+| Voltar conta para pendente | Nao | Sim | Sim | Sim |
+| Exportar PDF/CSV/Excel | Nao | Sim | Sim | Sim |
+| Importar contas | Nao | Nao | Sim | Sim |
+| Restaurar da lixeira | Nao | Nao | Sim | Sim |
+| Excluir definitivamente | Nao | Nao | Sim | Sim |
+| Salvar configuracoes | Nao | Nao | Sim | Sim |
+| Gerenciar destinatarios de alertas | Nao | Nao | Sim | Sim |
+| Gerenciar Filiais/Unidades | Nao | Nao | Sim | Sim |
+| Convidar usuario | Nao | Nao | Sim, com protecao de master | Sim |
+| Administrar usuarios | Nao | Nao | Sim, com protecao de master | Sim |
+| Editar Billing/plano comercial | Nao | Nao | Sim | Sim |
+| Gerenciar centro de custo | Nao | Nao | Sim | Sim |
+| Criar/gerenciar empresas | Nao | Nao | Nao | Sim |
+
+## Decisoes deste ciclo
+
+- Configuracoes: Gerente continua vendo a tela por enquanto, mas sem acoes administrativas sensiveis.
+- Importar contas: restrito a Admin/Master porque importacao altera dados financeiros em massa.
+- Lixeira: restrita a Admin/Master porque permite restaurar itens e excluir definitivamente.
+- Operador: nao ganhou acesso novo.
+- Admin/Master: acessos administrativos preservados.
 
 ## Guardrails frontend aplicados
 
-- Menu oculta itens não permitidos para operador.
-- Operador não vê ações de criar, editar, excluir, pagar, voltar para pendente, exportar, importar ou lixeira.
-- Ações sensíveis possuem guarda direta antes de executar a operação.
-- Exportações em contas e relatórios são ocultadas e bloqueadas para perfis sem permissão.
-- Lixeira é bloqueada para operador.
-- Restauração na lixeira é permitida para gerente, admin e master.
-- Exclusão definitiva na lixeira é permitida apenas para admin e master.
-- Ações bloqueadas exibem mensagem simples: `Você não tem permissão para realizar esta ação.`
+- Menu oculta itens nao permitidos para operador e gerente.
+- Importar contas e Lixeira possuem guard de menu e guard de tela/view.
+- `importarExcelParaContas` valida permissao antes de executar importacao.
+- Restauracao na Lixeira valida permissao antes de executar.
+- Exclusao definitiva na Lixeira segue permitida apenas para Admin/Master.
+- Carregamento inicial de Lixeira nao e solicitado para Gerente.
+- Acoes bloqueadas exibem mensagem simples: `Voce nao tem permissao para realizar esta acao.`
 
 ## Riscos residuais
 
-- Guardrails frontend não substituem RLS/backend.
-- A validação manual por perfil deve ser feita em homologação sempre que houver mudança em menu, rotas, páginas, botões ou ações.
-- Novas ações sensíveis devem receber guarda direta no ponto de execução, não apenas ocultação visual.
-- Novas exportações, importadores ou telas administrativas devem seguir esta matriz antes de serem liberadas.
+- Guardrails frontend nao substituem RLS/backend.
+- A validacao manual por perfil deve ser feita em homologacao sempre que houver mudanca em menu, rotas, paginas, botoes ou acoes.
+- Novas acoes sensiveis devem receber guarda direta no ponto de execucao, nao apenas ocultacao visual.
+- Novas exportacoes, importadores ou telas administrativas devem seguir esta matriz antes de serem liberadas.
 - Qualquer regra que envolva dados cross-tenant deve continuar protegida por RLS, policies, backend ou Edge Function adequada.
 
-## Checklist de validação manual
+## Checklist de validacao manual
 
 ### Operador
 
-- Não vê botões de criar conta ou nota.
-- Não vê botões de editar, excluir, pagar ou voltar para pendente.
-- Não vê exportações PDF, CSV ou Excel.
-- Não vê `Importar contas`.
-- Não vê `Lixeira`.
-- Não vê áreas administrativas: Configurações, Usuários, Billing, Filiais e Empresas/Master.
-- Se tentar ação sensível por caminho direto, recebe bloqueio de permissão.
+- Nao ve botoes de criar conta ou nota.
+- Nao ve botoes de editar, excluir, pagar ou voltar para pendente.
+- Nao ve exportacoes PDF, CSV ou Excel.
+- Nao ve `Importar contas`.
+- Nao ve `Lixeira`.
+- Nao ve areas administrativas.
+- Se tentar acao sensivel por caminho direto, recebe bloqueio de permissao.
 
 ### Gerente
 
@@ -133,28 +146,31 @@ Importante: guardrails frontend não substituem RLS, policies, validações back
 - Marca conta como paga.
 - Volta conta para pendente.
 - Cria, edita, conclui e exclui notas.
-- Importa contas.
 - Exporta dados.
-- Acessa relatórios.
-- Acessa Lixeira e restaura itens.
-- Não vê ou não executa exclusão definitiva.
-- Não administra usuários.
-- Não edita Billing/plano comercial.
+- Acessa relatorios.
+- Continua vendo Configuracoes sem edicao sensivel.
+- Nao ve `Importar contas` no menu desktop/mobile.
+- Nao acessa a tela `Importar contas` por navegacao direta interna.
+- Nao ve `Lixeira` no menu desktop/mobile.
+- Nao acessa a tela `Lixeira` por navegacao direta interna.
+- Continua sem acessar Filiais/Unidades.
+- Nao administra usuarios.
+- Nao acessa plano comercial/Billing.
 
 ### Admin
 
 - Opera financeiro completo.
 - Importa e exporta dados.
-- Administra usuários, preservando proteção de master.
-- Edita Billing/plano comercial.
-- Gerencia Configurações, Filiais e centro de custo.
+- Administra usuarios, preservando protecao de master.
+- Edita plano comercial/Billing.
+- Gerencia Configuracoes, Filiais/Unidades e centro de custo.
 - Acessa Lixeira.
 - Restaura e exclui definitivamente.
-- Não acessa Empresas/Master se não for master.
+- Nao acessa Empresas/Master se nao for master.
 
 ### Master
 
 - Executa tudo que admin executa.
 - Acessa Empresas/Master.
 - Cria/gerencia empresas pelo fluxo seguro validado.
-- Continua protegido contra alterações indevidas por admin comum.
+- Continua protegido contra alteracoes indevidas por admin comum.

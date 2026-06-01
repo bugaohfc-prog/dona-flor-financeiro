@@ -300,6 +300,7 @@ export default function App() {
   const [nomeEmpresa, setNomeEmpresa] = useState('')
   const [whatsappPadrao, setWhatsappPadrao] = useState('')
   const [emailPadrao, setEmailPadrao] = useState('')
+  const [mostrarConfigDestinatarios, setMostrarConfigDestinatarios] = useState(true)
   const [mostrarDestinatariosInativos, setMostrarDestinatariosInativos] = useState(false)
   const [destinatarioEditandoId, setDestinatarioEditandoId] = useState('')
   const [formDestinatarioAlerta, setFormDestinatarioAlerta] = useState(DESTINATARIO_ALERTA_FORM_INICIAL)
@@ -4529,7 +4530,15 @@ export default function App() {
         </section>
 
         <section style={styles.cardConfiguracao} className="settings-card settings-alert-recipients-card">
-          <h2 style={styles.subtitulo}>Destinatários de alertas</h2>
+          <HeaderExpansivel
+            styles={styles}
+            titulo="✉️ Destinatários de alertas"
+            aberto={mostrarConfigDestinatarios}
+            onClick={() => setMostrarConfigDestinatarios(!mostrarConfigDestinatarios)}
+          />
+
+          {mostrarConfigDestinatarios && (
+            <>
 
           <p style={styles.textoNota}>
             Cadastre e-mails de donos ou responsáveis para receber alertas sem criar usuários no sistema.
@@ -4588,38 +4597,42 @@ export default function App() {
                 disabled={salvandoDestinatario}
               />
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
-                <label className="checkbox-row-fix" style={styles.switchLinha}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, alignItems: 'stretch' }}>
+                <label className="checkbox-row-fix" style={{ ...styles.switchLinha, width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8 }}>
                   <span>Contas</span>
                   <input
                     type="checkbox"
+                    style={{ flexShrink: 0 }}
                     checked={formDestinatarioAlerta.recebe_contas}
                     onChange={(e) => atualizarCampoDestinatarioAlerta('recebe_contas', e.target.checked)}
                     disabled={salvandoDestinatario}
                   />
                 </label>
-                <label className="checkbox-row-fix" style={styles.switchLinha}>
+                <label className="checkbox-row-fix" style={{ ...styles.switchLinha, width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8 }}>
                   <span>Notas</span>
                   <input
                     type="checkbox"
+                    style={{ flexShrink: 0 }}
                     checked={formDestinatarioAlerta.recebe_notas}
                     onChange={(e) => atualizarCampoDestinatarioAlerta('recebe_notas', e.target.checked)}
                     disabled={salvandoDestinatario}
                   />
                 </label>
-                <label className="checkbox-row-fix" style={styles.switchLinha}>
+                <label className="checkbox-row-fix" style={{ ...styles.switchLinha, width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8 }}>
                   <span>Resumo</span>
                   <input
                     type="checkbox"
+                    style={{ flexShrink: 0 }}
                     checked={formDestinatarioAlerta.recebe_resumo}
                     onChange={(e) => atualizarCampoDestinatarioAlerta('recebe_resumo', e.target.checked)}
                     disabled={salvandoDestinatario}
                   />
                 </label>
-                <label className="checkbox-row-fix" style={styles.switchLinha}>
+                <label className="checkbox-row-fix" style={{ ...styles.switchLinha, width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8 }}>
                   <span>Ativo</span>
                   <input
                     type="checkbox"
+                    style={{ flexShrink: 0 }}
                     checked={formDestinatarioAlerta.ativo}
                     onChange={(e) => atualizarCampoDestinatarioAlerta('ativo', e.target.checked)}
                     disabled={salvandoDestinatario}
@@ -4688,6 +4701,8 @@ export default function App() {
               </div>
             ))}
           </div>
+            </>
+          )}
         </section>
 
 

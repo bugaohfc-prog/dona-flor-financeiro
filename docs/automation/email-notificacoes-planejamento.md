@@ -38,6 +38,71 @@ Criar uma lista de destinatários de alertas por `empresa_id`, separada de usuá
 
 A lista deve ter controle por empresa, validação de e-mail, status ativo/inativo e trilha mínima para auditoria. A leitura pelo GitHub Actions deve sempre filtrar `empresa_id`.
 
+## Estrutura inicial de banco
+
+Tabela proposta/criada em migration para validação manual:
+
+- `public.df_destinatarios_alertas`
+
+Finalidade:
+
+- manter a lista oficial de e-mails que podem receber alertas por empresa;
+- separar destinatários de alerta de usuários do sistema;
+- permitir inativação por `ativo=false`, sem DELETE físico;
+- preparar uma base segura para service/hook, frontend e GitHub Actions em ciclos futuros.
+
+Campos principais:
+
+- `id`
+- `empresa_id`
+- `nome`
+- `email`
+- `ativo`
+- `recebe_contas`
+- `recebe_notas`
+- `recebe_resumo`
+- `observacao`
+- `criado_em`
+- `atualizado_em`
+- `criado_por`
+- `atualizado_por`
+
+Arquivos do ciclo de banco/RLS:
+
+- `supabase/migrations/20260601160000_create_df_destinatarios_alertas.sql`
+- `docs/security/rollback/rollback_df_destinatarios_alertas_20260601.sql`
+- `docs/security/diagnostics/diagnostico_df_destinatarios_alertas_20260601.sql`
+
+## RLS aplicada
+
+A tabela `df_destinatarios_alertas` deve ser tenant-scoped por `empresa_id`.
+
+Regras previstas:
+
+- RLS habilitada e forçada;
+- `anon` sem acesso;
+- `authenticated` com `SELECT`, `INSERT` e `UPDATE`;
+- sem grant de `DELETE` para `authenticated`;
+- sem policy `ALL`;
+- sem policy de `DELETE`;
+- DELETE físico bloqueado por trigger;
+- alteração de `empresa_id` bloqueada após INSERT;
+- e-mail único por empresa.
+
+Leitura:
+
+- permitida para master;
+- permitida para perfis com vínculo na empresa compatíveis com acesso à área de Configurações, incluindo admin e gerente.
+
+Escrita:
+
+- restrita a master ou admin da empresa, conforme helpers existentes do projeto.
+
+Rollback:
+
+- o rollback remove policies, triggers, índices, tabela e funções criadas para `df_destinatarios_alertas`;
+- deve ser usado somente se a migration recém-aplicada falhar nos testes iniciais e antes de uso real da funcionalidade.
+
 ## Riscos
 
 - Misturar usuário do sistema com destinatário de alerta pode conceder acesso indevido.
@@ -58,8 +123,9 @@ Este ciclo não corrige encoding no envio real.
 
 ## Ordem segura futura
 
-1. Banco/RLS com rollback para destinatários por empresa.
-2. Service/hook para leitura e gravação segura.
-3. Frontend de cadastro em Configurações.
-4. Ajuste do GitHub Actions para priorizar destinatários configurados.
-5. Validação controlada de envio real.
+1. Revisar e aplicar manualmente a migration de banco/RLS.
+2. Rodar o diagnóstico estrutural e testes negativos de RLS.
+3. Criar service/hook para leitura e gravação segura.
+4. Criar frontend de cadastro em Configurações.
+5. Ajustar o GitHub Actions para priorizar destinatários configurados.
+6. Validar envio real de forma controlada.

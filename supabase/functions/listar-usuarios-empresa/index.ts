@@ -96,10 +96,16 @@ serve(async (req) => {
 
     let profiles: any[] = []
     if (usuarioIds.length > 0) {
-      const { data: profileData } = await supabaseAdmin
+      const { data: profileData, error: profilesError } = await supabaseAdmin
         .from('profiles')
-        .select('id, name, full_name, nome, email, role, perfil, status')
+        .select('id, name, nome, role, status, empresa_id')
         .in('id', usuarioIds)
+
+      if (profilesError) {
+        console.warn('[listar-usuarios-empresa] Falha ao carregar profiles complementares.', {
+          message: profilesError.message
+        })
+      }
 
       profiles = profileData || []
     }
@@ -108,13 +114,13 @@ serve(async (req) => {
 
     const resultado = (usuarios || []).map((usuario) => {
       const profile = usuario.user_id ? profilesPorId.get(usuario.user_id) : null
-      const email = String(usuario.email || profile?.email || '').trim().toLowerCase()
-      const perfil = normalizarPerfil(usuario.perfil || profile?.role || profile?.perfil || 'operador')
+      const email = String(usuario.email || '').trim().toLowerCase()
+      const perfil = normalizarPerfil(usuario.perfil || profile?.role || 'operador')
 
       return {
         ...usuario,
         empresa_id: usuario.empresa_id || empresaId,
-        nome: usuario.nome || profile?.name || profile?.full_name || profile?.nome || usuario.email,
+        nome: usuario.nome || profile?.nome || profile?.name || 'Usuário',
         email,
         perfil,
         status: usuario.status || profile?.status || 'ativo'
@@ -126,8 +132,11 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('[listar-usuarios-empresa] Erro ao listar usuários da empresa.', { message })
+
     return new Response(
-      JSON.stringify({ ok: false, message: error.message }),
+      JSON.stringify({ ok: false, message: 'Não foi possível listar usuários da empresa.' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
     )
   }

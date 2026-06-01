@@ -5,8 +5,52 @@ on:
     inputs:
       tipo:
         description: 'AUTO, HOJE, AMANHA ou VENCIDAS'
+        type: choice
+        options:
+          - AUTO
+          - HOJE
+          - AMANHA
+          - VENCIDAS
         required: false
         default: 'AUTO'
+      dry_run:
+        description: 'Manter true para teste sem envio real'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: true
+        default: 'true'
+      modo_teste:
+        description: 'Obrigatorio true para envio real controlado'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: true
+        default: 'true'
+      tipo_destinatario:
+        description: 'Preferencia de destinatarios a usar no teste'
+        type: choice
+        options:
+          - todos
+          - contas
+          - notas
+          - resumo
+        required: true
+        default: 'todos'
+      limite_destinatarios:
+        description: 'Para envio real controlado deve ser 1'
+        required: true
+        default: '1'
+      empresa_id:
+        description: 'Obrigatorio para envio real controlado'
+        required: false
+        default: ''
+      confirmar_envio_real:
+        description: 'Para dry_run=false use CONFIRMO_ENVIO_REAL_CONTROLADO'
+        required: false
+        default: ''
   schedule:
     # 08:00, 09:00 e 20:00 America/Sao_Paulo = 11:00, 12:00 e 23:00 UTC.
     # Minuto 7 evita o topo da hora, quando o GitHub Actions pode atrasar mais.
@@ -22,7 +66,12 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      DRY_RUN: ${{ secrets.DRY_RUN }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || secrets.DRY_RUN }}
+      MODO_TESTE: ${{ github.event_name == 'workflow_dispatch' && inputs.modo_teste || 'false' }}
+      TIPO_DESTINATARIO_TESTE: ${{ github.event_name == 'workflow_dispatch' && inputs.tipo_destinatario || 'todos' }}
+      LIMITE_DESTINATARIOS: ${{ github.event_name == 'workflow_dispatch' && inputs.limite_destinatarios || '' }}
+      EMPRESA_ID_TESTE: ${{ github.event_name == 'workflow_dispatch' && inputs.empresa_id || '' }}
+      CONFIRMAR_ENVIO_REAL: ${{ github.event_name == 'workflow_dispatch' && inputs.confirmar_envio_real || '' }}
       MAIL_TO_FALLBACK: ${{ secrets.MAIL_TO_FALLBACK }}
       SMTP_HOST: ${{ secrets.SMTP_HOST }}
       SMTP_PORT: ${{ secrets.SMTP_PORT }}

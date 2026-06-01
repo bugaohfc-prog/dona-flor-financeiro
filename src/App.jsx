@@ -687,11 +687,12 @@ export default function App() {
         if (item.tela === 'usuarios') return podeAdministrarUsuarios()
         if (['billing', 'onboarding'].includes(item.tela)) return temPermissao(['admin'])
         if (item.peopleOnly) return podeAcessarGestaoPessoas()
-        if (['configuracoes', 'filiais'].includes(item.tela)) return podeAcessarConfiguracoes()
+        if (item.tela === 'filiais') return podeEditarConfiguracoes()
+        if (item.tela === 'configuracoes') return podeAcessarConfiguracoes()
         return !item.masterOnly || permissoesUsuario?.canManageCompanies
       })
     }))
-    .filter((grupo) => grupo.items.length > 0), [permissoesUsuario?.canManageCompanies, podeAcessarConfiguracoes, podeAcessarGestaoPessoas, podeAdministrarUsuarios, podeGerenciarLixeira, podeImportarContas, temPermissao])
+    .filter((grupo) => grupo.items.length > 0), [permissoesUsuario?.canManageCompanies, podeAcessarConfiguracoes, podeAcessarGestaoPessoas, podeAdministrarUsuarios, podeEditarConfiguracoes, podeGerenciarLixeira, podeImportarContas, temPermissao])
 
   async function recarregarEmpresasDisponiveis() {
     if (!usuarioLogado) return
@@ -4203,7 +4204,7 @@ export default function App() {
 
 
   if (telaAtual === 'filiais') {
-    if (!podeAcessarConfiguracoes()) {
+    if (!podeEditarConfiguracoes()) {
       return renderAppFrame(
         <>
           <h1 style={styles.titulo}>🏬 Filiais</h1>
@@ -4484,12 +4485,30 @@ export default function App() {
         </section>
 
         <section style={styles.cardConfiguracao} className="settings-card settings-branches-card">
-          <HeaderExpansivel
-            styles={styles}
-            titulo="🏬 Filiais / Unidades"
-            aberto={false}
-            onClick={() => navegarPara('filiais')}
-          />
+          {podeEditarConfiguracoes() ? (
+            <HeaderExpansivel
+              styles={styles}
+              titulo="🏬 Filiais / Unidades"
+              aberto={false}
+              onClick={() => navegarPara('filiais')}
+            />
+          ) : (
+            <div style={styles.headerExpansivel}>
+              <span
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  color: '#0f172a',
+                  fontWeight: 900,
+                  lineHeight: 1.1
+                }}
+              >
+                <span style={{ fontSize: 24, lineHeight: 1 }}>🏬</span>
+                <span>Filiais / Unidades</span>
+              </span>
+            </div>
+          )}
 
           <p style={styles.textoNota}>
             Cadastre lojas, unidades, produção ou delivery dentro da empresa ativa para organizar melhor a operação.
@@ -4500,9 +4519,11 @@ export default function App() {
             <span>Isolamento por empresa ativo</span>
           </div>
 
-          <button style={styles.btnSalvar} onClick={() => navegarPara('filiais')}>
-            Gerenciar filiais
-          </button>
+          {podeEditarConfiguracoes() && (
+            <button style={styles.btnSalvar} onClick={() => navegarPara('filiais')}>
+              Gerenciar filiais
+            </button>
+          )}
         </section>
 
         <section style={styles.cardConfiguracao} className="settings-card settings-usage-card">

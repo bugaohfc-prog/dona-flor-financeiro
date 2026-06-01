@@ -1,4 +1,5 @@
 import { lazy } from 'react'
+import { handleChunkLoadError } from '../utils/chunkRecovery.js'
 
 export const lazyRouteImports = {
   dashboard: () => import('../components/routes/DashboardRouteComposition.jsx'),
@@ -41,21 +42,31 @@ export function getLazyRouteName(screenName) {
   return routeImportByScreen[screenName] || null
 }
 
-export const LazyDashboardRouteComposition = lazy(lazyRouteImports.dashboard)
-export const LazyContasPage = lazy(lazyRouteImports.contas)
-export const LazyRelatorios = lazy(lazyRouteImports.relatorios)
-export const LazyNotasPage = lazy(lazyRouteImports.notas)
-export const LazyMasterPanelPage = lazy(lazyRouteImports.masterPanel)
-export const LazyOnboardingPage = lazy(lazyRouteImports.onboarding)
-export const LazyBillingPage = lazy(lazyRouteImports.billing)
-export const LazyFiliaisPage = lazy(lazyRouteImports.filiais)
-export const LazyFuncionariosPage = lazy(lazyRouteImports.funcionarios)
-export const LazyFeriasPage = lazy(lazyRouteImports.ferias)
-export const LazyFechamentoFolhaPage = lazy(lazyRouteImports.fechamentoFolha)
-export const LazyRelatoriosPessoasPage = lazy(lazyRouteImports.relatoriosPessoas)
-export const LazyRelatoriosFeriasPage = lazy(lazyRouteImports.relatoriosFerias)
-export const LazyUsuariosPage = lazy(lazyRouteImports.usuarios)
-export const LazyCopilotDrawer = lazy(lazyRouteImports.copilotDrawer)
+function lazyWithRecovery(routeName) {
+  return lazy(() => lazyRouteImports[routeName]().catch((error) => {
+    const reloadStarted = handleChunkLoadError(error, routeName)
+    if (reloadStarted) {
+      return new Promise(() => {})
+    }
+    throw error
+  }))
+}
+
+export const LazyDashboardRouteComposition = lazyWithRecovery('dashboard')
+export const LazyContasPage = lazyWithRecovery('contas')
+export const LazyRelatorios = lazyWithRecovery('relatorios')
+export const LazyNotasPage = lazyWithRecovery('notas')
+export const LazyMasterPanelPage = lazyWithRecovery('masterPanel')
+export const LazyOnboardingPage = lazyWithRecovery('onboarding')
+export const LazyBillingPage = lazyWithRecovery('billing')
+export const LazyFiliaisPage = lazyWithRecovery('filiais')
+export const LazyFuncionariosPage = lazyWithRecovery('funcionarios')
+export const LazyFeriasPage = lazyWithRecovery('ferias')
+export const LazyFechamentoFolhaPage = lazyWithRecovery('fechamentoFolha')
+export const LazyRelatoriosPessoasPage = lazyWithRecovery('relatoriosPessoas')
+export const LazyRelatoriosFeriasPage = lazyWithRecovery('relatoriosFerias')
+export const LazyUsuariosPage = lazyWithRecovery('usuarios')
+export const LazyCopilotDrawer = lazyWithRecovery('copilotDrawer')
 
 
 const preloadedRoutes = new Set()

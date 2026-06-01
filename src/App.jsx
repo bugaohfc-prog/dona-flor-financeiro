@@ -44,6 +44,7 @@ import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsua
 import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario } from './services/permissoesService'
 import { listarFiliaisPorEmpresa } from './services/filiaisService'
 import { verificarUsoCentroCusto } from './services/contasService'
+import { clearChunkReloadAttempt } from './utils/chunkRecovery.js'
 import './styles.css'
 import styles from './styles/appStyles.js'
 import menuSections, { MODULOS_TOPBAR, resolverContextoModulo } from './config/menuSections.js'
@@ -92,9 +93,37 @@ const DESTINATARIO_ALERTA_FORM_INICIAL = {
   ativo: true
 }
 
+const SESSION_RETURN_SCREEN_KEY = 'dna_gestao_session_return_screen'
+const TELAS_RETORNO_SESSAO = new Set([
+  'dashboard',
+  'agenda',
+  'notas',
+  'contas',
+  'relatorios',
+  'configuracoes',
+  'importar',
+  'lixeira',
+  'usuarios',
+  'filiais',
+  'billing',
+  'onboarding',
+  'master-empresas',
+  'funcionarios',
+  'ferias',
+  'fechamento-folha',
+  'relatorios-pessoas',
+  'relatorios-ferias'
+])
+
+function telaRetornoSessaoSegura(tela) {
+  const telaNormalizada = String(tela || '').trim()
+  return TELAS_RETORNO_SESSAO.has(telaNormalizada) ? telaNormalizada : 'dashboard'
+}
+
 export default function App() {
   const sincronizacaoTenantRef = useRef(null)
   const sessaoEncerradaRef = useRef(true)
+  const telaAtualRef = useRef('dashboard')
   const { globalLoading, toast: globalToast, showToast, hideToast, empresaAtiva, setEmpresaAtiva, limparEmpresaAtiva, empresasDisponiveis, setEmpresasDisponiveis } = useApp()
   // =========================
   // BLOCO 0 — UTILITÁRIOS
@@ -371,6 +400,11 @@ export default function App() {
   }, [])
 
   const navegarParaLoginCallback = useCallback(() => {
+    try {
+      window.sessionStorage.setItem(SESSION_RETURN_SCREEN_KEY, telaRetornoSessaoSegura(telaAtualRef.current))
+    } catch (error) {
+      console.warn('Nao foi possivel salvar tela de retorno da sessao:', error?.message || error)
+    }
     setTelaAtualState('dashboard')
   }, [])
 
@@ -403,7 +437,28 @@ export default function App() {
 
 
   useEffect(() => {
+    telaAtualRef.current = telaAtual
+  }, [telaAtual])
+
+  useEffect(() => {
     sessaoEncerradaRef.current = !usuarioLogado?.id
+
+    if (!usuarioLogado?.id) return
+
+    clearChunkReloadAttempt()
+
+    let telaRetorno = ''
+    try {
+      telaRetorno = window.sessionStorage.getItem(SESSION_RETURN_SCREEN_KEY) || ''
+      window.sessionStorage.removeItem(SESSION_RETURN_SCREEN_KEY)
+    } catch (error) {
+      console.warn('Nao foi possivel recuperar tela de retorno da sessao:', error?.message || error)
+    }
+
+    const proximaTela = telaRetornoSessaoSegura(telaRetorno)
+    if (telaRetorno && telaAtualRef.current !== proximaTela) {
+      setTelaAtualState(proximaTela)
+    }
   }, [usuarioLogado?.id])
 
   async function podeContinuarOperacaoTenant(empresaAtual = empresaId) {

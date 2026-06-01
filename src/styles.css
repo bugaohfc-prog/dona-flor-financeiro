@@ -1,6 +1,82 @@
 @import './styles/base.css';
 @import './styles/legacy-dashboard.css';
 
+.app-recovery-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f8fafc;
+  color: #0f172a;
+  box-sizing: border-box;
+}
+
+.app-recovery-card {
+  width: min(520px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 28px;
+  border: 1px solid #dbe3ea;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, .12);
+}
+
+.app-recovery-kicker {
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.app-recovery-card h1 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.app-recovery-card p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.app-recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+
+.app-recovery-actions button {
+  min-height: 42px;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.app-recovery-primary {
+  border: 1px solid #0f766e;
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.app-recovery-secondary {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+}
+
+.app-route-loading {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  color: #0f766e;
+  font-weight: 900;
+}
+
 /* Perfil do usuário */
 .top-user-profile-button {
   border: 1px solid #d8eee9 !important;

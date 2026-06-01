@@ -1,5 +1,7 @@
 import { SummarySkeleton, NotesSkeleton } from '../feedback/Skeletons.jsx'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
+import { useApp } from '../../context/AppContext.jsx'
+import { useResumoGestaoPessoasPainel } from '../../hooks/useResumoGestaoPessoasPainel.js'
 
 export default function DashboardHome({
   styles,
@@ -27,9 +29,23 @@ export default function DashboardHome({
   filtroFilial = '',
   setFiltroFilial = () => {},
 }) {
+  const { empresaId, perfilEmpresaAtiva } = useApp()
   const valorSeguro = (valor) => Number(valor || 0)
   const filialSelecionada = (filiais || []).find((filial) => filial.id === filtroFilial)
   const LIMITE_NOTAS_PAINEL = 5
+  const perfilUsuario = String(perfilEmpresaAtiva || '').trim().toLowerCase()
+  const podeAcessarGestaoPessoas = ['admin', 'master'].includes(perfilUsuario)
+  const {
+    loading: loadingResumoPessoas,
+    erro: erroResumoPessoas,
+    podeVisualizar: podeVisualizarResumoPessoas,
+    resumo: resumoPessoas,
+    alertas: alertasPessoas
+  } = useResumoGestaoPessoasPainel({
+    empresaId,
+    perfilUsuario,
+    podeAcessarGestaoPessoas
+  })
 
   useEffect(() => {
     setMostrarNotas(true)
@@ -88,6 +104,23 @@ export default function DashboardHome({
   const proximaConta = contasAgenda.find((conta) => diferencaDias(conta.data_vencimento) >= 0) || contasAgenda[0]
   const totalHoje = contasHoje.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
   const totalSemana = contasSemana.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
+  const contadoresPessoas = useMemo(() => {
+    const contadores = [
+      { label: 'Funcion\u00e1rios ativos', valor: resumoPessoas.funcionariosAtivos },
+      { label: 'F\u00e9rias pr\u00f3ximas', valor: resumoPessoas.feriasProximas },
+      { label: 'F\u00e9rias vencidas', valor: resumoPessoas.feriasVencidas },
+      { label: 'Anivers\u00e1rios da semana', valor: resumoPessoas.aniversariosSemana }
+    ].filter((item) => Number(item.valor || 0) > 0)
+
+    if (resumoPessoas.folhaEmAberto) {
+      contadores.splice(2, 0, {
+        label: 'Folha em aberto',
+        valor: resumoPessoas.folhaEmAberto.competencia || 'Aberta'
+      })
+    }
+
+    return contadores.slice(0, 3)
+  }, [resumoPessoas])
   const notasPainel = notasPendentes
     .map(prioridadeNotaPainel)
     .sort((a, b) => {
@@ -219,6 +252,78 @@ export default function DashboardHome({
 
             <button className="executive-agenda-cta" onClick={() => navegarPara('contas')}>Ver contas</button>
           </div>
+
+          {podeVisualizarResumoPessoas && (
+            <div className="dashboard-analytics-card" aria-label={'Resumo de Gest\u00e3o de Pessoas'}>
+              <div className="analytics-card-header">
+                <div>
+                  <span className="analytics-kicker">{'Gest\u00e3o de Pessoas'}</span>
+                  <strong>Alertas e prazos da equipe</strong>
+                </div>
+                <span className="analytics-badge neutral">{(alertasPessoas || []).length} alerta(s)</span>
+              </div>
+
+              {loadingResumoPessoas ? (
+                <div className="analytics-empty">Carregando resumo de pessoas...</div>
+              ) : erroResumoPessoas ? (
+                <div className="analytics-empty">{'N\u00e3o foi poss\u00edvel carregar o resumo de Gest\u00e3o de Pessoas.'}</div>
+              ) : (
+                <>
+                  {contadoresPessoas.length > 0 && (
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                        gap: 8,
+                        marginBottom: 12
+                      }}
+                    >
+                      {contadoresPessoas.map((contador) => (
+                        <div
+                          key={contador.label}
+                          style={{
+                            background: '#f8fafc',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: 12,
+                            padding: '9px 10px'
+                          }}
+                        >
+                          <small style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700 }}>{contador.label}</small>
+                          <strong style={{ color: '#111827', display: 'block', fontSize: 16, marginTop: 3 }}>{contador.valor}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {(alertasPessoas || []).length === 0 ? (
+                    <div className="analytics-empty">{'Nenhuma pend\u00eancia cr\u00edtica de pessoas no momento.'}</div>
+                  ) : (
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      {(alertasPessoas || []).slice(0, 3).map((alerta) => (
+                        <button
+                          key={alerta.id}
+                          type="button"
+                          onClick={() => alerta.rotaDestino && navegarPara(alerta.rotaDestino)}
+                          style={{
+                            background: '#ffffff',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: 12,
+                            color: '#111827',
+                            cursor: alerta.rotaDestino ? 'pointer' : 'default',
+                            padding: '10px 12px',
+                            textAlign: 'left'
+                          }}
+                        >
+                          <strong style={{ display: 'block', fontSize: 13 }}>{alerta.titulo}</strong>
+                          <small style={{ color: '#64748b', display: 'block', marginTop: 3 }}>{alerta.descricao}</small>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </section>
       )}
 

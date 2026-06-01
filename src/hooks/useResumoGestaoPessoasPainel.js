@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase as supabasePadrao } from '../lib/supabase'
-import { calcularSaldoDiasFerias } from '../services/funcionariosFeriasService'
+import {
+  calcularSaldoDiasFerias,
+  listarCiclosFerias,
+  listarPeriodosFerias
+} from '../services/funcionariosFeriasService'
 import { mensagemSeguraErro } from '../utils/session'
 
 const RESUMO_VAZIO = Object.freeze({
@@ -14,8 +18,6 @@ const RESUMO_VAZIO = Object.freeze({
 const STATUS_FOLHA_EM_ABERTO = new Set(['aberta', 'em_conferencia'])
 
 const SELECT_FUNCIONARIOS_PAINEL = 'id, status, arquivado, data_nascimento'
-const SELECT_CICLOS_FERIAS_PAINEL = 'id, funcionario_id, data_limite_gozo, dias_direito, arquivado'
-const SELECT_PERIODOS_FERIAS_PAINEL = 'ciclo_ferias_id, quantidade_dias, status, arquivado'
 const SELECT_FOLHA_PAINEL = 'competencia, status, arquivado'
 
 function normalizarId(valor) {
@@ -94,7 +96,7 @@ function montarAlertas(resumo) {
     alertas.push(criarAlerta({
       id: 'ferias-vencidas',
       tipo: 'ferias',
-      titulo: 'Ferias vencidas',
+      titulo: 'Férias vencidas',
       descricao: `${resumo.feriasVencidas} ciclo(s) com limite de gozo ultrapassado.`,
       prioridade: 'alta',
       rotaDestino: 'relatorios-ferias'
@@ -106,7 +108,7 @@ function montarAlertas(resumo) {
       id: 'folha-em-aberto',
       tipo: 'folha',
       titulo: 'Folha em aberto',
-      descricao: `Competencia ${resumo.folhaEmAberto.competencia} com status ${resumo.folhaEmAberto.status}.`,
+      descricao: `Competência ${resumo.folhaEmAberto.competencia} com status ${resumo.folhaEmAberto.status}.`,
       prioridade: resumo.folhaEmAberto.status === 'aberta' ? 'alta' : 'media',
       rotaDestino: 'fechamento-folha'
     }))
@@ -116,8 +118,8 @@ function montarAlertas(resumo) {
     alertas.push(criarAlerta({
       id: 'ferias-proximas',
       tipo: 'ferias',
-      titulo: 'Ferias proximas',
-      descricao: `${resumo.feriasProximas} ciclo(s) com limite de gozo nos proximos 30 dias.`,
+      titulo: 'Férias próximas',
+      descricao: `${resumo.feriasProximas} ciclo(s) com limite de gozo nos próximos 30 dias.`,
       prioridade: 'media',
       rotaDestino: 'relatorios-ferias'
     }))
@@ -127,8 +129,8 @@ function montarAlertas(resumo) {
     alertas.push(criarAlerta({
       id: 'aniversarios-semana',
       tipo: 'aniversarios',
-      titulo: 'Aniversarios da semana',
-      descricao: `${resumo.aniversariosSemana} aniversario(s) nos proximos 7 dias.`,
+      titulo: 'Aniversários da semana',
+      descricao: `${resumo.aniversariosSemana} aniversário(s) nos próximos 7 dias.`,
       prioridade: 'baixa',
       rotaDestino: 'relatorios-pessoas'
     }))
@@ -138,7 +140,7 @@ function montarAlertas(resumo) {
     alertas.push(criarAlerta({
       id: 'funcionarios-ativos',
       tipo: 'funcionarios',
-      titulo: 'Funcionarios ativos',
+      titulo: 'Funcionários ativos',
       descricao: `${resumo.funcionariosAtivos} colaborador(es) ativos.`,
       prioridade: 'baixa',
       rotaDestino: 'funcionarios'
@@ -155,23 +157,23 @@ async function carregarResumoFerias({ supabase, empresaId, funcionariosAtivos })
   let feriasVencidas = 0
 
   await Promise.all(funcionariosAtivos.map(async (funcionario) => {
-    const { data: ciclos, error: erroCiclos } = await supabase
-      .from('df_funcionarios_ferias_ciclos')
-      .select(SELECT_CICLOS_FERIAS_PAINEL)
-      .eq('empresa_id', empresaId)
-      .eq('funcionario_id', funcionario.id)
-      .eq('arquivado', false)
+    const { data: ciclos, error: erroCiclos } = await listarCiclosFerias({
+      supabase,
+      empresaId,
+      funcionarioId: funcionario.id,
+      incluirArquivados: false
+    })
 
     if (erroCiclos) throw erroCiclos
 
     await Promise.all((ciclos || []).map(async (ciclo) => {
-      const { data: periodos, error: erroPeriodos } = await supabase
-        .from('df_funcionarios_ferias_periodos')
-        .select(SELECT_PERIODOS_FERIAS_PAINEL)
-        .eq('empresa_id', empresaId)
-        .eq('funcionario_id', funcionario.id)
-        .eq('ciclo_ferias_id', ciclo.id)
-        .eq('arquivado', false)
+      const { data: periodos, error: erroPeriodos } = await listarPeriodosFerias({
+        supabase,
+        empresaId,
+        cicloId: ciclo.id,
+        funcionarioId: funcionario.id,
+        incluirArquivados: false
+      })
 
       if (erroPeriodos) throw erroPeriodos
 
@@ -284,7 +286,7 @@ export function useResumoGestaoPessoasPainel({
       } catch (error) {
         if (cancelado || cargaAtualRef.current !== cargaId) return
 
-        setErro(mensagemSeguraErro(error, 'Nao foi possivel carregar o resumo de Gestao de Pessoas.'))
+        setErro(mensagemSeguraErro(error, 'Não foi possível carregar o resumo de Gestão de Pessoas.'))
         setResumo(RESUMO_VAZIO)
         setAlertas([])
       } finally {

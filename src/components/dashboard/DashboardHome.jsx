@@ -90,8 +90,7 @@ export default function DashboardHome({
     loading: loadingResumoPessoas,
     erro: erroResumoPessoas,
     podeVisualizar: podeVisualizarResumoPessoas,
-    resumo: resumoPessoas,
-    alertas: alertasPessoas
+    resumo: resumoPessoas
   } = useResumoGestaoPessoasPainel({
     empresaId,
     perfilUsuario,
@@ -143,36 +142,10 @@ export default function DashboardHome({
     }
   }
 
-  function descricaoAlertaPessoas(alerta) {
-    if (alerta.tipo === 'folha' && resumoPessoas.folhaEmAberto) {
-      return `Compet\u00eancia ${resumoPessoas.folhaEmAberto.competencia || 'em aberto'}`
-    }
-
-    if (alerta.id === 'ferias-vencidas') {
-      return `${resumoPessoas.feriasVencidas} ${resumoPessoas.feriasVencidas === 1 ? 'ciclo vencido' : 'ciclos vencidos'}`
-    }
-
-    if (alerta.id === 'ferias-proximas') {
-      return `${resumoPessoas.feriasProximas} ${resumoPessoas.feriasProximas === 1 ? 'per\u00edodo agendado nos pr\u00f3ximos 30 dias' : 'per\u00edodos agendados nos pr\u00f3ximos 30 dias'}`
-    }
-
-    if (alerta.id === 'exames-vencidos') {
-      return `${resumoPessoas.examesVencidos} ${resumoPessoas.examesVencidos === 1 ? 'peri\u00f3dico vencido' : 'peri\u00f3dicos vencidos'}`
-    }
-
-    if (alerta.id === 'exames-a-vencer') {
-      return `${resumoPessoas.examesAVencer} ${resumoPessoas.examesAVencer === 1 ? 'peri\u00f3dico nos pr\u00f3ximos 30 dias' : 'peri\u00f3dicos nos pr\u00f3ximos 30 dias'}`
-    }
-
-    if (alerta.tipo === 'aniversarios') {
-      return `${resumoPessoas.aniversariosSemana} ${resumoPessoas.aniversariosSemana === 1 ? 'anivers\u00e1rio' : 'anivers\u00e1rios'} nos pr\u00f3ximos 7 dias`
-    }
-
-    if (alerta.tipo === 'funcionarios') {
-      return `${resumoPessoas.funcionariosAtivos} ${resumoPessoas.funcionariosAtivos === 1 ? 'colaborador ativo' : 'colaboradores ativos'}`
-    }
-
-    return alerta.descricao
+  function statusFolhaPainel() {
+    const status = String(resumoPessoas.folhaEmAberto?.status || '').trim().toLowerCase()
+    if (status === 'em_conferencia') return 'Em confer\u00eancia'
+    return 'Pendente'
   }
 
   const contasAgenda = contas
@@ -188,107 +161,70 @@ export default function DashboardHome({
   const totalHoje = contasHoje.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
   const totalSemana = contasSemana.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
   const itensPessoas = useMemo(() => {
-    const prioridadeAlerta = {
-      'folha-em-aberto': 1,
-      'ferias-vencidas': 2,
-      'exames-vencidos': 3,
-      'ferias-proximas': 4,
-      'exames-a-vencer': 5,
-      'funcionarios-ativos': 7
-    }
-    const tiposSelecionados = new Set()
-    const alertas = [...(alertasPessoas || [])]
-      .filter((alerta) => alerta.id !== 'aniversarios-semana')
-      .sort((a, b) => (prioridadeAlerta[a.id] || 99) - (prioridadeAlerta[b.id] || 99))
-      .filter((alerta) => {
-        if (tiposSelecionados.has(alerta.tipo)) return false
-        tiposSelecionados.add(alerta.tipo)
-        return true
-      })
-      .map((alerta) => ({
-        id: alerta.id,
-        tipo: alerta.tipo,
-        titulo: alerta.titulo,
-        descricao: descricaoAlertaPessoas(alerta),
-        rotaDestino: alerta.rotaDestino,
-        destaque: true
-      }))
-    const tiposJaExibidos = new Set(alertas.map((alerta) => alerta.tipo))
-    const itens = [...alertas]
+    const itens = []
 
-    if (!tiposJaExibidos.has('folha') && resumoPessoas.folhaEmAberto) {
+    if (resumoPessoas.folhaEmAberto) {
       itens.push({
-        id: 'contador-folha-em-aberto',
+        id: 'folha-pendente',
         tipo: 'folha',
-        titulo: 'Folha em aberto',
+        titulo: `Folha: ${statusFolhaPainel()}`,
         descricao: `Compet\u00eancia ${resumoPessoas.folhaEmAberto.competencia || 'em aberto'}`,
+        quantidade: '1',
         rotaDestino: 'fechamento-folha'
       })
     }
 
-    if (!tiposJaExibidos.has('ferias') && resumoPessoas.feriasVencidas > 0) {
+    if (resumoPessoas.examesVencidos > 0) {
       itens.push({
-        id: 'contador-ferias-vencidas',
-        tipo: 'ferias',
-        titulo: 'F\u00e9rias vencidas',
-        descricao: `${resumoPessoas.feriasVencidas} ${resumoPessoas.feriasVencidas === 1 ? 'ciclo vencido' : 'ciclos vencidos'}`,
-        rotaDestino: 'relatorios-ferias'
-      })
-    }
-
-    if (!tiposJaExibidos.has('exames') && resumoPessoas.examesVencidos > 0) {
-      itens.push({
-        id: 'contador-exames-vencidos',
+        id: 'exames-atrasados',
         tipo: 'exames',
-        titulo: 'Exames vencidos',
-        descricao: `${resumoPessoas.examesVencidos} ${resumoPessoas.examesVencidos === 1 ? 'peri\u00f3dico vencido' : 'peri\u00f3dicos vencidos'}`,
+        titulo: 'Exames Atrasados',
+        descricao: 'Pend\u00eancias de acompanhamento',
+        quantidade: resumoPessoas.examesVencidos,
+        rotaDestino: 'relatorios-pessoas'
+      })
+    } else if (resumoPessoas.examesAVencer > 0) {
+      itens.push({
+        id: 'exames-a-vencer',
+        tipo: 'exames',
+        titulo: 'Exames a Vencer',
+        descricao: 'Pr\u00f3ximos 30 dias',
+        quantidade: resumoPessoas.examesAVencer,
         rotaDestino: 'relatorios-pessoas'
       })
     }
 
-    if (!tiposJaExibidos.has('ferias') && resumoPessoas.feriasProximas > 0) {
+    if (resumoPessoas.feriasVencidas > 0) {
       itens.push({
-        id: 'contador-ferias-proximas',
+        id: 'ferias-vencidas',
         tipo: 'ferias',
-        titulo: 'F\u00e9rias pr\u00f3ximas',
-        descricao: `${resumoPessoas.feriasProximas} ${resumoPessoas.feriasProximas === 1 ? 'per\u00edodo agendado nos pr\u00f3ximos 30 dias' : 'per\u00edodos agendados nos pr\u00f3ximos 30 dias'}`,
+        titulo: 'F\u00e9rias a Vencer',
+        descricao: 'Ciclos exigem revis\u00e3o',
+        quantidade: resumoPessoas.feriasVencidas,
+        rotaDestino: 'relatorios-ferias'
+      })
+    } else if (resumoPessoas.feriasProximas > 0) {
+      itens.push({
+        id: 'ferias-proximas',
+        tipo: 'ferias',
+        titulo: 'F\u00e9rias a Vencer',
+        descricao: 'Pr\u00f3ximos 30 dias',
+        quantidade: resumoPessoas.feriasProximas,
         rotaDestino: 'ferias'
       })
     }
 
-    if (!tiposJaExibidos.has('exames') && resumoPessoas.examesAVencer > 0) {
-      itens.push({
-        id: 'contador-exames-a-vencer',
-        tipo: 'exames',
-        titulo: 'Exames a vencer',
-        descricao: `${resumoPessoas.examesAVencer} ${resumoPessoas.examesAVencer === 1 ? 'peri\u00f3dico nos pr\u00f3ximos 30 dias' : 'peri\u00f3dicos nos pr\u00f3ximos 30 dias'}`,
-        rotaDestino: 'relatorios-pessoas'
-      })
-    }
-
-    if (!tiposJaExibidos.has('funcionarios') && resumoPessoas.funcionariosAtivos > 0) {
-      itens.push({
-        id: 'contador-funcionarios-ativos',
-        tipo: 'funcionarios',
-        titulo: 'Funcion\u00e1rios ativos',
-        descricao: `${resumoPessoas.funcionariosAtivos} ${resumoPessoas.funcionariosAtivos === 1 ? 'colaborador ativo' : 'colaboradores ativos'}`,
-        rotaDestino: 'funcionarios'
-      })
-    }
-
     return itens.slice(0, 3)
-  }, [alertasPessoas, resumoPessoas])
+  }, [resumoPessoas])
   const agendaEquipePessoas = useMemo(() => {
-    if (resumoPessoas.aniversariosSemana <= 0) return null
-
     return {
-      id: 'agenda-aniversarios-semana',
+      id: 'agenda-equipe',
       titulo: 'Agenda da equipe',
-      descricao: `Anivers\u00e1rios da semana: ${resumoPessoas.aniversariosSemana} ${resumoPessoas.aniversariosSemana === 1 ? 'anivers\u00e1rio' : 'anivers\u00e1rios'} nos pr\u00f3ximos 7 dias`,
+      aniversarios: resumoPessoas.aniversariosSemana,
+      equipeAtiva: resumoPessoas.funcionariosAtivos,
       rotaDestino: 'relatorios-pessoas'
     }
-  }, [resumoPessoas.aniversariosSemana])
-  const totalItensPessoas = itensPessoas.length + (agendaEquipePessoas ? 1 : 0)
+  }, [resumoPessoas.aniversariosSemana, resumoPessoas.funcionariosAtivos])
   const notasPainel = notasPendentes
     .map(prioridadeNotaPainel)
     .sort((a, b) => {
@@ -426,9 +362,9 @@ export default function DashboardHome({
               <div className="analytics-card-header" style={operacionalHeaderStyle}>
                 <div>
                   <span className="analytics-kicker">{'Gest\u00e3o de Pessoas'}</span>
-                  <strong>Alertas e prazos da equipe</strong>
+                  <strong>Resumo da equipe</strong>
                 </div>
-                <span className="analytics-badge neutral" style={operacionalBadgeStyle}>{totalItensPessoas} {totalItensPessoas === 1 ? 'item' : 'itens'}</span>
+                <span className="analytics-badge neutral" style={operacionalBadgeStyle}>Equipe Ativa: {resumoPessoas.funcionariosAtivos}</span>
               </div>
 
               {loadingResumoPessoas ? (
@@ -437,10 +373,10 @@ export default function DashboardHome({
                 <div className="dashboard-people-item analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>{'N\u00e3o foi poss\u00edvel carregar o resumo de Gest\u00e3o de Pessoas.'}</div>
               ) : (
                 <>
-                  {itensPessoas.length === 0 && !agendaEquipePessoas ? (
-                    <div className="dashboard-people-item analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>{'Nenhuma pend\u00eancia cr\u00edtica de pessoas no momento.'}</div>
+                  {itensPessoas.length === 0 ? (
+                    <div className="dashboard-people-item analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>{'Sem alertas principais no momento.'}</div>
                   ) : (
-                    <div style={{ display: 'grid', gap: 8 }}>
+                    <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
                       {itensPessoas.map((item) => (
                         <button
                           className="dashboard-people-item"
@@ -448,37 +384,71 @@ export default function DashboardHome({
                           type="button"
                           onClick={() => item.rotaDestino && navegarPara(item.rotaDestino)}
                           style={{
-                            background: item.destaque ? '#f8fafc' : '#ffffff',
+                            background: '#f8fafc',
                             color: '#111827',
                             cursor: item.rotaDestino ? 'pointer' : 'default',
                             textAlign: 'left',
+                            gap: 8,
                             ...gestaoPessoasItemStyle
                           }}
                         >
-                          <strong style={{ display: 'block', fontSize: 13 }}>{item.titulo}</strong>
-                          <small style={{ color: '#64748b', display: 'block', marginTop: 3 }}>{item.descricao}</small>
+                          <span style={{ alignItems: 'center', display: 'flex', gap: 8, justifyContent: 'space-between', width: '100%' }}>
+                            <strong style={{ display: 'block', fontSize: 13, lineHeight: 1.2 }}>{item.titulo}</strong>
+                            <span style={{
+                              background: item.tipo === 'folha' ? '#fef3c7' : item.tipo === 'exames' ? '#fee2e2' : '#e0f2fe',
+                              border: '1px solid rgba(15, 23, 42, .08)',
+                              borderRadius: 999,
+                              color: item.tipo === 'folha' ? '#92400e' : item.tipo === 'exames' ? '#991b1b' : '#0369a1',
+                              flex: '0 0 auto',
+                              fontSize: 12,
+                              fontWeight: 900,
+                              lineHeight: 1,
+                              padding: '5px 8px'
+                            }}>
+                              {item.quantidade}
+                            </span>
+                          </span>
+                          <small style={{ color: '#64748b', display: 'block', fontSize: 12, lineHeight: 1.35 }}>{item.descricao}</small>
                         </button>
                       ))}
-                      {agendaEquipePessoas && (
-                        <button
-                          className="dashboard-people-item"
-                          type="button"
-                          onClick={() => agendaEquipePessoas.rotaDestino && navegarPara(agendaEquipePessoas.rotaDestino)}
-                          style={{
-                            background: '#ffffff',
-                            borderStyle: 'dashed',
-                            color: '#111827',
-                            cursor: agendaEquipePessoas.rotaDestino ? 'pointer' : 'default',
-                            textAlign: 'left',
-                            ...gestaoPessoasItemStyle
-                          }}
-                        >
-                          <strong style={{ display: 'block', fontSize: 12 }}>{agendaEquipePessoas.titulo}</strong>
-                          <small style={{ color: '#64748b', display: 'block', marginTop: 3 }}>{agendaEquipePessoas.descricao}</small>
-                        </button>
-                      )}
                     </div>
                   )}
+                  <button
+                    className="dashboard-people-item"
+                    type="button"
+                    onClick={() => agendaEquipePessoas.rotaDestino && navegarPara(agendaEquipePessoas.rotaDestino)}
+                    style={{
+                      ...gestaoPessoasItemStyle,
+                      alignItems: 'center',
+                      background: '#ffffff',
+                      borderStyle: 'dashed',
+                      color: '#334155',
+                      cursor: agendaEquipePessoas.rotaDestino ? 'pointer' : 'default',
+                      display: 'flex',
+                      flexDirection: 'row',
+                      gap: 10,
+                      justifyContent: 'space-between',
+                      marginTop: 2,
+                      textAlign: 'left'
+                    }}
+                  >
+                    <span>
+                      <strong style={{ display: 'block', fontSize: 12 }}>{agendaEquipePessoas.titulo}</strong>
+                      <small style={{ color: '#64748b', display: 'block', marginTop: 2 }}>Aniversariantes nos pr\u00f3ximos 7 dias</small>
+                    </span>
+                    <span style={{
+                      background: '#f1f5f9',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: 999,
+                      color: '#475569',
+                      flex: '0 0 auto',
+                      fontSize: 12,
+                      fontWeight: 900,
+                      padding: '5px 9px'
+                    }}>
+                      Aniversariantes: {agendaEquipePessoas.aniversarios}
+                    </span>
+                  </button>
                 </>
               )}
             </div>

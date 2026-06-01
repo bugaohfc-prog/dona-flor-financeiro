@@ -684,12 +684,14 @@ export default function App() {
       items: grupo.items.filter((item) => {
         if (item.tela === 'importar') return podeImportarContas()
         if (item.tela === 'lixeira') return podeGerenciarLixeira()
+        if (item.tela === 'usuarios') return podeAdministrarUsuarios()
+        if (['billing', 'onboarding'].includes(item.tela)) return temPermissao(['admin'])
         if (item.peopleOnly) return podeAcessarGestaoPessoas()
-        if (['usuarios', 'configuracoes', 'billing', 'filiais', 'onboarding'].includes(item.tela)) return podeAcessarConfiguracoes()
+        if (['configuracoes', 'filiais'].includes(item.tela)) return podeAcessarConfiguracoes()
         return !item.masterOnly || permissoesUsuario?.canManageCompanies
       })
     }))
-    .filter((grupo) => grupo.items.length > 0), [permissoesUsuario?.canManageCompanies, podeAcessarConfiguracoes, podeAcessarGestaoPessoas, podeGerenciarLixeira, podeImportarContas])
+    .filter((grupo) => grupo.items.length > 0), [permissoesUsuario?.canManageCompanies, podeAcessarConfiguracoes, podeAcessarGestaoPessoas, podeAdministrarUsuarios, podeGerenciarLixeira, podeImportarContas, temPermissao])
 
   async function recarregarEmpresasDisponiveis() {
     if (!usuarioLogado) return

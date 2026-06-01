@@ -4392,9 +4392,9 @@ export default function App() {
               </label>
 
               <div style={styles.configResumo}>
-                <strong>Envio automatico atual</strong>
-                <span>E-mail: {configEmail ? 'Ativo para os alertas automaticos' : 'Desligado'}</span>
-                <span>WhatsApp e Push: nao configurados no fluxo atual.</span>
+                <strong>Envio automático atual</strong>
+                <span>E-mail: {configEmail ? 'Ativo para os alertas automáticos' : 'Desligado'}</span>
+                <span>WhatsApp e Push: não configurados no fluxo atual.</span>
               </div>
             </>
           )}
@@ -4426,12 +4426,26 @@ export default function App() {
 
               <input
                 style={styles.input}
-                placeholder="E-mail padrão"
+                placeholder="E-mail padrão da empresa"
                 value={emailPadrao}
                 onChange={(e) => setEmailPadrao(e.target.value)}
               />
             </>
           )}
+        </section>
+
+        <section style={styles.cardConfiguracao} className="settings-card settings-alert-recipients-card">
+          <h2 style={styles.subtitulo}>Destinatários de alertas</h2>
+
+          <p style={styles.textoNota}>
+            Futuramente, esta área permitirá cadastrar e-mails de donos ou responsáveis para receber
+            notificações sem criar usuário no sistema.
+          </p>
+
+          <div style={styles.configResumo}>
+            <span>Estado atual: envio por e-mail usa usuários da empresa ou o e-mail padrão como fallback.</span>
+            <span>Nenhum destinatário novo é salvo nesta etapa.</span>
+          </div>
         </section>
 
 
@@ -4531,15 +4545,15 @@ export default function App() {
           <h2 style={styles.subtitulo}>🧠 Como o sistema vai usar</h2>
 
           <p style={styles.textoNota}>
-            O envio automatico atual usa e-mail. WhatsApp e Push permanecem apenas como configuracoes
-            reservadas, sem disparo automatico ativo neste fluxo.
+            O envio automático atual usa e-mail. WhatsApp e Push permanecem apenas como configurações
+            reservadas, sem disparo automático ativo neste fluxo.
           </p>
 
           <div style={styles.configResumo}>
             <span>Geral: {notificacoesAtivas ? 'Ligado' : 'Desligado'}</span>
             <span>E-mail: {configEmail ? 'Ativo' : 'Desligado'}</span>
-            <span>WhatsApp: nao configurado para envio automatico</span>
-            <span>Push: nao configurado para envio automatico</span>
+            <span>WhatsApp: não configurado para envio automático</span>
+            <span>Push: não configurado para envio automático</span>
           </div>
         </section>
 

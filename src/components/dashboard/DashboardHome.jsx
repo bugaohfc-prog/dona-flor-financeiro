@@ -144,7 +144,7 @@ export default function DashboardHome({
 
   function statusFolhaPainel() {
     const status = String(resumoPessoas.folhaEmAberto?.status || '').trim().toLowerCase()
-    if (status === 'em_conferencia') return 'Em confer\u00eancia'
+    if (status === 'em_conferencia') return 'Em conferência'
     return 'Pendente'
   }
 
@@ -168,7 +168,7 @@ export default function DashboardHome({
         id: 'folha-pendente',
         tipo: 'folha',
         titulo: `Folha: ${statusFolhaPainel()}`,
-        descricao: `Compet\u00eancia ${resumoPessoas.folhaEmAberto.competencia || 'em aberto'}`,
+        descricao: `Competência ${resumoPessoas.folhaEmAberto.competencia || 'em aberto'}`,
         quantidade: '1',
         rotaDestino: 'fechamento-folha'
       })
@@ -179,7 +179,7 @@ export default function DashboardHome({
         id: 'exames-atrasados',
         tipo: 'exames',
         titulo: 'Exames Atrasados',
-        descricao: 'Pend\u00eancias de acompanhamento',
+        descricao: 'Pendências de acompanhamento',
         quantidade: resumoPessoas.examesVencidos,
         rotaDestino: 'relatorios-pessoas'
       })
@@ -188,7 +188,7 @@ export default function DashboardHome({
         id: 'exames-a-vencer',
         tipo: 'exames',
         titulo: 'Exames a Vencer',
-        descricao: 'Pr\u00f3ximos 30 dias',
+        descricao: 'Próximos 30 dias',
         quantidade: resumoPessoas.examesAVencer,
         rotaDestino: 'relatorios-pessoas'
       })
@@ -198,8 +198,8 @@ export default function DashboardHome({
       itens.push({
         id: 'ferias-vencidas',
         tipo: 'ferias',
-        titulo: 'F\u00e9rias a Vencer',
-        descricao: 'Ciclos exigem revis\u00e3o',
+        titulo: 'Férias a Vencer',
+        descricao: 'Ciclos exigem revisão',
         quantidade: resumoPessoas.feriasVencidas,
         rotaDestino: 'relatorios-ferias'
       })
@@ -207,8 +207,8 @@ export default function DashboardHome({
       itens.push({
         id: 'ferias-proximas',
         tipo: 'ferias',
-        titulo: 'F\u00e9rias a Vencer',
-        descricao: 'Pr\u00f3ximos 30 dias',
+        titulo: 'Férias a Vencer',
+        descricao: 'Próximos 30 dias',
         quantidade: resumoPessoas.feriasProximas,
         rotaDestino: 'ferias'
       })
@@ -358,10 +358,10 @@ export default function DashboardHome({
           </div>
 
           {podeVisualizarResumoPessoas && (
-            <div className="dashboard-people-card dashboard-analytics-card" style={gestaoPessoasCardStyle} aria-label={'Resumo de Gest\u00e3o de Pessoas'}>
+            <div className="dashboard-people-card dashboard-analytics-card" style={gestaoPessoasCardStyle} aria-label="Resumo de Gestão de Pessoas">
               <div className="analytics-card-header" style={operacionalHeaderStyle}>
                 <div>
-                  <span className="analytics-kicker">{'Gest\u00e3o de Pessoas'}</span>
+                  <span className="analytics-kicker">Gestão de Pessoas</span>
                   <strong>Resumo da equipe</strong>
                 </div>
                 <span className="analytics-badge neutral" style={operacionalBadgeStyle}>Equipe Ativa: {resumoPessoas.funcionariosAtivos}</span>
@@ -370,7 +370,7 @@ export default function DashboardHome({
               {loadingResumoPessoas ? (
                 <div className="dashboard-people-item analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>Carregando resumo de pessoas...</div>
               ) : erroResumoPessoas ? (
-                <div className="dashboard-people-item analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>{'N\u00e3o foi poss\u00edvel carregar o resumo de Gest\u00e3o de Pessoas.'}</div>
+                <div className="dashboard-people-item analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>Não foi possível carregar o resumo de Gestão de Pessoas.</div>
               ) : (
                 <>
                   {itensPessoas.length === 0 ? (
@@ -434,7 +434,7 @@ export default function DashboardHome({
                   >
                     <span>
                       <strong style={{ display: 'block', fontSize: 12 }}>{agendaEquipePessoas.titulo}</strong>
-                      <small style={{ color: '#64748b', display: 'block', marginTop: 2 }}>Aniversariantes nos pr\u00f3ximos 7 dias</small>
+                      <small style={{ color: '#64748b', display: 'block', marginTop: 2 }}>Aniversariantes nos próximos 7 dias</small>
                     </span>
                     <span style={{
                       background: '#f1f5f9',

@@ -33,6 +33,37 @@ export default function DashboardHome({
   const valorSeguro = (valor) => Number(valor || 0)
   const filialSelecionada = (filiais || []).find((filial) => filial.id === filtroFilial)
   const LIMITE_NOTAS_PAINEL = 5
+  const operacionalCardStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+    minHeight: 236,
+    padding: 18
+  }
+  const operacionalHeaderStyle = {
+    alignItems: 'flex-start',
+    display: 'flex',
+    gap: 12,
+    justifyContent: 'space-between',
+    minHeight: 46
+  }
+  const operacionalBadgeStyle = {
+    alignItems: 'center',
+    display: 'inline-flex',
+    flexShrink: 0,
+    minHeight: 34,
+    padding: '7px 12px'
+  }
+  const operacionalItemStyle = {
+    alignItems: 'flex-start',
+    border: '1px solid #e2e8f0',
+    borderRadius: 12,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    minHeight: 58,
+    padding: '10px 12px'
+  }
   const perfilUsuario = String(perfilEmpresaAtiva || '').trim().toLowerCase()
   const podeAcessarGestaoPessoas = ['admin', 'master'].includes(perfilUsuario)
   const {
@@ -300,57 +331,57 @@ export default function DashboardHome({
 
       {!loading && (
         <section className="dashboard-analytics-grid no-print">
-          <div className="dashboard-analytics-card executive-agenda-widget">
-            <div className="analytics-card-header">
+          <div className="dashboard-analytics-card executive-agenda-widget" style={operacionalCardStyle}>
+            <div className="analytics-card-header" style={operacionalHeaderStyle}>
               <div>
                 <span className="analytics-kicker">Agenda</span>
                 <strong>Próximos vencimentos</strong>
               </div>
-              <span className="analytics-badge neutral">{contasAgenda.length} abertas</span>
+              <span className="analytics-badge neutral" style={operacionalBadgeStyle}>{contasAgenda.length} abertas</span>
             </div>
 
-            <div className="executive-agenda-metrics">
-              <div>
+            <div className="executive-agenda-metrics" style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+              <div style={operacionalItemStyle}>
                 <small>Hoje</small>
                 <strong>{formatarValor(totalHoje)}</strong>
               </div>
-              <div>
+              <div style={operacionalItemStyle}>
                 <small>7 dias</small>
                 <strong>{formatarValor(totalSemana)}</strong>
               </div>
             </div>
 
             {proximaConta ? (
-              <div className="executive-agenda-next">
+              <div className="executive-agenda-next" style={operacionalItemStyle}>
                 <span>Próximo compromisso</span>
                 <strong>{proximaConta.descricao}</strong>
                 <small>{formatarData(proximaConta.data_vencimento)} • {formatarValor(proximaConta.valor)}</small>
               </div>
             ) : (
-              <div className="analytics-empty executive-agenda-empty">Agenda financeira limpa.</div>
+              <div className="analytics-empty executive-agenda-empty" style={{ ...operacionalItemStyle, alignItems: 'center' }}>Agenda financeira limpa.</div>
             )}
 
-            <button className="executive-agenda-cta" onClick={() => navegarPara('contas')}>Ver contas</button>
+            <button className="executive-agenda-cta" style={{ marginTop: 'auto' }} onClick={() => navegarPara('contas')}>Ver contas</button>
           </div>
 
           {podeVisualizarResumoPessoas && (
-            <div className="dashboard-analytics-card" aria-label={'Resumo de Gest\u00e3o de Pessoas'}>
-              <div className="analytics-card-header">
+            <div className="dashboard-analytics-card" style={operacionalCardStyle} aria-label={'Resumo de Gest\u00e3o de Pessoas'}>
+              <div className="analytics-card-header" style={operacionalHeaderStyle}>
                 <div>
                   <span className="analytics-kicker">{'Gest\u00e3o de Pessoas'}</span>
                   <strong>Alertas e prazos da equipe</strong>
                 </div>
-                <span className="analytics-badge neutral">{itensPessoas.length} {itensPessoas.length === 1 ? 'item' : 'itens'}</span>
+                <span className="analytics-badge neutral" style={operacionalBadgeStyle}>{itensPessoas.length} {itensPessoas.length === 1 ? 'item' : 'itens'}</span>
               </div>
 
               {loadingResumoPessoas ? (
-                <div className="analytics-empty">Carregando resumo de pessoas...</div>
+                <div className="analytics-empty" style={{ ...operacionalItemStyle, alignItems: 'center' }}>Carregando resumo de pessoas...</div>
               ) : erroResumoPessoas ? (
-                <div className="analytics-empty">{'N\u00e3o foi poss\u00edvel carregar o resumo de Gest\u00e3o de Pessoas.'}</div>
+                <div className="analytics-empty" style={{ ...operacionalItemStyle, alignItems: 'center' }}>{'N\u00e3o foi poss\u00edvel carregar o resumo de Gest\u00e3o de Pessoas.'}</div>
               ) : (
                 <>
                   {itensPessoas.length === 0 ? (
-                    <div className="analytics-empty">{'Nenhuma pend\u00eancia cr\u00edtica de pessoas no momento.'}</div>
+                    <div className="analytics-empty" style={{ ...operacionalItemStyle, alignItems: 'center' }}>{'Nenhuma pend\u00eancia cr\u00edtica de pessoas no momento.'}</div>
                   ) : (
                     <div style={{ display: 'grid', gap: 8 }}>
                       {itensPessoas.map((item) => (
@@ -360,12 +391,10 @@ export default function DashboardHome({
                           onClick={() => item.rotaDestino && navegarPara(item.rotaDestino)}
                           style={{
                             background: item.destaque ? '#f8fafc' : '#ffffff',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: 12,
                             color: '#111827',
                             cursor: item.rotaDestino ? 'pointer' : 'default',
-                            padding: '10px 12px',
-                            textAlign: 'left'
+                            textAlign: 'left',
+                            ...operacionalItemStyle
                           }}
                         >
                           <strong style={{ display: 'block', fontSize: 13 }}>{item.titulo}</strong>
@@ -392,8 +421,8 @@ export default function DashboardHome({
           <NotesSkeleton items={2} />
         </section>
       ) : (
-        <section className={`no-print dashboard-notes-card ${mostrarNotas ? 'notes-expanded' : 'notes-collapsed'}`}>
-          <div style={styles.notasHeaderNovo} className="notes-header-clean dashboard-notes-content">
+        <section className={`no-print dashboard-notes-card ${mostrarNotas ? 'notes-expanded' : 'notes-collapsed'}`} style={{ marginTop: 16, padding: 18 }}>
+          <div style={{ ...styles.notasHeaderNovo, alignItems: 'flex-start', gap: 12, marginBottom: mostrarNotas ? 14 : 0 }} className="notes-header-clean dashboard-notes-content">
             <div className="notes-title-wrap">
               <strong className="notes-title">{'Notas e pend\u00eancias'}</strong>
               <div className="notes-stats-row">

@@ -236,19 +236,27 @@ Tabelas consultadas:
 - `df_configuracoes`;
 - `df_configuracoes_alertas`;
 - `df_empresas`;
-- `df_usuarios_empresas`;
+- `df_destinatarios_alertas`;
 - `df_contas`;
 - `df_notas`.
 
-Para `df_usuarios_empresas`, a consulta usa somente colunas confirmadas no schema atual:
+Para `df_destinatarios_alertas`, a consulta usa somente destinatarios ativos da empresa processada:
 
-- `user_id`;
-- `email`;
-- `nome`;
-- `perfil`;
 - `empresa_id`.
+- `nome`;
+- `email`;
+- `ativo`;
+- `recebe_contas`;
+- `recebe_notas`;
+- `recebe_resumo`.
 
-Colunas opcionais do Pipedream antigo, como `role` e `receber_email`, nao sao consultadas para evitar erro HTTP 400 quando nao existirem no banco.
+O script respeita as preferencias por tipo de alerta:
+
+- `recebe_contas` para alertas de contas;
+- `recebe_notas` para alertas de notas;
+- `recebe_resumo` para o resumo geral.
+
+Se nao houver destinatario ativo compativel na nova tabela, o script usa `email_padrao` da empresa como fallback. Se tambem nao houver `email_padrao`, o fallback global permanece restrito ao comportamento de `DRY_RUN`.
 
 Campos atuais preferidos:
 
@@ -275,6 +283,14 @@ Os logs registram somente:
 - total de destinatarios;
 - `message_id` quando disponivel;
 - status `dry_run_ok`, `dry_run_sem_envio`, `enviado` ou aviso seguro.
+
+Em `DRY_RUN=true`, o script tambem registra `dry_run_destinatarios` por empresa e por tipo de alerta:
+
+- `contas`;
+- `notas`;
+- `resumo`.
+
+Esse log mostra origem (`df_destinatarios_alertas` ou `fallback`), quantidade e destinatarios mascarados.
 
 Os logs nao registram:
 

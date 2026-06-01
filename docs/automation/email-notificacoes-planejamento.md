@@ -164,3 +164,29 @@ Limites preservados:
 Proximo passo seguro:
 
 Integrar os destinatarios ao script de envio automatico com modo `dry-run`, priorizando leitura por `empresa_id`, destinatarios ativos e preferencias `recebe_contas`, `recebe_notas` e `recebe_resumo`.
+
+## Integracao dry-run com GitHub Actions
+
+Status em 2026-06-01:
+
+- o script `scripts/envio-automatico-dona-flor.mjs` passou a consultar `public.df_destinatarios_alertas`;
+- somente destinatarios com `ativo=true` entram na avaliacao;
+- as preferencias `recebe_contas`, `recebe_notas` e `recebe_resumo` sao respeitadas por tipo de alerta;
+- destinatarios duplicados sao removidos por e-mail;
+- se nao houver destinatarios ativos compativeis, o script usa `email_padrao` da empresa;
+- se tambem nao houver `email_padrao`, o fallback global permanece restrito ao comportamento de `dry-run`;
+- os logs de `dry-run` mostram empresa, tipo de alerta, origem, quantidade e e-mails mascarados;
+- SMTP nao e chamado quando `DRY_RUN=true`;
+- envio real ainda nao foi liberado para a nova lista de destinatarios.
+
+Limites preservados:
+
+- nenhuma alteracao de banco, RLS, migration, grants, policies ou triggers;
+- nenhuma alteracao de frontend, service ou hook;
+- nenhuma alteracao de secrets;
+- nenhum workflow foi disparado;
+- nenhum e-mail real foi enviado.
+
+Proximo passo seguro:
+
+Validar os logs de `dry-run` no GitHub Actions e somente depois abrir ciclo proprio para envio real controlado.

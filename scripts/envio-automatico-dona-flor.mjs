@@ -67,15 +67,27 @@ async function processarEmpresa(config, empresa, alertas) {
   const diasAlertaContas = normalizeInteger(alertas?.dias_alerta_contas, 1)
   const diasAlertaNotas = normalizeInteger(alertas?.dias_alerta_notas, 3)
 
-  const [contas, notas, destinatariosUsuarios] = await Promise.all([
+  const [contas, notas, destinatariosAlertas] = await Promise.all([
     buscarContasEmpresa(empresaId, addDaysIso(hoje, Math.max(1, diasAlertaContas))),
     buscarNotasEmpresa(empresaId),
-    buscarDestinatariosUsuariosEmpresa(empresaId)
+    buscarDestinatariosAlertasEmpresa(empresaId)
   ])
 
-  const destinatarios = destinatariosUsuarios.length > 0
-    ? destinatariosUsuarios
-    : fallbackDestinatarios(config.email_padrao)
+  const resumoContas = resumirContas(contas)
+  const notasResumo = resumirNotas(notas, addDaysIso(hoje, diasAlertaNotas))
+  const destinatariosPorTipo = resolverDestinatariosPorTipo({
+    destinatariosAlertas,
+    emailPadrao: config.email_padrao,
+    resumoContas,
+    notasResumo
+  })
+  const destinatarios = destinatariosPorTipo.todos
+
+  logDestinatariosDryRun({
+    empresaId,
+    empresaNome: empresa?.nome || config.nome_empresa,
+    destinatariosPorTipo
+  })
 
   if (destinatarios.length === 0) {
     console.warn('[envio-automatico] empresa_sem_destinatario', JSON.stringify({
@@ -86,8 +98,6 @@ async function processarEmpresa(config, empresa, alertas) {
     return { enviar: false }
   }
 
-  const resumoContas = resumirContas(contas)
-  const notasResumo = resumirNotas(notas, addDaysIso(hoje, diasAlertaNotas))
   const mensagem = montarMensagemDryRun({
     tipo: ALERTA_TIPO,
     empresaNome: empresa?.nome || config.nome_empresa || 'Empresa',
@@ -138,6 +148,7 @@ async function processarEmpresa(config, empresa, alertas) {
     destinatario: maskEmail(destinatarios[0]?.email || destinatarios[0]),
     destinatarios: destinatarios.map((destinatario) => maskEmail(destinatario?.email || destinatario)),
     destinatarios_total: destinatarios.length,
+    destinatarios_origem: destinatariosPorTipo.origemResumo,
     message_id: envio?.messageId || null,
     status: envio?.dryRun ? 'dry_run_ok' : 'enviado'
   }))
@@ -172,16 +183,17 @@ async function buscarAlertasPorEmpresa(empresaIds) {
   }
 }
 
-async function buscarDestinatariosUsuariosEmpresa(empresaId) {
+async function buscarDestinatariosAlertasEmpresa(empresaId) {
   try {
-    const usuarios = await fetchSupabase('df_usuarios_empresas', {
-      select: 'user_id,email,nome,perfil,empresa_id',
-      empresa_id: `eq.${empresaId}`
+    const destinatarios = await fetchSupabase('df_destinatarios_alertas', {
+      select: 'empresa_id,nome,email,ativo,recebe_contas,recebe_notas,recebe_resumo',
+      empresa_id: `eq.${empresaId}`,
+      ativo: 'eq.true'
     })
 
-    return filtrarDestinatariosUsuarios(usuarios)
+    return filtrarDestinatariosAlertas(destinatarios)
   } catch (error) {
-    console.warn('[envio-automatico] aviso_usuarios_nao_avaliados', JSON.stringify({
+    console.warn('[envio-automatico] aviso_destinatarios_alertas_nao_avaliados', JSON.stringify({
       empresa_id: empresaId,
       erro: safeError(error)
     }))
@@ -260,19 +272,97 @@ async function buscarNotasEmpresa(empresaId) {
   }
 }
 
-function filtrarDestinatariosUsuarios(usuarios) {
-  return usuarios
-    .map((usuario) => ({
-      email: cleanString(usuario?.email).toLowerCase(),
-      nome: cleanString(usuario?.nome),
-      perfil: normalizeText(usuario?.perfil)
+function filtrarDestinatariosAlertas(destinatarios) {
+  return destinatarios
+    .map((destinatario) => ({
+      email: cleanString(destinatario?.email).toLowerCase(),
+      nome: cleanString(destinatario?.nome),
+      ativo: destinatario?.ativo !== false,
+      recebe_contas: destinatario?.recebe_contas !== false,
+      recebe_notas: destinatario?.recebe_notas !== false,
+      recebe_resumo: destinatario?.recebe_resumo !== false
     }))
-    .filter((usuario) => {
-      if (!usuario.email) return false
-      if (EMAILS_BLOQUEADOS.has(usuario.email)) return false
-      if (['master', 'superadmin', 'super_admin'].includes(usuario.perfil)) return false
+    .filter((destinatario) => {
+      if (!destinatario.ativo) return false
+      if (!destinatario.email) return false
+      if (!extractEmail(destinatario.email)) return false
+      if (EMAILS_BLOQUEADOS.has(destinatario.email)) return false
       return true
     })
+}
+
+function resolverDestinatariosPorTipo({ destinatariosAlertas, emailPadrao, resumoContas, notasResumo }) {
+  const tipos = {
+    contas: filtrarDestinatariosPorPreferencia(destinatariosAlertas, 'recebe_contas'),
+    notas: filtrarDestinatariosPorPreferencia(destinatariosAlertas, 'recebe_notas'),
+    resumo: filtrarDestinatariosPorPreferencia(destinatariosAlertas, 'recebe_resumo')
+  }
+
+  const fontes = {
+    contas: tipos.contas.length > 0 ? 'df_destinatarios_alertas' : 'fallback',
+    notas: tipos.notas.length > 0 ? 'df_destinatarios_alertas' : 'fallback',
+    resumo: tipos.resumo.length > 0 ? 'df_destinatarios_alertas' : 'fallback'
+  }
+
+  if (tipos.contas.length === 0) tipos.contas = fallbackDestinatarios(emailPadrao)
+  if (tipos.notas.length === 0) tipos.notas = fallbackDestinatarios(emailPadrao)
+  if (tipos.resumo.length === 0) tipos.resumo = fallbackDestinatarios(emailPadrao)
+
+  const precisaContas = resumoContas.hoje.length > 0 || resumoContas.amanha.length > 0 || resumoContas.vencidas.length > 0 || resumoContas.altoValor.length > 0
+  const precisaNotas = notasResumo.urgentes.length > 0 || notasResumo.pendentes.length > 0
+  const todos = deduplicarDestinatarios([
+    ...(precisaContas ? tipos.contas : []),
+    ...(precisaNotas ? tipos.notas : []),
+    ...tipos.resumo
+  ])
+
+  return {
+    contas: deduplicarDestinatarios(tipos.contas),
+    notas: deduplicarDestinatarios(tipos.notas),
+    resumo: deduplicarDestinatarios(tipos.resumo),
+    todos,
+    fontes,
+    origemResumo: {
+      contas: fontes.contas,
+      notas: fontes.notas,
+      resumo: fontes.resumo
+    }
+  }
+}
+
+function filtrarDestinatariosPorPreferencia(destinatarios, preferencia) {
+  return (destinatarios || []).filter((destinatario) => destinatario?.[preferencia] !== false)
+}
+
+function deduplicarDestinatarios(destinatarios) {
+  const mapa = new Map()
+
+  for (const destinatario of destinatarios || []) {
+    const email = extractEmail(destinatario?.email || destinatario)
+    if (!email || mapa.has(email)) continue
+    mapa.set(email, {
+      email,
+      nome: cleanString(destinatario?.nome)
+    })
+  }
+
+  return Array.from(mapa.values())
+}
+
+function logDestinatariosDryRun({ empresaId, empresaNome, destinatariosPorTipo }) {
+  if (!DRY_RUN) return
+
+  for (const tipo of ['contas', 'notas', 'resumo']) {
+    const destinatarios = destinatariosPorTipo[tipo] || []
+    console.log('[envio-automatico] dry_run_destinatarios', JSON.stringify({
+      empresa_id: empresaId,
+      empresa_nome: safeName(empresaNome),
+      tipo_alerta: tipo,
+      origem: destinatariosPorTipo.fontes?.[tipo] || 'fallback',
+      destinatarios_total: destinatarios.length,
+      destinatarios: destinatarios.map((destinatario) => maskEmail(destinatario.email))
+    }))
+  }
 }
 
 function fallbackDestinatarios(emailPadrao) {

@@ -92,6 +92,30 @@ export default function DashboardHome({
     }
   }
 
+  function descricaoAlertaPessoas(alerta) {
+    if (alerta.tipo === 'folha' && resumoPessoas.folhaEmAberto) {
+      return `Compet\u00eancia ${resumoPessoas.folhaEmAberto.competencia || 'em aberto'}`
+    }
+
+    if (alerta.id === 'ferias-vencidas') {
+      return `${resumoPessoas.feriasVencidas} ${resumoPessoas.feriasVencidas === 1 ? 'ciclo vencido' : 'ciclos vencidos'}`
+    }
+
+    if (alerta.id === 'ferias-proximas') {
+      return `${resumoPessoas.feriasProximas} ${resumoPessoas.feriasProximas === 1 ? 'ciclo nos pr\u00f3ximos 30 dias' : 'ciclos nos pr\u00f3ximos 30 dias'}`
+    }
+
+    if (alerta.tipo === 'aniversarios') {
+      return `${resumoPessoas.aniversariosSemana} ${resumoPessoas.aniversariosSemana === 1 ? 'anivers\u00e1rio' : 'anivers\u00e1rios'} nos pr\u00f3ximos 7 dias`
+    }
+
+    if (alerta.tipo === 'funcionarios') {
+      return `${resumoPessoas.funcionariosAtivos} ${resumoPessoas.funcionariosAtivos === 1 ? 'colaborador ativo' : 'colaboradores ativos'}`
+    }
+
+    return alerta.descricao
+  }
+
   const contasAgenda = contas
     .filter((conta) => conta.status !== 'pago')
     .sort((a, b) => diferencaDias(a.data_vencimento) - diferencaDias(b.data_vencimento))
@@ -104,23 +128,79 @@ export default function DashboardHome({
   const proximaConta = contasAgenda.find((conta) => diferencaDias(conta.data_vencimento) >= 0) || contasAgenda[0]
   const totalHoje = contasHoje.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
   const totalSemana = contasSemana.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
-  const contadoresPessoas = useMemo(() => {
-    const contadores = [
-      { label: 'Funcion\u00e1rios ativos', valor: resumoPessoas.funcionariosAtivos },
-      { label: 'F\u00e9rias pr\u00f3ximas', valor: resumoPessoas.feriasProximas },
-      { label: 'F\u00e9rias vencidas', valor: resumoPessoas.feriasVencidas },
-      { label: 'Anivers\u00e1rios da semana', valor: resumoPessoas.aniversariosSemana }
-    ].filter((item) => Number(item.valor || 0) > 0)
+  const itensPessoas = useMemo(() => {
+    const prioridadeTipo = { folha: 1, ferias: 2, aniversarios: 3, funcionarios: 4 }
+    const tiposSelecionados = new Set()
+    const alertas = (alertasPessoas || [])
+      .filter((alerta) => {
+        if (tiposSelecionados.has(alerta.tipo)) return false
+        tiposSelecionados.add(alerta.tipo)
+        return true
+      })
+      .sort((a, b) => (prioridadeTipo[a.tipo] || 9) - (prioridadeTipo[b.tipo] || 9))
+      .map((alerta) => ({
+        id: alerta.id,
+        tipo: alerta.tipo,
+        titulo: alerta.titulo,
+        descricao: descricaoAlertaPessoas(alerta),
+        rotaDestino: alerta.rotaDestino,
+        destaque: true
+      }))
+    const tiposJaExibidos = new Set(alertas.map((alerta) => alerta.tipo))
+    const itens = [...alertas]
 
-    if (resumoPessoas.folhaEmAberto) {
-      contadores.splice(2, 0, {
-        label: 'Folha em aberto',
-        valor: resumoPessoas.folhaEmAberto.competencia || 'Aberta'
+    if (!tiposJaExibidos.has('folha') && resumoPessoas.folhaEmAberto) {
+      itens.push({
+        id: 'contador-folha-em-aberto',
+        tipo: 'folha',
+        titulo: 'Folha em aberto',
+        descricao: `Compet\u00eancia ${resumoPessoas.folhaEmAberto.competencia || 'em aberto'}`,
+        rotaDestino: 'fechamento-folha'
       })
     }
 
-    return contadores.slice(0, 3)
-  }, [resumoPessoas])
+    if (!tiposJaExibidos.has('ferias') && resumoPessoas.feriasVencidas > 0) {
+      itens.push({
+        id: 'contador-ferias-vencidas',
+        tipo: 'ferias',
+        titulo: 'F\u00e9rias vencidas',
+        descricao: `${resumoPessoas.feriasVencidas} ${resumoPessoas.feriasVencidas === 1 ? 'ciclo vencido' : 'ciclos vencidos'}`,
+        rotaDestino: 'relatorios-ferias'
+      })
+    }
+
+    if (!tiposJaExibidos.has('ferias') && resumoPessoas.feriasProximas > 0) {
+      itens.push({
+        id: 'contador-ferias-proximas',
+        tipo: 'ferias',
+        titulo: 'F\u00e9rias pr\u00f3ximas',
+        descricao: `${resumoPessoas.feriasProximas} ${resumoPessoas.feriasProximas === 1 ? 'ciclo nos pr\u00f3ximos 30 dias' : 'ciclos nos pr\u00f3ximos 30 dias'}`,
+        rotaDestino: 'relatorios-ferias'
+      })
+    }
+
+    if (!tiposJaExibidos.has('aniversarios') && resumoPessoas.aniversariosSemana > 0) {
+      itens.push({
+        id: 'contador-aniversarios',
+        tipo: 'aniversarios',
+        titulo: 'Anivers\u00e1rios da semana',
+        descricao: `${resumoPessoas.aniversariosSemana} ${resumoPessoas.aniversariosSemana === 1 ? 'anivers\u00e1rio' : 'anivers\u00e1rios'} nos pr\u00f3ximos 7 dias`,
+        rotaDestino: 'relatorios-pessoas'
+      })
+    }
+
+    if (!tiposJaExibidos.has('funcionarios') && resumoPessoas.funcionariosAtivos > 0) {
+      itens.push({
+        id: 'contador-funcionarios-ativos',
+        tipo: 'funcionarios',
+        titulo: 'Funcion\u00e1rios ativos',
+        descricao: `${resumoPessoas.funcionariosAtivos} ${resumoPessoas.funcionariosAtivos === 1 ? 'colaborador ativo' : 'colaboradores ativos'}`,
+        rotaDestino: 'funcionarios'
+      })
+    }
+
+    return itens.slice(0, 3)
+  }, [alertasPessoas, resumoPessoas])
   const notasPainel = notasPendentes
     .map(prioridadeNotaPainel)
     .sort((a, b) => {
@@ -260,7 +340,7 @@ export default function DashboardHome({
                   <span className="analytics-kicker">{'Gest\u00e3o de Pessoas'}</span>
                   <strong>Alertas e prazos da equipe</strong>
                 </div>
-                <span className="analytics-badge neutral">{(alertasPessoas || []).length} alerta(s)</span>
+                <span className="analytics-badge neutral">{itensPessoas.length} {itensPessoas.length === 1 ? 'item' : 'itens'}</span>
               </div>
 
               {loadingResumoPessoas ? (
@@ -269,53 +349,27 @@ export default function DashboardHome({
                 <div className="analytics-empty">{'N\u00e3o foi poss\u00edvel carregar o resumo de Gest\u00e3o de Pessoas.'}</div>
               ) : (
                 <>
-                  {contadoresPessoas.length > 0 && (
-                    <div
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-                        gap: 8,
-                        marginBottom: 12
-                      }}
-                    >
-                      {contadoresPessoas.map((contador) => (
-                        <div
-                          key={contador.label}
-                          style={{
-                            background: '#f8fafc',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: 12,
-                            padding: '9px 10px'
-                          }}
-                        >
-                          <small style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700 }}>{contador.label}</small>
-                          <strong style={{ color: '#111827', display: 'block', fontSize: 16, marginTop: 3 }}>{contador.valor}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {(alertasPessoas || []).length === 0 ? (
+                  {itensPessoas.length === 0 ? (
                     <div className="analytics-empty">{'Nenhuma pend\u00eancia cr\u00edtica de pessoas no momento.'}</div>
                   ) : (
                     <div style={{ display: 'grid', gap: 8 }}>
-                      {(alertasPessoas || []).slice(0, 3).map((alerta) => (
+                      {itensPessoas.map((item) => (
                         <button
-                          key={alerta.id}
+                          key={item.id}
                           type="button"
-                          onClick={() => alerta.rotaDestino && navegarPara(alerta.rotaDestino)}
+                          onClick={() => item.rotaDestino && navegarPara(item.rotaDestino)}
                           style={{
-                            background: '#ffffff',
+                            background: item.destaque ? '#f8fafc' : '#ffffff',
                             border: '1px solid #e2e8f0',
                             borderRadius: 12,
                             color: '#111827',
-                            cursor: alerta.rotaDestino ? 'pointer' : 'default',
+                            cursor: item.rotaDestino ? 'pointer' : 'default',
                             padding: '10px 12px',
                             textAlign: 'left'
                           }}
                         >
-                          <strong style={{ display: 'block', fontSize: 13 }}>{alerta.titulo}</strong>
-                          <small style={{ color: '#64748b', display: 'block', marginTop: 3 }}>{alerta.descricao}</small>
+                          <strong style={{ display: 'block', fontSize: 13 }}>{item.titulo}</strong>
+                          <small style={{ color: '#64748b', display: 'block', marginTop: 3 }}>{item.descricao}</small>
                         </button>
                       ))}
                     </div>

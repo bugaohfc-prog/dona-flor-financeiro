@@ -4392,8 +4392,9 @@ export default function App() {
               </label>
 
               <div style={styles.configResumo}>
-                <strong>Canais preparados</strong>
-                <span>WhatsApp: {configWhatsapp ? 'Ligado' : 'Desligado'} • E-mail: {configEmail ? 'Ligado' : 'Desligado'} • Push: {configPush ? 'Ligado' : 'Desligado'}</span>
+                <strong>Envio automatico atual</strong>
+                <span>E-mail: {configEmail ? 'Ativo para os alertas automaticos' : 'Desligado'}</span>
+                <span>WhatsApp e Push: nao configurados no fluxo atual.</span>
               </div>
             </>
           )}
@@ -4418,7 +4419,7 @@ export default function App() {
 
               <input
                 style={styles.input}
-                placeholder="WhatsApp padrão. Ex: 5511999999999"
+                placeholder="WhatsApp da empresa (contato). Ex: 5511999999999"
                 value={whatsappPadrao}
                 onChange={(e) => setWhatsappPadrao(e.target.value)}
               />
@@ -4530,15 +4531,15 @@ export default function App() {
           <h2 style={styles.subtitulo}>🧠 Como o sistema vai usar</h2>
 
           <p style={styles.textoNota}>
-            O envio automático seguirá as regras globais da empresa. Os formulários ficam mais limpos
-            e as contas/notas passam a obedecer ao mesmo padrão configurado aqui.
+            O envio automatico atual usa e-mail. WhatsApp e Push permanecem apenas como configuracoes
+            reservadas, sem disparo automatico ativo neste fluxo.
           </p>
 
           <div style={styles.configResumo}>
             <span>Geral: {notificacoesAtivas ? 'Ligado' : 'Desligado'}</span>
-            <span>WhatsApp: {configWhatsapp ? 'Ligado' : 'Desligado'}</span>
-            <span>E-mail: {configEmail ? 'Ligado' : 'Desligado'}</span>
-            <span>Push: {configPush ? 'Ligado' : 'Desligado'}</span>
+            <span>E-mail: {configEmail ? 'Ativo' : 'Desligado'}</span>
+            <span>WhatsApp: nao configurado para envio automatico</span>
+            <span>Push: nao configurado para envio automatico</span>
           </div>
         </section>
 

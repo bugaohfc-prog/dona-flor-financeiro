@@ -194,11 +194,11 @@ export default function DashboardHome({
       'exames-vencidos': 3,
       'ferias-proximas': 4,
       'exames-a-vencer': 5,
-      'aniversarios-semana': 6,
       'funcionarios-ativos': 7
     }
     const tiposSelecionados = new Set()
     const alertas = [...(alertasPessoas || [])]
+      .filter((alerta) => alerta.id !== 'aniversarios-semana')
       .sort((a, b) => (prioridadeAlerta[a.id] || 99) - (prioridadeAlerta[b.id] || 99))
       .filter((alerta) => {
         if (tiposSelecionados.has(alerta.tipo)) return false
@@ -266,16 +266,6 @@ export default function DashboardHome({
       })
     }
 
-    if (!tiposJaExibidos.has('aniversarios') && resumoPessoas.aniversariosSemana > 0) {
-      itens.push({
-        id: 'contador-aniversarios',
-        tipo: 'aniversarios',
-        titulo: 'Anivers\u00e1rios da semana',
-        descricao: `${resumoPessoas.aniversariosSemana} ${resumoPessoas.aniversariosSemana === 1 ? 'anivers\u00e1rio' : 'anivers\u00e1rios'} nos pr\u00f3ximos 7 dias`,
-        rotaDestino: 'relatorios-pessoas'
-      })
-    }
-
     if (!tiposJaExibidos.has('funcionarios') && resumoPessoas.funcionariosAtivos > 0) {
       itens.push({
         id: 'contador-funcionarios-ativos',
@@ -288,6 +278,17 @@ export default function DashboardHome({
 
     return itens.slice(0, 3)
   }, [alertasPessoas, resumoPessoas])
+  const agendaEquipePessoas = useMemo(() => {
+    if (resumoPessoas.aniversariosSemana <= 0) return null
+
+    return {
+      id: 'agenda-aniversarios-semana',
+      titulo: 'Agenda da equipe',
+      descricao: `Anivers\u00e1rios da semana: ${resumoPessoas.aniversariosSemana} ${resumoPessoas.aniversariosSemana === 1 ? 'anivers\u00e1rio' : 'anivers\u00e1rios'} nos pr\u00f3ximos 7 dias`,
+      rotaDestino: 'relatorios-pessoas'
+    }
+  }, [resumoPessoas.aniversariosSemana])
+  const totalItensPessoas = itensPessoas.length + (agendaEquipePessoas ? 1 : 0)
   const notasPainel = notasPendentes
     .map(prioridadeNotaPainel)
     .sort((a, b) => {
@@ -427,7 +428,7 @@ export default function DashboardHome({
                   <span className="analytics-kicker">{'Gest\u00e3o de Pessoas'}</span>
                   <strong>Alertas e prazos da equipe</strong>
                 </div>
-                <span className="analytics-badge neutral" style={operacionalBadgeStyle}>{itensPessoas.length} {itensPessoas.length === 1 ? 'item' : 'itens'}</span>
+                <span className="analytics-badge neutral" style={operacionalBadgeStyle}>{totalItensPessoas} {totalItensPessoas === 1 ? 'item' : 'itens'}</span>
               </div>
 
               {loadingResumoPessoas ? (
@@ -436,7 +437,7 @@ export default function DashboardHome({
                 <div className="dashboard-people-item analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>{'N\u00e3o foi poss\u00edvel carregar o resumo de Gest\u00e3o de Pessoas.'}</div>
               ) : (
                 <>
-                  {itensPessoas.length === 0 ? (
+                  {itensPessoas.length === 0 && !agendaEquipePessoas ? (
                     <div className="dashboard-people-item analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>{'Nenhuma pend\u00eancia cr\u00edtica de pessoas no momento.'}</div>
                   ) : (
                     <div style={{ display: 'grid', gap: 8 }}>
@@ -458,6 +459,24 @@ export default function DashboardHome({
                           <small style={{ color: '#64748b', display: 'block', marginTop: 3 }}>{item.descricao}</small>
                         </button>
                       ))}
+                      {agendaEquipePessoas && (
+                        <button
+                          className="dashboard-people-item"
+                          type="button"
+                          onClick={() => agendaEquipePessoas.rotaDestino && navegarPara(agendaEquipePessoas.rotaDestino)}
+                          style={{
+                            background: '#ffffff',
+                            borderStyle: 'dashed',
+                            color: '#111827',
+                            cursor: agendaEquipePessoas.rotaDestino ? 'pointer' : 'default',
+                            textAlign: 'left',
+                            ...gestaoPessoasItemStyle
+                          }}
+                        >
+                          <strong style={{ display: 'block', fontSize: 12 }}>{agendaEquipePessoas.titulo}</strong>
+                          <small style={{ color: '#64748b', display: 'block', marginTop: 3 }}>{agendaEquipePessoas.descricao}</small>
+                        </button>
+                      )}
                     </div>
                   )}
                 </>

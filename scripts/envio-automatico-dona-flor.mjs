@@ -86,8 +86,14 @@ async function processarEmpresa(config, empresa, alertas) {
     buscarDestinatariosAlertasEmpresa(empresaId)
   ])
 
-  const resumoContas = resumirContas(contas)
-  const notasResumo = resumirNotas(notas, addDaysIso(hoje, diasAlertaNotas))
+  const resumoContasOriginal = resumirContas(contas)
+  const notasResumoOriginal = resumirNotas(notas, addDaysIso(hoje, diasAlertaNotas))
+  const conteudoFiltrado = filtrarConteudoPorTipoDestinatario({
+    resumoContas: resumoContasOriginal,
+    notasResumo: notasResumoOriginal,
+    notas
+  })
+  const { resumoContas, notasResumo } = conteudoFiltrado
   const destinatariosPorTipo = resolverDestinatariosPorTipo({
     destinatariosAlertas,
     emailPadrao: config.email_padrao,
@@ -116,7 +122,7 @@ async function processarEmpresa(config, empresa, alertas) {
     empresaNome: empresa?.nome || config.nome_empresa || 'Empresa',
     resumoContas,
     notasResumo,
-    notas
+    notas: conteudoFiltrado.notas
   })
 
   if (!mensagem.enviar) {
@@ -342,12 +348,54 @@ function resolverDestinatariosPorTipo({ destinatariosAlertas, emailPadrao, resum
     resumo: deduplicarDestinatarios(tipos.resumo),
     todos,
     fontes,
-    origemResumo: {
-      contas: fontes.contas,
-      notas: fontes.notas,
-      resumo: fontes.resumo
+    origemResumo: origemResumoPorTipos(fontes)
+  }
+}
+
+function filtrarConteudoPorTipoDestinatario({ resumoContas, notasResumo, notas }) {
+  if (!MODO_TESTE) return { resumoContas, notasResumo, notas }
+  if (TIPO_DESTINATARIO_TESTE === 'contas') {
+    return {
+      resumoContas,
+      notasResumo: resumoNotasVazio(),
+      notas: []
     }
   }
+  if (TIPO_DESTINATARIO_TESTE === 'notas') {
+    return {
+      resumoContas: resumoContasVazio(),
+      notasResumo,
+      notas
+    }
+  }
+  return { resumoContas, notasResumo, notas }
+}
+
+function resumoContasVazio() {
+  return {
+    hoje: [],
+    amanha: [],
+    vencidas: [],
+    altoValor: []
+  }
+}
+
+function resumoNotasVazio() {
+  return {
+    pendentes: [],
+    urgentes: []
+  }
+}
+
+function tiposDestinatarioEmExecucao() {
+  if (MODO_TESTE && TIPO_DESTINATARIO_TESTE !== 'todos') return [TIPO_DESTINATARIO_TESTE]
+  return ['contas', 'notas', 'resumo']
+}
+
+function origemResumoPorTipos(fontes) {
+  return Object.fromEntries(
+    tiposDestinatarioEmExecucao().map((tipo) => [tipo, fontes?.[tipo] || 'fallback'])
+  )
 }
 
 function filtrarDestinatariosPorPreferencia(destinatarios, preferencia) {
@@ -383,7 +431,7 @@ function deduplicarDestinatarios(destinatarios) {
 
 function logDestinatariosExecucao({ empresaId, empresaNome, destinatariosPorTipo }) {
   const evento = DRY_RUN ? 'dry_run_destinatarios' : 'destinatarios_envio_real_controlado'
-  for (const tipo of ['contas', 'notas', 'resumo']) {
+  for (const tipo of tiposDestinatarioEmExecucao()) {
     const destinatarios = destinatariosPorTipo[tipo] || []
     console.log(`[envio-automatico] ${evento}`, JSON.stringify({
       empresa_id: empresaId,

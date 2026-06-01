@@ -176,6 +176,15 @@ Para dry-run manual:
 3. Escolher `tipo` e `tipo_destinatario`.
 4. Conferir logs com e-mails mascarados e `message_id:null`.
 
+No modo manual controlado, `tipo_destinatario` limita os destinatarios e os logs ao tipo escolhido:
+
+- `contas`: processa/loga/envia somente alertas de contas;
+- `notas`: processa/loga/envia somente alertas de notas;
+- `resumo`: processa/loga/envia somente o resumo geral para destinatarios de resumo;
+- `todos`: preserva o comportamento completo, com contas, notas e resumo.
+
+As execucoes agendadas nao usam esse filtro manual e continuam seguindo o tipo de alerta calculado pelo horario ou pelo input `tipo`.
+
 Para teste real controlado:
 
 1. Usar `dry_run=false`.

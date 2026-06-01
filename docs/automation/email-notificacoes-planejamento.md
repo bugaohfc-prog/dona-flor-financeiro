@@ -113,13 +113,14 @@ Rollback:
 
 ## Encoding
 
-O texto `Gestão` está correto no código quando lido em UTF-8. Se o Gmail mobile exibir interrogações, as hipóteses principais são:
+O texto `Gestão` está correto no código quando lido em UTF-8. Se o Gmail mobile exibir interrogações no remetente, a hipótese principal é:
 
 - `MAIL_FROM` com nome acentuado sem codificação MIME no cabeçalho `From`;
-- corpo do e-mail usando `Content-Transfer-Encoding: 8bit`, que pode ser menos robusto em alguns clientes;
 - divergência entre secret `MAIL_FROM`, template e cliente de e-mail.
 
-Este ciclo não corrige encoding no envio real.
+O script passou a codificar o display name do header `From` em MIME/UTF-8 quando houver acento. O corpo HTML/texto permanece em UTF-8.
+
+Validação final ainda deve ser feita no próximo envio real controlado, conferindo se o Gmail/mobile mostra `DNA Gestão` no remetente.
 
 ## Ordem segura futura
 
@@ -190,3 +191,26 @@ Limites preservados:
 Proximo passo seguro:
 
 Validar os logs de `dry-run` no GitHub Actions e somente depois abrir ciclo proprio para envio real controlado.
+
+## Preparacao para teste real controlado
+
+Status em 2026-06-01:
+
+- o workflow ganhou inputs manuais para teste controlado;
+- execucoes agendadas continuam usando o secret `DRY_RUN`;
+- execucoes manuais podem usar `dry_run=true` para dry-run;
+- execucoes manuais com `dry_run=false` exigem travas antes de SMTP;
+- nenhuma secret foi alterada;
+- nenhum e-mail real foi enviado neste ciclo.
+
+Travas obrigatorias para envio real manual:
+
+- `modo_teste=true`;
+- `limite_destinatarios=1`;
+- `empresa_id` preenchido;
+- `confirmar_envio_real=CONFIRMO_ENVIO_REAL_CONTROLADO`;
+- destinatarios finais nao podem exceder o limite configurado.
+
+Proximo passo seguro:
+
+Executar primeiro um workflow manual com `dry_run=true` usando os novos inputs. Somente depois, se os logs confirmarem 1 destinatario final, executar o teste real controlado.

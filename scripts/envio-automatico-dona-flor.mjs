@@ -7,6 +7,11 @@ const TIME_ZONE = process.env.TZ || 'America/Sao_Paulo'
 const SUPABASE_URL = requiredEnv('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = requiredEnv('SUPABASE_SERVICE_ROLE_KEY')
 const DRY_RUN = parseDryRun(process.env.DRY_RUN)
+const MODO_TESTE = parseBooleanFlag(process.env.MODO_TESTE)
+const TIPO_DESTINATARIO_TESTE = resolveTipoDestinatarioTeste(process.env.TIPO_DESTINATARIO_TESTE)
+const LIMITE_DESTINATARIOS = normalizeRecipientLimit(process.env.LIMITE_DESTINATARIOS)
+const EMPRESA_ID_TESTE = cleanString(process.env.EMPRESA_ID_TESTE)
+const CONFIRMAR_ENVIO_REAL = cleanString(process.env.CONFIRMAR_ENVIO_REAL)
 const MAIL_TO_FALLBACK = cleanString(process.env.MAIL_TO_FALLBACK)
 const ALERTA_TIPO = resolveTipoAlerta(process.env.ALERTA_TIPO, new Date(), TIME_ZONE)
 const APP_URL = 'https://dona-flor-financeiro.vercel.app/'
@@ -23,8 +28,14 @@ main().catch((error) => {
 })
 
 async function main() {
+  validarTravasOperacionais()
+
   console.log('[envio-automatico] inicio', JSON.stringify({
     dry_run: DRY_RUN,
+    modo_teste: MODO_TESTE,
+    limite_destinatarios: LIMITE_DESTINATARIOS || null,
+    empresa_id_teste: EMPRESA_ID_TESTE || null,
+    tipo_destinatario_teste: TIPO_DESTINATARIO_TESTE,
     timezone: TIME_ZONE,
     data: hoje,
     tipo: ALERTA_TIPO || 'HOJE'
@@ -36,7 +47,9 @@ async function main() {
     enviar_email: 'eq.true'
   })
 
-  const configuracoesValidas = configuracoes.filter((config) => cleanString(config?.empresa_id))
+  const configuracoesValidas = configuracoes
+    .filter((config) => cleanString(config?.empresa_id))
+    .filter((config) => !EMPRESA_ID_TESTE || cleanString(config?.empresa_id) === EMPRESA_ID_TESTE)
 
   if (configuracoesValidas.length === 0) {
     console.log('[envio-automatico] nenhuma_empresa_configurada')
@@ -83,7 +96,7 @@ async function processarEmpresa(config, empresa, alertas) {
   })
   const destinatarios = destinatariosPorTipo.todos
 
-  logDestinatariosDryRun({
+  logDestinatariosExecucao({
     empresaId,
     empresaNome: empresa?.nome || config.nome_empresa,
     destinatariosPorTipo
@@ -116,6 +129,12 @@ async function processarEmpresa(config, empresa, alertas) {
     }))
     return { enviar: false }
   }
+
+  validarDestinatariosAntesDoEnvioReal({
+    empresaId,
+    destinatarios,
+    destinatariosPorTipo
+  })
 
   let envio
   try {
@@ -310,11 +329,12 @@ function resolverDestinatariosPorTipo({ destinatariosAlertas, emailPadrao, resum
 
   const precisaContas = resumoContas.hoje.length > 0 || resumoContas.amanha.length > 0 || resumoContas.vencidas.length > 0 || resumoContas.altoValor.length > 0
   const precisaNotas = notasResumo.urgentes.length > 0 || notasResumo.pendentes.length > 0
-  const todos = deduplicarDestinatarios([
-    ...(precisaContas ? tipos.contas : []),
-    ...(precisaNotas ? tipos.notas : []),
-    ...tipos.resumo
-  ])
+  const selecionados = selecionarDestinatariosPorModoTeste({
+    tipos,
+    precisaContas,
+    precisaNotas
+  })
+  const todos = deduplicarDestinatarios(selecionados)
 
   return {
     contas: deduplicarDestinatarios(tipos.contas),
@@ -334,6 +354,18 @@ function filtrarDestinatariosPorPreferencia(destinatarios, preferencia) {
   return (destinatarios || []).filter((destinatario) => destinatario?.[preferencia] !== false)
 }
 
+function selecionarDestinatariosPorModoTeste({ tipos, precisaContas, precisaNotas }) {
+  if (TIPO_DESTINATARIO_TESTE === 'contas') return tipos.contas
+  if (TIPO_DESTINATARIO_TESTE === 'notas') return tipos.notas
+  if (TIPO_DESTINATARIO_TESTE === 'resumo') return tipos.resumo
+
+  return [
+    ...(precisaContas ? tipos.contas : []),
+    ...(precisaNotas ? tipos.notas : []),
+    ...tipos.resumo
+  ]
+}
+
 function deduplicarDestinatarios(destinatarios) {
   const mapa = new Map()
 
@@ -349,12 +381,11 @@ function deduplicarDestinatarios(destinatarios) {
   return Array.from(mapa.values())
 }
 
-function logDestinatariosDryRun({ empresaId, empresaNome, destinatariosPorTipo }) {
-  if (!DRY_RUN) return
-
+function logDestinatariosExecucao({ empresaId, empresaNome, destinatariosPorTipo }) {
+  const evento = DRY_RUN ? 'dry_run_destinatarios' : 'destinatarios_envio_real_controlado'
   for (const tipo of ['contas', 'notas', 'resumo']) {
     const destinatarios = destinatariosPorTipo[tipo] || []
-    console.log('[envio-automatico] dry_run_destinatarios', JSON.stringify({
+    console.log(`[envio-automatico] ${evento}`, JSON.stringify({
       empresa_id: empresaId,
       empresa_nome: safeName(empresaNome),
       tipo_alerta: tipo,
@@ -362,6 +393,40 @@ function logDestinatariosDryRun({ empresaId, empresaNome, destinatariosPorTipo }
       destinatarios_total: destinatarios.length,
       destinatarios: destinatarios.map((destinatario) => maskEmail(destinatario.email))
     }))
+  }
+}
+
+function validarTravasOperacionais() {
+  if (DRY_RUN) return
+
+  const erros = []
+  if (!MODO_TESTE) erros.push('MODO_TESTE precisa ser true para envio real controlado.')
+  if (LIMITE_DESTINATARIOS !== 1) erros.push('LIMITE_DESTINATARIOS precisa ser 1 para envio real controlado.')
+  if (!EMPRESA_ID_TESTE) erros.push('EMPRESA_ID_TESTE e obrigatorio para envio real controlado.')
+  if (CONFIRMAR_ENVIO_REAL !== 'CONFIRMO_ENVIO_REAL_CONTROLADO') {
+    erros.push('CONFIRMAR_ENVIO_REAL invalido para envio real controlado.')
+  }
+
+  if (erros.length > 0) {
+    throw new Error(`Travas de envio real nao atendidas: ${erros.join(' ')}`)
+  }
+}
+
+function validarDestinatariosAntesDoEnvioReal({ empresaId, destinatarios, destinatariosPorTipo }) {
+  if (DRY_RUN) return
+
+  if (destinatarios.length === 0) {
+    throw new Error(`Envio real bloqueado: nenhum destinatario final para empresa ${empresaId}.`)
+  }
+
+  if (destinatarios.length > LIMITE_DESTINATARIOS) {
+    throw new Error(`Envio real bloqueado: ${destinatarios.length} destinatarios finais excedem o limite ${LIMITE_DESTINATARIOS}.`)
+  }
+
+  const origens = Object.values(destinatariosPorTipo?.origemResumo || {})
+  const origemValida = origens.some((origem) => origem === 'df_destinatarios_alertas' || origem === 'fallback')
+  if (!origemValida) {
+    throw new Error('Envio real bloqueado: origem dos destinatarios nao reconhecida.')
   }
 }
 
@@ -934,7 +999,7 @@ function readSmtpConfig() {
     port,
     user,
     pass,
-    from: safeHeader(from),
+    from: formatAddressHeader(from),
     fromEmail
   }
 }
@@ -1003,6 +1068,19 @@ function encodeMimeHeader(value) {
     : `=?UTF-8?B?${Buffer.from(header, 'utf8').toString('base64')}?=`
 }
 
+function formatAddressHeader(value) {
+  const header = safeHeader(value)
+  const email = extractEmail(header)
+  if (!email) return ''
+
+  const match = header.match(/^(.*?)<[^>]+>$/)
+  const displayName = safeHeader(match ? match[1].trim().replace(/^"|"$/g, '') : '')
+
+  if (!displayName) return `<${email}>`
+
+  return `${encodeMimeHeader(displayName)} <${email}>`
+}
+
 function safeHeader(value) {
   return cleanString(value).replace(/[\r\n]+/g, ' ')
 }
@@ -1064,6 +1142,22 @@ function requiredEnv(name) {
 function parseDryRun(value) {
   const normalized = normalizeText(value)
   return normalized !== 'false'
+}
+
+function parseBooleanFlag(value) {
+  return ['true', '1', 'yes', 'sim', 'on'].includes(normalizeText(value))
+}
+
+function normalizeRecipientLimit(value) {
+  const parsed = Number.parseInt(cleanString(value || '0'), 10)
+  if (!Number.isInteger(parsed) || parsed < 0) return 0
+  return Math.min(parsed, 100)
+}
+
+function resolveTipoDestinatarioTeste(value) {
+  const normalized = normalizeText(value)
+  if (['contas', 'notas', 'resumo'].includes(normalized)) return normalized
+  return 'todos'
 }
 
 function resolveTipoAlerta(value, date, timeZone) {

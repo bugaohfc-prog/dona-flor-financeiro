@@ -112,14 +112,21 @@ Atencao: `MAIL_FROM` controla o remetente visual e o reply-to usado pelo script.
 
 Nenhum secret deve ser escrito no codigo ou impresso em log.
 
+Formato esperado para branding atual:
+
+- `MAIL_FROM=DNA Gestão <donaflor.suporte@gmail.com>`
+
+O script codifica o display name do header `From` em MIME/UTF-8 quando houver acentos. Isso evita exibicao como `DNA Gest??o` em clientes como Gmail mobile. O `Reply-To` continua usando somente o e-mail extraido de `MAIL_FROM`.
+
 ## DRY_RUN
 
 `DRY_RUN` controla se o envio real fica ativo.
 
-Estado oficial atual:
+Estado operacional atual:
 
-- `DRY_RUN=false`.
-- Envio real ativo pelo GitHub Actions.
+- execucoes agendadas continuam usando o secret `DRY_RUN`;
+- execucoes manuais podem sobrescrever `DRY_RUN` pelo input `dry_run`;
+- teste real manual exige travas adicionais antes de qualquer chamada SMTP.
 
 Com `DRY_RUN=true`:
 
@@ -129,7 +136,7 @@ Com `DRY_RUN=true`:
 - nenhum e-mail real e enviado;
 - os logs mostram apenas resumo seguro.
 
-Envio real so ocorre quando o secret `DRY_RUN` for exatamente `false`.
+Envio real so ocorre quando `DRY_RUN` for exatamente `false`.
 
 Qualquer outro valor, incluindo vazio, `true`, `0`, `no`, `off` ou erro de digitacao, e tratado como `DRY_RUN=true`.
 
@@ -139,14 +146,54 @@ Para pausar envio real em emergencia, alterar o secret `DRY_RUN` para `true`.
 
 Quando `DRY_RUN=false`, o script:
 
+- valida as travas de envio real controlado antes de consultar SMTP;
 - valida `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` e `MAIL_FROM`;
 - conecta no SMTP com STARTTLS quando usado `SMTP_PORT=587`;
 - autentica com `AUTH PLAIN`;
 - envia o HTML e texto montados pelo script;
-- usa `MAIL_FROM` como remetente e reply-to;
+- usa `MAIL_FROM` como remetente, com display name codificado em MIME/UTF-8 quando necessario;
+- usa o e-mail extraido de `MAIL_FROM` como reply-to;
 - registra somente resumo seguro.
 
 Se o SMTP falhar, a execucao falha com erro seguro, sem expor senha, corpo do e-mail ou secrets.
+
+## Execucao manual controlada
+
+O workflow `Envio automatico Dona Flor` possui inputs manuais para teste seguro:
+
+- `tipo`: `AUTO`, `HOJE`, `AMANHA` ou `VENCIDAS`;
+- `dry_run`: `true` ou `false`;
+- `modo_teste`: `true` ou `false`;
+- `tipo_destinatario`: `todos`, `contas`, `notas` ou `resumo`;
+- `limite_destinatarios`: quantidade maxima permitida;
+- `empresa_id`: empresa alvo do teste;
+- `confirmar_envio_real`: confirmacao textual para envio real.
+
+Para dry-run manual:
+
+1. Usar `dry_run=true`.
+2. Manter `modo_teste=true`.
+3. Escolher `tipo` e `tipo_destinatario`.
+4. Conferir logs com e-mails mascarados e `message_id:null`.
+
+Para teste real controlado:
+
+1. Usar `dry_run=false`.
+2. Usar `modo_teste=true`.
+3. Usar `limite_destinatarios=1`.
+4. Informar `empresa_id`.
+5. Preencher `confirmar_envio_real=CONFIRMO_ENVIO_REAL_CONTROLADO`.
+6. Conferir antes que exista somente 1 destinatario final esperado.
+
+Se qualquer trava falhar, o script aborta antes de SMTP:
+
+- `modo_teste` diferente de `true`;
+- `limite_destinatarios` diferente de `1`;
+- `empresa_id` ausente;
+- confirmacao textual incorreta;
+- mais de 1 destinatario final no envio real.
+
+As execucoes agendadas nao usam os inputs manuais e continuam seguindo o secret `DRY_RUN`.
 
 ## Validacao realizada
 
@@ -342,6 +389,16 @@ Para reativar envio real:
 
 No GitHub Actions, usar `workflow_dispatch`.
 
+Inputs principais:
+
+- `tipo`;
+- `dry_run`;
+- `modo_teste`;
+- `tipo_destinatario`;
+- `limite_destinatarios`;
+- `empresa_id`;
+- `confirmar_envio_real`.
+
 O input `tipo` aceita:
 
 - `AUTO`;
@@ -354,6 +411,8 @@ Em `AUTO`, o script infere o tipo pelo horario em Sao Paulo:
 - 20h: `VENCIDAS`;
 - 9h: `AMANHA`;
 - demais horarios: hoje/padrao.
+
+Para envio real controlado, seguir a secao `Execucao manual controlada` e preencher todas as travas obrigatorias.
 
 ## Melhorias futuras opcionais
 

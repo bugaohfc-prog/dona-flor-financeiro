@@ -153,7 +153,7 @@ export default function DashboardHome({
     }
 
     if (alerta.id === 'ferias-proximas') {
-      return `${resumoPessoas.feriasProximas} ${resumoPessoas.feriasProximas === 1 ? 'ciclo nos pr\u00f3ximos 30 dias' : 'ciclos nos pr\u00f3ximos 30 dias'}`
+      return `${resumoPessoas.feriasProximas} ${resumoPessoas.feriasProximas === 1 ? 'per\u00edodo agendado nos pr\u00f3ximos 30 dias' : 'per\u00edodos agendados nos pr\u00f3ximos 30 dias'}`
     }
 
     if (alerta.tipo === 'aniversarios') {
@@ -225,8 +225,8 @@ export default function DashboardHome({
         id: 'contador-ferias-proximas',
         tipo: 'ferias',
         titulo: 'F\u00e9rias pr\u00f3ximas',
-        descricao: `${resumoPessoas.feriasProximas} ${resumoPessoas.feriasProximas === 1 ? 'ciclo nos pr\u00f3ximos 30 dias' : 'ciclos nos pr\u00f3ximos 30 dias'}`,
-        rotaDestino: 'relatorios-ferias'
+        descricao: `${resumoPessoas.feriasProximas} ${resumoPessoas.feriasProximas === 1 ? 'per\u00edodo agendado nos pr\u00f3ximos 30 dias' : 'per\u00edodos agendados nos pr\u00f3ximos 30 dias'}`,
+        rotaDestino: 'ferias'
       })
     }
 

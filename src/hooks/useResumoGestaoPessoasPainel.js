@@ -85,6 +85,21 @@ function periodoConsomeSaldo(periodo) {
   return periodo && !estaArquivado(periodo) && periodo.status !== 'cancelada'
 }
 
+function periodoAgendadoProximo(periodo, hoje, limiteProximo) {
+  const dataInicio = String(periodo?.data_inicio || '').slice(0, 10)
+  const status = String(periodo?.status || '').trim().toLowerCase()
+
+  return Boolean(
+    periodo &&
+    !estaArquivado(periodo) &&
+    status === 'agendada' &&
+    dataInicio &&
+    dataInicio >= hoje &&
+    limiteProximo &&
+    dataInicio <= limiteProximo
+  )
+}
+
 function criarAlerta({ id, tipo, titulo, descricao, prioridade, rotaDestino }) {
   return { id, tipo, titulo, descricao, prioridade, rotaDestino }
 }
@@ -97,7 +112,7 @@ function montarAlertas(resumo) {
       id: 'ferias-vencidas',
       tipo: 'ferias',
       titulo: 'Férias vencidas',
-      descricao: `${resumo.feriasVencidas} ciclo(s) com limite de gozo ultrapassado.`,
+      descricao: `${resumo.feriasVencidas} ${resumo.feriasVencidas === 1 ? 'ciclo' : 'ciclos'} com limite de gozo ultrapassado.`,
       prioridade: 'alta',
       rotaDestino: 'relatorios-ferias'
     }))
@@ -119,9 +134,9 @@ function montarAlertas(resumo) {
       id: 'ferias-proximas',
       tipo: 'ferias',
       titulo: 'Férias próximas',
-      descricao: `${resumo.feriasProximas} ciclo(s) com limite de gozo nos próximos 30 dias.`,
+      descricao: `${resumo.feriasProximas} ${resumo.feriasProximas === 1 ? 'período agendado' : 'períodos agendados'} nos próximos 30 dias.`,
       prioridade: 'media',
-      rotaDestino: 'relatorios-ferias'
+      rotaDestino: 'ferias'
     }))
   }
 
@@ -130,7 +145,7 @@ function montarAlertas(resumo) {
       id: 'aniversarios-semana',
       tipo: 'aniversarios',
       titulo: 'Aniversários da semana',
-      descricao: `${resumo.aniversariosSemana} aniversário(s) nos próximos 7 dias.`,
+      descricao: `${resumo.aniversariosSemana} ${resumo.aniversariosSemana === 1 ? 'aniversário' : 'aniversários'} nos próximos 7 dias.`,
       prioridade: 'baixa',
       rotaDestino: 'relatorios-pessoas'
     }))
@@ -141,7 +156,7 @@ function montarAlertas(resumo) {
       id: 'funcionarios-ativos',
       tipo: 'funcionarios',
       titulo: 'Funcionários ativos',
-      descricao: `${resumo.funcionariosAtivos} colaborador(es) ativos.`,
+      descricao: `${resumo.funcionariosAtivos} ${resumo.funcionariosAtivos === 1 ? 'colaborador ativo' : 'colaboradores ativos'}.`,
       prioridade: 'baixa',
       rotaDestino: 'funcionarios'
     }))
@@ -178,6 +193,10 @@ async function carregarResumoFerias({ supabase, empresaId, funcionariosAtivos })
       if (erroPeriodos) throw erroPeriodos
 
       const periodosAtivos = (periodos || []).filter(periodoConsomeSaldo)
+      feriasProximas += periodosAtivos.filter((periodo) => (
+        periodoAgendadoProximo(periodo, hoje, limiteProximo)
+      )).length
+
       const saldo = calcularSaldoDiasFerias({
         diasDireito: ciclo.dias_direito || 30,
         periodosAtivos
@@ -187,8 +206,6 @@ async function carregarResumoFerias({ supabase, empresaId, funcionariosAtivos })
 
       if (ciclo.data_limite_gozo < hoje) {
         feriasVencidas += 1
-      } else if (limiteProximo && ciclo.data_limite_gozo <= limiteProximo) {
-        feriasProximas += 1
       }
     }))
   }))

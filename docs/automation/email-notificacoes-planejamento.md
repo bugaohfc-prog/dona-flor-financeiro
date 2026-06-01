@@ -129,3 +129,38 @@ Este ciclo não corrige encoding no envio real.
 4. Criar frontend de cadastro em Configurações.
 5. Ajustar o GitHub Actions para priorizar destinatários configurados.
 6. Validar envio real de forma controlada.
+
+## Frontend de destinatarios de alertas
+
+Status em 2026-06-01:
+
+- o bloco `Destinatarios de alertas` em Configuracoes passou a ser funcional;
+- destinatarios sao cadastrados em `public.df_destinatarios_alertas`;
+- destinatario de alerta continua nao sendo usuario do sistema;
+- nao ha criacao de login, senha ou vinculo em `df_usuarios_empresas`;
+- inativacao usa `ativo=false`, sem DELETE fisico.
+
+Permissoes esperadas no frontend:
+
+- Admin: lista, cria, edita, inativa e reativa destinatarios da empresa ativa;
+- Master: lista, cria, edita, inativa e reativa destinatarios da empresa ativa;
+- Gerente: visualiza a lista em modo leitura;
+- Operador: nao ganha acesso novo.
+
+Arquivos do ciclo de service/hook/frontend:
+
+- `src/services/destinatariosAlertasService.js`
+- `src/hooks/useDestinatariosAlertas.js`
+- `src/App.jsx`
+
+Limites preservados:
+
+- GitHub Actions continua usando o fluxo antigo ate ciclo proprio;
+- `scripts/envio-automatico-dona-flor.mjs` nao foi alterado;
+- secrets nao foram alterados;
+- nenhum workflow foi disparado;
+- nenhum e-mail real foi enviado.
+
+Proximo passo seguro:
+
+Integrar os destinatarios ao script de envio automatico com modo `dry-run`, priorizando leitura por `empresa_id`, destinatarios ativos e preferencias `recebe_contas`, `recebe_notas` e `recebe_resumo`.

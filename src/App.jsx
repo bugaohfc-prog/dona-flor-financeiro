@@ -33,6 +33,7 @@ import { useAuthSession } from './hooks/useAuthSession'
 import { useUiState } from './hooks/useUiState'
 import { useAppNavigation } from './hooks/useAppNavigation'
 import { useEmpresaContext } from './hooks/useEmpresaContext'
+import { useDestinatariosAlertas } from './hooks/useDestinatariosAlertas'
 import { converterValor, formatarData, formatarDataParaBanco, formatarValor, limitarDataInput, primeiraLetraMaiuscula } from './utils/format'
 import { dataLocal, diferencaDias, mesmoMesAtual } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
@@ -79,6 +80,16 @@ function CopilotDrawerBoundary() {
       <LazyCopilotDrawer />
     </AppSuspenseBoundary>
   )
+}
+
+const DESTINATARIO_ALERTA_FORM_INICIAL = {
+  nome: '',
+  email: '',
+  recebe_contas: true,
+  recebe_notas: true,
+  recebe_resumo: true,
+  observacao: '',
+  ativo: true
 }
 
 export default function App() {
@@ -289,6 +300,9 @@ export default function App() {
   const [nomeEmpresa, setNomeEmpresa] = useState('')
   const [whatsappPadrao, setWhatsappPadrao] = useState('')
   const [emailPadrao, setEmailPadrao] = useState('')
+  const [mostrarDestinatariosInativos, setMostrarDestinatariosInativos] = useState(false)
+  const [destinatarioEditandoId, setDestinatarioEditandoId] = useState('')
+  const [formDestinatarioAlerta, setFormDestinatarioAlerta] = useState(DESTINATARIO_ALERTA_FORM_INICIAL)
   function mostrarAviso(mensagem, tipo = 'info') {
     showToast(mensagem, tipo)
   }
@@ -677,6 +691,86 @@ export default function App() {
   const bloquearAcaoSemPermissao = useCallback(() => {
     mostrarAviso('Você não tem permissão para realizar esta ação.', 'erro')
   }, [mostrarAviso])
+
+  const podeGerenciarDestinatariosAlertas = podeEditarConfiguracoes()
+
+  const {
+    destinatarios,
+    loadingDestinatarios,
+    salvandoDestinatario,
+    erroDestinatarios,
+    criarDestinatario,
+    atualizarDestinatario,
+    alterarStatusDestinatario
+  } = useDestinatariosAlertas({
+    empresaId,
+    incluirInativos: mostrarDestinatariosInativos,
+    autoCarregar: Boolean(usuarioLogado?.id && empresaId && podeAcessarConfiguracoes())
+  })
+
+  function limparFormularioDestinatarioAlerta() {
+    setDestinatarioEditandoId('')
+    setFormDestinatarioAlerta(DESTINATARIO_ALERTA_FORM_INICIAL)
+  }
+
+  function preencherFormularioDestinatarioAlerta(destinatario) {
+    if (!podeGerenciarDestinatariosAlertas) return bloquearAcaoSemPermissao()
+
+    setDestinatarioEditandoId(destinatario.id)
+    setFormDestinatarioAlerta({
+      nome: destinatario.nome || '',
+      email: destinatario.email || '',
+      recebe_contas: destinatario.recebe_contas !== false,
+      recebe_notas: destinatario.recebe_notas !== false,
+      recebe_resumo: destinatario.recebe_resumo !== false,
+      observacao: destinatario.observacao || '',
+      ativo: destinatario.ativo !== false
+    })
+  }
+
+  function atualizarCampoDestinatarioAlerta(campo, valor) {
+    setFormDestinatarioAlerta((atual) => ({
+      ...atual,
+      [campo]: valor
+    }))
+  }
+
+  async function salvarDestinatarioAlerta(event) {
+    event?.preventDefault?.()
+
+    if (!podeGerenciarDestinatariosAlertas) return bloquearAcaoSemPermissao()
+    if (!empresaId) {
+      mostrarAviso('Empresa ativa nao identificada para salvar destinatario.', 'erro')
+      return
+    }
+
+    const resultado = destinatarioEditandoId
+      ? await atualizarDestinatario(destinatarioEditandoId, formDestinatarioAlerta)
+      : await criarDestinatario(formDestinatarioAlerta)
+
+    if (resultado.error) {
+      mostrarAviso(mensagemSeguraErro(resultado.error, 'Nao foi possivel salvar o destinatario.'), 'erro')
+      return
+    }
+
+    mostrarAviso(destinatarioEditandoId ? 'Destinatario atualizado.' : 'Destinatario cadastrado.', 'info')
+    limparFormularioDestinatarioAlerta()
+  }
+
+  async function alternarStatusDestinatarioAlerta(destinatario) {
+    if (!podeGerenciarDestinatariosAlertas) return bloquearAcaoSemPermissao()
+
+    const novoStatus = destinatario.ativo === false
+    const resultado = await alterarStatusDestinatario(destinatario.id, novoStatus)
+
+    if (resultado.error) {
+      mostrarAviso(mensagemSeguraErro(resultado.error, 'Nao foi possivel alterar o destinatario.'), 'erro')
+      return
+    }
+
+    if (destinatarioEditandoId === destinatario.id) limparFormularioDestinatarioAlerta()
+    mostrarAviso(novoStatus ? 'Destinatario reativado.' : 'Destinatario inativado.', 'info')
+  }
 
   const menuSectionsFiltradas = useMemo(() => menuSections
     .map((grupo) => ({
@@ -4438,13 +4532,161 @@ export default function App() {
           <h2 style={styles.subtitulo}>Destinatários de alertas</h2>
 
           <p style={styles.textoNota}>
-            Futuramente, esta área permitirá cadastrar e-mails de donos ou responsáveis para receber
-            notificações sem criar usuário no sistema.
+            Cadastre e-mails de donos ou responsáveis para receber alertas sem criar usuários no sistema.
           </p>
 
+          {!podeGerenciarDestinatariosAlertas && (
+            <p style={styles.textoNota}>Somente Admin/Master podem alterar destinatários.</p>
+          )}
+
           <div style={styles.configResumo}>
-            <span>Estado atual: envio por e-mail usa usuários da empresa ou o e-mail padrão como fallback.</span>
-            <span>Nenhum destinatário novo é salvo nesta etapa.</span>
+            <span>{loadingDestinatarios ? 'Carregando destinatários...' : `${destinatarios.length} destinatário(s) exibido(s)`}</span>
+            <span>Integração com envio automático será feita em ciclo próprio.</span>
+          </div>
+
+          {erroDestinatarios && (
+            <p style={{ ...styles.textoNota, color: '#b91c1c', fontWeight: 700 }}>{erroDestinatarios}</p>
+          )}
+
+          <label className="checkbox-row-fix" style={styles.switchLinha}>
+            <div>
+              <strong>Mostrar inativos</strong>
+              <small>Destinatários inativos ficam arquivados logicamente, sem DELETE físico.</small>
+            </div>
+            <input
+              type="checkbox"
+              checked={mostrarDestinatariosInativos}
+              onChange={(e) => setMostrarDestinatariosInativos(e.target.checked)}
+            />
+          </label>
+
+          {podeGerenciarDestinatariosAlertas && (
+            <form onSubmit={salvarDestinatarioAlerta} style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+                <input
+                  style={styles.input}
+                  placeholder="Nome do destinatário"
+                  value={formDestinatarioAlerta.nome}
+                  onChange={(e) => atualizarCampoDestinatarioAlerta('nome', primeiraLetraMaiuscula(e.target.value))}
+                  disabled={salvandoDestinatario}
+                />
+                <input
+                  style={styles.input}
+                  type="email"
+                  placeholder="E-mail do destinatário"
+                  value={formDestinatarioAlerta.email}
+                  onChange={(e) => atualizarCampoDestinatarioAlerta('email', e.target.value)}
+                  disabled={salvandoDestinatario}
+                />
+              </div>
+
+              <input
+                style={styles.input}
+                placeholder="Observação administrativa opcional"
+                value={formDestinatarioAlerta.observacao}
+                onChange={(e) => atualizarCampoDestinatarioAlerta('observacao', e.target.value)}
+                disabled={salvandoDestinatario}
+              />
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
+                <label className="checkbox-row-fix" style={styles.switchLinha}>
+                  <span>Contas</span>
+                  <input
+                    type="checkbox"
+                    checked={formDestinatarioAlerta.recebe_contas}
+                    onChange={(e) => atualizarCampoDestinatarioAlerta('recebe_contas', e.target.checked)}
+                    disabled={salvandoDestinatario}
+                  />
+                </label>
+                <label className="checkbox-row-fix" style={styles.switchLinha}>
+                  <span>Notas</span>
+                  <input
+                    type="checkbox"
+                    checked={formDestinatarioAlerta.recebe_notas}
+                    onChange={(e) => atualizarCampoDestinatarioAlerta('recebe_notas', e.target.checked)}
+                    disabled={salvandoDestinatario}
+                  />
+                </label>
+                <label className="checkbox-row-fix" style={styles.switchLinha}>
+                  <span>Resumo</span>
+                  <input
+                    type="checkbox"
+                    checked={formDestinatarioAlerta.recebe_resumo}
+                    onChange={(e) => atualizarCampoDestinatarioAlerta('recebe_resumo', e.target.checked)}
+                    disabled={salvandoDestinatario}
+                  />
+                </label>
+                <label className="checkbox-row-fix" style={styles.switchLinha}>
+                  <span>Ativo</span>
+                  <input
+                    type="checkbox"
+                    checked={formDestinatarioAlerta.ativo}
+                    onChange={(e) => atualizarCampoDestinatarioAlerta('ativo', e.target.checked)}
+                    disabled={salvandoDestinatario}
+                  />
+                </label>
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button style={styles.btnSalvar} type="submit" disabled={salvandoDestinatario}>
+                  {destinatarioEditandoId ? 'Salvar edição' : 'Adicionar destinatário'}
+                </button>
+
+                {destinatarioEditandoId && (
+                  <button style={styles.btnCinza} type="button" onClick={limparFormularioDestinatarioAlerta} disabled={salvandoDestinatario}>
+                    Cancelar edição
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
+
+          <div style={{ display: 'grid', gap: 8, marginTop: 14 }}>
+            {!loadingDestinatarios && destinatarios.length === 0 && (
+              <p style={styles.textoNota}>Nenhum destinatário cadastrado para a empresa ativa.</p>
+            )}
+
+            {destinatarios.map((destinatario) => (
+              <div
+                key={destinatario.id}
+                style={{
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 8,
+                  padding: 12,
+                  display: 'grid',
+                  gap: 8,
+                  background: destinatario.ativo === false ? '#f8fafc' : '#ffffff'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                  <div>
+                    <strong>{destinatario.nome || 'Sem nome'}</strong>
+                    <p style={{ ...styles.textoNota, margin: 0 }}>{destinatario.email}</p>
+                  </div>
+                  <span style={{ fontWeight: 800, color: destinatario.ativo === false ? '#64748b' : '#15803d' }}>
+                    {destinatario.ativo === false ? 'Inativo' : 'Ativo'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 13, color: '#475569' }}>
+                  {destinatario.recebe_contas !== false && <span>Contas</span>}
+                  {destinatario.recebe_notas !== false && <span>Notas</span>}
+                  {destinatario.recebe_resumo !== false && <span>Resumo</span>}
+                  {destinatario.observacao && <span>Obs.: {destinatario.observacao}</span>}
+                </div>
+
+                {podeGerenciarDestinatariosAlertas && (
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button style={styles.btnCinza} type="button" onClick={() => preencherFormularioDestinatarioAlerta(destinatario)}>
+                      Editar
+                    </button>
+                    <button style={styles.btnCinza} type="button" onClick={() => alternarStatusDestinatarioAlerta(destinatario)} disabled={salvandoDestinatario}>
+                      {destinatario.ativo === false ? 'Reativar' : 'Inativar'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </section>
 

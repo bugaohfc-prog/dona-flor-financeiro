@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase'
-import { normalizarPerfilUsuario } from './usuariosService'
+import { normalizarPerfilGlobal } from './permissoesService'
 
 export const TENANT_ERRORS = {
   semEmpresa: 'Usuário sem empresa vinculada. Peça ao administrador para liberar seu acesso.'
@@ -10,7 +10,7 @@ export function normalizarVinculoEmpresa(vinculo) {
 
   return {
     empresaId: vinculo.empresa_id,
-    perfil: normalizarPerfilUsuario(vinculo.perfil),
+    perfil: normalizarPerfilGlobal(vinculo.perfil),
     nomeEmpresa: vinculo.nome_empresa || vinculo.empresas?.nome || vinculo.df_empresas?.nome || '',
     origem: 'df_usuarios_empresas'
   }

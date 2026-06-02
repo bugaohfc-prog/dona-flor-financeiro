@@ -16,7 +16,7 @@ function normalizarEmail(email) {
   return String(email || '').trim().toLowerCase()
 }
 
-function normalizarPerfilGlobal(perfil) {
+export function normalizarPerfilGlobal(perfil) {
   const valor = String(perfil || '').toLowerCase().trim()
 
   if (['master', 'super_admin', 'superadmin', 'owner', 'dono'].includes(valor)) return PERFIS_GLOBAIS.MASTER
@@ -32,18 +32,29 @@ function masterAtivo(registro) {
   return true
 }
 
+function prioridadePerfilEmpresa(perfil) {
+  const perfilNormalizado = normalizarPerfilGlobal(perfil)
+  if (perfilNormalizado === PERFIS_GLOBAIS.MASTER) return 4
+  if (perfilNormalizado === PERFIS_GLOBAIS.ADMIN) return 3
+  if (perfilNormalizado === PERFIS_GLOBAIS.GERENTE) return 2
+  if (perfilNormalizado === PERFIS_GLOBAIS.OPERADOR) return 1
+  return 0
+}
+
 export function criarPermissoesUsuario({ perfilEmpresa = 'operador', master = null } = {}) {
-  const perfilNormalizado = normalizarPerfilUsuario(perfilEmpresa)
-  const perfilGlobal = master?.isMaster ? PERFIS_GLOBAIS.MASTER : perfilNormalizado
+  const perfilGlobalEmpresa = normalizarPerfilGlobal(perfilEmpresa)
+  const isMaster = Boolean(master?.isMaster || perfilGlobalEmpresa === PERFIS_GLOBAIS.MASTER)
+  const perfilNormalizado = isMaster ? PERFIS_GLOBAIS.MASTER : normalizarPerfilUsuario(perfilEmpresa)
+  const perfilGlobal = isMaster ? PERFIS_GLOBAIS.MASTER : perfilNormalizado
 
   return {
     perfilEmpresa: perfilNormalizado,
     perfilGlobal,
-    isMaster: Boolean(master?.isMaster),
-    canManageUsers: Boolean(master?.isMaster || perfilNormalizado === 'admin'),
-    canAccessSettings: Boolean(master?.isMaster || ['admin', 'gerente'].includes(perfilNormalizado)),
-    canManageCompanies: Boolean(master?.isMaster),
-    canSwitchCompany: Boolean(master?.isMaster)
+    isMaster,
+    canManageUsers: Boolean(isMaster || perfilNormalizado === 'admin'),
+    canAccessSettings: Boolean(isMaster || ['admin', 'gerente'].includes(perfilNormalizado)),
+    canManageCompanies: isMaster,
+    canSwitchCompany: isMaster
   }
 }
 
@@ -161,12 +172,15 @@ export async function listarEmpresasDisponiveisParaUsuario({ userId, email, isMa
   const mapa = new Map()
   ;(vinculos || []).forEach((vinculo) => {
     if (!vinculo?.empresa_id) return
-    const perfil = normalizarPerfilUsuario(vinculo.perfil)
+    const perfil = normalizarPerfilGlobal(vinculo.perfil)
     const existente = mapa.get(vinculo.empresa_id)
+    const perfilExistente = existente?.perfil || ''
+    const prioridadeAtual = prioridadePerfilEmpresa(perfil)
+    const prioridadeExistente = prioridadePerfilEmpresa(perfilExistente)
     mapa.set(vinculo.empresa_id, {
       id: vinculo.empresa_id,
       nome: existente?.nome || '',
-      perfil: existente?.perfil === 'admin' ? existente.perfil : perfil
+      perfil: prioridadeAtual > prioridadeExistente ? perfil : (perfilExistente || perfil)
     })
   })
 

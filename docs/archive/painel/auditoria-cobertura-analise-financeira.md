@@ -29,12 +29,12 @@ Arquivos esperados mas não localizados nesta cópia:
 - `src/pages/Dashboard.jsx`;
 - `src/pages/DashboardHome.jsx`;
 - `src/components/Dashboard/`;
-- `docs/auditoria-visual-ux-dna-gestao.md`;
-- `docs/redesenho-dashboard-painel-principal-dna-gestao.md`.
+- `docs/archive/diagnosticos/auditoria-visual-ux-dna-gestao.md`;
+- `docs/archive/painel/redesenho-dashboard-painel-principal-dna-gestao.md`.
 
 ## 3. Indicadores financeiros identificados no Painel
 
-Com base em `docs/inventario-visual-painel-principal-dna-gestao.md` e `src/components/dashboard/DashboardHome.jsx`, os blocos financeiros do Painel são:
+Com base em `docs/archive/painel/inventario-visual-painel-principal-dna-gestao.md` e `src/components/dashboard/DashboardHome.jsx`, os blocos financeiros do Painel são:
 
 | Indicador/bloco | Nome atual | Origem provável | Uso no Painel | Natureza |
 |---|---|---|---|---|

@@ -192,7 +192,7 @@ Arquivos consultados e localizados:
 
 Arquivo nao localizado:
 
-- `docs/auditoria-visual-ux-dna-gestao.md`.
+- `docs/archive/diagnosticos/auditoria-visual-ux-dna-gestao.md`.
 
 ### Funcionarios
 

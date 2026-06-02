@@ -47,8 +47,8 @@ Arquivos esperados mas não localizados nesta cópia:
 - `src/pages/Dashboard.jsx`;
 - `src/pages/DashboardHome.jsx`;
 - `src/pages/AgendaPage.jsx`;
-- `docs/auditoria-visual-ux-dna-gestao.md`;
-- `docs/redesenho-dashboard-painel-principal-dna-gestao.md`;
+- `docs/archive/diagnosticos/auditoria-visual-ux-dna-gestao.md`;
+- `docs/archive/painel/redesenho-dashboard-painel-principal-dna-gestao.md`;
 - `docs/planejamento-dashboard-geral-topbar-dna-gestao.md`;
 - `docs/branding.md`.
 

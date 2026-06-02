@@ -25,14 +25,14 @@ Arquivos esperados mas não localizados nesta cópia:
 - `src/pages/Dashboard.jsx`;
 - `src/pages/DashboardHome.jsx`;
 - `src/pages/AgendaPage.jsx`;
-- `docs/auditoria-visual-ux-dna-gestao.md`;
-- `docs/redesenho-dashboard-painel-principal-dna-gestao.md`;
+- `docs/archive/diagnosticos/auditoria-visual-ux-dna-gestao.md`;
+- `docs/archive/painel/redesenho-dashboard-painel-principal-dna-gestao.md`;
 - `docs/planejamento-dashboard-geral-topbar-dna-gestao.md`.
 
 Arquivos localizados e usados como base:
 
 - `docs/plano-consolidacao-pre-expansao-dna-gestao.md`;
-- `docs/planejamento-migracao-widgets-painel-analise-financeira.md`;
+- `docs/archive/painel/planejamento-migracao-widgets-painel-analise-financeira.md`;
 - `src/pages/DashboardPage.jsx`;
 - `src/components/dashboard/DashboardHome.jsx`;
 - `src/pages/Relatorios.jsx`;

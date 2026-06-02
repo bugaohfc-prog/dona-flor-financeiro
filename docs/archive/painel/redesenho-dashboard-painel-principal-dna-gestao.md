@@ -35,7 +35,7 @@ Função:
 Arquivos consultados:
 
 - `docs/plano-consolidacao-pre-expansao-dna-gestao.md`
-- `docs/auditoria-visual-ux-dna-gestao.md`
+- `docs/archive/diagnosticos/auditoria-visual-ux-dna-gestao.md`
 - `docs/branding/dna-gestao-branding.md`
 - `src/config/menuSections.js`
 - `src/components/dashboard/DashboardHome.jsx`
@@ -372,7 +372,7 @@ Risco:
 
 Arquivos:
 
-- `docs/redesenho-dashboard-painel-principal-dna-gestao.md`.
+- `docs/archive/painel/redesenho-dashboard-painel-principal-dna-gestao.md`.
 
 Build:
 

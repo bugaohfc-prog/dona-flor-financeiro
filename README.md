@@ -52,7 +52,7 @@ O projeto usa `_redirects` para manter rotas de SPA funcionando em hospedagens c
 - `src/services`: integracoes e acesso ao Supabase.
 - `src/utils`: formatacao, datas e recorrencia.
 - `supabase`: SQL e edge functions relacionadas ao backend.
-- `docs/implementation-history`: historico tecnico das fases antigas do projeto.
+- `docs/archive/implementation-history`: historico tecnico das fases antigas do projeto.
 
 ## Observacoes de producao
 

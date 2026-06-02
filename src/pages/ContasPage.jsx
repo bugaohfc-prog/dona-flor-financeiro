@@ -1,4 +1,5 @@
 import { AccountListSkeleton } from '../components/feedback/Skeletons.jsx'
+import { ehContaRecorrente } from '../utils/recorrencia'
 
 const CONTAS_EXPANDABLE_HEADER_STYLE = {
   width: '100%',
@@ -154,6 +155,8 @@ export default function ContasPage({
 
         {!loading && mostrarContas && contasFiltradas.map((conta) => {
           const vencida = estaVencida(conta.data_vencimento, conta.status)
+          const recorrente = ehContaRecorrente(conta)
+          const tipoRecorrencia = recorrente ? formatarTipoRecorrencia(obterTipoRecorrenciaConta(conta)) : ''
 
           return (
             <div
@@ -170,7 +173,14 @@ export default function ContasPage({
               }}
             >
               <div style={styles.cardTopo}>
-                <strong>{conta.descricao}</strong>
+                <div className="account-title-wrap">
+                  <strong>{conta.descricao}</strong>
+                  {recorrente && (
+                    <span className="account-recurring-badge account-recurring-title-badge" title={`Conta recorrente ${tipoRecorrencia}`}>
+                      ↻ Recorrente
+                    </span>
+                  )}
+                </div>
                 <span>{formatarValor(conta.valor)}</span>
               </div>
 
@@ -178,8 +188,8 @@ export default function ContasPage({
                 <span className="account-date-badge">📅 {formatarData(conta.data_vencimento)}</span>
                 <span>{conta.df_filiais?.nome || 'Sem filial'}</span>
                 <span>{conta.df_centros_custo?.nome || '-'}</span>
-                {conta.recorrencia_id && (
-                  <span className="account-recurring-badge">🔁 {formatarTipoRecorrencia(obterTipoRecorrenciaConta(conta))}</span>
+                {recorrente && (
+                  <span className="account-recurring-badge">↻ {tipoRecorrencia}</span>
                 )}
                 <span className={`status-pill ${vencida ? 'status-vencido' : conta.status === 'pago' ? 'status-pago' : 'status-pendente'}`}>
                   {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}

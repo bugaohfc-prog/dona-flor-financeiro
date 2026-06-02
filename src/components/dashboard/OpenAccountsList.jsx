@@ -1,4 +1,4 @@
-import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from '../../utils/recorrencia'
+import { ehContaRecorrente, formatarTipoRecorrencia, obterTipoRecorrenciaConta } from '../../utils/recorrencia'
 
 export default function OpenAccountsList({
   styles,
@@ -56,15 +56,24 @@ export default function OpenAccountsList({
           <div className="dashboard-open-list">
             {contasAbertasDashboard.slice(0, 8).map((conta) => {
               const vencida = estaVencida(conta.data_vencimento, conta.status)
+              const recorrente = ehContaRecorrente(conta)
+              const tipoRecorrencia = recorrente ? formatarTipoRecorrencia(obterTipoRecorrenciaConta(conta)) : ''
               return (
                 <div key={conta.id} className={`dashboard-account-row ${vencida ? 'account-row-vencido' : 'account-row-pendente'}`}>
                   <div>
-                    <strong>{conta.descricao}</strong>
+                    <div className="account-title-wrap">
+                      <strong>{conta.descricao}</strong>
+                      {recorrente && (
+                        <span className="account-recurring-badge account-recurring-title-badge" title={`Conta recorrente ${tipoRecorrencia}`}>
+                          ↻ Recorrente
+                        </span>
+                      )}
+                    </div>
                     <div className="dashboard-account-meta">
                       <span className="account-date-badge">📅 {formatarData(conta.data_vencimento)}</span>
                       <span className="account-center-label">{conta.df_centros_custo?.nome || 'Sem centro'}</span>
-                      {conta.recorrencia_id && (
-                        <span className="account-recurring-badge">🔁 {formatarTipoRecorrencia(obterTipoRecorrenciaConta(conta))}</span>
+                      {recorrente && (
+                        <span className="account-recurring-badge">↻ {tipoRecorrencia}</span>
                       )}
                     </div>
                     {conta.observacao && <small className="account-note-preview">Obs: {conta.observacao}</small>}

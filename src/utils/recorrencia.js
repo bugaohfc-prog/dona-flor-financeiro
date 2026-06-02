@@ -25,6 +25,14 @@ export function obterTipoRecorrenciaConta(conta) {
   return String(tipo || 'mensal')
 }
 
+export function ehContaRecorrente(conta) {
+  return Boolean(
+    conta?.recorrencia_id ||
+    conta?.df_contas_recorrentes?.tipo_recorrencia ||
+    conta?.tipo_recorrencia
+  )
+}
+
 export function formatarTipoRecorrencia(tipo) {
   const normalizado = String(tipo || 'mensal').toLowerCase()
   const mapa = {

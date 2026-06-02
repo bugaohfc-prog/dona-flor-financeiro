@@ -1321,6 +1321,37 @@ export default function AppShellStyles() {
               }
               .note-stat-critico { border-color: #fecaca !important; color: #991b1b !important; background: #fff7f7 !important; }
               .note-stat-urgente { border-color: #fde68a !important; color: #92400e !important; background: #fffbeb !important; }
+              .account-title-wrap {
+                align-items: center !important;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+                min-width: 0 !important;
+              }
+              .account-title-wrap strong {
+                min-width: 0 !important;
+                overflow-wrap: anywhere !important;
+              }
+              .account-recurring-badge {
+                align-items: center !important;
+                background: #eef6ff !important;
+                border: 1px solid #bfdbfe !important;
+                border-radius: 999px !important;
+                color: #1d4ed8 !important;
+                display: inline-flex !important;
+                flex: 0 0 auto !important;
+                font-size: 11px !important;
+                font-weight: 900 !important;
+                gap: 4px !important;
+                line-height: 1 !important;
+                max-width: 100% !important;
+                padding: 5px 8px !important;
+                white-space: nowrap !important;
+              }
+              .account-recurring-title-badge {
+                background: #eff6ff !important;
+                text-transform: uppercase !important;
+              }
               .mobile-menu-trigger {
                 background: #ffffff !important;
                 color: #0f766e !important;

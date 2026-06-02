@@ -269,6 +269,7 @@ export default function App() {
     setErroEmpresa
   } = useEmpresaContext()
   const [nomeUsuarioPerfil, setNomeUsuarioPerfil] = useState('')
+  const [empresaCarregando, setEmpresaCarregando] = useState(false)
   const {
     modalPerfilUsuario,
     setModalPerfilUsuario,
@@ -391,6 +392,7 @@ export default function App() {
     setFiliaisUsuariosEmpresa({})
     setNomeUsuarioPerfil('')
     setErroEmpresa('')
+    setEmpresaCarregando(false)
     setLoading(false)
     limparSessaoSegura()
   }
@@ -489,6 +491,7 @@ export default function App() {
 
   useEffect(() => {
     if (!usuarioLogado) {
+      setEmpresaCarregando(false)
       setLoading(false)
       return
     }
@@ -587,6 +590,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', fecharComEsc)
   }, [confirmacao.aberto, modalConta, modalNota, modalCentro, menuAberto, menuNavegacaoAberto])
   async function carregarEmpresaDoUsuario(userId) {
+    setEmpresaCarregando(true)
     setLoading(true)
     setErroEmpresa('')
 
@@ -667,9 +671,14 @@ export default function App() {
         mostrarAviso('Sua sessão expirou. Faça login novamente.', 'erro')
       } else {
         console.warn('Falha ao carregar empresa do usuário:', error)
-        mostrarAviso(mensagemSeguraErro(error, 'Não foi possível carregar sua empresa. Tente novamente.'), 'erro')
+        const mensagemEmpresa = mensagemSeguraErro(error, 'Não foi possível carregar sua empresa. Tente novamente.')
+        setEmpresaId(null)
+        limparEmpresaAtiva()
+        setErroEmpresa(mensagemEmpresa)
+        mostrarAviso(mensagemEmpresa, 'erro')
       }
     } finally {
+      setEmpresaCarregando(false)
       setLoading(false)
     }
   }
@@ -3961,8 +3970,10 @@ export default function App() {
     )
   }
 
+  const aguardandoEmpresaAtiva = Boolean(usuarioLogado?.id && !erroEmpresa && (empresaCarregando || !empresaId))
+
   const routeGuardProps = {
-    carregandoAuth,
+    carregandoAuth: carregandoAuth || aguardandoEmpresaAtiva,
     usuarioLogado,
     erroEmpresa,
     styles,
@@ -3972,7 +3983,7 @@ export default function App() {
     sairDoSistema
   }
 
-  if (carregandoAuth || !usuarioLogado || erroEmpresa) {
+  if (carregandoAuth || aguardandoEmpresaAtiva || !usuarioLogado || erroEmpresa) {
     return <AppRouteGuards {...routeGuardProps} />
   }
 

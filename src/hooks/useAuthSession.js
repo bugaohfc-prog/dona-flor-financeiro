@@ -51,22 +51,27 @@ export function useAuthSession({
     let ativo = true
 
     async function verificarSessao() {
-      try {
-        const timeoutSessao = new Promise((resolve) => {
-          window.setTimeout(
-            () => resolve({ data: { session: null }, error: new Error('Timeout ao validar sessão') }),
-            8000
-          )
-        })
+      let timeoutAviso = null
 
-        const { data, error } = await Promise.race([
-          supabase.auth.getSession(),
-          timeoutSessao
-        ])
+      try {
+        const sessaoPromise = supabase.auth.getSession()
+
+        timeoutAviso = window.setTimeout(() => {
+          console.warn('Validação de sessão demorando mais que o esperado. Aguardando recuperação do Supabase.')
+        }, 8000)
+
+        const { data, error } = await sessaoPromise
 
         if (!ativo) return
 
-        if (error || !data?.session) {
+        if (error) {
+          console.warn('Falha ao validar sessão:', error?.message || error)
+          onClearAuthData?.()
+          setUsuarioLogado(null)
+          return
+        }
+
+        if (!data?.session) {
           onClearAuthData?.()
           setUsuarioLogado(null)
           return
@@ -79,6 +84,7 @@ export function useAuthSession({
         onClearAuthData?.()
         setUsuarioLogado(null)
       } finally {
+        if (timeoutAviso) window.clearTimeout(timeoutAviso)
         if (ativo) setCarregandoAuth(false)
       }
     }

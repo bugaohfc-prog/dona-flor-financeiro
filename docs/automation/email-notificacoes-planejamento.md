@@ -206,7 +206,7 @@ Status em 2026-06-01:
 Travas obrigatorias para envio real manual:
 
 - `modo_teste=true`;
-- `limite_destinatarios=1`;
+- `limite_destinatarios` entre `1` e `2`;
 - `empresa_id` preenchido;
 - `confirmar_envio_real=CONFIRMO_ENVIO_REAL_CONTROLADO`;
 - destinatarios finais nao podem exceder o limite configurado.
@@ -222,5 +222,7 @@ Seguir rollout controlado, sem alterar `secrets.DRY_RUN`:
 5. Agendamento real futuro somente apos autorizacao expressa.
 
 Na Etapa 2, o envio real continua permitido apenas em execucao manual com `dry_run=false`, `modo_teste=true`, `limite_destinatarios=1`, `empresa_id` preenchido e `confirmar_envio_real=CONFIRMO_ENVIO_REAL_CONTROLADO`.
+
+Na Etapa 3, a expansao controlada por tipo/destinatario tambem permanece manual, com `empresa_id` obrigatorio, `tipo_destinatario` escolhido, `limite_destinatarios` maximo `2` e confirmacao textual obrigatoria.
 
 Execucoes agendadas continuam usando o secret `DRY_RUN` e devem permanecer em dry-run ate liberacao operacional futura.

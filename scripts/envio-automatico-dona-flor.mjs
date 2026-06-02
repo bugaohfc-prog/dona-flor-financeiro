@@ -16,6 +16,7 @@ const MAIL_TO_FALLBACK = cleanString(process.env.MAIL_TO_FALLBACK)
 const ALERTA_TIPO = resolveTipoAlerta(process.env.ALERTA_TIPO, new Date(), TIME_ZONE)
 const APP_URL = 'https://dona-flor-financeiro.vercel.app/'
 const LIMITE_ALTO_VALOR = 1000
+const LIMITE_MAXIMO_ENVIO_REAL_CONTROLADO = 2
 const EMAILS_BLOQUEADOS = new Set(['bugaohfc@gmail.com'])
 
 const supabaseBaseUrl = SUPABASE_URL.replace(/\/+$/, '')
@@ -450,7 +451,9 @@ function validarTravasOperacionais() {
 
   const erros = []
   if (!MODO_TESTE) erros.push('MODO_TESTE precisa ser true para envio real controlado.')
-  if (LIMITE_DESTINATARIOS !== 1) erros.push('LIMITE_DESTINATARIOS precisa ser 1 para envio real controlado.')
+  if (LIMITE_DESTINATARIOS < 1 || LIMITE_DESTINATARIOS > LIMITE_MAXIMO_ENVIO_REAL_CONTROLADO) {
+    erros.push(`LIMITE_DESTINATARIOS precisa estar entre 1 e ${LIMITE_MAXIMO_ENVIO_REAL_CONTROLADO} para envio real controlado.`)
+  }
   if (!EMPRESA_ID_TESTE) erros.push('EMPRESA_ID_TESTE e obrigatorio para envio real controlado da empresa piloto.')
   if (CONFIRMAR_ENVIO_REAL !== 'CONFIRMO_ENVIO_REAL_CONTROLADO') {
     erros.push('CONFIRMAR_ENVIO_REAL invalido para envio real controlado.')

@@ -189,18 +189,18 @@ Para teste real controlado:
 
 1. Usar `dry_run=false`.
 2. Usar `modo_teste=true`.
-3. Usar `limite_destinatarios=1`.
+3. Usar `limite_destinatarios` pequeno e validado para a etapa do rollout.
 4. Informar `empresa_id`.
 5. Preencher `confirmar_envio_real=CONFIRMO_ENVIO_REAL_CONTROLADO`.
-6. Conferir antes que exista somente 1 destinatario final esperado.
+6. Conferir antes que a quantidade de destinatarios finais respeite o limite configurado.
 
 Se qualquer trava falhar, o script aborta antes de SMTP:
 
 - `modo_teste` diferente de `true`;
-- `limite_destinatarios` diferente de `1`;
+- `limite_destinatarios` menor que `1` ou maior que `2`;
 - `empresa_id` ausente;
 - confirmacao textual incorreta;
-- mais de 1 destinatario final no envio real.
+- destinatarios finais acima do limite configurado.
 
 As execucoes agendadas nao usam os inputs manuais e continuam seguindo o secret `DRY_RUN`.
 
@@ -246,6 +246,16 @@ Na Etapa 2, envio real so pode ocorrer em `workflow_dispatch` manual com:
 - `limite_destinatarios=1`;
 - `empresa_id` preenchido com a empresa piloto;
 - `confirmar_envio_real=CONFIRMO_ENVIO_REAL_CONTROLADO`.
+
+Na Etapa 3, a expansao controlada por tipo/destinatario continua restrita a `workflow_dispatch` manual:
+
+- `dry_run=false`;
+- `modo_teste=true`;
+- `limite_destinatarios` pode ser `1` ou `2`;
+- `empresa_id` continua obrigatorio;
+- `tipo_destinatario` deve selecionar o grupo testado;
+- `confirmar_envio_real=CONFIRMO_ENVIO_REAL_CONTROLADO`;
+- destinatarios finais nao podem exceder o limite informado.
 
 Execucoes agendadas continuam seguindo `secrets.DRY_RUN`. O secret deve permanecer `true` ate autorizacao explicita para liberar agendamento real amplo.
 

@@ -213,4 +213,14 @@ Travas obrigatorias para envio real manual:
 
 Proximo passo seguro:
 
-Executar primeiro um workflow manual com `dry_run=true` usando os novos inputs. Somente depois, se os logs confirmarem 1 destinatario final, executar o teste real controlado.
+Seguir rollout controlado, sem alterar `secrets.DRY_RUN`:
+
+1. Manual controlado para 1 destinatario.
+2. Empresa piloto obrigatoria por `empresa_id`.
+3. Tipo especifico por `tipo_destinatario`.
+4. Expansao gradual de destinatarios ativos.
+5. Agendamento real futuro somente apos autorizacao expressa.
+
+Na Etapa 2, o envio real continua permitido apenas em execucao manual com `dry_run=false`, `modo_teste=true`, `limite_destinatarios=1`, `empresa_id` preenchido e `confirmar_envio_real=CONFIRMO_ENVIO_REAL_CONTROLADO`.
+
+Execucoes agendadas continuam usando o secret `DRY_RUN` e devem permanecer em dry-run ate liberacao operacional futura.

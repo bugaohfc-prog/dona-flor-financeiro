@@ -222,11 +222,32 @@ O fluxo GitHub Actions foi validado nas etapas abaixo.
 - log registrou status `enviado`;
 - log registrou `message_id`.
 
-Estado oficial final:
+Estado oficial atual:
 
 - Pipedream desligado;
 - GitHub Actions ativo como fluxo oficial;
-- `DRY_RUN=false` ativo para envio real.
+- agendamento amplo ainda preservado em dry-run por `secrets.DRY_RUN=true`;
+- envio real permitido apenas por execucao manual controlada com empresa piloto.
+
+## Rollout controlado
+
+O rollout de E-mail/Notificacoes deve permanecer progressivo:
+
+1. Execucao manual controlada para 1 destinatario.
+2. Empresa piloto obrigatoria por `empresa_id`.
+3. Tipo especifico por `tipo_destinatario`, quando necessario.
+4. Expansao gradual de destinatarios ativos.
+5. Agendamento real futuro somente apos validacao operacional expressa.
+
+Na Etapa 2, envio real so pode ocorrer em `workflow_dispatch` manual com:
+
+- `dry_run=false`;
+- `modo_teste=true`;
+- `limite_destinatarios=1`;
+- `empresa_id` preenchido com a empresa piloto;
+- `confirmar_envio_real=CONFIRMO_ENVIO_REAL_CONTROLADO`.
+
+Execucoes agendadas continuam seguindo `secrets.DRY_RUN`. O secret deve permanecer `true` ate autorizacao explicita para liberar agendamento real amplo.
 
 ## Erro SMTP 535
 

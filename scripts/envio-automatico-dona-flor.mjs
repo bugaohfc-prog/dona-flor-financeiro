@@ -32,6 +32,7 @@ async function main() {
 
   console.log('[envio-automatico] inicio', JSON.stringify({
     dry_run: DRY_RUN,
+    modo_execucao: DRY_RUN ? 'dry_run' : 'manual_controlado_empresa_piloto',
     modo_teste: MODO_TESTE,
     limite_destinatarios: LIMITE_DESTINATARIOS || null,
     empresa_id_teste: EMPRESA_ID_TESTE || null,
@@ -450,7 +451,7 @@ function validarTravasOperacionais() {
   const erros = []
   if (!MODO_TESTE) erros.push('MODO_TESTE precisa ser true para envio real controlado.')
   if (LIMITE_DESTINATARIOS !== 1) erros.push('LIMITE_DESTINATARIOS precisa ser 1 para envio real controlado.')
-  if (!EMPRESA_ID_TESTE) erros.push('EMPRESA_ID_TESTE e obrigatorio para envio real controlado.')
+  if (!EMPRESA_ID_TESTE) erros.push('EMPRESA_ID_TESTE e obrigatorio para envio real controlado da empresa piloto.')
   if (CONFIRMAR_ENVIO_REAL !== 'CONFIRMO_ENVIO_REAL_CONTROLADO') {
     erros.push('CONFIRMAR_ENVIO_REAL invalido para envio real controlado.')
   }

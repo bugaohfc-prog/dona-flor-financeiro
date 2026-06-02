@@ -12,7 +12,9 @@ Estado final validado:
 - GitHub Actions e o fluxo oficial de envio automatico.
 - Workflow: `.github/workflows/envio-automatico-dona-flor.yml`.
 - Script: `scripts/envio-automatico-dona-flor.mjs`.
-- Envio real ativo com `DRY_RUN=false`.
+- `secrets.DRY_RUN` permanece `true`.
+- Envio automático amplo/agendado real ainda não está liberado.
+- Envio real permitido apenas por execução manual controlada.
 - SMTP Gmail validado.
 - Conta correta de envio: `donaflor.suporte@gmail.com`.
 - `MAIL_FROM=Dona Flor Financeiro <donaflor.suporte@gmail.com>`.
@@ -405,12 +407,18 @@ Para testar manualmente:
 4. Escolher o tipo desejado, se necessario.
 5. Conferir logs com destinatarios mascarados.
 
-Para reativar envio real:
+Para execução real manual controlada:
 
-1. Alterar `DRY_RUN` para `false`.
-2. Executar manualmente o workflow.
-3. Conferir recebimento do e-mail.
-4. Conferir log com status `enviado` e `message_id`.
+1. Manter `secrets.DRY_RUN=true` para preservar o agendamento amplo em modo seguro.
+2. Executar manualmente o workflow com `dry_run=false`.
+3. Usar `modo_teste=true`.
+4. Informar `empresa_id`.
+5. Usar `limite_destinatarios` pequeno e validado para a etapa do rollout.
+6. Preencher `confirmar_envio_real=CONFIRMO_ENVIO_REAL_CONTROLADO`.
+7. Conferir recebimento do e-mail.
+8. Conferir log com status `enviado` e `message_id`.
+
+Para liberar envio real agendado/amplo no futuro, abrir ciclo próprio de rollout e alterar o secret somente após autorização explícita.
 
 ## Cuidados operacionais
 

@@ -16,6 +16,17 @@ O Painel principal já foi reposicionado como Área de trabalho da empresa. O pr
 
 O risco principal é de UX e governança: o usuário vê uma área administrativa, mas pode não ter permissão real para executar as ações internas.
 
+Nota de estado atual validado em 2026-06-02:
+
+- Gerente continua vendo Configurações.
+- Gerente não acessa Lixeira.
+- Gerente não acessa Importar contas.
+- Gerente não acessa Filiais/Unidades.
+- Admin/Master preservados.
+- Operador sem acesso novo.
+
+As matrizes e achados abaixo permanecem como diagnóstico histórico anterior aos ciclos corretivos.
+
 ## 3. Arquivos consultados
 
 Arquivos localizados e consultados:
@@ -87,7 +98,7 @@ Funções relevantes:
 | Configurações | `configuracoes` | `podeAcessarConfiguracoes()` | Gerente pode ver por regra atual. |
 | Plano comercial | `billing` | `podeAcessarConfiguracoes()` | Gerente pode ver por regra atual, mas a documentação indica que Gerente não deve editar plano comercial. |
 | Configuração inicial | `onboarding` | `podeAcessarConfiguracoes()` | Gerente pode ver por regra atual. |
-| Lixeira | `lixeira` | `podeGerenciarLixeira()` | Gerente pode ver e restaurar; exclusão definitiva fica restrita a Admin. |
+| Lixeira | `lixeira` | `podeGerenciarLixeira()` | No diagnóstico histórico, Gerente podia ver/restaurar; no estado atual validado, Gerente não acessa Lixeira. |
 
 ## 7. Comportamento atual por perfil
 
@@ -99,7 +110,7 @@ Se algum Operador tiver flags especiais como `canAccessSettings`, o comportament
 
 ### Gerente
 
-O Gerente vê hoje:
+No diagnóstico histórico, o Gerente via:
 
 - `Usuários`, porque `podeAcessarConfiguracoes()` inclui `gerente`;
 - `Configurações`, pelo mesmo motivo;
@@ -112,7 +123,7 @@ O Gerente não vê `Empresas`, salvo se possuir `canManageCompanies`.
 
 Na tela Usuários, o Gerente pode acessar a página, mas as ações de convite, reset, alteração de perfil, alteração de filiais e remoção dependem de `podeAdministrarUsuarios()`, que não inclui `gerente` por padrão.
 
-Na Lixeira, o Gerente pode restaurar itens. A exclusão definitiva depende de `podeExcluirDefinitivoFinanceiro()`, restrita a `admin`.
+No diagnóstico histórico, o Gerente podia restaurar itens na Lixeira. No estado atual validado, Gerente não acessa Lixeira; exclusão definitiva segue fora do escopo de Gerente.
 
 ### Admin
 
@@ -155,7 +166,7 @@ Esse desenho simplifica o filtro, mas cria uma permissão visual ampla demais pa
 | Gerente ver Plano comercial | Média/alta | Plano comercial é uma área sensível de contratação, limites ou faturamento. A documentação indica que Gerente não deve editar Billing. |
 | Gerente ver Configuração inicial | Média/alta | Onboarding pode alterar configuração estrutural da empresa. |
 | Gerente ver Configurações | Média | Pode ser aceitável para configurações operacionais, mas precisa separação entre configuração sensível e não sensível. |
-| Gerente ver Lixeira | Média | A documentação atual permite restauração por Gerente e bloqueia exclusão definitiva. O risco é aceitável se essa decisão permanecer válida. |
+| Gerente ver Lixeira | Média | Achado histórico superado: no estado atual validado, Gerente não acessa Lixeira. |
 | Menu desktop/mobile dependerem do mesmo filtro | Baixa | É positivo para consistência, mas qualquer regra ampla afeta os dois menus ao mesmo tempo. |
 
 ## 10. Matriz visual recomendada
@@ -169,7 +180,7 @@ Matriz recomendada para o grupo Administração:
 | Configurações | Não | A decidir | Sim | Sim | Separar configuração operacional de configuração sensível antes de mudar. |
 | Plano comercial | Não | Não | Sim | Sim | Remover do menu do Gerente. |
 | Configuração inicial | Não | Não | Sim | Sim | Remover do menu do Gerente. |
-| Lixeira | Não | Sim, para restaurar | Sim | Sim | Manter se a decisão de restauração por Gerente continuar válida. |
+| Lixeira | Não | Não | Sim | Sim | Estado atual validado: Lixeira restrita a Admin/Master. |
 
 Matriz recomendada para ações sensíveis:
 
@@ -180,14 +191,14 @@ Matriz recomendada para ações sensíveis:
 | Alterar filiais de usuários | Não | Não | Sim | Sim |
 | Editar plano comercial | Não | Não | Sim | Sim |
 | Executar configuração inicial | Não | Não | Sim | Sim |
-| Restaurar da Lixeira | Não | Sim | Sim | Sim |
+| Restaurar da Lixeira | Não | Não | Sim | Sim |
 | Excluir definitivamente da Lixeira | Não | Não | Sim | Sim |
 
 ## 11. O que não alterar sem decisão
 
 Não alterar sem uma decisão de produto/permissões:
 
-- acesso do Gerente à Lixeira, porque a documentação atual permite restauração;
+- acesso do Gerente à Lixeira, porque o estado atual validado não permite acesso;
 - acesso do Gerente a Configurações, porque pode existir uso operacional ainda não separado;
 - flags como `canAccessSettings`, `canManageUsers` e `canManageCompanies`;
 - regras de RLS, policies, Edge Functions ou banco;
@@ -213,7 +224,7 @@ Depois da matriz aprovada, o microciclo técnico recomendado é separar o filtro
 - `billing` deve depender de permissão de Admin/Master;
 - `onboarding` deve depender de permissão de Admin/Master;
 - `configuracoes` deve receber decisão específica;
-- `lixeira` deve manter regra própria, se restauração por Gerente continuar aprovada.
+- `lixeira` deve manter regra própria restrita a Admin/Master.
 
 ## 13. Critérios de aceite para correção futura
 
@@ -222,7 +233,7 @@ Uma correção futura deve atender a estes critérios:
 - Gerente não vê Usuários se não puder administrar usuários.
 - Gerente não vê Plano comercial se não puder editar plano comercial.
 - Gerente não vê Configuração inicial se esse fluxo for restrito a Admin/Master.
-- Gerente vê Lixeira somente se a restauração por Gerente continuar aprovada.
+- Gerente não vê Lixeira nem acessa a rota/view diretamente.
 - Operador não vê Administração.
 - Admin vê Administração geral.
 - Master vê Empresas/Master.
@@ -243,6 +254,6 @@ Uma correção futura deve atender a estes critérios:
 - Confirmar que Usuários não aparece para Gerente, se essa decisão for aprovada.
 - Confirmar que Plano comercial não aparece para Gerente, se essa decisão for aprovada.
 - Confirmar que Configuração inicial não aparece para Gerente, se essa decisão for aprovada.
-- Confirmar que Lixeira mantém restauração sem exclusão definitiva para Gerente, se essa decisão for mantida.
+- Confirmar que Lixeira não aparece para Gerente e que a rota/view direta permanece bloqueada.
 - Confirmar que rotas diretas exibem acesso restrito quando necessário.
 - Rodar build quando houver alteração em `src/`.

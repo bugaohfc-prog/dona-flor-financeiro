@@ -10,6 +10,17 @@ Diretriz:
 
 Este documento é somente diagnóstico e planejamento. Não autoriza implementação, alteração funcional, rota, menu, permissão, banco, RLS, service, hook, exportação ou integração.
 
+Nota de estado atual validado em 2026-06-02:
+
+- Gerente continua vendo Configurações.
+- Gerente não acessa Lixeira.
+- Gerente não acessa Importar contas.
+- Gerente não acessa Filiais/Unidades.
+- Admin/Master preservados.
+- Operador sem acesso novo.
+
+As menções antigas a Lixeira para Gerente neste documento devem ser lidas como achados históricos, anteriores aos ciclos corretivos de permissão.
+
 ## 2. Escopo auditado
 
 ### Layout geral
@@ -105,7 +116,7 @@ Achados:
 - Configurações e Agenda são renderizadas diretamente em `App.jsx`, não como páginas separadas.
 - `podeAcessarConfiguracoes()` permite `admin` e `gerente`.
 - Menu de Administração inclui Usuários, Configurações, Plano comercial, Configuração inicial e Lixeira para perfis filtrados pelas permissões atuais.
-- Lixeira permite gerenciamento por `admin` e `gerente`.
+- No diagnóstico histórico, Lixeira permitia gerenciamento por `admin` e `gerente`; no estado atual validado, Lixeira está restrita a Admin/Master.
 - Billing e Onboarding têm cabeçalhos e cards próprios, com padrões visuais diferentes das páginas de Pessoas.
 
 ### Conta
@@ -441,8 +452,8 @@ Recomendação:
 
 Achado:
 
-- `admin` e `gerente` acessam Configurações pelo filtro atual.
-- Lixeira também permite `admin` e `gerente`.
+- `admin` e `gerente` acessam Configurações pelo estado atual validado.
+- Lixeira não é acessada pelo Gerente no estado atual validado; permanece restrita a Admin/Master.
 - Usuários, Configurações, Plano comercial, Configuração inicial e Lixeira aparecem no grupo Administração conforme permissões.
 
 Recomendação:

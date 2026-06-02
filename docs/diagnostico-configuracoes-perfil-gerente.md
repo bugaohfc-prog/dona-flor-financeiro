@@ -10,16 +10,26 @@ Este documento não altera código, menu, permissões, banco, RLS, services, hoo
 
 No ciclo anterior, o menu Administração foi ajustado visualmente para o perfil Gerente.
 
+Nota de estado atual validado em 2026-06-02:
+
+- Gerente continua vendo Configurações.
+- Gerente não acessa Lixeira.
+- Gerente não acessa Importar contas.
+- Gerente não acessa Filiais/Unidades.
+- Admin/Master preservados.
+- Operador sem acesso novo.
+
+Os achados abaixo permanecem como registro histórico do diagnóstico feito antes dos ciclos corretivos.
+
 Estado validado:
 
 - Gerente não vê mais Usuários;
 - Gerente não vê mais Plano comercial;
 - Gerente não vê mais Configuração inicial;
 - Gerente continua vendo Configurações;
-- Gerente continua vendo Lixeira, para restauração;
-- Gerente continua vendo Importar contas, se a regra atual já permitia.
+- Gerente tinha visibilidade de Lixeira e Importar contas no estado diagnosticado originalmente, antes da correção posterior.
 
-A pendência deste ciclo é entender se Configurações deve continuar visível para Gerente ou se precisa ser separada em áreas operacionais e administrativas.
+A pendência histórica deste ciclo era entender se Configurações deveria continuar visível para Gerente ou se precisaria ser separada em áreas operacionais e administrativas.
 
 ## 3. Arquivos consultados
 
@@ -116,7 +126,7 @@ Não há campos editáveis nesse bloco.
 | Resumo de organização por empresa, filial, centro e conta | Explica estrutura operacional. | Operacional | Sim | Não | Não | Não | Não | Sim. |
 | Botão Gerenciar filiais | Navega para `filiais`. | Sensível operacional | Sim | Não | Não | Não | Não | Sim, pela regra atual. Requer revisão. |
 
-Risco identificado: a tela `FiliaisPage.jsx` permite criar filial, renomear filial e ativar/desativar filial. O acesso à rota `filiais` usa `podeAcessarConfiguracoes()`, então Gerente aparenta conseguir operar Filiais/Unidades. Esse ponto é mais sensível do que a visualização passiva de Configurações.
+Risco identificado no diagnóstico histórico: a tela `FiliaisPage.jsx` permitia criar filial, renomear filial e ativar/desativar filial. O acesso à rota `filiais` usava `podeAcessarConfiguracoes()`, então Gerente aparentava conseguir operar Filiais/Unidades. Esse ponto foi corrigido posteriormente; no estado atual validado, Gerente não acessa Filiais/Unidades.
 
 ### 5.6 Bloco Como o sistema vai usar
 
@@ -131,7 +141,7 @@ O botão Salvar configurações só aparece quando `podeEditarConfiguracoes()` r
 
 `podeEditarConfiguracoes()` aceita apenas `admin`, com Master coberto pelo comportamento de `temPermissao`.
 
-Conclusão: Gerente vê a tela e pode interagir localmente com inputs, mas não vê o botão de salvar configurações principais. A visualização ainda expõe campos sensíveis e o atalho de Filiais pode permitir alterações reais em outra tela.
+Conclusão histórica: Gerente vê a tela e pode interagir localmente com inputs, mas não vê o botão de salvar configurações principais. A visualização ainda expunha campos sensíveis e o atalho de Filiais podia permitir alterações reais em outra tela; no estado atual validado, Gerente não acessa Filiais/Unidades.
 
 ## 6. Itens possivelmente legados
 
@@ -194,14 +204,14 @@ Recomendação final:
 
 - manter Configurações para Gerente apenas de forma temporária;
 - não permitir que Gerente edite campos sensíveis;
-- revisar com prioridade o acesso de Gerente a Filiais/Unidades;
+- manter bloqueado o acesso de Gerente a Filiais/Unidades;
 - planejar a separação futura entre Configurações operacionais e Configurações administrativas/sensíveis.
 
 ## 9. Riscos encontrados
 
 | Risco | Severidade | Descrição |
 | --- | --- | --- |
-| Gerente alterar Filiais/Unidades | Alta | O atalho de Configurações leva a `FiliaisPage.jsx`, que permite criar, renomear e ativar/desativar filiais. |
+| Gerente alterar Filiais/Unidades | Alta | Achado histórico superado: o atalho de Configurações levava a `FiliaisPage.jsx`; no estado atual validado, Gerente não acessa Filiais/Unidades. |
 | Gerente visualizar e-mail padrão | Média/alta | O e-mail padrão pode ser fallback de envio automático e destinatário sensível. |
 | Gerente visualizar WhatsApp padrão | Média | Pode representar telefone/canal oficial da empresa, e parece não estar alinhado ao fluxo atual de GitHub Actions. |
 | Campos WhatsApp/Push confundirem o usuário | Média | GitHub Actions usa envio por e-mail; WhatsApp/Push podem transmitir impressão de automações ativas não confirmadas. |
@@ -253,7 +263,7 @@ Microciclo técnico recomendado antes da separação visual:
 
 - Desktop e mobile continuam consistentes.
 - Gerente não vê campo sensível indevido.
-- Gerente não consegue editar Filiais/Unidades sem decisão explícita.
+- Gerente não vê nem acessa Filiais/Unidades.
 - Admin mantém acesso a Configurações.
 - Master mantém acesso a Configurações.
 - Campos legados de WhatsApp/Push estão identificados.

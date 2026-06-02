@@ -6,6 +6,12 @@ Data: 2026-06-01
 
 Criar uma base inicial de auditoria administrativa sem tela nova e sem ampliar escopo funcional.
 
+## Estado atual validado
+
+- Fase 1 aplicada e validada de ponta a ponta para destinatários de alertas.
+- Fase 2 aplicada e validada de ponta a ponta para lixeira/restauração de contas/notas.
+- DELETE físico não foi testado e não deve ser testado sem autorização explícita.
+
 ## Tabela
 
 - `public.df_auditoria_admin`
@@ -63,16 +69,16 @@ Somente ações sensíveis ligadas ao estado de Lixeira:
 - conta enviada para lixeira;
 - conta restaurada;
 - conta com status de lixeira atualizado;
-- conta excluída definitivamente;
+- conta excluída definitivamente, se esse fluxo for executado futuramente com autorização explícita;
 - nota enviada para lixeira;
 - nota restaurada;
 - nota com status de lixeira atualizado;
-- nota excluída definitivamente.
+- nota excluída definitivamente, se esse fluxo for executado futuramente com autorização explícita.
 
 As ações são detectadas por triggers no banco:
 
 - `UPDATE` de `excluido` ou `excluido_em`;
-- `DELETE` físico em `df_contas` ou `df_notas`.
+- `DELETE` físico em `df_contas` ou `df_notas`, sem validação real pelo app nesta fase.
 
 Não são auditados nesta fase:
 
@@ -149,7 +155,7 @@ Não registrar:
 - `docs/security/diagnostics/diagnostico_df_auditoria_admin_20260601.sql`
 - `docs/security/diagnostics/diagnostico_audit_lixeira_financeira_20260602.sql`
 
-## Validação esperada
+## Validação estrutural
 
 - Tabela existe.
 - RLS habilitada.
@@ -163,6 +169,14 @@ Não registrar:
 - Triggers de auditoria em `df_contas` e `df_notas` existem após a Fase 2.
 - Amostra de `detalhes` não contém dados sensíveis em texto claro.
 
+## Validação real pelo app
+
+- Fase 1 validada com criação, atualização, inativação/reativação de destinatários de alertas.
+- Fase 2 validada com envio para lixeira e restauração de contas/notas.
+- Logs recentes foram confirmados com `user_id`, `empresa_id`, `registro_id`, `origem=database_trigger` e `detalhes` sanitizados.
+- Não houve exposição de e-mail em texto claro, CPF, salário, dado médico, laudo, anexo, secret, senha, token, descrição, valor, título, conteúdo ou observação.
+- DELETE físico não foi testado.
+
 ## Próximo passo recomendado
 
-Aplicar a migration da Fase 2 em ambiente controlado, rodar o diagnóstico estrutural e validar pelo app um fluxo real de envio para lixeira, restauração e, se autorizado operacionalmente, exclusão definitiva.
+Encerrar Fase 2 como aplicada e validada para lixeira/restauração. O próximo ciclo recomendado é apenas planejar uma Fase 3 de auditoria para outra ação administrativa sensível, sem testar DELETE físico sem autorização explícita.

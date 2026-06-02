@@ -1,5 +1,15 @@
 import { AccountListSkeleton } from '../components/feedback/Skeletons.jsx'
 import { ehContaRecorrente } from '../utils/recorrencia'
+import { useMemo, useState } from 'react'
+
+const OPCOES_ORDENACAO_CONTAS = [
+  { valor: 'vencimento_asc', label: 'Vencimento mais próximo' },
+  { valor: 'vencimento_desc', label: 'Vencimento mais distante' },
+  { valor: 'valor_desc', label: 'Maior valor' },
+  { valor: 'valor_asc', label: 'Menor valor' },
+  { valor: 'nome_asc', label: 'Nome A-Z' },
+  { valor: 'status', label: 'Status' }
+]
 
 const CONTAS_EXPANDABLE_HEADER_STYLE = {
   width: '100%',
@@ -64,6 +74,41 @@ export default function ContasPage({
   obterTipoRecorrenciaConta, abrirConfirmacao, marcarComoPago, voltarParaPendente, abrirEdicaoConta, excluirConta,
   navegarPara, podeEditarFinanceiro = true, podeExportarDados = true
 }) {
+  const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
+  const contasOrdenadas = useMemo(() => {
+    const obterStatusOrdenacao = (conta) => {
+      if (estaVencida(conta.data_vencimento, conta.status)) return 0
+      if (conta.status !== 'pago') return 1
+      return 2
+    }
+
+    return [...contasFiltradas].sort((a, b) => {
+      if (ordenacaoContas === 'vencimento_desc') {
+        return String(b.data_vencimento || '').localeCompare(String(a.data_vencimento || ''))
+      }
+
+      if (ordenacaoContas === 'valor_desc') {
+        return Number(b.valor || 0) - Number(a.valor || 0)
+      }
+
+      if (ordenacaoContas === 'valor_asc') {
+        return Number(a.valor || 0) - Number(b.valor || 0)
+      }
+
+      if (ordenacaoContas === 'nome_asc') {
+        return String(a.descricao || '').localeCompare(String(b.descricao || ''), 'pt-BR', { sensitivity: 'base' })
+      }
+
+      if (ordenacaoContas === 'status') {
+        const status = obterStatusOrdenacao(a) - obterStatusOrdenacao(b)
+        if (status !== 0) return status
+        return String(a.data_vencimento || '').localeCompare(String(b.data_vencimento || ''))
+      }
+
+      return String(a.data_vencimento || '').localeCompare(String(b.data_vencimento || ''))
+    })
+  }, [contasFiltradas, estaVencida, ordenacaoContas])
+
   function renderListaContasConteudo() {
     return (
       <>
@@ -88,6 +133,15 @@ export default function ContasPage({
             </>
           )}
         </div>
+
+        <label className="accounts-sort-control">
+          <span>Ordenar por</span>
+          <select style={styles.input} value={ordenacaoContas} onChange={(e) => setOrdenacaoContas(e.target.value)}>
+            {OPCOES_ORDENACAO_CONTAS.map((opcao) => (
+              <option key={opcao.valor} value={opcao.valor}>{opcao.label}</option>
+            ))}
+          </select>
+        </label>
 
         {mostrarFiltros && (
           <div className="advanced-filters">
@@ -145,7 +199,7 @@ export default function ContasPage({
           </button>
         </div>
 
-        {!loading && mostrarContas && contasFiltradas.length === 0 && (
+        {!loading && mostrarContas && contasOrdenadas.length === 0 && (
           <EmptyState
             icon="💳"
             title="Nenhuma conta encontrada"
@@ -153,10 +207,11 @@ export default function ContasPage({
           />
         )}
 
-        {!loading && mostrarContas && contasFiltradas.map((conta) => {
+        {!loading && mostrarContas && contasOrdenadas.map((conta) => {
           const vencida = estaVencida(conta.data_vencimento, conta.status)
           const recorrente = ehContaRecorrente(conta)
           const tipoRecorrencia = recorrente ? formatarTipoRecorrencia(obterTipoRecorrenciaConta(conta)) : ''
+          const observacao = String(conta.observacao || '').trim()
 
           return (
             <div
@@ -195,6 +250,13 @@ export default function ContasPage({
                   {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}
                 </span>
               </div>
+
+              {observacao && (
+                <div className="account-observation-preview" title={observacao}>
+                  <span>📝 Obs.</span>
+                  <p>{observacao}</p>
+                </div>
+              )}
 
               {podeEditarFinanceiro && (
                 <div className="account-actions" style={styles.acoes}>

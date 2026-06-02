@@ -1352,6 +1352,51 @@ export default function AppShellStyles() {
                 background: #eff6ff !important;
                 text-transform: uppercase !important;
               }
+              .accounts-sort-control {
+                align-items: center !important;
+                display: inline-flex !important;
+                flex: 1 1 220px !important;
+                gap: 8px !important;
+                min-width: 220px !important;
+              }
+              .accounts-sort-control span {
+                color: #64748b !important;
+                flex: 0 0 auto !important;
+                font-size: 12px !important;
+                font-weight: 900 !important;
+                text-transform: uppercase !important;
+              }
+              .accounts-sort-control select {
+                min-width: 180px !important;
+              }
+              .account-observation-preview {
+                align-items: flex-start !important;
+                background: rgba(248, 250, 252, 0.88) !important;
+                border: 1px solid #e2e8f0 !important;
+                border-radius: 10px !important;
+                color: #475569 !important;
+                display: grid !important;
+                gap: 4px !important;
+                grid-template-columns: auto minmax(0, 1fr) !important;
+                margin-top: 8px !important;
+                padding: 7px 9px !important;
+              }
+              .account-observation-preview span {
+                color: #334155 !important;
+                font-size: 11px !important;
+                font-weight: 900 !important;
+                line-height: 1.35 !important;
+                white-space: nowrap !important;
+              }
+              .account-observation-preview p {
+                -webkit-box-orient: vertical !important;
+                -webkit-line-clamp: 1 !important;
+                display: -webkit-box !important;
+                font-size: 12px !important;
+                line-height: 1.35 !important;
+                margin: 0 !important;
+                overflow: hidden !important;
+              }
               .mobile-menu-trigger {
                 background: #ffffff !important;
                 color: #0f766e !important;
@@ -1376,6 +1421,20 @@ export default function AppShellStyles() {
                 .app-page { padding-bottom: 92px !important; }
                 .dashboard-section-header-accounts,
                 .notes-header-clean { align-items: flex-start !important; }
+                .accounts-sort-control {
+                  align-items: stretch !important;
+                  flex: 1 1 100% !important;
+                  flex-direction: column !important;
+                  gap: 5px !important;
+                  min-width: 0 !important;
+                }
+                .accounts-sort-control select {
+                  min-width: 0 !important;
+                  width: 100% !important;
+                }
+                .account-observation-preview p {
+                  -webkit-line-clamp: 2 !important;
+                }
               }
             `}</style>
     </>

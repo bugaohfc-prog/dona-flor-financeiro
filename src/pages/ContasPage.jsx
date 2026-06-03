@@ -303,8 +303,9 @@ export default function ContasPage({
 
               {observacao && (
                 <div className="account-observation-preview" title={observacao}>
-                  <span aria-hidden="true">📝</span>
-                  <p>{observacao}</p>
+                  <span className="account-observation-text">
+                    <span aria-hidden="true">📝</span> {observacao}
+                  </span>
                 </div>
               )}
 

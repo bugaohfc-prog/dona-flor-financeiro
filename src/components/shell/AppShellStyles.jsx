@@ -1447,19 +1447,16 @@ export default function AppShellStyles() {
                   grid-row: 1 / span 2 !important;
                 }
               }
-              .account-observation-preview span {
+              .account-observation-text {
                 color: #334155 !important;
-                font-size: 11px !important;
-                font-weight: 900 !important;
-                line-height: 1.35 !important;
-                white-space: nowrap !important;
-              }
-              .account-observation-preview p {
-                display: block !important;
+                display: inline-flex !important;
                 flex: 1 1 auto !important;
                 font-size: 12px !important;
+                font-weight: 900 !important;
+                gap: 6px !important;
+                align-items: center !important;
                 line-height: 1.35 !important;
-                margin: 0 !important;
+                min-width: 0 !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
                 white-space: nowrap !important;

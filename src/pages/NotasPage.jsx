@@ -1,3 +1,13 @@
+import { useMemo, useState } from 'react'
+
+const OPCOES_ORDENACAO_NOTAS = [
+  { valor: 'prioridade', label: 'Prioridade' },
+  { valor: 'data_asc', label: 'Data mais próxima' },
+  { valor: 'data_desc', label: 'Data mais distante' },
+  { valor: 'titulo_asc', label: 'Título A-Z' },
+  { valor: 'status', label: 'Status' }
+]
+
 function EmptyState({ icon, title, description }) {
   return (
     <div className="empty-state-card">
@@ -13,6 +23,42 @@ export default function NotasPage({
   buscaNota, setBuscaNota, formatarData, alternarNotaConcluida, abrirEdicaoNota,
   abrirConfirmacao, excluirNota, filtroFilial, setFiltroFilial, filiais, podeEditarFinanceiro = true
 }) {
+  const [ordenacaoNotas, setOrdenacaoNotas] = useState('prioridade')
+  const notasOrdenadas = useMemo(() => {
+    const pesoPrioridade = { critico: 0, urgente: 1, normal: 2 }
+    const obterStatus = (nota) => nota.concluida ? 1 : 0
+    const obterData = (nota, fallback) => nota.data_evento || fallback
+
+    return [...notasFiltradas].sort((a, b) => {
+      if (ordenacaoNotas === 'data_asc') {
+        return String(obterData(a, '9999-12-31')).localeCompare(String(obterData(b, '9999-12-31')))
+      }
+
+      if (ordenacaoNotas === 'data_desc') {
+        return String(obterData(b, '0000-00-00')).localeCompare(String(obterData(a, '0000-00-00')))
+      }
+
+      if (ordenacaoNotas === 'titulo_asc') {
+        return String(a.titulo || '').localeCompare(String(b.titulo || ''), 'pt-BR', { sensitivity: 'base' })
+      }
+
+      if (ordenacaoNotas === 'status') {
+        const status = obterStatus(a) - obterStatus(b)
+        if (status !== 0) return status
+      }
+
+      const concluidaA = obterStatus(a)
+      const concluidaB = obterStatus(b)
+      if (concluidaA !== concluidaB) return concluidaA - concluidaB
+
+      const prioridadeA = pesoPrioridade[a.prioridade || 'normal'] ?? 2
+      const prioridadeB = pesoPrioridade[b.prioridade || 'normal'] ?? 2
+      if (prioridadeA !== prioridadeB) return prioridadeA - prioridadeB
+
+      return String(obterData(a, '9999-12-31')).localeCompare(String(obterData(b, '9999-12-31')))
+    })
+  }, [notasFiltradas, ordenacaoNotas])
+
   return (
     <>
       <div className="page-title-actions">
@@ -49,9 +95,17 @@ export default function NotasPage({
             value={buscaNota}
             onChange={(e) => setBuscaNota(e.target.value)}
           />
+          <label className="notes-sort-control">
+            <span>Ordenar por</span>
+            <select style={styles.input} value={ordenacaoNotas} onChange={(e) => setOrdenacaoNotas(e.target.value)}>
+              {OPCOES_ORDENACAO_NOTAS.map((opcao) => (
+                <option key={opcao.valor} value={opcao.valor}>{opcao.label}</option>
+              ))}
+            </select>
+          </label>
         </div>
 
-        {notasFiltradas.length === 0 && (
+        {notasOrdenadas.length === 0 && (
           <EmptyState
             icon="📝"
             title="Nenhuma nota encontrada"
@@ -60,20 +114,26 @@ export default function NotasPage({
         )}
 
         <div className="notes-page-grid">
-          {notasFiltradas.map((nota) => {
+          {notasOrdenadas.map((nota) => {
             const prioridade = nota.prioridade || 'normal'
+            const conteudo = String(nota.conteudo || '').trim()
             return (
               <div key={nota.id} className={`note-card-action note-card-${prioridade}`} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
                 <div style={styles.cardTopo}>
                   <strong style={{ textDecoration: nota.concluida ? 'line-through' : 'none' }}>{nota.titulo}</strong>
-                  <span className={`note-priority-badge note-priority-${prioridade}`} style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
-                    {prioridade === 'critico' ? 'Crítico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
-                  </span>
+                  <div className="note-card-badges">
+                    <span className={`note-priority-badge note-priority-${prioridade}`} style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
+                      {prioridade === 'critico' ? 'Crítico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
+                    </span>
+                    <span className={`note-status-badge ${nota.concluida ? 'note-status-done' : 'note-status-open'}`}>
+                      {nota.concluida ? 'Concluída' : 'Pendente'}
+                    </span>
+                  </div>
                 </div>
 
                 {nota.data_evento && <small className="note-event-date">📅 {formatarData(nota.data_evento)}</small>}
                 {nota.df_filiais?.nome && <small className="note-event-date">🏢 {nota.df_filiais.nome}</small>}
-                {nota.conteudo && <p style={styles.textoNota}>{nota.conteudo}</p>}
+                {conteudo && <p className="note-content-preview" title={conteudo}>{conteudo}</p>}
 
                 {podeEditarFinanceiro && (
                 <div style={styles.acoes}>

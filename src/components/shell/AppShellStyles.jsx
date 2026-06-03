@@ -1321,6 +1321,59 @@ export default function AppShellStyles() {
               }
               .note-stat-critico { border-color: #fecaca !important; color: #991b1b !important; background: #fff7f7 !important; }
               .note-stat-urgente { border-color: #fde68a !important; color: #92400e !important; background: #fffbeb !important; }
+              .notes-sort-control {
+                align-items: center !important;
+                display: inline-flex !important;
+                flex: 1 1 220px !important;
+                gap: 8px !important;
+                min-width: 220px !important;
+              }
+              .notes-sort-control span {
+                color: #64748b !important;
+                flex: 0 0 auto !important;
+                font-size: 12px !important;
+                font-weight: 900 !important;
+                text-transform: uppercase !important;
+              }
+              .notes-sort-control select {
+                min-width: 170px !important;
+              }
+              .note-card-badges {
+                align-items: center !important;
+                display: inline-flex !important;
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+                justify-content: flex-end !important;
+              }
+              .note-status-badge {
+                border-radius: 999px !important;
+                display: inline-flex !important;
+                font-size: 11px !important;
+                font-weight: 900 !important;
+                line-height: 1 !important;
+                padding: 5px 8px !important;
+                white-space: nowrap !important;
+              }
+              .note-status-open {
+                background: #fffbeb !important;
+                border: 1px solid #fde68a !important;
+                color: #92400e !important;
+              }
+              .note-status-done {
+                background: #ecfdf5 !important;
+                border: 1px solid #bbf7d0 !important;
+                color: #166534 !important;
+              }
+              .note-content-preview {
+                -webkit-box-orient: vertical !important;
+                -webkit-line-clamp: 2 !important;
+                color: #475569 !important;
+                display: -webkit-box !important;
+                font-size: 13px !important;
+                line-height: 1.45 !important;
+                margin: 8px 0 0 !important;
+                overflow: hidden !important;
+              }
               .account-title-wrap {
                 align-items: center !important;
                 display: flex !important;
@@ -1434,6 +1487,20 @@ export default function AppShellStyles() {
                 }
                 .account-observation-preview p {
                   -webkit-line-clamp: 2 !important;
+                }
+                .notes-sort-control {
+                  align-items: stretch !important;
+                  flex: 1 1 100% !important;
+                  flex-direction: column !important;
+                  gap: 5px !important;
+                  min-width: 0 !important;
+                }
+                .notes-sort-control select {
+                  min-width: 0 !important;
+                  width: 100% !important;
+                }
+                .note-card-badges {
+                  justify-content: flex-start !important;
                 }
               }
             `}</style>

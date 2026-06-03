@@ -269,10 +269,16 @@ export default function ContasPage({
           const recorrente = ehContaRecorrente(conta)
           const tipoRecorrencia = recorrente ? formatarTipoRecorrencia(obterTipoRecorrenciaConta(conta)) : ''
           const observacao = String(conta.observacao || '').trim()
+          const valorPrevisto = Number(conta.valor || 0)
+          const valorPago = Number(conta.valor_pago || 0)
+          const jurosMulta = Number(conta.juros_multa || 0)
+          const desconto = Number(conta.desconto || 0)
+          const exibirBaixaReal = conta.status === 'pago' && conta.valor_pago !== null && conta.valor_pago !== undefined
+          const valorPrincipal = exibirBaixaReal ? valorPago : valorPrevisto
 
           return (
             <div
-              className={`print-card account-card-desktop ${vencida ? 'account-card-vencida' : conta.status === 'pago' ? 'account-card-paga' : 'account-card-pendente'}`}
+              className={`print-card account-card-desktop ${exibirBaixaReal ? 'account-card-payment-real' : ''} ${vencida ? 'account-card-vencida' : conta.status === 'pago' ? 'account-card-paga' : 'account-card-pendente'}`}
               key={conta.id}
               style={{
                 ...styles.cardConta,
@@ -293,7 +299,12 @@ export default function ContasPage({
                     </span>
                   )}
                 </div>
-                <span>{formatarValor(conta.valor)}</span>
+                <div className="account-value-stack">
+                  <span>{formatarValor(valorPrincipal)}</span>
+                  {exibirBaixaReal && (
+                    <small>Previsto: {formatarValor(valorPrevisto)}</small>
+                  )}
+                </div>
               </div>
 
               <div style={styles.cardInfo} className="account-meta-line">
@@ -307,6 +318,14 @@ export default function ContasPage({
                   {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}
                 </span>
               </div>
+
+              {exibirBaixaReal && (
+                <div className="account-payment-summary">
+                  {jurosMulta > 0 && <span>Encargos: {formatarValor(jurosMulta)}</span>}
+                  {desconto > 0 && <span>Desconto: {formatarValor(desconto)}</span>}
+                  {jurosMulta <= 0 && desconto <= 0 && <span>Pago sem ajuste</span>}
+                </div>
+              )}
 
               {observacao && (
                 <div className="account-observation-preview" title={observacao}>

@@ -76,6 +76,25 @@ export default function ContasPage({
 }) {
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
   const contasOrdenadas = useMemo(() => {
+    const obterTimestampVencimento = (conta, fallback) => {
+      const valor = String(conta?.data_vencimento || '').trim()
+      const partesDataBanco = valor.match(/^(\d{4})-(\d{2})-(\d{2})/)
+
+      if (partesDataBanco) {
+        const [, ano, mes, dia] = partesDataBanco
+        return new Date(Number(ano), Number(mes) - 1, Number(dia)).getTime()
+      }
+
+      const timestamp = Date.parse(valor)
+      return Number.isNaN(timestamp) ? fallback : timestamp
+    }
+
+    const compararVencimentoAsc = (a, b) =>
+      obterTimestampVencimento(a, Number.MAX_SAFE_INTEGER) - obterTimestampVencimento(b, Number.MAX_SAFE_INTEGER)
+
+    const compararVencimentoDesc = (a, b) =>
+      obterTimestampVencimento(b, Number.MIN_SAFE_INTEGER) - obterTimestampVencimento(a, Number.MIN_SAFE_INTEGER)
+
     const obterStatusOrdenacao = (conta) => {
       if (estaVencida(conta.data_vencimento, conta.status)) return 0
       if (conta.status !== 'pago') return 1
@@ -84,7 +103,7 @@ export default function ContasPage({
 
     return [...contasFiltradas].sort((a, b) => {
       if (ordenacaoContas === 'vencimento_desc') {
-        return String(b.data_vencimento || '').localeCompare(String(a.data_vencimento || ''))
+        return compararVencimentoDesc(a, b)
       }
 
       if (ordenacaoContas === 'valor_desc') {
@@ -102,10 +121,10 @@ export default function ContasPage({
       if (ordenacaoContas === 'status') {
         const status = obterStatusOrdenacao(a) - obterStatusOrdenacao(b)
         if (status !== 0) return status
-        return String(a.data_vencimento || '').localeCompare(String(b.data_vencimento || ''))
+        return compararVencimentoAsc(a, b)
       }
 
-      return String(a.data_vencimento || '').localeCompare(String(b.data_vencimento || ''))
+      return compararVencimentoAsc(a, b)
     })
   }, [contasFiltradas, estaVencida, ordenacaoContas])
 

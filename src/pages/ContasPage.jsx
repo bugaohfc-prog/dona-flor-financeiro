@@ -37,6 +37,9 @@ function ordenarContasParaListagem(contas, ordenacao, filtroStatus, estaVencida)
   const compararVencimentoDesc = (a, b) =>
     obterTimestampVencimento(b, Number.MIN_SAFE_INTEGER) - obterTimestampVencimento(a, Number.MIN_SAFE_INTEGER)
 
+  const compararId = (a, b) =>
+    String(a.id || '').localeCompare(String(b.id || ''))
+
   const compararAbertasAntesDePagas = (a, b) => {
     if (filtroStatus === 'pagas') return 0
 
@@ -55,13 +58,15 @@ function ordenarContasParaListagem(contas, ordenacao, filtroStatus, estaVencida)
     if (ordenacao === 'vencimento_asc') {
       const grupo = compararAbertasAntesDePagas(a, b)
       if (grupo !== 0) return grupo
-      return compararVencimentoAsc(a, b)
+      const vencimento = compararVencimentoAsc(a, b)
+      return vencimento || compararId(a, b)
     }
 
     if (ordenacao === 'vencimento_desc') {
       const grupo = compararAbertasAntesDePagas(a, b)
       if (grupo !== 0) return grupo
-      return compararVencimentoDesc(a, b)
+      const vencimento = compararVencimentoDesc(a, b)
+      return vencimento || compararId(a, b)
     }
 
     if (ordenacao === 'valor_desc') {
@@ -79,10 +84,12 @@ function ordenarContasParaListagem(contas, ordenacao, filtroStatus, estaVencida)
     if (ordenacao === 'status') {
       const status = obterStatusOrdenacao(a) - obterStatusOrdenacao(b)
       if (status !== 0) return status
-      return compararVencimentoAsc(a, b)
+      const vencimento = compararVencimentoAsc(a, b)
+      return vencimento || compararId(a, b)
     }
 
-    return compararVencimentoAsc(a, b)
+    const vencimento = compararVencimentoAsc(a, b)
+    return vencimento || compararId(a, b)
   })
 }
 

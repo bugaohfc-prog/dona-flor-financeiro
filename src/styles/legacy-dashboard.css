@@ -798,7 +798,16 @@
     max-width: 100% !important;
   }
 
+  .account-card-desktop .account-observation-preview {
+    grid-column: 1 / 3 !important;
+    grid-row: 2 !important;
+    justify-self: stretch !important;
+    width: 100% !important;
+  }
+
   .account-card-desktop .account-actions {
+    grid-column: 3 !important;
+    grid-row: 1 / span 2 !important;
     display: flex !important;
     justify-content: flex-end !important;
     align-items: center !important;

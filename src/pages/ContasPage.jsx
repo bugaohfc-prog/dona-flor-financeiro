@@ -1,6 +1,6 @@
 import { AccountListSkeleton } from '../components/feedback/Skeletons.jsx'
 import { ehContaRecorrente } from '../utils/recorrencia'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 
 const OPCOES_ORDENACAO_CONTAS = [
   { valor: 'vencimento_asc', label: 'Vencimento mais próximo' },
@@ -10,6 +10,65 @@ const OPCOES_ORDENACAO_CONTAS = [
   { valor: 'nome_asc', label: 'Nome A-Z' },
   { valor: 'status', label: 'Status' }
 ]
+
+function obterTimestampVencimento(conta, fallback) {
+  const valor = String(conta?.data_vencimento || '').trim()
+  const partesDataBanco = valor.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  const partesDataBrasil = valor.match(/^(\d{2})[/-](\d{2})[/-](\d{4})/)
+
+  if (partesDataBanco) {
+    const [, ano, mes, dia] = partesDataBanco
+    return new Date(Number(ano), Number(mes) - 1, Number(dia)).getTime()
+  }
+
+  if (partesDataBrasil) {
+    const [, dia, mes, ano] = partesDataBrasil
+    return new Date(Number(ano), Number(mes) - 1, Number(dia)).getTime()
+  }
+
+  const timestamp = Date.parse(valor)
+  return Number.isNaN(timestamp) ? fallback : timestamp
+}
+
+function ordenarContasParaListagem(contas, ordenacao, estaVencida) {
+  const compararVencimentoAsc = (a, b) =>
+    obterTimestampVencimento(a, Number.MAX_SAFE_INTEGER) - obterTimestampVencimento(b, Number.MAX_SAFE_INTEGER)
+
+  const compararVencimentoDesc = (a, b) =>
+    obterTimestampVencimento(b, Number.MIN_SAFE_INTEGER) - obterTimestampVencimento(a, Number.MIN_SAFE_INTEGER)
+
+  const obterStatusOrdenacao = (conta) => {
+    if (estaVencida(conta.data_vencimento, conta.status)) return 0
+    if (conta.status !== 'pago') return 1
+    return 2
+  }
+
+  return [...contas].sort((a, b) => {
+    if (ordenacao === 'vencimento_desc') {
+      return compararVencimentoDesc(a, b)
+    }
+
+    if (ordenacao === 'valor_desc') {
+      return Number(b.valor || 0) - Number(a.valor || 0)
+    }
+
+    if (ordenacao === 'valor_asc') {
+      return Number(a.valor || 0) - Number(b.valor || 0)
+    }
+
+    if (ordenacao === 'nome_asc') {
+      return String(a.descricao || '').localeCompare(String(b.descricao || ''), 'pt-BR', { sensitivity: 'base' })
+    }
+
+    if (ordenacao === 'status') {
+      const status = obterStatusOrdenacao(a) - obterStatusOrdenacao(b)
+      if (status !== 0) return status
+      return compararVencimentoAsc(a, b)
+    }
+
+    return compararVencimentoAsc(a, b)
+  })
+}
 
 const CONTAS_EXPANDABLE_HEADER_STYLE = {
   width: '100%',
@@ -75,64 +134,7 @@ export default function ContasPage({
   navegarPara, podeEditarFinanceiro = true, podeExportarDados = true
 }) {
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
-  const contasOrdenadas = useMemo(() => {
-    const obterTimestampVencimento = (conta, fallback) => {
-      const valor = String(conta?.data_vencimento || '').trim()
-      const partesDataBanco = valor.match(/^(\d{4})-(\d{2})-(\d{2})/)
-      const partesDataBrasil = valor.match(/^(\d{2})[/-](\d{2})[/-](\d{4})/)
-
-      if (partesDataBanco) {
-        const [, ano, mes, dia] = partesDataBanco
-        return new Date(Number(ano), Number(mes) - 1, Number(dia)).getTime()
-      }
-
-      if (partesDataBrasil) {
-        const [, dia, mes, ano] = partesDataBrasil
-        return new Date(Number(ano), Number(mes) - 1, Number(dia)).getTime()
-      }
-
-      const timestamp = Date.parse(valor)
-      return Number.isNaN(timestamp) ? fallback : timestamp
-    }
-
-    const compararVencimentoAsc = (a, b) =>
-      obterTimestampVencimento(a, Number.MAX_SAFE_INTEGER) - obterTimestampVencimento(b, Number.MAX_SAFE_INTEGER)
-
-    const compararVencimentoDesc = (a, b) =>
-      obterTimestampVencimento(b, Number.MIN_SAFE_INTEGER) - obterTimestampVencimento(a, Number.MIN_SAFE_INTEGER)
-
-    const obterStatusOrdenacao = (conta) => {
-      if (estaVencida(conta.data_vencimento, conta.status)) return 0
-      if (conta.status !== 'pago') return 1
-      return 2
-    }
-
-    return [...contasFiltradas].sort((a, b) => {
-      if (ordenacaoContas === 'vencimento_desc') {
-        return compararVencimentoDesc(a, b)
-      }
-
-      if (ordenacaoContas === 'valor_desc') {
-        return Number(b.valor || 0) - Number(a.valor || 0)
-      }
-
-      if (ordenacaoContas === 'valor_asc') {
-        return Number(a.valor || 0) - Number(b.valor || 0)
-      }
-
-      if (ordenacaoContas === 'nome_asc') {
-        return String(a.descricao || '').localeCompare(String(b.descricao || ''), 'pt-BR', { sensitivity: 'base' })
-      }
-
-      if (ordenacaoContas === 'status') {
-        const status = obterStatusOrdenacao(a) - obterStatusOrdenacao(b)
-        if (status !== 0) return status
-        return compararVencimentoAsc(a, b)
-      }
-
-      return compararVencimentoAsc(a, b)
-    })
-  }, [contasFiltradas, estaVencida, ordenacaoContas])
+  const contasOrdenadas = ordenarContasParaListagem(contasFiltradas, ordenacaoContas, estaVencida)
 
   function renderListaContasConteudo() {
     return (

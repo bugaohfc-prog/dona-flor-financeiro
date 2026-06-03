@@ -1438,6 +1438,16 @@ export default function AppShellStyles() {
                 text-align: left !important;
                 width: 100% !important;
               }
+              @media (min-width: 980px) {
+                .account-card-desktop .account-observation-preview {
+                  grid-column: 1 / 3 !important;
+                  grid-row: 2 !important;
+                }
+                .account-card-desktop .account-actions {
+                  grid-column: 3 !important;
+                  grid-row: 1 / span 2 !important;
+                }
+              }
               .account-observation-preview span {
                 color: #334155 !important;
                 font-size: 11px !important;

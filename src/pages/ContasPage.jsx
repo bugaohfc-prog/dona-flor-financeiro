@@ -30,12 +30,20 @@ function obterTimestampVencimento(conta, fallback) {
   return Number.isNaN(timestamp) ? fallback : timestamp
 }
 
-function ordenarContasParaListagem(contas, ordenacao, estaVencida) {
+function ordenarContasParaListagem(contas, ordenacao, filtroStatus, estaVencida) {
   const compararVencimentoAsc = (a, b) =>
     obterTimestampVencimento(a, Number.MAX_SAFE_INTEGER) - obterTimestampVencimento(b, Number.MAX_SAFE_INTEGER)
 
   const compararVencimentoDesc = (a, b) =>
     obterTimestampVencimento(b, Number.MIN_SAFE_INTEGER) - obterTimestampVencimento(a, Number.MIN_SAFE_INTEGER)
+
+  const compararAbertasAntesDePagas = (a, b) => {
+    if (filtroStatus === 'pagas') return 0
+
+    const aPaga = a.status === 'pago' ? 1 : 0
+    const bPaga = b.status === 'pago' ? 1 : 0
+    return aPaga - bPaga
+  }
 
   const obterStatusOrdenacao = (conta) => {
     if (estaVencida(conta.data_vencimento, conta.status)) return 0
@@ -44,7 +52,15 @@ function ordenarContasParaListagem(contas, ordenacao, estaVencida) {
   }
 
   return [...contas].sort((a, b) => {
+    if (ordenacao === 'vencimento_asc') {
+      const grupo = compararAbertasAntesDePagas(a, b)
+      if (grupo !== 0) return grupo
+      return compararVencimentoAsc(a, b)
+    }
+
     if (ordenacao === 'vencimento_desc') {
+      const grupo = compararAbertasAntesDePagas(a, b)
+      if (grupo !== 0) return grupo
       return compararVencimentoDesc(a, b)
     }
 
@@ -134,7 +150,7 @@ export default function ContasPage({
   navegarPara, podeEditarFinanceiro = true, podeExportarDados = true
 }) {
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
-  const contasOrdenadas = ordenarContasParaListagem(contasFiltradas, ordenacaoContas, estaVencida)
+  const contasOrdenadas = ordenarContasParaListagem(contasFiltradas, ordenacaoContas, filtroStatus, estaVencida)
 
   function renderListaContasConteudo() {
     return (

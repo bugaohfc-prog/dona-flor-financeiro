@@ -79,9 +79,15 @@ export default function ContasPage({
     const obterTimestampVencimento = (conta, fallback) => {
       const valor = String(conta?.data_vencimento || '').trim()
       const partesDataBanco = valor.match(/^(\d{4})-(\d{2})-(\d{2})/)
+      const partesDataBrasil = valor.match(/^(\d{2})[/-](\d{2})[/-](\d{4})/)
 
       if (partesDataBanco) {
         const [, ano, mes, dia] = partesDataBanco
+        return new Date(Number(ano), Number(mes) - 1, Number(dia)).getTime()
+      }
+
+      if (partesDataBrasil) {
+        const [, dia, mes, ano] = partesDataBrasil
         return new Date(Number(ano), Number(mes) - 1, Number(dia)).getTime()
       }
 

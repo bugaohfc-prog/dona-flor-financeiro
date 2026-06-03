@@ -1430,9 +1430,13 @@ export default function AppShellStyles() {
                 color: #475569 !important;
                 display: grid !important;
                 gap: 4px !important;
+                grid-column: 1 / -1 !important;
                 grid-template-columns: auto minmax(0, 1fr) !important;
+                justify-self: stretch !important;
                 margin-top: 8px !important;
                 padding: 7px 9px !important;
+                text-align: left !important;
+                width: 100% !important;
               }
               .account-observation-preview span {
                 color: #334155 !important;

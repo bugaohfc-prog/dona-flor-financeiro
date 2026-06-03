@@ -3,6 +3,7 @@ import {
   atualizarConta,
   atualizarRecorrencia,
   atualizarStatusConta,
+  baixarContaComoPaga,
   buscarRecorrenciaPorId,
   criarConta,
   criarContasEmLote,
@@ -513,17 +514,21 @@ export function useContas() {
   }
 
   async function marcarComoPago(contexto) {
-    const { supabase, id, empresaId, buscarContas, mostrarAviso } = contexto
-    const { error } = await atualizarStatusConta(supabase, id, empresaId, 'pago')
+    const { supabase, id, empresaId, buscarContas, mostrarAviso, pagamento } = contexto
+    const resposta = pagamento
+      ? await baixarContaComoPaga(supabase, id, empresaId, pagamento)
+      : await atualizarStatusConta(supabase, id, empresaId, 'pago')
+    const { error } = resposta
 
     if (error) {
       console.warn('Falha ao marcar conta como paga:', error)
       mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível marcar a conta como paga.'), 'erro')
-      return
+      return false
     }
 
     await buscarContas()
     mostrarAviso?.('Conta marcada como paga.', 'sucesso')
+    return true
   }
 
   async function voltarParaPendente(contexto) {

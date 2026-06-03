@@ -1,6 +1,7 @@
 import { AccountListSkeleton } from '../components/feedback/Skeletons.jsx'
 import { ehContaRecorrente } from '../utils/recorrencia'
 import { useState } from 'react'
+import AccountPaymentModal from '../components/modals/AccountPaymentModal.jsx'
 
 const OPCOES_ORDENACAO_CONTAS = [
   { valor: 'vencimento_asc', label: 'Vencimento mais próximo' },
@@ -157,7 +158,13 @@ export default function ContasPage({
   navegarPara, podeEditarFinanceiro = true, podeExportarDados = true
 }) {
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
+  const [contaEmBaixa, setContaEmBaixa] = useState(null)
   const contasOrdenadas = ordenarContasParaListagem(contasFiltradas, ordenacaoContas, filtroStatus, estaVencida)
+
+  async function confirmarBaixaConta(payload) {
+    if (!contaEmBaixa?.id) return false
+    return marcarComoPago(contaEmBaixa.id, payload)
+  }
 
   function renderListaContasConteudo() {
     return (
@@ -312,7 +319,7 @@ export default function ContasPage({
               {podeEditarFinanceiro && (
                 <div className="account-actions" style={styles.acoes}>
                 {conta.status !== 'pago' ? (
-                  <button style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>
+                  <button style={styles.btnPago} onClick={() => setContaEmBaixa(conta)}>
                     Pago
                   </button>
                 ) : (
@@ -351,6 +358,16 @@ export default function ContasPage({
         </div>
       </div>
       {renderListaContasConteudo()}
+      {contaEmBaixa && (
+        <AccountPaymentModal
+          styles={styles}
+          conta={contaEmBaixa}
+          formatarValor={formatarValor}
+          limitarDataInput={limitarDataInput}
+          onClose={() => setContaEmBaixa(null)}
+          onConfirm={confirmarBaixaConta}
+        />
+      )}
     </>
   )
 }

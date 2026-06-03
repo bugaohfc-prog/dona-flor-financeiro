@@ -143,6 +143,15 @@ export async function atualizarStatusConta(supabase, id, empresaId, status) {
   return atualizarConta(supabase, id, empresaId, { status })
 }
 
+export async function baixarContaComoPaga(supabase, id, empresaId, payload = {}) {
+  return atualizarConta(supabase, id, empresaId, {
+    status: 'pago',
+    valor_pago: payload.valor_pago,
+    data_pagamento: payload.data_pagamento,
+    observacao_pagamento: payload.observacao_pagamento || null
+  })
+}
+
 export async function enviarContaParaLixeira(supabase, id, empresaId) {
   return atualizarConta(supabase, id, empresaId, {
     excluido: true,

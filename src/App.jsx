@@ -1691,13 +1691,13 @@ export default function App() {
     })
   }
 
-  async function marcarComoPago(id) {
+  async function marcarComoPago(id, pagamento) {
     if (!podeEditarFinanceiro()) {
       bloquearAcaoSemPermissao()
-      return
+      return false
     }
 
-    return marcarComoPagoHook({ supabase, id, empresaId, buscarContas, mostrarAviso })
+    return marcarComoPagoHook({ supabase, id, empresaId, buscarContas, mostrarAviso, pagamento })
   }
 
   async function voltarParaPendente(id) {
@@ -4948,8 +4948,8 @@ export default function App() {
                   <strong>{formatarValor(conta.valor)}</strong>
 
                   {podeEditarFinanceiro() && (
-                    <button style={styles.btnPago} onClick={() => abrirConfirmacao({ titulo: 'Confirmar pagamento', mensagem: `Deseja marcar a conta ${conta.descricao} como paga?`, textoConfirmar: 'Marcar como pago', tipo: 'sucesso', acao: () => marcarComoPago(conta.id) })}>
-                      Pago
+                    <button style={styles.btnPago} onClick={() => navegarPara('contas')}>
+                      Ver em Contas
                     </button>
                   )}
                 </div>

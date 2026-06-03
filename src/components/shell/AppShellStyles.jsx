@@ -1423,15 +1423,14 @@ export default function AppShellStyles() {
                 min-width: 180px !important;
               }
               .account-observation-preview {
-                align-items: flex-start !important;
+                align-items: center !important;
                 background: rgba(248, 250, 252, 0.88) !important;
                 border: 1px solid #e2e8f0 !important;
                 border-radius: 10px !important;
                 color: #475569 !important;
-                display: grid !important;
-                gap: 4px !important;
+                display: flex !important;
+                gap: 6px !important;
                 grid-column: 1 / -1 !important;
-                grid-template-columns: auto minmax(0, 1fr) !important;
                 justify-self: stretch !important;
                 margin-top: 8px !important;
                 padding: 7px 9px !important;
@@ -1456,13 +1455,14 @@ export default function AppShellStyles() {
                 white-space: nowrap !important;
               }
               .account-observation-preview p {
-                -webkit-box-orient: vertical !important;
-                -webkit-line-clamp: 1 !important;
-                display: -webkit-box !important;
+                display: block !important;
+                flex: 1 1 auto !important;
                 font-size: 12px !important;
                 line-height: 1.35 !important;
                 margin: 0 !important;
                 overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
               }
               .mobile-menu-trigger {
                 background: #ffffff !important;

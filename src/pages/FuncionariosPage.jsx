@@ -396,17 +396,73 @@ export default function FuncionariosPage({
         .funcionarios-page { display: grid; gap: 18px; }
         .funcionarios-toolbar {
           display: grid;
-          grid-template-columns: minmax(0, 1.2fr) 180px auto;
+          grid-template-columns: minmax(220px, 1fr) minmax(150px, 180px) auto;
           gap: 12px;
           align-items: center;
         }
         .funcionarios-switch {
           display: inline-flex;
           align-items: center;
+          justify-content: center;
           gap: 8px;
+          min-height: 42px;
+          padding: 0 12px;
+          border: 1px solid #cbd5e1;
+          border-radius: 999px;
+          background: #ffffff;
           color: #475569;
           font-size: 13px;
           font-weight: 800;
+          white-space: nowrap;
+          cursor: pointer;
+          transition: background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+        }
+        .funcionarios-switch:hover {
+          border-color: #94a3b8;
+          box-shadow: 0 8px 18px rgba(15, 23, 42, .06);
+        }
+        .funcionarios-switch input {
+          position: absolute;
+          inline-size: 1px;
+          block-size: 1px;
+          opacity: 0;
+          pointer-events: none;
+        }
+        .funcionarios-switch-indicator {
+          position: relative;
+          width: 34px;
+          height: 20px;
+          border-radius: 999px;
+          background: #e2e8f0;
+          flex: 0 0 auto;
+          transition: background .15s ease;
+        }
+        .funcionarios-switch-indicator::after {
+          content: '';
+          position: absolute;
+          top: 3px;
+          left: 3px;
+          width: 14px;
+          height: 14px;
+          border-radius: 999px;
+          background: #ffffff;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, .22);
+          transition: transform .15s ease;
+        }
+        .funcionarios-switch.ativo {
+          background: #ecfdf5;
+          border-color: #14b8a6;
+          color: #0f766e;
+        }
+        .funcionarios-switch.ativo .funcionarios-switch-indicator {
+          background: #14b8a6;
+        }
+        .funcionarios-switch.ativo .funcionarios-switch-indicator::after {
+          transform: translateX(14px);
+        }
+        .funcionarios-switch:has(input:focus-visible) {
+          outline: 3px solid rgba(20, 184, 166, .22);
+          outline-offset: 2px;
         }
         .funcionarios-summary {
           display: grid;
@@ -443,16 +499,16 @@ export default function FuncionariosPage({
           gap: 12px;
           align-items: start;
           border: 1px solid rgba(15, 23, 42, .08);
-          border-radius: 18px;
+          border-radius: 16px;
           background: #ffffff;
-          padding: 14px;
+          padding: 12px;
           box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
         }
         .funcionario-card.arquivado { background: #f8fafc; border-color: #cbd5e1; opacity: .82; }
         .funcionario-main { min-width: 0; display: flex; align-items: flex-start; gap: 12px; }
         .funcionario-avatar {
-          width: 44px;
-          height: 44px;
+          width: 40px;
+          height: 40px;
           border-radius: 14px;
           display: inline-flex;
           align-items: center;
@@ -460,7 +516,7 @@ export default function FuncionariosPage({
           background: rgba(20, 184, 166, .10);
           color: #0f766e;
           font-weight: 950;
-          flex: 0 0 42px;
+          flex: 0 0 40px;
         }
         .funcionario-main h3 { margin: 0 0 4px; color: #0f172a; font-size: 16px; line-height: 1.2; }
         .funcionario-main small,
@@ -594,6 +650,12 @@ export default function FuncionariosPage({
           .funcionario-exame-edit {
             grid-template-columns: 1fr;
           }
+          .funcionarios-toolbar { gap: 10px; }
+          .funcionarios-switch {
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 12px;
+          }
           .funcionario-exames-header { display: grid; }
           .funcionario-exame-actions { justify-content: flex-start; }
           .funcionario-modal-backdrop { align-items: flex-end; padding: 10px; }
@@ -643,14 +705,15 @@ export default function FuncionariosPage({
             <option value="afastado">Afastados</option>
             <option value="desligado">Desligados</option>
           </select>
-          <label className="funcionarios-switch">
+          <label className={`funcionarios-switch ${incluirArquivados ? 'ativo' : ''}`}>
             <input
               type="checkbox"
               checked={incluirArquivados}
               onChange={(event) => setIncluirArquivados(event.target.checked)}
               disabled={!empresaId}
             />
-            Mostrar arquivados
+            <span className="funcionarios-switch-indicator" aria-hidden="true" />
+            <span>Mostrar arquivados</span>
           </label>
         </div>
 
@@ -879,7 +942,7 @@ export default function FuncionariosPage({
                   <p>Registre somente as datas dos exames periódicos realizados. Não registre laudos, resultados, documentos ou informações clínicas.</p>
                 </div>
                 {funcionarioEditando?.id && (
-                  <label className="funcionarios-switch">
+                  <label className={`funcionarios-switch ${mostrarExamesArquivados ? 'ativo' : ''}`}>
                     <input
                       type="checkbox"
                       checked={mostrarExamesArquivados}
@@ -889,7 +952,8 @@ export default function FuncionariosPage({
                       }}
                       disabled={loadingExames || salvandoExames}
                     />
-                    Mostrar arquivados
+                    <span className="funcionarios-switch-indicator" aria-hidden="true" />
+                    <span>Mostrar arquivados</span>
                   </label>
                 )}
               </div>

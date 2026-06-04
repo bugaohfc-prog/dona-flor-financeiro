@@ -1422,62 +1422,62 @@ export default function AppShellStyles() {
               .accounts-sort-control select {
                 min-width: 180px !important;
               }
-              .account-value-stack {
+              .account-payment-real-summary {
                 align-items: flex-end !important;
+                color: #0f172a !important;
                 display: flex !important;
                 flex-direction: column !important;
-                gap: 2px !important;
+                gap: 4px !important;
                 margin-left: auto !important;
+                min-width: 132px !important;
                 text-align: right !important;
-                white-space: nowrap !important;
+                white-space: normal !important;
               }
-              .account-value-stack > span {
-                color: #0f172a !important;
+              .account-payment-real-summary > strong {
+                display: block !important;
                 font-size: 15px !important;
                 font-weight: 900 !important;
+                line-height: 1.2 !important;
               }
-              .account-value-stack > small {
+              .account-payment-real-summary > small {
                 color: #64748b !important;
+                display: block !important;
                 font-size: 11px !important;
                 font-weight: 800 !important;
+                line-height: 1.25 !important;
               }
-              .account-payment-summary {
-                align-items: center !important;
-                color: #166534 !important;
-                display: flex !important;
-                flex-wrap: wrap !important;
-                font-size: 12px !important;
-                font-weight: 900 !important;
-                gap: 6px !important;
-                grid-column: 1 / -1 !important;
-                margin-top: 8px !important;
-              }
-              .account-payment-summary span {
+              .account-payment-real-summary > span {
                 background: rgba(240, 253, 244, 0.9) !important;
                 border: 1px solid #bbf7d0 !important;
                 border-radius: 999px !important;
+                color: #166534 !important;
+                display: inline-flex !important;
+                font-size: 12px !important;
+                font-weight: 900 !important;
+                line-height: 1.2 !important;
                 padding: 4px 8px !important;
               }
               @media (max-width: 979px) {
-                .account-card-payment-real .account-value-stack {
+                .account-card-payment-real > div:first-child {
                   align-items: flex-start !important;
+                  flex-wrap: wrap !important;
+                  gap: 8px !important;
+                }
+                .account-card-payment-real .account-title-wrap {
+                  flex: 1 1 100% !important;
+                  width: 100% !important;
+                }
+                .account-card-payment-real .account-payment-real-summary {
+                  align-items: flex-start !important;
+                  flex: 1 0 100% !important;
                   margin-left: 0 !important;
                   min-width: 100% !important;
                   text-align: left !important;
-                  white-space: normal !important;
                   width: 100% !important;
                 }
-                .account-card-payment-real .account-value-stack > span,
-                .account-card-payment-real .account-value-stack > small {
+                .account-card-payment-real .account-payment-real-summary > strong,
+                .account-card-payment-real .account-payment-real-summary > small {
                   display: block !important;
-                  width: 100% !important;
-                }
-                .account-card-payment-real .account-value-stack > small {
-                  margin-top: 2px !important;
-                }
-                .account-card-payment-real .account-payment-summary {
-                  align-items: flex-start !important;
-                  flex-direction: column !important;
                   width: 100% !important;
                 }
               }
@@ -1497,23 +1497,13 @@ export default function AppShellStyles() {
                 width: 100% !important;
               }
               @media (min-width: 980px) {
-                .account-card-desktop .account-payment-summary {
-                  grid-column: 1 / 3 !important;
-                  grid-row: 2 !important;
-                }
                 .account-card-desktop .account-observation-preview {
                   grid-column: 1 / 3 !important;
                   grid-row: 2 !important;
                 }
-                .account-card-desktop.account-card-payment-real .account-observation-preview {
-                  grid-row: 3 !important;
-                }
                 .account-card-desktop .account-actions {
                   grid-column: 3 !important;
                   grid-row: 1 / span 2 !important;
-                }
-                .account-card-desktop.account-card-payment-real .account-actions {
-                  grid-row: 1 / span 3 !important;
                 }
               }
               .account-observation-text {

@@ -496,8 +496,8 @@ export default function App() {
       return
     }
 
-    carregarEmpresaDoUsuario(usuarioLogado.id)
-  }, [usuarioLogado])
+    carregarEmpresaDoUsuario(usuarioLogado)
+  }, [usuarioLogado?.id])
 
 
   useEffect(() => {
@@ -589,7 +589,15 @@ export default function App() {
     window.addEventListener('keydown', fecharComEsc)
     return () => window.removeEventListener('keydown', fecharComEsc)
   }, [confirmacao.aberto, modalConta, modalNota, modalCentro, menuAberto, menuNavegacaoAberto])
-  async function carregarEmpresaDoUsuario(userId) {
+  async function carregarEmpresaDoUsuario(usuarioAtual = usuarioLogado) {
+    const userId = usuarioAtual?.id
+
+    if (!userId) {
+      setEmpresaCarregando(false)
+      setLoading(false)
+      return
+    }
+
     setEmpresaCarregando(true)
     setLoading(true)
     setErroEmpresa('')
@@ -601,13 +609,13 @@ export default function App() {
 
       const permissoesBase = await buscarPermissoesUsuario({
         userId,
-        email: usuarioLogado?.email,
+        email: usuarioAtual?.email,
         perfilEmpresa: vinculo?.perfil || 'operador'
       })
 
       const empresasSessao = await listarEmpresasDisponiveisParaUsuario({
         userId,
-        email: usuarioLogado?.email,
+        email: usuarioAtual?.email,
         isMaster: permissoesBase.isMaster
       })
 
@@ -626,7 +634,7 @@ export default function App() {
         limparEmpresaAtiva()
         setPerfilUsuario('master')
         setPermissoesUsuario({ ...permissoesBase, canSwitchCompany: true, canManageCompanies: true })
-        setNomeUsuarioPerfil(nomePerfil || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name || '')
+        setNomeUsuarioPerfil(nomePerfil || usuarioAtual?.user_metadata?.name || usuarioAtual?.user_metadata?.full_name || '')
         setErroEmpresa('Nenhuma empresa cadastrada em df_empresas para o usuário master.')
         return
       }
@@ -643,7 +651,7 @@ export default function App() {
         ? { ...permissoesBase, perfilEmpresa: normalizarPerfil(perfilSelecionado), canSwitchCompany: true, canManageCompanies: true }
         : await buscarPermissoesUsuario({
             userId,
-            email: usuarioLogado?.email,
+            email: usuarioAtual?.email,
             perfilEmpresa: perfilSelecionado
           })
 
@@ -656,7 +664,7 @@ export default function App() {
       })
       setPerfilUsuario(perfilSelecionado)
       setPermissoesUsuario(permissoes)
-      setNomeUsuarioPerfil(nomePerfil || usuarioLogado?.user_metadata?.name || usuarioLogado?.user_metadata?.full_name || '')
+      setNomeUsuarioPerfil(nomePerfil || usuarioAtual?.user_metadata?.name || usuarioAtual?.user_metadata?.full_name || '')
       const podeOperarFinanceiro = Boolean(permissoes?.isMaster || ['admin', 'gerente'].includes(normalizarPerfil(perfilSelecionado)))
       const podeCarregarLixeira = Boolean(permissoes?.isMaster || normalizarPerfil(perfilSelecionado) === 'admin')
       await carregarTudo(empresaSelecionada.id, {

@@ -93,7 +93,19 @@ export function useAuthSession({
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setCarregandoAuth(false)
-      setUsuarioLogado(session?.user || null)
+
+      const proximoUsuario = session?.user || null
+      setUsuarioLogado((usuarioAtual) => {
+        if (usuarioAtual?.id && proximoUsuario?.id && usuarioAtual.id === proximoUsuario.id) {
+          return {
+            ...usuarioAtual,
+            email: proximoUsuario.email || usuarioAtual.email,
+            user_metadata: proximoUsuario.user_metadata || usuarioAtual.user_metadata
+          }
+        }
+
+        return proximoUsuario
+      })
 
       if (!session) {
         onClearAuthData?.()

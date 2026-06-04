@@ -61,6 +61,28 @@ function formatarDataCurta(data) {
   }
 }
 
+function obterIniciais(nome) {
+  const partes = String(nome || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+
+  if (partes.length === 0) return 'F'
+
+  return partes.map((parte) => parte.charAt(0).toLocaleUpperCase('pt-BR')).join('')
+}
+
+function fazAniversarioNoMes(data, dataReferencia = new Date()) {
+  if (!data) return false
+
+  const partes = String(data).slice(0, 10).split('-')
+  if (partes.length < 2) return false
+
+  const mes = Number(partes[1])
+  return mes === dataReferencia.getMonth() + 1
+}
+
 function montarFormulario(funcionario) {
   if (!funcionario) return FORMULARIO_INICIAL
 
@@ -173,6 +195,21 @@ export default function FuncionariosPage({
       return camposBusca.some((campo) => campo.includes(termo))
     })
   }, [busca, filiaisPorId, funcionarios, statusFiltro])
+
+  const resumoEquipe = useMemo(() => {
+    const lista = funcionarios || []
+    const ativos = lista.filter((funcionario) => !funcionario.arquivado && (funcionario.status || 'ativo') === 'ativo')
+    const afastados = lista.filter((funcionario) => !funcionario.arquivado && funcionario.status === 'afastado')
+    const inativos = lista.filter((funcionario) => funcionario.arquivado || funcionario.status === 'desligado')
+    const aniversariantes = lista.filter((funcionario) => !funcionario.arquivado && fazAniversarioNoMes(funcionario.data_nascimento))
+
+    return {
+      ativos: ativos.length,
+      afastados: afastados.length,
+      inativos: inativos.length,
+      aniversariantes: aniversariantes.length
+    }
+  }, [funcionarios])
 
   const examesAtivos = useMemo(() => {
     return (exames || [])
@@ -371,24 +408,52 @@ export default function FuncionariosPage({
           font-size: 13px;
           font-weight: 800;
         }
+        .funcionarios-summary {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+          margin: 14px 0;
+        }
+        .funcionarios-summary-card {
+          border: 1px solid rgba(15, 23, 42, .08);
+          border-radius: 16px;
+          background: #ffffff;
+          padding: 12px;
+          display: grid;
+          gap: 4px;
+          min-width: 0;
+          box-shadow: 0 8px 20px rgba(15, 23, 42, .04);
+        }
+        .funcionarios-summary-card small {
+          color: #64748b;
+          font-size: 11px;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: .03em;
+        }
+        .funcionarios-summary-card strong {
+          color: #0f172a;
+          font-size: 22px;
+          line-height: 1;
+        }
         .funcionarios-list { display: grid; gap: 12px; margin-top: 16px; }
         .funcionario-card {
           display: grid;
-          grid-template-columns: minmax(0, 1.25fr) minmax(160px, .7fr) auto;
-          gap: 14px;
-          align-items: center;
+          grid-template-columns: 1fr;
+          gap: 12px;
+          align-items: start;
           border: 1px solid rgba(15, 23, 42, .08);
-          border-radius: 20px;
+          border-radius: 18px;
           background: #ffffff;
           padding: 14px;
           box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
         }
         .funcionario-card.arquivado { background: #f8fafc; border-color: #cbd5e1; opacity: .82; }
-        .funcionario-main { min-width: 0; display: flex; align-items: center; gap: 12px; }
+        .funcionario-main { min-width: 0; display: flex; align-items: flex-start; gap: 12px; }
         .funcionario-avatar {
-          width: 42px;
-          height: 42px;
-          border-radius: 16px;
+          width: 44px;
+          height: 44px;
+          border-radius: 14px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -397,10 +462,10 @@ export default function FuncionariosPage({
           font-weight: 950;
           flex: 0 0 42px;
         }
-        .funcionario-main h3 { margin: 0 0 4px; color: #0f172a; font-size: 16px; }
+        .funcionario-main h3 { margin: 0 0 4px; color: #0f172a; font-size: 16px; line-height: 1.2; }
         .funcionario-main small,
         .funcionario-meta small { display: block; color: #64748b; line-height: 1.35; }
-        .funcionario-meta { display: grid; gap: 5px; color: #64748b; font-size: 12px; }
+        .funcionario-meta { display: flex; gap: 8px; color: #64748b; font-size: 12px; flex-wrap: wrap; align-items: center; }
         .funcionario-status {
           width: fit-content;
           border-radius: 999px;
@@ -415,7 +480,7 @@ export default function FuncionariosPage({
         .funcionario-status.afastado { background: #fff7ed; color: #c2410c; }
         .funcionario-status.desligado { background: #f1f5f9; color: #475569; }
         .funcionario-status.arquivado { background: #fee2e2; color: #b91c1c; }
-        .funcionario-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+        .funcionario-actions { display: flex; justify-content: flex-start; gap: 8px; flex-wrap: wrap; }
         .funcionario-actions button { min-height: 36px !important; padding: 8px 12px !important; margin: 0 !important; }
         .funcionario-modal-backdrop {
           position: fixed;
@@ -513,16 +578,22 @@ export default function FuncionariosPage({
           font-size: 13px;
           line-height: 1.4;
         }
+        @media (min-width: 861px) {
+          .funcionarios-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+          .funcionario-card {
+            grid-template-columns: minmax(0, 1.2fr) minmax(220px, .8fr) auto;
+            align-items: center;
+          }
+          .funcionario-actions { justify-content: flex-end; }
+        }
         @media (max-width: 860px) {
           .funcionarios-toolbar,
-          .funcionario-card,
           .funcionario-form-grid,
           .funcionario-exames-add,
           .funcionario-exame-row,
           .funcionario-exame-edit {
             grid-template-columns: 1fr;
           }
-          .funcionario-actions { justify-content: flex-start; }
           .funcionario-exames-header { display: grid; }
           .funcionario-exame-actions { justify-content: flex-start; }
           .funcionario-modal-backdrop { align-items: flex-end; padding: 10px; }
@@ -544,7 +615,7 @@ export default function FuncionariosPage({
         <div className="master-list-header">
           <div>
             <h2 style={styles.subtitulo}>Equipe cadastrada</h2>
-            <p style={styles.textoNota}>A listagem usa sempre a empresa ativa e respeita a RLS validada.</p>
+            <p style={styles.textoNota}>Leitura rápida da equipe, sem expor CPF, documentos, salário ou dados clínicos.</p>
           </div>
           {podeEditar && (
             <button style={styles.btnSalvar} type="button" disabled={!empresaId} onClick={abrirNovoFuncionario}>
@@ -558,7 +629,7 @@ export default function FuncionariosPage({
             style={styles.input}
             value={busca}
             onChange={(event) => setBusca(event.target.value)}
-            placeholder="Buscar por nome, cargo, contato ou filial"
+            placeholder="Buscar por nome, cargo ou filial"
             disabled={!empresaId}
           />
           <select
@@ -581,6 +652,25 @@ export default function FuncionariosPage({
             />
             Mostrar arquivados
           </label>
+        </div>
+
+        <div className="funcionarios-summary" aria-label="Resumo da equipe">
+          <div className="funcionarios-summary-card">
+            <small>Equipe ativa</small>
+            <strong>{resumoEquipe.ativos}</strong>
+          </div>
+          <div className="funcionarios-summary-card">
+            <small>Afastados</small>
+            <strong>{resumoEquipe.afastados}</strong>
+          </div>
+          <div className="funcionarios-summary-card">
+            <small>Aniversariantes</small>
+            <strong>{resumoEquipe.aniversariantes}</strong>
+          </div>
+          <div className="funcionarios-summary-card">
+            <small>Inativos</small>
+            <strong>{resumoEquipe.inativos}</strong>
+          </div>
         </div>
 
         {!empresaId ? (
@@ -610,17 +700,15 @@ export default function FuncionariosPage({
           <div className="funcionarios-list">
             {funcionariosFiltrados.map((funcionario) => {
               const status = funcionario.arquivado ? 'arquivado' : (funcionario.status || 'ativo')
-              const contato = funcionario.email || funcionario.telefone || 'Contato não informado'
               const filialNome = filiaisPorId[funcionario.filial_id] || 'Sem filial'
 
               return (
                 <article key={funcionario.id} className={`funcionario-card ${funcionario.arquivado ? 'arquivado' : ''}`}>
                   <div className="funcionario-main">
-                    <span className="funcionario-avatar">{String(funcionario.nome || 'F').slice(0, 1).toUpperCase()}</span>
+                    <span className="funcionario-avatar" aria-hidden="true">{obterIniciais(funcionario.nome)}</span>
                     <div>
                       <h3>{funcionario.nome || 'Funcionário sem nome'}</h3>
                       <small>{funcionario.cargo || 'Cargo não informado'}</small>
-                      <small>{contato}</small>
                     </div>
                   </div>
 
@@ -628,9 +716,6 @@ export default function FuncionariosPage({
                     <span className={`funcionario-status ${status}`}>{funcionario.arquivado ? 'Arquivado' : STATUS_LABELS[status] || status}</span>
                     <small>Filial: {filialNome}</small>
                     <small>Admissão: {formatarDataCurta(funcionario.data_admissao)}</small>
-                    {funcionario.data_exame_admissional && (
-                      <small>Exame admissional: {formatarDataCurta(funcionario.data_exame_admissional)}</small>
-                    )}
                   </div>
 
                   <div className="funcionario-actions">

@@ -1,6 +1,6 @@
 import { AccountListSkeleton } from '../components/feedback/Skeletons.jsx'
 import { ehContaRecorrente } from '../utils/recorrencia'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import AccountPaymentModal from '../components/modals/AccountPaymentModal.jsx'
 
 const OPCOES_ORDENACAO_CONTAS = [
@@ -94,6 +94,28 @@ function ordenarContasParaListagem(contas, ordenacao, filtroStatus, estaVencida)
   })
 }
 
+function calcularResumoResultadoFiltrado(contas) {
+  return contas.reduce((resumo, conta) => {
+    const valorPrevisto = Number(conta.valor || 0)
+    const valorPago = conta.valor_pago == null ? valorPrevisto : Number(conta.valor_pago || 0)
+
+    resumo.previsto += valorPrevisto
+    resumo.encargos += Number(conta.juros_multa || 0)
+    resumo.descontos += Number(conta.desconto || 0)
+
+    if (conta.status === 'pago') {
+      resumo.realizado += valorPago
+    }
+
+    return resumo
+  }, {
+    previsto: 0,
+    realizado: 0,
+    encargos: 0,
+    descontos: 0
+  })
+}
+
 const CONTAS_EXPANDABLE_HEADER_STYLE = {
   width: '100%',
   boxSizing: 'border-box',
@@ -160,6 +182,12 @@ export default function ContasPage({
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
   const [contaEmBaixa, setContaEmBaixa] = useState(null)
   const contasOrdenadas = ordenarContasParaListagem(contasFiltradas, ordenacaoContas, filtroStatus, estaVencida)
+  const resumoResultadoFiltrado = useMemo(
+    () => calcularResumoResultadoFiltrado(contasFiltradas),
+    [contasFiltradas]
+  )
+  const mostrarEncargosResultado = resumoResultadoFiltrado.encargos > 0
+  const mostrarDescontosResultado = resumoResultadoFiltrado.descontos > 0
 
   async function confirmarBaixaConta(payload) {
     if (!contaEmBaixa?.id) return false
@@ -229,7 +257,11 @@ export default function ContasPage({
 
       <section className="result-summary" style={styles.resumoFiltro}>
         <strong>Resultado filtrado</strong>
-        <span>{contasFiltradas.length} conta(s) • Total {formatarValor(total)}</span>
+        <span>
+          Contas: {contasFiltradas.length} • Previsto: {formatarValor(resumoResultadoFiltrado.previsto)} • Realizado: {formatarValor(resumoResultadoFiltrado.realizado)}
+          {mostrarEncargosResultado && <> • Encargos: {formatarValor(resumoResultadoFiltrado.encargos)}</>}
+          {mostrarDescontosResultado && <> • Descontos: {formatarValor(resumoResultadoFiltrado.descontos)}</>}
+        </span>
         <small>
           Filial: {filtroFilial ? (filiais || []).find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas'} •
           Centro: {filtroCentro ? centros.find((centro) => centro.id === filtroCentro)?.nome || 'Selecionado' : 'Todos'} •

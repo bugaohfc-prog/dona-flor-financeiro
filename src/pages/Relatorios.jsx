@@ -199,7 +199,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
   const metaValida = !isNaN(meta) && meta > 0
   const percentualMeta = metaValida ? (totalGeral / meta) * 100 : 0
   const taxaPago = totalGeral ? (totalPago / totalGeral) * 100 : 0
-  const taxaVencido = totalGeral ? (totalVencido / totalGeral) * 100 : 0
+  const taxaVencido = totalGeral ? Math.min((totalVencido / totalGeral) * 100, 100) : 0
 
   const centrosComContas = contasFiltradas.reduce((acc, conta) => {
     const chave = conta.centro_custo_id || 'sem-centro'
@@ -397,7 +397,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
     const totalRecorrente = recorrentes.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
     const percentualRecorrente = totalGeral ? (totalRecorrente / totalGeral) * 100 : 0
     const concentracaoCentro = principalCentro?.percentual || 0
-    const riscoCaixa = totalGeral ? ((totalPendente + totalVencido) / totalGeral) * 100 : 0
+    const riscoCaixa = totalGeral ? Math.min((totalPendente / totalGeral) * 100, 100) : 0
+    const riscoVencido = totalGeral ? Math.min((totalVencido / totalGeral) * 100, 100) : 0
     const anomalias = contasFiltradas
       .filter((conta) => ticketMedio > 0 && Number(conta.valor || 0) >= ticketMedio * 2.5)
       .sort((a, b) => Number(b.valor || 0) - Number(a.valor || 0))
@@ -426,7 +427,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
 
     const previsoes = [
       { label: 'Próximo mês', value: previsaoProximoMes, sub: 'projeção por tendência simples' },
-      { label: 'Risco em aberto', value: totalPendente + totalVencido, sub: `${formatarPercentual(riscoCaixa)} do total filtrado` },
+      { label: 'Risco em aberto', value: totalPendente, sub: `${formatarPercentual(riscoCaixa)} ainda não pago` },
+      { label: 'Risco vencido', value: totalVencido, sub: `${formatarPercentual(riscoVencido)} do previsto` },
       { label: 'Recorrente', value: totalRecorrente, sub: `${formatarPercentual(percentualRecorrente)} do total` },
       { label: 'Top 3 despesas', value: paretoTop3, sub: `${formatarPercentual(paretoTop3Percentual)} do total` }
     ]
@@ -437,6 +439,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       cor,
       ticketMedio,
       riscoCaixa,
+      riscoVencido,
       paretoTop3,
       paretoTop3Percentual,
       percentualRecorrente,
@@ -459,11 +462,12 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
     const ultimo = totais.length ? totais[totais.length - 1] : totalGeral
     const penultimo = totais.length > 1 ? totais[totais.length - 2] : ultimo
     const variacao = ultimo - penultimo
-    const fatorRisco = totalGeral ? Math.min(((totalVencido + totalPendente) / totalGeral), 1.5) : 0
+    const fatorRisco = totalGeral ? Math.min(totalPendente / totalGeral, 1) : 0
+    const fatorVencido = totalGeral ? Math.min(totalVencido / totalGeral, 1) : 0
     const previsao30 = Math.max(ultimo + variacao * 0.35, 0)
     const previsao60 = Math.max(previsao30 + variacao * 0.55, 0)
     const previsao90 = Math.max(previsao60 + variacao * 0.75, 0)
-    const riscoProjetado = Math.min(100, Math.max(0, taxaVencido + fatorRisco * 35 + (principalCentro?.percentual >= 60 ? 12 : 0) + (percentualClassificacao < 80 ? 10 : 0)))
+    const riscoProjetado = Math.min(100, Math.max(0, fatorRisco * 35 + fatorVencido * 35 + (principalCentro?.percentual >= 60 ? 12 : 0) + (percentualClassificacao < 80 ? 10 : 0)))
     const statusRisco = riscoProjetado >= 65 ? 'Alto' : riscoProjetado >= 35 ? 'Moderado' : 'Baixo'
     const corRisco = riscoProjetado >= 65 ? '#dc3545' : riscoProjetado >= 35 ? '#f59f00' : '#12b886'
     const tendencia = variacao > 0 ? 'alta' : variacao < 0 ? 'queda' : 'estável'
@@ -727,7 +731,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
           ['Indicador', 'Valor', 'Observação'],
           ['Nível', inteligenciaFinanceira.nivel, inteligenciaFinanceira.titulo],
           ['Ticket médio', inteligenciaFinanceira.ticketMedio, 'Média por conta filtrada'],
-          ['Risco caixa %', inteligenciaFinanceira.riscoCaixa, 'Pendente + vencido sobre total'],
+          ['Risco caixa %', inteligenciaFinanceira.riscoCaixa, 'Pendente ainda não pago sobre previsto'],
+          ['Risco vencido %', inteligenciaFinanceira.riscoVencido, 'Parte vencida dentro do pendente'],
           ['Top 3 despesas', inteligenciaFinanceira.paretoTop3, `${formatarPercentual(inteligenciaFinanceira.paretoTop3Percentual)} do total`],
           ['Recorrente %', inteligenciaFinanceira.percentualRecorrente, 'Peso das contas recorrentes'],
           [],
@@ -994,6 +999,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
               <div style={styles.grid3Compacto}>
                 <MiniStat label="Ticket médio" value={formatarValor(inteligenciaFinanceira.ticketMedio)} />
                 <MiniStat label="Risco caixa" value={formatarPercentual(inteligenciaFinanceira.riscoCaixa)} />
+                <MiniStat label="Risco vencido" value={formatarPercentual(inteligenciaFinanceira.riscoVencido)} />
                 <MiniStat label="Pendências" value={inteligenciaFinanceira.pendentesAbertas} />
               </div>
             </Widget>

@@ -1422,31 +1422,44 @@ export default function AppShellStyles() {
               .accounts-sort-control select {
                 min-width: 180px !important;
               }
-              .account-payment-real-summary {
-                align-items: flex-end !important;
+              .account-payment-value-panel {
+                align-items: flex-start !important;
                 color: #0f172a !important;
                 display: flex !important;
                 flex-direction: column !important;
                 gap: 4px !important;
-                margin-left: auto !important;
-                min-width: 132px !important;
-                text-align: right !important;
+                grid-column: 1 / -1 !important;
+                margin-top: 8px !important;
+                text-align: left !important;
                 white-space: normal !important;
+                width: 100% !important;
               }
-              .account-payment-real-summary > strong {
+              .account-payment-value-panel > strong {
                 display: block !important;
                 font-size: 15px !important;
                 font-weight: 900 !important;
                 line-height: 1.2 !important;
               }
-              .account-payment-real-summary > small {
+              .account-payment-value-panel > small {
                 color: #64748b !important;
                 display: block !important;
                 font-size: 11px !important;
                 font-weight: 800 !important;
                 line-height: 1.25 !important;
               }
-              .account-payment-real-summary > span {
+              .account-payment-summary {
+                align-items: flex-start !important;
+                color: #166534 !important;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                font-size: 12px !important;
+                font-weight: 900 !important;
+                gap: 6px !important;
+                grid-column: 1 / -1 !important;
+                margin-top: 8px !important;
+                width: 100% !important;
+              }
+              .account-payment-summary > span {
                 background: rgba(240, 253, 244, 0.9) !important;
                 border: 1px solid #bbf7d0 !important;
                 border-radius: 999px !important;
@@ -1467,19 +1480,6 @@ export default function AppShellStyles() {
                   flex: 1 1 100% !important;
                   width: 100% !important;
                 }
-                .account-card-payment-real .account-payment-real-summary {
-                  align-items: flex-start !important;
-                  flex: 1 0 100% !important;
-                  margin-left: 0 !important;
-                  min-width: 100% !important;
-                  text-align: left !important;
-                  width: 100% !important;
-                }
-                .account-card-payment-real .account-payment-real-summary > strong,
-                .account-card-payment-real .account-payment-real-summary > small {
-                  display: block !important;
-                  width: 100% !important;
-                }
               }
               .account-observation-preview {
                 align-items: center !important;
@@ -1497,13 +1497,35 @@ export default function AppShellStyles() {
                 width: 100% !important;
               }
               @media (min-width: 980px) {
+                .account-card-desktop.account-card-payment-real > div:first-child {
+                  grid-column: 1 / 3 !important;
+                  grid-row: 1 !important;
+                }
+                .account-card-desktop .account-payment-value-panel {
+                  grid-column: 1 / 3 !important;
+                  grid-row: 2 !important;
+                }
+                .account-card-desktop.account-card-payment-real .account-meta-line {
+                  grid-column: 1 / 3 !important;
+                  grid-row: 3 !important;
+                }
+                .account-card-desktop .account-payment-summary {
+                  grid-column: 1 / 3 !important;
+                  grid-row: 4 !important;
+                }
                 .account-card-desktop .account-observation-preview {
                   grid-column: 1 / 3 !important;
                   grid-row: 2 !important;
                 }
+                .account-card-desktop.account-card-payment-real .account-observation-preview {
+                  grid-row: 5 !important;
+                }
                 .account-card-desktop .account-actions {
                   grid-column: 3 !important;
                   grid-row: 1 / span 2 !important;
+                }
+                .account-card-desktop.account-card-payment-real .account-actions {
+                  grid-row: 1 / span 5 !important;
                 }
               }
               .account-observation-text {

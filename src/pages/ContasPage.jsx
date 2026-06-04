@@ -299,18 +299,17 @@ export default function ContasPage({
                     </span>
                   )}
                 </div>
-                {exibirBaixaReal ? (
-                  <div className="account-payment-real-summary">
-                    <strong>{formatarValor(valorPrincipal)}</strong>
-                    <small>Previsto: {formatarValor(valorPrevisto)}</small>
-                    {jurosMulta > 0 && <span>Encargos: {formatarValor(jurosMulta)}</span>}
-                    {desconto > 0 && <span>Desconto: {formatarValor(desconto)}</span>}
-                    {jurosMulta <= 0 && desconto <= 0 && <span>Pago sem ajuste</span>}
-                  </div>
-                ) : (
+                {!exibirBaixaReal && (
                   <span>{formatarValor(valorPrevisto)}</span>
                 )}
               </div>
+
+              {exibirBaixaReal && (
+                <div className="account-payment-value-panel">
+                  <strong>{formatarValor(valorPrincipal)}</strong>
+                  <small>Previsto: {formatarValor(valorPrevisto)}</small>
+                </div>
+              )}
 
               <div style={styles.cardInfo} className="account-meta-line">
                 <span className="account-date-badge">📅 {formatarData(conta.data_vencimento)}</span>
@@ -323,6 +322,14 @@ export default function ContasPage({
                   {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}
                 </span>
               </div>
+
+              {exibirBaixaReal && (
+                <div className="account-payment-summary">
+                  {jurosMulta > 0 && <span>Encargos: {formatarValor(jurosMulta)}</span>}
+                  {desconto > 0 && <span>Desconto: {formatarValor(desconto)}</span>}
+                  {jurosMulta <= 0 && desconto <= 0 && <span>Pago sem ajuste</span>}
+                </div>
+              )}
 
               {observacao && (
                 <div className="account-observation-preview" title={observacao}>

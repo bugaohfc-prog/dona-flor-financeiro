@@ -840,8 +840,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
               </>
             )}
           </div>
-          <h1 style={styles.titulo}>Relatórios financeiros</h1>
-          <p style={styles.descricaoTela}>Acompanhe indicadores, tendências e análises financeiras da empresa.</p>
+          <h1 style={styles.titulo}>Análise Financeira</h1>
+          <p style={styles.descricaoTela}>Decida com base em previsto, realizado, pendências e riscos do período.</p>
         </div>
         <div style={styles.heroBadge}>
           <span>{statusSaude.emoji}</span>
@@ -890,13 +890,13 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
 
       {loading ? <RelatorioSkeleton /> : (
         <>
-      <section style={styles.kpiGrid}>
-        <KpiCard titulo="Previsto" valor={formatarValor(totalGeral)} detalhe={`${contasFiltradas.length} conta(s)`} emoji="💼" cor="#364fc7" progresso={100} />
-        <KpiCard titulo="Realizado" valor={formatarValor(totalPago)} detalhe={`${formatarPercentual(taxaPago)} do previsto`} emoji="✅" cor="#12b886" progresso={taxaPago} />
-        <KpiCard titulo="Pendente" valor={formatarValor(totalPendente)} detalhe={totalGeral ? `${formatarPercentual((totalPendente / totalGeral) * 100)} das despesas` : 'Sem pendência'} emoji="🟡" cor="#f59f00" progresso={totalGeral ? (totalPendente / totalGeral) * 100 : 0} />
-        <KpiCard titulo="Vencido" valor={formatarValor(totalVencido)} detalhe={totalVencido > 0 ? `${formatarPercentual(taxaVencido)} em atraso` : 'Sem vencidos'} emoji="🚨" cor="#dc3545" progresso={taxaVencido} />
-        {totalEncargos > 0 && <KpiCard titulo="Encargos" valor={formatarValor(totalEncargos)} detalhe="Juros/multa pagos" emoji="↗" cor="#ea580c" progresso={100} />}
-        {totalDescontos > 0 && <KpiCard titulo="Descontos" valor={formatarValor(totalDescontos)} detalhe="Ajustes a menor" emoji="↘" cor="#059669" progresso={100} />}
+      <section className="executive-kpi-grid" style={styles.executiveKpiGrid}>
+        <ExecutiveKpiCard titulo="Previsto" valor={formatarValor(totalGeral)} detalhe={`${contasFiltradas.length} conta(s)`} tom="#364fc7" />
+        <ExecutiveKpiCard titulo="Realizado" valor={formatarValor(totalPago)} detalhe={`${formatarPercentual(taxaPago)} do previsto`} tom="#12b886" />
+        <ExecutiveKpiCard titulo="Pendente" valor={formatarValor(totalPendente)} detalhe="Ainda não pago" tom="#f59f00" />
+        <ExecutiveKpiCard titulo="Vencido" valor={formatarValor(totalVencido)} detalhe={totalVencido > 0 ? `${formatarPercentual(taxaVencido)} do previsto` : 'Sem vencidos'} tom="#dc3545" />
+        <ExecutiveKpiCard titulo="Encargos" valor={formatarValor(totalEncargos)} detalhe="Juros/multa" tom="#ea580c" />
+        <ExecutiveKpiCard titulo="Descontos" valor={formatarValor(totalDescontos)} detalhe="Ajustes a menor" tom="#059669" />
       </section>
 
       <section style={styles.advancedPanel}>
@@ -1388,6 +1388,16 @@ function KpiCard({ titulo, valor, detalhe, emoji, cor, progresso }) {
   )
 }
 
+function ExecutiveKpiCard({ titulo, valor, detalhe, tom }) {
+  return (
+    <section className="executive-kpi-card print-card" style={{ ...styles.executiveKpiCard, borderLeftColor: tom }}>
+      <small style={styles.executiveKpiLabel}>{titulo}</small>
+      <strong style={styles.executiveKpiValue}>{valor}</strong>
+      <span style={styles.executiveKpiDetail}>{detalhe}</span>
+    </section>
+  )
+}
+
 function MiniStat({ label, value, sub }) {
   return (
     <div style={styles.miniStat}>
@@ -1449,6 +1459,9 @@ const cssPrint = `
   .relatorio-print-header, .relatorio-print-footer { display: none; }
   @media (max-width: 900px) {
     .relatorios-page { padding: 12px !important; }
+    .executive-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; }
+    .executive-kpi-card { min-height: 0 !important; padding: 10px !important; border-radius: 14px !important; }
+    .executive-kpi-card strong { font-size: 15px !important; line-height: 1.15 !important; }
   }
   @media print {
     html, body { background: #fff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -1521,6 +1534,11 @@ const styles = {
   filtro: { border: '1px solid #d1d5db', background: '#fff', padding: '7px 12px', borderRadius: 999, fontWeight: 800, color: '#334155' },
   filtroAtivo: { border: '1px solid #0d9488', background: '#0d9488', color: '#fff', padding: '7px 12px', borderRadius: 999, fontWeight: 800 },
   kpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14, marginBottom: 16 },
+  executiveKpiGrid: { display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 10, marginBottom: 16 },
+  executiveKpiCard: { background: '#fff', border: '1px solid rgba(226,232,240,0.9)', borderLeft: '4px solid #0d9488', borderRadius: 16, padding: 12, minHeight: 92, boxShadow: '0 8px 20px rgba(15,23,42,0.05)', display: 'grid', alignContent: 'start', gap: 4, minWidth: 0 },
+  executiveKpiLabel: { color: '#64748b', fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.2, lineHeight: 1.1 },
+  executiveKpiValue: { color: '#0f172a', fontSize: 18, lineHeight: 1.1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+  executiveKpiDetail: { color: '#64748b', fontSize: 12, fontWeight: 700, lineHeight: 1.2 },
   kpiCard: { ...cardBase(), minHeight: 130 },
   kpiIcon: { width: 38, height: 38, borderRadius: 14, background: '#f1f5f9', display: 'grid', placeItems: 'center', fontSize: 20, marginBottom: 8 },
   kpiTitulo: { color: '#64748b', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.3 },

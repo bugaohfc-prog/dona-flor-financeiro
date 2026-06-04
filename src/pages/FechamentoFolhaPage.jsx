@@ -68,11 +68,29 @@ const CATEGORIAS_OPCOES = [
 const estilosLocais = {
   pageActions: {
     display: 'flex',
-    gap: 8,
+    gap: 12,
     alignItems: 'center',
     justifyContent: 'space-between',
     flexWrap: 'wrap',
-    marginBottom: 16
+    marginBottom: 14
+  },
+  pageIntro: {
+    display: 'grid',
+    gap: 4,
+    minWidth: 240
+  },
+  sectionHeader: {
+    display: 'flex',
+    gap: 12,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    marginBottom: 12
+  },
+  sectionTitleBlock: {
+    display: 'grid',
+    gap: 4,
+    minWidth: 220
   },
   grid: {
     display: 'grid',
@@ -81,13 +99,13 @@ const estilosLocais = {
   },
   resumoGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-    gap: 10
+    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+    gap: 8
   },
   resumoCard: {
     border: '1px solid #e5e7eb',
     borderRadius: 8,
-    padding: 14,
+    padding: 12,
     background: '#fff',
     boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
   },
@@ -108,26 +126,34 @@ const estilosLocais = {
   },
   formGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-    gap: 12
+    gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+    gap: 10
   },
   competenciaGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-    gap: 12,
+    gridTemplateColumns: 'minmax(180px, .8fr) minmax(180px, .8fr) minmax(220px, 1.4fr)',
+    gap: 10,
     alignItems: 'start'
   },
   formPanel: {
     border: '1px solid #e5e7eb',
     borderRadius: 8,
-    padding: 14,
+    padding: 12,
     background: '#f9fafb',
     display: 'grid',
-    gap: 12
+    gap: 10
+  },
+  formPanelSoft: {
+    border: '1px solid #e5e7eb',
+    borderRadius: 8,
+    padding: 12,
+    background: '#fff',
+    display: 'grid',
+    gap: 10
   },
   formSectionTitle: {
     margin: 0,
-    fontSize: 14,
+    fontSize: 13,
     color: '#111827'
   },
   formActions: {
@@ -168,7 +194,7 @@ const estilosLocais = {
   },
   textarea: {
     width: '100%',
-    minHeight: 76,
+    minHeight: 64,
     border: '1px solid #d1d5db',
     borderRadius: 8,
     padding: '10px 12px',
@@ -218,7 +244,7 @@ const estilosLocais = {
     width: '100%',
     borderCollapse: 'separate',
     borderSpacing: 0,
-    minWidth: 980
+    minWidth: 920
   },
   th: {
     textAlign: 'left',
@@ -231,21 +257,66 @@ const estilosLocais = {
   },
   td: {
     borderBottom: '1px solid #f3f4f6',
-    padding: '12px 10px',
+    padding: '10px',
     verticalAlign: 'top',
     color: '#1f2937',
     lineHeight: 1.35
   },
   tdTexto: {
-    maxWidth: 220,
+    maxWidth: 240,
     whiteSpace: 'normal',
     overflowWrap: 'anywhere'
+  },
+  tdMuted: {
+    color: '#64748b',
+    fontSize: 13
+  },
+  tdValor: {
+    color: '#475569',
+    fontWeight: 700,
+    whiteSpace: 'nowrap'
   },
   acoesTabela: {
     display: 'flex',
     gap: 6,
     flexWrap: 'wrap',
     alignItems: 'center'
+  },
+  mobileCards: {
+    display: 'none'
+  },
+  mobileCard: {
+    border: '1px solid #e5e7eb',
+    borderRadius: 8,
+    padding: 12,
+    background: '#fff',
+    display: 'grid',
+    gap: 10
+  },
+  mobileCardHeader: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10
+  },
+  mobileMetaGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: 8
+  },
+  mobileMetaItem: {
+    border: '1px solid #eef2f7',
+    borderRadius: 8,
+    padding: 8,
+    background: '#f8fafc',
+    display: 'grid',
+    gap: 3
+  },
+  mobileMetaLabel: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: 800,
+    textTransform: 'uppercase'
   }
 }
 
@@ -516,8 +587,85 @@ export default function FechamentoFolhaPage({
 
   return (
     <>
+      <style>{`
+        .folha-page-shell {
+          display: grid;
+          gap: 14px;
+        }
+        .folha-section {
+          scroll-margin-top: 18px;
+        }
+        .folha-section.compact {
+          padding-top: 14px !important;
+          padding-bottom: 14px !important;
+        }
+        .folha-resumo-card h3 {
+          margin: 4px 0 0;
+          color: #334155;
+          font-size: 18px;
+          line-height: 1.15;
+        }
+        .folha-resumo-card.is-money h3 {
+          color: #475569;
+          font-size: 16px;
+        }
+        .folha-table tbody tr:hover {
+          background: #f8fafc;
+        }
+        .folha-table tbody tr:last-child td {
+          border-bottom: 0;
+        }
+        .folha-money {
+          color: #475569;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+        .folha-card-description {
+          margin: 0;
+          color: #475569;
+          font-size: 13px;
+          line-height: 1.4;
+        }
+        .folha-mobile-note {
+          display: none;
+        }
+        @media (max-width: 860px) {
+          .folha-page-shell {
+            gap: 12px;
+          }
+          .folha-desktop-list {
+            display: none !important;
+          }
+          .folha-mobile-list {
+            display: grid !important;
+            gap: 10px;
+            margin-top: 12px;
+          }
+          .folha-mobile-note {
+            display: block;
+          }
+          .folha-competencia-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .folha-mobile-meta-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+        @media (max-width: 560px) {
+          .folha-mobile-meta-grid {
+            grid-template-columns: 1fr;
+          }
+          .folha-card-actions {
+            width: 100%;
+          }
+          .folha-card-actions button {
+            flex: 1 1 130px;
+          }
+        }
+      `}</style>
+      <div className="folha-page-shell">
       <div style={estilosLocais.pageActions}>
-        <div>
+        <div style={estilosLocais.pageIntro}>
           <h1 style={styles.titulo}>Fechamento de Folha</h1>
           <p style={styles.textoNota}>Controle inicial de competências e lançamentos mensais da folha.</p>
           {empresaNome && <p style={styles.textoNota}>Empresa ativa: <strong>{empresaNome}</strong></p>}
@@ -529,7 +677,7 @@ export default function FechamentoFolhaPage({
         )}
       </div>
 
-      <section style={styles.cardConfiguracao}>
+      <section className="folha-section compact" style={styles.cardConfiguracao}>
         <strong>Atenção LGPD</strong>
         <p style={styles.textoNota}>
           Não registre dados médicos, CID, laudos, diagnósticos, documentos ou informações clínicas.
@@ -538,7 +686,7 @@ export default function FechamentoFolhaPage({
       </section>
 
       {!empresaId && (
-        <section style={styles.cardConfiguracao}>
+        <section className="folha-section compact" style={styles.cardConfiguracao}>
           <h2 style={styles.subtitulo}>Empresa ativa não identificada</h2>
           <p style={styles.textoNota}>Selecione uma empresa para carregar competências e lançamentos da folha.</p>
         </section>
@@ -550,12 +698,12 @@ export default function FechamentoFolhaPage({
         </div>
       )}
 
-      <section style={styles.cardConfiguracao}>
+      <section className="folha-section compact" style={styles.cardConfiguracao}>
         <h2 style={styles.subtitulo}>Competências</h2>
         <p style={styles.textoNota}>Crie e selecione uma competência mensal no formato AAAA-MM.</p>
 
         <form onSubmit={salvarCompetencia} style={estilosLocais.formPanel}>
-          <div style={estilosLocais.competenciaGrid}>
+          <div className="folha-competencia-grid" style={estilosLocais.competenciaGrid}>
             <label style={estilosLocais.formField}>
               <span style={estilosLocais.label}>Competência</span>
               <input
@@ -605,7 +753,7 @@ export default function FechamentoFolhaPage({
               }))}
               style={estilosLocais.textarea}
               disabled={!empresaId || !podeEditar || salvando}
-              placeholder="Use apenas observações administrativas."
+              placeholder="Somente contexto administrativo. Não inclua documentos, saúde, CID ou dados clínicos."
             />
           </label>
 
@@ -686,7 +834,7 @@ export default function FechamentoFolhaPage({
         )}
       </section>
 
-      <section style={styles.cardConfiguracao}>
+      <section className="folha-section compact" style={styles.cardConfiguracao}>
         <h2 style={styles.subtitulo}>Resumo da competência selecionada</h2>
         {!competenciaSelecionada ? (
           <p style={styles.textoNota}>Selecione uma competência para ver o resumo e os lançamentos.</p>
@@ -696,19 +844,19 @@ export default function FechamentoFolhaPage({
               Competência <strong>{competenciaSelecionada.competencia}</strong> • {LABELS_STATUS_COMPETENCIA[competenciaSelecionada.status] || competenciaSelecionada.status}
             </p>
             <div style={estilosLocais.resumoGrid}>
-              <div style={estilosLocais.resumoCard}>
+              <div className="folha-resumo-card is-money" style={estilosLocais.resumoCard}>
                 <span style={styles.textoNota}>Total de créditos</span>
                 <h3>{formatarMoeda(resumo.totalCreditos)}</h3>
               </div>
-              <div style={estilosLocais.resumoCard}>
+              <div className="folha-resumo-card is-money" style={estilosLocais.resumoCard}>
                 <span style={styles.textoNota}>Total de descontos</span>
                 <h3>{formatarMoeda(resumo.totalDescontos)}</h3>
               </div>
-              <div style={estilosLocais.resumoCard}>
+              <div className="folha-resumo-card is-money" style={estilosLocais.resumoCard}>
                 <span style={styles.textoNota}>Saldo informativo</span>
                 <h3>{formatarMoeda(resumo.saldoInformativo)}</h3>
               </div>
-              <div style={estilosLocais.resumoCard}>
+              <div className="folha-resumo-card" style={estilosLocais.resumoCard}>
                 <span style={styles.textoNota}>Lançamentos</span>
                 <h3>{resumo.quantidadeLancamentos}</h3>
               </div>
@@ -717,7 +865,7 @@ export default function FechamentoFolhaPage({
         )}
       </section>
 
-      <section style={styles.cardConfiguracao}>
+      <section className="folha-section compact" style={styles.cardConfiguracao}>
         <h2 style={styles.subtitulo}>{lancamentoEditandoId ? 'Editar lançamento' : 'Lançamento manual'}</h2>
         <p style={styles.textoNota}>
           O lançamento manual respeita a empresa ativa, a competência selecionada e a RLS do Supabase.
@@ -727,7 +875,7 @@ export default function FechamentoFolhaPage({
           <p style={styles.textoNota}>Selecione uma competência antes de criar lançamentos.</p>
         ) : (
           <form onSubmit={salvarLancamento} style={{ display: 'grid', gap: 12 }}>
-            <div style={estilosLocais.formPanel}>
+            <div style={estilosLocais.formPanelSoft}>
               <h3 style={estilosLocais.formSectionTitle}>Dados principais</h3>
               <div style={estilosLocais.formGrid}>
                 <label style={estilosLocais.formField}>
@@ -780,7 +928,7 @@ export default function FechamentoFolhaPage({
               </div>
             </div>
 
-            <div style={estilosLocais.formPanel}>
+            <div style={estilosLocais.formPanelSoft}>
               <h3 style={estilosLocais.formSectionTitle}>Valores e referência</h3>
               <div style={estilosLocais.formGrid}>
                 <label style={estilosLocais.formField}>
@@ -835,7 +983,7 @@ export default function FechamentoFolhaPage({
               </div>
             </div>
 
-            <div style={estilosLocais.formPanel}>
+            <div style={estilosLocais.formPanelSoft}>
               <h3 style={estilosLocais.formSectionTitle}>Descrição e conferência</h3>
               <label style={estilosLocais.formField}>
                 <span style={estilosLocais.label}>Descrição</span>
@@ -844,7 +992,7 @@ export default function FechamentoFolhaPage({
                   onChange={(event) => setFormLancamento((atual) => ({ ...atual, descricao: event.target.value }))}
                   style={estilosLocais.input}
                   disabled={!empresaId || !podeEditar || salvando}
-                  placeholder="Obrigatória para outro crédito/outro desconto."
+                  placeholder="Descrição administrativa obrigatória para outro crédito/outro desconto."
                 />
               </label>
 
@@ -858,7 +1006,7 @@ export default function FechamentoFolhaPage({
                   }))}
                   style={estilosLocais.textarea}
                   disabled={!empresaId || !podeEditar || salvando}
-                  placeholder="Use apenas observações administrativas."
+                  placeholder="Somente contexto administrativo. Não inclua documentos, saúde, CID ou dados clínicos."
                 />
                 <small style={estilosLocais.helperText}>
                   Não registre dados médicos, CID, laudos, diagnósticos, documentos ou informações clínicas.
@@ -884,7 +1032,7 @@ export default function FechamentoFolhaPage({
         )}
       </section>
 
-      <section style={styles.cardConfiguracao}>
+      <section className="folha-section" style={styles.cardConfiguracao}>
         <div style={estilosLocais.pageActions}>
           <div>
             <h2 style={styles.subtitulo}>Lançamentos da competência</h2>
@@ -908,8 +1056,12 @@ export default function FechamentoFolhaPage({
         ) : lancamentos.length === 0 ? (
           <p style={styles.textoNota}>Nenhum lançamento encontrado para a competência selecionada.</p>
         ) : (
-          <div style={estilosLocais.tableWrap}>
-            <table style={estilosLocais.table}>
+          <>
+          <p className="folha-mobile-note" style={styles.textoNota}>
+            No celular, os lançamentos aparecem em cards para facilitar leitura e conferência.
+          </p>
+          <div className="folha-desktop-list" style={estilosLocais.tableWrap}>
+            <table className="folha-table" style={estilosLocais.table}>
               <thead>
                 <tr>
                   <th style={estilosLocais.th}>Funcionário</th>
@@ -931,15 +1083,15 @@ export default function FechamentoFolhaPage({
                     <td style={{ ...estilosLocais.td, ...estilosLocais.tdTexto }}>
                       {obterNomeFuncionario(funcionariosPorId, lancamento.funcionario_id)}
                     </td>
-                    <td style={estilosLocais.td}>{LABELS_NATUREZA[lancamento.natureza] || lancamento.natureza}</td>
-                    <td style={estilosLocais.td}>{LABELS_CATEGORIA[lancamento.categoria] || lancamento.categoria}</td>
+                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{LABELS_NATUREZA[lancamento.natureza] || lancamento.natureza}</td>
+                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{LABELS_CATEGORIA[lancamento.categoria] || lancamento.categoria}</td>
                     <td style={{ ...estilosLocais.td, ...estilosLocais.tdTexto }}>{lancamento.descricao || '-'}</td>
-                    <td style={estilosLocais.td}>{formatarData(lancamento.data_referencia)}</td>
-                    <td style={estilosLocais.td}>{formatarNumero(lancamento.quantidade)}</td>
-                    <td style={estilosLocais.td}>{formatarNumero(lancamento.percentual)}</td>
-                    <td style={estilosLocais.td}>{lancamento.valor === null ? '-' : formatarMoeda(lancamento.valor)}</td>
-                    <td style={estilosLocais.td}>{lancamento.conferido ? 'Sim' : 'Não'}</td>
-                    <td style={estilosLocais.td}>{lancamento.arquivado ? 'Arquivado' : 'Ativo'}</td>
+                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{formatarData(lancamento.data_referencia)}</td>
+                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{formatarNumero(lancamento.quantidade)}</td>
+                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{formatarNumero(lancamento.percentual)}</td>
+                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdValor }}>{lancamento.valor === null ? '-' : formatarMoeda(lancamento.valor)}</td>
+                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{lancamento.conferido ? 'Sim' : 'Não'}</td>
+                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{lancamento.arquivado ? 'Arquivado' : 'Ativo'}</td>
                     <td style={estilosLocais.td}>
                       <div style={estilosLocais.acoesTabela}>
                         <button
@@ -965,8 +1117,67 @@ export default function FechamentoFolhaPage({
               </tbody>
             </table>
           </div>
+          <div className="folha-mobile-list" style={estilosLocais.mobileCards}>
+            {lancamentos.map((lancamento) => (
+              <article key={`mobile-${lancamento.id}`} style={estilosLocais.mobileCard}>
+                <div style={estilosLocais.mobileCardHeader}>
+                  <div>
+                    <strong>{obterNomeFuncionario(funcionariosPorId, lancamento.funcionario_id)}</strong>
+                    <p className="folha-card-description">
+                      {LABELS_CATEGORIA[lancamento.categoria] || lancamento.categoria} - {LABELS_NATUREZA[lancamento.natureza] || lancamento.natureza}
+                    </p>
+                  </div>
+                  <span style={estilosLocais.badge}>{lancamento.arquivado ? 'Arquivado' : 'Ativo'}</span>
+                </div>
+
+                {lancamento.descricao && (
+                  <p className="folha-card-description">{lancamento.descricao}</p>
+                )}
+
+                <div className="folha-mobile-meta-grid" style={estilosLocais.mobileMetaGrid}>
+                  <div style={estilosLocais.mobileMetaItem}>
+                    <span style={estilosLocais.mobileMetaLabel}>Data</span>
+                    <strong>{formatarData(lancamento.data_referencia)}</strong>
+                  </div>
+                  <div style={estilosLocais.mobileMetaItem}>
+                    <span style={estilosLocais.mobileMetaLabel}>Valor</span>
+                    <strong className="folha-money">{lancamento.valor === null ? '-' : formatarMoeda(lancamento.valor)}</strong>
+                  </div>
+                  <div style={estilosLocais.mobileMetaItem}>
+                    <span style={estilosLocais.mobileMetaLabel}>Qtd. / %</span>
+                    <strong>{formatarNumero(lancamento.quantidade)} / {formatarNumero(lancamento.percentual)}</strong>
+                  </div>
+                  <div style={estilosLocais.mobileMetaItem}>
+                    <span style={estilosLocais.mobileMetaLabel}>Conferido</span>
+                    <strong>{lancamento.conferido ? 'Sim' : 'Não'}</strong>
+                  </div>
+                </div>
+
+                <div className="folha-card-actions" style={estilosLocais.acoesTabela}>
+                  <button
+                    type="button"
+                    style={styles.btnCinza}
+                    onClick={() => iniciarEdicaoLancamento(lancamento)}
+                    disabled={!podeEditar || salvando || lancamento.arquivado}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    style={styles.btnCinza}
+                    onClick={() => alternarArquivoLancamento(lancamento)}
+                    disabled={!podeEditar || salvando}
+                  >
+                    {lancamento.arquivado ? 'Reativar' : 'Arquivar'}
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+          </>
         )}
       </section>
+      </div>
     </>
   )
 }

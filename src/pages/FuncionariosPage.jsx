@@ -310,6 +310,13 @@ export default function FuncionariosPage({
   async function alternarArquivamento(funcionario) {
     if (!funcionario?.id || !empresaId || !podeEditar || salvando) return
 
+    const nomeFuncionario = funcionario.nome || 'este funcionário'
+    const mensagemConfirmacao = funcionario.arquivado
+      ? `Reativar o cadastro de ${nomeFuncionario}? Ele voltará para a lista principal.`
+      : `Arquivar o cadastro de ${nomeFuncionario}? Ele sairá da lista principal, mas poderá ser reativado em "Mostrar arquivados".`
+
+    if (!window.confirm(mensagemConfirmacao)) return
+
     const resposta = funcionario.arquivado
       ? await reativarFuncionario(funcionario.id)
       : await arquivarFuncionario(funcionario.id)
@@ -319,7 +326,12 @@ export default function FuncionariosPage({
       return
     }
 
-    mostrarAviso?.(funcionario.arquivado ? 'Funcionário reativado.' : 'Funcionário arquivado.', 'sucesso')
+    mostrarAviso?.(
+      funcionario.arquivado
+        ? 'Cadastro reativado e disponível na lista principal.'
+        : 'Cadastro arquivado. Ative "Mostrar arquivados" para localizar e reativar.',
+      'sucesso'
+    )
   }
 
   async function adicionarExamePeriodico() {
@@ -793,7 +805,7 @@ export default function FuncionariosPage({
                           disabled={salvando}
                           onClick={() => alternarArquivamento(funcionario)}
                         >
-                          {funcionario.arquivado ? 'Reativar' : 'Arquivar'}
+                          {funcionario.arquivado ? 'Reativar cadastro' : 'Arquivar cadastro'}
                         </button>
                       </>
                     )}
@@ -812,30 +824,32 @@ export default function FuncionariosPage({
               <div>
                 <span className="master-kicker">{funcionarioEditando ? 'Editar cadastro' : 'Novo cadastro'}</span>
                 <h2 style={styles.subtitulo}>{funcionarioEditando ? 'Editar funcionário' : 'Novo funcionário'}</h2>
-                <p style={styles.textoNota}>Use apenas dados estruturados necessários para a gestão interna.</p>
+                <p style={styles.textoNota}>Preencha somente dados operacionais necessários para organizar a equipe.</p>
               </div>
               <button style={styles.btnCinza} type="button" onClick={fecharFormulario}>Fechar</button>
             </div>
 
             <div className="funcionario-form-grid">
               <label>
-                Nome
+                Nome completo
                 <input
                   style={styles.input}
                   value={formulario.nome}
                   onChange={(event) => atualizarCampo('nome', event.target.value)}
                   onBlur={() => normalizarCampoCapitalizado('nome')}
+                  placeholder="Ex.: Maria Souza"
                   required
                   autoFocus
                 />
               </label>
               <label>
-                Cargo
+                Cargo ou função
                 <input
                   style={styles.input}
                   value={formulario.cargo}
                   onChange={(event) => atualizarCampo('cargo', event.target.value)}
                   onBlur={() => normalizarCampoCapitalizado('cargo')}
+                  placeholder="Ex.: Atendente"
                 />
               </label>
               <label>
@@ -845,6 +859,7 @@ export default function FuncionariosPage({
                   value={formulario.telefone}
                   onChange={(event) => atualizarCampo('telefone', event.target.value)}
                   inputMode="tel"
+                  placeholder="Contato operacional"
                 />
               </label>
               <label>
@@ -854,21 +869,23 @@ export default function FuncionariosPage({
                   value={formulario.email}
                   onChange={(event) => atualizarCampo('email', event.target.value)}
                   type="email"
+                  placeholder="email@empresa.com"
                 />
               </label>
               <label>
-                CPF opcional
+                CPF (opcional)
                 <input
                   style={styles.input}
                   value={formulario.cpf}
                   onChange={(event) => atualizarCampo('cpf', event.target.value)}
                   inputMode="numeric"
                   maxLength={11}
-                  placeholder="Somente dígitos"
+                  placeholder="Somente números"
                 />
+                <small style={styles.textoAjuda}>Não aparece na listagem de funcionários.</small>
               </label>
               <label>
-                Status
+                Status operacional
                 <select
                   style={styles.input}
                   value={formulario.status}
@@ -887,6 +904,7 @@ export default function FuncionariosPage({
                   onChange={(event) => atualizarCampo('data_nascimento', event.target.value)}
                   type="date"
                 />
+                <small style={styles.textoAjuda}>Usada apenas para contagem de aniversariantes.</small>
               </label>
               <label>
                 Data de admissão
@@ -905,7 +923,7 @@ export default function FuncionariosPage({
                   onChange={(event) => atualizarCampo('data_exame_admissional', event.target.value)}
                   type="date"
                 />
-                <small style={styles.textoAjuda}>Controle de periodicidade; salva somente a data.</small>
+                <small style={styles.textoAjuda}>Controle de periodicidade; salve somente a data, sem laudos ou resultados.</small>
               </label>
               <label className="span-2">
                 Filial

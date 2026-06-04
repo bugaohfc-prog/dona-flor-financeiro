@@ -1557,23 +1557,33 @@ export default function App() {
     }), [contas, dataFinal, dataInicial, filtroCentro, filtroMes, filtroStatus, termoBuscaContas])
 
   const resumoFinanceiro = useMemo(() => {
+    const obterValorRealizadoConta = (conta) => conta.status === 'pago'
+      ? Number(conta.valor_pago ?? conta.valor ?? 0)
+      : 0
+
     const totalCalculado = contasFiltradas.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
     const pagoCalculado = contasFiltradas
-      .filter((conta) => conta.status === 'pago')
-      .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+      .reduce((acc, conta) => acc + obterValorRealizadoConta(conta), 0)
     const vencidoCalculado = contasFiltradas
       .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
       .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+    const pendenteCalculado = contasFiltradas
+      .filter((conta) => conta.status !== 'pago')
+      .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+    const encargosCalculado = contasFiltradas.reduce((acc, conta) => acc + Number(conta.juros_multa || 0), 0)
+    const descontosCalculado = contasFiltradas.reduce((acc, conta) => acc + Number(conta.desconto || 0), 0)
 
     return {
       total: totalCalculado,
       pago: pagoCalculado,
       vencido: vencidoCalculado,
-      pendente: totalCalculado - pagoCalculado
+      pendente: pendenteCalculado,
+      encargos: encargosCalculado,
+      descontos: descontosCalculado
     }
   }, [contasFiltradas])
 
-  const { total, pago, vencido, pendente } = resumoFinanceiro
+  const { total, pago, vencido, pendente, encargos, descontos } = resumoFinanceiro
 
   const contasAbertasDashboard = useMemo(() => contasFiltradas
     .filter((conta) => conta.status !== 'pago')
@@ -2056,15 +2066,38 @@ export default function App() {
       return
     }
 
-    const cabecalho = ['Descricao', 'Valor', 'Vencimento', 'Status', 'Filial', 'Centro']
-    const linhas = contasFiltradas.map((conta) => [
-      conta.descricao || '',
-      Number(conta.valor || 0).toFixed(2).replace('.', ','),
-      formatarData(conta.data_vencimento),
-      estaVencida(conta.data_vencimento, conta.status) ? 'vencido' : conta.status,
-      conta.df_filiais?.nome || '',
-      conta.df_centros_custo?.nome || ''
-    ])
+    const formatarNumeroCsv = (valor) => Number(valor || 0).toFixed(2).replace('.', ',')
+    const cabecalho = [
+      'Descricao',
+      'Valor previsto',
+      'Valor pago',
+      'Encargos',
+      'Desconto',
+      'Data pagamento',
+      'Observacao pagamento',
+      'Vencimento',
+      'Status',
+      'Filial',
+      'Centro'
+    ]
+    const linhas = contasFiltradas.map((conta) => {
+      const valorPrevisto = Number(conta.valor || 0)
+      const valorPago = conta.status === 'pago' ? Number(conta.valor_pago ?? conta.valor ?? 0) : ''
+
+      return [
+        conta.descricao || '',
+        formatarNumeroCsv(valorPrevisto),
+        valorPago === '' ? '' : formatarNumeroCsv(valorPago),
+        formatarNumeroCsv(conta.juros_multa || 0),
+        formatarNumeroCsv(conta.desconto || 0),
+        conta.data_pagamento ? formatarData(conta.data_pagamento) : '',
+        conta.observacao_pagamento || '',
+        formatarData(conta.data_vencimento),
+        estaVencida(conta.data_vencimento, conta.status) ? 'vencido' : conta.status,
+        conta.df_filiais?.nome || '',
+        conta.df_centros_custo?.nome || ''
+      ]
+    })
 
     const csv = [cabecalho, ...linhas]
       .map((linha) => linha.map((campo) => `"${String(campo).replaceAll('"', '""')}"`).join(';'))
@@ -2100,18 +2133,26 @@ export default function App() {
         : conta.status === 'pago'
           ? 'Pago'
           : 'Pendente'
+      const valorPago = conta.status === 'pago' ? Number(conta.valor_pago ?? conta.valor ?? 0) : null
+      const jurosMulta = Number(conta.juros_multa || 0)
+      const descontoPagamento = Number(conta.desconto || 0)
 
       return `
         <tr>
           <td>
             <strong>${escapeHtml(conta.descricao || '-')}</strong>
             ${conta.observacao ? `<small>Obs: ${escapeHtml(conta.observacao)}</small>` : ''}
+            ${conta.observacao_pagamento ? `<small>Obs. pagamento: ${escapeHtml(conta.observacao_pagamento)}</small>` : ''}
           </td>
           <td>${escapeHtml(conta.df_filiais?.nome || '-')}</td>
           <td>${escapeHtml(conta.df_centros_custo?.nome || '-')}</td>
           <td>${escapeHtml(formatarData(conta.data_vencimento))}</td>
+          <td>${escapeHtml(conta.data_pagamento ? formatarData(conta.data_pagamento) : '-')}</td>
           <td><span class="status ${status.toLowerCase()}">${status}</span></td>
           <td class="valor">${escapeHtml(formatarValor(conta.valor))}</td>
+          <td class="valor">${valorPago == null ? '-' : escapeHtml(formatarValor(valorPago))}</td>
+          <td class="valor">${jurosMulta > 0 ? escapeHtml(formatarValor(jurosMulta)) : '-'}</td>
+          <td class="valor">${descontoPagamento > 0 ? escapeHtml(formatarValor(descontoPagamento)) : '-'}</td>
         </tr>
       `
     }).join('')
@@ -2181,18 +2222,20 @@ export default function App() {
               <div class="data">Gerado em ${new Date().toLocaleDateString('pt-BR')}<br/>${contasFiltradas.length} conta(s) listada(s)</div>
             </header>
             <section class="summary">
-              <div class="box"><span>Total</span><strong>${escapeHtml(formatarValor(total))}</strong></div>
-              <div class="box"><span>Pago</span><strong>${escapeHtml(formatarValor(pago))}</strong></div>
+              <div class="box"><span>Previsto</span><strong>${escapeHtml(formatarValor(total))}</strong></div>
+              <div class="box"><span>Realizado</span><strong>${escapeHtml(formatarValor(pago))}</strong></div>
               <div class="box"><span>Pendente</span><strong>${escapeHtml(formatarValor(pendente))}</strong></div>
               <div class="box"><span>Vencido</span><strong>${escapeHtml(formatarValor(vencido))}</strong></div>
+              <div class="box"><span>Encargos</span><strong>${escapeHtml(formatarValor(encargos))}</strong></div>
+              <div class="box"><span>Descontos</span><strong>${escapeHtml(formatarValor(descontos))}</strong></div>
             </section>
             <div class="table-wrap">
               <table>
                 <thead>
-                  <tr><th>Conta</th><th>Filial</th><th>Centro</th><th>Vencimento</th><th>Situação</th><th>Valor</th></tr>
+                  <tr><th>Conta</th><th>Filial</th><th>Centro</th><th>Vencimento</th><th>Pagamento</th><th>Situação</th><th>Previsto</th><th>Realizado</th><th>Encargos</th><th>Desconto</th></tr>
                 </thead>
                 <tbody>
-                  ${linhas || '<tr><td colspan="6">Nenhuma conta encontrada.</td></tr>'}
+                  ${linhas || '<tr><td colspan="10">Nenhuma conta encontrada.</td></tr>'}
                 </tbody>
               </table>
             </div>

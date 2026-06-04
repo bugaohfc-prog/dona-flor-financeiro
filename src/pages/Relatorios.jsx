@@ -35,6 +35,23 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
     return vencimento < hoje
   }
 
+  function valorPrevistoConta(conta) {
+    return Number(conta?.valor || 0)
+  }
+
+  function valorRealizadoConta(conta) {
+    if (conta?.status !== 'pago') return 0
+    return Number(conta.valor_pago ?? conta.valor ?? 0)
+  }
+
+  function encargosConta(conta) {
+    return Number(conta?.juros_multa || 0)
+  }
+
+  function descontoConta(conta) {
+    return Number(conta?.desconto || 0)
+  }
+
   function pegarMes(data) {
     if (!data) return ''
     return String(data).slice(0, 7)
@@ -168,11 +185,13 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       })
   }, [contas, filtroMes, filtroCentro, filtroFilial])
 
-  const totalGeral = contasFiltradas.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
-  const totalPago = contasFiltradas.filter((conta) => conta.status === 'pago').reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
-  const totalVencido = contasFiltradas.filter((conta) => estaVencida(conta.data_vencimento, conta.status)).reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
-  const totalPendente = totalGeral - totalPago
-  const totalMesAnterior = contasMesAnterior.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+  const totalGeral = contasFiltradas.reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
+  const totalPago = contasFiltradas.reduce((acc, conta) => acc + valorRealizadoConta(conta), 0)
+  const totalEncargos = contasFiltradas.reduce((acc, conta) => acc + encargosConta(conta), 0)
+  const totalDescontos = contasFiltradas.reduce((acc, conta) => acc + descontoConta(conta), 0)
+  const totalVencido = contasFiltradas.filter((conta) => estaVencida(conta.data_vencimento, conta.status)).reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
+  const totalPendente = contasFiltradas.filter((conta) => conta.status !== 'pago').reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
+  const totalMesAnterior = contasMesAnterior.reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
   const diferencaMes = totalGeral - totalMesAnterior
   const percentualMes = totalMesAnterior ? (diferencaMes / totalMesAnterior) * 100 : 0
   const previsaoProximoMes = totalMesAnterior ? Math.max(totalGeral + diferencaMes, 0) : totalGeral
@@ -193,16 +212,21 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
     .map((centroId) => {
       const lista = centrosComContas[centroId]
       const centro = centros.find((c) => c.id === centroId)
-      const total = lista.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
-      const pago = lista.filter((conta) => conta.status === 'pago').reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
-      const vencido = lista.filter((conta) => estaVencida(conta.data_vencimento, conta.status)).reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+      const total = lista.reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
+      const pago = lista.reduce((acc, conta) => acc + valorRealizadoConta(conta), 0)
+      const pendenteCentro = lista.filter((conta) => conta.status !== 'pago').reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
+      const vencido = lista.filter((conta) => estaVencida(conta.data_vencimento, conta.status)).reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
+      const encargos = lista.reduce((acc, conta) => acc + encargosConta(conta), 0)
+      const descontos = lista.reduce((acc, conta) => acc + descontoConta(conta), 0)
       return {
         id: centroId,
         nome: centro?.nome || 'Sem centro',
         total,
         pago,
-        pendente: total - pago,
+        pendente: pendenteCentro,
         vencido,
+        encargos,
+        descontos,
         percentual: totalGeral ? (total / totalGeral) * 100 : 0
       }
     })
@@ -309,9 +333,9 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       const mes = pegarMes(conta.data_vencimento)
       if (!mes) return
       if (!mapa[mes]) mapa[mes] = { mes, total: 0, pago: 0, pendente: 0, vencido: 0 }
-      const valor = Number(conta.valor || 0)
+      const valor = valorPrevistoConta(conta)
       mapa[mes].total += valor
-      if (conta.status === 'pago') mapa[mes].pago += valor
+      if (conta.status === 'pago') mapa[mes].pago += valorRealizadoConta(conta)
       else mapa[mes].pendente += valor
       if (estaVencida(conta.data_vencimento, conta.status)) mapa[mes].vencido += valor
     })
@@ -324,10 +348,11 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       const chave = conta.filial_id || 'sem-filial'
       const nome = conta.df_filiais?.nome || 'Sem filial'
       if (!mapa[chave]) mapa[chave] = { id: chave, nome, total: 0, pago: 0, pendente: 0, vencido: 0, qtd: 0 }
-      const valor = Number(conta.valor || 0)
+      const valor = valorPrevistoConta(conta)
+      const realizado = valorRealizadoConta(conta)
       mapa[chave].total += valor
       mapa[chave].qtd += 1
-      if (conta.status === 'pago') mapa[chave].pago += valor
+      if (conta.status === 'pago') mapa[chave].pago += realizado
       else mapa[chave].pendente += valor
       if (estaVencida(conta.data_vencimento, conta.status)) mapa[chave].vencido += valor
     })
@@ -343,14 +368,16 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
     return [
       { linha: 'Realizado', valor: realizado, descricao: 'Contas pagas no filtro' },
       { linha: 'A realizar', valor: emAberto, descricao: 'Pendências abertas' },
+      ...(totalEncargos > 0 ? [{ linha: 'Encargos', valor: totalEncargos, descricao: 'Juros e multas pagos acima do previsto' }] : []),
+      ...(totalDescontos > 0 ? [{ linha: 'Descontos', valor: totalDescontos, descricao: 'Descontos ou ajustes pagos abaixo do previsto' }] : []),
       { linha: 'Risco vencido', valor: risco, descricao: 'Parte atrasada que exige ação' },
       { linha: 'Previsão próximo mês', valor: provisao, descricao: 'Tendência gerencial simples' },
       { linha: 'Eficiência', valor: eficiencia, descricao: 'Quanto menor o vencido, melhor', percentual: true }
     ]
-  }, [totalPago, totalPendente, totalVencido, previsaoProximoMes, totalGeral, taxaVencido])
+  }, [totalPago, totalPendente, totalEncargos, totalDescontos, totalVencido, previsaoProximoMes, totalGeral, taxaVencido])
 
   const chartStatus = useMemo(() => ([
-    { name: 'Pago', value: totalPago, color: '#12b886' },
+    { name: 'Realizado', value: totalPago, color: '#12b886' },
     { name: 'Pendente', value: Math.max(totalPendente - totalVencido, 0), color: '#f59f00' },
     { name: 'Vencido', value: totalVencido, color: '#dc3545' }
   ].filter((item) => item.value > 0)), [totalPago, totalPendente, totalVencido])
@@ -478,7 +505,12 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
   function criarLinhasContasExportacao() {
     return contasFiltradas.map((conta) => [
       conta.descricao || 'Sem descrição',
-      Number(conta.valor || 0),
+      valorPrevistoConta(conta),
+      conta.status === 'pago' ? Number(conta.valor_pago ?? conta.valor ?? 0) : '',
+      encargosConta(conta),
+      descontoConta(conta),
+      conta.data_pagamento ? formatarData(conta.data_pagamento) : '',
+      conta.observacao_pagamento || '',
       formatarData(conta.data_vencimento),
       estaVencida(conta.data_vencimento, conta.status) ? 'vencido' : conta.status,
       conta.df_centros_custo?.nome || 'Sem centro',
@@ -503,7 +535,11 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
     `).join('')
 
     const linhasContas = criarLinhasContasExportacao().map((linha) => `
-      <tr>${linha.map((campo, index) => `<td class="${index === 1 ? 'valor' : ''}">${index === 1 ? formatarValor(campo) : escapeHtml(campo)}</td>`).join('')}</tr>
+      <tr>${linha.map((campo, index) => {
+        const ehValor = index >= 1 && index <= 4
+        const valor = ehValor && campo !== '' ? formatarValor(campo) : escapeHtml(campo || '-')
+        return `<td class="${ehValor ? 'valor' : ''}">${valor}</td>`
+      }).join('')}</tr>
     `).join('')
 
     const linhasRanking = ranking.map((item) => `
@@ -513,6 +549,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
         <td class="valor">${formatarValor(item.pago)}</td>
         <td class="valor">${formatarValor(item.pendente)}</td>
         <td class="valor">${formatarValor(item.vencido)}</td>
+        <td class="valor">${formatarValor(item.encargos)}</td>
+        <td class="valor">${formatarValor(item.descontos)}</td>
         <td class="valor">${formatarPercentual(item.percentual)}</td>
       </tr>
     `).join('')
@@ -581,10 +619,12 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
           <div class="narrative"><strong>Concentração</strong>${escapeHtml(copilotFinanceiro.narrativa?.concentracao || '')}</div>
           <div class="narrative"><strong>Curto prazo</strong>${escapeHtml(copilotFinanceiro.narrativa?.curtoPrazo || '')}</div>
           <div class="cards">
-            <div class="card"><span class="label">Total</span><span class="numero">${formatarValor(totalGeral)}</span></div>
-            <div class="card"><span class="label">Pago</span><span class="numero">${formatarValor(totalPago)}</span></div>
+            <div class="card"><span class="label">Previsto</span><span class="numero">${formatarValor(totalGeral)}</span></div>
+            <div class="card"><span class="label">Realizado</span><span class="numero">${formatarValor(totalPago)}</span></div>
             <div class="card"><span class="label">Pendente</span><span class="numero">${formatarValor(totalPendente)}</span></div>
             <div class="card"><span class="label">Vencido</span><span class="numero">${formatarValor(totalVencido)}</span></div>
+            <div class="card"><span class="label">Encargos</span><span class="numero">${formatarValor(totalEncargos)}</span></div>
+            <div class="card"><span class="label">Descontos</span><span class="numero">${formatarValor(totalDescontos)}</span></div>
           </div>
           <h2>Prioridades financeiras</h2>
           <table><thead><tr><th>Nível</th><th>Prioridade</th><th>Leitura</th><th>Impacto</th><th>Ação</th></tr></thead><tbody>${linhasPrioridadesCopilot || '<tr><td colspan="5">Nenhuma prioridade crítica encontrada.</td></tr>'}</tbody></table>
@@ -595,9 +635,9 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
           <h2>Análises financeiras</h2>
           ${insights.map((insight) => `<div class="insight">${escapeHtml(insight.texto)}</div>`).join('')}
           <h2>Ranking por centro</h2>
-          <table><thead><tr><th>Centro</th><th>Total</th><th>Pago</th><th>Pendente</th><th>Vencido</th><th>Participação</th></tr></thead><tbody>${linhasRanking || '<tr><td colspan="6">Nenhum centro encontrado.</td></tr>'}</tbody></table>
+          <table><thead><tr><th>Centro</th><th>Previsto</th><th>Realizado</th><th>Pendente</th><th>Vencido</th><th>Encargos</th><th>Desconto</th><th>Participação</th></tr></thead><tbody>${linhasRanking || '<tr><td colspan="8">Nenhum centro encontrado.</td></tr>'}</tbody></table>
           <h2>Contas filtradas</h2>
-          <table><thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Centro</th><th>Filial</th><th>Recorrência</th></tr></thead><tbody>${linhasContas || '<tr><td colspan="7">Nenhuma conta encontrada.</td></tr>'}</tbody></table>
+          <table><thead><tr><th>Descrição</th><th>Previsto</th><th>Realizado</th><th>Encargos</th><th>Desconto</th><th>Data pagamento</th><th>Obs. pagamento</th><th>Vencimento</th><th>Status</th><th>Centro</th><th>Filial</th><th>Recorrência</th></tr></thead><tbody>${linhasContas || '<tr><td colspan="12">Nenhuma conta encontrada.</td></tr>'}</tbody></table>
           <div class="footer">Relatório gerado pelo DNA Gestão.</div>
         </body>
       </html>`
@@ -611,15 +651,20 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       return
     }
 
-    const headers = ['Descrição', 'Valor', 'Vencimento', 'Status', 'Centro', 'Filial', 'Recorrência']
+    const headers = ['Descrição', 'Valor previsto', 'Valor pago', 'Encargos', 'Desconto', 'Data pagamento', 'Observação pagamento', 'Vencimento', 'Status', 'Centro', 'Filial', 'Recorrência']
     const rows = criarLinhasContasExportacao().map((linha) => [
       linha[0],
       Number(linha[1] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-      linha[2],
-      linha[3],
-      linha[4],
+      linha[2] === '' ? '' : Number(linha[2] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      Number(linha[3] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      Number(linha[4] || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       linha[5],
-      linha[6]
+      linha[6],
+      linha[7],
+      linha[8],
+      linha[9],
+      linha[10],
+      linha[11]
     ])
 
     exportCsv({ filename: nomeArquivoRelatorio('csv'), headers, rows })
@@ -642,10 +687,12 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
           ['Filial', filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas'],
           [],
           ['Indicador', 'Valor'],
-          ['Total', totalGeral],
-          ['Pago', totalPago],
+          ['Previsto', totalGeral],
+          ['Realizado', totalPago],
           ['Pendente', totalPendente],
           ['Vencido', totalVencido],
+          ['Encargos', totalEncargos],
+          ['Descontos', totalDescontos],
           ['Saúde financeira', copilotFinanceiro.score],
           ['Situação financeira', copilotFinanceiro.status.label],
           ['Nível de atenção', inteligenciaFinanceira.nivel],
@@ -663,15 +710,15 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       {
         name: 'Contas',
         rows: [
-          ['Descrição', 'Valor', 'Vencimento', 'Status', 'Centro', 'Filial', 'Recorrência'],
+          ['Descrição', 'Valor previsto', 'Valor pago', 'Encargos', 'Desconto', 'Data pagamento', 'Observação pagamento', 'Vencimento', 'Status', 'Centro', 'Filial', 'Recorrência'],
           ...criarLinhasContasExportacao()
         ]
       },
       {
         name: 'Ranking',
         rows: [
-          ['Centro', 'Total', 'Pago', 'Pendente', 'Vencido', 'Participação'],
-          ...ranking.map((item) => [item.nome, item.total, item.pago, item.pendente, item.vencido, `${formatarPercentual(item.percentual)}`])
+          ['Centro', 'Previsto', 'Realizado', 'Pendente', 'Vencido', 'Encargos', 'Desconto', 'Participação'],
+          ...ranking.map((item) => [item.nome, item.total, item.pago, item.pendente, item.vencido, item.encargos, item.descontos, `${formatarPercentual(item.percentual)}`])
         ]
       },
       {
@@ -706,10 +753,12 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
           ['Pontos de atenção'],
           ...(copilotFinanceiro.narrativa?.anomalias || []).map((item, index) => [index + 1, item]),
           [],
-          ['Total', copilotFinanceiro.totals.total],
-          ['Pago', copilotFinanceiro.totals.pago],
+          ['Previsto', copilotFinanceiro.totals.total],
+          ['Realizado', copilotFinanceiro.totals.pago],
           ['Pendente', copilotFinanceiro.totals.pendente],
           ['Vencido', copilotFinanceiro.totals.vencido],
+          ['Encargos', copilotFinanceiro.totals.encargos || 0],
+          ['Descontos', copilotFinanceiro.totals.descontos || 0],
           [],
           ['Prioridades'],
           ['Nível', 'Prioridade', 'Descrição', 'Impacto', 'Ação'],
@@ -719,8 +768,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
           ...copilotFinanceiro.recomendacoes.map((item, index) => [index + 1, item]),
           [],
           ['Centros de custo'],
-          ['Centro', 'Total', 'Pendente', 'Vencido', 'Peso', 'Risco'],
-          ...copilotFinanceiro.rankingCentros.map((item) => [item.nome, item.total, item.pendente, item.vencido, `${item.peso}%`, `${item.risco}%`])
+          ['Centro', 'Previsto', 'Realizado', 'Pendente', 'Vencido', 'Encargos', 'Desconto', 'Peso', 'Risco'],
+          ...copilotFinanceiro.rankingCentros.map((item) => [item.nome, item.total, item.pago, item.pendente, item.vencido, item.encargos || 0, item.descontos || 0, `${item.peso}%`, `${item.risco}%`])
         ]
       },
       {
@@ -837,10 +886,12 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       {loading ? <RelatorioSkeleton /> : (
         <>
       <section style={styles.kpiGrid}>
-        <KpiCard titulo="Total" valor={formatarValor(totalGeral)} detalhe={`${contasFiltradas.length} conta(s)`} emoji="💼" cor="#364fc7" progresso={100} />
-        <KpiCard titulo="Pago" valor={formatarValor(totalPago)} detalhe={`${formatarPercentual(taxaPago)} do total`} emoji="✅" cor="#12b886" progresso={taxaPago} />
+        <KpiCard titulo="Previsto" valor={formatarValor(totalGeral)} detalhe={`${contasFiltradas.length} conta(s)`} emoji="💼" cor="#364fc7" progresso={100} />
+        <KpiCard titulo="Realizado" valor={formatarValor(totalPago)} detalhe={`${formatarPercentual(taxaPago)} do previsto`} emoji="✅" cor="#12b886" progresso={taxaPago} />
         <KpiCard titulo="Pendente" valor={formatarValor(totalPendente)} detalhe={totalGeral ? `${formatarPercentual((totalPendente / totalGeral) * 100)} das despesas` : 'Sem pendência'} emoji="🟡" cor="#f59f00" progresso={totalGeral ? (totalPendente / totalGeral) * 100 : 0} />
         <KpiCard titulo="Vencido" valor={formatarValor(totalVencido)} detalhe={totalVencido > 0 ? `${formatarPercentual(taxaVencido)} em atraso` : 'Sem vencidos'} emoji="🚨" cor="#dc3545" progresso={taxaVencido} />
+        {totalEncargos > 0 && <KpiCard titulo="Encargos" valor={formatarValor(totalEncargos)} detalhe="Juros/multa pagos" emoji="↗" cor="#ea580c" progresso={100} />}
+        {totalDescontos > 0 && <KpiCard titulo="Descontos" valor={formatarValor(totalDescontos)} detalhe="Ajustes a menor" emoji="↘" cor="#059669" progresso={100} />}
       </section>
 
       <section style={styles.advancedPanel}>
@@ -991,7 +1042,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
             <Widget titulo="Resumo financeiro" emoji="✨" badge={`${copilotFinanceiro.score}/100`} badgeColor={copilotFinanceiro.status.tone === 'danger' ? '#dc3545' : copilotFinanceiro.status.tone === 'warning' ? '#f59f00' : '#12b886'}>
               <p style={styles.executivoTexto}>{copilotFinanceiro.executiveSummary}</p>
               <div style={styles.grid3Compacto}>
-                <MiniStat label="Total" value={formatarValor(copilotFinanceiro.totals.total)} />
+                <MiniStat label="Previsto" value={formatarValor(copilotFinanceiro.totals.total)} />
+                <MiniStat label="Realizado" value={formatarValor(copilotFinanceiro.totals.pago)} />
                 <MiniStat label="Pendente" value={formatarValor(copilotFinanceiro.totals.pendente)} />
                 <MiniStat label="Vencido" value={formatarValor(copilotFinanceiro.totals.vencido)} />
               </div>
@@ -1229,7 +1281,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
                 </div>
                 <Progress value={Math.max(maiorValor ? (item.total / maiorValor) * 100 : 0, 4)} color={corPorPercentual(item.percentual)} />
                 <div style={styles.grid3Compacto}>
-                  <small>Pago: {formatarValor(item.pago)}</small>
+                  <small>Realizado: {formatarValor(item.pago)}</small>
                   <small>Pend: {formatarValor(item.pendente)}</small>
                   <small>Venc: {formatarValor(item.vencido)}</small>
                 </div>
@@ -1244,7 +1296,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
           <h2 style={styles.subtitulo}>📊 Resumo do Centro</h2>
           <div className="print-card" style={styles.cardRanking}>
             <div style={styles.cardLinha}><strong>{centroSelecionado?.nome || 'Centro selecionado'}</strong><strong>{formatarValor(totalGeral)}</strong></div>
-            <div style={styles.grid3Compacto}><small>Pago: {formatarValor(totalPago)}</small><small>Pend: {formatarValor(totalPendente)}</small><small>Venc: {formatarValor(totalVencido)}</small></div>
+            <div style={styles.grid3Compacto}><small>Realizado: {formatarValor(totalPago)}</small><small>Pend: {formatarValor(totalPendente)}</small><small>Venc: {formatarValor(totalVencido)}</small></div>
           </div>
         </section>
       )}
@@ -1252,12 +1304,24 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       <section style={styles.bloco}>
         <h2 style={styles.subtitulo}>📄 Contas do relatório</h2>
         <div style={styles.contasGrid}>
-          {contasFiltradas.map((conta) => (
-            <div className="print-card" key={conta.id} style={styles.cardConta}>
-              <div style={styles.cardLinha}><strong>{conta.descricao}</strong><span>{formatarValor(conta.valor)}</span></div>
-              <small>{formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'} • {estaVencida(conta.data_vencimento, conta.status) ? 'VENCIDO' : conta.status}</small>
-            </div>
-          ))}
+          {contasFiltradas.map((conta) => {
+            const realizado = valorRealizadoConta(conta)
+            const ajuste = encargosConta(conta) > 0
+              ? ` • Encargos: ${formatarValor(encargosConta(conta))}`
+              : descontoConta(conta) > 0
+                ? ` • Desconto: ${formatarValor(descontoConta(conta))}`
+                : ''
+
+            return (
+              <div className="print-card" key={conta.id} style={styles.cardConta}>
+                <div style={styles.cardLinha}><strong>{conta.descricao}</strong><span>{formatarValor(valorPrevistoConta(conta))}</span></div>
+                <small>
+                  {conta.status === 'pago' ? `Realizado: ${formatarValor(realizado)} • ` : ''}
+                  {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'} • {estaVencida(conta.data_vencimento, conta.status) ? 'VENCIDO' : conta.status}{ajuste}
+                </small>
+              </div>
+            )
+          })}
         </div>
       </section>
         </>

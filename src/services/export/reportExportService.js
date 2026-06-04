@@ -42,6 +42,58 @@ export function printHtmlReport(html, onError) {
     return
   }
 
+  const openedWindow = window.open('', '_blank')
+  if (openedWindow) {
+    try {
+      openedWindow.document.open()
+      openedWindow.document.write(html)
+      openedWindow.document.close()
+
+      let printed = false
+      let attempt = 0
+
+      const runPrint = async () => {
+        if (printed) return
+
+        const doc = openedWindow.document
+        const ready = doc.readyState === 'complete' || doc.readyState === 'interactive'
+        const rendered = Boolean(doc.body?.innerText?.trim())
+
+        if ((!ready || !rendered) && attempt < 12) {
+          attempt += 1
+          window.setTimeout(runPrint, 250)
+          return
+        }
+
+        printed = true
+
+        try {
+          if (doc.fonts?.ready) {
+            await doc.fonts.ready
+          }
+
+          openedWindow.focus()
+          window.setTimeout(() => openedWindow.print(), 150)
+        } catch (error) {
+          printWithHiddenIframe(html, onError)
+        }
+      }
+
+      window.setTimeout(runPrint, 250)
+      return
+    } catch (error) {
+      try {
+        openedWindow.close()
+      } catch {
+        // Mantem fallback por iframe quando a janela nao puder ser controlada.
+      }
+    }
+  }
+
+  printWithHiddenIframe(html, onError)
+}
+
+function printWithHiddenIframe(html, onError) {
   const iframe = document.createElement('iframe')
   iframe.title = 'Relatório para impressão'
   iframe.style.position = 'fixed'

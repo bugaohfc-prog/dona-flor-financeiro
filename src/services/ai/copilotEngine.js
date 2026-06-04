@@ -3,6 +3,19 @@ function valorConta(conta) {
   return Number(conta?.valor || 0)
 }
 
+function valorRealizadoConta(conta) {
+  if (conta?.status !== 'pago') return 0
+  return Number(conta.valor_pago ?? conta.valor ?? 0)
+}
+
+function encargosConta(conta) {
+  return Number(conta?.juros_multa || 0)
+}
+
+function descontoConta(conta) {
+  return Number(conta?.desconto || 0)
+}
+
 function dataVencida(data, status) {
   if (!data || status === 'pago') return false
   const hoje = new Date()
@@ -44,12 +57,14 @@ function calcularRankingPorCentro(contas = []) {
   const mapa = new Map()
   contas.forEach((conta) => {
     const chave = nomeCentro(conta)
-    const atual = mapa.get(chave) || { nome: chave, total: 0, pago: 0, pendente: 0, vencido: 0, quantidade: 0 }
+    const atual = mapa.get(chave) || { nome: chave, total: 0, pago: 0, pendente: 0, vencido: 0, encargos: 0, descontos: 0, quantidade: 0 }
     const valor = valorConta(conta)
     atual.total += valor
     atual.quantidade += 1
-    if (conta.status === 'pago') atual.pago += valor
+    if (conta.status === 'pago') atual.pago += valorRealizadoConta(conta)
     else atual.pendente += valor
+    atual.encargos += encargosConta(conta)
+    atual.descontos += descontoConta(conta)
     if (dataVencida(conta.data_vencimento, conta.status)) atual.vencido += valor
     mapa.set(chave, atual)
   })
@@ -67,11 +82,13 @@ function calcularTendenciaMensal(contas = []) {
   const mapa = new Map()
   contas.forEach((conta) => {
     const mes = chaveMes(conta)
-    const atual = mapa.get(mes) || { mes, total: 0, pago: 0, pendente: 0, vencido: 0 }
+    const atual = mapa.get(mes) || { mes, total: 0, pago: 0, pendente: 0, vencido: 0, encargos: 0, descontos: 0 }
     const valor = valorConta(conta)
     atual.total += valor
-    if (conta.status === 'pago') atual.pago += valor
+    if (conta.status === 'pago') atual.pago += valorRealizadoConta(conta)
     else atual.pendente += valor
+    atual.encargos += encargosConta(conta)
+    atual.descontos += descontoConta(conta)
     if (dataVencida(conta.data_vencimento, conta.status)) atual.vencido += valor
     mapa.set(mes, atual)
   })
@@ -125,9 +142,11 @@ export function gerarCopilotFinanceiro({ contas = [], contasFiltradas = [] } = {
   const contasPagas = base.filter((conta) => conta.status === 'pago')
   const contasPendentes = base.filter((conta) => conta.status !== 'pago')
   const contasVencidas = base.filter((conta) => dataVencida(conta.data_vencimento, conta.status))
-  const pago = contasPagas.reduce((acc, conta) => acc + valorConta(conta), 0)
+  const pago = contasPagas.reduce((acc, conta) => acc + valorRealizadoConta(conta), 0)
   const pendente = contasPendentes.reduce((acc, conta) => acc + valorConta(conta), 0)
   const vencido = contasVencidas.reduce((acc, conta) => acc + valorConta(conta), 0)
+  const encargos = base.reduce((acc, conta) => acc + encargosConta(conta), 0)
+  const descontos = base.reduce((acc, conta) => acc + descontoConta(conta), 0)
   const taxaPago = total ? (pago / total) * 100 : 0
   const taxaVencido = total ? (vencido / total) * 100 : 0
   const rankingCentros = calcularRankingPorCentro(base).map((centro) => ({ ...centro, peso: total ? Math.round((centro.total / total) * 100) : 0 }))
@@ -220,7 +239,7 @@ export function gerarCopilotFinanceiro({ contas = [], contasFiltradas = [] } = {
     status,
     executiveSummary,
     narrativa,
-    totals: { total, pago, pendente, vencido, taxaPago, taxaVencido, total7Dias },
+    totals: { total, pago, pendente, vencido, encargos, descontos, taxaPago, taxaVencido, total7Dias },
     priorities: priorities.slice(0, 4),
     insights,
     recomendacoes,

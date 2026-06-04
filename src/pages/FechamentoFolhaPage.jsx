@@ -194,11 +194,13 @@ const estilosLocais = {
   },
   textarea: {
     width: '100%',
-    minHeight: 64,
+    minHeight: 88,
     border: '1px solid #d1d5db',
     borderRadius: 8,
     padding: '10px 12px',
+    boxSizing: 'border-box',
     font: 'inherit',
+    lineHeight: 1.45,
     resize: 'vertical'
   },
   badge: {
@@ -626,6 +628,67 @@ export default function FechamentoFolhaPage({
           font-size: 13px;
           line-height: 1.4;
         }
+        .folha-competencia-actions {
+          justify-content: space-between;
+        }
+        .folha-switch {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          min-height: 34px;
+          border: 1px solid rgba(15, 23, 42, 0.12);
+          border-radius: 999px;
+          padding: 5px 10px 5px 6px;
+          background: #fff;
+          color: #475569;
+          font-size: 12px;
+          font-weight: 800;
+          line-height: 1;
+          cursor: pointer;
+          user-select: none;
+        }
+        .folha-switch input {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          cursor: pointer;
+        }
+        .folha-switch-indicator {
+          position: relative;
+          width: 30px;
+          height: 18px;
+          flex: 0 0 30px;
+          border-radius: 999px;
+          background: #cbd5e1;
+          transition: background 0.18s ease;
+        }
+        .folha-switch-indicator::after {
+          content: '';
+          position: absolute;
+          top: 3px;
+          left: 3px;
+          width: 12px;
+          height: 12px;
+          border-radius: 999px;
+          background: #fff;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+          transition: transform 0.18s ease;
+        }
+        .folha-switch.ativo {
+          border-color: rgba(13, 148, 136, 0.35);
+          background: #f0fdfa;
+          color: #0f766e;
+        }
+        .folha-switch.ativo .folha-switch-indicator {
+          background: #0f766e;
+        }
+        .folha-switch.ativo .folha-switch-indicator::after {
+          transform: translateX(12px);
+        }
+        .folha-switch:has(input:focus-visible) {
+          box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.16);
+        }
         .folha-mobile-note {
           display: none;
         }
@@ -646,6 +709,22 @@ export default function FechamentoFolhaPage({
           }
           .folha-competencia-grid {
             grid-template-columns: 1fr !important;
+          }
+          .folha-competencia-actions {
+            display: grid !important;
+            grid-template-columns: 1fr;
+            align-items: stretch !important;
+          }
+          .folha-competencia-actions button,
+          .folha-switch {
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .folha-switch {
+            justify-content: center;
+          }
+          .folha-observacao-competencia textarea {
+            min-height: 104px !important;
           }
           .folha-mobile-meta-grid {
             grid-template-columns: 1fr 1fr;
@@ -743,7 +822,7 @@ export default function FechamentoFolhaPage({
             </label>
           </div>
 
-          <label style={{ ...estilosLocais.formField, gridColumn: '1 / -1' }}>
+          <label className="folha-observacao-competencia" style={{ ...estilosLocais.formField, gridColumn: '1 / -1' }}>
             <span style={estilosLocais.label}>Observação administrativa</span>
             <textarea
               value={formCompetencia.observacao_administrativa}
@@ -757,7 +836,7 @@ export default function FechamentoFolhaPage({
             />
           </label>
 
-          <div style={estilosLocais.formActions}>
+          <div className="folha-competencia-actions" style={estilosLocais.formActions}>
             <button
               type="submit"
               style={styles.btnPrimario}
@@ -765,13 +844,14 @@ export default function FechamentoFolhaPage({
             >
               {salvando ? 'Salvando...' : 'Criar competência'}
             </button>
-            <label style={{ ...styles.textoNota, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <label className={`folha-switch ${mostrarArquivadas ? 'ativo' : ''}`}>
               <input
                 type="checkbox"
                 checked={mostrarArquivadas}
                 onChange={(event) => setMostrarArquivadas(event.target.checked)}
               />
-              Mostrar arquivadas
+              <span className="folha-switch-indicator" aria-hidden="true" />
+              <span>Mostrar arquivadas</span>
             </label>
           </div>
         </form>

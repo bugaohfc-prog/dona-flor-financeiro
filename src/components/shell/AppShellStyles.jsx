@@ -1458,6 +1458,29 @@ export default function AppShellStyles() {
                 border-radius: 999px !important;
                 padding: 4px 8px !important;
               }
+              @media (max-width: 979px) {
+                .account-card-payment-real .account-value-stack {
+                  align-items: flex-start !important;
+                  margin-left: 0 !important;
+                  min-width: 100% !important;
+                  text-align: left !important;
+                  white-space: normal !important;
+                  width: 100% !important;
+                }
+                .account-card-payment-real .account-value-stack > span,
+                .account-card-payment-real .account-value-stack > small {
+                  display: block !important;
+                  width: 100% !important;
+                }
+                .account-card-payment-real .account-value-stack > small {
+                  margin-top: 2px !important;
+                }
+                .account-card-payment-real .account-payment-summary {
+                  align-items: flex-start !important;
+                  flex-direction: column !important;
+                  width: 100% !important;
+                }
+              }
               .account-observation-preview {
                 align-items: center !important;
                 background: rgba(248, 250, 252, 0.88) !important;

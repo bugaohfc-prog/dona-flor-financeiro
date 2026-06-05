@@ -686,6 +686,13 @@ export default function FechamentoFolhaPage({
         .folha-switch.ativo .folha-switch-indicator::after {
           transform: translateX(12px);
         }
+        .folha-switch.desabilitado {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+        .folha-switch.desabilitado input {
+          cursor: not-allowed;
+        }
         .folha-switch:has(input:focus-visible) {
           box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.16);
         }
@@ -1118,14 +1125,15 @@ export default function FechamentoFolhaPage({
             <h2 style={styles.subtitulo}>Lançamentos da competência</h2>
             <p style={styles.textoNota}>Lista interna sem CPF, exportação, documentos ou integração financeira.</p>
           </div>
-          <label style={{ ...styles.textoNota, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <label className={`folha-switch ${mostrarLancamentosArquivados ? 'ativo' : ''} ${!competenciaSelecionada ? 'desabilitado' : ''}`}>
             <input
               type="checkbox"
               checked={mostrarLancamentosArquivados}
               onChange={(event) => setMostrarLancamentosArquivados(event.target.checked)}
               disabled={!competenciaSelecionada}
             />
-            Mostrar arquivados
+            <span className="folha-switch-indicator" aria-hidden="true" />
+            <span>Mostrar arquivados</span>
           </label>
         </div>
 

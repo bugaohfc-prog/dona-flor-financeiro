@@ -400,6 +400,18 @@ const estilosLocais = {
     display: 'grid',
     gap: 10
   },
+  itensPanelHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 10,
+    flexWrap: 'wrap',
+    alignItems: 'center'
+  },
+  itensPanelIntro: {
+    display: 'grid',
+    gap: 3,
+    minWidth: 190
+  },
   itensLista: {
     display: 'grid',
     gap: 8
@@ -418,6 +430,29 @@ const estilosLocais = {
     gap: 10,
     flexWrap: 'wrap',
     alignItems: 'flex-start'
+  },
+  itemFormularioCompacto: {
+    border: '1px solid #cbd5e1',
+    borderRadius: 8,
+    padding: 10,
+    background: '#fff',
+    display: 'grid',
+    gap: 10
+  },
+  itemFormularioHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 10,
+    flexWrap: 'wrap',
+    alignItems: 'flex-start'
+  },
+  itemVazio: {
+    border: '1px dashed #cbd5e1',
+    borderRadius: 8,
+    padding: 10,
+    background: '#fff',
+    color: '#64748b',
+    fontSize: 13
   }
 }
 
@@ -620,6 +655,7 @@ export default function FechamentoFolhaPage({
   const [formLancamento, setFormLancamento] = useState(criarFormularioLancamentoInicial)
   const [lancamentoEditandoId, setLancamentoEditandoId] = useState('')
   const [lancamentoItensAbertoId, setLancamentoItensAbertoId] = useState('')
+  const [itemFormularioAbertoId, setItemFormularioAbertoId] = useState('')
   const [itemEditandoId, setItemEditandoId] = useState('')
   const [formItem, setFormItem] = useState(criarFormularioItemInicial)
   const [erroFormulario, setErroFormulario] = useState('')
@@ -739,10 +775,9 @@ export default function FechamentoFolhaPage({
     limparMensagens()
     setLancamentoItensAbertoId((atual) => {
       const proximo = atual === lancamento.id ? '' : lancamento.id
-      if (proximo) {
-        setItemEditandoId('')
-        setFormItem(criarFormularioItemInicial(lancamento.categoria))
-      }
+      setItemFormularioAbertoId('')
+      setItemEditandoId('')
+      setFormItem(criarFormularioItemInicial(lancamento.categoria))
       return proximo
     })
   }
@@ -936,6 +971,7 @@ export default function FechamentoFolhaPage({
 
     setItemEditandoId('')
     setLancamentoItensAbertoId(lancamento.id)
+    setItemFormularioAbertoId('')
     setFormItem(criarFormularioItemInicial(lancamento.categoria))
   }
 
@@ -959,6 +995,7 @@ export default function FechamentoFolhaPage({
   function iniciarNovoItemLancamento(lancamento) {
     limparMensagens()
     setLancamentoItensAbertoId(lancamento.id)
+    setItemFormularioAbertoId(lancamento.id)
     setItemEditandoId('')
     setFormItem(criarFormularioItemInicial(lancamento.categoria))
   }
@@ -966,6 +1003,7 @@ export default function FechamentoFolhaPage({
   function iniciarEdicaoItemLancamento(lancamento, item) {
     limparMensagens()
     setLancamentoItensAbertoId(lancamento.id)
+    setItemFormularioAbertoId(lancamento.id)
     setItemEditandoId(item.id)
     setFormItem({
       descricao: item.descricao || '',
@@ -979,6 +1017,7 @@ export default function FechamentoFolhaPage({
   }
 
   function cancelarEdicaoItem(lancamento) {
+    setItemFormularioAbertoId('')
     setItemEditandoId('')
     setFormItem(criarFormularioItemInicial(lancamento?.categoria))
     setErroFormulario('')
@@ -1036,7 +1075,11 @@ export default function FechamentoFolhaPage({
   function renderFormularioItem(lancamento) {
     const categoria = lancamento?.categoria
     const podeDetalhar = CATEGORIAS_ITENS_DETALHADOS.has(categoria)
-    if (!podeDetalhar || lancamentoItensAbertoId !== lancamento.id) return null
+    if (
+      !podeDetalhar ||
+      lancamentoItensAbertoId !== lancamento.id ||
+      itemFormularioAbertoId !== lancamento.id
+    ) return null
 
     const categoriaHorasItem = CATEGORIAS_HORAS_EXTRAS.has(categoria)
     const categoriaFaltaItem = categoria === 'falta_injustificada'
@@ -1044,21 +1087,19 @@ export default function FechamentoFolhaPage({
     const categoriaCompraItem = categoria === 'compras_vales'
 
     return (
-      <form onSubmit={(event) => salvarItemLancamento(event, lancamento)} style={estilosLocais.formPanelSoft}>
-        <div style={estilosLocais.sectionHeader}>
+      <form onSubmit={(event) => salvarItemLancamento(event, lancamento)} style={estilosLocais.itemFormularioCompacto}>
+        <div style={estilosLocais.itemFormularioHeader}>
           <div>
             <h4 style={estilosLocais.formSectionTitle}>
               {itemEditandoId ? 'Editar item detalhado' : 'Adicionar item detalhado'}
             </h4>
             <p style={estilosLocais.helperText}>
-              Itens ativos recalculam o valor consolidado do lancamento pelo banco.
+              Formulario do item. O total do lancamento e recalculado pelo banco apos salvar.
             </p>
           </div>
-          {itemEditandoId && (
-            <button type="button" style={styles.btnCinza} onClick={() => cancelarEdicaoItem(lancamento)}>
-              Cancelar item
-            </button>
-          )}
+          <button type="button" style={styles.btnCinza} onClick={() => cancelarEdicaoItem(lancamento)}>
+            Fechar formulario
+          </button>
         </div>
 
         <div style={estilosLocais.formGrid}>
@@ -1178,6 +1219,9 @@ export default function FechamentoFolhaPage({
           <button type="submit" style={styles.btnPrimario} disabled={!podeEditar || salvando}>
             {salvando ? 'Salvando...' : (itemEditandoId ? 'Salvar item' : 'Adicionar item')}
           </button>
+          <button type="button" style={styles.btnCinza} onClick={() => cancelarEdicaoItem(lancamento)} disabled={salvando}>
+            Cancelar
+          </button>
         </div>
       </form>
     )
@@ -1197,22 +1241,32 @@ export default function FechamentoFolhaPage({
 
     return (
       <div style={estilosLocais.itensPanel}>
-        <div style={estilosLocais.itemDetalhadoHeader}>
-          <div>
-            <strong>Itens detalhados</strong>
+        <div style={estilosLocais.itensPanelHeader}>
+          <div style={estilosLocais.itensPanelIntro}>
+            <strong>Itens do lancamento</strong>
             <p style={estilosLocais.helperText}>
-              {loadingItensLancamentos ? 'Carregando itens...' : `${itens.length} item(ns) ativo(s).`}
+              {loadingItensLancamentos
+                ? 'Carregando itens...'
+                : `${itens.length} item(ns) ativo(s). Total consolidado pelo banco.`}
             </p>
           </div>
           <button
             type="button"
-            style={styles.btnCinza}
+            style={styles.btnPrimario}
             onClick={() => iniciarNovoItemLancamento(lancamento)}
             disabled={!podeEditar || salvando || lancamento.arquivado}
           >
             + item
           </button>
         </div>
+
+        {itens.length === 0 && itemFormularioAbertoId !== lancamento.id && (
+          <p style={estilosLocais.itemVazio}>
+            Nenhum item ativo. Use + item para detalhar este lancamento.
+          </p>
+        )}
+
+        {renderFormularioItem(lancamento)}
 
         {itens.length > 0 && (
           <div style={estilosLocais.itensLista}>
@@ -1252,8 +1306,6 @@ export default function FechamentoFolhaPage({
             ))}
           </div>
         )}
-
-        {renderFormularioItem(lancamento)}
       </div>
     )
   }
@@ -1267,7 +1319,7 @@ export default function FechamentoFolhaPage({
           onClick={() => abrirItensLancamento(lancamento)}
           disabled={!CATEGORIAS_ITENS_DETALHADOS.has(lancamento.categoria)}
         >
-          {lancamentoItensAbertoId === lancamento.id ? 'Ocultar itens' : 'Itens'}
+          {lancamentoItensAbertoId === lancamento.id ? 'Ocultar itens' : 'Ver itens'}
         </button>
         <button
           type="button"
@@ -1275,7 +1327,7 @@ export default function FechamentoFolhaPage({
           onClick={() => iniciarEdicaoLancamento(lancamento)}
           disabled={!podeEditar || salvando || lancamento.arquivado}
         >
-          Editar
+          Editar lancamento
         </button>
         <button
           type="button"
@@ -1283,7 +1335,7 @@ export default function FechamentoFolhaPage({
           onClick={() => alternarArquivoLancamento(lancamento)}
           disabled={!podeEditar || salvando}
         >
-          {lancamento.arquivado ? 'Reativar' : 'Arquivar'}
+          {lancamento.arquivado ? 'Reativar lancamento' : 'Arquivar lancamento'}
         </button>
       </div>
     )

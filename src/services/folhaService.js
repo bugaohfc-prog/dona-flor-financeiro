@@ -7,6 +7,7 @@ import { assertEmpresaId } from './tenantService'
 
 const TABELA_FOLHA_COMPETENCIAS = 'df_folha_competencias'
 const TABELA_FOLHA_LANCAMENTOS = 'df_folha_lancamentos'
+const TABELA_FOLHA_LANCAMENTO_ITENS = 'df_folha_lancamento_itens'
 
 const COMPETENCIA_SELECT = [
   'id',
@@ -38,6 +39,31 @@ const LANCAMENTO_SELECT = [
   'observacao_administrativa',
   'origem_lancamento',
   'origem_id',
+  'conferido',
+  'conferido_em',
+  'conferido_por',
+  'arquivado',
+  'arquivado_em',
+  'criado_em',
+  'atualizado_em'
+].join(', ')
+
+const LANCAMENTO_ITEM_SELECT = [
+  'id',
+  'empresa_id',
+  'competencia_id',
+  'lancamento_id',
+  'funcionario_id',
+  'filial_id',
+  'categoria',
+  'descricao',
+  'data_referencia',
+  'quantidade',
+  'percentual',
+  'valor_base',
+  'valor',
+  'observacao_administrativa',
+  'origem_item',
   'conferido',
   'conferido_em',
   'conferido_por',
@@ -93,12 +119,22 @@ export const CATEGORIAS_FINANCEIRAS_COM_VALOR_OBRIGATORIO = Object.freeze([
   'outro_desconto'
 ])
 
+export const CATEGORIAS_ITENS_DETALHADOS_FOLHA = Object.freeze([
+  'compras_vales',
+  'falta_injustificada',
+  'hora_extra_50',
+  'hora_extra_60',
+  'hora_extra_100',
+  'premiacao'
+])
+
 const STATUS_COMPETENCIA_SET = new Set(STATUS_COMPETENCIA_FOLHA)
 const NATUREZAS_SET = new Set(NATUREZAS_FOLHA)
 const CATEGORIAS_CREDITO_SET = new Set(CATEGORIAS_CREDITO_FOLHA)
 const CATEGORIAS_DESCONTO_SET = new Set(CATEGORIAS_DESCONTO_FOLHA)
 const CATEGORIAS_INFORMATIVO_SET = new Set(CATEGORIAS_INFORMATIVO_FOLHA)
 const CATEGORIAS_VALOR_OBRIGATORIO_SET = new Set(CATEGORIAS_FINANCEIRAS_COM_VALOR_OBRIGATORIO)
+const CATEGORIAS_ITENS_DETALHADOS_SET = new Set(CATEGORIAS_ITENS_DETALHADOS_FOLHA)
 
 const CAMPOS_PROIBIDOS = new Set([
   'empresa_id',
@@ -186,6 +222,52 @@ const CAMPOS_LANCAMENTO_ATUALIZAR = new Set([
   'origemLancamento',
   'origem_id',
   'origemId',
+  'conferido',
+  'conferido_em',
+  'conferidoEm',
+  'arquivado',
+  'arquivado_em',
+  'arquivadoEm'
+])
+
+const CAMPOS_LANCAMENTO_ITEM_CRIAR = new Set([
+  'competencia_id',
+  'competenciaId',
+  'lancamento_id',
+  'lancamentoId',
+  'funcionario_id',
+  'funcionarioId',
+  'filial_id',
+  'filialId',
+  'categoria',
+  'descricao',
+  'data_referencia',
+  'dataReferencia',
+  'quantidade',
+  'percentual',
+  'valor_base',
+  'valorBase',
+  'valor',
+  'observacao_administrativa',
+  'observacaoAdministrativa',
+  'origem_item',
+  'origemItem'
+])
+
+const CAMPOS_LANCAMENTO_ITEM_ATUALIZAR = new Set([
+  'categoria',
+  'descricao',
+  'data_referencia',
+  'dataReferencia',
+  'quantidade',
+  'percentual',
+  'valor_base',
+  'valorBase',
+  'valor',
+  'observacao_administrativa',
+  'observacaoAdministrativa',
+  'origem_item',
+  'origemItem',
   'conferido',
   'conferido_em',
   'conferidoEm',
@@ -289,6 +371,14 @@ function normalizarCategoria(valor) {
   return categoria
 }
 
+function normalizarCategoriaItem(valor) {
+  const categoria = String(valor || '').trim().toLowerCase()
+  if (!CATEGORIAS_ITENS_DETALHADOS_SET.has(categoria)) {
+    throw new Error('Categoria de item detalhado de folha invalida.')
+  }
+  return categoria
+}
+
 function normalizarNumero(valor, nomeCampo) {
   if (valor === null || valor === undefined || valor === '') return null
   const numero = Number(valor)
@@ -325,6 +415,102 @@ function validarValorCategoria(categoria, valor) {
   if (CATEGORIAS_VALOR_OBRIGATORIO_SET.has(categoria) && valor === null) {
     throw new Error('Informe o valor do lancamento de folha.')
   }
+}
+
+function percentualEsperadoHoraExtra(categoria) {
+  if (categoria === 'hora_extra_50') return 50
+  if (categoria === 'hora_extra_60') return 60
+  if (categoria === 'hora_extra_100') return 100
+  return null
+}
+
+function montarPayloadItemDetalhadoBase(entrada) {
+  const categoria = normalizarCategoriaItem(entrada.categoria)
+  const quantidade = normalizarNumero(entrada.quantidade, 'Quantidade')
+  const percentual = normalizarNumero(entrada.percentual, 'Percentual')
+  const valorBase = normalizarNumero(obterCampo(entrada, 'valor_base', 'valorBase'), 'Valor base')
+  const valor = normalizarNumero(entrada.valor, 'Valor')
+  const dataReferencia = normalizarData(obterCampo(entrada, 'data_referencia', 'dataReferencia'))
+  const payload = {
+    categoria,
+    descricao: normalizarTexto(entrada.descricao),
+    data_referencia: dataReferencia,
+    quantidade,
+    percentual,
+    valor_base: valorBase,
+    valor: valor === null ? 0 : valor,
+    observacao_administrativa: normalizarTexto(
+      obterCampo(entrada, 'observacao_administrativa', 'observacaoAdministrativa')
+    ),
+    origem_item: normalizarTexto(obterCampo(entrada, 'origem_item', 'origemItem'))
+  }
+
+  if (categoria === 'compras_vales') {
+    if (valor === null || valor <= 0) throw new Error('Item de compra/vale exige valor maior que zero.')
+    payload.percentual = null
+    payload.valor_base = null
+  } else if (categoria === 'falta_injustificada') {
+    if (!dataReferencia) throw new Error('Item de falta exige data de referencia.')
+    if (quantidade === null || quantidade <= 0) throw new Error('Item de falta exige quantidade maior que zero.')
+    payload.percentual = null
+    payload.valor_base = null
+    payload.valor = 0
+  } else if (percentualEsperadoHoraExtra(categoria) !== null) {
+    const esperado = percentualEsperadoHoraExtra(categoria)
+    if (quantidade === null || quantidade <= 0) throw new Error('Item de hora extra exige quantidade de horas maior que zero.')
+    if (percentual !== esperado) throw new Error(`Item de hora extra exige percentual ${esperado}.`)
+    payload.valor_base = null
+    payload.valor = 0
+  } else if (categoria === 'premiacao') {
+    if (valorBase === null || valorBase <= 0) throw new Error('Item de premiacao exige valor base maior que zero.')
+    if (percentual === null || percentual <= 0) throw new Error('Item de premiacao exige percentual maior que zero.')
+    payload.quantidade = null
+    payload.valor = Number(((valorBase * percentual) / 100).toFixed(2))
+  }
+
+  return payload
+}
+
+function montarPayloadItemDetalhadoCriacao(dados = {}) {
+  const entrada = entradaObjeto(dados)
+  garantirCamposPermitidos(entrada, CAMPOS_LANCAMENTO_ITEM_CRIAR)
+  const payload = montarPayloadItemDetalhadoBase(entrada)
+
+  return {
+    ...payload,
+    competencia_id: validarCompetenciaId(obterCampo(entrada, 'competencia_id', 'competenciaId')),
+    lancamento_id: validarLancamentoId(obterCampo(entrada, 'lancamento_id', 'lancamentoId')),
+    funcionario_id: validarFuncionarioId(obterCampo(entrada, 'funcionario_id', 'funcionarioId')),
+    filial_id: normalizarTexto(obterCampo(entrada, 'filial_id', 'filialId'))
+  }
+}
+
+function montarPayloadItemDetalhadoAtualizacao(dados = {}) {
+  const entrada = entradaObjeto(dados)
+  garantirCamposPermitidos(entrada, CAMPOS_LANCAMENTO_ITEM_ATUALIZAR)
+  const payload = montarPayloadItemDetalhadoBase(entrada)
+
+  if (Object.prototype.hasOwnProperty.call(entrada, 'conferido')) {
+    payload.conferido = normalizarBoolean(entrada.conferido)
+  }
+
+  if (Object.prototype.hasOwnProperty.call(entrada, 'conferido_em') ||
+      Object.prototype.hasOwnProperty.call(entrada, 'conferidoEm')) {
+    const valor = obterCampo(entrada, 'conferido_em', 'conferidoEm')
+    payload.conferido_em = valor ? new Date(valor).toISOString() : null
+  }
+
+  if (Object.prototype.hasOwnProperty.call(entrada, 'arquivado')) {
+    payload.arquivado = normalizarBoolean(entrada.arquivado)
+  }
+
+  if (Object.prototype.hasOwnProperty.call(entrada, 'arquivado_em') ||
+      Object.prototype.hasOwnProperty.call(entrada, 'arquivadoEm')) {
+    const valor = obterCampo(entrada, 'arquivado_em', 'arquivadoEm')
+    payload.arquivado_em = valor ? new Date(valor).toISOString() : null
+  }
+
+  return payload
 }
 
 function montarPayloadCompetenciaCriacao(dados = {}) {
@@ -626,6 +812,32 @@ export async function listarLancamentosFolha({
   return query
 }
 
+export async function listarItensLancamentosFolha({
+  supabase,
+  empresaId,
+  competenciaId,
+  lancamentoId,
+  incluirArquivados = false
+}) {
+  const empresa = validarEmpresaId(empresaId)
+  const competencia = validarCompetenciaId(competenciaId)
+
+  let query = selecionarPorEmpresa(supabase, TABELA_FOLHA_LANCAMENTO_ITENS, empresa, LANCAMENTO_ITEM_SELECT)
+    .eq('competencia_id', competencia)
+    .order('data_referencia', { ascending: false, nullsFirst: false })
+    .order('criado_em', { ascending: false })
+
+  if (lancamentoId) {
+    query = query.eq('lancamento_id', validarLancamentoId(lancamentoId))
+  }
+
+  if (!incluirArquivados) {
+    query = query.eq('arquivado', false)
+  }
+
+  return query
+}
+
 export async function criarLancamentoFolha({ supabase, empresaId, dados }) {
   const empresa = validarEmpresaId(empresaId)
 
@@ -639,6 +851,44 @@ export async function criarLancamentoFolha({ supabase, empresaId, dados }) {
   }
 
   return inserirComEmpresa(supabase, TABELA_FOLHA_LANCAMENTOS, payload, { select: LANCAMENTO_SELECT })
+    .single()
+}
+
+export async function criarItemLancamentoFolha({ supabase, empresaId, dados }) {
+  const empresa = validarEmpresaId(empresaId)
+
+  const payload = {
+    ...montarPayloadItemDetalhadoCriacao(dados),
+    empresa_id: empresa,
+    conferido: false,
+    conferido_em: null,
+    arquivado: false,
+    arquivado_em: null
+  }
+
+  return inserirComEmpresa(supabase, TABELA_FOLHA_LANCAMENTO_ITENS, payload, { select: LANCAMENTO_ITEM_SELECT })
+    .single()
+}
+
+export async function atualizarItemLancamentoFolha({ supabase, empresaId, id, dados }) {
+  const empresa = validarEmpresaId(empresaId)
+  const itemId = validarLancamentoId(id)
+  const payload = montarPayloadItemDetalhadoAtualizacao(dados)
+
+  return atualizarPorEmpresa(supabase, TABELA_FOLHA_LANCAMENTO_ITENS, itemId, empresa, payload)
+    .select(LANCAMENTO_ITEM_SELECT)
+    .single()
+}
+
+export async function arquivarItemLancamentoFolha({ supabase, empresaId, id }) {
+  const empresa = validarEmpresaId(empresaId)
+  const itemId = validarLancamentoId(id)
+
+  return atualizarPorEmpresa(supabase, TABELA_FOLHA_LANCAMENTO_ITENS, itemId, empresa, {
+    arquivado: true,
+    arquivado_em: new Date().toISOString()
+  })
+    .select(LANCAMENTO_ITEM_SELECT)
     .single()
 }
 

@@ -6,6 +6,7 @@ import {
   CATEGORIAS_DESCONTO_FOLHA,
   CATEGORIAS_FINANCEIRAS_COM_VALOR_OBRIGATORIO,
   CATEGORIAS_INFORMATIVO_FOLHA,
+  CATEGORIAS_ITENS_DETALHADOS_FOLHA,
   STATUS_COMPETENCIA_FOLHA
 } from '../services/folhaService'
 
@@ -24,6 +25,16 @@ const FORM_LANCAMENTO_INICIAL = {
   data_referencia: '',
   quantidade: '',
   percentual: '',
+  valor: '',
+  observacao_administrativa: ''
+}
+
+const FORM_ITEM_INICIAL = {
+  descricao: '',
+  data_referencia: '',
+  quantidade: '',
+  percentual: '',
+  valor_base: '',
   valor: '',
   observacao_administrativa: ''
 }
@@ -78,6 +89,8 @@ const CATEGORIAS_VALOR_ZERO_INFORMATIVO = new Set([
   'hora_extra_100',
   'falta_injustificada'
 ])
+
+const CATEGORIAS_ITENS_DETALHADOS = new Set(CATEGORIAS_ITENS_DETALHADOS_FOLHA)
 
 const estilosLocais = {
   pageActions: {
@@ -378,6 +391,33 @@ const estilosLocais = {
   },
   grupoTableRow: {
     background: '#f8fafc'
+  },
+  itensPanel: {
+    border: '1px solid #e5e7eb',
+    borderRadius: 8,
+    padding: 10,
+    background: '#f8fafc',
+    display: 'grid',
+    gap: 10
+  },
+  itensLista: {
+    display: 'grid',
+    gap: 8
+  },
+  itemDetalhado: {
+    border: '1px solid #e5e7eb',
+    borderRadius: 8,
+    padding: 10,
+    background: '#fff',
+    display: 'grid',
+    gap: 8
+  },
+  itemDetalhadoHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 10,
+    flexWrap: 'wrap',
+    alignItems: 'flex-start'
   }
 }
 
@@ -393,6 +433,17 @@ function criarFormularioCompetenciaInicial() {
 
 function criarFormularioLancamentoInicial() {
   return { ...FORM_LANCAMENTO_INICIAL }
+}
+
+function criarFormularioItemInicial(categoria = '') {
+  const formulario = { ...FORM_ITEM_INICIAL }
+
+  if (categoria === 'hora_extra_50') formulario.percentual = '50'
+  if (categoria === 'hora_extra_60') formulario.percentual = '60'
+  if (categoria === 'hora_extra_100') formulario.percentual = '100'
+  if (CATEGORIAS_VALOR_ZERO_INFORMATIVO.has(categoria)) formulario.valor = '0'
+
+  return formulario
 }
 
 function formatarData(data) {
@@ -451,6 +502,21 @@ function calcularValorPremiacaoFormulario(formulario) {
 
   if (valorVenda === null || percentual === null) return ''
   return formatarValorFormulario((valorVenda * percentual) / 100)
+}
+
+function calcularValorItemPremiacaoFormulario(formulario) {
+  const valorBase = parseNumeroFormulario(formulario.valor_base)
+  const percentual = parseNumeroFormulario(formulario.percentual)
+
+  if (valorBase === null || percentual === null) return ''
+  return formatarValorFormulario((valorBase * percentual) / 100)
+}
+
+function percentualEsperadoItem(categoria) {
+  if (categoria === 'hora_extra_50') return '50'
+  if (categoria === 'hora_extra_60') return '60'
+  if (categoria === 'hora_extra_100') return '100'
+  return ''
 }
 
 function prepararFormularioLancamentoParaSalvar(formulario) {
@@ -553,13 +619,18 @@ export default function FechamentoFolhaPage({
   const [formCompetencia, setFormCompetencia] = useState(criarFormularioCompetenciaInicial)
   const [formLancamento, setFormLancamento] = useState(criarFormularioLancamentoInicial)
   const [lancamentoEditandoId, setLancamentoEditandoId] = useState('')
+  const [lancamentoItensAbertoId, setLancamentoItensAbertoId] = useState('')
+  const [itemEditandoId, setItemEditandoId] = useState('')
+  const [formItem, setFormItem] = useState(criarFormularioItemInicial)
   const [erroFormulario, setErroFormulario] = useState('')
 
   const {
     competencias,
     lancamentos,
+    itensLancamentos,
     loading,
     loadingLancamentos,
+    loadingItensLancamentos,
     salvando,
     erro,
     resumo,
@@ -570,6 +641,9 @@ export default function FechamentoFolhaPage({
     atualizarLancamento,
     arquivarLancamento,
     reativarLancamento,
+    criarItemLancamento,
+    atualizarItemLancamento,
+    arquivarItemLancamento,
     limparErro
   } = useFolha({
     empresaId,
@@ -608,9 +682,25 @@ export default function FechamentoFolhaPage({
     return agruparLancamentosPorFuncionario(lancamentos, funcionariosPorId)
   }, [funcionariosPorId, lancamentos])
 
+  const itensPorLancamento = useMemo(() => {
+    const mapa = new Map()
+
+    ;(itensLancamentos || []).forEach((item) => {
+      if (!item?.lancamento_id || item.arquivado) return
+      if (!mapa.has(item.lancamento_id)) mapa.set(item.lancamento_id, [])
+      mapa.get(item.lancamento_id).push(item)
+    })
+
+    return mapa
+  }, [itensLancamentos])
+
   const valorPremiacaoCalculado = useMemo(() => {
     return calcularValorPremiacaoFormulario(formLancamento)
   }, [formLancamento])
+
+  const valorItemPremiacaoCalculado = useMemo(() => {
+    return calcularValorItemPremiacaoFormulario(formItem)
+  }, [formItem])
 
   const categoriaHorasExtras = CATEGORIAS_HORAS_EXTRAS.has(formLancamento.categoria)
   const categoriaFalta = formLancamento.categoria === 'falta_injustificada'
@@ -645,6 +735,18 @@ export default function FechamentoFolhaPage({
     focarFormularioLancamento()
   }
 
+  function abrirItensLancamento(lancamento) {
+    limparMensagens()
+    setLancamentoItensAbertoId((atual) => {
+      const proximo = atual === lancamento.id ? '' : lancamento.id
+      if (proximo) {
+        setItemEditandoId('')
+        setFormItem(criarFormularioItemInicial(lancamento.categoria))
+      }
+      return proximo
+    })
+  }
+
   function limparMensagens() {
     setErroFormulario('')
     limparErro()
@@ -672,6 +774,72 @@ export default function FechamentoFolhaPage({
     }
 
     return ''
+  }
+
+  function prepararFormularioItemParaSalvar(lancamento, formulario = formItem) {
+    const categoria = lancamento?.categoria
+    const proximoFormulario = { ...formulario }
+
+    if (categoria === 'premiacao') {
+      const valorPremiacao = calcularValorItemPremiacaoFormulario(proximoFormulario)
+      if (valorPremiacao) proximoFormulario.valor = valorPremiacao
+    }
+
+    const percentualHora = percentualEsperadoItem(categoria)
+    if (percentualHora) {
+      proximoFormulario.percentual = percentualHora
+      proximoFormulario.valor = '0'
+    }
+
+    if (categoria === 'falta_injustificada') {
+      proximoFormulario.valor = '0'
+    }
+
+    return proximoFormulario
+  }
+
+  function validarFormularioItem(lancamento, formulario = formItem) {
+    const categoria = lancamento?.categoria
+    if (!lancamento?.id) return 'Lancamento de folha nao identificado.'
+    if (!CATEGORIAS_ITENS_DETALHADOS.has(categoria)) return 'Esta categoria nao possui itens detalhados neste ciclo.'
+    if (Number(formulario.valor) < 0) return 'O valor do item nao pode ser negativo.'
+
+    if (categoria === 'compras_vales') {
+      const valor = parseNumeroFormulario(formulario.valor)
+      if (valor === null || valor <= 0) return 'Compra/vale exige valor maior que zero.'
+    }
+
+    if (categoria === 'falta_injustificada') {
+      const quantidade = parseNumeroFormulario(formulario.quantidade)
+      if (!formulario.data_referencia) return 'Falta exige data de referencia.'
+      if (quantidade === null || quantidade <= 0) return 'Falta exige quantidade/dias maior que zero.'
+    }
+
+    if (CATEGORIAS_HORAS_EXTRAS.has(categoria)) {
+      const quantidade = parseNumeroFormulario(formulario.quantidade)
+      if (quantidade === null || quantidade <= 0) return 'Hora extra exige quantidade de horas maior que zero.'
+    }
+
+    if (categoria === 'premiacao') {
+      const valorBase = parseNumeroFormulario(formulario.valor_base)
+      const percentual = parseNumeroFormulario(formulario.percentual)
+      if (valorBase === null || valorBase <= 0) return 'Premiacao exige valor base maior que zero.'
+      if (percentual === null || percentual <= 0) return 'Premiacao exige percentual maior que zero.'
+    }
+
+    return ''
+  }
+
+  function montarPayloadItem(formulario) {
+    return {
+      descricao: normalizarTexto(formulario.descricao) || null,
+      data_referencia: normalizarTexto(formulario.data_referencia) || null,
+      quantidade: formulario.quantidade === '' ? null : formulario.quantidade,
+      percentual: formulario.percentual === '' ? null : formulario.percentual,
+      valor_base: formulario.valor_base === '' ? null : formulario.valor_base,
+      valor: formulario.valor === '' ? null : formulario.valor,
+      observacao_administrativa: normalizarTexto(formulario.observacao_administrativa) || null
+    }
   }
 
   async function salvarCompetencia(event) {
@@ -737,6 +905,40 @@ export default function FechamentoFolhaPage({
     setFormLancamento(criarFormularioLancamentoInicial())
   }
 
+  async function salvarItemLancamento(event, lancamento) {
+    event.preventDefault()
+    limparMensagens()
+
+    const formularioParaSalvar = prepararFormularioItemParaSalvar(lancamento, formItem)
+    if (JSON.stringify(formularioParaSalvar) !== JSON.stringify(formItem)) {
+      setFormItem(formularioParaSalvar)
+    }
+
+    const erroValidacao = validarFormularioItem(lancamento, formularioParaSalvar)
+    if (erroValidacao) {
+      setErroFormulario(erroValidacao)
+      return
+    }
+
+    const payload = montarPayloadItem(formularioParaSalvar)
+    const itemEditando = itemEditandoId
+      ? (itensLancamentos || []).find((item) => item.id === itemEditandoId)
+      : null
+
+    const resposta = itemEditando
+      ? await atualizarItemLancamento(itemEditando, payload)
+      : await criarItemLancamento(lancamento, payload)
+
+    if (resposta.error) {
+      setErroFormulario(resposta.error.message || 'Nao foi possivel salvar o item detalhado.')
+      return
+    }
+
+    setItemEditandoId('')
+    setLancamentoItensAbertoId(lancamento.id)
+    setFormItem(criarFormularioItemInicial(lancamento.categoria))
+  }
+
   function iniciarEdicaoLancamento(lancamento) {
     limparMensagens()
     setLancamentoEditandoId(lancamento.id)
@@ -754,6 +956,34 @@ export default function FechamentoFolhaPage({
     })
   }
 
+  function iniciarNovoItemLancamento(lancamento) {
+    limparMensagens()
+    setLancamentoItensAbertoId(lancamento.id)
+    setItemEditandoId('')
+    setFormItem(criarFormularioItemInicial(lancamento.categoria))
+  }
+
+  function iniciarEdicaoItemLancamento(lancamento, item) {
+    limparMensagens()
+    setLancamentoItensAbertoId(lancamento.id)
+    setItemEditandoId(item.id)
+    setFormItem({
+      descricao: item.descricao || '',
+      data_referencia: item.data_referencia || '',
+      quantidade: item.quantidade ?? '',
+      percentual: item.percentual ?? percentualEsperadoItem(lancamento.categoria),
+      valor_base: item.valor_base ?? '',
+      valor: item.valor ?? '',
+      observacao_administrativa: item.observacao_administrativa || ''
+    })
+  }
+
+  function cancelarEdicaoItem(lancamento) {
+    setItemEditandoId('')
+    setFormItem(criarFormularioItemInicial(lancamento?.categoria))
+    setErroFormulario('')
+  }
+
   function cancelarEdicaoLancamento() {
     setLancamentoEditandoId('')
     setFormLancamento(criarFormularioLancamentoInicial())
@@ -768,6 +998,15 @@ export default function FechamentoFolhaPage({
 
     if (resposta.error) {
       setErroFormulario(resposta.error.message || 'Não foi possível atualizar o lançamento.')
+    }
+  }
+
+  async function arquivarItemDetalhado(item) {
+    limparMensagens()
+    const resposta = await arquivarItemLancamento(item)
+
+    if (resposta.error) {
+      setErroFormulario(resposta.error.message || 'Nao foi possivel arquivar o item detalhado.')
     }
   }
 
@@ -794,9 +1033,242 @@ export default function FechamentoFolhaPage({
     )
   }
 
+  function renderFormularioItem(lancamento) {
+    const categoria = lancamento?.categoria
+    const podeDetalhar = CATEGORIAS_ITENS_DETALHADOS.has(categoria)
+    if (!podeDetalhar || lancamentoItensAbertoId !== lancamento.id) return null
+
+    const categoriaHorasItem = CATEGORIAS_HORAS_EXTRAS.has(categoria)
+    const categoriaFaltaItem = categoria === 'falta_injustificada'
+    const categoriaPremiacaoItem = categoria === 'premiacao'
+    const categoriaCompraItem = categoria === 'compras_vales'
+
+    return (
+      <form onSubmit={(event) => salvarItemLancamento(event, lancamento)} style={estilosLocais.formPanelSoft}>
+        <div style={estilosLocais.sectionHeader}>
+          <div>
+            <h4 style={estilosLocais.formSectionTitle}>
+              {itemEditandoId ? 'Editar item detalhado' : 'Adicionar item detalhado'}
+            </h4>
+            <p style={estilosLocais.helperText}>
+              Itens ativos recalculam o valor consolidado do lancamento pelo banco.
+            </p>
+          </div>
+          {itemEditandoId && (
+            <button type="button" style={styles.btnCinza} onClick={() => cancelarEdicaoItem(lancamento)}>
+              Cancelar item
+            </button>
+          )}
+        </div>
+
+        <div style={estilosLocais.formGrid}>
+          <label style={estilosLocais.formField}>
+            <span style={estilosLocais.label}>Data</span>
+            <input
+              type="date"
+              value={formItem.data_referencia}
+              onChange={(event) => setFormItem((atual) => ({ ...atual, data_referencia: event.target.value }))}
+              style={estilosLocais.input}
+              disabled={!podeEditar || salvando}
+              required={categoriaFaltaItem}
+            />
+          </label>
+
+          {categoriaPremiacaoItem && (
+            <label style={estilosLocais.formField}>
+              <span style={estilosLocais.label}>Valor base</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={formItem.valor_base}
+                onChange={(event) => setFormItem((atual) => ({ ...atual, valor_base: event.target.value }))}
+                style={estilosLocais.input}
+                disabled={!podeEditar || salvando}
+                required
+              />
+            </label>
+          )}
+
+          <label style={estilosLocais.formField}>
+            <span style={estilosLocais.label}>
+              {categoriaHorasItem ? 'Horas' : categoriaFaltaItem ? 'Quantidade/dias' : 'Quantidade'}
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={formItem.quantidade}
+              onChange={(event) => setFormItem((atual) => ({ ...atual, quantidade: event.target.value }))}
+              style={estilosLocais.input}
+              disabled={!podeEditar || salvando || categoriaPremiacaoItem}
+              required={categoriaHorasItem || categoriaFaltaItem}
+            />
+          </label>
+
+          <label style={estilosLocais.formField}>
+            <span style={estilosLocais.label}>Percentual</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={formItem.percentual}
+              onChange={(event) => setFormItem((atual) => ({ ...atual, percentual: event.target.value }))}
+              style={estilosLocais.input}
+              disabled={!podeEditar || salvando || categoriaHorasItem}
+              required={categoriaPremiacaoItem || categoriaHorasItem}
+            />
+          </label>
+
+          <label style={estilosLocais.formField}>
+            <span style={estilosLocais.label}>Valor</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={formItem.valor}
+              onChange={(event) => setFormItem((atual) => ({ ...atual, valor: event.target.value }))}
+              style={categoriaFaltaItem || categoriaHorasItem || categoriaPremiacaoItem ? estilosLocais.inputReadOnly : estilosLocais.input}
+              disabled={!podeEditar || salvando || categoriaFaltaItem || categoriaHorasItem || categoriaPremiacaoItem}
+              required={categoriaCompraItem}
+            />
+          </label>
+        </div>
+
+        {categoriaPremiacaoItem && (
+          <small style={estilosLocais.helperText}>
+            Calculo simples: valor base x percentual / 100
+            {valorItemPremiacaoCalculado ? ` = ${formatarMoeda(valorItemPremiacaoCalculado)}.` : '.'}
+          </small>
+        )}
+        {categoriaHorasItem && (
+          <small style={estilosLocais.helperText}>
+            Horas extras sao informativas para a contabilidade. O sistema nao calcula valor trabalhista.
+          </small>
+        )}
+        {categoriaFaltaItem && (
+          <small style={estilosLocais.helperText}>
+            A data da falta ajuda a contabilidade a avaliar DSR. O sistema nao calcula desconto trabalhista.
+          </small>
+        )}
+
+        <label style={estilosLocais.formField}>
+          <span style={estilosLocais.label}>Descricao curta</span>
+          <input
+            value={formItem.descricao}
+            onChange={(event) => setFormItem((atual) => ({ ...atual, descricao: event.target.value }))}
+            style={estilosLocais.input}
+            disabled={!podeEditar || salvando}
+            placeholder="Contexto administrativo do item."
+          />
+        </label>
+
+        <label style={estilosLocais.formField}>
+          <span style={estilosLocais.label}>Observacao administrativa</span>
+          <textarea
+            value={formItem.observacao_administrativa}
+            onChange={(event) => setFormItem((atual) => ({ ...atual, observacao_administrativa: event.target.value }))}
+            style={estilosLocais.textarea}
+            disabled={!podeEditar || salvando}
+            placeholder="Somente contexto administrativo. Nao inclua documentos, saude, CID ou dados clinicos."
+          />
+        </label>
+
+        <div style={estilosLocais.formActions}>
+          <button type="submit" style={styles.btnPrimario} disabled={!podeEditar || salvando}>
+            {salvando ? 'Salvando...' : (itemEditandoId ? 'Salvar item' : 'Adicionar item')}
+          </button>
+        </div>
+      </form>
+    )
+  }
+
+  function renderItensLancamento(lancamento) {
+    const itens = itensPorLancamento.get(lancamento.id) || []
+    const podeDetalhar = CATEGORIAS_ITENS_DETALHADOS.has(lancamento.categoria)
+
+    if (!podeDetalhar) {
+      return (
+        <p style={estilosLocais.helperText}>
+          Esta categoria permanece como lancamento consolidado, sem itens detalhados neste ciclo.
+        </p>
+      )
+    }
+
+    return (
+      <div style={estilosLocais.itensPanel}>
+        <div style={estilosLocais.itemDetalhadoHeader}>
+          <div>
+            <strong>Itens detalhados</strong>
+            <p style={estilosLocais.helperText}>
+              {loadingItensLancamentos ? 'Carregando itens...' : `${itens.length} item(ns) ativo(s).`}
+            </p>
+          </div>
+          <button
+            type="button"
+            style={styles.btnCinza}
+            onClick={() => iniciarNovoItemLancamento(lancamento)}
+            disabled={!podeEditar || salvando || lancamento.arquivado}
+          >
+            + item
+          </button>
+        </div>
+
+        {itens.length > 0 && (
+          <div style={estilosLocais.itensLista}>
+            {itens.map((item) => (
+              <article key={item.id} style={estilosLocais.itemDetalhado}>
+                <div style={estilosLocais.itemDetalhadoHeader}>
+                  <div>
+                    <strong>{item.descricao || LABELS_CATEGORIA[item.categoria] || item.categoria}</strong>
+                    <p style={estilosLocais.helperText}>
+                      {formatarData(item.data_referencia)} | Qtd. {formatarNumero(item.quantidade)} | {formatarNumero(item.percentual)}%
+                    </p>
+                  </div>
+                  <strong className="folha-money">{formatarMoeda(item.valor)}</strong>
+                </div>
+                {item.observacao_administrativa && (
+                  <p className="folha-card-description">{item.observacao_administrativa}</p>
+                )}
+                <div style={estilosLocais.acoesTabela}>
+                  <button
+                    type="button"
+                    style={styles.btnCinza}
+                    onClick={() => iniciarEdicaoItemLancamento(lancamento, item)}
+                    disabled={!podeEditar || salvando || lancamento.arquivado}
+                  >
+                    Editar item
+                  </button>
+                  <button
+                    type="button"
+                    style={styles.btnCinza}
+                    onClick={() => arquivarItemDetalhado(item)}
+                    disabled={!podeEditar || salvando || lancamento.arquivado}
+                  >
+                    Arquivar item
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+
+        {renderFormularioItem(lancamento)}
+      </div>
+    )
+  }
+
   function renderAcoesLancamento(lancamento) {
     return (
       <div className="folha-card-actions" style={estilosLocais.acoesTabela}>
+        <button
+          type="button"
+          style={styles.btnCinza}
+          onClick={() => abrirItensLancamento(lancamento)}
+          disabled={!CATEGORIAS_ITENS_DETALHADOS.has(lancamento.categoria)}
+        >
+          {lancamentoItensAbertoId === lancamento.id ? 'Ocultar itens' : 'Itens'}
+        </button>
         <button
           type="button"
           style={styles.btnCinza}
@@ -1465,7 +1937,8 @@ export default function FechamentoFolhaPage({
                       </td>
                     </tr>
                     {grupo.lancamentos.map((lancamento) => (
-                      <tr key={lancamento.id}>
+                      <Fragment key={lancamento.id}>
+                      <tr>
                         <td style={{ ...estilosLocais.td, ...estilosLocais.tdTexto }}>
                           {grupo.nome}
                         </td>
@@ -1482,6 +1955,14 @@ export default function FechamentoFolhaPage({
                           {renderAcoesLancamento(lancamento)}
                         </td>
                       </tr>
+                      {lancamentoItensAbertoId === lancamento.id && (
+                        <tr>
+                          <td colSpan={11} style={{ ...estilosLocais.td, background: '#f8fafc' }}>
+                            {renderItensLancamento(lancamento)}
+                          </td>
+                        </tr>
+                      )}
+                      </Fragment>
                     ))}
                   </Fragment>
                 ))}
@@ -1545,6 +2026,7 @@ export default function FechamentoFolhaPage({
                     </div>
 
                     {renderAcoesLancamento(lancamento)}
+                    {lancamentoItensAbertoId === lancamento.id && renderItensLancamento(lancamento)}
                   </article>
                 ))}
               </div>

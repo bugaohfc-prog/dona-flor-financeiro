@@ -2,13 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase as supabasePadrao } from '../lib/supabase'
 import {
   arquivarCompetenciaFolha as arquivarCompetenciaFolhaService,
+  arquivarItemLancamentoFolha as arquivarItemLancamentoFolhaService,
   arquivarLancamentoFolha as arquivarLancamentoFolhaService,
   atualizarCompetenciaFolha as atualizarCompetenciaFolhaService,
+  atualizarItemLancamentoFolha as atualizarItemLancamentoFolhaService,
   atualizarLancamentoFolha as atualizarLancamentoFolhaService,
   calcularResumoFolhaCompetencia,
   criarCompetenciaFolha as criarCompetenciaFolhaService,
+  criarItemLancamentoFolha as criarItemLancamentoFolhaService,
   criarLancamentoFolha as criarLancamentoFolhaService,
   listarCompetenciasFolha,
+  listarItensLancamentosFolha,
   listarLancamentosFolha,
   reativarCompetenciaFolha as reativarCompetenciaFolhaService,
   reativarLancamentoFolha as reativarLancamentoFolhaService
@@ -48,14 +52,17 @@ export function useFolha(opcoes = {}) {
   const funcionarioAtual = useMemo(() => normalizarId(funcionarioId), [funcionarioId])
   const [competencias, setCompetencias] = useState([])
   const [lancamentos, setLancamentos] = useState([])
+  const [itensLancamentos, setItensLancamentos] = useState([])
   const [loadingCompetencias, setLoadingCompetencias] = useState(false)
   const [loadingLancamentos, setLoadingLancamentos] = useState(false)
+  const [loadingItensLancamentos, setLoadingItensLancamentos] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState(null)
   const cargaCompetenciasRef = useRef(0)
   const cargaLancamentosRef = useRef(0)
+  const cargaItensLancamentosRef = useRef(0)
 
-  const loading = loadingCompetencias || loadingLancamentos
+  const loading = loadingCompetencias || loadingLancamentos || loadingItensLancamentos
   const resumo = useMemo(() => calcularResumoFolhaCompetencia(lancamentos), [lancamentos])
 
   const definirErro = useCallback((error) => {
@@ -64,8 +71,17 @@ export function useFolha(opcoes = {}) {
 
   const limparLancamentos = useCallback(() => {
     cargaLancamentosRef.current += 1
+    cargaItensLancamentosRef.current += 1
     setLancamentos([])
+    setItensLancamentos([])
     setLoadingLancamentos(false)
+    setLoadingItensLancamentos(false)
+  }, [])
+
+  const limparItensLancamentos = useCallback(() => {
+    cargaItensLancamentosRef.current += 1
+    setItensLancamentos([])
+    setLoadingItensLancamentos(false)
   }, [])
 
   const carregarCompetencias = useCallback(async (opcoesCarga = {}) => {
@@ -115,6 +131,53 @@ export function useFolha(opcoes = {}) {
     }
   }, [definirErro, empresaAtual, incluirArquivadas, supabase])
 
+  const carregarItensLancamentos = useCallback(async (opcoesCarga = {}) => {
+    const empresa = normalizarId(opcoesCarga.empresaId || empresaAtual)
+    const competencia = normalizarId(opcoesCarga.competenciaId || competenciaAtual)
+    const cargaId = cargaItensLancamentosRef.current + 1
+    cargaItensLancamentosRef.current = cargaId
+
+    if (!empresa || !competencia) {
+      limparItensLancamentos()
+      return respostaErro(!empresa ? criarErroEmpresaAusente() : criarErroCompetenciaAusente())
+    }
+
+    if (!opcoesCarga.silencioso) setLoadingItensLancamentos(true)
+
+    try {
+      const { data, error } = await listarItensLancamentosFolha({
+        supabase,
+        empresaId: empresa,
+        competenciaId: competencia,
+        lancamentoId: opcoesCarga.lancamentoId,
+        incluirArquivados: false
+      })
+
+      if (cargaItensLancamentosRef.current !== cargaId) {
+        return { data: null, error: null, ignorado: true }
+      }
+
+      if (error) {
+        setItensLancamentos([])
+        definirErro(error)
+        return respostaErro(error)
+      }
+
+      setItensLancamentos(data || [])
+      return { data: data || [], error: null }
+    } catch (error) {
+      if (cargaItensLancamentosRef.current === cargaId) {
+        setItensLancamentos([])
+        definirErro(error)
+      }
+      return respostaErro(error)
+    } finally {
+      if (cargaItensLancamentosRef.current === cargaId && !opcoesCarga.silencioso) {
+        setLoadingItensLancamentos(false)
+      }
+    }
+  }, [competenciaAtual, definirErro, empresaAtual, limparItensLancamentos, supabase])
+
   const carregarLancamentos = useCallback(async (opcoesCarga = {}) => {
     const empresa = normalizarId(opcoesCarga.empresaId || empresaAtual)
     const competencia = normalizarId(opcoesCarga.competenciaId || competenciaAtual)
@@ -157,6 +220,11 @@ export function useFolha(opcoes = {}) {
       }
 
       setLancamentos(data || [])
+      await carregarItensLancamentos({
+        empresaId: empresa,
+        competenciaId: competencia,
+        silencioso: true
+      })
       return { data: data || [], error: null }
     } catch (error) {
       if (cargaLancamentosRef.current === cargaId) {
@@ -171,6 +239,7 @@ export function useFolha(opcoes = {}) {
     }
   }, [
     competenciaAtual,
+    carregarItensLancamentos,
     definirErro,
     empresaAtual,
     funcionarioAtual,
@@ -196,11 +265,14 @@ export function useFolha(opcoes = {}) {
 
   useEffect(() => {
     cargaLancamentosRef.current += 1
+    cargaItensLancamentosRef.current += 1
     setLancamentos([])
+    setItensLancamentos([])
     definirErro(null)
 
     if (!empresaAtual || !competenciaAtual) {
       setLoadingLancamentos(false)
+      setLoadingItensLancamentos(false)
       return
     }
 
@@ -352,6 +424,64 @@ export function useFolha(opcoes = {}) {
     }), { recarregarLancamentos: true })
   }, [executarComEmpresaAtiva, supabase])
 
+  const criarItemLancamento = useCallback(async (lancamento, dados = {}) => {
+    const competencia = normalizarId(dados.competenciaId || dados.competencia_id || lancamento?.competencia_id || competenciaAtual)
+
+    if (!competencia) {
+      const error = criarErroCompetenciaAusente()
+      definirErro(error)
+      return respostaErro(error)
+    }
+
+    const payload = {
+      ...dados,
+      competencia_id: competencia,
+      lancamento_id: lancamento?.id || dados.lancamento_id || dados.lancamentoId,
+      funcionario_id: lancamento?.funcionario_id || dados.funcionario_id || dados.funcionarioId,
+      filial_id: lancamento?.filial_id || dados.filial_id || dados.filialId || null,
+      categoria: lancamento?.categoria || dados.categoria
+    }
+
+    return executarComEmpresaAtiva((empresa) => criarItemLancamentoFolhaService({
+      supabase,
+      empresaId: empresa,
+      dados: payload
+    }), {
+      recarregarLancamentos: true,
+      competenciaId: competencia
+    })
+  }, [competenciaAtual, definirErro, executarComEmpresaAtiva, supabase])
+
+  const atualizarItemLancamento = useCallback(async (item, dados = {}) => {
+    const competencia = normalizarId(item?.competencia_id || competenciaAtual)
+
+    return executarComEmpresaAtiva((empresa) => atualizarItemLancamentoFolhaService({
+      supabase,
+      empresaId: empresa,
+      id: item?.id,
+      dados: {
+        ...dados,
+        categoria: item?.categoria || dados.categoria
+      }
+    }), {
+      recarregarLancamentos: true,
+      competenciaId: competencia
+    })
+  }, [competenciaAtual, executarComEmpresaAtiva, supabase])
+
+  const arquivarItemLancamento = useCallback(async (item) => {
+    const competencia = normalizarId(item?.competencia_id || competenciaAtual)
+
+    return executarComEmpresaAtiva((empresa) => arquivarItemLancamentoFolhaService({
+      supabase,
+      empresaId: empresa,
+      id: item?.id
+    }), {
+      recarregarLancamentos: true,
+      competenciaId: competencia
+    })
+  }, [competenciaAtual, executarComEmpresaAtiva, supabase])
+
   const calcularResumo = useCallback((lista = lancamentos) => {
     return calcularResumoFolhaCompetencia(lista)
   }, [lancamentos])
@@ -359,9 +489,11 @@ export function useFolha(opcoes = {}) {
   return {
     competencias,
     lancamentos,
+    itensLancamentos,
     loading,
     loadingCompetencias,
     loadingLancamentos,
+    loadingItensLancamentos,
     salvando,
     erro,
     resumo,
@@ -374,12 +506,17 @@ export function useFolha(opcoes = {}) {
     arquivarCompetencia,
     reativarCompetencia,
     carregarLancamentos,
+    carregarItensLancamentos,
     criarLancamento,
     atualizarLancamento,
     arquivarLancamento,
     reativarLancamento,
+    criarItemLancamento,
+    atualizarItemLancamento,
+    arquivarItemLancamento,
     calcularResumo,
     limparErro: () => definirErro(null),
-    limparLancamentos
+    limparLancamentos,
+    limparItensLancamentos
   }
 }

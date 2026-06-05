@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { useFolha } from '../hooks/useFolha'
 import { useFuncionarios } from '../hooks/useFuncionarios'
 import {
@@ -20,6 +20,7 @@ const FORM_LANCAMENTO_INICIAL = {
   natureza: 'credito',
   categoria: 'premiacao',
   descricao: '',
+  valor_venda: '',
   data_referencia: '',
   quantidade: '',
   percentual: '',
@@ -64,6 +65,19 @@ const CATEGORIAS_OPCOES = [
   { grupo: 'Descontos', itens: CATEGORIAS_DESCONTO_FOLHA },
   { grupo: 'Informativos', itens: CATEGORIAS_INFORMATIVO_FOLHA }
 ]
+
+const CATEGORIAS_HORAS_EXTRAS = new Set([
+  'hora_extra_50',
+  'hora_extra_60',
+  'hora_extra_100'
+])
+
+const CATEGORIAS_VALOR_ZERO_INFORMATIVO = new Set([
+  'hora_extra_50',
+  'hora_extra_60',
+  'hora_extra_100',
+  'falta_injustificada'
+])
 
 const estilosLocais = {
   pageActions: {
@@ -301,6 +315,12 @@ const estilosLocais = {
     justifyContent: 'space-between',
     gap: 10
   },
+  mobileGroup: {
+    display: 'grid',
+    gap: 10,
+    padding: '10px 0 4px',
+    borderTop: '1px solid #e5e7eb'
+  },
   mobileMetaGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
@@ -319,6 +339,45 @@ const estilosLocais = {
     fontSize: 11,
     fontWeight: 800,
     textTransform: 'uppercase'
+  },
+  grupoLancamentosHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
+    flexWrap: 'wrap'
+  },
+  grupoLancamentosNome: {
+    display: 'grid',
+    gap: 4,
+    minWidth: 180
+  },
+  grupoResumoGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, minmax(110px, 1fr))',
+    gap: 8
+  },
+  grupoResumoItem: {
+    border: '1px solid #e5e7eb',
+    borderRadius: 8,
+    padding: 8,
+    background: '#f8fafc',
+    display: 'grid',
+    gap: 2
+  },
+  grupoResumoLabel: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: 800,
+    textTransform: 'uppercase'
+  },
+  grupoResumoValor: {
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: 800
+  },
+  grupoTableRow: {
+    background: '#f8fafc'
   }
 }
 
@@ -372,6 +431,46 @@ function normalizarTexto(valor) {
   return String(valor || '').trim()
 }
 
+function parseNumeroFormulario(valor) {
+  if (valor === null || valor === undefined || valor === '') return null
+  const numero = Number(String(valor).replace(',', '.'))
+  return Number.isFinite(numero) ? numero : null
+}
+
+function formatarValorFormulario(valor) {
+  const numero = Number(valor)
+  if (!Number.isFinite(numero)) return ''
+  return numero.toFixed(2)
+}
+
+function calcularValorPremiacaoFormulario(formulario) {
+  if (formulario.categoria !== 'premiacao') return ''
+
+  const valorVenda = parseNumeroFormulario(formulario.valor_venda)
+  const percentual = parseNumeroFormulario(formulario.percentual)
+
+  if (valorVenda === null || percentual === null) return ''
+  return formatarValorFormulario((valorVenda * percentual) / 100)
+}
+
+function prepararFormularioLancamentoParaSalvar(formulario) {
+  const proximoFormulario = { ...formulario }
+  const valorPremiacao = calcularValorPremiacaoFormulario(proximoFormulario)
+
+  if (valorPremiacao) {
+    proximoFormulario.valor = valorPremiacao
+  }
+
+  if (
+    CATEGORIAS_VALOR_ZERO_INFORMATIVO.has(proximoFormulario.categoria) &&
+    normalizarTexto(proximoFormulario.valor) === ''
+  ) {
+    proximoFormulario.valor = '0'
+  }
+
+  return proximoFormulario
+}
+
 function montarPayloadLancamento(formulario) {
   const payload = {
     natureza: formulario.natureza,
@@ -391,6 +490,54 @@ function obterNomeFuncionario(funcionariosPorId, funcionarioId) {
   const funcionario = funcionariosPorId.get(funcionarioId)
   if (!funcionario) return 'Funcionário não encontrado'
   return [funcionario.nome, funcionario.cargo].filter(Boolean).join(' • ')
+}
+
+function calcularResumoLancamentos(lista = []) {
+  return (lista || []).reduce((resumo, lancamento) => {
+    const valor = Number(lancamento?.valor) || 0
+
+    resumo.quantidadeLancamentos += 1
+    if (lancamento?.arquivado) resumo.quantidadeArquivados += 1
+
+    if (!lancamento?.arquivado && lancamento?.natureza === 'credito') {
+      resumo.totalCreditos += valor
+    } else if (!lancamento?.arquivado && lancamento?.natureza === 'desconto') {
+      resumo.totalDescontos += valor
+    }
+
+    resumo.saldoInformativo = resumo.totalCreditos - resumo.totalDescontos
+    return resumo
+  }, {
+    totalCreditos: 0,
+    totalDescontos: 0,
+    saldoInformativo: 0,
+    quantidadeLancamentos: 0,
+    quantidadeArquivados: 0
+  })
+}
+
+function agruparLancamentosPorFuncionario(lancamentos = [], funcionariosPorId) {
+  const grupos = new Map()
+
+  ;(lancamentos || []).forEach((lancamento) => {
+    const funcionarioId = lancamento.funcionario_id || '__sem_funcionario'
+    if (!grupos.has(funcionarioId)) {
+      grupos.set(funcionarioId, {
+        funcionarioId,
+        nome: obterNomeFuncionario(funcionariosPorId, lancamento.funcionario_id),
+        lancamentos: []
+      })
+    }
+
+    grupos.get(funcionarioId).lancamentos.push(lancamento)
+  })
+
+  return Array.from(grupos.values())
+    .map((grupo) => ({
+      ...grupo,
+      resumo: calcularResumoLancamentos(grupo.lancamentos)
+    }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
 }
 
 export default function FechamentoFolhaPage({
@@ -457,12 +604,45 @@ export default function FechamentoFolhaPage({
     return competencias.find((competencia) => competencia.id === competenciaSelecionadaId) || null
   }, [competenciaSelecionadaId, competencias])
 
+  const gruposLancamentos = useMemo(() => {
+    return agruparLancamentosPorFuncionario(lancamentos, funcionariosPorId)
+  }, [funcionariosPorId, lancamentos])
+
+  const valorPremiacaoCalculado = useMemo(() => {
+    return calcularValorPremiacaoFormulario(formLancamento)
+  }, [formLancamento])
+
+  const categoriaHorasExtras = CATEGORIAS_HORAS_EXTRAS.has(formLancamento.categoria)
+  const categoriaFalta = formLancamento.categoria === 'falta_injustificada'
+
   function definirCategoria(categoria) {
     setFormLancamento((atual) => ({
       ...atual,
       categoria,
-      natureza: obterNaturezaPorCategoria(categoria)
+      natureza: obterNaturezaPorCategoria(categoria),
+      valor: CATEGORIAS_VALOR_ZERO_INFORMATIVO.has(categoria) && normalizarTexto(atual.valor) === ''
+        ? '0'
+        : atual.valor
     }))
+  }
+
+  function focarFormularioLancamento() {
+    window.setTimeout(() => {
+      document.getElementById('folha-form-lancamento')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }, 0)
+  }
+
+  function iniciarNovoLancamentoFuncionario(funcionarioId) {
+    limparMensagens()
+    setLancamentoEditandoId('')
+    setFormLancamento({
+      ...criarFormularioLancamentoInicial(),
+      funcionario_id: funcionarioId
+    })
+    focarFormularioLancamento()
   }
 
   function limparMensagens() {
@@ -470,23 +650,23 @@ export default function FechamentoFolhaPage({
     limparErro()
   }
 
-  function validarFormularioLancamento() {
+  function validarFormularioLancamento(formulario = formLancamento) {
     if (!empresaId) return 'Empresa ativa não identificada.'
     if (!competenciaSelecionadaId) return 'Selecione uma competência antes de lançar.'
-    if (!lancamentoEditandoId && !formLancamento.funcionario_id) return 'Selecione um funcionário.'
-    if (!formLancamento.natureza || !formLancamento.categoria) return 'Informe natureza e categoria.'
-    if (Number(formLancamento.valor) < 0) return 'O valor não pode ser negativo.'
+    if (!lancamentoEditandoId && !formulario.funcionario_id) return 'Selecione um funcionário.'
+    if (!formulario.natureza || !formulario.categoria) return 'Informe natureza e categoria.'
+    if (Number(formulario.valor) < 0) return 'O valor não pode ser negativo.'
 
     if (
-      CATEGORIAS_FINANCEIRAS_COM_VALOR_OBRIGATORIO.includes(formLancamento.categoria) &&
-      formLancamento.valor === ''
+      CATEGORIAS_FINANCEIRAS_COM_VALOR_OBRIGATORIO.includes(formulario.categoria) &&
+      formulario.valor === ''
     ) {
       return 'Informe o valor para esta categoria.'
     }
 
     if (
-      (formLancamento.categoria === 'outro_credito' || formLancamento.categoria === 'outro_desconto') &&
-      !normalizarTexto(formLancamento.descricao)
+      (formulario.categoria === 'outro_credito' || formulario.categoria === 'outro_desconto') &&
+      !normalizarTexto(formulario.descricao)
     ) {
       return 'Informe uma descrição para outro crédito/outro desconto.'
     }
@@ -527,20 +707,25 @@ export default function FechamentoFolhaPage({
   async function salvarLancamento(event) {
     event.preventDefault()
     limparMensagens()
-    const erroValidacao = validarFormularioLancamento()
+    const formularioParaSalvar = prepararFormularioLancamentoParaSalvar(formLancamento)
+    if (formularioParaSalvar.valor !== formLancamento.valor) {
+      setFormLancamento(formularioParaSalvar)
+    }
+
+    const erroValidacao = validarFormularioLancamento(formularioParaSalvar)
 
     if (erroValidacao) {
       setErroFormulario(erroValidacao)
       return
     }
 
-    const payloadBase = montarPayloadLancamento(formLancamento)
+    const payloadBase = montarPayloadLancamento(formularioParaSalvar)
     const resposta = lancamentoEditandoId
       ? await atualizarLancamento(lancamentoEditandoId, payloadBase)
       : await criarLancamento({
         ...payloadBase,
         competencia_id: competenciaSelecionadaId,
-        funcionario_id: formLancamento.funcionario_id
+        funcionario_id: formularioParaSalvar.funcionario_id
       })
 
     if (resposta.error) {
@@ -560,6 +745,7 @@ export default function FechamentoFolhaPage({
       natureza: lancamento.natureza || obterNaturezaPorCategoria(lancamento.categoria),
       categoria: lancamento.categoria || 'premiacao',
       descricao: lancamento.descricao || '',
+      valor_venda: '',
       data_referencia: lancamento.data_referencia || '',
       quantidade: lancamento.quantidade ?? '',
       percentual: lancamento.percentual ?? '',
@@ -583,6 +769,52 @@ export default function FechamentoFolhaPage({
     if (resposta.error) {
       setErroFormulario(resposta.error.message || 'Não foi possível atualizar o lançamento.')
     }
+  }
+
+  function renderResumoGrupo(resumo) {
+    return (
+      <div className="folha-grupo-resumo" style={estilosLocais.grupoResumoGrid}>
+        <div style={estilosLocais.grupoResumoItem}>
+          <span style={estilosLocais.grupoResumoLabel}>Créditos</span>
+          <strong style={estilosLocais.grupoResumoValor}>{formatarMoeda(resumo.totalCreditos)}</strong>
+        </div>
+        <div style={estilosLocais.grupoResumoItem}>
+          <span style={estilosLocais.grupoResumoLabel}>Descontos</span>
+          <strong style={estilosLocais.grupoResumoValor}>{formatarMoeda(resumo.totalDescontos)}</strong>
+        </div>
+        <div style={estilosLocais.grupoResumoItem}>
+          <span style={estilosLocais.grupoResumoLabel}>Saldo</span>
+          <strong style={estilosLocais.grupoResumoValor}>{formatarMoeda(resumo.saldoInformativo)}</strong>
+        </div>
+        <div style={estilosLocais.grupoResumoItem}>
+          <span style={estilosLocais.grupoResumoLabel}>Lançamentos</span>
+          <strong style={estilosLocais.grupoResumoValor}>{resumo.quantidadeLancamentos}</strong>
+        </div>
+      </div>
+    )
+  }
+
+  function renderAcoesLancamento(lancamento) {
+    return (
+      <div className="folha-card-actions" style={estilosLocais.acoesTabela}>
+        <button
+          type="button"
+          style={styles.btnCinza}
+          onClick={() => iniciarEdicaoLancamento(lancamento)}
+          disabled={!podeEditar || salvando || lancamento.arquivado}
+        >
+          Editar
+        </button>
+        <button
+          type="button"
+          style={styles.btnCinza}
+          onClick={() => alternarArquivoLancamento(lancamento)}
+          disabled={!podeEditar || salvando}
+        >
+          {lancamento.arquivado ? 'Reativar' : 'Arquivar'}
+        </button>
+      </div>
+    )
   }
 
   const mensagemErro = erroFormulario || erro || erroFuncionarios
@@ -736,10 +968,16 @@ export default function FechamentoFolhaPage({
           .folha-mobile-meta-grid {
             grid-template-columns: 1fr 1fr;
           }
+          .folha-grupo-resumo {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
         }
         @media (max-width: 560px) {
           .folha-mobile-meta-grid {
             grid-template-columns: 1fr;
+          }
+          .folha-grupo-resumo {
+            grid-template-columns: 1fr !important;
           }
           .folha-card-actions {
             width: 100%;
@@ -952,7 +1190,7 @@ export default function FechamentoFolhaPage({
         )}
       </section>
 
-      <section className="folha-section compact" style={styles.cardConfiguracao}>
+      <section id="folha-form-lancamento" className="folha-section compact" style={styles.cardConfiguracao}>
         <h2 style={styles.subtitulo}>{lancamentoEditandoId ? 'Editar lançamento' : 'Lançamento manual'}</h2>
         <p style={styles.textoNota}>
           O lançamento manual respeita a empresa ativa, a competência selecionada e a RLS do Supabase.
@@ -1029,8 +1267,29 @@ export default function FechamentoFolhaPage({
                   />
                 </label>
 
+                {formLancamento.categoria === 'premiacao' && (
+                  <label style={estilosLocais.formField}>
+                    <span style={estilosLocais.label}>Valor de venda</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formLancamento.valor_venda}
+                      onChange={(event) => setFormLancamento((atual) => ({ ...atual, valor_venda: event.target.value }))}
+                      style={estilosLocais.input}
+                      disabled={!empresaId || !podeEditar || salvando}
+                      placeholder="Base para cálculo local"
+                    />
+                    <small style={estilosLocais.helperText}>
+                      Auxiliar visual. O valor de venda não é salvo em campo próprio neste ciclo.
+                    </small>
+                  </label>
+                )}
+
                 <label style={estilosLocais.formField}>
-                  <span style={estilosLocais.label}>Quantidade</span>
+                  <span style={estilosLocais.label}>
+                    {categoriaHorasExtras ? 'Quantidade de horas' : categoriaFalta ? 'Quantidade/dias' : 'Quantidade'}
+                  </span>
                   <input
                     type="number"
                     min="0"
@@ -1068,6 +1327,22 @@ export default function FechamentoFolhaPage({
                   />
                 </label>
               </div>
+              {formLancamento.categoria === 'premiacao' && (
+                <small style={estilosLocais.helperText}>
+                  Cálculo local: valor de venda x percentual / 100
+                  {valorPremiacaoCalculado ? ` = ${formatarMoeda(valorPremiacaoCalculado)}. O campo valor será preenchido antes de salvar.` : '.'}
+                </small>
+              )}
+              {categoriaHorasExtras && (
+                <small style={estilosLocais.helperText}>
+                  Informe apenas a quantidade de horas para conferência da contabilidade. O sistema não calcula valor trabalhista; valor 0 é permitido.
+                </small>
+              )}
+              {categoriaFalta && (
+                <small style={estilosLocais.helperText}>
+                  Informe a quantidade/dias para conferência da contabilidade. O sistema não calcula desconto trabalhista; valor 0 é permitido.
+                </small>
+              )}
             </div>
 
             <div style={estilosLocais.formPanelSoft}>
@@ -1166,100 +1441,113 @@ export default function FechamentoFolhaPage({
                 </tr>
               </thead>
               <tbody>
-                {lancamentos.map((lancamento) => (
-                  <tr key={lancamento.id}>
-                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdTexto }}>
-                      {obterNomeFuncionario(funcionariosPorId, lancamento.funcionario_id)}
-                    </td>
-                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{LABELS_NATUREZA[lancamento.natureza] || lancamento.natureza}</td>
-                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{LABELS_CATEGORIA[lancamento.categoria] || lancamento.categoria}</td>
-                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdTexto }}>{lancamento.descricao || '-'}</td>
-                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{formatarData(lancamento.data_referencia)}</td>
-                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{formatarNumero(lancamento.quantidade)}</td>
-                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{formatarNumero(lancamento.percentual)}</td>
-                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdValor }}>{lancamento.valor === null ? '-' : formatarMoeda(lancamento.valor)}</td>
-                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{lancamento.conferido ? 'Sim' : 'Não'}</td>
-                    <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{lancamento.arquivado ? 'Arquivado' : 'Ativo'}</td>
-                    <td style={estilosLocais.td}>
-                      <div style={estilosLocais.acoesTabela}>
-                        <button
-                          type="button"
-                          style={styles.btnCinza}
-                          onClick={() => iniciarEdicaoLancamento(lancamento)}
-                          disabled={!podeEditar || salvando || lancamento.arquivado}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          type="button"
-                          style={styles.btnCinza}
-                          onClick={() => alternarArquivoLancamento(lancamento)}
-                          disabled={!podeEditar || salvando}
-                        >
-                          {lancamento.arquivado ? 'Reativar' : 'Arquivar'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                {gruposLancamentos.map((grupo) => (
+                  <Fragment key={`grupo-${grupo.funcionarioId}`}>
+                    <tr style={estilosLocais.grupoTableRow}>
+                      <td colSpan={11} style={{ ...estilosLocais.td, borderBottom: '1px solid #e2e8f0' }}>
+                        <div style={estilosLocais.grupoLancamentosHeader}>
+                          <div style={estilosLocais.grupoLancamentosNome}>
+                            <strong>{grupo.nome}</strong>
+                            <span style={styles.textoNota}>
+                              {grupo.resumo.quantidadeLancamentos} lançamento(s) nesta competência.
+                            </span>
+                          </div>
+                          {renderResumoGrupo(grupo.resumo)}
+                          <button
+                            type="button"
+                            style={styles.btnPrimario}
+                            onClick={() => iniciarNovoLancamentoFuncionario(grupo.funcionarioId)}
+                            disabled={!podeEditar || salvando || grupo.funcionarioId === '__sem_funcionario'}
+                          >
+                            + lançamento
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {grupo.lancamentos.map((lancamento) => (
+                      <tr key={lancamento.id}>
+                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdTexto }}>
+                          {grupo.nome}
+                        </td>
+                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{LABELS_NATUREZA[lancamento.natureza] || lancamento.natureza}</td>
+                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{LABELS_CATEGORIA[lancamento.categoria] || lancamento.categoria}</td>
+                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdTexto }}>{lancamento.descricao || '-'}</td>
+                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{formatarData(lancamento.data_referencia)}</td>
+                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{formatarNumero(lancamento.quantidade)}</td>
+                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{formatarNumero(lancamento.percentual)}</td>
+                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdValor }}>{lancamento.valor === null ? '-' : formatarMoeda(lancamento.valor)}</td>
+                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{lancamento.conferido ? 'Sim' : 'Não'}</td>
+                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{lancamento.arquivado ? 'Arquivado' : 'Ativo'}</td>
+                        <td style={estilosLocais.td}>
+                          {renderAcoesLancamento(lancamento)}
+                        </td>
+                      </tr>
+                    ))}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
           </div>
           <div className="folha-mobile-list" style={estilosLocais.mobileCards}>
-            {lancamentos.map((lancamento) => (
-              <article key={`mobile-${lancamento.id}`} style={estilosLocais.mobileCard}>
-                <div style={estilosLocais.mobileCardHeader}>
-                  <div>
-                    <strong>{obterNomeFuncionario(funcionariosPorId, lancamento.funcionario_id)}</strong>
-                    <p className="folha-card-description">
-                      {LABELS_CATEGORIA[lancamento.categoria] || lancamento.categoria} - {LABELS_NATUREZA[lancamento.natureza] || lancamento.natureza}
-                    </p>
+            {gruposLancamentos.map((grupo) => (
+              <div key={`mobile-grupo-${grupo.funcionarioId}`} style={estilosLocais.mobileGroup}>
+                <div style={estilosLocais.grupoLancamentosHeader}>
+                  <div style={estilosLocais.grupoLancamentosNome}>
+                    <strong>{grupo.nome}</strong>
+                    <span style={styles.textoNota}>
+                      {grupo.resumo.quantidadeLancamentos} lançamento(s) nesta competência.
+                    </span>
                   </div>
-                  <span style={estilosLocais.badge}>{lancamento.arquivado ? 'Arquivado' : 'Ativo'}</span>
-                </div>
-
-                {lancamento.descricao && (
-                  <p className="folha-card-description">{lancamento.descricao}</p>
-                )}
-
-                <div className="folha-mobile-meta-grid" style={estilosLocais.mobileMetaGrid}>
-                  <div style={estilosLocais.mobileMetaItem}>
-                    <span style={estilosLocais.mobileMetaLabel}>Data</span>
-                    <strong>{formatarData(lancamento.data_referencia)}</strong>
-                  </div>
-                  <div style={estilosLocais.mobileMetaItem}>
-                    <span style={estilosLocais.mobileMetaLabel}>Valor</span>
-                    <strong className="folha-money">{lancamento.valor === null ? '-' : formatarMoeda(lancamento.valor)}</strong>
-                  </div>
-                  <div style={estilosLocais.mobileMetaItem}>
-                    <span style={estilosLocais.mobileMetaLabel}>Qtd. / %</span>
-                    <strong>{formatarNumero(lancamento.quantidade)} / {formatarNumero(lancamento.percentual)}</strong>
-                  </div>
-                  <div style={estilosLocais.mobileMetaItem}>
-                    <span style={estilosLocais.mobileMetaLabel}>Conferido</span>
-                    <strong>{lancamento.conferido ? 'Sim' : 'Não'}</strong>
-                  </div>
-                </div>
-
-                <div className="folha-card-actions" style={estilosLocais.acoesTabela}>
                   <button
                     type="button"
-                    style={styles.btnCinza}
-                    onClick={() => iniciarEdicaoLancamento(lancamento)}
-                    disabled={!podeEditar || salvando || lancamento.arquivado}
+                    style={styles.btnPrimario}
+                    onClick={() => iniciarNovoLancamentoFuncionario(grupo.funcionarioId)}
+                    disabled={!podeEditar || salvando || grupo.funcionarioId === '__sem_funcionario'}
                   >
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    style={styles.btnCinza}
-                    onClick={() => alternarArquivoLancamento(lancamento)}
-                    disabled={!podeEditar || salvando}
-                  >
-                    {lancamento.arquivado ? 'Reativar' : 'Arquivar'}
+                    + lançamento
                   </button>
                 </div>
-              </article>
+                {renderResumoGrupo(grupo.resumo)}
+
+                {grupo.lancamentos.map((lancamento) => (
+                  <article key={`mobile-${lancamento.id}`} style={estilosLocais.mobileCard}>
+                    <div style={estilosLocais.mobileCardHeader}>
+                      <div>
+                        <strong>{LABELS_CATEGORIA[lancamento.categoria] || lancamento.categoria}</strong>
+                        <p className="folha-card-description">
+                          {LABELS_NATUREZA[lancamento.natureza] || lancamento.natureza}
+                        </p>
+                      </div>
+                      <span style={estilosLocais.badge}>{lancamento.arquivado ? 'Arquivado' : 'Ativo'}</span>
+                    </div>
+
+                    {lancamento.descricao && (
+                      <p className="folha-card-description">{lancamento.descricao}</p>
+                    )}
+
+                    <div className="folha-mobile-meta-grid" style={estilosLocais.mobileMetaGrid}>
+                      <div style={estilosLocais.mobileMetaItem}>
+                        <span style={estilosLocais.mobileMetaLabel}>Data</span>
+                        <strong>{formatarData(lancamento.data_referencia)}</strong>
+                      </div>
+                      <div style={estilosLocais.mobileMetaItem}>
+                        <span style={estilosLocais.mobileMetaLabel}>Valor</span>
+                        <strong className="folha-money">{lancamento.valor === null ? '-' : formatarMoeda(lancamento.valor)}</strong>
+                      </div>
+                      <div style={estilosLocais.mobileMetaItem}>
+                        <span style={estilosLocais.mobileMetaLabel}>Qtd. / %</span>
+                        <strong>{formatarNumero(lancamento.quantidade)} / {formatarNumero(lancamento.percentual)}</strong>
+                      </div>
+                      <div style={estilosLocais.mobileMetaItem}>
+                        <span style={estilosLocais.mobileMetaLabel}>Conferido</span>
+                        <strong>{lancamento.conferido ? 'Sim' : 'Não'}</strong>
+                      </div>
+                    </div>
+
+                    {renderAcoesLancamento(lancamento)}
+                  </article>
+                ))}
+              </div>
             ))}
           </div>
           </>

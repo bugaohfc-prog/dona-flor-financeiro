@@ -26,11 +26,15 @@ A tabela `public.df_folha_lancamento_itens` detalha os lancamentos da competenci
 - Reativar item limpa `arquivado_em`; conferir item preenche `conferido_em`.
 - Fluxo visual de conferencia por item fica fora deste ciclo.
 - Grants diretos ficam restritos: `authenticated` somente com `SELECT`, `INSERT` e `UPDATE`; funcoes internas de trigger nao ficam executaveis via RPC por `anon` ou `authenticated`.
+- As funcoes internas de recalculo rodam como `SECURITY DEFINER` com `search_path=public`, mantendo `EXECUTE` direto revogado para `PUBLIC`, `anon` e `authenticated`. Isso permite o trigger recalcular o total sem expor RPC direto.
 
 ## Arquivos de apoio
 
 - Migration: `supabase/migrations/20260605130000_create_df_folha_lancamento_itens.sql`
 - Hardening de grants: `supabase/migrations/20260605131500_fix_df_folha_lancamento_itens_grants.sql`
 - Hardening de funcoes: `supabase/migrations/20260605132000_harden_df_folha_lancamento_itens_functions.sql`
+- Hotfix de recalculo: `supabase/migrations/20260605143000_fix_df_folha_lancamento_itens_recalculo_security.sql`
 - Diagnostico: `docs/security/diagnostics/diagnostico_df_folha_lancamento_itens_20260605.sql`
+- Diagnostico do hotfix: `docs/security/diagnostics/diagnostico_df_folha_lancamento_itens_recalculo_security_20260605.sql`
 - Rollback: `docs/security/rollback/rollback_df_folha_lancamento_itens_20260605.sql`
+- Rollback do hotfix: `docs/security/rollback/rollback_df_folha_lancamento_itens_recalculo_security_20260605.sql`

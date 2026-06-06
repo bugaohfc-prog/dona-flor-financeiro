@@ -18,6 +18,7 @@ const FORM_COMPETENCIA_INICIAL = {
 
 const FORM_LANCAMENTO_INICIAL = {
   funcionario_id: '',
+  filial_id: '',
   natureza: 'credito',
   categoria: 'premiacao',
   descricao: '',
@@ -593,6 +594,11 @@ function obterNomeFuncionario(funcionariosPorId, funcionarioId) {
   return [funcionario.nome, funcionario.cargo].filter(Boolean).join(' • ')
 }
 
+function obterFilialFuncionario(funcionariosPorId, funcionarioId) {
+  const funcionario = funcionariosPorId.get(funcionarioId)
+  return normalizarTexto(funcionario?.filial_id) || ''
+}
+
 function calcularResumoLancamentos(lista = []) {
   return (lista || []).reduce((resumo, lancamento) => {
     const valor = Number(lancamento?.valor) || 0
@@ -752,6 +758,16 @@ export default function FechamentoFolhaPage({
     }))
   }
 
+  function selecionarFuncionarioLancamento(funcionarioId) {
+    const filialId = obterFilialFuncionario(funcionariosPorId, funcionarioId)
+
+    setFormLancamento((atual) => ({
+      ...atual,
+      funcionario_id: funcionarioId,
+      filial_id: filialId
+    }))
+  }
+
   function focarFormularioLancamento() {
     window.setTimeout(() => {
       document.getElementById('folha-form-lancamento')?.scrollIntoView({
@@ -766,7 +782,8 @@ export default function FechamentoFolhaPage({
     setLancamentoEditandoId('')
     setFormLancamento({
       ...criarFormularioLancamentoInicial(),
-      funcionario_id: funcionarioId
+      funcionario_id: funcionarioId,
+      filial_id: obterFilialFuncionario(funcionariosPorId, funcionarioId)
     })
     focarFormularioLancamento()
   }
@@ -928,7 +945,8 @@ export default function FechamentoFolhaPage({
       : await criarLancamento({
         ...payloadBase,
         competencia_id: competenciaSelecionadaId,
-        funcionario_id: formularioParaSalvar.funcionario_id
+        funcionario_id: formularioParaSalvar.funcionario_id,
+        filial_id: formularioParaSalvar.filial_id || null
       })
 
     if (resposta.error) {
@@ -980,6 +998,7 @@ export default function FechamentoFolhaPage({
     setLancamentoEditandoId(lancamento.id)
     setFormLancamento({
       funcionario_id: lancamento.funcionario_id || '',
+      filial_id: lancamento.filial_id || obterFilialFuncionario(funcionariosPorId, lancamento.funcionario_id),
       natureza: lancamento.natureza || obterNaturezaPorCategoria(lancamento.categoria),
       categoria: lancamento.categoria || 'premiacao',
       descricao: lancamento.descricao || '',
@@ -1770,7 +1789,7 @@ export default function FechamentoFolhaPage({
                   <span style={estilosLocais.label}>Funcionário</span>
                   <select
                     value={formLancamento.funcionario_id}
-                    onChange={(event) => setFormLancamento((atual) => ({ ...atual, funcionario_id: event.target.value }))}
+                    onChange={(event) => selecionarFuncionarioLancamento(event.target.value)}
                     style={estilosLocais.input}
                     disabled={!empresaId || !podeEditar || salvando || Boolean(lancamentoEditandoId)}
                     required={!lancamentoEditandoId}
@@ -1782,6 +1801,25 @@ export default function FechamentoFolhaPage({
                       </option>
                     ))}
                   </select>
+                </label>
+
+                <label style={estilosLocais.formField}>
+                  <span style={estilosLocais.label}>Filial do lancamento</span>
+                  <input
+                    value={
+                      formLancamento.filial_id
+                        ? 'Preenchida automaticamente pelo colaborador'
+                        : formLancamento.funcionario_id
+                          ? 'Colaborador sem filial cadastrada'
+                          : 'Selecione um colaborador'
+                    }
+                    style={estilosLocais.inputReadOnly}
+                    disabled
+                    readOnly
+                  />
+                  <small style={estilosLocais.helperText}>
+                    A filial acompanha o cadastro do colaborador para evitar divergencia manual.
+                  </small>
                 </label>
 
                 <label style={estilosLocais.formField}>

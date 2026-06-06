@@ -270,6 +270,7 @@ export default function App() {
   } = useEmpresaContext()
   const [nomeUsuarioPerfil, setNomeUsuarioPerfil] = useState('')
   const [empresaCarregando, setEmpresaCarregando] = useState(false)
+  const [empresaSessaoInicializada, setEmpresaSessaoInicializada] = useState(false)
   const {
     modalPerfilUsuario,
     setModalPerfilUsuario,
@@ -393,6 +394,7 @@ export default function App() {
     setNomeUsuarioPerfil('')
     setErroEmpresa('')
     setEmpresaCarregando(false)
+    setEmpresaSessaoInicializada(false)
     setLoading(false)
     limparSessaoSegura()
   }
@@ -511,7 +513,7 @@ export default function App() {
       try {
         const permitirCarregarLixeira = podeGerenciarLixeira()
         const tarefas = [
-          buscarContas(empresaId),
+          buscarContas(empresaId, { silencioso: true, permitirGerarRecorrencias: false }),
           buscarCentros(empresaId),
           buscarFiliais(empresaId)
         ]
@@ -594,11 +596,13 @@ export default function App() {
 
     if (!userId) {
       setEmpresaCarregando(false)
+      setEmpresaSessaoInicializada(false)
       setLoading(false)
       return
     }
 
     setEmpresaCarregando(true)
+    setEmpresaSessaoInicializada(false)
     setLoading(true)
     setErroEmpresa('')
 
@@ -671,6 +675,7 @@ export default function App() {
         permitirGerarRecorrencias: podeOperarFinanceiro,
         permitirCarregarLixeira: podeCarregarLixeira
       })
+      setEmpresaSessaoInicializada(true)
     } catch (error) {
       if (erroEhSessaoExpirada(error)) {
         await supabase.auth.signOut()
@@ -1277,6 +1282,7 @@ export default function App() {
       configPush,
       diasAlertaContas,
       diasAvisoPadrao,
+      silencioso: opcoes.silencioso,
       permitirGerarRecorrencias: opcoes.permitirGerarRecorrencias ?? podeEditarFinanceiro()
     })
   }
@@ -4021,10 +4027,11 @@ export default function App() {
     )
   }
 
-  const aguardandoEmpresaAtiva = Boolean(usuarioLogado?.id && !erroEmpresa && (empresaCarregando || !empresaId))
+  const aguardandoEmpresaInicial = Boolean(usuarioLogado?.id && !erroEmpresa && !empresaSessaoInicializada)
+  const bloqueandoPorEmpresa = Boolean(aguardandoEmpresaInicial && (empresaCarregando || !empresaId))
 
   const routeGuardProps = {
-    carregandoAuth: carregandoAuth || aguardandoEmpresaAtiva,
+    carregandoAuth: carregandoAuth || bloqueandoPorEmpresa,
     usuarioLogado,
     erroEmpresa,
     styles,
@@ -4034,7 +4041,7 @@ export default function App() {
     sairDoSistema
   }
 
-  if (carregandoAuth || aguardandoEmpresaAtiva || !usuarioLogado || erroEmpresa) {
+  if (carregandoAuth || bloqueandoPorEmpresa || !usuarioLogado || erroEmpresa) {
     return <AppRouteGuards {...routeGuardProps} />
   }
 

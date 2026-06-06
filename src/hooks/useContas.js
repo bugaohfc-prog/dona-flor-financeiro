@@ -178,36 +178,41 @@ export function useContas() {
       configPush,
       diasAlertaContas,
       diasAvisoPadrao,
+      silencioso = false,
       permitirGerarRecorrencias = false
     } = contexto
 
     if (!empresaAtual) return
 
-    const { data, error } = await listarContasAtivas(supabase, empresaAtual)
+    try {
+      const { data, error } = await listarContasAtivas(supabase, empresaAtual)
 
-    if (error) {
-      avisarErro(error)
-      return
+      if (error) {
+        avisarErro(error)
+        return
+      }
+
+      const contasAtuais = data || []
+
+      if (!permitirGerarRecorrencias) {
+        setContas(contasAtuais)
+        return
+      }
+
+      const contasComRecorrencias = await garantirContasRecorrentesDoMes({
+        supabase,
+        empresaAtual,
+        contasAtuais,
+        configWhatsapp,
+        configEmail,
+        configPush,
+        diasAlertaContas,
+        diasAvisoPadrao
+      })
+      setContas(contasComRecorrencias)
+    } finally {
+      if (!silencioso) setLoading(false)
     }
-
-    const contasAtuais = data || []
-
-    if (!permitirGerarRecorrencias) {
-      setContas(contasAtuais)
-      return
-    }
-
-    const contasComRecorrencias = await garantirContasRecorrentesDoMes({
-      supabase,
-      empresaAtual,
-      contasAtuais,
-      configWhatsapp,
-      configEmail,
-      configPush,
-      diasAlertaContas,
-      diasAvisoPadrao
-    })
-    setContas(contasComRecorrencias)
   }
 
   function abrirNovaConta(contexto) {

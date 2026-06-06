@@ -4251,6 +4251,7 @@ export default function App() {
         empresaNome={empresaAtiva?.nome || nomeEmpresa}
         podeEditar={podeAcessarGestaoPessoas()}
         voltarPainel={() => navegarPara('dashboard')}
+        filiais={filiais}
       />
     )
   }

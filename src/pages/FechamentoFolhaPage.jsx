@@ -599,6 +599,12 @@ function obterFilialFuncionario(funcionariosPorId, funcionarioId) {
   return normalizarTexto(funcionario?.filial_id) || ''
 }
 
+function obterNomeFilial(filiaisPorId, filialId) {
+  const id = normalizarTexto(filialId)
+  if (!id) return ''
+  return normalizarTexto(filiaisPorId.get(id)?.nome) || 'Filial vinculada nao encontrada'
+}
+
 function calcularResumoLancamentos(lista = []) {
   return (lista || []).reduce((resumo, lancamento) => {
     const valor = Number(lancamento?.valor) || 0
@@ -652,7 +658,8 @@ export default function FechamentoFolhaPage({
   empresaId,
   empresaNome,
   podeEditar = true,
-  voltarPainel
+  voltarPainel,
+  filiais = []
 }) {
   const [mostrarArquivadas, setMostrarArquivadas] = useState(false)
   const [mostrarLancamentosArquivados, setMostrarLancamentosArquivados] = useState(false)
@@ -715,6 +722,10 @@ export default function FechamentoFolhaPage({
   const funcionariosPorId = useMemo(() => {
     return new Map((funcionarios || []).map((funcionario) => [funcionario.id, funcionario]))
   }, [funcionarios])
+
+  const filiaisPorId = useMemo(() => {
+    return new Map((filiais || []).map((filial) => [filial.id, filial]))
+  }, [filiais])
 
   const competenciaSelecionada = useMemo(() => {
     return competencias.find((competencia) => competencia.id === competenciaSelecionadaId) || null
@@ -1808,7 +1819,7 @@ export default function FechamentoFolhaPage({
                   <input
                     value={
                       formLancamento.filial_id
-                        ? 'Preenchida automaticamente pelo colaborador'
+                        ? obterNomeFilial(filiaisPorId, formLancamento.filial_id)
                         : formLancamento.funcionario_id
                           ? 'Colaborador sem filial cadastrada'
                           : 'Selecione um colaborador'

@@ -1085,6 +1085,19 @@ export default function FechamentoFolhaPage({
     const categoriaFaltaItem = categoria === 'falta_injustificada'
     const categoriaPremiacaoItem = categoria === 'premiacao'
     const categoriaCompraItem = categoria === 'compras_vales'
+    const mostrarDataItem = !categoriaPremiacaoItem
+    const mostrarQuantidadeItem = categoriaHorasItem || categoriaFaltaItem
+    const mostrarPercentualItem = categoriaPremiacaoItem
+    const mostrarValorItem = categoriaCompraItem
+    const textoCategoriaItem = categoriaCompraItem
+      ? 'Use para compras internas, vales ou descontos combinados com o colaborador.'
+      : categoriaFaltaItem
+        ? 'Informe quantidade/dias. O calculo trabalhista final deve ser conferido pela contabilidade.'
+        : categoriaHorasItem
+          ? 'Informe a quantidade de horas para conferencia. Nao substitui calculo trabalhista.'
+          : categoriaPremiacaoItem
+            ? 'Calculo gerencial de apoio. Conferir regras internas antes do fechamento.'
+            : 'Use para detalhar o lancamento com contexto administrativo.'
 
     return (
       <form onSubmit={(event) => salvarItemLancamento(event, lancamento)} style={estilosLocais.itemFormularioCompacto}>
@@ -1096,6 +1109,9 @@ export default function FechamentoFolhaPage({
             <p style={estilosLocais.helperText}>
               Formulario do item. O total do lancamento e recalculado pelo banco apos salvar.
             </p>
+            <p style={estilosLocais.helperText}>
+              {textoCategoriaItem}
+            </p>
           </div>
           <button type="button" style={styles.btnCinza} onClick={() => cancelarEdicaoItem(lancamento)}>
             Fechar formulario
@@ -1103,17 +1119,19 @@ export default function FechamentoFolhaPage({
         </div>
 
         <div style={estilosLocais.formGrid}>
-          <label style={estilosLocais.formField}>
-            <span style={estilosLocais.label}>Data</span>
-            <input
-              type="date"
-              value={formItem.data_referencia}
-              onChange={(event) => setFormItem((atual) => ({ ...atual, data_referencia: event.target.value }))}
-              style={estilosLocais.input}
-              disabled={!podeEditar || salvando}
-              required={categoriaFaltaItem}
-            />
-          </label>
+          {mostrarDataItem && (
+            <label style={estilosLocais.formField}>
+              <span style={estilosLocais.label}>{categoriaFaltaItem ? 'Data da falta' : 'Data'}</span>
+              <input
+                type="date"
+                value={formItem.data_referencia}
+                onChange={(event) => setFormItem((atual) => ({ ...atual, data_referencia: event.target.value }))}
+                style={estilosLocais.input}
+                disabled={!podeEditar || salvando}
+                required={categoriaFaltaItem}
+              />
+            </label>
+          )}
 
           {categoriaPremiacaoItem && (
             <label style={estilosLocais.formField}>
@@ -1131,49 +1149,67 @@ export default function FechamentoFolhaPage({
             </label>
           )}
 
-          <label style={estilosLocais.formField}>
-            <span style={estilosLocais.label}>
-              {categoriaHorasItem ? 'Horas' : categoriaFaltaItem ? 'Quantidade/dias' : 'Quantidade'}
-            </span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={formItem.quantidade}
-              onChange={(event) => setFormItem((atual) => ({ ...atual, quantidade: event.target.value }))}
-              style={estilosLocais.input}
-              disabled={!podeEditar || salvando || categoriaPremiacaoItem}
-              required={categoriaHorasItem || categoriaFaltaItem}
-            />
-          </label>
+          {mostrarQuantidadeItem && (
+            <label style={estilosLocais.formField}>
+              <span style={estilosLocais.label}>
+                {categoriaHorasItem ? 'Quantidade de horas' : 'Quantidade/dias'}
+              </span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={formItem.quantidade}
+                onChange={(event) => setFormItem((atual) => ({ ...atual, quantidade: event.target.value }))}
+                style={estilosLocais.input}
+                disabled={!podeEditar || salvando}
+                required
+              />
+            </label>
+          )}
 
-          <label style={estilosLocais.formField}>
-            <span style={estilosLocais.label}>Percentual</span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={formItem.percentual}
-              onChange={(event) => setFormItem((atual) => ({ ...atual, percentual: event.target.value }))}
-              style={estilosLocais.input}
-              disabled={!podeEditar || salvando || categoriaHorasItem}
-              required={categoriaPremiacaoItem || categoriaHorasItem}
-            />
-          </label>
+          {mostrarPercentualItem && (
+            <label style={estilosLocais.formField}>
+              <span style={estilosLocais.label}>Percentual</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={formItem.percentual}
+                onChange={(event) => setFormItem((atual) => ({ ...atual, percentual: event.target.value }))}
+                style={estilosLocais.input}
+                disabled={!podeEditar || salvando}
+                required
+              />
+            </label>
+          )}
 
-          <label style={estilosLocais.formField}>
-            <span style={estilosLocais.label}>Valor</span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={formItem.valor}
-              onChange={(event) => setFormItem((atual) => ({ ...atual, valor: event.target.value }))}
-              style={categoriaFaltaItem || categoriaHorasItem || categoriaPremiacaoItem ? estilosLocais.inputReadOnly : estilosLocais.input}
-              disabled={!podeEditar || salvando || categoriaFaltaItem || categoriaHorasItem || categoriaPremiacaoItem}
-              required={categoriaCompraItem}
-            />
-          </label>
+          {mostrarValorItem && (
+            <label style={estilosLocais.formField}>
+              <span style={estilosLocais.label}>Valor</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={formItem.valor}
+                onChange={(event) => setFormItem((atual) => ({ ...atual, valor: event.target.value }))}
+                style={estilosLocais.input}
+                disabled={!podeEditar || salvando}
+                required
+              />
+            </label>
+          )}
+
+          {categoriaPremiacaoItem && (
+            <label style={estilosLocais.formField}>
+              <span style={estilosLocais.label}>Valor calculado</span>
+              <input
+                value={valorItemPremiacaoCalculado ? formatarMoeda(valorItemPremiacaoCalculado) : 'Preencha valor base e percentual'}
+                style={estilosLocais.inputReadOnly}
+                disabled
+                readOnly
+              />
+            </label>
+          )}
         </div>
 
         {categoriaPremiacaoItem && (
@@ -1184,12 +1220,12 @@ export default function FechamentoFolhaPage({
         )}
         {categoriaHorasItem && (
           <small style={estilosLocais.helperText}>
-            Horas extras sao informativas para a contabilidade. O sistema nao calcula valor trabalhista.
+            O valor 0 e registrado automaticamente. A contabilidade confere o calculo trabalhista.
           </small>
         )}
         {categoriaFaltaItem && (
           <small style={estilosLocais.helperText}>
-            A data da falta ajuda a contabilidade a avaliar DSR. O sistema nao calcula desconto trabalhista.
+            O valor 0 e registrado automaticamente. A data ajuda a contabilidade a avaliar DSR.
           </small>
         )}
 
@@ -1200,7 +1236,7 @@ export default function FechamentoFolhaPage({
             onChange={(event) => setFormItem((atual) => ({ ...atual, descricao: event.target.value }))}
             style={estilosLocais.input}
             disabled={!podeEditar || salvando}
-            placeholder="Contexto administrativo do item."
+            placeholder="Resumo administrativo curto do item."
           />
         </label>
 
@@ -1211,8 +1247,11 @@ export default function FechamentoFolhaPage({
             onChange={(event) => setFormItem((atual) => ({ ...atual, observacao_administrativa: event.target.value }))}
             style={estilosLocais.textarea}
             disabled={!podeEditar || salvando}
-            placeholder="Somente contexto administrativo. Nao inclua documentos, saude, CID ou dados clinicos."
+            placeholder="Nao registre dados medicos, documentos, diagnosticos ou informacoes sensiveis neste campo."
           />
+          <small style={estilosLocais.helperText}>
+            Nao registre dados medicos, documentos, diagnosticos ou informacoes sensiveis neste campo.
+          </small>
         </label>
 
         <div style={estilosLocais.formActions}>

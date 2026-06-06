@@ -14,6 +14,8 @@ const STATUS_LABELS = {
   arquivado: 'Arquivados'
 }
 
+const LIMITE_INICIAL_LISTA = 5
+
 function criarDataLocal(data) {
   if (!data) return null
   if (data instanceof Date) return Number.isNaN(data.getTime()) ? null : data
@@ -126,7 +128,17 @@ function PessoaResumoCard({ label, valor, detalhe }) {
   )
 }
 
-function PessoaListaSecao({ titulo, descricao, vazio, children }) {
+function PessoaListaSecao({
+  titulo,
+  descricao,
+  vazio,
+  total = 0,
+  aberta = true,
+  expandida = false,
+  onAlternarAberta,
+  onAlternarExpandida,
+  children
+}) {
   return (
     <section className="pessoas-report-section">
       <div className="pessoas-report-section-header">
@@ -134,12 +146,24 @@ function PessoaListaSecao({ titulo, descricao, vazio, children }) {
           <h2>{titulo}</h2>
           <p>{descricao}</p>
         </div>
+        <button className="pessoas-report-toggle" type="button" onClick={onAlternarAberta}>
+          {aberta ? 'Recolher' : 'Abrir'}
+        </button>
       </div>
-      {children || (
-        <div className="pessoas-report-empty">
-          <strong>Sem dados para exibir</strong>
-          <p>{vazio}</p>
-        </div>
+      {aberta && (
+        <>
+          {children || (
+            <div className="pessoas-report-empty">
+              <strong>Sem dados para exibir</strong>
+              <p>{vazio}</p>
+            </div>
+          )}
+          {total > LIMITE_INICIAL_LISTA && (
+            <button className="pessoas-report-more" type="button" onClick={onAlternarExpandida}>
+              {expandida ? 'Ver menos' : `Ver mais (${total - LIMITE_INICIAL_LISTA})`}
+            </button>
+          )}
+        </>
       )}
     </section>
   )
@@ -169,6 +193,13 @@ export default function RelatoriosPessoasPage({
   const [examesPorFuncionario, setExamesPorFuncionario] = useState({})
   const [loadingExamesPeriodicos, setLoadingExamesPeriodicos] = useState(false)
   const [erroExamesPeriodicos, setErroExamesPeriodicos] = useState(null)
+  const [statusFiltro, setStatusFiltro] = useState('todos')
+  const [secoesAbertas, setSecoesAbertas] = useState({
+    aniversariantes: true,
+    admissoes: true,
+    exames: true
+  })
+  const [listasExpandidas, setListasExpandidas] = useState({})
 
   const {
     funcionarios,
@@ -242,6 +273,9 @@ export default function RelatoriosPessoasPage({
   const dadosRelatorio = useMemo(() => {
     const lista = Array.isArray(funcionarios) ? funcionarios : []
     const naoArquivados = funcionariosNaoArquivados
+    const funcionariosFiltrados = statusFiltro === 'todos'
+      ? naoArquivados
+      : naoArquivados.filter((funcionario) => (funcionario.status || 'ativo') === statusFiltro)
 
     const resumo = {
       ativo: naoArquivados.filter((funcionario) => funcionario.status === 'ativo').length,
@@ -251,18 +285,18 @@ export default function RelatoriosPessoasPage({
     }
 
     const aniversariantes = ordenarPorData(
-      naoArquivados.filter((funcionario) => estaNoMesAtual(funcionario.data_nascimento)),
+      funcionariosFiltrados.filter((funcionario) => estaNoMesAtual(funcionario.data_nascimento)),
       'data_nascimento',
       true
     )
 
     const admissoes = ordenarPorData(
-      naoArquivados.filter((funcionario) => estaNoMesAtual(funcionario.data_admissao, true)),
+      funcionariosFiltrados.filter((funcionario) => estaNoMesAtual(funcionario.data_admissao, true)),
       'data_admissao'
     )
 
     const exames = ordenarPrevisoesPeriodicas(
-      naoArquivados
+      funcionariosFiltrados
         .map((funcionario) => ({
           funcionario,
           previsao: montarPrevisaoPeriodico(funcionario, examesPorFuncionario[funcionario.id] || [])
@@ -276,7 +310,19 @@ export default function RelatoriosPessoasPage({
       admissoes,
       exames
     }
-  }, [examesPorFuncionario, funcionarios, funcionariosNaoArquivados])
+  }, [examesPorFuncionario, funcionarios, funcionariosNaoArquivados, statusFiltro])
+
+  function alternarSecao(chave) {
+    setSecoesAbertas((atual) => ({ ...atual, [chave]: !atual[chave] }))
+  }
+
+  function alternarLista(chave) {
+    setListasExpandidas((atual) => ({ ...atual, [chave]: !atual[chave] }))
+  }
+
+  function listaVisivel(chave, lista) {
+    return listasExpandidas[chave] ? lista : lista.slice(0, LIMITE_INICIAL_LISTA)
+  }
 
   return (
     <div className="pessoas-report-page">
@@ -335,6 +381,53 @@ export default function RelatoriosPessoasPage({
           color: #64748b;
           font-size: 13px;
           line-height: 1.45;
+        }
+        .pessoas-report-filters {
+          border: 1px solid rgba(15, 23, 42, .08);
+          border-radius: 18px;
+          background: #ffffff;
+          padding: 12px;
+          box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          align-items: end;
+        }
+        .pessoas-report-filter {
+          display: grid;
+          gap: 6px;
+          min-width: 180px;
+        }
+        .pessoas-report-filter span {
+          color: #64748b;
+          font-size: 12px;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: .04em;
+        }
+        .pessoas-report-filter select {
+          border: 1px solid rgba(15, 23, 42, .14);
+          border-radius: 12px;
+          min-height: 40px;
+          padding: 8px 10px;
+          color: #0f172a;
+          background: #ffffff;
+        }
+        .pessoas-report-toggle,
+        .pessoas-report-more {
+          border: 1px solid rgba(15, 23, 42, .12);
+          border-radius: 12px;
+          background: #ffffff;
+          color: #0f172a;
+          font-weight: 800;
+          min-height: 34px;
+          padding: 8px 11px;
+          cursor: pointer;
+        }
+        .pessoas-report-more {
+          margin-top: 10px;
+          width: 100%;
+          background: #f8fafc;
         }
         .pessoas-report-list { display: grid; gap: 10px; }
         .pessoas-report-row {
@@ -401,6 +494,18 @@ export default function RelatoriosPessoasPage({
             justify-items: start;
             text-align: left;
           }
+          .pessoas-report-section-header {
+            align-items: stretch;
+          }
+          .pessoas-report-toggle {
+            width: 100%;
+          }
+          .pessoas-report-filters {
+            display: grid;
+          }
+          .pessoas-report-filter {
+            min-width: 0;
+          }
         }
       `}</style>
 
@@ -446,15 +551,32 @@ export default function RelatoriosPessoasPage({
             <PessoaResumoCard label={STATUS_LABELS.arquivado} valor={dadosRelatorio.resumo.arquivado} detalhe="Arquivamento lógico" />
           </section>
 
+          <section className="pessoas-report-filters" aria-label="Filtros locais dos relatorios de pessoas">
+            <label className="pessoas-report-filter">
+              <span>Status</span>
+              <select value={statusFiltro} onChange={(event) => setStatusFiltro(event.target.value)}>
+                <option value="todos">Todos nao arquivados</option>
+                <option value="ativo">Ativos</option>
+                <option value="afastado">Afastados</option>
+                <option value="desligado">Desligados</option>
+              </select>
+            </label>
+          </section>
+
           <div className="pessoas-report-columns">
             <PessoaListaSecao
               titulo="Aniversariantes do mês"
               descricao="Usa somente nome, cargo e dia/mês de nascimento."
               vazio="Nenhum aniversariante encontrado neste mês."
+              total={dadosRelatorio.aniversariantes.length}
+              aberta={secoesAbertas.aniversariantes}
+              expandida={Boolean(listasExpandidas.aniversariantes)}
+              onAlternarAberta={() => alternarSecao('aniversariantes')}
+              onAlternarExpandida={() => alternarLista('aniversariantes')}
             >
               {dadosRelatorio.aniversariantes.length > 0 && (
                 <div className="pessoas-report-list">
-                  {dadosRelatorio.aniversariantes.map((funcionario) => (
+                  {listaVisivel('aniversariantes', dadosRelatorio.aniversariantes).map((funcionario) => (
                     <PessoaLinha
                       key={funcionario.id}
                       nome={funcionario.nome}
@@ -470,10 +592,15 @@ export default function RelatoriosPessoasPage({
               titulo="Admissões do mês"
               descricao="Considera admissões do mês e ano atuais."
               vazio="Nenhuma admissão registrada para este mês."
+              total={dadosRelatorio.admissoes.length}
+              aberta={secoesAbertas.admissoes}
+              expandida={Boolean(listasExpandidas.admissoes)}
+              onAlternarAberta={() => alternarSecao('admissoes')}
+              onAlternarExpandida={() => alternarLista('admissoes')}
             >
               {dadosRelatorio.admissoes.length > 0 && (
                 <div className="pessoas-report-list">
-                  {dadosRelatorio.admissoes.map((funcionario) => (
+                  {listaVisivel('admissoes', dadosRelatorio.admissoes).map((funcionario) => (
                     <PessoaLinha
                       key={funcionario.id}
                       nome={funcionario.nome}
@@ -490,6 +617,11 @@ export default function RelatoriosPessoasPage({
             titulo="Exames ocupacionais cadastrados"
             descricao="Usa o último periódico ativo quando existir; senão usa o exame admissional."
             vazio="Nenhum exame admissional ou periódico ativo encontrado para colaboradores ativos nesta empresa."
+            total={dadosRelatorio.exames.length}
+            aberta={secoesAbertas.exames}
+            expandida={Boolean(listasExpandidas.exames)}
+            onAlternarAberta={() => alternarSecao('exames')}
+            onAlternarExpandida={() => alternarLista('exames')}
           >
             {loadingExamesPeriodicos ? (
               <div className="pessoas-report-empty">
@@ -503,7 +635,7 @@ export default function RelatoriosPessoasPage({
               </div>
             ) : dadosRelatorio.exames.length > 0 && (
               <div className="pessoas-report-list">
-                {dadosRelatorio.exames.map(({ funcionario, previsao }) => {
+                {listaVisivel('exames', dadosRelatorio.exames).map(({ funcionario, previsao }) => {
                   const baseTexto = previsao.origem === 'periodico'
                     ? `Último periódico: ${formatarDataCurta(previsao.ultimoPeriodico?.data_exame)}`
                     : `Exame admissional: ${formatarDataCurta(funcionario.data_exame_admissional)}`

@@ -18,6 +18,8 @@ const STATUS_CICLO_LABELS = {
   cancelada: 'Cancelada'
 }
 
+const LIMITE_INICIAL_LISTA = 5
+
 function normalizarDataISO(data) {
   const texto = String(data || '').slice(0, 10)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(texto)) return ''
@@ -121,7 +123,20 @@ function ResumoCard({ label, valor, detalhe }) {
   )
 }
 
-function SecaoRelatorio({ titulo, descricao, vazio, children }) {
+function SecaoRelatorio({
+  titulo,
+  descricao,
+  vazio,
+  total = 0,
+  aberta = true,
+  expandida = false,
+  visivel = true,
+  onAlternarAberta,
+  onAlternarExpandida,
+  children
+}) {
+  if (!visivel) return null
+
   return (
     <section className="ferias-report-section">
       <div className="ferias-report-section-header">
@@ -129,12 +144,24 @@ function SecaoRelatorio({ titulo, descricao, vazio, children }) {
           <h2>{titulo}</h2>
           <p>{descricao}</p>
         </div>
+        <button className="ferias-report-toggle" type="button" onClick={onAlternarAberta}>
+          {aberta ? 'Recolher' : 'Abrir'}
+        </button>
       </div>
-      {children || (
-        <div className="ferias-report-empty">
-          <strong>Sem dados para exibir</strong>
-          <p>{vazio}</p>
-        </div>
+      {aberta && (
+        <>
+          {children || (
+            <div className="ferias-report-empty">
+              <strong>Sem dados para exibir</strong>
+              <p>{vazio}</p>
+            </div>
+          )}
+          {total > LIMITE_INICIAL_LISTA && (
+            <button className="ferias-report-more" type="button" onClick={onAlternarExpandida}>
+              {expandida ? 'Ver menos' : `Ver mais (${total - LIMITE_INICIAL_LISTA})`}
+            </button>
+          )}
+        </>
       )}
     </section>
   )
@@ -182,6 +209,15 @@ export default function RelatoriosFeriasPage({
   const [dadosFerias, setDadosFerias] = useState([])
   const [loadingFerias, setLoadingFerias] = useState(false)
   const [erroFerias, setErroFerias] = useState(null)
+  const [filtroSecao, setFiltroSecao] = useState('todos')
+  const [secoesAbertas, setSecoesAbertas] = useState({
+    vencidas: true,
+    aVencer: true,
+    agendadas: true,
+    concluidas: true,
+    saldos: true
+  })
+  const [listasExpandidas, setListasExpandidas] = useState({})
 
   const {
     funcionarios,
@@ -339,6 +375,22 @@ export default function RelatoriosFeriasPage({
     }
   }, [dadosFerias])
 
+  function alternarSecao(chave) {
+    setSecoesAbertas((atual) => ({ ...atual, [chave]: !atual[chave] }))
+  }
+
+  function alternarLista(chave) {
+    setListasExpandidas((atual) => ({ ...atual, [chave]: !atual[chave] }))
+  }
+
+  function listaVisivel(chave, lista) {
+    return listasExpandidas[chave] ? lista : lista.slice(0, LIMITE_INICIAL_LISTA)
+  }
+
+  function deveMostrarSecao(chave) {
+    return filtroSecao === 'todos' || filtroSecao === chave
+  }
+
   return (
     <div className="ferias-report-page">
       <style>{`
@@ -396,6 +448,53 @@ export default function RelatoriosFeriasPage({
           color: #64748b;
           font-size: 13px;
           line-height: 1.45;
+        }
+        .ferias-report-filters {
+          border: 1px solid rgba(15, 23, 42, .08);
+          border-radius: 18px;
+          background: #ffffff;
+          padding: 12px;
+          box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          align-items: end;
+        }
+        .ferias-report-filter {
+          display: grid;
+          gap: 6px;
+          min-width: 210px;
+        }
+        .ferias-report-filter span {
+          color: #64748b;
+          font-size: 12px;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: .04em;
+        }
+        .ferias-report-filter select {
+          border: 1px solid rgba(15, 23, 42, .14);
+          border-radius: 12px;
+          min-height: 40px;
+          padding: 8px 10px;
+          color: #0f172a;
+          background: #ffffff;
+        }
+        .ferias-report-toggle,
+        .ferias-report-more {
+          border: 1px solid rgba(15, 23, 42, .12);
+          border-radius: 12px;
+          background: #ffffff;
+          color: #0f172a;
+          font-weight: 800;
+          min-height: 34px;
+          padding: 8px 11px;
+          cursor: pointer;
+        }
+        .ferias-report-more {
+          margin-top: 10px;
+          width: 100%;
+          background: #f8fafc;
         }
         .ferias-report-list { display: grid; gap: 10px; }
         .ferias-report-row {
@@ -463,6 +562,18 @@ export default function RelatoriosFeriasPage({
             justify-items: start;
             text-align: left;
           }
+          .ferias-report-section-header {
+            align-items: stretch;
+          }
+          .ferias-report-toggle {
+            width: 100%;
+          }
+          .ferias-report-filters {
+            display: grid;
+          }
+          .ferias-report-filter {
+            min-width: 0;
+          }
         }
       `}</style>
 
@@ -518,15 +629,35 @@ export default function RelatoriosFeriasPage({
             <ResumoCard label="Com saldo" valor={relatorio.resumo.funcionariosComSaldo} detalhe="Colaboradores com saldo pendente" />
           </section>
 
+          <section className="ferias-report-filters" aria-label="Filtros locais dos relatorios de ferias">
+            <label className="ferias-report-filter">
+              <span>Secao</span>
+              <select value={filtroSecao} onChange={(event) => setFiltroSecao(event.target.value)}>
+                <option value="todos">Todas as secoes</option>
+                <option value="vencidas">Ferias vencidas</option>
+                <option value="aVencer">Ferias a vencer</option>
+                <option value="agendadas">Ferias agendadas</option>
+                <option value="concluidas">Ferias concluidas</option>
+                <option value="saldos">Saldos por colaborador</option>
+              </select>
+            </label>
+          </section>
+
           <div className="ferias-report-columns">
             <SecaoRelatorio
               titulo="Férias vencidas"
               descricao="Ciclos com saldo restante e limite de gozo anterior à data atual."
               vazio="Nenhuma férias vencida encontrada."
+              total={relatorio.vencidas.length}
+              aberta={secoesAbertas.vencidas}
+              expandida={Boolean(listasExpandidas.vencidas)}
+              visivel={deveMostrarSecao('vencidas')}
+              onAlternarAberta={() => alternarSecao('vencidas')}
+              onAlternarExpandida={() => alternarLista('vencidas')}
             >
               {relatorio.vencidas.length > 0 && (
                 <div className="ferias-report-list">
-                  {relatorio.vencidas.map((item) => (
+                  {listaVisivel('vencidas', relatorio.vencidas).map((item) => (
                     <LinhaCiclo key={item.ciclo.id} item={item} />
                   ))}
                 </div>
@@ -537,10 +668,16 @@ export default function RelatoriosFeriasPage({
               titulo="Férias a vencer"
               descricao="Ciclos com saldo restante e limite de gozo futuro. Itens em atenção destacam o prazo interno de 30 dias."
               vazio="Nenhuma férias a vencer encontrada."
+              total={relatorio.aVencer.length}
+              aberta={secoesAbertas.aVencer}
+              expandida={Boolean(listasExpandidas.aVencer)}
+              visivel={deveMostrarSecao('aVencer')}
+              onAlternarAberta={() => alternarSecao('aVencer')}
+              onAlternarExpandida={() => alternarLista('aVencer')}
             >
               {relatorio.aVencer.length > 0 && (
                 <div className="ferias-report-list">
-                  {relatorio.aVencer.map((item) => (
+                  {listaVisivel('aVencer', relatorio.aVencer).map((item) => (
                     <LinhaCiclo key={item.ciclo.id} item={item} tipo={item.emAlerta ? 'alerta' : ''} />
                   ))}
                 </div>
@@ -553,10 +690,16 @@ export default function RelatoriosFeriasPage({
               titulo="Férias agendadas"
               descricao="Períodos ativos com status agendada e retorno ao trabalho ainda não ultrapassado."
               vazio="Nenhuma férias agendada encontrada."
+              total={relatorio.agendadas.length}
+              aberta={secoesAbertas.agendadas}
+              expandida={Boolean(listasExpandidas.agendadas)}
+              visivel={deveMostrarSecao('agendadas')}
+              onAlternarAberta={() => alternarSecao('agendadas')}
+              onAlternarExpandida={() => alternarLista('agendadas')}
             >
               {relatorio.agendadas.length > 0 && (
                 <div className="ferias-report-list">
-                  {relatorio.agendadas.map((item) => (
+                  {listaVisivel('agendadas', relatorio.agendadas).map((item) => (
                     <LinhaPeriodo key={item.periodo.id} item={item} />
                   ))}
                 </div>
@@ -567,10 +710,16 @@ export default function RelatoriosFeriasPage({
               titulo="Férias concluídas"
               descricao="Períodos concluídos ou agendados com retorno já ultrapassado, sem atualização automática no banco."
               vazio="Nenhuma férias concluída encontrada."
+              total={relatorio.concluidas.length}
+              aberta={secoesAbertas.concluidas}
+              expandida={Boolean(listasExpandidas.concluidas)}
+              visivel={deveMostrarSecao('concluidas')}
+              onAlternarAberta={() => alternarSecao('concluidas')}
+              onAlternarExpandida={() => alternarLista('concluidas')}
             >
               {relatorio.concluidas.length > 0 && (
                 <div className="ferias-report-list">
-                  {relatorio.concluidas.map((item) => (
+                  {listaVisivel('concluidas', relatorio.concluidas).map((item) => (
                     <LinhaPeriodo key={item.periodo.id} item={item} />
                   ))}
                 </div>
@@ -582,10 +731,16 @@ export default function RelatoriosFeriasPage({
             titulo="Saldos por colaborador"
             descricao="Ciclos ativos com dias de direito, dias lançados, saldo restante e status calculado."
             vazio="Nenhum ciclo ativo encontrado para exibir saldo."
+            total={relatorio.saldos.length}
+            aberta={secoesAbertas.saldos}
+            expandida={Boolean(listasExpandidas.saldos)}
+            visivel={deveMostrarSecao('saldos')}
+            onAlternarAberta={() => alternarSecao('saldos')}
+            onAlternarExpandida={() => alternarLista('saldos')}
           >
             {relatorio.saldos.length > 0 && (
               <div className="ferias-report-list">
-                {relatorio.saldos.map((item) => (
+                {listaVisivel('saldos', relatorio.saldos).map((item) => (
                   <article key={item.ciclo.id} className="ferias-report-row">
                     <div>
                       <h3>{item.funcionario.nome || 'Colaborador sem nome'}</h3>

@@ -221,6 +221,9 @@ function montarItensAnaliticosFolha({
 
       return {
         id: item.id,
+        funcionarioId,
+        categoriaChave: categoria || '',
+        naturezaChave: natureza || '',
         colaborador: funcionario.nome || 'Colaborador não identificado',
         cargo: funcionario.cargo || '',
         competencia: competencia || 'Competência selecionada',
@@ -248,6 +251,9 @@ export default function RelatoriosGestaoPessoasPage({
 }) {
   const [abaAtiva, setAbaAtiva] = useState('visao-geral')
   const [competenciaFolhaId, setCompetenciaFolhaId] = useState('')
+  const [filtroFolhaColaborador, setFiltroFolhaColaborador] = useState('')
+  const [filtroFolhaCategoria, setFiltroFolhaCategoria] = useState('')
+  const [filtroFolhaNatureza, setFiltroFolhaNatureza] = useState('')
   const [resumoOperacional, setResumoOperacional] = useState(RESUMO_INICIAL)
   const [loadingResumo, setLoadingResumo] = useState(false)
   const [erroResumo, setErroResumo] = useState(null)
@@ -301,11 +307,46 @@ export default function RelatoriosGestaoPessoasPage({
     })
   }, [competenciaFolhaSelecionada?.competencia, funcionariosPorId, itensLancamentos, lancamentos])
 
+  const opcoesFiltroFolha = useMemo(() => {
+    const colaboradores = new Map()
+    const categorias = new Map()
+    const naturezas = new Map()
+
+    itensAnaliticosFolha.forEach((item) => {
+      if (item.funcionarioId) colaboradores.set(item.funcionarioId, item.colaborador)
+      if (item.categoriaChave) categorias.set(item.categoriaChave, item.categoria)
+      if (item.naturezaChave) naturezas.set(item.naturezaChave, item.natureza)
+    })
+
+    const ordenar = ([, a], [, b]) => String(a || '').localeCompare(String(b || ''), 'pt-BR')
+
+    return {
+      colaboradores: [...colaboradores.entries()].sort(ordenar),
+      categorias: [...categorias.entries()].sort(ordenar),
+      naturezas: [...naturezas.entries()].sort(ordenar)
+    }
+  }, [itensAnaliticosFolha])
+
+  const itensAnaliticosFolhaFiltrados = useMemo(() => {
+    return itensAnaliticosFolha.filter((item) => {
+      const colaboradorOk = !filtroFolhaColaborador || item.funcionarioId === filtroFolhaColaborador
+      const categoriaOk = !filtroFolhaCategoria || item.categoriaChave === filtroFolhaCategoria
+      const naturezaOk = !filtroFolhaNatureza || item.naturezaChave === filtroFolhaNatureza
+      return colaboradorOk && categoriaOk && naturezaOk
+    })
+  }, [filtroFolhaCategoria, filtroFolhaColaborador, filtroFolhaNatureza, itensAnaliticosFolha])
+
   useEffect(() => {
     if (abaAtiva !== 'folha') return
     if (competenciaFolhaId && competencias.some((competencia) => competencia.id === competenciaFolhaId)) return
     setCompetenciaFolhaId(competencias[0]?.id || '')
   }, [abaAtiva, competenciaFolhaId, competencias])
+
+  useEffect(() => {
+    setFiltroFolhaColaborador('')
+    setFiltroFolhaCategoria('')
+    setFiltroFolhaNatureza('')
+  }, [competenciaFolhaId])
 
   useEffect(() => {
     let cancelado = false
@@ -596,15 +637,55 @@ export default function RelatoriosGestaoPessoasPage({
                 </div>
               </div>
 
+              {itensAnaliticosFolha.length > 0 && (
+                <div className="people-report-payroll-filter-grid" aria-label="Filtros da visão analítica de folha">
+                  <label>
+                    <span>Colaborador</span>
+                    <select value={filtroFolhaColaborador} onChange={(event) => setFiltroFolhaColaborador(event.target.value)}>
+                      <option value="">Todos os colaboradores</option>
+                      {opcoesFiltroFolha.colaboradores.map(([id, nome]) => (
+                        <option key={id} value={id}>{nome}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Categoria</span>
+                    <select value={filtroFolhaCategoria} onChange={(event) => setFiltroFolhaCategoria(event.target.value)}>
+                      <option value="">Todas as categorias</option>
+                      {opcoesFiltroFolha.categorias.map(([id, nome]) => (
+                        <option key={id} value={id}>{nome}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Natureza</span>
+                    <select value={filtroFolhaNatureza} onChange={(event) => setFiltroFolhaNatureza(event.target.value)}>
+                      <option value="">Todas</option>
+                      {opcoesFiltroFolha.naturezas.map(([id, nome]) => (
+                        <option key={id} value={id}>{nome}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
+
               {itensAnaliticosFolha.length === 0 ? (
                 <div className="empty-state-card">
                   <div className="empty-state-icon">I</div>
                   <strong>Sem itens detalhados ativos</strong>
                   <p>Não há itens ativos vinculados aos lançamentos desta competência.</p>
                 </div>
+              ) : itensAnaliticosFolhaFiltrados.length === 0 ? (
+                <div className="empty-state-card">
+                  <div className="empty-state-icon">I</div>
+                  <strong>Nenhum item encontrado</strong>
+                  <p>Nenhum item encontrado para os filtros selecionados.</p>
+                </div>
               ) : (
                 <div className="people-report-payroll-item-list">
-                  {itensAnaliticosFolha.map((item) => (
+                  {itensAnaliticosFolhaFiltrados.map((item) => (
                     <article key={item.id} className="people-report-payroll-item-card">
                       <div className="people-report-payroll-item-heading">
                         <div>
@@ -784,6 +865,31 @@ export default function RelatoriosGestaoPessoasPage({
         .people-report-payroll-row-meta strong {
           color: #0f172a;
         }
+        .people-report-payroll-filter-grid {
+          border: 1px solid #e5e7eb;
+          background: #f8fafc;
+          border-radius: 8px;
+          padding: 12px;
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+        }
+        .people-report-payroll-filter-grid label {
+          display: grid;
+          gap: 6px;
+          min-width: 0;
+          color: #475569;
+          font-weight: 700;
+        }
+        .people-report-payroll-filter-grid select {
+          min-height: 40px;
+          width: 100%;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          padding: 8px 10px;
+          color: #0f172a;
+          background: #ffffff;
+        }
         .people-report-payroll-item-list {
           display: grid;
           gap: 10px;
@@ -840,6 +946,7 @@ export default function RelatoriosGestaoPessoasPage({
           .people-report-tabs { display: grid; grid-template-columns: 1fr; }
           .people-report-tab { width: 100%; text-align: left; }
           .people-report-overview-grid { grid-template-columns: 1fr; }
+          .people-report-payroll-filter-grid { grid-template-columns: 1fr; }
           .people-report-payroll-row { grid-template-columns: 1fr; }
           .people-report-payroll-row-meta { text-align: left; }
           .people-report-payroll-item-heading { grid-template-columns: 1fr; }

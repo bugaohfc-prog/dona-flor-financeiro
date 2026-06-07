@@ -17,9 +17,9 @@ import RelatoriosPessoasPage from './RelatoriosPessoasPage'
 import RelatoriosFeriasPage from './RelatoriosFeriasPage'
 
 const ABAS = [
-  { id: 'visao-geral', label: 'Visao geral' },
+  { id: 'visao-geral', label: 'Visão geral' },
   { id: 'pessoas', label: 'Pessoas' },
-  { id: 'ferias', label: 'Ferias' },
+  { id: 'ferias', label: 'Férias' },
   { id: 'folha', label: 'Folha' }
 ]
 
@@ -32,9 +32,9 @@ const RESUMO_INICIAL = Object.freeze({
 
 const LABELS_STATUS_COMPETENCIA = {
   aberta: 'Aberta',
-  em_conferencia: 'Em conferencia',
+  em_conferencia: 'Em conferência',
   validada: 'Validada',
-  enviada_contabilidade: 'Enviada a contabilidade',
+  enviada_contabilidade: 'Enviada à contabilidade',
   fechada: 'Fechada',
   arquivada: 'Arquivada'
 }
@@ -291,7 +291,7 @@ export default function RelatoriosGestaoPessoasPage({
       } catch (error) {
         if (!cancelado) {
           setResumoOperacional(RESUMO_INICIAL)
-          setErroResumo(mensagemSeguraErro(error, 'Nao foi possivel carregar a visao geral.'))
+          setErroResumo(mensagemSeguraErro(error, 'Não foi possível carregar a visão geral.'))
         }
       } finally {
         if (!cancelado) setLoadingResumo(false)
@@ -311,8 +311,8 @@ export default function RelatoriosGestaoPessoasPage({
         <section style={styles.cardConfiguracao}>
           <div className="empty-state-card">
             <div className="empty-state-icon">!</div>
-            <strong>Empresa ativa necessaria</strong>
-            <p>Selecione uma empresa para carregar os relatorios de Gestao de Pessoas.</p>
+            <strong>Empresa ativa necessária</strong>
+            <p>Selecione uma empresa para carregar os relatórios de Gestão de Pessoas.</p>
           </div>
         </section>
       )
@@ -321,7 +321,7 @@ export default function RelatoriosGestaoPessoasPage({
     if (loading || loadingResumo) {
       return (
         <section style={styles.cardConfiguracao}>
-          <p style={styles.textoNota}>Carregando visao geral de Gestao de Pessoas...</p>
+          <p style={styles.textoNota}>Carregando visão geral de Gestão de Pessoas...</p>
         </section>
       )
     }
@@ -331,7 +331,7 @@ export default function RelatoriosGestaoPessoasPage({
         <section style={styles.cardConfiguracao}>
           <div className="empty-state-card">
             <div className="empty-state-icon">!</div>
-            <strong>Nao foi possivel carregar</strong>
+            <strong>Não foi possível carregar</strong>
             <p>{erro || erroResumo}</p>
             <button style={styles.btnCinza} type="button" onClick={() => carregarFuncionarios()}>
               Tentar novamente
@@ -343,22 +343,22 @@ export default function RelatoriosGestaoPessoasPage({
 
     return (
       <>
-        <section className="people-report-overview-grid" aria-label="Visao geral de pessoas">
-          <IndicadorCard label="Colaboradores ativos" valor={resumoFuncionarios.ativos} detalhe="Nao arquivados" />
+        <section className="people-report-overview-grid" aria-label="Visão geral de pessoas">
+          <IndicadorCard label="Colaboradores ativos" valor={resumoFuncionarios.ativos} detalhe="Não arquivados" />
           <IndicadorCard label="Afastados" valor={resumoFuncionarios.afastados} detalhe="Status cadastral" />
-          <IndicadorCard label="Desligados" valor={resumoFuncionarios.desligados} detalhe="Nao arquivados" />
-          <IndicadorCard label="Arquivados" valor={resumoFuncionarios.arquivados} detalhe="Arquivamento logico" />
-          <IndicadorCard label="Ferias vencidas" valor={resumoOperacional.feriasVencidas} detalhe="Ciclos com saldo vencido" />
-          <IndicadorCard label="Ferias a vencer" valor={resumoOperacional.feriasAVencer} detalhe="Proximos 30 dias" />
-          <IndicadorCard label="Ferias agendadas" valor={resumoOperacional.feriasAgendadas} detalhe="Periodos ativos" />
-          <IndicadorCard label="Exames previstos" valor={resumoOperacional.examesPrevistos} detalhe="Proximos 30 dias" />
+          <IndicadorCard label="Desligados" valor={resumoFuncionarios.desligados} detalhe="Não arquivados" />
+          <IndicadorCard label="Arquivados" valor={resumoFuncionarios.arquivados} detalhe="Arquivamento lógico" />
+          <IndicadorCard label="Férias vencidas" valor={resumoOperacional.feriasVencidas} detalhe="Ciclos com saldo vencido" />
+          <IndicadorCard label="Férias a vencer" valor={resumoOperacional.feriasAVencer} detalhe="Próximos 30 dias" />
+          <IndicadorCard label="Férias agendadas" valor={resumoOperacional.feriasAgendadas} detalhe="Períodos ativos" />
+          <IndicadorCard label="Exames previstos" valor={resumoOperacional.examesPrevistos} detalhe="Próximos 30 dias" />
         </section>
 
         <section className="people-report-overview-note">
           <strong>Consulta visual interna.</strong>
           <p>
-            Esta visao nao exibe CPF, telefone, e-mail, salario, documentos, laudos, anexos,
-            CID, diagnosticos, resultados de exame ou dados medicos.
+            Esta visão não exibe CPF, telefone, e-mail, salário, documentos, laudos, anexos,
+            CID, diagnósticos, resultados de exame ou dados médicos.
           </p>
         </section>
       </>
@@ -371,8 +371,8 @@ export default function RelatoriosGestaoPessoasPage({
         <section style={styles.cardConfiguracao}>
           <div className="empty-state-card">
             <div className="empty-state-icon">!</div>
-            <strong>Empresa ativa necessaria</strong>
-            <p>Selecione uma empresa para carregar o relatorio sintetico de folha.</p>
+            <strong>Empresa ativa necessária</strong>
+            <p>Selecione uma empresa para carregar o relatório sintético de folha.</p>
           </div>
         </section>
       )
@@ -381,7 +381,7 @@ export default function RelatoriosGestaoPessoasPage({
     if (loadingFolha && competencias.length === 0) {
       return (
         <section style={styles.cardConfiguracao}>
-          <p style={styles.textoNota}>Carregando competencias de folha...</p>
+          <p style={styles.textoNota}>Carregando competências de folha...</p>
         </section>
       )
     }
@@ -391,7 +391,7 @@ export default function RelatoriosGestaoPessoasPage({
         <section style={styles.cardConfiguracao}>
           <div className="empty-state-card">
             <div className="empty-state-icon">!</div>
-            <strong>Nao foi possivel carregar a folha</strong>
+            <strong>Não foi possível carregar a folha</strong>
             <p>{erroFolha}</p>
           </div>
         </section>
@@ -403,8 +403,8 @@ export default function RelatoriosGestaoPessoasPage({
         <section style={styles.cardConfiguracao}>
           <div className="empty-state-card">
             <div className="empty-state-icon">F</div>
-            <strong>Nenhuma competencia cadastrada</strong>
-            <p>Crie competencias no Fechamento de Folha para consultar o relatorio sintetico.</p>
+            <strong>Nenhuma competência cadastrada</strong>
+            <p>Crie competências no Fechamento de Folha para consultar o relatório sintético.</p>
           </div>
         </section>
       )
@@ -414,7 +414,7 @@ export default function RelatoriosGestaoPessoasPage({
       <div className="people-report-payroll">
         <section className="people-report-payroll-filter" aria-label="Filtro de competencia da folha">
           <label>
-            <span>Competencia</span>
+            <span>Competência</span>
             <select value={competenciaFolhaId} onChange={(event) => setCompetenciaFolhaId(event.target.value)}>
               {competencias.map((competencia) => (
                 <option key={competencia.id} value={competencia.id}>
@@ -425,7 +425,7 @@ export default function RelatoriosGestaoPessoasPage({
           </label>
           {competenciaFolhaSelecionada && (
             <p>
-              Competencia <strong>{competenciaFolhaSelecionada.competencia}</strong> em status{' '}
+              Competência <strong>{competenciaFolhaSelecionada.competencia}</strong> em status{' '}
               <strong>{LABELS_STATUS_COMPETENCIA[competenciaFolhaSelecionada.status] || competenciaFolhaSelecionada.status}</strong>.
             </p>
           )}
@@ -433,32 +433,32 @@ export default function RelatoriosGestaoPessoasPage({
 
         {loadingFolha && competenciaFolhaId ? (
           <section style={styles.cardConfiguracao}>
-            <p style={styles.textoNota}>Carregando lancamentos da competencia...</p>
+            <p style={styles.textoNota}>Carregando lançamentos da competência...</p>
           </section>
         ) : (
           <>
-            <section className="people-report-overview-grid" aria-label="Resumo sintetico da folha">
-              <IndicadorCard label="Creditos" valor={formatarMoeda(resumoFolha.totalCreditos)} detalhe="Lancamentos ativos" />
-              <IndicadorCard label="Descontos" valor={formatarMoeda(resumoFolha.totalDescontos)} detalhe="Lancamentos ativos" />
-              <IndicadorCard label="Saldo" valor={formatarMoeda(resumoFolha.saldoInformativo)} detalhe="Credito menos desconto" />
-              <IndicadorCard label="Lancamentos" valor={resumoFolha.quantidadeLancamentos} detalhe="Registros ativos" />
+            <section className="people-report-overview-grid" aria-label="Resumo sintético da folha">
+              <IndicadorCard label="Créditos" valor={formatarMoeda(resumoFolha.totalCreditos)} detalhe="Lançamentos ativos" />
+              <IndicadorCard label="Descontos" valor={formatarMoeda(resumoFolha.totalDescontos)} detalhe="Lançamentos ativos" />
+              <IndicadorCard label="Saldo" valor={formatarMoeda(resumoFolha.saldoInformativo)} detalhe="Crédito menos desconto" />
+              <IndicadorCard label="Lançamentos" valor={resumoFolha.quantidadeLancamentos} detalhe="Registros ativos" />
               <IndicadorCard label="Itens detalhados" valor={itensLancamentos.length} detalhe="Itens ativos vinculados" />
-              <IndicadorCard label="Colaboradores" valor={gruposFolha.length} detalhe="Com lancamentos na competencia" />
+              <IndicadorCard label="Colaboradores" valor={gruposFolha.length} detalhe="Com lançamentos na competência" />
             </section>
 
             <section className="people-report-payroll-section">
               <div className="people-report-payroll-section-header">
                 <div>
                   <h2>Resumo por colaborador</h2>
-                  <p>Visao gerencial consolidada. Itens arquivados nao entram na contagem.</p>
+                  <p>Visão gerencial consolidada. Itens arquivados não entram na contagem.</p>
                 </div>
               </div>
 
               {gruposFolha.length === 0 ? (
                 <div className="empty-state-card">
                   <div className="empty-state-icon">F</div>
-                  <strong>Sem lancamentos ativos</strong>
-                  <p>Nao ha lancamentos ativos para a competencia selecionada.</p>
+                  <strong>Sem lançamentos ativos</strong>
+                  <p>Não há lançamentos ativos para a competência selecionada.</p>
                 </div>
               ) : (
                 <div className="people-report-payroll-list">
@@ -466,12 +466,12 @@ export default function RelatoriosGestaoPessoasPage({
                     <article key={grupo.id} className="people-report-payroll-row">
                       <div>
                         <h3>{grupo.nome}</h3>
-                        <small>{grupo.cargo || 'Cargo nao informado'}</small>
+                        <small>{grupo.cargo || 'Cargo não informado'}</small>
                       </div>
                       <div className="people-report-payroll-row-meta">
                         <strong>{formatarMoeda(grupo.saldo)}</strong>
-                        <small>Creditos: {formatarMoeda(grupo.totalCreditos)} | Descontos: {formatarMoeda(grupo.totalDescontos)}</small>
-                        <small>{grupo.quantidadeLancamentos} lancamento(s) | {grupo.quantidadeItens} item(ns) detalhado(s)</small>
+                        <small>Créditos: {formatarMoeda(grupo.totalCreditos)} | Descontos: {formatarMoeda(grupo.totalDescontos)}</small>
+                        <small>{grupo.quantidadeLancamentos} lançamento(s) | {grupo.quantidadeItens} item(ns) detalhado(s)</small>
                       </div>
                     </article>
                   ))}
@@ -480,10 +480,10 @@ export default function RelatoriosGestaoPessoasPage({
             </section>
 
             <section className="people-report-overview-note">
-              <strong>Relatorio gerencial de apoio.</strong>
+              <strong>Relatório gerencial de apoio.</strong>
               <p>
-                Esta aba nao substitui a contabilidade, nao calcula encargos trabalhistas e nao exibe CPF,
-                telefone, e-mail, documentos, laudos, CID, diagnosticos, resultados de exame ou dados medicos.
+                Esta aba não substitui a contabilidade, não calcula encargos trabalhistas e não exibe CPF,
+                telefone, e-mail, documentos, laudos, CID, diagnósticos, resultados de exame ou dados médicos.
               </p>
             </section>
           </>
@@ -643,15 +643,15 @@ export default function RelatoriosGestaoPessoasPage({
 
       <div className="master-page-hero">
         <div>
-          <span className="master-kicker">Gestao de Pessoas</span>
-          <h1 style={styles.titulo}>Relatorios de Gestao de Pessoas</h1>
-          <p style={styles.textoNota}>Visao central para indicadores internos de pessoas, ferias e exames.</p>
-          <small style={styles.textoAjuda}>Empresa ativa: <strong>{empresaNome || 'Empresa nao identificada'}</strong></small>
+          <span className="master-kicker">Gestão de Pessoas</span>
+          <h1 style={styles.titulo}>Relatórios de Gestão de Pessoas</h1>
+          <p style={styles.textoNota}>Visão central para indicadores internos de pessoas, férias e exames.</p>
+          <small style={styles.textoAjuda}>Empresa ativa: <strong>{empresaNome || 'Empresa não identificada'}</strong></small>
         </div>
         <button style={styles.btnCinza} type="button" onClick={voltarPainel}>Voltar ao Painel</button>
       </div>
 
-      <nav className="people-report-tabs" aria-label="Abas de relatorios de Gestao de Pessoas">
+      <nav className="people-report-tabs" aria-label="Abas de relatórios de Gestão de Pessoas">
         {ABAS.map((aba) => (
           <button
             key={aba.id}

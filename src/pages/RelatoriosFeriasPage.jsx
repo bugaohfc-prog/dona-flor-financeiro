@@ -485,18 +485,26 @@ export default function RelatoriosFeriasPage({
         .ferias-report-toggle,
         .ferias-report-more {
           border: 1px solid rgba(15, 23, 42, .12);
-          border-radius: 12px;
+          border-radius: 999px;
           background: #ffffff;
           color: #0f172a;
           font-weight: 800;
-          min-height: 34px;
-          padding: 8px 11px;
+          min-height: 30px;
+          padding: 6px 10px;
           cursor: pointer;
+        }
+        .ferias-report-toggle {
+          width: fit-content;
+          justify-self: end;
+          font-size: 12px;
+          line-height: 1;
         }
         .ferias-report-more {
           margin-top: 10px;
           width: 100%;
           background: #f8fafc;
+          border-radius: 12px;
+          min-height: 34px;
         }
         .ferias-report-list { display: grid; gap: 10px; }
         .ferias-report-row {
@@ -564,10 +572,11 @@ export default function RelatoriosFeriasPage({
             text-align: left;
           }
           .ferias-report-section-header {
-            align-items: stretch;
+            align-items: flex-start;
           }
           .ferias-report-toggle {
-            width: 100%;
+            width: auto;
+            justify-self: start;
           }
           .ferias-report-filters {
             display: grid;

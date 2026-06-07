@@ -418,18 +418,26 @@ export default function RelatoriosPessoasPage({
         .pessoas-report-toggle,
         .pessoas-report-more {
           border: 1px solid rgba(15, 23, 42, .12);
-          border-radius: 12px;
+          border-radius: 999px;
           background: #ffffff;
           color: #0f172a;
           font-weight: 800;
-          min-height: 34px;
-          padding: 8px 11px;
+          min-height: 30px;
+          padding: 6px 10px;
           cursor: pointer;
+        }
+        .pessoas-report-toggle {
+          width: fit-content;
+          justify-self: end;
+          font-size: 12px;
+          line-height: 1;
         }
         .pessoas-report-more {
           margin-top: 10px;
           width: 100%;
           background: #f8fafc;
+          border-radius: 12px;
+          min-height: 34px;
         }
         .pessoas-report-list { display: grid; gap: 10px; }
         .pessoas-report-row {
@@ -496,10 +504,11 @@ export default function RelatoriosPessoasPage({
             text-align: left;
           }
           .pessoas-report-section-header {
-            align-items: stretch;
+            align-items: flex-start;
           }
           .pessoas-report-toggle {
-            width: 100%;
+            width: auto;
+            justify-self: start;
           }
           .pessoas-report-filters {
             display: grid;

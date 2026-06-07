@@ -6,7 +6,21 @@ import {
 import { assertEmpresaId } from './tenantService'
 
 const TABELA_FUNCIONARIOS = 'df_funcionarios'
-const FUNCIONARIO_SELECT = [
+const FUNCIONARIO_LIST_SELECT = [
+  'id',
+  'empresa_id',
+  'filial_id',
+  'nome',
+  'cargo',
+  'data_nascimento',
+  'data_admissao',
+  'data_exame_admissional',
+  'status',
+  'arquivado',
+  'arquivado_em'
+].join(', ')
+
+const FUNCIONARIO_DETAIL_SELECT = [
   'id',
   'empresa_id',
   'filial_id',
@@ -143,7 +157,7 @@ function montarPayloadFuncionario(dados = {}, opcoes = {}) {
 export async function listarFuncionarios({ supabase, empresaId, incluirArquivados = false }) {
   assertEmpresaId(empresaId)
 
-  let query = selecionarPorEmpresa(supabase, TABELA_FUNCIONARIOS, empresaId, FUNCIONARIO_SELECT)
+  let query = selecionarPorEmpresa(supabase, TABELA_FUNCIONARIOS, empresaId, FUNCIONARIO_LIST_SELECT)
     .order('nome', { ascending: true })
 
   if (!incluirArquivados) {
@@ -157,7 +171,7 @@ export async function obterFuncionarioPorId({ supabase, empresaId, funcionarioId
   assertEmpresaId(empresaId)
   const id = validarFuncionarioId(funcionarioId)
 
-  return selecionarPorEmpresa(supabase, TABELA_FUNCIONARIOS, empresaId, FUNCIONARIO_SELECT)
+  return selecionarPorEmpresa(supabase, TABELA_FUNCIONARIOS, empresaId, FUNCIONARIO_DETAIL_SELECT)
     .eq('id', id)
     .maybeSingle()
 }
@@ -172,7 +186,7 @@ export async function criarFuncionario({ supabase, empresaId, dados }) {
     arquivado_em: null
   }
 
-  return inserirComEmpresa(supabase, TABELA_FUNCIONARIOS, payload, { select: FUNCIONARIO_SELECT })
+  return inserirComEmpresa(supabase, TABELA_FUNCIONARIOS, payload, { select: FUNCIONARIO_LIST_SELECT })
     .single()
 }
 
@@ -182,7 +196,7 @@ export async function atualizarFuncionario({ supabase, empresaId, funcionarioId,
   const payload = montarPayloadFuncionario(dados)
 
   return atualizarPorEmpresa(supabase, TABELA_FUNCIONARIOS, id, empresaId, payload)
-    .select(FUNCIONARIO_SELECT)
+    .select(FUNCIONARIO_LIST_SELECT)
     .single()
 }
 
@@ -194,7 +208,7 @@ export async function arquivarFuncionario({ supabase, empresaId, funcionarioId }
     arquivado: true,
     arquivado_em: new Date().toISOString()
   })
-    .select(FUNCIONARIO_SELECT)
+    .select(FUNCIONARIO_LIST_SELECT)
     .single()
 }
 
@@ -206,6 +220,6 @@ export async function reativarFuncionario({ supabase, empresaId, funcionarioId }
     arquivado: false,
     arquivado_em: null
   })
-    .select(FUNCIONARIO_SELECT)
+    .select(FUNCIONARIO_LIST_SELECT)
     .single()
 }

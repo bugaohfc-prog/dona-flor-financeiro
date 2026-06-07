@@ -146,6 +146,7 @@ export default function FuncionariosPage({
     atualizarFuncionario,
     arquivarFuncionario,
     reativarFuncionario,
+    obterFuncionarioPorId,
     carregarFuncionarios,
     limparErro
   } = useFuncionarios({
@@ -187,8 +188,6 @@ export default function FuncionariosPage({
       const camposBusca = [
         funcionario.nome,
         funcionario.cargo,
-        funcionario.email,
-        funcionario.telefone,
         filiaisPorId[funcionario.filial_id]
       ].map(normalizarTextoBusca)
 
@@ -263,12 +262,20 @@ export default function FuncionariosPage({
     setModalAberto(true)
   }
 
-  function abrirEdicaoFuncionario(funcionario) {
+  async function abrirEdicaoFuncionario(funcionario) {
     if (!funcionario?.id || !podeEditar) return
     limparErro?.()
     limparErroExames?.()
-    setFuncionarioEditando(funcionario)
-    setFormulario(montarFormulario(funcionario))
+
+    const resposta = await obterFuncionarioPorId(funcionario.id)
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'NÃ£o foi possÃ­vel carregar os dados completos do funcionÃ¡rio.'), 'erro')
+      return
+    }
+
+    const funcionarioDetalhado = resposta?.data || funcionario
+    setFuncionarioEditando(funcionarioDetalhado)
+    setFormulario(montarFormulario(funcionarioDetalhado))
     setMostrarExamesArquivados(false)
     limparFormularioExamePeriodico()
     setModalAberto(true)

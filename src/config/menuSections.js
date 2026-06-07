@@ -21,6 +21,7 @@ const menuSections = [
     id: 'pessoas',
     titulo: 'Gestão de Pessoas',
     items: [
+      { tela: 'relatorios-gestao-pessoas', icon: 'RG', label: 'Relatorios de Gestao', desc: 'Visao geral, pessoas e ferias', peopleOnly: true },
       { tela: 'funcionarios', icon: '👥', label: 'Funcionários', desc: 'Cadastro de colaboradores', peopleOnly: true },
       { tela: 'relatorios-pessoas', icon: '📋', label: 'Relatórios', desc: 'Indicadores internos de pessoas', peopleOnly: true },
       { tela: 'ferias', icon: '🌴', label: 'Férias', desc: 'Ciclos e parcelas de férias', peopleOnly: true },
@@ -74,6 +75,7 @@ const CONTEXTO_MODULO_POR_TELA = {
   ferias: MODULOS_TOPBAR.pessoas,
   'fechamento-mensal': MODULOS_TOPBAR.pessoas,
   'fechamento-folha': MODULOS_TOPBAR.pessoas,
+  'relatorios-gestao-pessoas': MODULOS_TOPBAR.pessoas,
   'relatorios-pessoas': MODULOS_TOPBAR.pessoas,
   'relatorios-ferias': MODULOS_TOPBAR.pessoas
 }

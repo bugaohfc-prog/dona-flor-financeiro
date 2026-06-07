@@ -188,7 +188,8 @@ export default function RelatoriosPessoasPage({
   styles,
   empresaId,
   empresaNome,
-  voltarPainel
+  voltarPainel,
+  modoIntegrado = false
 }) {
   const [examesPorFuncionario, setExamesPorFuncionario] = useState({})
   const [loadingExamesPeriodicos, setLoadingExamesPeriodicos] = useState(false)
@@ -509,6 +510,7 @@ export default function RelatoriosPessoasPage({
         }
       `}</style>
 
+      {!modoIntegrado && (
       <div className="master-page-hero">
         <div>
           <span className="master-kicker">Gestão de Pessoas</span>
@@ -518,6 +520,7 @@ export default function RelatoriosPessoasPage({
         </div>
         <button style={styles.btnCinza} type="button" onClick={voltarPainel}>← Painel</button>
       </div>
+      )}
 
       {!empresaId ? (
         <section style={styles.cardConfiguracao}>

@@ -64,6 +64,7 @@ import {
   LazyNotasPage,
   LazyOnboardingPage,
   LazyRelatorios,
+  LazyRelatoriosGestaoPessoasPage,
   LazyRelatoriosFeriasPage,
   LazyRelatoriosPessoasPage,
   LazyUsuariosPage,
@@ -111,6 +112,7 @@ const TELAS_RETORNO_SESSAO = new Set([
   'funcionarios',
   'ferias',
   'fechamento-folha',
+  'relatorios-gestao-pessoas',
   'relatorios-pessoas',
   'relatorios-ferias'
 ])
@@ -4172,6 +4174,30 @@ export default function App() {
 
     return renderAppFrame(
       <LazyRelatoriosPessoasPage
+        styles={styles}
+        empresaId={empresaId}
+        empresaNome={empresaAtiva?.nome || nomeEmpresa}
+        voltarPainel={() => navegarPara('dashboard')}
+      />
+    )
+  }
+
+  if (telaAtual === 'relatorios-gestao-pessoas') {
+    if (!podeAcessarGestaoPessoas()) {
+      return renderAppFrame(
+        <>
+          <h1 style={styles.titulo}>Relatorios de Gestao de Pessoas</h1>
+          <section style={styles.cardConfiguracao}>
+            <h2 style={styles.subtitulo}>Acesso restrito</h2>
+            <p style={styles.textoNota}>Seu perfil atual nao permite acessar Gestao de Pessoas.</p>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>Voltar</button>
+          </section>
+        </>
+      )
+    }
+
+    return renderAppFrame(
+      <LazyRelatoriosGestaoPessoasPage
         styles={styles}
         empresaId={empresaId}
         empresaNome={empresaAtiva?.nome || nomeEmpresa}

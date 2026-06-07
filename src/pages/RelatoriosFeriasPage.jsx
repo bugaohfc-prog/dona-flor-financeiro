@@ -204,7 +204,8 @@ export default function RelatoriosFeriasPage({
   styles,
   empresaId,
   empresaNome,
-  voltarPainel
+  voltarPainel,
+  modoIntegrado = false
 }) {
   const [dadosFerias, setDadosFerias] = useState([])
   const [loadingFerias, setLoadingFerias] = useState(false)
@@ -577,6 +578,7 @@ export default function RelatoriosFeriasPage({
         }
       `}</style>
 
+      {!modoIntegrado && (
       <div className="master-page-hero">
         <div>
           <span className="master-kicker">Gestão de Pessoas</span>
@@ -586,6 +588,7 @@ export default function RelatoriosFeriasPage({
         </div>
         <button style={styles.btnCinza} type="button" onClick={voltarPainel}>← Painel</button>
       </div>
+      )}
 
       {!empresaId ? (
         <section style={styles.cardConfiguracao}>

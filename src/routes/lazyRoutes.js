@@ -13,6 +13,7 @@ export const lazyRouteImports = {
   funcionarios: () => import('../pages/FuncionariosPage.jsx'),
   ferias: () => import('../pages/FeriasPage.jsx'),
   fechamentoFolha: () => import('../pages/FechamentoFolhaPage.jsx'),
+  relatoriosGestaoPessoas: () => import('../pages/RelatoriosGestaoPessoasPage.jsx'),
   relatoriosPessoas: () => import('../pages/RelatoriosPessoasPage.jsx'),
   relatoriosFerias: () => import('../pages/RelatoriosFeriasPage.jsx'),
   usuarios: () => import('../pages/UsuariosPage.jsx'),
@@ -33,6 +34,7 @@ export const routeImportByScreen = {
   funcionarios: 'funcionarios',
   ferias: 'ferias',
   'fechamento-folha': 'fechamentoFolha',
+  'relatorios-gestao-pessoas': 'relatoriosGestaoPessoas',
   'relatorios-pessoas': 'relatoriosPessoas',
   'relatorios-ferias': 'relatoriosFerias',
   usuarios: 'usuarios'
@@ -63,6 +65,7 @@ export const LazyFiliaisPage = lazyWithRecovery('filiais')
 export const LazyFuncionariosPage = lazyWithRecovery('funcionarios')
 export const LazyFeriasPage = lazyWithRecovery('ferias')
 export const LazyFechamentoFolhaPage = lazyWithRecovery('fechamentoFolha')
+export const LazyRelatoriosGestaoPessoasPage = lazyWithRecovery('relatoriosGestaoPessoas')
 export const LazyRelatoriosPessoasPage = lazyWithRecovery('relatoriosPessoas')
 export const LazyRelatoriosFeriasPage = lazyWithRecovery('relatoriosFerias')
 export const LazyUsuariosPage = lazyWithRecovery('usuarios')

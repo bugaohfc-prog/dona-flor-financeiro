@@ -39,6 +39,45 @@ const LABELS_STATUS_COMPETENCIA = {
   arquivada: 'Arquivada'
 }
 
+const LABELS_NATUREZA_FOLHA = {
+  credito: 'Crédito',
+  desconto: 'Desconto',
+  informativo: 'Informativo'
+}
+
+const LABELS_CATEGORIA_FOLHA = {
+  premiacao: 'Premiação',
+  hora_extra_50: 'Hora extra 50%',
+  hora_extra_60: 'Hora extra 60%',
+  hora_extra_100: 'Hora extra 100%',
+  outro_credito: 'Outro crédito',
+  compras_vales: 'Compras internas / vales',
+  plano_saude: 'Plano de saúde',
+  falta_injustificada: 'Falta',
+  pensao_alimenticia: 'Pensão alimentícia',
+  outro_desconto: 'Outro desconto',
+  observacao_administrativa: 'Observação administrativa',
+  data_falta: 'Data de falta',
+  status_conferencia: 'Status de conferência',
+  origem_lancamento: 'Origem do lançamento'
+}
+
+const CATEGORIAS_CREDITO_FOLHA = new Set([
+  'premiacao',
+  'hora_extra_50',
+  'hora_extra_60',
+  'hora_extra_100',
+  'outro_credito'
+])
+
+const CATEGORIAS_DESCONTO_FOLHA = new Set([
+  'compras_vales',
+  'plano_saude',
+  'falta_injustificada',
+  'pensao_alimenticia',
+  'outro_desconto'
+])
+
 function hojeISO() {
   const hoje = new Date()
   return [
@@ -103,6 +142,29 @@ function formatarMoeda(valor) {
   }).format(Number(valor || 0))
 }
 
+function formatarDataCurta(valor) {
+  if (!valor) return 'Sem data'
+  const data = new Date(`${String(valor).slice(0, 10)}T00:00:00`)
+  if (Number.isNaN(data.getTime())) return 'Sem data'
+  return data.toLocaleDateString('pt-BR')
+}
+
+function formatarNumeroFolha(valor) {
+  if (valor === null || valor === undefined || valor === '') return null
+  const numero = Number(valor)
+  if (!Number.isFinite(numero)) return null
+  return new Intl.NumberFormat('pt-BR', {
+    maximumFractionDigits: 2
+  }).format(numero)
+}
+
+function obterNaturezaItemFolha(item, lancamento) {
+  if (lancamento?.natureza) return lancamento.natureza
+  if (CATEGORIAS_CREDITO_FOLHA.has(item?.categoria)) return 'credito'
+  if (CATEGORIAS_DESCONTO_FOLHA.has(item?.categoria)) return 'desconto'
+  return 'informativo'
+}
+
 function calcularResumoPorColaborador(lancamentos = [], itensLancamentos = [], funcionariosPorId = new Map()) {
   const itensAtivosPorLancamento = (itensLancamentos || []).reduce((mapa, item) => {
     if (!item?.lancamento_id || item.arquivado) return mapa
@@ -138,6 +200,44 @@ function calcularResumoPorColaborador(lancamentos = [], itensLancamentos = [], f
       saldo: grupo.totalCreditos - grupo.totalDescontos
     }))
     .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'))
+}
+
+function montarItensAnaliticosFolha({
+  itensLancamentos = [],
+  lancamentos = [],
+  funcionariosPorId = new Map(),
+  competencia = ''
+}) {
+  const lancamentosPorId = new Map((lancamentos || []).map((lancamento) => [lancamento.id, lancamento]))
+
+  return (itensLancamentos || [])
+    .filter((item) => item && !item.arquivado)
+    .map((item) => {
+      const lancamento = lancamentosPorId.get(item.lancamento_id) || {}
+      const funcionarioId = item.funcionario_id || lancamento.funcionario_id
+      const funcionario = funcionariosPorId.get(funcionarioId) || {}
+      const categoria = item.categoria || lancamento.categoria
+      const natureza = obterNaturezaItemFolha(item, lancamento)
+
+      return {
+        id: item.id,
+        colaborador: funcionario.nome || 'Colaborador não identificado',
+        cargo: funcionario.cargo || '',
+        competencia: competencia || 'Competência selecionada',
+        categoria: LABELS_CATEGORIA_FOLHA[categoria] || categoria || 'Item detalhado',
+        natureza: LABELS_NATUREZA_FOLHA[natureza] || natureza || 'Informativo',
+        data: item.data_referencia,
+        quantidade: formatarNumeroFolha(item.quantidade),
+        percentual: formatarNumeroFolha(item.percentual),
+        valor: Number(item.valor || 0),
+        descricao: item.descricao || ''
+      }
+    })
+    .sort((a, b) => {
+      const nome = String(a.colaborador || '').localeCompare(String(b.colaborador || ''), 'pt-BR')
+      if (nome !== 0) return nome
+      return String(a.data || '').localeCompare(String(b.data || ''))
+    })
 }
 
 export default function RelatoriosGestaoPessoasPage({
@@ -191,6 +291,15 @@ export default function RelatoriosGestaoPessoasPage({
   const gruposFolha = useMemo(() => {
     return calcularResumoPorColaborador(lancamentos, itensLancamentos, funcionariosPorId)
   }, [funcionariosPorId, itensLancamentos, lancamentos])
+
+  const itensAnaliticosFolha = useMemo(() => {
+    return montarItensAnaliticosFolha({
+      itensLancamentos,
+      lancamentos,
+      funcionariosPorId,
+      competencia: competenciaFolhaSelecionada?.competencia
+    })
+  }, [competenciaFolhaSelecionada?.competencia, funcionariosPorId, itensLancamentos, lancamentos])
 
   useEffect(() => {
     if (abaAtiva !== 'folha') return
@@ -479,6 +588,52 @@ export default function RelatoriosGestaoPessoasPage({
               )}
             </section>
 
+            <section className="people-report-payroll-section">
+              <div className="people-report-payroll-section-header">
+                <div>
+                  <h2>Visão analítica de itens</h2>
+                  <p>Itens detalhados ativos da competência selecionada. Itens arquivados não aparecem neste relatório.</p>
+                </div>
+              </div>
+
+              {itensAnaliticosFolha.length === 0 ? (
+                <div className="empty-state-card">
+                  <div className="empty-state-icon">I</div>
+                  <strong>Sem itens detalhados ativos</strong>
+                  <p>Não há itens ativos vinculados aos lançamentos desta competência.</p>
+                </div>
+              ) : (
+                <div className="people-report-payroll-item-list">
+                  {itensAnaliticosFolha.map((item) => (
+                    <article key={item.id} className="people-report-payroll-item-card">
+                      <div className="people-report-payroll-item-heading">
+                        <div>
+                          <h3>{item.colaborador}</h3>
+                          <small>{item.cargo || 'Cargo não informado'} | {item.competencia}</small>
+                        </div>
+                        <strong>{formatarMoeda(item.valor)}</strong>
+                      </div>
+
+                      <div className="people-report-payroll-item-tags">
+                        <span>{item.categoria}</span>
+                        <span>{item.natureza}</span>
+                        <span>{formatarDataCurta(item.data)}</span>
+                      </div>
+
+                      <div className="people-report-payroll-item-meta">
+                        {item.quantidade && <small>Quantidade: {item.quantidade}</small>}
+                        {item.percentual && <small>Percentual: {item.percentual}%</small>}
+                      </div>
+
+                      {item.descricao && (
+                        <p>{item.descricao}</p>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+
             <section className="people-report-overview-note">
               <strong>Relatório gerencial de apoio.</strong>
               <p>
@@ -629,6 +784,55 @@ export default function RelatoriosGestaoPessoasPage({
         .people-report-payroll-row-meta strong {
           color: #0f172a;
         }
+        .people-report-payroll-item-list {
+          display: grid;
+          gap: 10px;
+        }
+        .people-report-payroll-item-card {
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          padding: 12px;
+          display: grid;
+          gap: 10px;
+          min-width: 0;
+        }
+        .people-report-payroll-item-card h3,
+        .people-report-payroll-item-card p {
+          margin: 0;
+        }
+        .people-report-payroll-item-card h3 {
+          color: #0f172a;
+          font-size: 16px;
+        }
+        .people-report-payroll-item-card small,
+        .people-report-payroll-item-card p {
+          color: #64748b;
+        }
+        .people-report-payroll-item-heading {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 12px;
+          align-items: start;
+        }
+        .people-report-payroll-item-heading strong {
+          color: #0f172a;
+          white-space: nowrap;
+        }
+        .people-report-payroll-item-tags,
+        .people-report-payroll-item-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+        .people-report-payroll-item-tags span {
+          border: 1px solid #dbe4ef;
+          background: #f8fafc;
+          color: #334155;
+          border-radius: 999px;
+          padding: 4px 8px;
+          font-size: 12px;
+          font-weight: 700;
+        }
         @media (max-width: 900px) {
           .people-report-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
@@ -638,6 +842,7 @@ export default function RelatoriosGestaoPessoasPage({
           .people-report-overview-grid { grid-template-columns: 1fr; }
           .people-report-payroll-row { grid-template-columns: 1fr; }
           .people-report-payroll-row-meta { text-align: left; }
+          .people-report-payroll-item-heading { grid-template-columns: 1fr; }
         }
       `}</style>
 

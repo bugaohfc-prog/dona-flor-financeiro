@@ -21,11 +21,9 @@ const menuSections = [
     id: 'pessoas',
     titulo: 'Gestão de Pessoas',
     items: [
-      { tela: 'relatorios-gestao-pessoas', icon: 'RG', label: 'Relatorios de Gestao', desc: 'Visao geral, pessoas e ferias', peopleOnly: true },
+      { tela: 'relatorios-gestao-pessoas', icon: 'RG', label: 'Relatórios de Gestão', desc: 'Visão geral, pessoas, férias e folha', peopleOnly: true },
       { tela: 'funcionarios', icon: '👥', label: 'Funcionários', desc: 'Cadastro de colaboradores', peopleOnly: true },
-      { tela: 'relatorios-pessoas', icon: '📋', label: 'Relatórios', desc: 'Indicadores internos de pessoas', peopleOnly: true },
       { tela: 'ferias', icon: '🌴', label: 'Férias', desc: 'Ciclos e parcelas de férias', peopleOnly: true },
-      { tela: 'relatorios-ferias', icon: '📆', label: 'Relatórios de Férias', desc: 'Vencimentos, saldos e retornos', peopleOnly: true },
       { tela: 'fechamento-folha', icon: '🧾', label: 'Fechamento de Folha', desc: 'Competências e lançamentos mensais', peopleOnly: true }
     ]
   },

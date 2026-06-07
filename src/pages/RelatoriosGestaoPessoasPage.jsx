@@ -758,25 +758,35 @@ export default function RelatoriosGestaoPessoasPage({
         }
         .people-report-overview-grid {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 12px;
+          grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+          gap: 10px;
         }
         .people-report-overview-card {
           border: 1px solid #e5e7eb;
           background: #ffffff;
           border-radius: 8px;
-          padding: 14px;
+          padding: 10px 12px;
           display: grid;
-          gap: 6px;
-          min-height: 112px;
+          gap: 4px;
+          min-height: 86px;
+          align-content: center;
         }
         .people-report-overview-card span,
         .people-report-overview-card small {
           color: #64748b;
         }
+        .people-report-overview-card span {
+          font-size: 12px;
+          font-weight: 800;
+          line-height: 1.2;
+        }
+        .people-report-overview-card small {
+          font-size: 12px;
+          line-height: 1.25;
+        }
         .people-report-overview-card strong {
           color: #0f172a;
-          font-size: 24px;
+          font-size: 22px;
           line-height: 1;
         }
         .people-report-overview-note {
@@ -939,13 +949,9 @@ export default function RelatoriosGestaoPessoasPage({
           font-size: 12px;
           font-weight: 700;
         }
-        @media (max-width: 900px) {
-          .people-report-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
         @media (max-width: 640px) {
           .people-report-tabs { display: grid; grid-template-columns: 1fr; }
           .people-report-tab { width: 100%; text-align: left; }
-          .people-report-overview-grid { grid-template-columns: 1fr; }
           .people-report-payroll-filter-grid { grid-template-columns: 1fr; }
           .people-report-payroll-row { grid-template-columns: 1fr; }
           .people-report-payroll-row-meta { text-align: left; }

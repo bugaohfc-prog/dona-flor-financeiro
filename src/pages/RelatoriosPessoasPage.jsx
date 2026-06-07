@@ -331,27 +331,28 @@ export default function RelatoriosPessoasPage({
         .pessoas-report-page { display: grid; gap: 18px; }
         .pessoas-report-grid {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 12px;
+          grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+          gap: 10px;
         }
         .pessoas-report-card {
           border: 1px solid rgba(15, 23, 42, .08);
-          border-radius: 18px;
+          border-radius: 12px;
           background: #ffffff;
-          padding: 16px;
-          box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
+          padding: 10px 12px;
+          box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
           display: grid;
-          gap: 6px;
+          gap: 4px;
+          min-height: 86px;
+          align-content: center;
         }
         .pessoas-report-card span {
           color: #64748b;
           font-size: 12px;
-          font-weight: 900;
-          text-transform: uppercase;
-          letter-spacing: .04em;
+          font-weight: 800;
+          line-height: 1.2;
         }
-        .pessoas-report-card strong { color: #0f172a; font-size: 28px; line-height: 1; }
-        .pessoas-report-card small { color: #64748b; line-height: 1.35; }
+        .pessoas-report-card strong { color: #0f172a; font-size: 22px; line-height: 1; }
+        .pessoas-report-card small { color: #64748b; font-size: 12px; line-height: 1.25; }
         .pessoas-report-columns {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -484,7 +485,6 @@ export default function RelatoriosPessoasPage({
           line-height: 1.45;
         }
         @media (max-width: 980px) {
-          .pessoas-report-grid,
           .pessoas-report-columns {
             grid-template-columns: 1fr;
           }

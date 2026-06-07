@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useFolha } from '../hooks/useFolha'
 import { useFuncionarios } from '../hooks/useFuncionarios'
 import { supabase } from '../lib/supabase'
 import {
@@ -18,7 +19,8 @@ import RelatoriosFeriasPage from './RelatoriosFeriasPage'
 const ABAS = [
   { id: 'visao-geral', label: 'Visao geral' },
   { id: 'pessoas', label: 'Pessoas' },
-  { id: 'ferias', label: 'Ferias' }
+  { id: 'ferias', label: 'Ferias' },
+  { id: 'folha', label: 'Folha' }
 ]
 
 const RESUMO_INICIAL = Object.freeze({
@@ -27,6 +29,15 @@ const RESUMO_INICIAL = Object.freeze({
   feriasAgendadas: 0,
   examesPrevistos: 0
 })
+
+const LABELS_STATUS_COMPETENCIA = {
+  aberta: 'Aberta',
+  em_conferencia: 'Em conferencia',
+  validada: 'Validada',
+  enviada_contabilidade: 'Enviada a contabilidade',
+  fechada: 'Fechada',
+  arquivada: 'Arquivada'
+}
 
 function hojeISO() {
   const hoje = new Date()
@@ -85,6 +96,50 @@ function IndicadorCard({ label, valor, detalhe }) {
   )
 }
 
+function formatarMoeda(valor) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(Number(valor || 0))
+}
+
+function calcularResumoPorColaborador(lancamentos = [], itensLancamentos = [], funcionariosPorId = new Map()) {
+  const itensAtivosPorLancamento = (itensLancamentos || []).reduce((mapa, item) => {
+    if (!item?.lancamento_id || item.arquivado) return mapa
+    mapa.set(item.lancamento_id, (mapa.get(item.lancamento_id) || 0) + 1)
+    return mapa
+  }, new Map())
+
+  return [...(lancamentos || []).reduce((mapa, lancamento) => {
+    if (!lancamento?.funcionario_id || lancamento.arquivado) return mapa
+
+    const funcionario = funcionariosPorId.get(lancamento.funcionario_id)
+    const atual = mapa.get(lancamento.funcionario_id) || {
+      id: lancamento.funcionario_id,
+      nome: funcionario?.nome || 'Colaborador sem nome',
+      cargo: funcionario?.cargo || '',
+      totalCreditos: 0,
+      totalDescontos: 0,
+      quantidadeLancamentos: 0,
+      quantidadeItens: 0
+    }
+
+    const valor = Number(lancamento.valor || 0)
+    if (lancamento.natureza === 'credito') atual.totalCreditos += valor
+    if (lancamento.natureza === 'desconto') atual.totalDescontos += valor
+    atual.quantidadeLancamentos += 1
+    atual.quantidadeItens += itensAtivosPorLancamento.get(lancamento.id) || 0
+
+    mapa.set(lancamento.funcionario_id, atual)
+    return mapa
+  }, new Map()).values()]
+    .map((grupo) => ({
+      ...grupo,
+      saldo: grupo.totalCreditos - grupo.totalDescontos
+    }))
+    .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'))
+}
+
 export default function RelatoriosGestaoPessoasPage({
   styles,
   empresaId,
@@ -92,6 +147,7 @@ export default function RelatoriosGestaoPessoasPage({
   voltarPainel
 }) {
   const [abaAtiva, setAbaAtiva] = useState('visao-geral')
+  const [competenciaFolhaId, setCompetenciaFolhaId] = useState('')
   const [resumoOperacional, setResumoOperacional] = useState(RESUMO_INICIAL)
   const [loadingResumo, setLoadingResumo] = useState(false)
   const [erroResumo, setErroResumo] = useState(null)
@@ -104,10 +160,43 @@ export default function RelatoriosGestaoPessoasPage({
   } = useFuncionarios({
     empresaId,
     incluirArquivados: true,
-    autoCarregar: abaAtiva === 'visao-geral'
+    autoCarregar: abaAtiva === 'visao-geral' || abaAtiva === 'folha'
   })
 
   const resumoFuncionarios = useMemo(() => calcularResumoFuncionarios(funcionarios), [funcionarios])
+  const funcionariosPorId = useMemo(() => {
+    return new Map((funcionarios || []).map((funcionario) => [funcionario.id, funcionario]))
+  }, [funcionarios])
+
+  const {
+    competencias,
+    lancamentos,
+    itensLancamentos,
+    loading: loadingFolha,
+    erro: erroFolha,
+    resumo: resumoFolha
+  } = useFolha({
+    empresaId,
+    competenciaId: competenciaFolhaId,
+    incluirArquivadas: false,
+    incluirArquivados: false,
+    autoCarregarCompetencias: abaAtiva === 'folha',
+    autoCarregarLancamentos: abaAtiva === 'folha' && Boolean(competenciaFolhaId)
+  })
+
+  const competenciaFolhaSelecionada = useMemo(() => {
+    return competencias.find((competencia) => competencia.id === competenciaFolhaId) || null
+  }, [competenciaFolhaId, competencias])
+
+  const gruposFolha = useMemo(() => {
+    return calcularResumoPorColaborador(lancamentos, itensLancamentos, funcionariosPorId)
+  }, [funcionariosPorId, itensLancamentos, lancamentos])
+
+  useEffect(() => {
+    if (abaAtiva !== 'folha') return
+    if (competenciaFolhaId && competencias.some((competencia) => competencia.id === competenciaFolhaId)) return
+    setCompetenciaFolhaId(competencias[0]?.id || '')
+  }, [abaAtiva, competenciaFolhaId, competencias])
 
   useEffect(() => {
     let cancelado = false
@@ -276,6 +365,133 @@ export default function RelatoriosGestaoPessoasPage({
     )
   }
 
+  function renderFolha() {
+    if (!empresaId) {
+      return (
+        <section style={styles.cardConfiguracao}>
+          <div className="empty-state-card">
+            <div className="empty-state-icon">!</div>
+            <strong>Empresa ativa necessaria</strong>
+            <p>Selecione uma empresa para carregar o relatorio sintetico de folha.</p>
+          </div>
+        </section>
+      )
+    }
+
+    if (loadingFolha && competencias.length === 0) {
+      return (
+        <section style={styles.cardConfiguracao}>
+          <p style={styles.textoNota}>Carregando competencias de folha...</p>
+        </section>
+      )
+    }
+
+    if (erroFolha) {
+      return (
+        <section style={styles.cardConfiguracao}>
+          <div className="empty-state-card">
+            <div className="empty-state-icon">!</div>
+            <strong>Nao foi possivel carregar a folha</strong>
+            <p>{erroFolha}</p>
+          </div>
+        </section>
+      )
+    }
+
+    if (competencias.length === 0) {
+      return (
+        <section style={styles.cardConfiguracao}>
+          <div className="empty-state-card">
+            <div className="empty-state-icon">F</div>
+            <strong>Nenhuma competencia cadastrada</strong>
+            <p>Crie competencias no Fechamento de Folha para consultar o relatorio sintetico.</p>
+          </div>
+        </section>
+      )
+    }
+
+    return (
+      <div className="people-report-payroll">
+        <section className="people-report-payroll-filter" aria-label="Filtro de competencia da folha">
+          <label>
+            <span>Competencia</span>
+            <select value={competenciaFolhaId} onChange={(event) => setCompetenciaFolhaId(event.target.value)}>
+              {competencias.map((competencia) => (
+                <option key={competencia.id} value={competencia.id}>
+                  {competencia.competencia} - {LABELS_STATUS_COMPETENCIA[competencia.status] || competencia.status}
+                </option>
+              ))}
+            </select>
+          </label>
+          {competenciaFolhaSelecionada && (
+            <p>
+              Competencia <strong>{competenciaFolhaSelecionada.competencia}</strong> em status{' '}
+              <strong>{LABELS_STATUS_COMPETENCIA[competenciaFolhaSelecionada.status] || competenciaFolhaSelecionada.status}</strong>.
+            </p>
+          )}
+        </section>
+
+        {loadingFolha && competenciaFolhaId ? (
+          <section style={styles.cardConfiguracao}>
+            <p style={styles.textoNota}>Carregando lancamentos da competencia...</p>
+          </section>
+        ) : (
+          <>
+            <section className="people-report-overview-grid" aria-label="Resumo sintetico da folha">
+              <IndicadorCard label="Creditos" valor={formatarMoeda(resumoFolha.totalCreditos)} detalhe="Lancamentos ativos" />
+              <IndicadorCard label="Descontos" valor={formatarMoeda(resumoFolha.totalDescontos)} detalhe="Lancamentos ativos" />
+              <IndicadorCard label="Saldo" valor={formatarMoeda(resumoFolha.saldoInformativo)} detalhe="Credito menos desconto" />
+              <IndicadorCard label="Lancamentos" valor={resumoFolha.quantidadeLancamentos} detalhe="Registros ativos" />
+              <IndicadorCard label="Itens detalhados" valor={itensLancamentos.length} detalhe="Itens ativos vinculados" />
+              <IndicadorCard label="Colaboradores" valor={gruposFolha.length} detalhe="Com lancamentos na competencia" />
+            </section>
+
+            <section className="people-report-payroll-section">
+              <div className="people-report-payroll-section-header">
+                <div>
+                  <h2>Resumo por colaborador</h2>
+                  <p>Visao gerencial consolidada. Itens arquivados nao entram na contagem.</p>
+                </div>
+              </div>
+
+              {gruposFolha.length === 0 ? (
+                <div className="empty-state-card">
+                  <div className="empty-state-icon">F</div>
+                  <strong>Sem lancamentos ativos</strong>
+                  <p>Nao ha lancamentos ativos para a competencia selecionada.</p>
+                </div>
+              ) : (
+                <div className="people-report-payroll-list">
+                  {gruposFolha.map((grupo) => (
+                    <article key={grupo.id} className="people-report-payroll-row">
+                      <div>
+                        <h3>{grupo.nome}</h3>
+                        <small>{grupo.cargo || 'Cargo nao informado'}</small>
+                      </div>
+                      <div className="people-report-payroll-row-meta">
+                        <strong>{formatarMoeda(grupo.saldo)}</strong>
+                        <small>Creditos: {formatarMoeda(grupo.totalCreditos)} | Descontos: {formatarMoeda(grupo.totalDescontos)}</small>
+                        <small>{grupo.quantidadeLancamentos} lancamento(s) | {grupo.quantidadeItens} item(ns) detalhado(s)</small>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="people-report-overview-note">
+              <strong>Relatorio gerencial de apoio.</strong>
+              <p>
+                Esta aba nao substitui a contabilidade, nao calcula encargos trabalhistas e nao exibe CPF,
+                telefone, e-mail, documentos, laudos, CID, diagnosticos, resultados de exame ou dados medicos.
+              </p>
+            </section>
+          </>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="people-report-center-page">
       <style>{`
@@ -337,6 +553,82 @@ export default function RelatoriosGestaoPessoasPage({
           gap: 6px;
         }
         .people-report-overview-note p { margin: 0; }
+        .people-report-payroll {
+          display: grid;
+          gap: 14px;
+        }
+        .people-report-payroll-filter {
+          border: 1px solid #e5e7eb;
+          background: #ffffff;
+          border-radius: 8px;
+          padding: 14px;
+          display: grid;
+          gap: 10px;
+        }
+        .people-report-payroll-filter label {
+          display: grid;
+          gap: 6px;
+          color: #475569;
+          font-weight: 700;
+        }
+        .people-report-payroll-filter select {
+          min-height: 40px;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          padding: 8px 10px;
+          color: #0f172a;
+          background: #ffffff;
+        }
+        .people-report-payroll-filter p {
+          margin: 0;
+          color: #64748b;
+        }
+        .people-report-payroll-section {
+          border: 1px solid #e5e7eb;
+          background: #ffffff;
+          border-radius: 8px;
+          padding: 14px;
+          display: grid;
+          gap: 12px;
+        }
+        .people-report-payroll-section-header h2 {
+          margin: 0;
+          color: #0f172a;
+          font-size: 18px;
+        }
+        .people-report-payroll-section-header p {
+          margin: 4px 0 0;
+          color: #64748b;
+        }
+        .people-report-payroll-list {
+          display: grid;
+          gap: 10px;
+        }
+        .people-report-payroll-row {
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          padding: 12px;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(220px, auto);
+          gap: 12px;
+          align-items: center;
+        }
+        .people-report-payroll-row h3 {
+          margin: 0;
+          color: #0f172a;
+          font-size: 16px;
+        }
+        .people-report-payroll-row small {
+          color: #64748b;
+        }
+        .people-report-payroll-row-meta {
+          display: grid;
+          gap: 4px;
+          text-align: right;
+        }
+        .people-report-payroll-row-meta strong {
+          color: #0f172a;
+        }
         @media (max-width: 900px) {
           .people-report-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
@@ -344,6 +636,8 @@ export default function RelatoriosGestaoPessoasPage({
           .people-report-tabs { display: grid; grid-template-columns: 1fr; }
           .people-report-tab { width: 100%; text-align: left; }
           .people-report-overview-grid { grid-template-columns: 1fr; }
+          .people-report-payroll-row { grid-template-columns: 1fr; }
+          .people-report-payroll-row-meta { text-align: left; }
         }
       `}</style>
 
@@ -389,6 +683,7 @@ export default function RelatoriosGestaoPessoasPage({
           modoIntegrado
         />
       )}
+      {abaAtiva === 'folha' && renderFolha()}
     </div>
   )
 }

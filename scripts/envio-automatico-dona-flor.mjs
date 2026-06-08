@@ -692,8 +692,8 @@ function montarHtmlDryRun({
   return `
     <div style="font-family: Arial, sans-serif; background:#f4f4f4; padding:20px">
       <div style="background:#0f5c4d; color:#fff; padding:22px; border-radius:14px">
-        <h2 style="margin:0; font-size:24px; line-height:1.18;">DNA GestÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o</h2>
-        <p style="margin:10px 0 0 0; font-size:15px; line-height:1.35;">Alertas financeiros automÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ticos</p>
+        <h2 style="margin:0; font-size:24px; line-height:1.18;">DNA Gestão</h2>
+        <p style="margin:10px 0 0 0; font-size:15px; line-height:1.35;">Alertas financeiros automáticos</p>
       </div>
 
       ${blocoAlerta}
@@ -713,7 +713,7 @@ function montarHtmlDryRun({
       </a>
 
       <p style="font-size:12px; color:#999; margin-top:28px;">
-        Mensagem automÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡tica enviada pelo DNA GestÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o.
+        Mensagem automática enviada pelo DNA Gestão.
       </p>
       <p style="font-size:12px; color:#999;">Empresa: ${escapeHtml(safeName(empresaNome))}</p>
     </div>
@@ -775,7 +775,7 @@ function montarTextoResumo({ tipo, tituloPrincipal, contasPrincipal, resumoConta
       ? 'Total amanha'
       : 'Total hoje'
 
-  linhas.push('DNA GestÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o')
+  linhas.push('DNA Gestão')
   linhas.push('')
   linhas.push(resumoContas.vencidas.length > 0 || resumoContas.altoValor.length > 0 || contasPrincipal.length > 0 ? 'ALERTA CRITICO' : 'Situacao sob controle')
   linhas.push('')

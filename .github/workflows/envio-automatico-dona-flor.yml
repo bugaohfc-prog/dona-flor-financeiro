@@ -68,7 +68,11 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || secrets.DRY_RUN }}
       MODO_TESTE: ${{ github.event_name == 'workflow_dispatch' && inputs.modo_teste || 'false' }}
-      TIPO_DESTINATARIO_TESTE: ${{ github.event_name == 'workflow_dispatch' && inputs.tipo_destinatario || 'todos' }}
+
+      # Agendamento automatico restrito a CONTAS.
+      # Notas e resumo seguem apenas por execucao manual controlada.
+      TIPO_DESTINATARIO_TESTE: ${{ github.event_name == 'workflow_dispatch' && inputs.tipo_destinatario || 'contas' }}
+
       LIMITE_DESTINATARIOS: ${{ github.event_name == 'workflow_dispatch' && inputs.limite_destinatarios || '' }}
       EMPRESA_ID_TESTE: ${{ github.event_name == 'workflow_dispatch' && inputs.empresa_id || '' }}
       CONFIRMAR_ENVIO_REAL: ${{ github.event_name == 'workflow_dispatch' && inputs.confirmar_envio_real || '' }}

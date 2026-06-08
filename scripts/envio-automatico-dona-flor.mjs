@@ -581,7 +581,7 @@ function montarMensagemDryRun({ tipo, empresaNome, resumoContas, notasResumo, no
   const subject = tipo === 'VENCIDAS'
     ? `Contas vencidas - ${empresaAssunto}`
     : tipo === 'AMANHA'
-      ? `Contas de amanhÃƒÆ’Ã‚Â£ - ${empresaAssunto}`
+      ? `Contas de amanhÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£ - ${empresaAssunto}`
       : `Alerta financeiro - ${empresaAssunto}`
 
   const totais = calcularTotaisContas(resumoContas)
@@ -643,9 +643,9 @@ function montarHtmlDryRun({
       ? `
           <div style="background:#e74c3c; color:#fff; padding:18px; margin-top:18px; border-radius:14px; font-weight:bold; line-height:1.7;">
             <div style="font-size:17px; margin-bottom:8px;">ALERTA CRITICO</div>
-            ${resumoContas.vencidas.length > 0 ? `<div>Vencidas: ${resumoContas.vencidas.length} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ${moeda(totais.vencidas)}</div>` : ''}
-            ${resumoContas.hoje.length > 0 ? `<div>Vencem hoje: ${resumoContas.hoje.length} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ${moeda(totais.hoje)}</div>` : ''}
-            ${resumoContas.amanha.length > 0 ? `<div>Vencem amanha: ${resumoContas.amanha.length} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ${moeda(totais.amanha)}</div>` : ''}
+            ${resumoContas.vencidas.length > 0 ? `<div>Vencidas: ${resumoContas.vencidas.length} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ${moeda(totais.vencidas)}</div>` : ''}
+            ${resumoContas.hoje.length > 0 ? `<div>Vencem hoje: ${resumoContas.hoje.length} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ${moeda(totais.hoje)}</div>` : ''}
+            ${resumoContas.amanha.length > 0 ? `<div>Vencem amanha: ${resumoContas.amanha.length} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ${moeda(totais.amanha)}</div>` : ''}
             ${resumoContas.altoValor.length > 0 ? `<div>Alto valor: ${resumoContas.altoValor.length}</div>` : ''}
             ${notasResumo.urgentes.length > 0 ? `<div>Notas urgentes: ${notasResumo.urgentes.length}</div>` : ''}
           </div>
@@ -692,8 +692,8 @@ function montarHtmlDryRun({
   return `
     <div style="font-family: Arial, sans-serif; background:#f4f4f4; padding:20px">
       <div style="background:#0f5c4d; color:#fff; padding:22px; border-radius:14px">
-        <h2 style="margin:0; font-size:24px; line-height:1.18;">DNA GestÃƒÆ’Ã‚Â£o</h2>
-        <p style="margin:10px 0 0 0; font-size:15px; line-height:1.35;">Alertas financeiros automÃƒÆ’Ã‚Â¡ticos</p>
+        <h2 style="margin:0; font-size:24px; line-height:1.18;">DNA GestÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o</h2>
+        <p style="margin:10px 0 0 0; font-size:15px; line-height:1.35;">Alertas financeiros automÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ticos</p>
       </div>
 
       ${blocoAlerta}
@@ -713,7 +713,7 @@ function montarHtmlDryRun({
       </a>
 
       <p style="font-size:12px; color:#999; margin-top:28px;">
-        Mensagem automÃƒÆ’Ã‚Â¡tica enviada pelo DNA GestÃƒÆ’Ã‚Â£o.
+        Mensagem automÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡tica enviada pelo DNA GestÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o.
       </p>
       <p style="font-size:12px; color:#999;">Empresa: ${escapeHtml(safeName(empresaNome))}</p>
     </div>
@@ -775,7 +775,7 @@ function montarTextoResumo({ tipo, tituloPrincipal, contasPrincipal, resumoConta
       ? 'Total amanha'
       : 'Total hoje'
 
-  linhas.push('DNA GestÃƒÆ’Ã‚Â£o')
+  linhas.push('DNA GestÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£o')
   linhas.push('')
   linhas.push(resumoContas.vencidas.length > 0 || resumoContas.altoValor.length > 0 || contasPrincipal.length > 0 ? 'ALERTA CRITICO' : 'Situacao sob controle')
   linhas.push('')
@@ -793,7 +793,7 @@ function montarTextoResumo({ tipo, tituloPrincipal, contasPrincipal, resumoConta
   if (contasPrincipal.length === 0) {
     linhas.push(vazioPrincipal)
   } else {
-    linhas.push(`${tituloPrincipal.replace(/[ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¦ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â´]/g, '').trim()}:`)
+    linhas.push(`${tituloPrincipal.replace(/[ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â´]/g, '').trim()}:`)
     for (const conta of contasPrincipal.slice(0, 10)) {
       linhas.push(`- ${getField(conta, ['descricao', 'nome', 'conta', 'titulo'])} | ${moeda(conta?.valor)} | ${formatarData(dataConta(conta))}`)
     }
@@ -1123,7 +1123,7 @@ function extractEmail(value) {
 function buildMimeMessage({ from, fromEmail, to, subject, html, text, messageId }) {
   const boundary = `dona-flor-${randomUUID()}`
   const safeSubject = encodeMimeHeader(subject || 'Alerta financeiro - Empresa')
-  const safeText = cleanString(text) || 'Resumo automÃƒÆ’Ã‚Â¡tico DNA GestÃƒÆ’Ã‚Â£o.'
+  const safeText = cleanString(text) || 'Resumo automático DNA Gestão.'
   const safeHtml = cleanString(html) || `<p>${escapeHtml(safeText)}</p>`
 
   return [
@@ -1138,15 +1138,15 @@ function buildMimeMessage({ from, fromEmail, to, subject, html, text, messageId 
     '',
     `--${boundary}`,
     'Content-Type: text/plain; charset=UTF-8',
-    'Content-Transfer-Encoding: 8bit',
+    'Content-Transfer-Encoding: base64',
     '',
-    normalizeBody(safeText),
+    encodeBase64Mime(safeText),
     '',
     `--${boundary}`,
     'Content-Type: text/html; charset=UTF-8',
-    'Content-Transfer-Encoding: 8bit',
+    'Content-Transfer-Encoding: base64',
     '',
-    normalizeBody(safeHtml),
+    encodeBase64Mime(safeHtml),
     '',
     `--${boundary}--`,
     ''
@@ -1179,6 +1179,13 @@ function safeHeader(value) {
 
 function normalizeBody(value) {
   return String(value || '').replace(/\r?\n/g, '\r\n')
+}
+
+function encodeBase64Mime(value) {
+  return Buffer.from(String(value || ''), 'utf8')
+    .toString('base64')
+    .replace(/.{1,76}/g, '$&\r\n')
+    .trim()
 }
 
 function dotStuff(message) {
@@ -1255,12 +1262,13 @@ function resolveTipoDestinatarioTeste(value) {
 function resolveTipoAlerta(value, date, timeZone) {
   const normalized = normalizeText(value)
   if (['vencidas', 'vencida'].includes(normalized)) return 'VENCIDAS'
-  if (['amanha', 'amanhÃƒÆ’Ã‚Â£'].includes(normalized)) return 'AMANHA'
+  if (['amanha', 'amanhã'].includes(normalized)) return 'AMANHA'
   if (['hoje', ''].includes(normalized)) return ''
 
   const hour = hourInTimeZone(date, timeZone)
-  if (hour === 20) return 'VENCIDAS'
-  if (hour === 9) return 'AMANHA'
+  if (hour === 8) return 'VENCIDAS'
+  if (hour === 9) return ''
+  if (hour === 20) return 'AMANHA'
   return ''
 }
 
@@ -1368,4 +1376,3 @@ function safeError(error) {
     status: error?.status || null
   }
 }
-

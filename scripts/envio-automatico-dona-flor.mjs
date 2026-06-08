@@ -1,4 +1,4 @@
-﻿import net from 'node:net'
+import net from 'node:net'
 import tls from 'node:tls'
 import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
@@ -359,21 +359,25 @@ function resolverDestinatariosPorTipo({ destinatariosAlertas, emailPadrao, resum
 }
 
 function filtrarConteudoPorTipoDestinatario({ resumoContas, notasResumo, notas }) {
-  if (!MODO_TESTE) return { resumoContas, notasResumo, notas }
-  if (TIPO_DESTINATARIO_TESTE === 'contas') {
+  const restritoContas = TIPO_DESTINATARIO_TESTE === 'contas' && (MODO_TESTE || ENVIO_AGENDADO_CONTAS)
+  const restritoNotas = TIPO_DESTINATARIO_TESTE === 'notas' && MODO_TESTE
+
+  if (restritoContas) {
     return {
       resumoContas,
       notasResumo: resumoNotasVazio(),
       notas: []
     }
   }
-  if (TIPO_DESTINATARIO_TESTE === 'notas') {
+
+  if (restritoNotas) {
     return {
       resumoContas: resumoContasVazio(),
       notasResumo,
       notas
     }
   }
+
   return { resumoContas, notasResumo, notas }
 }
 
@@ -394,7 +398,10 @@ function resumoNotasVazio() {
 }
 
 function tiposDestinatarioEmExecucao() {
-  if (MODO_TESTE && TIPO_DESTINATARIO_TESTE !== 'todos') return [TIPO_DESTINATARIO_TESTE]
+  if ((MODO_TESTE || ENVIO_AGENDADO_CONTAS) && TIPO_DESTINATARIO_TESTE !== 'todos') {
+    return [TIPO_DESTINATARIO_TESTE]
+  }
+
   return ['contas', 'notas', 'resumo']
 }
 
@@ -453,6 +460,24 @@ function logDestinatariosExecucao({ empresaId, empresaNome, destinatariosPorTipo
 function validarTravasOperacionais() {
   if (DRY_RUN) return
 
+  if (ENVIO_AGENDADO_CONTAS) {
+    const errosAgendamento = []
+
+    if (TIPO_DESTINATARIO_TESTE !== 'contas') {
+      errosAgendamento.push('Agendamento real permitido somente para contas.')
+    }
+
+    if (CONFIRMAR_ENVIO_REAL !== 'CONFIRMO_ENVIO_REAL_CONTAS_AGENDADO') {
+      errosAgendamento.push('CONFIRMAR_ENVIO_REAL invalido para agendamento real de contas.')
+    }
+
+    if (errosAgendamento.length > 0) {
+      throw new Error(`Travas de agendamento real de contas nao atendidas: ${errosAgendamento.join(' ')}`)
+    }
+
+    return
+  }
+
   const erros = []
   if (!MODO_TESTE) erros.push('MODO_TESTE precisa ser true para envio real controlado.')
   if (LIMITE_DESTINATARIOS < 1 || LIMITE_DESTINATARIOS > LIMITE_MAXIMO_ENVIO_REAL_CONTROLADO) {
@@ -473,6 +498,16 @@ function validarDestinatariosAntesDoEnvioReal({ empresaId, destinatarios, destin
 
   if (destinatarios.length === 0) {
     throw new Error(`Envio real bloqueado: nenhum destinatario final para empresa ${empresaId}.`)
+  }
+
+  if (ENVIO_AGENDADO_CONTAS) {
+    const origemContas = destinatariosPorTipo?.origemResumo?.contas
+
+    if (origemContas !== 'df_destinatarios_alertas') {
+      throw new Error(`Envio real agendado bloqueado: empresa ${empresaId} sem destinatario de contas em df_destinatarios_alertas.`)
+    }
+
+    return
   }
 
   if (destinatarios.length > LIMITE_DESTINATARIOS) {
@@ -545,7 +580,7 @@ function montarMensagemDryRun({ tipo, empresaNome, resumoContas, notasResumo, no
   const subject = tipo === 'VENCIDAS'
     ? `Contas vencidas - ${empresaAssunto}`
     : tipo === 'AMANHA'
-      ? `Contas de amanhÃ£ - ${empresaAssunto}`
+      ? `Contas de amanhã - ${empresaAssunto}`
       : `Alerta financeiro - ${empresaAssunto}`
 
   const totais = calcularTotaisContas(resumoContas)
@@ -607,9 +642,9 @@ function montarHtmlDryRun({
       ? `
           <div style="background:#e74c3c; color:#fff; padding:18px; margin-top:18px; border-radius:14px; font-weight:bold; line-height:1.7;">
             <div style="font-size:17px; margin-bottom:8px;">ALERTA CRITICO</div>
-            ${resumoContas.vencidas.length > 0 ? `<div>Vencidas: ${resumoContas.vencidas.length} â€” ${moeda(totais.vencidas)}</div>` : ''}
-            ${resumoContas.hoje.length > 0 ? `<div>Vencem hoje: ${resumoContas.hoje.length} â€” ${moeda(totais.hoje)}</div>` : ''}
-            ${resumoContas.amanha.length > 0 ? `<div>Vencem amanha: ${resumoContas.amanha.length} â€” ${moeda(totais.amanha)}</div>` : ''}
+            ${resumoContas.vencidas.length > 0 ? `<div>Vencidas: ${resumoContas.vencidas.length} — ${moeda(totais.vencidas)}</div>` : ''}
+            ${resumoContas.hoje.length > 0 ? `<div>Vencem hoje: ${resumoContas.hoje.length} — ${moeda(totais.hoje)}</div>` : ''}
+            ${resumoContas.amanha.length > 0 ? `<div>Vencem amanha: ${resumoContas.amanha.length} — ${moeda(totais.amanha)}</div>` : ''}
             ${resumoContas.altoValor.length > 0 ? `<div>Alto valor: ${resumoContas.altoValor.length}</div>` : ''}
             ${notasResumo.urgentes.length > 0 ? `<div>Notas urgentes: ${notasResumo.urgentes.length}</div>` : ''}
           </div>
@@ -656,8 +691,8 @@ function montarHtmlDryRun({
   return `
     <div style="font-family: Arial, sans-serif; background:#f4f4f4; padding:20px">
       <div style="background:#0f5c4d; color:#fff; padding:22px; border-radius:14px">
-        <h2 style="margin:0; font-size:24px; line-height:1.18;">DNA GestÃ£o</h2>
-        <p style="margin:10px 0 0 0; font-size:15px; line-height:1.35;">Alertas financeiros automÃ¡ticos</p>
+        <h2 style="margin:0; font-size:24px; line-height:1.18;">DNA Gestão</h2>
+        <p style="margin:10px 0 0 0; font-size:15px; line-height:1.35;">Alertas financeiros automáticos</p>
       </div>
 
       ${blocoAlerta}
@@ -677,7 +712,7 @@ function montarHtmlDryRun({
       </a>
 
       <p style="font-size:12px; color:#999; margin-top:28px;">
-        Mensagem automÃ¡tica enviada pelo DNA GestÃ£o.
+        Mensagem automática enviada pelo DNA Gestão.
       </p>
       <p style="font-size:12px; color:#999;">Empresa: ${escapeHtml(safeName(empresaNome))}</p>
     </div>
@@ -739,7 +774,7 @@ function montarTextoResumo({ tipo, tituloPrincipal, contasPrincipal, resumoConta
       ? 'Total amanha'
       : 'Total hoje'
 
-  linhas.push('DNA GestÃ£o')
+  linhas.push('DNA Gestão')
   linhas.push('')
   linhas.push(resumoContas.vencidas.length > 0 || resumoContas.altoValor.length > 0 || contasPrincipal.length > 0 ? 'ALERTA CRITICO' : 'Situacao sob controle')
   linhas.push('')
@@ -757,7 +792,7 @@ function montarTextoResumo({ tipo, tituloPrincipal, contasPrincipal, resumoConta
   if (contasPrincipal.length === 0) {
     linhas.push(vazioPrincipal)
   } else {
-    linhas.push(`${tituloPrincipal.replace(/[ðŸ“…ðŸ“†ðŸ”´]/g, '').trim()}:`)
+    linhas.push(`${tituloPrincipal.replace(/[📅📆🔴]/g, '').trim()}:`)
     for (const conta of contasPrincipal.slice(0, 10)) {
       linhas.push(`- ${getField(conta, ['descricao', 'nome', 'conta', 'titulo'])} | ${moeda(conta?.valor)} | ${formatarData(dataConta(conta))}`)
     }
@@ -1087,7 +1122,7 @@ function extractEmail(value) {
 function buildMimeMessage({ from, fromEmail, to, subject, html, text, messageId }) {
   const boundary = `dona-flor-${randomUUID()}`
   const safeSubject = encodeMimeHeader(subject || 'Alerta financeiro - Empresa')
-  const safeText = cleanString(text) || 'Resumo automÃ¡tico DNA GestÃ£o.'
+  const safeText = cleanString(text) || 'Resumo automático DNA Gestão.'
   const safeHtml = cleanString(html) || `<p>${escapeHtml(safeText)}</p>`
 
   return [
@@ -1219,7 +1254,7 @@ function resolveTipoDestinatarioTeste(value) {
 function resolveTipoAlerta(value, date, timeZone) {
   const normalized = normalizeText(value)
   if (['vencidas', 'vencida'].includes(normalized)) return 'VENCIDAS'
-  if (['amanha', 'amanhÃ£'].includes(normalized)) return 'AMANHA'
+  if (['amanha', 'amanhã'].includes(normalized)) return 'AMANHA'
   if (['hoje', ''].includes(normalized)) return ''
 
   const hour = hourInTimeZone(date, timeZone)

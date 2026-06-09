@@ -643,9 +643,9 @@ function montarHtmlDryRun({
       ? `
           <div style="background:#e74c3c; color:#fff; padding:18px; margin-top:18px; border-radius:14px; font-weight:bold; line-height:1.7;">
             <div style="font-size:17px; margin-bottom:8px;">ALERTA CRITICO</div>
-            ${resumoContas.vencidas.length > 0 ? `<div>Vencidas: ${resumoContas.vencidas.length} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ${moeda(totais.vencidas)}</div>` : ''}
-            ${resumoContas.hoje.length > 0 ? `<div>Vencem hoje: ${resumoContas.hoje.length} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ${moeda(totais.hoje)}</div>` : ''}
-            ${resumoContas.amanha.length > 0 ? `<div>Vencem amanha: ${resumoContas.amanha.length} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ${moeda(totais.amanha)}</div>` : ''}
+            ${resumoContas.vencidas.length > 0 ? `<div>Vencidas: ${resumoContas.vencidas.length} &mdash; ${moeda(totais.vencidas)}</div>` : ''}
+            ${resumoContas.hoje.length > 0 ? `<div>Vencem hoje: ${resumoContas.hoje.length} &mdash; ${moeda(totais.hoje)}</div>` : ''}
+            ${resumoContas.amanha.length > 0 ? `<div>Vencem amanhã: ${resumoContas.amanha.length} &mdash; ${moeda(totais.amanha)}</div>` : ''}
             ${resumoContas.altoValor.length > 0 ? `<div>Alto valor: ${resumoContas.altoValor.length}</div>` : ''}
             ${notasResumo.urgentes.length > 0 ? `<div>Notas urgentes: ${notasResumo.urgentes.length}</div>` : ''}
           </div>

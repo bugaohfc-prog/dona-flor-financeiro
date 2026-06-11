@@ -238,6 +238,93 @@ export default function DashboardHome({
 
   return (
     <>
+      <style>{`
+        .dashboard-notes-card .note-toggle-small {
+          border-radius: 999px !important;
+          font-size: 15px !important;
+          font-weight: 900 !important;
+          line-height: 1 !important;
+        }
+        .dashboard-note-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          gap: 6px;
+          flex-wrap: wrap;
+          margin-top: 8px;
+        }
+        .dashboard-note-actions button {
+          width: auto !important;
+          min-width: 0 !important;
+          min-height: 31px !important;
+          padding: 5px 10px !important;
+          border-radius: 999px !important;
+          font-size: 12px !important;
+          font-weight: 800 !important;
+          box-shadow: none !important;
+        }
+        .dashboard-note-actions .dashboard-note-secondary,
+        .dashboard-note-actions .dashboard-note-danger {
+          opacity: 0.76;
+        }
+        .dashboard-note-actions .dashboard-note-danger {
+          background: #fff7f7 !important;
+          color: #991b1b !important;
+          border: 1px solid #fecaca !important;
+        }
+        @media (max-width: 640px) {
+          .dashboard-notes-card {
+            padding: 12px !important;
+          }
+          .dashboard-notes-card .notes-header-clean {
+            gap: 8px !important;
+            margin-bottom: 10px !important;
+          }
+          .dashboard-notes-card .notes-title {
+            font-size: 15px !important;
+          }
+          .dashboard-notes-card .notes-stats-row {
+            gap: 5px !important;
+          }
+          .dashboard-notes-card .note-stat {
+            font-size: 10.5px !important;
+            padding: 4px 7px !important;
+          }
+          .dashboard-notes-card .dashboard-see-all-link {
+            min-height: 30px !important;
+            padding: 5px 9px !important;
+            font-size: 11px !important;
+          }
+          .dashboard-notes-card .note-toggle-small {
+            width: 30px !important;
+            min-width: 30px !important;
+            height: 30px !important;
+            min-height: 30px !important;
+            padding: 0 !important;
+          }
+          .dashboard-notes-card .note-card-action {
+            padding: 12px !important;
+          }
+          .dashboard-notes-card .note-card-action p {
+            font-size: 12px !important;
+            line-height: 1.38 !important;
+            margin-top: 6px !important;
+          }
+          .dashboard-note-actions {
+            gap: 5px;
+            margin-top: 7px;
+          }
+          .dashboard-note-actions button {
+            min-height: 28px !important;
+            padding: 4px 8px !important;
+            font-size: 11px !important;
+          }
+          .dashboard-note-actions .dashboard-note-secondary,
+          .dashboard-note-actions .dashboard-note-danger {
+            padding-inline: 7px !important;
+          }
+        }
+      `}</style>
       <section className="dashboard-branch-filter no-print" aria-label="Filtro de filial do painel">
         <div className="dashboard-branch-filter-card">
           <div>
@@ -486,7 +573,7 @@ export default function DashboardHome({
                 title={mostrarNotas ? 'Recolher bloco de notas' : 'Expandir bloco de notas'}
                 aria-label={mostrarNotas ? 'Recolher bloco de notas' : 'Expandir bloco de notas'}
               >
-                {mostrarNotas ? '-' : '+'}
+                {mostrarNotas ? '▴' : '▾'}
               </button>
             </div>
           </div>
@@ -513,10 +600,10 @@ export default function DashboardHome({
                     {nota.conteudo && <p style={styles.textoNota}>{nota.conteudo}</p>}
 
                     {podeEditarFinanceiro && (
-                      <div style={styles.acoes}>
-                        <button style={styles.btnPago} onClick={() => alternarNotaConcluida(nota)}>{nota.concluida ? 'Reabrir' : 'Concluir'}</button>
-                        <button style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
-                        <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficar\u00e1 em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>Excluir</button>
+                      <div className="dashboard-note-actions">
+                        <button className="dashboard-note-primary" style={styles.btnPago} onClick={() => alternarNotaConcluida(nota)}>{nota.concluida ? 'Reabrir' : 'Concluir'}</button>
+                        <button className="dashboard-note-secondary" style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
+                        <button className="dashboard-note-danger" style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficar\u00e1 em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>Excluir</button>
                       </div>
                     )}
                   </div>

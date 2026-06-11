@@ -8,6 +8,12 @@ const OPCOES_ORDENACAO_NOTAS = [
   { valor: 'status', label: 'Status' }
 ]
 
+const ABAS_STATUS_NOTAS = [
+  { valor: 'abertas', label: 'Abertas' },
+  { valor: 'concluidas', label: 'Concluídas' },
+  { valor: 'todas', label: 'Todas' }
+]
+
 function EmptyState({ icon, title, description }) {
   return (
     <div className="empty-state-card">
@@ -23,13 +29,33 @@ export default function NotasPage({
   buscaNota, setBuscaNota, formatarData, alternarNotaConcluida, abrirEdicaoNota,
   abrirConfirmacao, excluirNota, filtroFilial, setFiltroFilial, filiais, podeEditarFinanceiro = true
 }) {
+  const [abaStatusNotas, setAbaStatusNotas] = useState('abertas')
   const [ordenacaoNotas, setOrdenacaoNotas] = useState('prioridade')
+  const notasAbertasFiltradas = useMemo(
+    () => notasFiltradas.filter((nota) => !nota.concluida),
+    [notasFiltradas]
+  )
+  const notasConcluidasFiltradas = useMemo(
+    () => notasFiltradas.filter((nota) => nota.concluida),
+    [notasFiltradas]
+  )
+  const notasDaAba = useMemo(() => {
+    if (abaStatusNotas === 'concluidas') return notasConcluidasFiltradas
+    if (abaStatusNotas === 'todas') return notasFiltradas
+    return notasAbertasFiltradas
+  }, [abaStatusNotas, notasAbertasFiltradas, notasConcluidasFiltradas, notasFiltradas])
+  const tituloAbaNotas = abaStatusNotas === 'concluidas'
+    ? 'Notas concluídas'
+    : abaStatusNotas === 'todas'
+      ? 'Todas as notas'
+      : 'Notas abertas'
+
   const notasOrdenadas = useMemo(() => {
     const pesoPrioridade = { critico: 0, urgente: 1, normal: 2 }
     const obterStatus = (nota) => nota.concluida ? 1 : 0
     const obterData = (nota, fallback) => nota.data_evento || fallback
 
-    return [...notasFiltradas].sort((a, b) => {
+    return [...notasDaAba].sort((a, b) => {
       if (ordenacaoNotas === 'data_asc') {
         return String(obterData(a, '9999-12-31')).localeCompare(String(obterData(b, '9999-12-31')))
       }
@@ -57,10 +83,78 @@ export default function NotasPage({
 
       return String(obterData(a, '9999-12-31')).localeCompare(String(obterData(b, '9999-12-31')))
     })
-  }, [notasFiltradas, ordenacaoNotas])
+  }, [notasDaAba, ordenacaoNotas])
 
   return (
     <>
+      <style>{`
+        .notes-status-tabs {
+          grid-column: 1 / -1;
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 6px;
+          width: 100%;
+        }
+        .notes-toolbar {
+          gap: 10px;
+        }
+        .notes-status-tab {
+          min-height: 36px;
+          border: 1px solid #dbe4ef;
+          border-radius: 999px;
+          background: #ffffff;
+          color: #475569;
+          font-weight: 800;
+          cursor: pointer;
+          padding: 7px 10px;
+        }
+        .notes-status-tab.is-active {
+          border-color: #0f766e;
+          background: #0f766e;
+          color: #ffffff;
+          box-shadow: 0 6px 16px rgba(15, 118, 110, 0.16);
+        }
+        .notes-card-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          gap: 6px;
+          flex-wrap: wrap;
+          margin-top: 8px;
+        }
+        .notes-card-actions button {
+          width: auto !important;
+          min-width: 0 !important;
+          min-height: 32px !important;
+          padding: 6px 10px !important;
+          border-radius: 999px !important;
+          font-size: 12px !important;
+          font-weight: 800 !important;
+          box-shadow: none !important;
+        }
+        .notes-card-actions .note-action-secondary,
+        .notes-card-actions .note-action-danger {
+          opacity: 0.82;
+        }
+        @media (max-width: 640px) {
+          .notes-status-tabs {
+            gap: 5px;
+          }
+          .notes-status-tab {
+            min-height: 34px;
+            padding: 6px 8px;
+            font-size: 13px;
+          }
+          .notes-card-actions {
+            gap: 5px;
+          }
+          .notes-card-actions button {
+            min-height: 30px !important;
+            padding: 5px 9px !important;
+            font-size: 12px !important;
+          }
+        }
+      `}</style>
       <div className="page-title-actions">
         <div>
           <h1 style={styles.titulo}>📝 Notas</h1>
@@ -74,8 +168,8 @@ export default function NotasPage({
       <section style={styles.cardConfiguracao} className="notes-page-section">
         <div className="notes-page-header">
           <div>
-            <h2 style={styles.subtitulo}>Todas as notas</h2>
-            <p style={styles.textoNota}>{notasFiltradas.length} nota(s) encontrada(s) • {notasPendentes.length} pendente(s)</p>
+            <h2 style={styles.subtitulo}>{tituloAbaNotas}</h2>
+            <p style={styles.textoNota}>{notasOrdenadas.length} nota(s) na aba • {notasAbertasFiltradas.length} aberta(s) • {notasConcluidasFiltradas.length} concluída(s)</p>
           </div>
           <div className="notes-page-stats">
             <span className="note-stat note-stat-pendente">{notasPendentes.length} pendente(s)</span>
@@ -85,6 +179,21 @@ export default function NotasPage({
         </div>
 
         <div className="notes-toolbar">
+          <div className="notes-status-tabs" role="tablist" aria-label="Filtro principal de status das notas">
+            {ABAS_STATUS_NOTAS.map((aba) => (
+              <button
+                key={aba.valor}
+                type="button"
+                role="tab"
+                aria-selected={abaStatusNotas === aba.valor}
+                className={`notes-status-tab ${abaStatusNotas === aba.valor ? 'is-active' : ''}`}
+                onClick={() => setAbaStatusNotas(aba.valor)}
+              >
+                {aba.label}
+              </button>
+            ))}
+          </div>
+
           <select style={styles.input} value={filtroFilial} onChange={(e) => setFiltroFilial(e.target.value)}>
             <option value="">Todas as filiais</option>
             {(filiais || []).map((filial) => (<option key={filial.id} value={filial.id}>{filial.nome}</option>))}
@@ -109,7 +218,11 @@ export default function NotasPage({
           <EmptyState
             icon="📝"
             title="Nenhuma nota encontrada"
-            description="Use as notas para registrar pendências, lembretes e prioridades da operação."
+            description={abaStatusNotas === 'abertas'
+              ? 'Nenhuma nota aberta para os filtros selecionados.'
+              : abaStatusNotas === 'concluidas'
+                ? 'Nenhuma nota concluída para os filtros selecionados.'
+                : 'Use as notas para registrar pendências, lembretes e prioridades da operação.'}
           />
         )}
 
@@ -118,9 +231,9 @@ export default function NotasPage({
             const prioridade = nota.prioridade || 'normal'
             const conteudo = String(nota.conteudo || '').trim()
             return (
-              <div key={nota.id} className={`note-card-action note-card-${prioridade}`} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
+              <div key={nota.id} className={`note-card-action note-card-${prioridade}`} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida && abaStatusNotas === 'todas' ? 0.72 : 1 }}>
                 <div style={styles.cardTopo}>
-                  <strong style={{ textDecoration: nota.concluida ? 'line-through' : 'none' }}>{nota.titulo}</strong>
+                  <strong style={{ textDecoration: nota.concluida && abaStatusNotas === 'todas' ? 'line-through' : 'none' }}>{nota.titulo}</strong>
                   <div className="note-card-badges">
                     <span className={`note-priority-badge note-priority-${prioridade}`} style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
                       {prioridade === 'critico' ? 'Crítico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
@@ -136,10 +249,10 @@ export default function NotasPage({
                 {conteudo && <p className="note-content-preview" title={conteudo}>{conteudo}</p>}
 
                 {podeEditarFinanceiro && (
-                <div style={styles.acoes}>
-                  <button style={styles.btnPago} onClick={() => alternarNotaConcluida(nota)}>{nota.concluida ? 'Reabrir' : 'Concluir'}</button>
-                  <button style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
-                  <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>Excluir</button>
+                <div className="notes-card-actions">
+                  <button className="note-action-primary" style={styles.btnPago} onClick={() => alternarNotaConcluida(nota)}>{nota.concluida ? 'Reabrir' : 'Concluir'}</button>
+                  <button className="note-action-secondary" style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
+                  <button className="note-action-danger" style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>Excluir</button>
                 </div>
                 )}
               </div>

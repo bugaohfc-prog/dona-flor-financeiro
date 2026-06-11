@@ -13,7 +13,7 @@ function EmptyState({ icon, title, description }) {
 function CardAgenda({
   styles,
   titulo,
-  total,
+  resumo,
   lista,
   cor,
   formatarValor,
@@ -26,7 +26,7 @@ function CardAgenda({
     <section style={styles.cardAgenda}>
       <div style={styles.cardTopo}>
         <strong>{titulo}</strong>
-        <span>{formatarValor(total)}</span>
+        <span>{resumo}</span>
       </div>
 
       {lista.length === 0 && (
@@ -140,16 +140,34 @@ export default function AgendaPage({
   const somarContas = (lista) => lista.reduce((acc, evento) => {
     return acc + (evento.tipo === 'conta' ? Number(evento.valor || 0) : 0)
   }, 0)
+  const contarNotas = (lista) => lista.filter((evento) => evento.tipo === 'nota').length
+  const formatarNotas = (quantidade) => `${quantidade} nota(s)`
+  const formatarResumo = (lista) => {
+    const totalContas = somarContas(lista)
+    const totalNotas = contarNotas(lista)
 
-  const totalVencidasAgenda = somarContas(eventosVencidos)
-  const totalHojeAgenda = somarContas(eventosHoje)
-  const totalSemanaAgenda = somarContas(eventosSemana)
-  const totalMesAgenda = somarContas(eventosMes)
+    if (filtroTipo === 'nota') return formatarNotas(totalNotas)
+    if (filtroTipo === 'conta') return formatarValor(totalContas)
+    return `${formatarValor(totalContas)} em contas • ${formatarNotas(totalNotas)}`
+  }
+
+  const tituloVencidos = filtroTipo === 'nota'
+    ? 'Atrasadas'
+    : filtroTipo === 'conta'
+      ? 'Vencidas'
+      : 'Vencidas/Atrasadas'
 
   const filtrosTipo = [
     { valor: 'todas', label: 'Todas' },
     { valor: 'conta', label: 'Contas' },
     { valor: 'nota', label: 'Notas' }
+  ]
+
+  const grupos = [
+    { chave: 'vencidas', label: tituloVencidos, titulo: '🚨 Vencidas / atrasadas', lista: eventosVencidos, cor: '#dc3545', style: styles.boxVencido },
+    { chave: 'hoje', label: 'Hoje', titulo: '📌 Hoje', lista: eventosHoje, cor: '#ffc107', style: styles.boxPendente },
+    { chave: 'semana', label: '7 dias', titulo: '🗓️ Próximos 7 dias', lista: eventosSemana, cor: '#0d6efd', style: styles.boxTotal },
+    { chave: 'mes', label: 'Mês', titulo: '📆 Restante do mês', lista: eventosMes, cor: '#14b8a6', style: styles.boxPago }
   ]
 
   return (
@@ -207,7 +225,7 @@ export default function AgendaPage({
         }
       `}</style>
 
-      <h1 style={styles.titulo}>📅 Agenda Financeira</h1>
+      <h1 style={styles.titulo}>📅 Agenda</h1>
 
       <button className="btn-back-page" style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>
         ← Voltar
@@ -228,76 +246,30 @@ export default function AgendaPage({
       </div>
 
       <section className="agenda-summary-grid" style={styles.resumo}>
-        <div style={styles.boxVencido}>
-          <span>Vencidas</span>
-          <strong>{formatarValor(totalVencidasAgenda)}</strong>
-        </div>
-
-        <div style={styles.boxPendente}>
-          <span>Hoje</span>
-          <strong>{formatarValor(totalHojeAgenda)}</strong>
-        </div>
-
-        <div style={styles.boxTotal}>
-          <span>7 dias</span>
-          <strong>{formatarValor(totalSemanaAgenda)}</strong>
-        </div>
-
-        <div style={styles.boxPago}>
-          <span>Mês</span>
-          <strong>{formatarValor(totalMesAgenda)}</strong>
-        </div>
+        {grupos.map((grupo) => (
+          <div key={grupo.chave} style={grupo.style}>
+            <span>{grupo.label}</span>
+            <strong>{formatarResumo(grupo.lista)}</strong>
+          </div>
+        ))}
       </section>
 
       <div className="agenda-page-grid">
-        <CardAgenda
-          styles={styles}
-          titulo="🚨 Vencidas / atrasadas"
-          total={totalVencidasAgenda}
-          lista={eventosVencidos}
-          cor="#dc3545"
-          formatarValor={formatarValor}
-          formatarData={formatarData}
-          diferencaDias={diferencaDias}
-          navegarPara={navegarPara}
-          podeEditarFinanceiro={podeEditarFinanceiro}
-        />
-        <CardAgenda
-          styles={styles}
-          titulo="📌 Hoje"
-          total={totalHojeAgenda}
-          lista={eventosHoje}
-          cor="#ffc107"
-          formatarValor={formatarValor}
-          formatarData={formatarData}
-          diferencaDias={diferencaDias}
-          navegarPara={navegarPara}
-          podeEditarFinanceiro={podeEditarFinanceiro}
-        />
-        <CardAgenda
-          styles={styles}
-          titulo="🗓️ Próximos 7 dias"
-          total={totalSemanaAgenda}
-          lista={eventosSemana}
-          cor="#0d6efd"
-          formatarValor={formatarValor}
-          formatarData={formatarData}
-          diferencaDias={diferencaDias}
-          navegarPara={navegarPara}
-          podeEditarFinanceiro={podeEditarFinanceiro}
-        />
-        <CardAgenda
-          styles={styles}
-          titulo="📆 Restante do mês"
-          total={totalMesAgenda}
-          lista={eventosMes}
-          cor="#14b8a6"
-          formatarValor={formatarValor}
-          formatarData={formatarData}
-          diferencaDias={diferencaDias}
-          navegarPara={navegarPara}
-          podeEditarFinanceiro={podeEditarFinanceiro}
-        />
+        {grupos.map((grupo) => (
+          <CardAgenda
+            key={grupo.chave}
+            styles={styles}
+            titulo={grupo.titulo}
+            resumo={formatarResumo(grupo.lista)}
+            lista={grupo.lista}
+            cor={grupo.cor}
+            formatarValor={formatarValor}
+            formatarData={formatarData}
+            diferencaDias={diferencaDias}
+            navegarPara={navegarPara}
+            podeEditarFinanceiro={podeEditarFinanceiro}
+          />
+        ))}
       </div>
     </>
   )

@@ -4612,6 +4612,7 @@ export default function App() {
         <LazyAgendaPage
           styles={styles}
           contas={contas}
+          notas={notas}
           formatarValor={formatarValor}
           formatarData={formatarData}
           dataLocal={dataLocal}

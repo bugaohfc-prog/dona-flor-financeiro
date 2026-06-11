@@ -1,3 +1,5 @@
+import { useMemo, useState } from 'react'
+
 function EmptyState({ icon, title, description }) {
   return (
     <div className="empty-state-card">
@@ -28,35 +30,48 @@ function CardAgenda({
       </div>
 
       {lista.length === 0 && (
-        <EmptyState icon="✅" title="Agenda limpa" description="Não há contas neste grupo de vencimento no momento." />
+        <EmptyState icon="✓" title="Agenda limpa" description="Não há eventos neste grupo no momento." />
       )}
 
-      {lista.map((conta) => {
-        const dias = diferencaDias(conta.data_vencimento)
+      {lista.map((evento) => {
+        const dias = diferencaDias(evento.data)
+        const ehNota = evento.tipo === 'nota'
 
         return (
-          <div key={conta.id} style={{ ...styles.itemAgenda, borderLeft: `5px solid ${cor}` }}>
+          <div key={evento.chave} style={{ ...styles.itemAgenda, borderLeft: `5px solid ${cor}` }}>
             <div>
-              <strong>{conta.descricao}</strong>
+              <div className="agenda-event-title">
+                <strong>{evento.titulo}</strong>
+                <span className={`agenda-event-badge agenda-event-badge-${evento.tipo}`}>
+                  {ehNota ? 'Nota' : 'Conta'}
+                </span>
+              </div>
+
               <div style={styles.cardInfo}>
-                {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'}
+                {formatarData(evento.data)} • {evento.descricaoSecundaria}
               </div>
 
               <small style={dias < 0 ? styles.textoVencidoAgenda : styles.textoAgenda}>
                 {dias < 0
-                  ? `Vencida há ${Math.abs(dias)} dia(s)`
+                  ? `${ehNota ? 'Atrasada' : 'Vencida'} há ${Math.abs(dias)} dia(s)`
                   : dias === 0
-                    ? 'Vence hoje'
-                    : `Vence em ${dias} dia(s)`}
+                    ? `${ehNota ? 'Para hoje' : 'Vence hoje'}`
+                    : `${ehNota ? 'Para daqui' : 'Vence em'} ${dias} dia(s)`}
               </small>
             </div>
 
             <div style={styles.agendaDireita}>
-              <strong>{formatarValor(conta.valor)}</strong>
+              {!ehNota && <strong>{formatarValor(evento.valor)}</strong>}
 
-              {podeEditarFinanceiro && (
+              {!ehNota && podeEditarFinanceiro && (
                 <button style={styles.btnPago} onClick={() => navegarPara('contas')}>
                   Ver em Contas
+                </button>
+              )}
+
+              {ehNota && (
+                <button style={styles.btnPago} onClick={() => navegarPara('notas')}>
+                  Ver em Notas
                 </button>
               )}
             </div>
@@ -70,6 +85,7 @@ function CardAgenda({
 export default function AgendaPage({
   styles,
   contas = [],
+  notas = [],
   formatarValor,
   formatarData,
   dataLocal,
@@ -78,33 +94,138 @@ export default function AgendaPage({
   navegarPara,
   podeEditarFinanceiro = true
 }) {
-  const contasAgenda = [...contas]
-    .filter((conta) => conta.status !== 'pago')
-    .sort((a, b) => dataLocal(a.data_vencimento) - dataLocal(b.data_vencimento))
+  const [filtroTipo, setFiltroTipo] = useState('todas')
 
-  const contasVencidas = contasAgenda.filter((conta) => diferencaDias(conta.data_vencimento) < 0)
-  const contasHoje = contasAgenda.filter((conta) => diferencaDias(conta.data_vencimento) === 0)
-  const contasSemana = contasAgenda.filter((conta) => {
-    const dias = diferencaDias(conta.data_vencimento)
+  const eventosAgenda = useMemo(() => {
+    const contasAgenda = contas
+      .filter((conta) => conta.status !== 'pago')
+      .map((conta) => ({
+        ...conta,
+        chave: `conta-${conta.id}`,
+        tipo: 'conta',
+        data: conta.data_vencimento,
+        titulo: conta.descricao,
+        descricaoSecundaria: conta.df_centros_custo?.nome || 'Sem centro',
+        valor: Number(conta.valor || 0)
+      }))
+
+    const notasAgenda = notas
+      .filter((nota) => !nota.concluida && nota.data_evento)
+      .map((nota) => ({
+        ...nota,
+        chave: `nota-${nota.id}`,
+        tipo: 'nota',
+        data: nota.data_evento,
+        titulo: nota.titulo,
+        descricaoSecundaria: `Notas e pendências${nota.prioridade ? ` • ${nota.prioridade}` : ''}`,
+        valor: 0
+      }))
+
+    return [...contasAgenda, ...notasAgenda]
+      .filter((evento) => filtroTipo === 'todas' || evento.tipo === filtroTipo)
+      .sort((a, b) => dataLocal(a.data) - dataLocal(b.data))
+  }, [contas, notas, filtroTipo, dataLocal])
+
+  const eventosVencidos = eventosAgenda.filter((evento) => diferencaDias(evento.data) < 0)
+  const eventosHoje = eventosAgenda.filter((evento) => diferencaDias(evento.data) === 0)
+  const eventosSemana = eventosAgenda.filter((evento) => {
+    const dias = diferencaDias(evento.data)
     return dias > 0 && dias <= 7
   })
-  const contasMes = contasAgenda.filter((conta) => {
-    const dias = diferencaDias(conta.data_vencimento)
-    return dias > 7 && mesmoMesAtual(conta.data_vencimento)
+  const eventosMes = eventosAgenda.filter((evento) => {
+    const dias = diferencaDias(evento.data)
+    return dias > 7 && mesmoMesAtual(evento.data)
   })
 
-  const totalVencidasAgenda = contasVencidas.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
-  const totalHojeAgenda = contasHoje.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
-  const totalSemanaAgenda = contasSemana.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
-  const totalMesAgenda = contasMes.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
+  const somarContas = (lista) => lista.reduce((acc, evento) => {
+    return acc + (evento.tipo === 'conta' ? Number(evento.valor || 0) : 0)
+  }, 0)
+
+  const totalVencidasAgenda = somarContas(eventosVencidos)
+  const totalHojeAgenda = somarContas(eventosHoje)
+  const totalSemanaAgenda = somarContas(eventosSemana)
+  const totalMesAgenda = somarContas(eventosMes)
+
+  const filtrosTipo = [
+    { valor: 'todas', label: 'Todas' },
+    { valor: 'conta', label: 'Contas' },
+    { valor: 'nota', label: 'Notas' }
+  ]
 
   return (
     <>
+      <style>{`
+        .agenda-type-tabs {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          margin: 10px 0 14px;
+        }
+        .agenda-type-tab {
+          border: 1px solid #dbe3ef;
+          background: #ffffff;
+          color: #334155;
+          border-radius: 999px;
+          padding: 8px 14px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+        .agenda-type-tab-active {
+          background: #0f172a;
+          color: #ffffff;
+          border-color: #0f172a;
+        }
+        .agenda-event-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .agenda-event-badge {
+          border-radius: 999px;
+          padding: 3px 8px;
+          font-size: 11px;
+          font-weight: 900;
+          line-height: 1;
+        }
+        .agenda-event-badge-conta {
+          background: #e0f2fe;
+          color: #075985;
+        }
+        .agenda-event-badge-nota {
+          background: #fef3c7;
+          color: #92400e;
+        }
+        @media (max-width: 640px) {
+          .agenda-type-tabs {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+          .agenda-type-tab {
+            padding: 8px 6px;
+          }
+        }
+      `}</style>
+
       <h1 style={styles.titulo}>📅 Agenda Financeira</h1>
 
       <button className="btn-back-page" style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>
         ← Voltar
       </button>
+
+      <div className="agenda-type-tabs" role="tablist" aria-label="Filtro de tipo da agenda">
+        {filtrosTipo.map((filtro) => (
+          <button
+            key={filtro.valor}
+            type="button"
+            className={`agenda-type-tab ${filtroTipo === filtro.valor ? 'agenda-type-tab-active' : ''}`}
+            onClick={() => setFiltroTipo(filtro.valor)}
+            aria-pressed={filtroTipo === filtro.valor}
+          >
+            {filtro.label}
+          </button>
+        ))}
+      </div>
 
       <section className="agenda-summary-grid" style={styles.resumo}>
         <div style={styles.boxVencido}>
@@ -131,9 +252,9 @@ export default function AgendaPage({
       <div className="agenda-page-grid">
         <CardAgenda
           styles={styles}
-          titulo="🚨 Vencidas"
+          titulo="🚨 Vencidas / atrasadas"
           total={totalVencidasAgenda}
-          lista={contasVencidas}
+          lista={eventosVencidos}
           cor="#dc3545"
           formatarValor={formatarValor}
           formatarData={formatarData}
@@ -143,9 +264,9 @@ export default function AgendaPage({
         />
         <CardAgenda
           styles={styles}
-          titulo="📌 Vencem hoje"
+          titulo="📌 Hoje"
           total={totalHojeAgenda}
-          lista={contasHoje}
+          lista={eventosHoje}
           cor="#ffc107"
           formatarValor={formatarValor}
           formatarData={formatarData}
@@ -157,7 +278,7 @@ export default function AgendaPage({
           styles={styles}
           titulo="🗓️ Próximos 7 dias"
           total={totalSemanaAgenda}
-          lista={contasSemana}
+          lista={eventosSemana}
           cor="#0d6efd"
           formatarValor={formatarValor}
           formatarData={formatarData}
@@ -169,7 +290,7 @@ export default function AgendaPage({
           styles={styles}
           titulo="📆 Restante do mês"
           total={totalMesAgenda}
-          lista={contasMes}
+          lista={eventosMes}
           cor="#14b8a6"
           formatarValor={formatarValor}
           formatarData={formatarData}

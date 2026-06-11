@@ -441,7 +441,10 @@ export default function DashboardHome({
               <div className="analytics-empty executive-agenda-empty" style={{ ...operacionalItemStyle, alignItems: 'center' }}>Agenda financeira limpa.</div>
             )}
 
-            <button className="executive-agenda-cta" style={{ marginTop: 'auto' }} onClick={() => navegarPara('contas')}>Ver contas</button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 'auto' }}>
+              <button className="executive-agenda-cta" style={{ flex: '1 1 140px' }} onClick={() => navegarPara('agenda')}>Ver agenda</button>
+              <button className="executive-agenda-cta" style={{ flex: '0 1 auto', minWidth: 0, paddingInline: 12, background: '#f8fafc', color: '#334155', border: '1px solid #dbe3ef' }} onClick={() => navegarPara('contas')}>Ver contas</button>
+            </div>
           </div>
 
           {podeVisualizarResumoPessoas && (

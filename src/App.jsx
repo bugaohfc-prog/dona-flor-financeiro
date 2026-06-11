@@ -29,6 +29,7 @@ import { useCopilot } from './components/copilot/core/CopilotProvider.jsx'
 import { useApp } from './context/AppContext.jsx'
 import { useContas } from './hooks/useContas'
 import { useNotas } from './hooks/useNotas'
+import { useFuncionarios } from './hooks/useFuncionarios'
 import { useAuthSession } from './hooks/useAuthSession'
 import { useUiState } from './hooks/useUiState'
 import { useAppNavigation } from './hooks/useAppNavigation'
@@ -831,6 +832,13 @@ export default function App() {
   const podeGerenciarCentroCusto = useCallback(() => {
     return temPermissao(['admin'])
   }, [temPermissao])
+
+  const {
+    funcionarios: funcionariosAgenda
+  } = useFuncionarios({
+    empresaId,
+    autoCarregar: Boolean(usuarioLogado?.id && empresaId && podeAcessarGestaoPessoas())
+  })
 
   const bloquearAcaoSemPermissao = useCallback(() => {
     mostrarAviso('Você não tem permissão para realizar esta ação.', 'erro')
@@ -4626,6 +4634,7 @@ export default function App() {
           styles={styles}
           contas={contas}
           notas={notas}
+          funcionarios={funcionariosAgenda}
           formatarValor={formatarValor}
           formatarData={formatarData}
           dataLocal={dataLocal}

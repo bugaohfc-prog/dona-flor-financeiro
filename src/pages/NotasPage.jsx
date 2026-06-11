@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 const OPCOES_ORDENACAO_NOTAS = [
   { valor: 'prioridade', label: 'Prioridade' },
@@ -25,25 +25,39 @@ function EmptyState({ icon, title, description }) {
 }
 
 export default function NotasPage({
-  styles, navegarPara, notasFiltradas, notasPendentes, notasCriticas, notasUrgentes,
+  styles, navegarPara, notas = [], notasFiltradas, agendaFocusTarget, onAgendaFocusHandled, notasPendentes, notasCriticas, notasUrgentes,
   buscaNota, setBuscaNota, formatarData, alternarNotaConcluida, abrirEdicaoNota,
   abrirConfirmacao, excluirNota, filtroFilial, setFiltroFilial, filiais, podeEditarFinanceiro = true
 }) {
   const [abaStatusNotas, setAbaStatusNotas] = useState('abertas')
   const [ordenacaoNotas, setOrdenacaoNotas] = useState('prioridade')
+  const [notaDestacadaId, setNotaDestacadaId] = useState('')
+  const notaDestacadaRef = useRef(null)
+  const notaAlvoAgendaId = agendaFocusTarget?.tipo === 'nota' ? agendaFocusTarget.id : ''
+  const notaAlvoAgenda = useMemo(() => {
+    if (!notaAlvoAgendaId) return null
+    return notas.find((nota) => String(nota.id) === String(notaAlvoAgendaId))
+      || notasFiltradas.find((nota) => String(nota.id) === String(notaAlvoAgendaId))
+      || null
+  }, [notaAlvoAgendaId, notas, notasFiltradas])
+  const notasParaFiltro = useMemo(() => {
+    if (!notaAlvoAgenda) return notasFiltradas
+    const jaEstaFiltrada = notasFiltradas.some((nota) => String(nota.id) === String(notaAlvoAgenda.id))
+    return jaEstaFiltrada ? notasFiltradas : [notaAlvoAgenda, ...notasFiltradas]
+  }, [notaAlvoAgenda, notasFiltradas])
   const notasAbertasFiltradas = useMemo(
-    () => notasFiltradas.filter((nota) => !nota.concluida),
-    [notasFiltradas]
+    () => notasParaFiltro.filter((nota) => !nota.concluida),
+    [notasParaFiltro]
   )
   const notasConcluidasFiltradas = useMemo(
-    () => notasFiltradas.filter((nota) => nota.concluida),
-    [notasFiltradas]
+    () => notasParaFiltro.filter((nota) => nota.concluida),
+    [notasParaFiltro]
   )
   const notasDaAba = useMemo(() => {
     if (abaStatusNotas === 'concluidas') return notasConcluidasFiltradas
-    if (abaStatusNotas === 'todas') return notasFiltradas
+    if (abaStatusNotas === 'todas') return notasParaFiltro
     return notasAbertasFiltradas
-  }, [abaStatusNotas, notasAbertasFiltradas, notasConcluidasFiltradas, notasFiltradas])
+  }, [abaStatusNotas, notasAbertasFiltradas, notasConcluidasFiltradas, notasParaFiltro])
   const tituloAbaNotas = abaStatusNotas === 'concluidas'
     ? 'Notas concluídas'
     : abaStatusNotas === 'todas'
@@ -84,6 +98,26 @@ export default function NotasPage({
       return String(obterData(a, '9999-12-31')).localeCompare(String(obterData(b, '9999-12-31')))
     })
   }, [notasDaAba, ordenacaoNotas])
+
+  useEffect(() => {
+    if (!notaAlvoAgendaId) return undefined
+
+    setNotaDestacadaId(String(notaAlvoAgendaId))
+
+    const scrollTimer = window.setTimeout(() => {
+      notaDestacadaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 120)
+
+    const clearTimer = window.setTimeout(() => {
+      setNotaDestacadaId('')
+      onAgendaFocusHandled?.()
+    }, 4500)
+
+    return () => {
+      window.clearTimeout(scrollTimer)
+      window.clearTimeout(clearTimer)
+    }
+  }, [notaAlvoAgendaId, onAgendaFocusHandled])
 
   return (
     <>
@@ -138,6 +172,10 @@ export default function NotasPage({
         }
         .note-card-completed-muted::before {
           background: #94a3b8 !important;
+        }
+        .note-card-agenda-focus {
+          outline: 3px solid #0f766e;
+          box-shadow: 0 0 0 6px rgba(15, 118, 110, 0.14), 0 10px 28px rgba(15, 23, 42, 0.16) !important;
         }
         .notes-card-actions {
           display: flex;
@@ -293,10 +331,16 @@ export default function NotasPage({
 
         <div className="notes-page-grid">
           {notasOrdenadas.map((nota) => {
+            const destacadaPelaAgenda = String(nota.id) === String(notaDestacadaId)
             const prioridade = nota.prioridade || 'normal'
             const conteudo = String(nota.conteudo || '').trim()
             return (
-              <div key={nota.id} className={`note-card-action note-card-${prioridade} ${nota.concluida && abaStatusNotas === 'todas' ? 'note-card-completed-muted' : ''}`} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida && abaStatusNotas === 'todas' ? 0.68 : 1 }}>
+              <div
+                key={nota.id}
+                ref={destacadaPelaAgenda ? notaDestacadaRef : null}
+                className={`note-card-action note-card-${prioridade} ${destacadaPelaAgenda ? 'note-card-agenda-focus' : ''} ${nota.concluida && abaStatusNotas === 'todas' ? 'note-card-completed-muted' : ''}`}
+                style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida && abaStatusNotas === 'todas' ? 0.68 : 1 }}
+              >
                 <div style={styles.cardTopo}>
                   <strong style={{ textDecoration: nota.concluida && abaStatusNotas === 'todas' ? 'line-through' : 'none' }}>{nota.titulo}</strong>
                   <div className="note-card-badges">

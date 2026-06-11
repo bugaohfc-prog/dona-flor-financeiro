@@ -19,7 +19,7 @@ function CardAgenda({
   formatarValor,
   formatarData,
   diferencaDias,
-  navegarPara,
+  navegarParaOrigemAgenda,
   podeEditarFinanceiro
 }) {
   return (
@@ -64,13 +64,13 @@ function CardAgenda({
               {!ehNota && <strong>{formatarValor(evento.valor)}</strong>}
 
               {!ehNota && podeEditarFinanceiro && (
-                <button style={styles.btnPago} onClick={() => navegarPara('contas')}>
+                <button style={styles.btnPago} onClick={() => navegarParaOrigemAgenda('conta', evento.id)}>
                   Ver em Contas
                 </button>
               )}
 
               {ehNota && (
-                <button style={styles.btnPago} onClick={() => navegarPara('notas')}>
+                <button style={styles.btnPago} onClick={() => navegarParaOrigemAgenda('nota', evento.id)}>
                   Ver em Notas
                 </button>
               )}
@@ -92,9 +92,11 @@ export default function AgendaPage({
   diferencaDias,
   mesmoMesAtual,
   navegarPara,
+  navegarParaOrigemAgenda,
   podeEditarFinanceiro = true
 }) {
   const [filtroTipo, setFiltroTipo] = useState('todas')
+  const [mostrarMesCompleto, setMostrarMesCompleto] = useState(false)
 
   const eventosAgenda = useMemo(() => {
     const contasAgenda = contas
@@ -214,6 +216,16 @@ export default function AgendaPage({
           background: #fef3c7;
           color: #92400e;
         }
+        .agenda-show-more {
+          margin-top: 10px;
+          border: 1px solid #dbe3ef;
+          border-radius: 999px;
+          background: #ffffff;
+          color: #334155;
+          font-weight: 800;
+          padding: 8px 12px;
+          cursor: pointer;
+        }
         @media (max-width: 640px) {
           .agenda-type-tabs {
             display: grid;
@@ -255,21 +267,37 @@ export default function AgendaPage({
       </section>
 
       <div className="agenda-page-grid">
-        {grupos.map((grupo) => (
-          <CardAgenda
-            key={grupo.chave}
-            styles={styles}
-            titulo={grupo.titulo}
-            resumo={formatarResumo(grupo.lista)}
-            lista={grupo.lista}
-            cor={grupo.cor}
-            formatarValor={formatarValor}
-            formatarData={formatarData}
-            diferencaDias={diferencaDias}
-            navegarPara={navegarPara}
-            podeEditarFinanceiro={podeEditarFinanceiro}
-          />
-        ))}
+        {grupos.map((grupo) => {
+          const limitarMes = grupo.chave === 'mes' && grupo.lista.length > 10
+          const listaVisivel = limitarMes && !mostrarMesCompleto ? grupo.lista.slice(0, 10) : grupo.lista
+
+          return (
+            <div key={grupo.chave}>
+              <CardAgenda
+                styles={styles}
+                titulo={grupo.titulo}
+                resumo={formatarResumo(grupo.lista)}
+                lista={listaVisivel}
+                cor={grupo.cor}
+                formatarValor={formatarValor}
+                formatarData={formatarData}
+                diferencaDias={diferencaDias}
+                navegarParaOrigemAgenda={navegarParaOrigemAgenda}
+                podeEditarFinanceiro={podeEditarFinanceiro}
+              />
+
+              {limitarMes && (
+                <button
+                  type="button"
+                  className="agenda-show-more"
+                  onClick={() => setMostrarMesCompleto((atual) => !atual)}
+                >
+                  {mostrarMesCompleto ? 'Ver menos' : `Ver mais ${grupo.lista.length - 10} item(ns)`}
+                </button>
+              )}
+            </div>
+          )
+        })}
       </div>
     </>
   )

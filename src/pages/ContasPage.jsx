@@ -1,6 +1,6 @@
 import { AccountListSkeleton } from '../components/feedback/Skeletons.jsx'
 import { ehContaRecorrente } from '../utils/recorrencia'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import AccountPaymentModal from '../components/modals/AccountPaymentModal.jsx'
 
 const OPCOES_ORDENACAO_CONTAS = [
@@ -217,14 +217,28 @@ function EmptyState({ icon, title, description, actionLabel, onAction }) {
 export default function ContasPage({
   styles, busca, setBusca, mostrarFiltros, setMostrarFiltros, limparFiltros, imprimirPDF, exportarCSV,
   filtroStatus, setFiltroStatus, centros, filtroCentro, setFiltroCentro, filiais, filtroFilial, setFiltroFilial, filtroMes, setFiltroMes,
-  dataInicial, setDataInicial, dataFinal, setDataFinal, limitarDataInput, contasFiltradas, total, formatarValor,
+  dataInicial, setDataInicial, dataFinal, setDataFinal, limitarDataInput, contas = [], contasFiltradas, agendaFocusTarget, onAgendaFocusHandled, total, formatarValor,
   loading, mostrarContas, setMostrarContas, estaVencida, formatarData, formatarTipoRecorrencia,
   obterTipoRecorrenciaConta, abrirConfirmacao, marcarComoPago, voltarParaPendente, abrirEdicaoConta, excluirConta,
   navegarPara, podeEditarFinanceiro = true, podeExportarDados = true
 }) {
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
   const [contaEmBaixa, setContaEmBaixa] = useState(null)
-  const contasOrdenadas = ordenarContasParaListagem(contasFiltradas, ordenacaoContas, filtroStatus, estaVencida)
+  const [contaDestacadaId, setContaDestacadaId] = useState('')
+  const contaDestacadaRef = useRef(null)
+  const contaAlvoAgendaId = agendaFocusTarget?.tipo === 'conta' ? agendaFocusTarget.id : ''
+  const contaAlvoAgenda = useMemo(() => {
+    if (!contaAlvoAgendaId) return null
+    return contas.find((conta) => String(conta.id) === String(contaAlvoAgendaId))
+      || contasFiltradas.find((conta) => String(conta.id) === String(contaAlvoAgendaId))
+      || null
+  }, [contaAlvoAgendaId, contas, contasFiltradas])
+  const contasParaListagem = useMemo(() => {
+    if (!contaAlvoAgenda) return contasFiltradas
+    const jaEstaFiltrada = contasFiltradas.some((conta) => String(conta.id) === String(contaAlvoAgenda.id))
+    return jaEstaFiltrada ? contasFiltradas : [contaAlvoAgenda, ...contasFiltradas]
+  }, [contaAlvoAgenda, contasFiltradas])
+  const contasOrdenadas = ordenarContasParaListagem(contasParaListagem, ordenacaoContas, filtroStatus, estaVencida)
   const resumoResultadoFiltrado = useMemo(
     () => calcularResumoResultadoFiltrado(contasFiltradas),
     [contasFiltradas]
@@ -236,6 +250,27 @@ export default function ContasPage({
     if (!contaEmBaixa?.id) return false
     return marcarComoPago(contaEmBaixa.id, payload)
   }
+
+  useEffect(() => {
+    if (!contaAlvoAgendaId) return undefined
+
+    setMostrarContas(true)
+    setContaDestacadaId(String(contaAlvoAgendaId))
+
+    const scrollTimer = window.setTimeout(() => {
+      contaDestacadaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 120)
+
+    const clearTimer = window.setTimeout(() => {
+      setContaDestacadaId('')
+      onAgendaFocusHandled?.()
+    }, 4500)
+
+    return () => {
+      window.clearTimeout(scrollTimer)
+      window.clearTimeout(clearTimer)
+    }
+  }, [contaAlvoAgendaId, setMostrarContas, onAgendaFocusHandled])
 
   function renderListaContasConteudo() {
     return (
@@ -352,6 +387,7 @@ export default function ContasPage({
         )}
 
         {!loading && mostrarContas && contasOrdenadas.map((conta) => {
+          const destacadaPelaAgenda = String(conta.id) === String(contaDestacadaId)
           const vencida = estaVencida(conta.data_vencimento, conta.status)
           const recorrente = ehContaRecorrente(conta)
           const tipoRecorrencia = recorrente ? formatarTipoRecorrencia(obterTipoRecorrenciaConta(conta)) : ''
@@ -365,7 +401,8 @@ export default function ContasPage({
 
           return (
             <div
-              className={`print-card account-card-desktop ${exibirBaixaReal ? 'account-card-payment-real' : ''} ${vencida ? 'account-card-vencida' : conta.status === 'pago' ? 'account-card-paga' : 'account-card-pendente'}`}
+              ref={destacadaPelaAgenda ? contaDestacadaRef : null}
+              className={`print-card account-card-desktop ${destacadaPelaAgenda ? 'account-card-agenda-focus' : ''} ${exibirBaixaReal ? 'account-card-payment-real' : ''} ${vencida ? 'account-card-vencida' : conta.status === 'pago' ? 'account-card-paga' : 'account-card-pendente'}`}
               key={conta.id}
               style={{
                 ...styles.cardConta,
@@ -529,6 +566,10 @@ export default function ContasPage({
           grid-column: 1 / -1;
           max-width: 320px;
           order: 4;
+        }
+        .account-card-agenda-focus {
+          outline: 3px solid #0f766e;
+          box-shadow: 0 0 0 6px rgba(15, 118, 110, 0.14), 0 10px 28px rgba(15, 23, 42, 0.16) !important;
         }
         .filters-desktop .advanced-filters {
           grid-template-columns: repeat(5, minmax(0, 1fr)) !important;

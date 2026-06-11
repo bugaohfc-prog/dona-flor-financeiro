@@ -385,6 +385,7 @@ export default function App() {
   const [mostrarDestinatariosInativos, setMostrarDestinatariosInativos] = useState(false)
   const [destinatarioEditandoId, setDestinatarioEditandoId] = useState('')
   const [formDestinatarioAlerta, setFormDestinatarioAlerta] = useState(DESTINATARIO_ALERTA_FORM_INICIAL)
+  const [agendaFocusTarget, setAgendaFocusTarget] = useState(null)
   function mostrarAviso(mensagem, tipo = 'info') {
     showToast(mensagem, tipo)
   }
@@ -398,6 +399,12 @@ export default function App() {
     console.warn('Erro técnico capturado:', erro)
     mostrarAviso(mensagemSeguraErro(erro, fallback), 'erro')
   }
+
+  const navegarParaOrigemAgenda = useCallback((tipo, id) => {
+    if (!tipo || !id) return
+    setAgendaFocusTarget({ tipo, id, nonce: Date.now() })
+    navegarPara(tipo === 'nota' ? 'notas' : 'contas')
+  }, [navegarPara])
 
   function limparDadosTenant() {
     setContas([])
@@ -4134,7 +4141,10 @@ export default function App() {
         dataFinal={dataFinal}
         setDataFinal={setDataFinal}
         limitarDataInput={limitarDataInput}
+        contas={contas}
         contasFiltradas={contasFiltradas}
+        agendaFocusTarget={agendaFocusTarget}
+        onAgendaFocusHandled={() => setAgendaFocusTarget(null)}
         total={total}
         formatarValor={formatarValor}
         loading={loading}
@@ -4168,7 +4178,10 @@ export default function App() {
       <LazyNotasPage
         styles={styles}
         navegarPara={navegarPara}
+        notas={notas}
         notasFiltradas={notasFiltradas}
+        agendaFocusTarget={agendaFocusTarget}
+        onAgendaFocusHandled={() => setAgendaFocusTarget(null)}
         notasPendentes={notasPendentes}
         notasCriticas={notasCriticas}
         notasUrgentes={notasUrgentes}
@@ -4619,6 +4632,7 @@ export default function App() {
           diferencaDias={diferencaDias}
           mesmoMesAtual={mesmoMesAtual}
           navegarPara={navegarPara}
+          navegarParaOrigemAgenda={navegarParaOrigemAgenda}
           podeEditarFinanceiro={podeEditarFinanceiro()}
         />
       </AppSuspenseBoundary>

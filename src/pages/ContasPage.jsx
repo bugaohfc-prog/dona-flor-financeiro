@@ -258,6 +258,7 @@ export default function ContasPage({
 
           {podeExportarDados && (
             <div className="export-actions accounts-export-actions" style={styles.acoes}>
+              <span className="accounts-export-label">Exportar</span>
               <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
               <button style={styles.btnVerde} onClick={exportarCSV}>CSV</button>
             </div>
@@ -501,6 +502,13 @@ export default function ContasPage({
           width: auto !important;
           margin: 0 !important;
         }
+        .accounts-export-label {
+          color: #64748b;
+          font-size: 12px;
+          font-weight: 800;
+          line-height: 1;
+          white-space: nowrap;
+        }
         .accounts-status-tabs {
           grid-column: 1 / -1;
           display: grid;
@@ -527,8 +535,19 @@ export default function ContasPage({
         }
         .accounts-sort-control-main {
           grid-column: 1 / -1;
+          display: flex;
+          align-items: center;
+          gap: 8px;
           max-width: 320px;
           order: 4;
+        }
+        .accounts-sort-control-main span {
+          flex: 0 0 auto;
+          white-space: nowrap;
+        }
+        .accounts-sort-control-main select {
+          flex: 1 1 auto;
+          min-width: 0;
         }
         .filters-desktop .advanced-filters {
           grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
@@ -545,12 +564,12 @@ export default function ContasPage({
         @media (max-width: 640px) {
           .filters-desktop {
             grid-template-columns: 1fr !important;
-            gap: 8px !important;
-            padding: 10px !important;
+            gap: 6px !important;
+            padding: 8px !important;
           }
           .filters-desktop .accounts-search-input {
             order: 1;
-            height: 40px !important;
+            height: 38px !important;
           }
           .accounts-status-tabs {
             order: 2;
@@ -560,47 +579,57 @@ export default function ContasPage({
             order: 3;
             width: 100%;
             justify-content: flex-start;
-            gap: 6px;
+            gap: 5px;
           }
           .accounts-filter-actions .filter-toggle-button {
             flex: 0 0 auto;
-            height: 36px !important;
-            min-height: 34px !important;
-            padding: 0 12px !important;
+            height: 34px !important;
+            min-height: 32px !important;
+            padding: 0 10px !important;
+            font-size: 12px !important;
           }
           .filters-desktop .accounts-clear-button {
             flex: 0 0 auto;
-            height: 36px !important;
-            min-height: 34px !important;
-            padding: 0 11px !important;
+            height: 34px !important;
+            min-height: 32px !important;
+            padding: 0 10px !important;
+            font-size: 12px !important;
           }
           .accounts-export-actions {
             order: 4;
-            flex: 1 1 100%;
+            flex: 0 1 auto;
             justify-content: flex-start;
-            gap: 5px;
+            gap: 4px;
           }
           .accounts-export-actions button {
-            min-height: 32px !important;
-            padding: 6px 10px !important;
+            min-height: 28px !important;
+            padding: 4px 8px !important;
             font-size: 12px !important;
             box-shadow: none !important;
+          }
+          .accounts-export-label {
+            font-size: 11px;
           }
           .accounts-status-tabs {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
           .accounts-status-tab {
-            min-height: 34px;
-            padding: 6px 8px;
+            min-height: 32px;
+            padding: 5px 8px;
             font-size: 13px;
           }
           .accounts-sort-control-main {
             order: 5;
             max-width: none;
             width: 100%;
+            gap: 6px;
           }
           .accounts-sort-control-main select {
-            height: 38px !important;
+            height: 34px !important;
+            font-size: 12px !important;
+          }
+          .accounts-sort-control-main span {
+            font-size: 12px;
           }
           .filters-desktop .advanced-filters {
             order: 6;

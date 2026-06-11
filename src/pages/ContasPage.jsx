@@ -12,6 +12,45 @@ const OPCOES_ORDENACAO_CONTAS = [
   { valor: 'status', label: 'Status' }
 ]
 
+const ABAS_STATUS_CONTAS = [
+  { valor: 'pendentes', label: 'Abertas' },
+  { valor: 'vencidas', label: 'Vencidas' },
+  { valor: 'pagas', label: 'Pagas' },
+  { valor: 'todas', label: 'Todas' }
+]
+
+const ACCOUNT_ACTIONS_STYLE = {
+  marginTop: 10,
+  gap: 6,
+  alignItems: 'center'
+}
+
+const ACCOUNT_PRIMARY_ACTION_STYLE = {
+  minHeight: 32,
+  minWidth: 68,
+  padding: '6px 10px',
+  borderRadius: 999,
+  fontSize: 12
+}
+
+const ACCOUNT_SECONDARY_ACTION_STYLE = {
+  minHeight: 30,
+  minWidth: 0,
+  padding: '5px 9px',
+  borderRadius: 999,
+  fontSize: 12,
+  background: '#ffffff',
+  color: '#475569',
+  border: '1px solid #cbd5e1'
+}
+
+const ACCOUNT_DANGER_ACTION_STYLE = {
+  ...ACCOUNT_SECONDARY_ACTION_STYLE,
+  color: '#991b1b',
+  border: '1px solid #fecaca',
+  background: '#fffafa'
+}
+
 function obterTimestampVencimento(conta, fallback) {
   const valor = String(conta?.data_vencimento || '').trim()
   const partesDataBanco = valor.match(/^(\d{4})-(\d{2})-(\d{2})/)
@@ -149,13 +188,17 @@ const CONTAS_EXPANDABLE_BUTTON_STYLE = {
   marginLeft: 'auto',
   border: '1px solid rgba(15, 23, 42, 0.12)',
   borderRadius: 999,
-  padding: '8px 12px',
+  width: 32,
+  height: 32,
+  padding: 0,
   background: '#f8fafc',
   color: '#0f172a',
-  fontSize: 14,
+  fontSize: 16,
   fontWeight: 900,
   lineHeight: 1,
-  whiteSpace: 'nowrap',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
   cursor: 'pointer'
 }
 
@@ -209,32 +252,41 @@ export default function ContasPage({
           {mostrarFiltros ? 'Ocultar filtros' : 'Filtros'}
         </button>
 
-        <div className="export-actions" style={styles.acoes}>
-          <button style={styles.btnCinza} onClick={limparFiltros}>Limpar</button>
-          {podeExportarDados && (
-            <>
-              <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
-              <button style={styles.btnVerde} onClick={exportarCSV}>CSV</button>
-            </>
-          )}
+        <div className="accounts-status-tabs" role="tablist" aria-label="Filtro principal de status das contas">
+          {ABAS_STATUS_CONTAS.map((aba) => (
+            <button
+              key={aba.valor}
+              type="button"
+              role="tab"
+              aria-selected={filtroStatus === aba.valor}
+              className={`accounts-status-tab ${filtroStatus === aba.valor ? 'is-active' : ''}`}
+              onClick={() => setFiltroStatus(aba.valor)}
+            >
+              {aba.label}
+            </button>
+          ))}
         </div>
 
-        <label className="accounts-sort-control">
-          <span>Ordenar por</span>
-          <select style={styles.input} value={ordenacaoContas} onChange={(e) => setOrdenacaoContas(e.target.value)}>
-            {OPCOES_ORDENACAO_CONTAS.map((opcao) => (
-              <option key={opcao.valor} value={opcao.valor}>{opcao.label}</option>
-            ))}
-          </select>
-        </label>
+        <button style={styles.btnCinza} onClick={limparFiltros}>Limpar</button>
 
         {mostrarFiltros && (
           <div className="advanced-filters">
-            <div className="status-tabs filter-tabs-fixed" style={styles.filtros}>
-              <button style={filtroStatus === 'todas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('todas')}>Todas</button>
-              <button style={filtroStatus === 'pendentes' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pendentes')}>Pendentes</button>
-              <button style={filtroStatus === 'pagas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('pagas')}>Pagas</button>
-              <button style={filtroStatus === 'vencidas' ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus('vencidas')}>Vencidas</button>
+            <label className="accounts-sort-control">
+              <span>Ordenar por</span>
+              <select style={styles.input} value={ordenacaoContas} onChange={(e) => setOrdenacaoContas(e.target.value)}>
+                {OPCOES_ORDENACAO_CONTAS.map((opcao) => (
+                  <option key={opcao.valor} value={opcao.valor}>{opcao.label}</option>
+                ))}
+              </select>
+            </label>
+
+            <div className="export-actions" style={styles.acoes}>
+              {podeExportarDados && (
+                <>
+                  <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
+                  <button style={styles.btnVerde} onClick={exportarCSV}>CSV</button>
+                </>
+              )}
             </div>
 
             <select style={styles.input} value={filtroFilial} onChange={(e) => setFiltroFilial(e.target.value)}>
@@ -283,8 +335,10 @@ export default function ContasPage({
             style={CONTAS_EXPANDABLE_BUTTON_STYLE}
             onClick={() => setMostrarContas(!mostrarContas)}
             aria-expanded={mostrarContas}
+            aria-label={mostrarContas ? 'Recolher seção de contas' : 'Expandir seção de contas'}
+            title={mostrarContas ? 'Recolher' : 'Expandir'}
           >
-            {mostrarContas ? 'Recolher' : 'Expandir'}
+            {mostrarContas ? '⌃' : '⌄'}
           </button>
         </div>
 
@@ -379,22 +433,22 @@ export default function ContasPage({
               )}
 
               {podeEditarFinanceiro && (
-                <div className="account-actions" style={styles.acoes}>
+                <div className="account-actions" style={{ ...styles.acoes, ...ACCOUNT_ACTIONS_STYLE }}>
                 {conta.status !== 'pago' ? (
-                  <button style={styles.btnPago} onClick={() => setContaEmBaixa(conta)}>
-                    Pago
+                  <button style={{ ...styles.btnPago, ...ACCOUNT_PRIMARY_ACTION_STYLE }} onClick={() => setContaEmBaixa(conta)}>
+                    Baixar
                   </button>
                 ) : (
-                  <button style={styles.btnVoltar} onClick={() => abrirConfirmacao({ titulo: 'Voltar para pendente', mensagem: `Deseja voltar a conta ${conta.descricao} para pendente?`, textoConfirmar: 'Voltar', tipo: 'aviso', acao: () => voltarParaPendente(conta.id) })}>
+                  <button style={{ ...styles.btnVoltar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirConfirmacao({ titulo: 'Voltar para pendente', mensagem: `Deseja voltar a conta ${conta.descricao} para pendente?`, textoConfirmar: 'Voltar', tipo: 'aviso', acao: () => voltarParaPendente(conta.id) })}>
                     Voltar
                   </button>
                 )}
 
-                <button style={styles.btnEditar} onClick={() => abrirEdicaoConta(conta)}>
+                <button style={{ ...styles.btnEditar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirEdicaoConta(conta)}>
                   Editar
                 </button>
 
-                <button style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
+                <button style={{ ...styles.btnExcluir, ...ACCOUNT_DANGER_ACTION_STYLE }} onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
                   Excluir
                 </button>
                 </div>
@@ -410,6 +464,38 @@ export default function ContasPage({
 
   return (
     <>
+      <style>{`
+        .accounts-status-tabs {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 6px;
+          width: 100%;
+        }
+        .accounts-status-tab {
+          min-height: 38px;
+          border: 1px solid #dbe4ef;
+          border-radius: 999px;
+          background: #ffffff;
+          color: #475569;
+          font-weight: 800;
+          cursor: pointer;
+          padding: 7px 10px;
+        }
+        .accounts-status-tab.is-active {
+          border-color: #0f766e;
+          background: #0f766e;
+          color: #ffffff;
+          box-shadow: 0 6px 16px rgba(15, 118, 110, 0.18);
+        }
+        @media (max-width: 640px) {
+          .accounts-status-tabs {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+          .account-actions {
+            gap: 5px !important;
+          }
+        }
+      `}</style>
       <div className="page-title-actions">
         <div>
           <h1 style={styles.titulo}>💳 Contas</h1>

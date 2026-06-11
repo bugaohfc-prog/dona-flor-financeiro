@@ -19,12 +19,31 @@ export function useAuthSession({
   const [usuarioLogado, setUsuarioLogado] = useState(null)
   const [carregandoAuth, setCarregandoAuth] = useState(true)
 
+  const reiniciarControleSessao = useCallback((session, opcoes = {}) => {
+    const agora = Date.now()
+    const sessaoAtual = lerSessaoSegura()
+    const mesmoUsuario = sessaoAtual.usuarioId === session?.user?.id
+    const preservarInicio = opcoes.preservarInicio && mesmoUsuario && sessaoAtual.inicio
+    const preservarAtividade = opcoes.preservarAtividade && mesmoUsuario && sessaoAtual.ultimaAtividade
+
+    salvarSessaoSegura({
+      usuarioId: session?.user?.id || null,
+      inicio: preservarInicio ? sessaoAtual.inicio : agora,
+      ultimaAtividade: preservarAtividade ? sessaoAtual.ultimaAtividade : agora,
+      expiraEm: session?.expires_at || null
+    })
+
+    avisoSessaoMostradoRef.current = false
+  }, [])
+
   const registrarAtividadeSessao = useCallback(() => {
     const sessao = lerSessaoSegura()
 
     salvarSessaoSegura({
+      usuarioId: sessao.usuarioId || null,
       inicio: sessao.inicio || Date.now(),
-      ultimaAtividade: Date.now()
+      ultimaAtividade: Date.now(),
+      expiraEm: sessao.expiraEm || null
     })
 
     avisoSessaoMostradoRef.current = false
@@ -77,6 +96,15 @@ export function useAuthSession({
           return
         }
 
+        const sessaoSegura = lerSessaoSegura()
+        const inicioSessao = Number(sessaoSegura.inicio || 0)
+        const usuarioSessao = sessaoSegura.usuarioId || null
+        const sessaoLocalAntiga = !inicioSessao || Date.now() - inicioSessao >= OITO_HORAS_MS
+
+        if (usuarioSessao !== data.session.user.id || sessaoLocalAntiga) {
+          reiniciarControleSessao(data.session)
+        }
+
         setUsuarioLogado(data.session.user)
       } catch (error) {
         if (!ativo) return
@@ -91,10 +119,19 @@ export function useAuthSession({
 
     verificarSessao()
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setCarregandoAuth(false)
 
       const proximoUsuario = session?.user || null
+
+      if (session && event === 'SIGNED_IN') {
+        reiniciarControleSessao(session)
+      }
+
+      if (session && ['TOKEN_REFRESHED', 'USER_UPDATED'].includes(event)) {
+        reiniciarControleSessao(session, { preservarInicio: true, preservarAtividade: true })
+      }
+
       setUsuarioLogado((usuarioAtual) => {
         if (usuarioAtual?.id && proximoUsuario?.id && usuarioAtual.id === proximoUsuario.id) {
           return {
@@ -116,17 +153,19 @@ export function useAuthSession({
       ativo = false
       listener.subscription.unsubscribe()
     }
-  }, [onClearAuthData])
+  }, [onClearAuthData, reiniciarControleSessao])
 
   useEffect(() => {
-    if (!usuarioLogado) return undefined
+    if (!usuarioLogado?.id) return undefined
 
     const agora = Date.now()
     const sessaoAtual = lerSessaoSegura()
 
     salvarSessaoSegura({
-      inicio: sessaoAtual.inicio || agora,
-      ultimaAtividade: agora
+      usuarioId: usuarioLogado.id,
+      inicio: sessaoAtual.usuarioId === usuarioLogado.id ? sessaoAtual.inicio || agora : agora,
+      ultimaAtividade: agora,
+      expiraEm: sessaoAtual.expiraEm || null
     })
 
     function verificarExpiracao() {
@@ -162,7 +201,7 @@ export function useAuthSession({
       eventos.forEach((evento) => window.removeEventListener(evento, registrarAtividadeSessao))
       window.clearInterval(intervalo)
     }
-  }, [encerrarSessao, onSessionWarning, registrarAtividadeSessao, usuarioLogado])
+  }, [encerrarSessao, onSessionWarning, registrarAtividadeSessao, usuarioLogado?.id])
 
   return {
     usuarioLogado,

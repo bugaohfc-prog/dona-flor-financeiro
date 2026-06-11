@@ -399,6 +399,14 @@ export default function App() {
     setEmpresaSessaoInicializada(false)
     setLoading(false)
     limparSessaoSegura()
+    setConfirmacao({
+      aberto: false,
+      titulo: '',
+      mensagem: '',
+      textoConfirmar: 'Confirmar',
+      tipo: 'padrao',
+      acao: null
+    })
   }
 
   const limparEstadoAutenticacaoCallback = useCallback(() => {

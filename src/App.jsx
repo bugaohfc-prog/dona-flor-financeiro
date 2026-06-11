@@ -122,6 +122,50 @@ function telaRetornoSessaoSegura(tela) {
   return TELAS_RETORNO_SESSAO.has(telaNormalizada) ? telaNormalizada : 'dashboard'
 }
 
+function normalizarValorBuscaContas(busca) {
+  const texto = String(busca || '')
+    .toLowerCase()
+    .replace(/r\$/g, '')
+    .replace(/\s/g, '')
+    .replace(/[^\d,.-]/g, '')
+
+  if (!/\d/.test(texto)) return null
+
+  const ultimaVirgula = texto.lastIndexOf(',')
+  const ultimoPonto = texto.lastIndexOf('.')
+  let normalizado = texto
+
+  if (ultimaVirgula >= 0 && ultimoPonto >= 0) {
+    normalizado = ultimaVirgula > ultimoPonto
+      ? texto.replace(/\./g, '').replace(',', '.')
+      : texto.replace(/,/g, '')
+  } else if (ultimaVirgula >= 0) {
+    normalizado = texto.replace(/\./g, '').replace(',', '.')
+  } else if (ultimoPonto >= 0) {
+    const casasDecimais = texto.length - ultimoPonto - 1
+    normalizado = casasDecimais === 2
+      ? texto.replace(/,/g, '')
+      : texto.replace(/\./g, '')
+  }
+
+  const valor = Number(normalizado)
+  return Number.isFinite(valor) && valor > 0 ? Math.round(valor * 100) : null
+}
+
+function valorContaCorrespondeBusca(conta, valorBuscaCentavos) {
+  if (valorBuscaCentavos === null) return false
+
+  return [
+    conta.valor,
+    conta.valor_pago,
+    conta.juros_multa,
+    conta.desconto
+  ].some((valor) => {
+    const numero = Number(valor)
+    return Number.isFinite(numero) && numero > 0 && Math.round(numero * 100) === valorBuscaCentavos
+  })
+}
+
 export default function App() {
   const sincronizacaoTenantRef = useRef(null)
   const sessaoEncerradaRef = useRef(true)
@@ -1494,6 +1538,7 @@ export default function App() {
   // BLOCO 6 — FILTROS / RESUMOS
   // =========================
   const termoBuscaContas = useMemo(() => busca.trim().toLowerCase(), [busca])
+  const valorBuscaContasCentavos = useMemo(() => normalizarValorBuscaContas(busca), [busca])
 
   const contasFiltradas = useMemo(() => contas
     .filter((conta) => {
@@ -1512,6 +1557,7 @@ export default function App() {
     })
     .filter((conta) => {
       if (!termoBuscaContas) return true
+      if (valorContaCorrespondeBusca(conta, valorBuscaContasCentavos)) return true
 
       const centroNome = conta.df_centros_custo?.nome || ''
       const filialNome = conta.df_filiais?.nome || ''
@@ -1536,7 +1582,7 @@ export default function App() {
       return camposBusca
         .filter(Boolean)
         .some((campo) => String(campo).toLowerCase().includes(termoBuscaContas))
-    }), [contas, dataFinal, dataInicial, filtroCentro, filtroFilial, filtroMes, filtroStatus, termoBuscaContas])
+    }), [contas, dataFinal, dataInicial, filtroCentro, filtroFilial, filtroMes, filtroStatus, termoBuscaContas, valorBuscaContasCentavos])
 
   const contasOperacionaisFiliais = useMemo(() => contas
     .filter((conta) => {
@@ -1554,6 +1600,7 @@ export default function App() {
     })
     .filter((conta) => {
       if (!termoBuscaContas) return true
+      if (valorContaCorrespondeBusca(conta, valorBuscaContasCentavos)) return true
 
       const centroNome = conta.df_centros_custo?.nome || ''
       const filialNome = conta.df_filiais?.nome || ''
@@ -1578,7 +1625,7 @@ export default function App() {
       return camposBusca
         .filter(Boolean)
         .some((campo) => String(campo).toLowerCase().includes(termoBuscaContas))
-    }), [contas, dataFinal, dataInicial, filtroCentro, filtroMes, filtroStatus, termoBuscaContas])
+    }), [contas, dataFinal, dataInicial, filtroCentro, filtroMes, filtroStatus, termoBuscaContas, valorBuscaContasCentavos])
 
   const resumoFinanceiro = useMemo(() => {
     const obterValorRealizadoConta = (conta) => conta.status === 'pago'

@@ -242,15 +242,27 @@ export default function ContasPage({
       <>
       <section className="no-print filters-desktop" style={styles.filtrosBox}>
         <input
+          className="accounts-search-input"
           style={styles.input}
           placeholder="Buscar por conta, data, centro, observação ou status..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
         />
 
-        <button className="filter-toggle-button" onClick={() => setMostrarFiltros(!mostrarFiltros)}>
-          {mostrarFiltros ? 'Ocultar filtros' : 'Filtros'}
-        </button>
+        <div className="accounts-filter-actions">
+          <button className="filter-toggle-button" onClick={() => setMostrarFiltros(!mostrarFiltros)}>
+            {mostrarFiltros ? 'Ocultar filtros' : 'Filtros'}
+          </button>
+
+          <button className="accounts-clear-button" style={styles.btnCinza} onClick={limparFiltros}>Limpar</button>
+
+          {podeExportarDados && (
+            <div className="export-actions accounts-export-actions" style={styles.acoes}>
+              <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
+              <button style={styles.btnVerde} onClick={exportarCSV}>CSV</button>
+            </div>
+          )}
+        </div>
 
         <div className="accounts-status-tabs" role="tablist" aria-label="Filtro principal de status das contas">
           {ABAS_STATUS_CONTAS.map((aba) => (
@@ -267,28 +279,17 @@ export default function ContasPage({
           ))}
         </div>
 
-        <button style={styles.btnCinza} onClick={limparFiltros}>Limpar</button>
+        <label className="accounts-sort-control accounts-sort-control-main">
+          <span>Ordenar por</span>
+          <select style={styles.input} value={ordenacaoContas} onChange={(e) => setOrdenacaoContas(e.target.value)}>
+            {OPCOES_ORDENACAO_CONTAS.map((opcao) => (
+              <option key={opcao.valor} value={opcao.valor}>{opcao.label}</option>
+            ))}
+          </select>
+        </label>
 
         {mostrarFiltros && (
           <div className="advanced-filters">
-            <label className="accounts-sort-control">
-              <span>Ordenar por</span>
-              <select style={styles.input} value={ordenacaoContas} onChange={(e) => setOrdenacaoContas(e.target.value)}>
-                {OPCOES_ORDENACAO_CONTAS.map((opcao) => (
-                  <option key={opcao.valor} value={opcao.valor}>{opcao.label}</option>
-                ))}
-              </select>
-            </label>
-
-            <div className="export-actions" style={styles.acoes}>
-              {podeExportarDados && (
-                <>
-                  <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
-                  <button style={styles.btnVerde} onClick={exportarCSV}>CSV</button>
-                </>
-              )}
-            </div>
-
             <select style={styles.input} value={filtroFilial} onChange={(e) => setFiltroFilial(e.target.value)}>
               <option value="">Todas as filiais</option>
               {(filiais || []).map((filial) => (<option key={filial.id} value={filial.id}>{filial.nome}</option>))}
@@ -465,7 +466,41 @@ export default function ContasPage({
   return (
     <>
       <style>{`
+        .filters-desktop {
+          grid-template-columns: minmax(220px, 1fr) auto !important;
+          align-items: start !important;
+        }
+        .filters-desktop .accounts-search-input {
+          width: 100% !important;
+          min-width: 0;
+        }
+        .accounts-filter-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .filters-desktop .accounts-clear-button {
+          width: auto !important;
+          min-width: 0 !important;
+          max-width: max-content !important;
+          height: 42px !important;
+          min-height: 36px !important;
+          padding: 0 12px !important;
+          border-radius: 999px !important;
+          white-space: nowrap;
+        }
+        .accounts-export-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 6px;
+          width: auto !important;
+          margin: 0 !important;
+        }
         .accounts-status-tabs {
+          grid-column: 1 / -1;
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 6px;
@@ -487,9 +522,40 @@ export default function ContasPage({
           color: #ffffff;
           box-shadow: 0 6px 16px rgba(15, 118, 110, 0.18);
         }
+        .accounts-sort-control-main {
+          grid-column: 1 / -1;
+          max-width: 320px;
+        }
+        .filters-desktop .advanced-filters {
+          grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+        }
         @media (max-width: 640px) {
+          .filters-desktop {
+            grid-template-columns: 1fr !important;
+          }
+          .accounts-filter-actions {
+            width: 100%;
+            justify-content: stretch;
+          }
+          .accounts-filter-actions .filter-toggle-button {
+            flex: 1 1 120px;
+          }
+          .filters-desktop .accounts-clear-button {
+            flex: 0 0 auto;
+          }
+          .accounts-export-actions {
+            flex: 1 1 100%;
+            justify-content: flex-start;
+          }
           .accounts-status-tabs {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+          .accounts-sort-control-main {
+            max-width: none;
+            width: 100%;
+          }
+          .filters-desktop .advanced-filters {
+            grid-template-columns: 1fr !important;
           }
           .account-actions {
             gap: 5px !important;

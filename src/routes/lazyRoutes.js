@@ -4,6 +4,7 @@ import { handleChunkLoadError } from '../utils/chunkRecovery.js'
 export const lazyRouteImports = {
   dashboard: () => import('../components/routes/DashboardRouteComposition.jsx'),
   agenda: () => import('../pages/AgendaPage.jsx'),
+  configuracoes: () => import('../pages/ConfiguracoesPage.jsx'),
   contas: () => import('../pages/ContasPage.jsx'),
   importar: () => import('../pages/ImportarPage.jsx'),
   lixeira: () => import('../pages/LixeiraPage.jsx'),
@@ -27,6 +28,7 @@ export const lazyRouteImports = {
 export const routeImportByScreen = {
   dashboard: 'dashboard',
   agenda: 'agenda',
+  configuracoes: 'configuracoes',
   contas: 'contas',
   importar: 'importar',
   lixeira: 'lixeira',
@@ -62,6 +64,7 @@ function lazyWithRecovery(routeName) {
 
 export const LazyDashboardRouteComposition = lazyWithRecovery('dashboard')
 export const LazyAgendaPage = lazyWithRecovery('agenda')
+export const LazyConfiguracoesPage = lazyWithRecovery('configuracoes')
 export const LazyContasPage = lazyWithRecovery('contas')
 export const LazyImportarPage = lazyWithRecovery('importar')
 export const LazyLixeiraPage = lazyWithRecovery('lixeira')

@@ -581,7 +581,7 @@ function montarMensagemDryRun({ tipo, empresaNome, resumoContas, notasResumo, no
   const subject = tipo === 'VENCIDAS'
     ? `Contas vencidas - ${empresaAssunto}`
     : tipo === 'AMANHA'
-      ? `Contas de amanhÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â£ - ${empresaAssunto}`
+      ? `Contas de amanhã - ${empresaAssunto}`
       : `Alerta financeiro - ${empresaAssunto}`
 
   const totais = calcularTotaisContas(resumoContas)
@@ -793,7 +793,7 @@ function montarTextoResumo({ tipo, tituloPrincipal, contasPrincipal, resumoConta
   if (contasPrincipal.length === 0) {
     linhas.push(vazioPrincipal)
   } else {
-    linhas.push(`${tituloPrincipal.replace(/[ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â´]/g, '').trim()}:`)
+    linhas.push(`${tituloPrincipal.trim()}:`)
     for (const conta of contasPrincipal.slice(0, 10)) {
       linhas.push(`- ${getField(conta, ['descricao', 'nome', 'conta', 'titulo'])} | ${moeda(conta?.valor)} | ${formatarData(dataConta(conta))}`)
     }

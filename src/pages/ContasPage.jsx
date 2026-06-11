@@ -473,6 +473,7 @@ export default function ContasPage({
         .filters-desktop .accounts-search-input {
           width: 100% !important;
           min-width: 0;
+          order: 1;
         }
         .accounts-filter-actions {
           display: flex;
@@ -480,6 +481,7 @@ export default function ContasPage({
           justify-content: flex-end;
           gap: 8px;
           flex-wrap: wrap;
+          order: 2;
         }
         .filters-desktop .accounts-clear-button {
           width: auto !important;
@@ -505,6 +507,7 @@ export default function ContasPage({
           grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 6px;
           width: 100%;
+          order: 3;
         }
         .accounts-status-tab {
           min-height: 38px;
@@ -525,44 +528,115 @@ export default function ContasPage({
         .accounts-sort-control-main {
           grid-column: 1 / -1;
           max-width: 320px;
+          order: 4;
         }
         .filters-desktop .advanced-filters {
           grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+          order: 5;
+        }
+        .accounts-page-header .page-actions-row button {
+          width: auto !important;
+          min-width: 0 !important;
+          max-width: max-content !important;
+          padding: 8px 12px !important;
+          border-radius: 999px !important;
+          white-space: nowrap;
         }
         @media (max-width: 640px) {
           .filters-desktop {
             grid-template-columns: 1fr !important;
+            gap: 8px !important;
+            padding: 10px !important;
+          }
+          .filters-desktop .accounts-search-input {
+            order: 1;
+            height: 40px !important;
+          }
+          .accounts-status-tabs {
+            order: 2;
+            gap: 5px;
           }
           .accounts-filter-actions {
+            order: 3;
             width: 100%;
-            justify-content: stretch;
+            justify-content: flex-start;
+            gap: 6px;
           }
           .accounts-filter-actions .filter-toggle-button {
-            flex: 1 1 120px;
+            flex: 0 0 auto;
+            height: 36px !important;
+            min-height: 34px !important;
+            padding: 0 12px !important;
           }
           .filters-desktop .accounts-clear-button {
             flex: 0 0 auto;
+            height: 36px !important;
+            min-height: 34px !important;
+            padding: 0 11px !important;
           }
           .accounts-export-actions {
+            order: 4;
             flex: 1 1 100%;
             justify-content: flex-start;
+            gap: 5px;
+          }
+          .accounts-export-actions button {
+            min-height: 32px !important;
+            padding: 6px 10px !important;
+            font-size: 12px !important;
+            box-shadow: none !important;
           }
           .accounts-status-tabs {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
+          .accounts-status-tab {
+            min-height: 34px;
+            padding: 6px 8px;
+            font-size: 13px;
+          }
           .accounts-sort-control-main {
+            order: 5;
             max-width: none;
             width: 100%;
           }
+          .accounts-sort-control-main select {
+            height: 38px !important;
+          }
           .filters-desktop .advanced-filters {
+            order: 6;
             grid-template-columns: 1fr !important;
+            gap: 8px !important;
+          }
+          .accounts-page-header {
+            align-items: flex-start !important;
+            gap: 8px !important;
+            margin-bottom: 10px !important;
+          }
+          .accounts-page-header h1 {
+            margin-bottom: 2px !important;
+          }
+          .accounts-page-header p {
+            display: none;
+          }
+          .accounts-page-header .page-actions-row {
+            width: auto !important;
+            align-self: flex-start;
+          }
+          .accounts-page-header .page-actions-row button {
+            min-height: 32px !important;
+            padding: 6px 10px !important;
+            font-size: 12px !important;
+          }
+          .result-summary {
+            margin-top: 8px !important;
+            padding: 10px !important;
           }
           .account-actions {
             gap: 5px !important;
           }
         }
       `}</style>
-      <div className="page-title-actions">
+      <div className="page-title-actions accounts-page-header">
         <div>
           <h1 style={styles.titulo}>💳 Contas</h1>
           <p style={styles.textoNota}>Consulte, filtre, exporte e administre as contas da empresa em uma página dedicada.</p>

@@ -420,6 +420,31 @@ export async function listarPeriodosFerias({
   return query
 }
 
+export async function listarPeriodosFeriasAgenda({
+  supabase,
+  empresaId,
+  dataInicioMinima,
+  dataInicioMaxima
+}) {
+  const empresa = validarEmpresaId(empresaId)
+
+  let query = selecionarPorEmpresa(supabase, TABELA_FERIAS_PERIODOS, empresa, PERIODO_FERIAS_SELECT)
+    .eq('arquivado', false)
+    .eq('status', 'agendada')
+    .not('data_inicio', 'is', null)
+    .order('data_inicio', { ascending: true })
+
+  if (dataInicioMinima) {
+    query = query.gte('data_inicio', normalizarDataObrigatoria(dataInicioMinima))
+  }
+
+  if (dataInicioMaxima) {
+    query = query.lte('data_inicio', normalizarDataObrigatoria(dataInicioMaxima))
+  }
+
+  return query
+}
+
 export async function obterPeriodoFeriasPorId({ supabase, empresaId, periodoId }) {
   const empresa = validarEmpresaId(empresaId)
   const id = validarPeriodoId(periodoId)

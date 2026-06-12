@@ -45,6 +45,7 @@ import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsua
 import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario } from './services/permissoesService'
 import { listarFiliaisPorEmpresa } from './services/filiaisService'
 import { verificarUsoCentroCusto } from './services/contasService'
+import { listarPeriodosFeriasAgenda } from './services/funcionariosFeriasService'
 import { clearChunkReloadAttempt } from './utils/chunkRecovery.js'
 import './styles.css'
 import styles from './styles/appStyles.js'
@@ -840,6 +841,68 @@ export default function App() {
     empresaId,
     autoCarregar: Boolean(usuarioLogado?.id && empresaId && telaAtual === 'agenda' && podeAcessarGestaoPessoas())
   })
+
+  const [feriasAgenda, setFeriasAgenda] = useState([])
+  const [loadingFeriasAgenda, setLoadingFeriasAgenda] = useState(false)
+
+  useEffect(() => {
+    let cancelado = false
+
+    setFeriasAgenda([])
+
+    if (!usuarioLogado?.id || !empresaId || telaAtual !== 'agenda' || !podeAcessarGestaoPessoas()) {
+      setLoadingFeriasAgenda(false)
+      return () => {
+        cancelado = true
+      }
+    }
+
+    async function carregarFeriasAgenda() {
+      setLoadingFeriasAgenda(true)
+
+      const hoje = new Date()
+      hoje.setHours(0, 0, 0, 0)
+      const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
+      const dataInicioMinima = [
+        hoje.getFullYear(),
+        String(hoje.getMonth() + 1).padStart(2, '0'),
+        String(hoje.getDate()).padStart(2, '0')
+      ].join('-')
+      const dataInicioMaxima = [
+        fimMes.getFullYear(),
+        String(fimMes.getMonth() + 1).padStart(2, '0'),
+        String(fimMes.getDate()).padStart(2, '0')
+      ].join('-')
+
+      try {
+        const { data, error } = await listarPeriodosFeriasAgenda({
+          supabase,
+          empresaId,
+          dataInicioMinima,
+          dataInicioMaxima
+        })
+
+        if (cancelado) return
+
+        if (error) {
+          setFeriasAgenda([])
+          return
+        }
+
+        setFeriasAgenda(data || [])
+      } catch {
+        if (!cancelado) setFeriasAgenda([])
+      } finally {
+        if (!cancelado) setLoadingFeriasAgenda(false)
+      }
+    }
+
+    carregarFeriasAgenda()
+
+    return () => {
+      cancelado = true
+    }
+  }, [empresaId, telaAtual, usuarioLogado?.id, podeAcessarGestaoPessoas])
 
   const bloquearAcaoSemPermissao = useCallback(() => {
     mostrarAviso('Você não tem permissão para realizar esta ação.', 'erro')
@@ -4637,6 +4700,8 @@ export default function App() {
           notas={notas}
           funcionarios={funcionariosAgenda}
           loadingFuncionarios={loadingFuncionariosAgenda}
+          feriasAgendadas={feriasAgenda}
+          loadingFerias={loadingFeriasAgenda}
           formatarValor={formatarValor}
           formatarData={formatarData}
           dataLocal={dataLocal}

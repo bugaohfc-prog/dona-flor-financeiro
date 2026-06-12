@@ -67,31 +67,38 @@ function CardAgenda({
         const dias = diferencaDias(evento.data)
         const ehNota = evento.tipo === 'nota'
         const ehPessoa = evento.tipo === 'pessoa'
+        const ehFerias = evento.categoria === 'ferias'
 
         return (
           <div key={evento.chave} style={{ ...styles.itemAgenda, borderLeft: `5px solid ${cor}` }}>
             <div>
               <div className="agenda-event-title">
                 <strong>{evento.titulo}</strong>
-                <span className={`agenda-event-badge agenda-event-badge-${evento.tipo}`}>
-                  {ehPessoa ? 'Aniversário' : ehNota ? 'Nota' : 'Conta'}
+                <span className={`agenda-event-badge agenda-event-badge-${evento.categoria || evento.tipo}`}>
+                  {ehFerias ? 'Férias' : ehPessoa ? 'Aniversário' : ehNota ? 'Nota' : 'Conta'}
                 </span>
               </div>
 
               <div style={styles.cardInfo}>
                 {formatarData(evento.data)} • {evento.descricaoSecundaria}
+                {ehFerias && evento.dataFim ? ` • Fim: ${formatarData(evento.dataFim)}` : ''}
+                {ehFerias && evento.dataRetorno ? ` • Retorno: ${formatarData(evento.dataRetorno)}` : ''}
               </div>
 
               <small style={dias < 0 ? styles.textoVencidoAgenda : styles.textoAgenda}>
-                {ehPessoa
+                {ehFerias
                   ? dias === 0
-                    ? 'Aniversário hoje'
-                    : `Aniversário em ${dias} dia(s)`
-                  : dias < 0
-                    ? `${ehNota ? 'Atrasada' : 'Vencida'} há ${Math.abs(dias)} dia(s)`
-                    : dias === 0
-                      ? `${ehNota ? 'Para hoje' : 'Vence hoje'}`
-                      : `${ehNota ? 'Para daqui' : 'Vence em'} ${dias} dia(s)`}
+                    ? 'Férias começam hoje'
+                    : `Férias começam em ${dias} dia(s)`
+                  : ehPessoa
+                    ? dias === 0
+                      ? 'Aniversário hoje'
+                      : `Aniversário em ${dias} dia(s)`
+                    : dias < 0
+                      ? `${ehNota ? 'Atrasada' : 'Vencida'} há ${Math.abs(dias)} dia(s)`
+                      : dias === 0
+                        ? `${ehNota ? 'Para hoje' : 'Vence hoje'}`
+                        : `${ehNota ? 'Para daqui' : 'Vence em'} ${dias} dia(s)}`}
               </small>
             </div>
 
@@ -110,9 +117,15 @@ function CardAgenda({
                 </button>
               )}
 
-              {ehPessoa && (
+              {ehPessoa && !ehFerias && (
                 <button style={styles.btnPago} onClick={() => navegarPara('relatorios-pessoas')}>
                   Ver em Pessoas
+                </button>
+              )}
+
+              {ehFerias && (
+                <button style={styles.btnPago} onClick={() => navegarPara('ferias')}>
+                  Ver em Férias
                 </button>
               )}
             </div>
@@ -129,6 +142,8 @@ export default function AgendaPage({
   notas = [],
   funcionarios = [],
   loadingFuncionarios = false,
+  feriasAgendadas = [],
+  loadingFerias = false,
   formatarValor,
   formatarData,
   dataLocal,
@@ -189,13 +204,44 @@ export default function AgendaPage({
       .filter(Boolean)
   }, [funcionarios])
 
+  const funcionariosPorId = useMemo(() => {
+    return (funcionarios || []).reduce((mapa, funcionario) => {
+      if (funcionario?.id) mapa.set(funcionario.id, funcionario)
+      return mapa
+    }, new Map())
+  }, [funcionarios])
+
+  const feriasAgenda = useMemo(() => {
+    return feriasAgendadas
+      .filter((periodo) => periodo?.data_inicio && periodo.status === 'agendada' && !periodo.arquivado)
+      .map((periodo) => {
+        const funcionario = funcionariosPorId.get(periodo.funcionario_id)
+        const nome = funcionario?.nome || 'Colaborador'
+        const cargo = funcionario?.cargo
+
+        return {
+          id: periodo.id,
+          chave: `pessoa-ferias-${periodo.id}`,
+          tipo: 'pessoa',
+          categoria: 'ferias',
+          data: periodo.data_inicio,
+          dataFim: periodo.data_fim_calculada,
+          dataRetorno: periodo.data_retorno_trabalho,
+          titulo: nome,
+          descricaoSecundaria: `Férias agendadas${cargo ? ` • ${cargo}` : ''}`,
+          valor: 0
+        }
+      })
+  }, [feriasAgendadas, funcionariosPorId])
+
   const eventosAgenda = useMemo(() => {
-    return [...contasAgenda, ...notasAgenda, ...aniversariosAgenda]
+    return [...contasAgenda, ...notasAgenda, ...aniversariosAgenda, ...feriasAgenda]
       .filter((evento) => filtroTipo === 'todas' || evento.tipo === filtroTipo)
       .sort((a, b) => dataLocal(a.data) - dataLocal(b.data))
-  }, [contasAgenda, notasAgenda, aniversariosAgenda, filtroTipo, dataLocal])
+  }, [contasAgenda, notasAgenda, aniversariosAgenda, feriasAgenda, filtroTipo, dataLocal])
 
   const mostrarLoadingPessoas = loadingFuncionarios && (filtroTipo === 'todas' || filtroTipo === 'pessoa')
+  const mostrarLoadingFerias = loadingFerias && (filtroTipo === 'todas' || filtroTipo === 'pessoa')
 
   const eventosVencidos = eventosAgenda.filter((evento) => evento.tipo !== 'pessoa' && diferencaDias(evento.data) < 0)
   const eventosHoje = eventosAgenda.filter((evento) => diferencaDias(evento.data) === 0)
@@ -294,6 +340,10 @@ export default function AgendaPage({
           background: #dcfce7;
           color: #166534;
         }
+        .agenda-event-badge-ferias {
+          background: #f0fdfa;
+          color: #0f766e;
+        }
         .agenda-show-more {
           margin-top: 10px;
           border: 1px solid #dbe3ef;
@@ -356,6 +406,10 @@ export default function AgendaPage({
 
       {mostrarLoadingPessoas && (
         <div className="agenda-people-loading">Carregando eventos de pessoas...</div>
+      )}
+
+      {mostrarLoadingFerias && (
+        <div className="agenda-people-loading">Carregando eventos de férias...</div>
       )}
 
       <div className="agenda-page-grid">

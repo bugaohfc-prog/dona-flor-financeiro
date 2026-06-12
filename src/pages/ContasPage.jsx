@@ -218,7 +218,7 @@ function EmptyState({ icon, title, description, actionLabel, onAction }) {
   )
 }
 export default function ContasPage({
-  styles, busca, setBusca, mostrarFiltros, setMostrarFiltros, limparFiltros, imprimirPDF, exportarCSV,
+  styles, busca, setBusca, mostrarFiltros, setMostrarFiltros, limparFiltros, imprimirPDF, exportarCSV, exportarExcel,
   filtroStatus, setFiltroStatus, centros, filtroCentro, setFiltroCentro, filiais, filtroFilial, setFiltroFilial, filtroMes, setFiltroMes,
   dataInicial, setDataInicial, dataFinal, setDataFinal, limitarDataInput, contas = [], contasFiltradas, agendaFocusTarget, onAgendaFocusHandled, total, formatarValor,
   loading, mostrarContas, setMostrarContas, estaVencida, formatarData, formatarTipoRecorrencia,
@@ -228,6 +228,7 @@ export default function ContasPage({
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
   const [contaEmBaixa, setContaEmBaixa] = useState(null)
   const [contaDestacadaId, setContaDestacadaId] = useState('')
+  const [mostrarExportacoes, setMostrarExportacoes] = useState(false)
   const contaDestacadaRef = useRef(null)
   const contaAlvoAgendaId = agendaFocusTarget?.tipo === 'conta' ? agendaFocusTarget.id : ''
   const contaAlvoAgenda = useMemo(() => {
@@ -282,7 +283,7 @@ export default function ContasPage({
         <input
           className="accounts-search-input"
           style={styles.input}
-          placeholder="Buscar por conta, data, centro, observação ou status..."
+          placeholder="Buscar por conta, valor, data, centro, observação ou status..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
         />
@@ -296,8 +297,21 @@ export default function ContasPage({
 
           {podeExportarDados && (
             <div className="export-actions accounts-export-actions" style={styles.acoes}>
-              <button style={styles.btnRoxo} onClick={imprimirPDF}>PDF</button>
-              <button style={styles.btnVerde} onClick={exportarCSV}>CSV</button>
+              <button
+                className="accounts-export-toggle"
+                type="button"
+                onClick={() => setMostrarExportacoes((atual) => !atual)}
+                aria-expanded={mostrarExportacoes}
+              >
+                Exportar
+              </button>
+              {mostrarExportacoes && (
+                <div className="accounts-export-menu">
+                  <button type="button" onClick={imprimirPDF}>PDF</button>
+                  <button type="button" onClick={exportarExcel}>Excel</button>
+                  <button type="button" onClick={exportarCSV}>CSV</button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -540,6 +554,44 @@ export default function ContasPage({
           gap: 6px;
           width: auto !important;
           margin: 0 !important;
+          position: relative;
+        }
+        .accounts-export-toggle {
+          min-height: 36px;
+          border: 1px solid #99f6e4;
+          border-radius: 999px;
+          background: #f0fdfa;
+          color: #0f766e;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 850;
+          padding: 7px 12px;
+          white-space: nowrap;
+        }
+        .accounts-export-menu {
+          position: absolute;
+          top: calc(100% + 6px);
+          right: 0;
+          z-index: 20;
+          display: flex;
+          gap: 5px;
+          padding: 6px;
+          border: 1px solid #dbe3ef;
+          border-radius: 14px;
+          background: #ffffff;
+          box-shadow: 0 14px 30px rgba(15, 23, 42, 0.14);
+        }
+        .accounts-export-menu button {
+          min-height: 30px;
+          border: 1px solid #dbe3ef;
+          border-radius: 999px;
+          background: #ffffff;
+          color: #334155;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 800;
+          padding: 5px 9px;
+          white-space: nowrap;
         }
         .accounts-status-tabs {
           grid-column: 1 / -1;
@@ -624,11 +676,15 @@ export default function ContasPage({
             justify-content: flex-start;
             gap: 5px;
           }
-          .accounts-export-actions button {
+          .accounts-export-toggle {
             min-height: 32px !important;
             padding: 6px 10px !important;
             font-size: 12px !important;
             box-shadow: none !important;
+          }
+          .accounts-export-menu {
+            left: 0;
+            right: auto;
           }
           .accounts-status-tabs {
             grid-template-columns: repeat(2, minmax(0, 1fr));

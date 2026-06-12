@@ -160,8 +160,23 @@ function normalizarValorBuscaContas(busca) {
   return Number.isFinite(valor) && valor > 0 ? Math.round(valor * 100) : null
 }
 
-function valorContaCorrespondeBusca(conta, valorBuscaCentavos) {
-  if (valorBuscaCentavos === null) return false
+function normalizarDigitosValorBuscaContas(busca) {
+  const texto = String(busca || '')
+    .toLowerCase()
+    .replace(/r\$/g, '')
+
+  if (!/\d/.test(texto)) return ''
+  return texto.replace(/\D/g, '')
+}
+
+function valorParaDigitosBusca(valor) {
+  const numero = Number(valor)
+  if (!Number.isFinite(numero) || numero <= 0) return ''
+  return String(Math.round(numero * 100))
+}
+
+function valorContaCorrespondeBusca(conta, valorBuscaCentavos, digitosBuscaValor) {
+  if (valorBuscaCentavos === null && !digitosBuscaValor) return false
 
   return [
     conta.valor,
@@ -170,7 +185,13 @@ function valorContaCorrespondeBusca(conta, valorBuscaCentavos) {
     conta.desconto
   ].some((valor) => {
     const numero = Number(valor)
-    return Number.isFinite(numero) && numero > 0 && Math.round(numero * 100) === valorBuscaCentavos
+    if (!Number.isFinite(numero) || numero <= 0) return false
+
+    const centavos = Math.round(numero * 100)
+    if (valorBuscaCentavos !== null && centavos === valorBuscaCentavos) return true
+
+    const digitosValor = valorParaDigitosBusca(numero)
+    return digitosBuscaValor.length >= 2 && digitosValor.includes(digitosBuscaValor)
   })
 }
 
@@ -1714,6 +1735,7 @@ export default function App() {
   // =========================
   const termoBuscaContas = useMemo(() => busca.trim().toLowerCase(), [busca])
   const valorBuscaContasCentavos = useMemo(() => normalizarValorBuscaContas(busca), [busca])
+  const digitosBuscaValorContas = useMemo(() => normalizarDigitosValorBuscaContas(busca), [busca])
 
   const contasFiltradas = useMemo(() => contas
     .filter((conta) => {
@@ -1732,7 +1754,7 @@ export default function App() {
     })
     .filter((conta) => {
       if (!termoBuscaContas) return true
-      if (valorContaCorrespondeBusca(conta, valorBuscaContasCentavos)) return true
+      if (valorContaCorrespondeBusca(conta, valorBuscaContasCentavos, digitosBuscaValorContas)) return true
 
       const centroNome = conta.df_centros_custo?.nome || ''
       const filialNome = conta.df_filiais?.nome || ''
@@ -1757,7 +1779,7 @@ export default function App() {
       return camposBusca
         .filter(Boolean)
         .some((campo) => String(campo).toLowerCase().includes(termoBuscaContas))
-    }), [contas, dataFinal, dataInicial, filtroCentro, filtroFilial, filtroMes, filtroStatus, termoBuscaContas, valorBuscaContasCentavos])
+    }), [contas, dataFinal, dataInicial, filtroCentro, filtroFilial, filtroMes, filtroStatus, termoBuscaContas, valorBuscaContasCentavos, digitosBuscaValorContas])
 
   const contasOperacionaisFiliais = useMemo(() => contas
     .filter((conta) => {
@@ -1775,7 +1797,7 @@ export default function App() {
     })
     .filter((conta) => {
       if (!termoBuscaContas) return true
-      if (valorContaCorrespondeBusca(conta, valorBuscaContasCentavos)) return true
+      if (valorContaCorrespondeBusca(conta, valorBuscaContasCentavos, digitosBuscaValorContas)) return true
 
       const centroNome = conta.df_centros_custo?.nome || ''
       const filialNome = conta.df_filiais?.nome || ''
@@ -1800,7 +1822,7 @@ export default function App() {
       return camposBusca
         .filter(Boolean)
         .some((campo) => String(campo).toLowerCase().includes(termoBuscaContas))
-    }), [contas, dataFinal, dataInicial, filtroCentro, filtroMes, filtroStatus, termoBuscaContas, valorBuscaContasCentavos])
+    }), [contas, dataFinal, dataInicial, filtroCentro, filtroMes, filtroStatus, termoBuscaContas, valorBuscaContasCentavos, digitosBuscaValorContas])
 
   const resumoFinanceiro = useMemo(() => {
     const obterValorRealizadoConta = (conta) => conta.status === 'pago'
@@ -2355,6 +2377,85 @@ export default function App() {
 
     link.href = url
     link.download = 'relatorio-contas.csv'
+    link.click()
+
+    URL.revokeObjectURL(url)
+  }
+
+  function exportarExcel() {
+    if (!podeExportarDados()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
+    const escapeHtml = (valor) => String(valor ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;')
+
+    const cabecalho = [
+      'Descricao',
+      'Valor previsto',
+      'Valor pago',
+      'Encargos',
+      'Desconto',
+      'Data pagamento',
+      'Observacao pagamento',
+      'Vencimento',
+      'Status',
+      'Filial',
+      'Centro'
+    ]
+
+    const linhas = contasFiltradas.map((conta) => {
+      const valorPrevisto = Number(conta.valor || 0)
+      const valorPago = conta.status === 'pago' ? Number(conta.valor_pago ?? conta.valor ?? 0) : ''
+
+      return [
+        conta.descricao || '',
+        formatarValor(valorPrevisto),
+        valorPago === '' ? '' : formatarValor(valorPago),
+        formatarValor(conta.juros_multa || 0),
+        formatarValor(conta.desconto || 0),
+        conta.data_pagamento ? formatarData(conta.data_pagamento) : '',
+        conta.observacao_pagamento || '',
+        formatarData(conta.data_vencimento),
+        estaVencida(conta.data_vencimento, conta.status) ? 'vencido' : conta.status,
+        conta.df_filiais?.nome || '',
+        conta.df_centros_custo?.nome || ''
+      ]
+    })
+
+    const html = `<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>
+            table { border-collapse: collapse; font-family: Arial, sans-serif; }
+            th, td { border: 1px solid #d1d5db; padding: 6px 8px; text-align: left; }
+            th { background: #f0fdfa; color: #0f766e; font-weight: 700; }
+          </style>
+        </head>
+        <body>
+          <table>
+            <thead>
+              <tr>${cabecalho.map((campo) => `<th>${escapeHtml(campo)}</th>`).join('')}</tr>
+            </thead>
+            <tbody>
+              ${linhas.map((linha) => `<tr>${linha.map((campo) => `<td>${escapeHtml(campo)}</td>`).join('')}</tr>`).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>`
+
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = 'relatorio-contas.xls'
     link.click()
 
     URL.revokeObjectURL(url)
@@ -4288,6 +4389,7 @@ export default function App() {
         limparFiltros={limparFiltros}
         imprimirPDF={imprimirPDF}
         exportarCSV={exportarCSV}
+        exportarExcel={exportarExcel}
         podeEditarFinanceiro={podeEditarFinanceiro()}
         podeExportarDados={podeExportarDados()}
         filtroStatus={filtroStatus}

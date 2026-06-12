@@ -447,16 +447,27 @@ export default function DashboardHome({
             )}
 
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 'auto' }}>
-              <button className="executive-agenda-cta" style={{ flex: '1 1 140px' }} onClick={() => navegarPara('agenda')}>Ver agenda</button>
+              <button
+                className="executive-agenda-cta"
+                style={{
+                  background: '#0f766e',
+                  borderColor: '#0f766e',
+                  color: '#ffffff',
+                  flex: '1 1 140px'
+                }}
+                onClick={() => navegarPara('agenda')}
+              >
+                Ver agenda
+              </button>
               <button
                 type="button"
                 style={{
                   alignItems: 'center',
-                  background: '#ffffff',
-                  border: '1px solid #cbd5e1',
+                  background: '#f0fdfa',
+                  border: '1px solid #99f6e4',
                   borderRadius: 999,
                   boxShadow: 'none',
-                  color: '#0f172a',
+                  color: '#0f766e',
                   cursor: 'pointer',
                   display: 'inline-flex',
                   flex: '0 1 auto',

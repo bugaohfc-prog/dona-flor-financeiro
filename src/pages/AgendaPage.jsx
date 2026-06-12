@@ -70,10 +70,15 @@ function CardAgenda({
         const ehPessoa = evento.tipo === 'pessoa'
         const ehFerias = evento.categoria === 'ferias'
         const ehExame = evento.categoria === 'exame'
+        const ehRh = ehPessoa || ehFerias || ehExame
 
         return (
-          <div key={evento.chave} style={{ ...styles.itemAgenda, borderLeft: `5px solid ${cor}` }}>
-            <div>
+          <div
+            key={evento.chave}
+            className={`agenda-event-item ${ehRh ? 'agenda-event-item-rh' : ''}`}
+            style={{ ...styles.itemAgenda, borderLeft: `5px solid ${cor}` }}
+          >
+            <div className="agenda-event-main">
               <div className="agenda-event-title">
                 <strong>{evento.titulo}</strong>
                 <span className={`agenda-event-badge agenda-event-badge-${evento.categoria || evento.tipo}`}>
@@ -114,31 +119,31 @@ function CardAgenda({
               {!ehNota && !ehPessoa && <strong>{formatarValor(evento.valor)}</strong>}
 
               {!ehNota && !ehPessoa && podeEditarFinanceiro && (
-                <button style={styles.btnPago} onClick={() => navegarParaOrigemAgenda('conta', evento.id)}>
+                <button className="agenda-event-action" style={styles.btnPago} onClick={() => navegarParaOrigemAgenda('conta', evento.id)}>
                   Ver em Contas
                 </button>
               )}
 
               {ehNota && (
-                <button style={styles.btnPago} onClick={() => navegarParaOrigemAgenda('nota', evento.id)}>
+                <button className="agenda-event-action" style={styles.btnPago} onClick={() => navegarParaOrigemAgenda('nota', evento.id)}>
                   Ver em Notas
                 </button>
               )}
 
               {ehPessoa && !ehFerias && !ehExame && (
-                <button style={styles.btnPago} onClick={() => navegarPara('relatorios-pessoas')}>
+                <button className="agenda-event-action agenda-event-action-rh" style={styles.btnPago} onClick={() => navegarPara('relatorios-pessoas')}>
                   Ver em Pessoas
                 </button>
               )}
 
               {ehFerias && (
-                <button style={styles.btnPago} onClick={() => navegarPara('ferias')}>
+                <button className="agenda-event-action agenda-event-action-rh" style={styles.btnPago} onClick={() => navegarPara('ferias')}>
                   Ver em Férias
                 </button>
               )}
 
               {ehExame && (
-                <button style={styles.btnPago} onClick={() => navegarPara('relatorios-pessoas')}>
+                <button className="agenda-event-action agenda-event-action-rh" style={styles.btnPago} onClick={() => navegarPara('relatorios-pessoas')}>
                   Ver em Pessoas
                 </button>
               )}
@@ -379,32 +384,70 @@ export default function AgendaPage({
           gap: 8px;
           flex-wrap: wrap;
         }
+        .agenda-event-item {
+          min-width: 0;
+        }
+        .agenda-event-item-rh {
+          gap: 10px !important;
+          padding: 10px 12px !important;
+          align-items: center !important;
+        }
+        .agenda-event-item-rh .agenda-event-main {
+          display: grid;
+          gap: 4px;
+          min-width: 0;
+        }
+        .agenda-event-item-rh .agenda-event-title {
+          gap: 6px;
+        }
+        .agenda-event-item-rh .agenda-event-title strong {
+          font-size: 14px;
+          line-height: 1.2;
+        }
+        .agenda-event-item-rh small {
+          line-height: 1.25;
+        }
         .agenda-event-badge {
           border-radius: 999px;
-          padding: 3px 8px;
-          font-size: 11px;
+          padding: 3px 7px;
+          font-size: 10px;
           font-weight: 900;
           line-height: 1;
+          border: 1px solid transparent;
+          white-space: nowrap;
+          text-transform: uppercase;
         }
         .agenda-event-badge-conta {
           background: #e0f2fe;
           color: #075985;
+          border-color: #bae6fd;
         }
         .agenda-event-badge-nota {
           background: #fef3c7;
           color: #92400e;
+          border-color: #fde68a;
         }
         .agenda-event-badge-pessoa {
           background: #dcfce7;
           color: #166534;
+          border-color: #bbf7d0;
         }
         .agenda-event-badge-ferias {
           background: #f0fdfa;
           color: #0f766e;
+          border-color: #99f6e4;
         }
         .agenda-event-badge-exame {
           background: #fee2e2;
           color: #991b1b;
+          border-color: #fecaca;
+        }
+        .agenda-event-action-rh {
+          min-height: 30px !important;
+          padding: 6px 10px !important;
+          font-size: 12px !important;
+          line-height: 1.1 !important;
+          white-space: nowrap;
         }
         .agenda-show-more {
           margin-top: 10px;
@@ -433,6 +476,14 @@ export default function AgendaPage({
           }
           .agenda-type-tab {
             padding: 8px 6px;
+          }
+          .agenda-event-item-rh {
+            grid-template-columns: minmax(0, 1fr) auto;
+            padding: 9px 10px !important;
+          }
+          .agenda-event-action-rh {
+            min-height: 28px !important;
+            padding: 5px 8px !important;
           }
         }
       `}</style>

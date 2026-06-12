@@ -361,7 +361,7 @@ export default function ContasPage({
         </small>
       </section>
 
-      <section className="content-block" style={styles.bloco}>
+      <section className="content-block accounts-list-section" style={styles.bloco}>
         {loading && <AccountListSkeleton items={3} />}
 
         <div style={CONTAS_EXPANDABLE_HEADER_STYLE}>
@@ -682,6 +682,9 @@ export default function ContasPage({
             min-height: 28px !important;
             padding: 4px 8px !important;
             font-size: 11px !important;
+          }
+          .accounts-list-section {
+            padding-bottom: max(112px, calc(88px + env(safe-area-inset-bottom))) !important;
           }
         }
       `}</style>

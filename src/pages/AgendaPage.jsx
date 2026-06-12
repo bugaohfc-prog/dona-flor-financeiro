@@ -144,7 +144,9 @@ function CardAgenda({
                       ? `${ehNota ? 'Atrasada' : 'Vencida'} há ${Math.abs(dias)} dia(s)`
                       : dias === 0
                         ? `${ehNota ? 'Para hoje' : 'Vence hoje'}`
-                        : `${ehNota ? 'Para daqui' : 'Vence em'} ${dias} dia(s)}`}
+                        : ehNota
+                          ? `Para daqui ${dias} ${dias === 1 ? 'dia' : 'dias'}`
+                          : `Vence em ${dias} ${dias === 1 ? 'dia' : 'dias'}`}
               </small>
             </div>
 
@@ -530,6 +532,23 @@ export default function AgendaPage({
           border-color: #0f766e !important;
           color: #0f766e !important;
         }
+        .agenda-page-grid .empty-state-card {
+          min-height: 0 !important;
+          padding: 12px !important;
+          gap: 4px !important;
+        }
+        .agenda-page-grid .empty-state-icon {
+          font-size: 20px !important;
+          margin-bottom: 2px !important;
+        }
+        .agenda-page-grid .empty-state-card strong {
+          font-size: 13px !important;
+        }
+        .agenda-page-grid .empty-state-card p {
+          font-size: 12px !important;
+          line-height: 1.3 !important;
+          margin: 2px 0 0 !important;
+        }
         .agenda-event-action-rh {
           min-height: 30px !important;
           padding: 6px 10px !important;
@@ -577,6 +596,12 @@ export default function AgendaPage({
             min-height: 28px !important;
             padding: 5px 8px !important;
             font-size: 11px !important;
+          }
+          .agenda-page-grid .empty-state-card {
+            padding: 10px !important;
+          }
+          .agenda-page-grid .empty-state-icon {
+            font-size: 18px !important;
           }
         }
       `}</style>

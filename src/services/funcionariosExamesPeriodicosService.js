@@ -120,6 +120,17 @@ export async function listarExamesPeriodicos({
   return query
 }
 
+export async function listarExamesPeriodicosAgenda({
+  supabase,
+  empresaId
+}) {
+  const empresa = validarEmpresaId(empresaId)
+
+  return selecionarPorEmpresa(supabase, TABELA_EXAMES_PERIODICOS, empresa, EXAME_PERIODICO_SELECT)
+    .eq('arquivado', false)
+    .order('data_exame', { ascending: false })
+}
+
 export async function criarExamePeriodico({
   supabase,
   empresaId,

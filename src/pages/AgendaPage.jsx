@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { calcularProximoPeriodico } from '../services/funcionariosExamesPeriodicosService'
 
 function EmptyState({ icon, title, description }) {
   return (
@@ -68,6 +69,7 @@ function CardAgenda({
         const ehNota = evento.tipo === 'nota'
         const ehPessoa = evento.tipo === 'pessoa'
         const ehFerias = evento.categoria === 'ferias'
+        const ehExame = evento.categoria === 'exame'
 
         return (
           <div key={evento.chave} style={{ ...styles.itemAgenda, borderLeft: `5px solid ${cor}` }}>
@@ -75,7 +77,7 @@ function CardAgenda({
               <div className="agenda-event-title">
                 <strong>{evento.titulo}</strong>
                 <span className={`agenda-event-badge agenda-event-badge-${evento.categoria || evento.tipo}`}>
-                  {ehFerias ? 'Férias' : ehPessoa ? 'Aniversário' : ehNota ? 'Nota' : 'Conta'}
+                  {ehExame ? 'Exame' : ehFerias ? 'Férias' : ehPessoa ? 'Aniversário' : ehNota ? 'Nota' : 'Conta'}
                 </span>
               </div>
 
@@ -86,7 +88,13 @@ function CardAgenda({
               </div>
 
               <small style={dias < 0 ? styles.textoVencidoAgenda : styles.textoAgenda}>
-                {ehFerias
+                {ehExame
+                  ? dias < 0
+                    ? `Exame atrasado há ${Math.abs(dias)} dia(s)`
+                    : dias === 0
+                      ? 'Exame previsto para hoje'
+                      : `Exame a vencer em ${dias} dia(s)`
+                  : ehFerias
                   ? dias === 0
                     ? 'Férias começam hoje'
                     : `Férias começam em ${dias} dia(s)`
@@ -117,7 +125,7 @@ function CardAgenda({
                 </button>
               )}
 
-              {ehPessoa && !ehFerias && (
+              {ehPessoa && !ehFerias && !ehExame && (
                 <button style={styles.btnPago} onClick={() => navegarPara('relatorios-pessoas')}>
                   Ver em Pessoas
                 </button>
@@ -126,6 +134,12 @@ function CardAgenda({
               {ehFerias && (
                 <button style={styles.btnPago} onClick={() => navegarPara('ferias')}>
                   Ver em Férias
+                </button>
+              )}
+
+              {ehExame && (
+                <button style={styles.btnPago} onClick={() => navegarPara('relatorios-pessoas')}>
+                  Ver em Pessoas
                 </button>
               )}
             </div>
@@ -144,6 +158,8 @@ export default function AgendaPage({
   loadingFuncionarios = false,
   feriasAgendadas = [],
   loadingFerias = false,
+  examesPeriodicos = [],
+  loadingExames = false,
   formatarValor,
   formatarData,
   dataLocal,
@@ -234,16 +250,58 @@ export default function AgendaPage({
       })
   }, [feriasAgendadas, funcionariosPorId])
 
+  const ultimoExamePorFuncionario = useMemo(() => {
+    return (examesPeriodicos || []).reduce((mapa, exame) => {
+      if (!exame?.funcionario_id || !exame.data_exame || exame.arquivado) return mapa
+
+      const atual = mapa.get(exame.funcionario_id)
+      if (!atual || String(exame.data_exame).localeCompare(String(atual.data_exame || '')) > 0) {
+        mapa.set(exame.funcionario_id, exame)
+      }
+
+      return mapa
+    }, new Map())
+  }, [examesPeriodicos])
+
+  const examesAgenda = useMemo(() => {
+    return (funcionarios || [])
+      .filter((funcionario) => !funcionario.arquivado && funcionario.status === 'ativo')
+      .map((funcionario) => {
+        const ultimoExame = ultimoExamePorFuncionario.get(funcionario.id)
+        const dataBase = ultimoExame?.data_exame || funcionario.data_exame_admissional
+        const dataPrevista = calcularProximoPeriodico(dataBase)
+        if (!dataPrevista) return null
+
+        const dias = diferencaDias(dataPrevista)
+        const cargo = funcionario?.cargo
+
+        return {
+          id: funcionario.id,
+          chave: `pessoa-exame-${funcionario.id}`,
+          tipo: 'pessoa',
+          categoria: 'exame',
+          data: dataPrevista,
+          titulo: funcionario.nome || 'Colaborador',
+          descricaoSecundaria: `${dias < 0 ? 'Exame atrasado' : 'Exame a vencer'}${cargo ? ` • ${cargo}` : ''}`,
+          valor: 0
+        }
+      })
+      .filter(Boolean)
+  }, [diferencaDias, examesPeriodicos, funcionarios, ultimoExamePorFuncionario])
+
   const eventosAgenda = useMemo(() => {
-    return [...contasAgenda, ...notasAgenda, ...aniversariosAgenda, ...feriasAgenda]
+    return [...contasAgenda, ...notasAgenda, ...aniversariosAgenda, ...feriasAgenda, ...examesAgenda]
       .filter((evento) => filtroTipo === 'todas' || evento.tipo === filtroTipo)
       .sort((a, b) => dataLocal(a.data) - dataLocal(b.data))
-  }, [contasAgenda, notasAgenda, aniversariosAgenda, feriasAgenda, filtroTipo, dataLocal])
+  }, [contasAgenda, notasAgenda, aniversariosAgenda, feriasAgenda, examesAgenda, filtroTipo, dataLocal])
 
   const mostrarLoadingPessoas = loadingFuncionarios && (filtroTipo === 'todas' || filtroTipo === 'pessoa')
   const mostrarLoadingFerias = loadingFerias && (filtroTipo === 'todas' || filtroTipo === 'pessoa')
+  const mostrarLoadingExames = loadingExames && (filtroTipo === 'todas' || filtroTipo === 'pessoa')
 
-  const eventosVencidos = eventosAgenda.filter((evento) => evento.tipo !== 'pessoa' && diferencaDias(evento.data) < 0)
+  const eventosVencidos = eventosAgenda.filter((evento) => (
+    (evento.tipo !== 'pessoa' || evento.categoria === 'exame') && diferencaDias(evento.data) < 0
+  ))
   const eventosHoje = eventosAgenda.filter((evento) => diferencaDias(evento.data) === 0)
   const eventosSemana = eventosAgenda.filter((evento) => {
     const dias = diferencaDias(evento.data)
@@ -290,7 +348,7 @@ export default function AgendaPage({
     { chave: 'semana', label: '7 dias', titulo: '🗓️ Próximos 7 dias', lista: eventosSemana, cor: '#0d6efd', style: styles.boxTotal },
     { chave: 'mes', label: 'Mês', titulo: '📆 Restante do mês', lista: eventosMes, cor: '#14b8a6', style: styles.boxPago }
   ]
-  const grupos = filtroTipo === 'pessoa' ? gruposBase.filter((grupo) => grupo.chave !== 'vencidas') : gruposBase
+  const grupos = gruposBase
 
   return (
     <>
@@ -343,6 +401,10 @@ export default function AgendaPage({
         .agenda-event-badge-ferias {
           background: #f0fdfa;
           color: #0f766e;
+        }
+        .agenda-event-badge-exame {
+          background: #fee2e2;
+          color: #991b1b;
         }
         .agenda-show-more {
           margin-top: 10px;
@@ -410,6 +472,10 @@ export default function AgendaPage({
 
       {mostrarLoadingFerias && (
         <div className="agenda-people-loading">Carregando eventos de férias...</div>
+      )}
+
+      {mostrarLoadingExames && (
+        <div className="agenda-people-loading">Carregando eventos de exames...</div>
       )}
 
       <div className="agenda-page-grid">

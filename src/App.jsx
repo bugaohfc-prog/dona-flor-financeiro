@@ -46,6 +46,7 @@ import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiv
 import { listarFiliaisPorEmpresa } from './services/filiaisService'
 import { verificarUsoCentroCusto } from './services/contasService'
 import { listarPeriodosFeriasAgenda } from './services/funcionariosFeriasService'
+import { listarExamesPeriodicosAgenda } from './services/funcionariosExamesPeriodicosService'
 import { clearChunkReloadAttempt } from './utils/chunkRecovery.js'
 import './styles.css'
 import styles from './styles/appStyles.js'
@@ -844,6 +845,8 @@ export default function App() {
 
   const [feriasAgenda, setFeriasAgenda] = useState([])
   const [loadingFeriasAgenda, setLoadingFeriasAgenda] = useState(false)
+  const [examesAgenda, setExamesAgenda] = useState([])
+  const [loadingExamesAgenda, setLoadingExamesAgenda] = useState(false)
 
   useEffect(() => {
     let cancelado = false
@@ -898,6 +901,49 @@ export default function App() {
     }
 
     carregarFeriasAgenda()
+
+    return () => {
+      cancelado = true
+    }
+  }, [empresaId, telaAtual, usuarioLogado?.id, podeAcessarGestaoPessoas])
+
+  useEffect(() => {
+    let cancelado = false
+
+    setExamesAgenda([])
+
+    if (!usuarioLogado?.id || !empresaId || telaAtual !== 'agenda' || !podeAcessarGestaoPessoas()) {
+      setLoadingExamesAgenda(false)
+      return () => {
+        cancelado = true
+      }
+    }
+
+    async function carregarExamesAgenda() {
+      setLoadingExamesAgenda(true)
+
+      try {
+        const { data, error } = await listarExamesPeriodicosAgenda({
+          supabase,
+          empresaId
+        })
+
+        if (cancelado) return
+
+        if (error) {
+          setExamesAgenda([])
+          return
+        }
+
+        setExamesAgenda(data || [])
+      } catch {
+        if (!cancelado) setExamesAgenda([])
+      } finally {
+        if (!cancelado) setLoadingExamesAgenda(false)
+      }
+    }
+
+    carregarExamesAgenda()
 
     return () => {
       cancelado = true
@@ -4702,6 +4748,8 @@ export default function App() {
           loadingFuncionarios={loadingFuncionariosAgenda}
           feriasAgendadas={feriasAgenda}
           loadingFerias={loadingFeriasAgenda}
+          examesPeriodicos={examesAgenda}
+          loadingExames={loadingExamesAgenda}
           formatarValor={formatarValor}
           formatarData={formatarData}
           dataLocal={dataLocal}

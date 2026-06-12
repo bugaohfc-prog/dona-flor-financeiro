@@ -406,6 +406,7 @@ export default function AgendaPage({
     : filtroTipo === 'conta'
       ? 'Vencidas'
       : 'Vencidas/Atrasadas'
+  const tituloGrupoVencidos = filtroTipo === 'conta' ? '🚨 Vencidas' : '🚨 Vencidas / atrasadas'
 
   const filtrosTipo = [
     { valor: 'todas', label: 'Todas' },
@@ -415,7 +416,7 @@ export default function AgendaPage({
   ]
 
   const gruposBase = [
-    { chave: 'vencidas', label: tituloVencidos, titulo: '🚨 Vencidas / atrasadas', lista: eventosVencidos, cor: '#dc3545', style: styles.boxVencido },
+    { chave: 'vencidas', label: tituloVencidos, titulo: tituloGrupoVencidos, lista: eventosVencidos, cor: '#dc3545', style: styles.boxVencido },
     { chave: 'hoje', label: 'Hoje', titulo: '📌 Hoje', lista: eventosHoje, cor: '#ffc107', style: styles.boxPendente },
     { chave: 'semana', label: '7 dias', titulo: '🗓️ Próximos 7 dias', lista: eventosSemana, cor: '#0d6efd', style: styles.boxTotal },
     { chave: 'mes', label: 'Mês', titulo: '📆 Restante do mês', lista: eventosMes, cor: '#14b8a6', style: styles.boxPago }

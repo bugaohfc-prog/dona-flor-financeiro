@@ -26,29 +26,32 @@ const ACCOUNT_ACTIONS_STYLE = {
 }
 
 const ACCOUNT_PRIMARY_ACTION_STYLE = {
-  minHeight: 32,
-  minWidth: 68,
+  minHeight: 30,
+  minWidth: 64,
   padding: '6px 10px',
   borderRadius: 999,
-  fontSize: 12
+  fontSize: 12,
+  boxShadow: 'none'
 }
 
 const ACCOUNT_SECONDARY_ACTION_STYLE = {
-  minHeight: 30,
+  minHeight: 28,
   minWidth: 0,
-  padding: '5px 9px',
+  padding: '5px 8px',
   borderRadius: 999,
   fontSize: 12,
   background: '#ffffff',
   color: '#475569',
-  border: '1px solid #cbd5e1'
+  border: '1px solid #cbd5e1',
+  boxShadow: 'none'
 }
 
 const ACCOUNT_DANGER_ACTION_STYLE = {
   ...ACCOUNT_SECONDARY_ACTION_STYLE,
   color: '#991b1b',
   border: '1px solid #fecaca',
-  background: '#fffafa'
+  background: '#fffafa',
+  opacity: 0.78
 }
 
 function obterTimestampVencimento(conta, fallback) {
@@ -674,6 +677,11 @@ export default function ContasPage({
           }
           .account-actions {
             gap: 5px !important;
+          }
+          .account-actions button {
+            min-height: 28px !important;
+            padding: 4px 8px !important;
+            font-size: 11px !important;
           }
         }
       `}</style>

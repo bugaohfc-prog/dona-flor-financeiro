@@ -188,7 +188,7 @@ export default function NotasPage({
         .notes-card-actions button {
           width: auto !important;
           min-width: 0 !important;
-          min-height: 32px !important;
+          min-height: 30px !important;
           padding: 6px 10px !important;
           border-radius: 999px !important;
           font-size: 12px !important;
@@ -197,10 +197,15 @@ export default function NotasPage({
         }
         .notes-card-actions .note-action-secondary,
         .notes-card-actions .note-action-danger {
-          opacity: 0.74;
+          opacity: 0.78;
+        }
+        .notes-card-actions .note-action-secondary {
+          background: #ffffff !important;
+          color: #475569 !important;
+          border: 1px solid #cbd5e1 !important;
         }
         .notes-card-actions .note-action-danger {
-          background: #fff7f7 !important;
+          background: #fffafa !important;
           color: #991b1b !important;
           border: 1px solid #fecaca !important;
         }

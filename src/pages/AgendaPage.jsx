@@ -152,37 +152,37 @@ function CardAgenda({
               {!ehNota && !ehPessoa && <strong>{formatarValor(evento.valor)}</strong>}
 
               {!ehNota && !ehPessoa && podeEditarFinanceiro && (
-                <button className="agenda-event-action" style={styles.btnPago} onClick={() => navegarParaOrigemAgenda('conta', evento.id)}>
+                <button className="agenda-event-action agenda-event-action-context" style={styles.btnPago} onClick={() => navegarParaOrigemAgenda('conta', evento.id)}>
                   Ver em Contas
                 </button>
               )}
 
               {ehNota && (
-                <button className="agenda-event-action" style={styles.btnPago} onClick={() => navegarParaOrigemAgenda('nota', evento.id)}>
+                <button className="agenda-event-action agenda-event-action-context" style={styles.btnPago} onClick={() => navegarParaOrigemAgenda('nota', evento.id)}>
                   Ver em Notas
                 </button>
               )}
 
               {ehPessoa && !ehFerias && !ehExame && !ehFolha && (
-                <button className="agenda-event-action agenda-event-action-rh" style={styles.btnPago} onClick={() => navegarPara('relatorios-pessoas')}>
+                <button className="agenda-event-action agenda-event-action-context agenda-event-action-rh" style={styles.btnPago} onClick={() => navegarPara('relatorios-pessoas')}>
                   Ver em Pessoas
                 </button>
               )}
 
               {ehFerias && (
-                <button className="agenda-event-action agenda-event-action-rh" style={styles.btnPago} onClick={() => navegarPara('ferias')}>
+                <button className="agenda-event-action agenda-event-action-context agenda-event-action-rh" style={styles.btnPago} onClick={() => navegarPara('ferias')}>
                   Ver em Férias
                 </button>
               )}
 
               {ehExame && (
-                <button className="agenda-event-action agenda-event-action-rh" style={styles.btnPago} onClick={() => navegarPara('relatorios-pessoas')}>
+                <button className="agenda-event-action agenda-event-action-context agenda-event-action-rh" style={styles.btnPago} onClick={() => navegarPara('relatorios-pessoas')}>
                   Ver em Pessoas
                 </button>
               )}
 
               {ehFolha && (
-                <button className="agenda-event-action agenda-event-action-rh" style={styles.btnPago} onClick={() => navegarPara('fechamento-folha')}>
+                <button className="agenda-event-action agenda-event-action-context agenda-event-action-rh" style={styles.btnPago} onClick={() => navegarPara('fechamento-folha')}>
                   Ver folha
                 </button>
               )}
@@ -512,6 +512,24 @@ export default function AgendaPage({
           color: #5b21b6;
           border-color: #ddd6fe;
         }
+        .agenda-event-action-context {
+          min-height: 30px !important;
+          min-width: 0 !important;
+          padding: 6px 10px !important;
+          border-radius: 999px !important;
+          border: 1px solid #cbd5e1 !important;
+          background: #ffffff !important;
+          color: #334155 !important;
+          box-shadow: none !important;
+          font-size: 12px !important;
+          font-weight: 800 !important;
+          line-height: 1.1 !important;
+          white-space: nowrap;
+        }
+        .agenda-event-action-context:hover {
+          border-color: #0f766e !important;
+          color: #0f766e !important;
+        }
         .agenda-event-action-rh {
           min-height: 30px !important;
           padding: 6px 10px !important;
@@ -554,6 +572,11 @@ export default function AgendaPage({
           .agenda-event-action-rh {
             min-height: 28px !important;
             padding: 5px 8px !important;
+          }
+          .agenda-event-action-context {
+            min-height: 28px !important;
+            padding: 5px 8px !important;
+            font-size: 11px !important;
           }
         }
       `}</style>

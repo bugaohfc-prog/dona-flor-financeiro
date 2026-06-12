@@ -256,8 +256,8 @@ export default function DashboardHome({
         .dashboard-note-actions button {
           width: auto !important;
           min-width: 0 !important;
-          min-height: 31px !important;
-          padding: 5px 10px !important;
+          min-height: 30px !important;
+          padding: 6px 10px !important;
           border-radius: 999px !important;
           font-size: 12px !important;
           font-weight: 800 !important;
@@ -265,10 +265,15 @@ export default function DashboardHome({
         }
         .dashboard-note-actions .dashboard-note-secondary,
         .dashboard-note-actions .dashboard-note-danger {
-          opacity: 0.76;
+          opacity: 0.78;
+        }
+        .dashboard-note-actions .dashboard-note-secondary {
+          background: #ffffff !important;
+          color: #475569 !important;
+          border: 1px solid #cbd5e1 !important;
         }
         .dashboard-note-actions .dashboard-note-danger {
-          background: #fff7f7 !important;
+          background: #fffafa !important;
           color: #991b1b !important;
           border: 1px solid #fecaca !important;
         }

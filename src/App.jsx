@@ -47,6 +47,7 @@ import { listarFiliaisPorEmpresa } from './services/filiaisService'
 import { verificarUsoCentroCusto } from './services/contasService'
 import { listarPeriodosFeriasAgenda } from './services/funcionariosFeriasService'
 import { listarExamesPeriodicosAgenda } from './services/funcionariosExamesPeriodicosService'
+import { listarCompetenciasFolhaAgenda } from './services/folhaService'
 import { clearChunkReloadAttempt } from './utils/chunkRecovery.js'
 import './styles.css'
 import styles from './styles/appStyles.js'
@@ -847,6 +848,8 @@ export default function App() {
   const [loadingFeriasAgenda, setLoadingFeriasAgenda] = useState(false)
   const [examesAgenda, setExamesAgenda] = useState([])
   const [loadingExamesAgenda, setLoadingExamesAgenda] = useState(false)
+  const [folhaAgenda, setFolhaAgenda] = useState([])
+  const [loadingFolhaAgenda, setLoadingFolhaAgenda] = useState(false)
 
   useEffect(() => {
     let cancelado = false
@@ -944,6 +947,49 @@ export default function App() {
     }
 
     carregarExamesAgenda()
+
+    return () => {
+      cancelado = true
+    }
+  }, [empresaId, telaAtual, usuarioLogado?.id, podeAcessarGestaoPessoas])
+
+  useEffect(() => {
+    let cancelado = false
+
+    setFolhaAgenda([])
+
+    if (!usuarioLogado?.id || !empresaId || telaAtual !== 'agenda' || !podeAcessarGestaoPessoas()) {
+      setLoadingFolhaAgenda(false)
+      return () => {
+        cancelado = true
+      }
+    }
+
+    async function carregarFolhaAgenda() {
+      setLoadingFolhaAgenda(true)
+
+      try {
+        const { data, error } = await listarCompetenciasFolhaAgenda({
+          supabase,
+          empresaId
+        })
+
+        if (cancelado) return
+
+        if (error) {
+          setFolhaAgenda([])
+          return
+        }
+
+        setFolhaAgenda(data || [])
+      } catch {
+        if (!cancelado) setFolhaAgenda([])
+      } finally {
+        if (!cancelado) setLoadingFolhaAgenda(false)
+      }
+    }
+
+    carregarFolhaAgenda()
 
     return () => {
       cancelado = true
@@ -4750,6 +4796,8 @@ export default function App() {
           loadingFerias={loadingFeriasAgenda}
           examesPeriodicos={examesAgenda}
           loadingExames={loadingExamesAgenda}
+          competenciasFolha={folhaAgenda}
+          loadingFolha={loadingFolhaAgenda}
           formatarValor={formatarValor}
           formatarData={formatarData}
           dataLocal={dataLocal}

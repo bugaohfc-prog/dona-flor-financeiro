@@ -48,6 +48,16 @@ const LANCAMENTO_SELECT = [
   'atualizado_em'
 ].join(', ')
 
+const COMPETENCIA_AGENDA_SELECT = [
+  'id',
+  'empresa_id',
+  'competencia',
+  'status',
+  'arquivado',
+  'criado_em',
+  'atualizado_em'
+].join(', ')
+
 const LANCAMENTO_ITEM_SELECT = [
   'id',
   'empresa_id',
@@ -736,6 +746,16 @@ export async function listarCompetenciasFolha({ supabase, empresaId, incluirArqu
   }
 
   return query
+}
+
+export async function listarCompetenciasFolhaAgenda({ supabase, empresaId }) {
+  const empresa = validarEmpresaId(empresaId)
+
+  return selecionarPorEmpresa(supabase, TABELA_FOLHA_COMPETENCIAS, empresa, COMPETENCIA_AGENDA_SELECT)
+    .eq('arquivado', false)
+    .in('status', ['aberta', 'em_conferencia', 'pendente'])
+    .order('competencia', { ascending: false })
+    .order('criado_em', { ascending: false })
 }
 
 export async function criarCompetenciaFolha({ supabase, empresaId, dados }) {

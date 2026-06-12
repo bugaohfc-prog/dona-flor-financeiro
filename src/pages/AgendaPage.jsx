@@ -40,6 +40,32 @@ function obterAniversarioAtual(dataNascimento) {
   return formatarISO(aniversario)
 }
 
+function obterUltimoDiaCompetencia(competencia) {
+  const texto = String(competencia || '').trim()
+  const match = texto.match(/^(\d{4})-(\d{2})/)
+  if (!match) return null
+
+  const ano = Number(match[1])
+  const mes = Number(match[2])
+  if (!ano || !mes || mes < 1 || mes > 12) return null
+
+  return formatarISO(new Date(ano, mes, 0))
+}
+
+function formatarCompetencia(competencia) {
+  const texto = String(competencia || '').trim()
+  const match = texto.match(/^(\d{4})-(\d{2})/)
+  if (!match) return texto || 'Competencia'
+
+  return `${match[2]}/${match[1]}`
+}
+
+function formatarStatusFolha(status) {
+  if (status === 'em_conferencia') return 'Folha em conferência'
+  if (status === 'pendente') return 'Folha pendente'
+  return 'Folha em aberto'
+}
+
 function CardAgenda({
   styles,
   titulo,
@@ -70,7 +96,8 @@ function CardAgenda({
         const ehPessoa = evento.tipo === 'pessoa'
         const ehFerias = evento.categoria === 'ferias'
         const ehExame = evento.categoria === 'exame'
-        const ehRh = ehPessoa || ehFerias || ehExame
+        const ehFolha = evento.categoria === 'folha'
+        const ehRh = ehPessoa || ehFerias || ehExame || ehFolha
 
         return (
           <div
@@ -82,7 +109,7 @@ function CardAgenda({
               <div className="agenda-event-title">
                 <strong>{evento.titulo}</strong>
                 <span className={`agenda-event-badge agenda-event-badge-${evento.categoria || evento.tipo}`}>
-                  {ehExame ? 'Exame' : ehFerias ? 'Férias' : ehPessoa ? 'Aniversário' : ehNota ? 'Nota' : 'Conta'}
+                  {ehFolha ? 'Folha' : ehExame ? 'Exame' : ehFerias ? 'Férias' : ehPessoa ? 'Aniversário' : ehNota ? 'Nota' : 'Conta'}
                 </span>
               </div>
 
@@ -99,6 +126,12 @@ function CardAgenda({
                     : dias === 0
                       ? 'Exame previsto para hoje'
                       : `Exame a vencer em ${dias} dia(s)`
+                  : ehFolha
+                  ? dias < 0
+                    ? `Prazo gerencial vencido há ${Math.abs(dias)} dia(s)`
+                    : dias === 0
+                      ? 'Prazo gerencial para hoje'
+                      : `Prazo gerencial em ${dias} dia(s)`
                   : ehFerias
                   ? dias === 0
                     ? 'Férias começam hoje'
@@ -130,7 +163,7 @@ function CardAgenda({
                 </button>
               )}
 
-              {ehPessoa && !ehFerias && !ehExame && (
+              {ehPessoa && !ehFerias && !ehExame && !ehFolha && (
                 <button className="agenda-event-action agenda-event-action-rh" style={styles.btnPago} onClick={() => navegarPara('relatorios-pessoas')}>
                   Ver em Pessoas
                 </button>
@@ -145,6 +178,12 @@ function CardAgenda({
               {ehExame && (
                 <button className="agenda-event-action agenda-event-action-rh" style={styles.btnPago} onClick={() => navegarPara('relatorios-pessoas')}>
                   Ver em Pessoas
+                </button>
+              )}
+
+              {ehFolha && (
+                <button className="agenda-event-action agenda-event-action-rh" style={styles.btnPago} onClick={() => navegarPara('fechamento-folha')}>
+                  Ver folha
                 </button>
               )}
             </div>
@@ -165,6 +204,8 @@ export default function AgendaPage({
   loadingFerias = false,
   examesPeriodicos = [],
   loadingExames = false,
+  competenciasFolha = [],
+  loadingFolha = false,
   formatarValor,
   formatarData,
   dataLocal,
@@ -294,18 +335,42 @@ export default function AgendaPage({
       .filter(Boolean)
   }, [diferencaDias, examesPeriodicos, funcionarios, ultimoExamePorFuncionario])
 
+  const folhaAgenda = useMemo(() => {
+    const statusPermitidos = new Set(['aberta', 'em_conferencia', 'pendente'])
+
+    return (competenciasFolha || [])
+      .filter((competencia) => competencia?.competencia && !competencia.arquivado && statusPermitidos.has(competencia.status))
+      .map((competencia) => {
+        const dataPrazo = obterUltimoDiaCompetencia(competencia.competencia)
+        if (!dataPrazo) return null
+
+        return {
+          id: competencia.id,
+          chave: `pessoa-folha-${competencia.id}`,
+          tipo: 'pessoa',
+          categoria: 'folha',
+          data: dataPrazo,
+          titulo: formatarStatusFolha(competencia.status),
+          descricaoSecundaria: `Competência ${formatarCompetencia(competencia.competencia)}`,
+          valor: 0
+        }
+      })
+      .filter(Boolean)
+  }, [competenciasFolha])
+
   const eventosAgenda = useMemo(() => {
-    return [...contasAgenda, ...notasAgenda, ...aniversariosAgenda, ...feriasAgenda, ...examesAgenda]
+    return [...contasAgenda, ...notasAgenda, ...aniversariosAgenda, ...feriasAgenda, ...examesAgenda, ...folhaAgenda]
       .filter((evento) => filtroTipo === 'todas' || evento.tipo === filtroTipo)
       .sort((a, b) => dataLocal(a.data) - dataLocal(b.data))
-  }, [contasAgenda, notasAgenda, aniversariosAgenda, feriasAgenda, examesAgenda, filtroTipo, dataLocal])
+  }, [contasAgenda, notasAgenda, aniversariosAgenda, feriasAgenda, examesAgenda, folhaAgenda, filtroTipo, dataLocal])
 
   const mostrarLoadingPessoas = loadingFuncionarios && (filtroTipo === 'todas' || filtroTipo === 'pessoa')
   const mostrarLoadingFerias = loadingFerias && (filtroTipo === 'todas' || filtroTipo === 'pessoa')
   const mostrarLoadingExames = loadingExames && (filtroTipo === 'todas' || filtroTipo === 'pessoa')
+  const mostrarLoadingFolha = loadingFolha && (filtroTipo === 'todas' || filtroTipo === 'pessoa')
 
   const eventosVencidos = eventosAgenda.filter((evento) => (
-    (evento.tipo !== 'pessoa' || evento.categoria === 'exame') && diferencaDias(evento.data) < 0
+    (evento.tipo !== 'pessoa' || evento.categoria === 'exame' || evento.categoria === 'folha') && diferencaDias(evento.data) < 0
   ))
   const eventosHoje = eventosAgenda.filter((evento) => diferencaDias(evento.data) === 0)
   const eventosSemana = eventosAgenda.filter((evento) => {
@@ -442,6 +507,11 @@ export default function AgendaPage({
           color: #991b1b;
           border-color: #fecaca;
         }
+        .agenda-event-badge-folha {
+          background: #ede9fe;
+          color: #5b21b6;
+          border-color: #ddd6fe;
+        }
         .agenda-event-action-rh {
           min-height: 30px !important;
           padding: 6px 10px !important;
@@ -527,6 +597,10 @@ export default function AgendaPage({
 
       {mostrarLoadingExames && (
         <div className="agenda-people-loading">Carregando eventos de exames...</div>
+      )}
+
+      {mostrarLoadingFolha && (
+        <div className="agenda-people-loading">Carregando eventos de folha...</div>
       )}
 
       <div className="agenda-page-grid">

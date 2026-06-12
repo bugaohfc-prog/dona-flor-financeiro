@@ -834,10 +834,11 @@ export default function App() {
   }, [temPermissao])
 
   const {
-    funcionarios: funcionariosAgenda
+    funcionarios: funcionariosAgenda,
+    loading: loadingFuncionariosAgenda
   } = useFuncionarios({
     empresaId,
-    autoCarregar: Boolean(usuarioLogado?.id && empresaId && podeAcessarGestaoPessoas())
+    autoCarregar: Boolean(usuarioLogado?.id && empresaId && telaAtual === 'agenda' && podeAcessarGestaoPessoas())
   })
 
   const bloquearAcaoSemPermissao = useCallback(() => {
@@ -4635,6 +4636,7 @@ export default function App() {
           contas={contas}
           notas={notas}
           funcionarios={funcionariosAgenda}
+          loadingFuncionarios={loadingFuncionariosAgenda}
           formatarValor={formatarValor}
           formatarData={formatarData}
           dataLocal={dataLocal}

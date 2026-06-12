@@ -128,6 +128,7 @@ export default function AgendaPage({
   contas = [],
   notas = [],
   funcionarios = [],
+  loadingFuncionarios = false,
   formatarValor,
   formatarData,
   dataLocal,
@@ -140,8 +141,8 @@ export default function AgendaPage({
   const [filtroTipo, setFiltroTipo] = useState('todas')
   const [mostrarMesCompleto, setMostrarMesCompleto] = useState(false)
 
-  const eventosAgenda = useMemo(() => {
-    const contasAgenda = contas
+  const contasAgenda = useMemo(() => {
+    return contas
       .filter((conta) => conta.status !== 'pago')
       .map((conta) => ({
         ...conta,
@@ -152,8 +153,10 @@ export default function AgendaPage({
         descricaoSecundaria: conta.df_centros_custo?.nome || 'Sem centro',
         valor: Number(conta.valor || 0)
       }))
+  }, [contas])
 
-    const notasAgenda = notas
+  const notasAgenda = useMemo(() => {
+    return notas
       .filter((nota) => !nota.concluida && nota.data_evento)
       .map((nota) => ({
         ...nota,
@@ -164,8 +167,10 @@ export default function AgendaPage({
         descricaoSecundaria: `Notas e pendências${nota.prioridade ? ` • ${nota.prioridade}` : ''}`,
         valor: 0
       }))
+  }, [notas])
 
-    const aniversariosAgenda = funcionarios
+  const aniversariosAgenda = useMemo(() => {
+    return funcionarios
       .filter((funcionario) => !funcionario.arquivado && funcionario.status === 'ativo')
       .map((funcionario) => {
         const dataAniversario = obterAniversarioAtual(funcionario.data_nascimento)
@@ -182,11 +187,15 @@ export default function AgendaPage({
         }
       })
       .filter(Boolean)
+  }, [funcionarios])
 
+  const eventosAgenda = useMemo(() => {
     return [...contasAgenda, ...notasAgenda, ...aniversariosAgenda]
       .filter((evento) => filtroTipo === 'todas' || evento.tipo === filtroTipo)
       .sort((a, b) => dataLocal(a.data) - dataLocal(b.data))
-  }, [contas, notas, funcionarios, filtroTipo, dataLocal])
+  }, [contasAgenda, notasAgenda, aniversariosAgenda, filtroTipo, dataLocal])
+
+  const mostrarLoadingPessoas = loadingFuncionarios && (filtroTipo === 'todas' || filtroTipo === 'pessoa')
 
   const eventosVencidos = eventosAgenda.filter((evento) => evento.tipo !== 'pessoa' && diferencaDias(evento.data) < 0)
   const eventosHoje = eventosAgenda.filter((evento) => diferencaDias(evento.data) === 0)
@@ -295,6 +304,16 @@ export default function AgendaPage({
           padding: 8px 12px;
           cursor: pointer;
         }
+        .agenda-people-loading {
+          border: 1px solid #dbe3ef;
+          border-radius: 12px;
+          background: #f8fafc;
+          color: #475569;
+          font-size: 13px;
+          font-weight: 700;
+          padding: 9px 12px;
+          margin: 0 0 12px;
+        }
         @media (max-width: 640px) {
           .agenda-type-tabs {
             display: grid;
@@ -334,6 +353,10 @@ export default function AgendaPage({
           </div>
         ))}
       </section>
+
+      {mostrarLoadingPessoas && (
+        <div className="agenda-people-loading">Carregando eventos de pessoas...</div>
+      )}
 
       <div className="agenda-page-grid">
         {grupos.map((grupo) => {

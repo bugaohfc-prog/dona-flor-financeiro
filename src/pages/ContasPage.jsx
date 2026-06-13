@@ -158,53 +158,6 @@ function calcularResumoResultadoFiltrado(contas) {
   })
 }
 
-const CONTAS_EXPANDABLE_HEADER_STYLE = {
-  width: '100%',
-  boxSizing: 'border-box',
-  background: '#fff',
-  border: '1px solid #e5e5e5',
-  borderRadius: 14,
-  padding: '12px 14px',
-  margin: '12px 0',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: 16,
-  textAlign: 'left',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-}
-
-const CONTAS_EXPANDABLE_TITLE_STYLE = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 10,
-  flex: '1 1 auto',
-  minWidth: 0,
-  color: '#0f172a',
-  fontSize: 20,
-  fontWeight: 900,
-  lineHeight: 1.1
-}
-
-const CONTAS_EXPANDABLE_BUTTON_STYLE = {
-  flex: '0 0 auto',
-  marginLeft: 'auto',
-  border: '1px solid rgba(15, 23, 42, 0.12)',
-  borderRadius: 999,
-  width: 32,
-  height: 32,
-  padding: 0,
-  background: '#f8fafc',
-  color: '#0f172a',
-  fontSize: 16,
-  fontWeight: 900,
-  lineHeight: 1,
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  cursor: 'pointer'
-}
-
 function EmptyState({ icon, title, description, actionLabel, onAction }) {
   return (
     <div className="empty-state-card">
@@ -279,7 +232,7 @@ export default function ContasPage({
   function renderListaContasConteudo() {
     return (
       <>
-      <section className="no-print filters-desktop" style={styles.filtrosBox}>
+      <section className="no-print filters-desktop accounts-control-panel" style={styles.filtrosBox}>
         <input
           className="accounts-search-input"
           style={styles.input}
@@ -360,7 +313,7 @@ export default function ContasPage({
         )}
       </section>
 
-      <section className="result-summary" style={styles.resumoFiltro}>
+      <section className="result-summary accounts-result-summary" style={styles.resumoFiltro}>
         <strong>Resultado filtrado</strong>
         <span>
           Contas: {contasFiltradas.length} • Previsto: {formatarValor(resumoResultadoFiltrado.previsto)} • Realizado: {formatarValor(resumoResultadoFiltrado.realizado)}
@@ -378,20 +331,21 @@ export default function ContasPage({
       <section className="content-block accounts-list-section" style={styles.bloco}>
         {loading && <AccountListSkeleton items={3} />}
 
-        <div style={CONTAS_EXPANDABLE_HEADER_STYLE}>
-          <span style={CONTAS_EXPANDABLE_TITLE_STYLE}>
-            <span style={{ fontSize: 24, lineHeight: 1 }}>💰</span>
-            <span>Contas</span>
-          </span>
+        <div className="accounts-list-header">
+          <div className="accounts-list-title">
+            <span className="accounts-kicker">Lista financeira</span>
+            <strong>Contas</strong>
+            <small>{contasOrdenadas.length} conta(s) na visualização atual</small>
+          </div>
           <button
             type="button"
-            style={CONTAS_EXPANDABLE_BUTTON_STYLE}
+            className="accounts-collapse-button"
             onClick={() => setMostrarContas(!mostrarContas)}
             aria-expanded={mostrarContas}
             aria-label={mostrarContas ? 'Recolher seção de contas' : 'Expandir seção de contas'}
             title={mostrarContas ? 'Recolher' : 'Expandir'}
           >
-            {mostrarContas ? '⌃' : '⌄'}
+            {mostrarContas ? '\u2212' : '+'}
           </button>
         </div>
 
@@ -519,231 +473,6 @@ export default function ContasPage({
 
   return (
     <>
-      <style>{`
-        .filters-desktop {
-          grid-template-columns: minmax(220px, 1fr) auto !important;
-          align-items: start !important;
-        }
-        .filters-desktop .accounts-search-input {
-          width: 100% !important;
-          min-width: 0;
-          order: 1;
-        }
-        .accounts-filter-actions {
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 8px;
-          flex-wrap: wrap;
-          order: 2;
-        }
-        .filters-desktop .accounts-clear-button {
-          width: auto !important;
-          min-width: 0 !important;
-          max-width: max-content !important;
-          height: 42px !important;
-          min-height: 36px !important;
-          padding: 0 12px !important;
-          border-radius: 999px !important;
-          white-space: nowrap;
-        }
-        .accounts-export-actions {
-          display: flex;
-          align-items: center;
-          justify-content: flex-end;
-          gap: 6px;
-          width: auto !important;
-          margin: 0 !important;
-          position: relative;
-        }
-        .accounts-export-toggle {
-          min-height: 36px;
-          border: 1px solid #99f6e4;
-          border-radius: 999px;
-          background: #f0fdfa;
-          color: #0f766e;
-          cursor: pointer;
-          font-size: 13px;
-          font-weight: 850;
-          padding: 7px 12px;
-          white-space: nowrap;
-        }
-        .accounts-export-menu {
-          position: absolute;
-          top: calc(100% + 6px);
-          right: 0;
-          z-index: 20;
-          display: flex;
-          gap: 5px;
-          padding: 6px;
-          border: 1px solid #dbe3ef;
-          border-radius: 14px;
-          background: #ffffff;
-          box-shadow: 0 14px 30px rgba(15, 23, 42, 0.14);
-        }
-        .accounts-export-menu button {
-          min-height: 30px;
-          border: 1px solid #dbe3ef;
-          border-radius: 999px;
-          background: #ffffff;
-          color: #334155;
-          cursor: pointer;
-          font-size: 12px;
-          font-weight: 800;
-          padding: 5px 9px;
-          white-space: nowrap;
-        }
-        .accounts-status-tabs {
-          grid-column: 1 / -1;
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 6px;
-          width: 100%;
-          order: 3;
-        }
-        .accounts-status-tab {
-          min-height: 38px;
-          border: 1px solid #dbe4ef;
-          border-radius: 999px;
-          background: #ffffff;
-          color: #475569;
-          font-weight: 800;
-          cursor: pointer;
-          padding: 7px 10px;
-        }
-        .accounts-status-tab.is-active {
-          border-color: #0f766e;
-          background: #0f766e;
-          color: #ffffff;
-          box-shadow: 0 6px 16px rgba(15, 118, 110, 0.18);
-        }
-        .accounts-sort-control-main {
-          grid-column: 1 / -1;
-          max-width: 320px;
-          order: 4;
-        }
-        .account-card-agenda-focus {
-          outline: 3px solid #0f766e;
-          box-shadow: 0 0 0 6px rgba(15, 118, 110, 0.14), 0 10px 28px rgba(15, 23, 42, 0.16) !important;
-        }
-        .filters-desktop .advanced-filters {
-          grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-          order: 5;
-        }
-        .accounts-page-header .page-actions-row button {
-          width: auto !important;
-          min-width: 0 !important;
-          max-width: max-content !important;
-          padding: 8px 12px !important;
-          border-radius: 999px !important;
-          white-space: nowrap;
-        }
-        @media (max-width: 640px) {
-          .filters-desktop {
-            grid-template-columns: 1fr !important;
-            gap: 8px !important;
-            padding: 10px !important;
-          }
-          .filters-desktop .accounts-search-input {
-            order: 1;
-            height: 40px !important;
-          }
-          .accounts-status-tabs {
-            order: 2;
-            gap: 5px;
-          }
-          .accounts-filter-actions {
-            order: 3;
-            width: 100%;
-            justify-content: flex-start;
-            gap: 6px;
-          }
-          .accounts-filter-actions .filter-toggle-button {
-            flex: 0 0 auto;
-            height: 36px !important;
-            min-height: 34px !important;
-            padding: 0 12px !important;
-          }
-          .filters-desktop .accounts-clear-button {
-            flex: 0 0 auto;
-            height: 36px !important;
-            min-height: 34px !important;
-            padding: 0 11px !important;
-          }
-          .accounts-export-actions {
-            order: 4;
-            flex: 1 1 100%;
-            justify-content: flex-start;
-            gap: 5px;
-          }
-          .accounts-export-toggle {
-            min-height: 32px !important;
-            padding: 6px 10px !important;
-            font-size: 12px !important;
-            box-shadow: none !important;
-          }
-          .accounts-export-menu {
-            left: 0;
-            right: auto;
-          }
-          .accounts-status-tabs {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-          .accounts-status-tab {
-            min-height: 34px;
-            padding: 6px 8px;
-            font-size: 13px;
-          }
-          .accounts-sort-control-main {
-            order: 5;
-            max-width: none;
-            width: 100%;
-          }
-          .accounts-sort-control-main select {
-            height: 38px !important;
-          }
-          .filters-desktop .advanced-filters {
-            order: 6;
-            grid-template-columns: 1fr !important;
-            gap: 8px !important;
-          }
-          .accounts-page-header {
-            align-items: flex-start !important;
-            gap: 8px !important;
-            margin-bottom: 10px !important;
-          }
-          .accounts-page-header h1 {
-            margin-bottom: 2px !important;
-          }
-          .accounts-page-header p {
-            display: none;
-          }
-          .accounts-page-header .page-actions-row {
-            width: auto !important;
-            align-self: flex-start;
-          }
-          .accounts-page-header .page-actions-row button {
-            min-height: 32px !important;
-            padding: 6px 10px !important;
-            font-size: 12px !important;
-          }
-          .result-summary {
-            margin-top: 8px !important;
-            padding: 10px !important;
-          }
-          .account-actions {
-            gap: 5px !important;
-          }
-          .account-actions button {
-            min-height: 28px !important;
-            padding: 4px 8px !important;
-            font-size: 11px !important;
-          }
-          .accounts-list-section {
-            padding-bottom: max(112px, calc(88px + env(safe-area-inset-bottom))) !important;
-          }
-        }
-      `}</style>
       <div className="page-title-actions accounts-page-header">
         <div>
           <h1 style={styles.titulo}>💳 Contas</h1>

@@ -121,149 +121,7 @@ export default function NotasPage({
 
   return (
     <>
-      <style>{`
-        .notes-status-tabs {
-          grid-column: 1 / -1;
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 6px;
-          width: 100%;
-          padding: 6px;
-          border: 1px solid #dbe4ef;
-          border-radius: 14px;
-          background: #f8fafc;
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
-        }
-        .notes-toolbar {
-          gap: 10px;
-        }
-        .notes-status-tab {
-          min-height: 34px;
-          border: 1px solid transparent;
-          border-radius: 10px;
-          background: #ffffff;
-          color: #475569;
-          font-weight: 800;
-          cursor: pointer;
-          padding: 7px 10px;
-        }
-        .notes-status-tab.is-active {
-          border-color: #0f766e;
-          background: #0f766e;
-          color: #ffffff;
-          box-shadow: 0 4px 12px rgba(15, 118, 110, 0.14);
-        }
-        .notes-page-title {
-          align-items: flex-start;
-        }
-        .notes-page-title .page-actions-row button {
-          width: auto !important;
-          min-width: 0 !important;
-          max-width: max-content !important;
-          padding: 8px 12px !important;
-          border-radius: 999px !important;
-          white-space: nowrap;
-        }
-        .note-card-completed-muted {
-          background: #f8fafc !important;
-          border-color: #e5e7eb !important;
-          border-left-color: #94a3b8 !important;
-          box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06) !important;
-        }
-        .note-card-completed-muted::before {
-          background: #94a3b8 !important;
-        }
-        .note-card-agenda-focus {
-          outline: 3px solid #0f766e;
-          box-shadow: 0 0 0 6px rgba(15, 118, 110, 0.14), 0 10px 28px rgba(15, 23, 42, 0.16) !important;
-        }
-        .notes-card-actions {
-          display: flex;
-          align-items: center;
-          justify-content: flex-start;
-          gap: 6px;
-          flex-wrap: wrap;
-          margin-top: 8px;
-        }
-        .notes-card-actions button {
-          width: auto !important;
-          min-width: 0 !important;
-          min-height: 30px !important;
-          padding: 6px 10px !important;
-          border-radius: 999px !important;
-          font-size: 12px !important;
-          font-weight: 800 !important;
-          box-shadow: none !important;
-        }
-        .notes-card-actions .note-action-secondary,
-        .notes-card-actions .note-action-danger {
-          opacity: 0.78;
-        }
-        .notes-card-actions .note-action-secondary {
-          background: #ffffff !important;
-          color: #475569 !important;
-          border: 1px solid #cbd5e1 !important;
-        }
-        .notes-card-actions .note-action-danger {
-          background: #fffafa !important;
-          color: #991b1b !important;
-          border: 1px solid #fecaca !important;
-        }
-        @media (max-width: 640px) {
-          .notes-page-title {
-            gap: 8px !important;
-            margin-bottom: 10px !important;
-          }
-          .notes-page-title p {
-            display: none;
-          }
-          .notes-page-title .page-actions-row {
-            width: auto !important;
-            align-self: flex-start;
-          }
-          .notes-page-title .page-actions-row button {
-            min-height: 32px !important;
-            padding: 6px 10px !important;
-            font-size: 12px !important;
-          }
-          .notes-page-section {
-            padding: 12px !important;
-          }
-          .notes-status-tabs {
-            gap: 5px;
-            padding: 5px;
-            order: -1;
-          }
-          .notes-status-tab {
-            min-height: 32px;
-            padding: 5px 8px;
-            font-size: 13px;
-          }
-          .notes-page-header {
-            gap: 8px !important;
-          }
-          .notes-page-header h2 {
-            margin-bottom: 2px !important;
-          }
-          .notes-page-header p {
-            font-size: 12px !important;
-            line-height: 1.35 !important;
-          }
-          .notes-card-actions {
-            gap: 5px;
-          }
-          .notes-card-actions button {
-            min-height: 28px !important;
-            padding: 4px 8px !important;
-            font-size: 11px !important;
-          }
-          .notes-card-actions .note-action-secondary,
-          .notes-card-actions .note-action-danger {
-            padding-inline: 7px !important;
-          }
-        }
-      `}</style>
-      <div className="page-title-actions notes-page-title">
+      <div className="page-title-actions notes-page-title notes-redesign-header">
         <div>
           <h1 style={styles.titulo}>📝 Notas</h1>
           <p style={styles.textoNota}>Central de notas e lembretes da empresa, separada do painel financeiro para reduzir poluição visual.</p>
@@ -273,7 +131,7 @@ export default function NotasPage({
         </div>
       </div>
 
-      <section style={styles.cardConfiguracao} className="notes-page-section">
+      <section style={styles.cardConfiguracao} className="notes-page-section notes-redesign-section">
         <div className="notes-page-header">
           <div>
             <h2 style={styles.subtitulo}>{tituloAbaNotas}</h2>
@@ -302,11 +160,12 @@ export default function NotasPage({
             ))}
           </div>
 
-          <select style={styles.input} value={filtroFilial} onChange={(e) => setFiltroFilial(e.target.value)}>
+          <select className="notes-branch-filter" style={styles.input} value={filtroFilial} onChange={(e) => setFiltroFilial(e.target.value)}>
             <option value="">Todas as filiais</option>
             {(filiais || []).map((filial) => (<option key={filial.id} value={filial.id}>{filial.nome}</option>))}
           </select>
           <input
+            className="notes-search-input"
             style={styles.input}
             placeholder="Buscar por título, conteúdo ou prioridade..."
             value={buscaNota}

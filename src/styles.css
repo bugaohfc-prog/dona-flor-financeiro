@@ -1938,10 +1938,6 @@
   gap: 8px;
   flex-wrap: wrap;
   order: 2;
-  padding: 5px;
-  border: 1px solid #dbe7e3;
-  border-radius: 999px;
-  background: #f8fafc;
 }
 
 .accounts-filter-actions .filter-toggle-button,
@@ -1953,12 +1949,12 @@
   width: auto !important;
   min-width: 0 !important;
   max-width: max-content !important;
-  min-height: 32px !important;
-  padding: 6px 11px !important;
+  min-height: 36px !important;
+  padding: 7px 12px !important;
   border-radius: 999px !important;
   box-shadow: none !important;
   cursor: pointer !important;
-  font-size: 11px !important;
+  font-size: 12px !important;
   font-weight: 900 !important;
   line-height: 1.1 !important;
   white-space: nowrap;
@@ -2044,28 +2040,21 @@
 
 .accounts-sort-control-main {
   grid-column: 1 / -1;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  width: fit-content;
-  max-width: min(100%, 420px);
-  padding: 5px 8px;
-  border: 1px solid #dbe7e3;
-  border-radius: 999px;
-  background: #f8fafc;
+  display: grid;
+  gap: 6px;
+  width: min(320px, 100%);
+  max-width: 320px;
   color: #64748b;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 900;
   order: 4;
 }
 
 .accounts-sort-control-main select {
-  min-height: 30px !important;
+  min-height: 38px !important;
   margin: 0 !important;
   border-color: #cbd5e1 !important;
-  border-radius: 999px !important;
-  font-size: 12px !important;
-  padding: 4px 28px 4px 10px !important;
+  border-radius: 12px !important;
 }
 
 .accounts-control-panel .advanced-filters {
@@ -2113,7 +2102,6 @@
   max-width: var(--df-dashboard-max, 1280px);
   margin-left: auto;
   margin-right: auto;
-  padding-bottom: 96px !important;
 }
 
 .accounts-list-header {
@@ -2218,15 +2206,6 @@
 }
 
 .account-actions button {
-  min-height: 30px !important;
-  width: auto !important;
-  min-width: 72px !important;
-  max-width: none !important;
-  padding: 5px 10px !important;
-  border-radius: 999px !important;
-  font-size: 11px !important;
-  font-weight: 900 !important;
-  line-height: 1.1 !important;
   box-shadow: none !important;
 }
 
@@ -2275,7 +2254,7 @@
 
   .accounts-control-panel.filters-desktop {
     grid-template-columns: 1fr !important;
-    gap: 7px !important;
+    gap: 8px !important;
     padding: 10px !important;
   }
 
@@ -2297,31 +2276,29 @@
   }
 
   .accounts-filter-actions {
-    justify-content: space-between;
+    justify-content: flex-start;
     width: 100%;
-    gap: 4px;
+    gap: 6px;
     order: 3;
-    padding: 4px;
   }
 
   .accounts-filter-actions .filter-toggle-button,
-  .accounts-control-panel .accounts-clear-button,
-  .accounts-export-toggle {
-    flex: 1 1 0;
-    max-width: none !important;
-    min-height: 30px !important;
-    padding: 5px 8px !important;
-    font-size: 11px !important;
+  .accounts-control-panel .accounts-clear-button {
+    min-height: 34px !important;
+    padding: 6px 11px !important;
   }
 
   .accounts-export-actions {
-    flex: 1 1 0;
-    justify-content: stretch;
+    flex: 1 1 100%;
+    justify-content: flex-start;
     gap: 5px;
+    order: 4;
   }
 
   .accounts-export-toggle {
-    width: 100% !important;
+    min-height: 32px !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
   }
 
   .accounts-export-menu {
@@ -2332,19 +2309,13 @@
   .accounts-sort-control-main {
     width: 100%;
     max-width: none;
-    justify-content: space-between;
-    order: 4;
-  }
-
-  .accounts-sort-control-main select {
-    flex: 1 1 auto;
-    min-width: 0;
+    order: 5;
   }
 
   .accounts-control-panel .advanced-filters {
     grid-template-columns: 1fr !important;
     gap: 8px !important;
-    order: 5;
+    order: 6;
   }
 
   .accounts-result-summary.result-summary {
@@ -2362,13 +2333,12 @@
   }
 
   .account-actions button {
-    min-height: 30px !important;
-    min-width: 0 !important;
-    padding: 5px 8px !important;
+    min-height: 28px !important;
+    padding: 4px 8px !important;
     font-size: 11px !important;
   }
 
   .accounts-list-section {
-    padding-bottom: max(156px, calc(132px + env(safe-area-inset-bottom))) !important;
+    padding-bottom: max(112px, calc(88px + env(safe-area-inset-bottom))) !important;
   }
 }

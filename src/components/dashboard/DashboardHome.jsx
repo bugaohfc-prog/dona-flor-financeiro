@@ -26,15 +26,17 @@ function DashboardCollapseButton({ expanded, onClick, label }) {
   )
 }
 
-function DashboardWidgetHeader({ kicker, title, badge, expanded, onToggle, label }) {
+function DashboardWidgetHeader({ kicker, title, subtitle, badge, actions, expanded, onToggle, label }) {
   return (
     <div className="dashboard-home-widget-header">
-      <div>
+      <div className="dashboard-home-header-copy">
         <span className="dashboard-home-kicker">{kicker}</span>
         <strong>{title}</strong>
+        {subtitle && <small>{subtitle}</small>}
       </div>
       <div className="dashboard-home-header-tools">
         {badge && <span className="dashboard-home-badge">{badge}</span>}
+        {actions}
         {onToggle && (
           <DashboardCollapseButton expanded={expanded} onClick={onToggle} label={label || title} />
         )}
@@ -261,22 +263,18 @@ export default function DashboardHome({
           <SummarySkeleton items={4} />
         ) : (
           <div className="dashboard-home-card dashboard-home-finance-card">
-            <div className="dashboard-home-section-head">
-              <div>
-                <span className="dashboard-home-kicker">Resumo financeiro rápido</span>
-                <strong>Visão operacional</strong>
-              </div>
-              <div className="dashboard-home-header-tools">
+            <DashboardWidgetHeader
+              kicker="Resumo financeiro rápido"
+              title="Visão operacional"
+              actions={(
                 <DashboardAction variant="secondary" onClick={() => navegarPara('relatorios')}>
                   Ver relatórios
                 </DashboardAction>
-                <DashboardCollapseButton
-                  expanded={mostrarResumoFinanceiro}
-                  onClick={() => setMostrarResumoFinanceiro((atual) => !atual)}
-                  label="Resumo financeiro rápido"
-                />
-              </div>
-            </div>
+              )}
+              expanded={mostrarResumoFinanceiro}
+              onToggle={() => setMostrarResumoFinanceiro((atual) => !atual)}
+              label="Resumo financeiro rápido"
+            />
 
             {mostrarResumoFinanceiro && (
               <div className="dashboard-home-kpi-grid">
@@ -407,26 +405,26 @@ export default function DashboardHome({
         </section>
       ) : (
         <section className={`no-print dashboard-home-card dashboard-home-notes dashboard-notes-card ${mostrarNotas ? 'notes-expanded' : 'notes-collapsed'}`}>
-          <div className="dashboard-home-section-head dashboard-home-notes-head">
-            <div className="notes-title-wrap">
-              <span className="dashboard-home-kicker">Notas/Pendências</span>
-              <strong className="notes-title">Acompanhamento rápido</strong>
-              <div className="notes-stats-row">
+          <div className="dashboard-home-notes-head">
+            <DashboardWidgetHeader
+              kicker="Notas/Pendências"
+              title="Acompanhamento rápido"
+              subtitle={(
+                <span className="notes-stats-row">
                 <span className="note-stat note-stat-pendente">{notasPendentes.length} pendente(s)</span>
                 <span className="note-stat note-stat-critico">{notasCriticas} crítica(s)</span>
                 <span className="note-stat note-stat-urgente">{notasUrgentes} urgente(s)</span>
-              </div>
-            </div>
-            <div className="dashboard-home-note-tools">
-              <DashboardAction variant="secondary" onClick={() => navegarPara('notas')}>
-                Ver notas
-              </DashboardAction>
-              <DashboardCollapseButton
-                expanded={mostrarNotas}
-                onClick={() => setMostrarNotas(!mostrarNotas)}
-                label="Notas/Pendências"
-              />
-            </div>
+                </span>
+              )}
+              actions={(
+                <DashboardAction variant="secondary" onClick={() => navegarPara('notas')}>
+                  Ver notas
+                </DashboardAction>
+              )}
+              expanded={mostrarNotas}
+              onToggle={() => setMostrarNotas(!mostrarNotas)}
+              label="Notas/Pendências"
+            />
           </div>
 
           {mostrarNotas && notasPainel.length === 0 && (

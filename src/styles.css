@@ -1328,7 +1328,6 @@
   margin-bottom: 14px;
 }
 
-.dashboard-home-section-head,
 .dashboard-home-widget-header {
   display: flex;
   align-items: flex-start;
@@ -1337,18 +1336,22 @@
   min-width: 0;
 }
 
-.dashboard-home-section-head > div,
-.dashboard-home-widget-header > div {
+.dashboard-home-header-copy {
   display: grid;
   gap: 3px;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
-.dashboard-home-section-head strong,
 .dashboard-home-widget-header strong {
   color: #0f172a;
   font-size: 17px;
   line-height: 1.2;
+}
+
+.dashboard-home-header-copy small {
+  display: block;
+  min-width: 0;
 }
 
 .dashboard-home-header-tools {
@@ -1358,6 +1361,7 @@
   justify-content: flex-end;
   gap: 8px;
   max-width: 100%;
+  margin-left: auto;
 }
 
 .dashboard-home-kicker {
@@ -1517,8 +1521,7 @@
 }
 
 .dashboard-home-actions,
-.dashboard-note-actions,
-.dashboard-home-note-tools {
+.dashboard-note-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1649,10 +1652,6 @@
 
 .dashboard-home-notes-head {
   margin: 0 !important;
-}
-
-.dashboard-home-note-tools {
-  justify-content: flex-end;
 }
 
 .dashboard-home-icon-button {
@@ -1793,7 +1792,6 @@
     border-radius: 14px !important;
   }
 
-  .dashboard-home-section-head,
   .dashboard-home-widget-header,
   .dashboard-home-notes-head {
     display: flex;
@@ -1801,13 +1799,11 @@
     gap: 10px;
   }
 
-  .dashboard-home-section-head > div,
-  .dashboard-home-widget-header > div {
+  .dashboard-home-header-copy {
     flex: 1 1 auto;
   }
 
-  .dashboard-home-header-tools,
-  .dashboard-home-note-tools {
+  .dashboard-home-header-tools {
     flex: 0 0 auto;
     justify-content: flex-end;
   }
@@ -1828,7 +1824,7 @@
     flex: 1 1 130px;
   }
 
-  .dashboard-home-note-tools .dashboard-home-action {
+  .dashboard-home-header-tools .dashboard-home-action {
     flex: 0 1 auto;
   }
 

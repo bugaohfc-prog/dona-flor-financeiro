@@ -2101,8 +2101,7 @@
   max-width: var(--df-dashboard-max, 1280px);
   margin-left: auto;
   margin-right: auto;
-  padding-right: clamp(0px, 8vw, 88px) !important;
-  padding-bottom: 156px !important;
+  padding-bottom: 132px !important;
 }
 
 .accounts-list-header {
@@ -2179,18 +2178,18 @@
 }
 
 .account-card-desktop.account-card-pendente {
-  border-color: #facc15 !important;
-  background: #fef3c7 !important;
+  border-color: #fde68a !important;
+  background: #fffbeb !important;
 }
 
 .account-card-desktop.account-card-vencida {
-  border-color: #fca5a5 !important;
-  background: #fee2e2 !important;
+  border-color: #fecaca !important;
+  background: #fff7f7 !important;
 }
 
 .account-card-desktop.account-card-paga {
-  border-color: #86efac !important;
-  background: #dcfce7 !important;
+  border-color: #bbf7d0 !important;
+  background: #f0fdf4 !important;
 }
 
 .account-card-head {
@@ -2325,7 +2324,7 @@
   }
 
   .accounts-filter-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
     gap: 6px;
   }
 
@@ -2342,12 +2341,7 @@
   }
 
   .accounts-control-panel .accounts-clear-button {
-    grid-column: 1 / -1;
-    justify-self: start;
-    width: auto !important;
-    min-width: 82px !important;
-    padding-left: 12px !important;
-    padding-right: 12px !important;
+    min-width: 58px !important;
   }
 
   .accounts-export-menu {
@@ -2392,7 +2386,6 @@
   }
 
   .accounts-list-section {
-    padding-right: 14px !important;
-    padding-bottom: max(216px, calc(184px + env(safe-area-inset-bottom))) !important;
+    padding-bottom: max(168px, calc(138px + env(safe-area-inset-bottom))) !important;
   }
 }

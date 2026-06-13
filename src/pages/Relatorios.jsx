@@ -106,6 +106,25 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
   const [visaoExecutiva, setVisaoExecutiva] = useState('dre')
   const [metaMensal, setMetaMensal] = useState('')
   const [exportMenuAberto, setExportMenuAberto] = useState(false)
+  const [blocosAbertos, setBlocosAbertos] = useState({
+    filtros: true,
+    kpis: true,
+    analise: true,
+    indicadores: true,
+    projecoes: false,
+    prioridade: true,
+    meta: true,
+    insights: false,
+    listas: false,
+    ranking: false,
+    contas: true
+  })
+  const [limiteContasRelatorio, setLimiteContasRelatorio] = useState(10)
+
+  const blocoAberto = (chave) => blocosAbertos[chave] !== false
+  const alternarBloco = (chave) => {
+    setBlocosAbertos((atual) => ({ ...atual, [chave]: !blocoAberto(chave) }))
+  }
 
   useEffect(() => {
     buscarDados()
@@ -815,6 +834,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
         : diferencaMes > 0
           ? 'Os custos cresceram em relação ao mês anterior. Acompanhe os maiores centros.'
           : 'O cenário atual está controlado para os filtros selecionados.'
+  const contasRelatorioVisiveis = contasFiltradas.slice(0, limiteContasRelatorio)
+  const exibindoTodasContasRelatorio = limiteContasRelatorio >= contasFiltradas.length
 
   return (
     <div className="relatorios-page" style={styles.page}>
@@ -870,63 +891,81 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
             <strong>Recorte financeiro</strong>
           </div>
           <span style={styles.filtroResumo}>{nomeMes(filtroMes || mesAtualPadrao())} • {filtroCentro ? centroSelecionado?.nome || 'Centro selecionado' : 'Todos os centros'} • {filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Filial selecionada' : 'Todas as filiais'}</span>
-          <button className="finance-report-clear" style={styles.btnLimpar} onClick={limparFiltros}>Limpar</button>
+          <div className="finance-report-head-actions">
+            <button className="finance-report-clear" style={styles.btnLimpar} onClick={limparFiltros}>Limpar</button>
+            <BlockToggle aberto={blocoAberto('filtros')} onClick={() => alternarBloco('filtros')} label="filtros" />
+          </div>
         </div>
-        <div className="finance-report-filter-grid" style={styles.filtrosGrid}>
-          <label>
-            <span>Meta mensal</span>
-            <input style={styles.input} placeholder="Ex: 5000" value={metaMensal} onChange={(e) => setMetaMensal(e.target.value)} />
-          </label>
-          <label>
-            <span>Centro</span>
-            <select style={styles.input} value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)}>
-              <option value="">Todos os centros</option>
-              {centros.map((centro) => <option key={centro.id} value={centro.id}>{centro.nome}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>Filial</span>
-            <select style={styles.input} value={filtroFilial} onChange={(e) => setFiltroFilial(e.target.value)}>
-              <option value="">Todas as filiais</option>
-              {filiais.map((filial) => <option key={filial.id} value={filial.id}>{filial.nome}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>Visão</span>
-            <select style={styles.input} value={visaoExecutiva} onChange={(e) => setVisaoExecutiva(e.target.value)}>
-              <option value="dre">Visão DRE</option>
-              <option value="graficos">Visão Gráficos</option>
-              <option value="filiais">Visão Filiais</option>
-              <option value="inteligencia">Análise financeira</option>
-              <option value="preditiva">Projeções financeiras</option>
-              <option value="copilot">Assistente financeiro</option>
-            </select>
-          </label>
-          <label>
-            <span>Mês</span>
-            <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
-          </label>
-        </div>
-        <div className="finance-report-status-tabs" style={styles.filtros}>
-          {[
-            ['todas', 'Todas'],
-            ['pendentes', 'Pendentes'],
-            ['pagas', 'Pagas'],
-            ['vencidas', 'Vencidas']
-          ].map(([valor, label]) => (
-            <button key={valor} className={`finance-report-status-${valor} ${filtroStatus === valor ? 'is-active' : ''}`} style={filtroStatus === valor ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus(valor)}>{label}</button>
-          ))}
-        </div>
+        {blocoAberto('filtros') && (
+          <>
+            <div className="finance-report-filter-grid" style={styles.filtrosGrid}>
+              <label>
+                <span>Meta mensal</span>
+                <input style={styles.input} placeholder="Ex: 5000" value={metaMensal} onChange={(e) => setMetaMensal(e.target.value)} />
+              </label>
+              <label>
+                <span>Centro</span>
+                <select style={styles.input} value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)}>
+                  <option value="">Todos os centros</option>
+                  {centros.map((centro) => <option key={centro.id} value={centro.id}>{centro.nome}</option>)}
+                </select>
+              </label>
+              <label>
+                <span>Filial</span>
+                <select style={styles.input} value={filtroFilial} onChange={(e) => setFiltroFilial(e.target.value)}>
+                  <option value="">Todas as filiais</option>
+                  {filiais.map((filial) => <option key={filial.id} value={filial.id}>{filial.nome}</option>)}
+                </select>
+              </label>
+              <label>
+                <span>Visão</span>
+                <select style={styles.input} value={visaoExecutiva} onChange={(e) => setVisaoExecutiva(e.target.value)}>
+                  <option value="dre">Visão DRE</option>
+                  <option value="graficos">Visão Gráficos</option>
+                  <option value="filiais">Visão Filiais</option>
+                  <option value="inteligencia">Análise financeira</option>
+                  <option value="preditiva">Projeções financeiras</option>
+                  <option value="copilot">Assistente financeiro</option>
+                </select>
+              </label>
+              <label>
+                <span>Mês</span>
+                <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
+              </label>
+            </div>
+            <div className="finance-report-status-tabs" style={styles.filtros}>
+              {[
+                ['todas', 'Todas'],
+                ['pendentes', 'Pendentes'],
+                ['pagas', 'Pagas'],
+                ['vencidas', 'Vencidas']
+              ].map(([valor, label]) => (
+                <button key={valor} className={`finance-report-status-${valor} ${filtroStatus === valor ? 'is-active' : ''}`} style={filtroStatus === valor ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus(valor)}>{label}</button>
+              ))}
+            </div>
+          </>
+        )}
       </section>
       {loading ? <RelatorioSkeleton /> : (
         <>
-      <section className="executive-kpi-grid finance-report-kpis" style={styles.executiveKpiGrid}>
-        <ExecutiveKpiCard titulo="Previsto" valor={formatarValor(totalGeral)} detalhe={`${contasFiltradas.length} conta(s)`} tom="#364fc7" />
-        <ExecutiveKpiCard titulo="Realizado" valor={formatarValor(totalPago)} detalhe={`${formatarPercentual(taxaPago)} do previsto`} tom="#12b886" />
-        <ExecutiveKpiCard titulo="Pendente" valor={formatarValor(totalPendente)} detalhe="Ainda não pago" tom="#f59f00" />
-        <ExecutiveKpiCard titulo="Vencido" valor={formatarValor(totalVencido)} detalhe={totalVencido > 0 ? `${formatarPercentual(taxaVencido)} do previsto` : 'Sem vencidos'} tom="#dc3545" />
-        <ExecutiveKpiCard titulo="Encargos" valor={formatarValor(totalEncargos)} detalhe="Juros/multa" tom="#ea580c" />
-        <ExecutiveKpiCard titulo="Descontos" valor={formatarValor(totalDescontos)} detalhe="Ajustes a menor" tom="#059669" />
+      <section className="finance-report-list-section finance-report-kpi-section">
+        <div className="finance-report-section-head">
+          <div>
+            <span className="finance-report-kicker">Resumo</span>
+            <strong>Indicadores financeiros</strong>
+          </div>
+          <BlockToggle aberto={blocoAberto('kpis')} onClick={() => alternarBloco('kpis')} label="indicadores financeiros" />
+        </div>
+        {blocoAberto('kpis') && (
+          <div className="executive-kpi-grid finance-report-kpis" style={styles.executiveKpiGrid}>
+            <ExecutiveKpiCard titulo="Previsto" valor={formatarValor(totalGeral)} detalhe={`${contasFiltradas.length} conta(s)`} tom="#364fc7" />
+            <ExecutiveKpiCard titulo="Realizado" valor={formatarValor(totalPago)} detalhe={`${formatarPercentual(taxaPago)} do previsto`} tom="#12b886" />
+            <ExecutiveKpiCard titulo="Pendente" valor={formatarValor(totalPendente)} detalhe="Ainda não pago" tom="#f59f00" />
+            <ExecutiveKpiCard titulo="Vencido" valor={formatarValor(totalVencido)} detalhe={totalVencido > 0 ? `${formatarPercentual(taxaVencido)} do previsto` : 'Sem vencidos'} tom="#dc3545" />
+            <ExecutiveKpiCard titulo="Encargos" valor={formatarValor(totalEncargos)} detalhe="Juros/multa" tom="#ea580c" />
+            <ExecutiveKpiCard titulo="Descontos" valor={formatarValor(totalDescontos)} detalhe="Ajustes a menor" tom="#059669" />
+          </div>
+        )}
       </section>
 
       <section className="finance-report-analysis-panel" style={styles.advancedPanel}>
@@ -935,10 +974,13 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
             <strong>Relatórios financeiros</strong>
             <p style={styles.muted}>Visualize indicadores, tendências, filiais, projeções e recomendações em um só lugar.</p>
           </div>
-          <span style={styles.badge}>Completo</span>
+          <div className="finance-report-head-actions">
+            <span style={styles.badge}>Completo</span>
+            <BlockToggle aberto={blocoAberto('analise')} onClick={() => alternarBloco('analise')} label="relatórios financeiros" />
+          </div>
         </div>
 
-        {visaoExecutiva === 'dre' && (
+        {blocoAberto('analise') && visaoExecutiva === 'dre' && (
           <div style={styles.advancedGrid}>
             <Widget titulo="DRE gerencial" emoji="🧮">
               {dreGerencial.map((linha) => (
@@ -968,7 +1010,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
           </div>
         )}
 
-        {visaoExecutiva === 'graficos' && (
+        {blocoAberto('analise') && visaoExecutiva === 'graficos' && (
           <div style={styles.advancedGrid}>
             <Widget titulo="Centros por valor" emoji="📊">
               <div style={styles.chartBox}>
@@ -998,7 +1040,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
           </div>
         )}
 
-        {visaoExecutiva === 'filiais' && (
+        {blocoAberto('analise') && visaoExecutiva === 'filiais' && (
           <div style={styles.advancedGrid}>
             <Widget titulo="Ranking por filial" emoji="🏢">
               {rankingFiliais.length === 0 && <p style={styles.vazio}>Nenhuma filial encontrada nos filtros.</p>}
@@ -1021,7 +1063,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
         )}
 
 
-        {visaoExecutiva === 'inteligencia' && (
+        {blocoAberto('analise') && visaoExecutiva === 'inteligencia' && (
           <div style={styles.advancedGrid}>
             <Widget titulo={inteligenciaFinanceira.titulo} emoji="🧠" badge={inteligenciaFinanceira.nivel.toUpperCase()} badgeColor={inteligenciaFinanceira.cor}>
               <p style={styles.executivoTexto}>Análise dos principais sinais financeiros para os filtros atuais.</p>
@@ -1073,7 +1115,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
         )}
 
 
-        {visaoExecutiva === 'copilot' && (
+        {blocoAberto('analise') && visaoExecutiva === 'copilot' && (
           <div style={styles.advancedGrid}>
             <Widget titulo="Resumo financeiro" emoji="✨" badge={`${copilotFinanceiro.score}/100`} badgeColor={copilotFinanceiro.status.tone === 'danger' ? '#dc3545' : copilotFinanceiro.status.tone === 'warning' ? '#f59f00' : '#12b886'}>
               <p style={styles.executivoTexto}>{copilotFinanceiro.executiveSummary}</p>
@@ -1144,40 +1186,51 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
         )}
       </section>
 
-      <section className="finance-report-dashboard-grid" style={styles.dashboardGrid}>
-        <Widget titulo="Resumo financeiro" emoji="📌" destaque>
-          <p style={styles.executivoTexto}>{resumoExecutivo}</p>
-          <div style={styles.miniStats}>
-            <MiniStat label="Mês" value={nomeMes(filtroMes || mesAtualPadrao())} />
-            <MiniStat label="Centro" value={filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos'} />
-            <MiniStat label="Status" value={filtroStatus} />
+      <section className="finance-report-list-section">
+        <div className="finance-report-section-head">
+          <div>
+            <span className="finance-report-kicker">Leitura executiva</span>
+            <strong>Resumo e qualidade</strong>
           </div>
-        </Widget>
+          <BlockToggle aberto={blocoAberto('indicadores')} onClick={() => alternarBloco('indicadores')} label="resumo e qualidade" />
+        </div>
+        {blocoAberto('indicadores') && (
+          <div className="finance-report-dashboard-grid" style={styles.dashboardGrid}>
+            <Widget titulo="Resumo financeiro" emoji="📌" destaque>
+              <p style={styles.executivoTexto}>{resumoExecutivo}</p>
+              <div style={styles.miniStats}>
+                <MiniStat label="Mês" value={nomeMes(filtroMes || mesAtualPadrao())} />
+                <MiniStat label="Centro" value={filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos'} />
+                <MiniStat label="Status" value={filtroStatus} />
+              </div>
+            </Widget>
 
-        <Widget titulo={statusSaude.titulo} emoji={statusSaude.emoji} badge={statusSaude.etiqueta} badgeColor={statusSaude.cor}>
-          <p style={styles.muted}>{statusSaude.descricao}</p>
-          <Progress value={scoreSaude} color={statusSaude.cor} />
-          <small>{scoreSaude}/100 pontos de saúde financeira</small>
-        </Widget>
+            <Widget titulo={statusSaude.titulo} emoji={statusSaude.emoji} badge={statusSaude.etiqueta} badgeColor={statusSaude.cor}>
+              <p style={styles.muted}>{statusSaude.descricao}</p>
+              <Progress value={scoreSaude} color={statusSaude.cor} />
+              <small>{scoreSaude}/100 pontos de saúde financeira</small>
+            </Widget>
 
-        <Widget titulo={qualidadeDados.titulo} emoji={qualidadeDados.emoji} badge={formatarPercentual(percentualClassificacao)} badgeColor={qualidadeDados.cor}>
-          <p style={styles.muted}>{qualidadeDados.descricao}</p>
-          <Progress value={percentualClassificacao} color={qualidadeDados.cor} />
-          <div style={styles.grid3Compacto}>
-            <MiniStat label="Total" value={contasFiltradas.length} />
-            <MiniStat label="Com centro" value={contasComCentro} />
-            <MiniStat label="Sem centro" value={contasSemCentro} />
+            <Widget titulo={qualidadeDados.titulo} emoji={qualidadeDados.emoji} badge={formatarPercentual(percentualClassificacao)} badgeColor={qualidadeDados.cor}>
+              <p style={styles.muted}>{qualidadeDados.descricao}</p>
+              <Progress value={percentualClassificacao} color={qualidadeDados.cor} />
+              <div style={styles.grid3Compacto}>
+                <MiniStat label="Total" value={contasFiltradas.length} />
+                <MiniStat label="Com centro" value={contasComCentro} />
+                <MiniStat label="Sem centro" value={contasSemCentro} />
+              </div>
+            </Widget>
+
+            <Widget titulo="Comparativo mensal" emoji="📅">
+              <div style={styles.compareGrid}>
+                <MiniStat label="Mês atual" value={formatarValor(totalGeral)} sub={nomeMes(filtroMes || mesAtualPadrao())} />
+                <MiniStat label="Mês anterior" value={formatarValor(totalMesAnterior)} sub={nomeMes(mesAnterior(filtroMes || mesAtualPadrao()))} />
+                <MiniStat label="Variação" value={`${diferencaMes > 0 ? '↑ +' : diferencaMes < 0 ? '↓ ' : ''}${formatarValor(diferencaMes)}`} sub={formatarPercentual(percentualMes)} />
+                <MiniStat label="Previsão" value={formatarValor(previsaoProximoMes)} sub="próximo mês" />
+              </div>
+            </Widget>
           </div>
-        </Widget>
-
-        <Widget titulo="Comparativo mensal" emoji="📅">
-          <div style={styles.compareGrid}>
-            <MiniStat label="Mês atual" value={formatarValor(totalGeral)} sub={nomeMes(filtroMes || mesAtualPadrao())} />
-            <MiniStat label="Mês anterior" value={formatarValor(totalMesAnterior)} sub={nomeMes(mesAnterior(filtroMes || mesAtualPadrao()))} />
-            <MiniStat label="Variação" value={`${diferencaMes > 0 ? '↑ +' : diferencaMes < 0 ? '↓ ' : ''}${formatarValor(diferencaMes)}`} sub={formatarPercentual(percentualMes)} />
-            <MiniStat label="Previsão" value={formatarValor(previsaoProximoMes)} sub="próximo mês" />
-          </div>
-        </Widget>
+        )}
       </section>
 
 
@@ -1187,178 +1240,274 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
             <strong>Projeções financeiras</strong>
             <p style={styles.muted}>Estimativa para 30, 60 e 90 dias, com risco projetado e acompanhamento da meta.</p>
           </div>
-          <span style={{ ...styles.badge, color: camadaPreditiva.corRisco }}>{camadaPreditiva.statusRisco}</span>
+          <div className="finance-report-head-actions">
+            <span style={{ ...styles.badge, color: camadaPreditiva.corRisco }}>{camadaPreditiva.statusRisco}</span>
+            <BlockToggle aberto={blocoAberto('projecoes')} onClick={() => alternarBloco('projecoes')} label="projeções financeiras" />
+          </div>
         </div>
-        <div style={styles.predictiveGrid}>
-          <MiniStat label="Previsão 30d" value={formatarValor(camadaPreditiva.previsao30)} sub={camadaPreditiva.tendencia} />
-          <MiniStat label="Previsão 60d" value={formatarValor(camadaPreditiva.previsao60)} sub="projeção" />
-          <MiniStat label="Previsão 90d" value={formatarValor(camadaPreditiva.previsao90)} sub="cenário" />
-          <MiniStat label="Risco projetado" value={`${formatarPercentual(camadaPreditiva.riscoProjetado)}`} sub={camadaPreditiva.statusRisco} />
-        </div>
-        <Progress value={camadaPreditiva.riscoProjetado} color={camadaPreditiva.corRisco} />
-        <div style={styles.advancedGrid}>
-          <Widget titulo="Curva de previsão" emoji="📈">
-            <div style={styles.chartBox}>
-              <ResponsiveContainer width="100%" height={230}>
-                <LineChart data={camadaPreditiva.serie}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="mes" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => value == null ? '-' : formatarValor(value)} />
-                  <Line type="monotone" dataKey="realizado" stroke="#0d9488" strokeWidth={3} connectNulls dot={false} />
-                  <Line type="monotone" dataKey="previsto" stroke="#7c3aed" strokeWidth={3} strokeDasharray="6 4" connectNulls dot />
-                </LineChart>
-              </ResponsiveContainer>
+        {blocoAberto('projecoes') && (
+          <>
+            <div style={styles.predictiveGrid}>
+              <MiniStat label="Previsão 30d" value={formatarValor(camadaPreditiva.previsao30)} sub={camadaPreditiva.tendencia} />
+              <MiniStat label="Previsão 60d" value={formatarValor(camadaPreditiva.previsao60)} sub="projeção" />
+              <MiniStat label="Previsão 90d" value={formatarValor(camadaPreditiva.previsao90)} sub="cenário" />
+              <MiniStat label="Risco projetado" value={`${formatarPercentual(camadaPreditiva.riscoProjetado)}`} sub={camadaPreditiva.statusRisco} />
             </div>
-          </Widget>
-          <Widget titulo="Pontos de atenção" emoji="🚦">
-            <div style={styles.insightList}>
-              {camadaPreditiva.alertas.map((alerta, index) => (
-                <div key={index} style={styles.insightItem}>
-                  <span style={styles.insightEmoji}>🔎</span>
-                  <p>{alerta}</p>
+            <Progress value={camadaPreditiva.riscoProjetado} color={camadaPreditiva.corRisco} />
+            <div style={styles.advancedGrid}>
+              <Widget titulo="Curva de previsão" emoji="📈">
+                <div style={styles.chartBox}>
+                  <ResponsiveContainer width="100%" height={230}>
+                    <LineChart data={camadaPreditiva.serie}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="mes" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => value == null ? '-' : formatarValor(value)} />
+                      <Line type="monotone" dataKey="realizado" stroke="#0d9488" strokeWidth={3} connectNulls dot={false} />
+                      <Line type="monotone" dataKey="previsto" stroke="#7c3aed" strokeWidth={3} strokeDasharray="6 4" connectNulls dot />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
-              ))}
+              </Widget>
+              <Widget titulo="Pontos de atenção" emoji="🚦">
+                <div style={styles.insightList}>
+                  {camadaPreditiva.alertas.map((alerta, index) => (
+                    <div key={index} style={styles.insightItem}>
+                      <span style={styles.insightEmoji}>🔎</span>
+                      <p>{alerta}</p>
+                    </div>
+                  ))}
+                </div>
+                {camadaPreditiva.metaForecast && (
+                  <div style={styles.metaForecastBox}>
+                    <strong>Meta projetada</strong>
+                    <small>Chance de cumprir: {camadaPreditiva.metaForecast.chance}</small>
+                    <small>Falta: {formatarValor(camadaPreditiva.metaForecast.falta)}</small>
+                    <Progress value={Math.min(camadaPreditiva.metaForecast.percentualProjetado, 100)} color={camadaPreditiva.metaForecast.percentualProjetado > 100 ? '#dc3545' : '#12b886'} />
+                  </div>
+                )}
+              </Widget>
             </div>
-            {camadaPreditiva.metaForecast && (
-              <div style={styles.metaForecastBox}>
-                <strong>Meta projetada</strong>
-                <small>Chance de cumprir: {camadaPreditiva.metaForecast.chance}</small>
-                <small>Falta: {formatarValor(camadaPreditiva.metaForecast.falta)}</small>
-                <Progress value={Math.min(camadaPreditiva.metaForecast.percentualProjetado, 100)} color={camadaPreditiva.metaForecast.percentualProjetado > 100 ? '#dc3545' : '#12b886'} />
-              </div>
-            )}
-          </Widget>
-        </div>
+          </>
+        )}
       </section>
 
       {mostrarAcaoPrioritaria && (
         <section className="print-card finance-report-priority-card" style={styles.cardAlerta}>
           <div>
-            <strong>🚨 Ação prioritária</strong>
-            <p>{formatarPercentual(semCentro.percentual)} das despesas filtradas estão sem centro de custo. Classifique os lançamentos para melhorar a análise.</p>
+            <div className="finance-report-section-head">
+              <strong>🚨 Ação prioritária</strong>
+              <BlockToggle aberto={blocoAberto('prioridade')} onClick={() => alternarBloco('prioridade')} label="ação prioritária" />
+            </div>
+            {blocoAberto('prioridade') && (
+              <p>{formatarPercentual(semCentro.percentual)} das despesas filtradas estão sem centro de custo. Classifique os lançamentos para melhorar a análise.</p>
+            )}
           </div>
-          <button className="no-print" style={styles.btnAcao} onClick={voltar}>Ir para contas</button>
+          {blocoAberto('prioridade') && <button className="no-print" style={styles.btnAcao} onClick={voltar}>Ir para contas</button>}
         </section>
       )}
 
       {metaValida && (
         <section className="print-card finance-report-meta-card" style={styles.cardMeta}>
-          <div style={styles.widgetHeader}><strong>🎯 Meta mensal</strong><span style={styles.badge}>{formatarPercentual(percentualMeta)}</span></div>
-          <p>Meta: {formatarValor(meta)} • Atual: {formatarValor(totalGeral)}</p>
-          <Progress value={Math.min(percentualMeta, 100)} color={percentualMeta > 100 ? '#dc3545' : percentualMeta >= 80 ? '#f59f00' : '#12b886'} />
+          <div className="finance-report-section-head" style={styles.widgetHeader}>
+            <strong>🎯 Meta mensal</strong>
+            <div className="finance-report-head-actions">
+              <span style={styles.badge}>{formatarPercentual(percentualMeta)}</span>
+              <BlockToggle aberto={blocoAberto('meta')} onClick={() => alternarBloco('meta')} label="meta mensal" />
+            </div>
+          </div>
+          {blocoAberto('meta') && (
+            <>
+              <p>Meta: {formatarValor(meta)} • Atual: {formatarValor(totalGeral)}</p>
+              <Progress value={Math.min(percentualMeta, 100)} color={percentualMeta > 100 ? '#dc3545' : percentualMeta >= 80 ? '#f59f00' : '#12b886'} />
+            </>
+          )}
         </section>
       )}
 
-      <section className="finance-report-two-columns" style={styles.twoColumns}>
-        <Widget titulo="Insights automáticos" emoji="💡">
-          <div style={styles.insightList}>
-            {insights.map((insight, index) => (
-              <div key={index} style={styles.insightItem}>
-                <span style={styles.insightEmoji}>{emojiInsight(insight.tipo)}</span>
-                <p>{insight.texto}</p>
-              </div>
-            ))}
+      <section className="finance-report-list-section">
+        <div className="finance-report-section-head">
+          <div>
+            <span className="finance-report-kicker">Leituras</span>
+            <strong>Insights e distribuição</strong>
           </div>
-        </Widget>
-
-        {!filtroCentro && ranking.length > 0 && (
-          <Widget titulo="Distribuição por centro" emoji="📊">
-            {ranking.slice(0, 5).map((item) => (
-              <div key={item.id} style={styles.itemGrafico}>
-                <div style={styles.cardLinha}><span>{item.nome}</span><strong>{formatarPercentual(item.percentual)}</strong></div>
-                <Progress value={Math.max(item.percentual, 4)} color={corPorPercentual(item.percentual)} />
-                <small>{formatarValor(item.total)} {item.id === 'sem-centro' && <b style={styles.alertaTexto}> • Classificar</b>}</small>
+          <BlockToggle aberto={blocoAberto('insights')} onClick={() => alternarBloco('insights')} label="insights e distribuição" />
+        </div>
+        {blocoAberto('insights') && (
+          <div className="finance-report-two-columns" style={styles.twoColumns}>
+            <Widget titulo="Insights automáticos" emoji="💡">
+              <div style={styles.insightList}>
+                {insights.map((insight, index) => (
+                  <div key={index} style={styles.insightItem}>
+                    <span style={styles.insightEmoji}>{emojiInsight(insight.tipo)}</span>
+                    <p>{insight.texto}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </Widget>
+            </Widget>
+
+            {!filtroCentro && ranking.length > 0 && (
+              <Widget titulo="Distribuição por centro" emoji="📊">
+                {ranking.slice(0, 5).map((item) => (
+                  <div key={item.id} style={styles.itemGrafico}>
+                    <div style={styles.cardLinha}><span>{item.nome}</span><strong>{formatarPercentual(item.percentual)}</strong></div>
+                    <Progress value={Math.max(item.percentual, 4)} color={corPorPercentual(item.percentual)} />
+                    <small>{formatarValor(item.total)} {item.id === 'sem-centro' && <b style={styles.alertaTexto}> • Classificar</b>}</small>
+                  </div>
+                ))}
+              </Widget>
+            )}
+          </div>
         )}
       </section>
 
-      <section className="finance-report-two-columns" style={styles.twoColumns}>
-        {topDespesas.length > 0 && (
-          <Widget titulo="Top despesas" emoji="🔥">
-            {topDespesas.map((conta, index) => (
-              <div key={conta.id} style={styles.topItem}>
-                <div style={styles.medalha}>{index + 1}</div>
-                <div style={styles.topText}>
-                  <strong>{conta.descricao}</strong>
-                  <small>{formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'}</small>
-                </div>
-                <strong>{formatarValor(conta.valor)}</strong>
-              </div>
-            ))}
-          </Widget>
-        )}
-
-        <Widget titulo="Resultado do filtro" emoji="🧾">
-          <div style={styles.resultGrid}>
-            <MiniStat label="Centros" value={ranking.length} />
-            <MiniStat label="Contas" value={contasFiltradas.length} />
-            <MiniStat label="Dominante" value={principalCentro ? principalCentro.nome : '-'} sub={principalCentro ? formatarPercentual(principalCentro.percentual) : ''} />
+      <section className="finance-report-list-section">
+        <div className="finance-report-section-head">
+          <div>
+            <span className="finance-report-kicker">Listas</span>
+            <strong>Top despesas e resultado</strong>
           </div>
-        </Widget>
+          <BlockToggle aberto={blocoAberto('listas')} onClick={() => alternarBloco('listas')} label="top despesas e resultado" />
+        </div>
+        {blocoAberto('listas') && (
+          <div className="finance-report-two-columns" style={styles.twoColumns}>
+            {topDespesas.length > 0 && (
+              <Widget titulo="Top despesas" emoji="🔥">
+                {topDespesas.map((conta, index) => (
+                  <div key={conta.id} style={styles.topItem}>
+                    <div style={styles.medalha}>{index + 1}</div>
+                    <div style={styles.topText}>
+                      <strong>{conta.descricao}</strong>
+                      <small>{formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'}</small>
+                    </div>
+                    <strong>{formatarValor(conta.valor)}</strong>
+                  </div>
+                ))}
+              </Widget>
+            )}
+
+            <Widget titulo="Resultado do filtro" emoji="🧾">
+              <div style={styles.resultGrid}>
+                <MiniStat label="Centros" value={ranking.length} />
+                <MiniStat label="Contas" value={contasFiltradas.length} />
+                <MiniStat label="Dominante" value={principalCentro ? principalCentro.nome : '-'} sub={principalCentro ? formatarPercentual(principalCentro.percentual) : ''} />
+              </div>
+            </Widget>
+          </div>
+        )}
       </section>
 
       {!filtroCentro && (
         <section className="finance-report-list-section" style={styles.bloco}>
-          <h2 style={styles.subtitulo}>🏆 Ranking por Centro</h2>
-          {ranking.length === 0 && <p style={styles.vazio}>Nenhum dado encontrado.</p>}
-          <div className="finance-report-ranking-grid" style={styles.rankingGrid}>
-            {ranking.map((item, index) => (
-              <div className="print-card" key={item.id} style={styles.cardRanking}>
-                <div style={styles.cardLinha}>
-                  <div>
-                    <strong>{index + 1}. {item.nome}{item.id === 'sem-centro' ? ' ⚠️' : ''}</strong>
-                    {index === 0 && <small style={styles.maiorCusto}>🔝 Maior custo</small>}
-                    <small>{formatarPercentual(item.percentual)} do total</small>
-                  </div>
-                  <strong>{formatarValor(item.total)}</strong>
-                </div>
-                <Progress value={Math.max(maiorValor ? (item.total / maiorValor) * 100 : 0, 4)} color={corPorPercentual(item.percentual)} />
-                <div style={styles.grid3Compacto}>
-                  <small>Realizado: {formatarValor(item.pago)}</small>
-                  <small>Pend: {formatarValor(item.pendente)}</small>
-                  <small>Venc: {formatarValor(item.vencido)}</small>
-                </div>
-              </div>
-            ))}
+          <div className="finance-report-section-head">
+            <div>
+              <span className="finance-report-kicker">Ranking</span>
+              <h2 style={styles.subtitulo}>🏆 Ranking por Centro</h2>
+            </div>
+            <BlockToggle aberto={blocoAberto('ranking')} onClick={() => alternarBloco('ranking')} label="ranking por centro" />
           </div>
+          {blocoAberto('ranking') && (
+            <>
+              {ranking.length === 0 && <p style={styles.vazio}>Nenhum dado encontrado.</p>}
+              <div className="finance-report-ranking-grid" style={styles.rankingGrid}>
+                {ranking.map((item, index) => (
+                  <div className="print-card" key={item.id} style={styles.cardRanking}>
+                    <div style={styles.cardLinha}>
+                      <div>
+                        <strong>{index + 1}. {item.nome}{item.id === 'sem-centro' ? ' ⚠️' : ''}</strong>
+                        {index === 0 && <small style={styles.maiorCusto}>🔝 Maior custo</small>}
+                        <small>{formatarPercentual(item.percentual)} do total</small>
+                      </div>
+                      <strong>{formatarValor(item.total)}</strong>
+                    </div>
+                    <Progress value={Math.max(maiorValor ? (item.total / maiorValor) * 100 : 0, 4)} color={corPorPercentual(item.percentual)} />
+                    <div style={styles.grid3Compacto}>
+                      <small>Realizado: {formatarValor(item.pago)}</small>
+                      <small>Pend: {formatarValor(item.pendente)}</small>
+                      <small>Venc: {formatarValor(item.vencido)}</small>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </section>
       )}
 
       {filtroCentro && (
         <section className="finance-report-list-section" style={styles.bloco}>
-          <h2 style={styles.subtitulo}>📊 Resumo do Centro</h2>
-          <div className="print-card" style={styles.cardRanking}>
-            <div style={styles.cardLinha}><strong>{centroSelecionado?.nome || 'Centro selecionado'}</strong><strong>{formatarValor(totalGeral)}</strong></div>
-            <div style={styles.grid3Compacto}><small>Realizado: {formatarValor(totalPago)}</small><small>Pend: {formatarValor(totalPendente)}</small><small>Venc: {formatarValor(totalVencido)}</small></div>
+          <div className="finance-report-section-head">
+            <div>
+              <span className="finance-report-kicker">Centro selecionado</span>
+              <h2 style={styles.subtitulo}>📊 Resumo do Centro</h2>
+            </div>
+            <BlockToggle aberto={blocoAberto('ranking')} onClick={() => alternarBloco('ranking')} label="resumo do centro" />
           </div>
+          {blocoAberto('ranking') && (
+            <div className="print-card" style={styles.cardRanking}>
+              <div style={styles.cardLinha}><strong>{centroSelecionado?.nome || 'Centro selecionado'}</strong><strong>{formatarValor(totalGeral)}</strong></div>
+              <div style={styles.grid3Compacto}><small>Realizado: {formatarValor(totalPago)}</small><small>Pend: {formatarValor(totalPendente)}</small><small>Venc: {formatarValor(totalVencido)}</small></div>
+            </div>
+          )}
         </section>
       )}
 
       <section className="finance-report-list-section finance-report-accounts-section" style={styles.bloco}>
-        <h2 style={styles.subtitulo}>📄 Contas do relatório</h2>
-        <div className="finance-report-accounts-grid" style={styles.contasGrid}>
-          {contasFiltradas.map((conta) => {
-            const realizado = valorRealizadoConta(conta)
-            const ajuste = encargosConta(conta) > 0
-              ? ` • Encargos: ${formatarValor(encargosConta(conta))}`
-              : descontoConta(conta) > 0
-                ? ` • Desconto: ${formatarValor(descontoConta(conta))}`
-                : ''
-
-            return (
-              <div className="print-card" key={conta.id} style={styles.cardConta}>
-                <div style={styles.cardLinha}><strong>{conta.descricao}</strong><span>{formatarValor(valorPrevistoConta(conta))}</span></div>
-                <small>
-                  {conta.status === 'pago' ? `Realizado: ${formatarValor(realizado)} • ` : ''}
-                  {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'} • {estaVencida(conta.data_vencimento, conta.status) ? 'VENCIDO' : conta.status}{ajuste}
-                </small>
-              </div>
-            )
-          })}
+        <div className="finance-report-section-head">
+          <div>
+            <span className="finance-report-kicker">Detalhamento</span>
+            <h2 style={styles.subtitulo}>📄 Contas do relatório</h2>
+            <p style={styles.muted}>{contasFiltradas.length} conta(s) no recorte atual</p>
+          </div>
+          <div className="finance-report-head-actions">
+            <span style={styles.badge}>{Math.min(limiteContasRelatorio, contasFiltradas.length)} de {contasFiltradas.length}</span>
+            <BlockToggle aberto={blocoAberto('contas')} onClick={() => alternarBloco('contas')} label="contas do relatório" />
+          </div>
         </div>
+        {blocoAberto('contas') && (
+          <>
+            <div className="finance-report-accounts-grid" style={styles.contasGrid}>
+              {contasRelatorioVisiveis.map((conta) => {
+                const realizado = valorRealizadoConta(conta)
+                const ajuste = encargosConta(conta) > 0
+                  ? ` • Encargos: ${formatarValor(encargosConta(conta))}`
+                  : descontoConta(conta) > 0
+                    ? ` • Desconto: ${formatarValor(descontoConta(conta))}`
+                    : ''
+
+                return (
+                  <div className="print-card" key={conta.id} style={styles.cardConta}>
+                    <div style={styles.cardLinha}><strong>{conta.descricao}</strong><span>{formatarValor(valorPrevistoConta(conta))}</span></div>
+                    <small>
+                      {conta.status === 'pago' ? `Realizado: ${formatarValor(realizado)} • ` : ''}
+                      {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'} • {estaVencida(conta.data_vencimento, conta.status) ? 'VENCIDO' : conta.status}{ajuste}
+                    </small>
+                  </div>
+                )
+              })}
+            </div>
+            {contasFiltradas.length === 0 && <p style={styles.vazio}>Nenhuma conta encontrada.</p>}
+            {contasFiltradas.length > 10 && (
+              <div className="finance-report-list-actions">
+                {!exibindoTodasContasRelatorio && (
+                  <button type="button" onClick={() => setLimiteContasRelatorio((limite) => Math.min(limite + 10, contasFiltradas.length))}>
+                    Carregar mais 10
+                  </button>
+                )}
+                {!exibindoTodasContasRelatorio && (
+                  <button type="button" onClick={() => setLimiteContasRelatorio(contasFiltradas.length)}>
+                    Ver todos
+                  </button>
+                )}
+                {limiteContasRelatorio > 10 && (
+                  <button type="button" onClick={() => setLimiteContasRelatorio(10)}>
+                    Recolher
+                  </button>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </section>
         </>
       )}
@@ -1403,6 +1552,19 @@ function Widget({ titulo, emoji, badge, badgeColor = '#0d9488', children, destaq
       </div>
       {children}
     </section>
+  )
+}
+
+function BlockToggle({ aberto, onClick, label }) {
+  return (
+    <button
+      type="button"
+      className="finance-report-toggle"
+      aria-label={`${aberto ? 'Recolher' : 'Expandir'} ${label}`}
+      onClick={onClick}
+    >
+      {aberto ? '−' : '+'}
+    </button>
   )
 }
 

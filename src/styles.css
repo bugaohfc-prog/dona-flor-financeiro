@@ -3643,3 +3643,236 @@
     min-width: 0 !important;
   }
 }
+
+/* Lixeira - acabamento operacional */
+.trash-bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 9px 10px;
+  border: 1px solid #dbe7e3;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, .05);
+}
+
+.trash-bulk-bar > span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.trash-bulk-bar > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: flex-end;
+}
+
+.trash-bulk-bar button,
+.trash-selection-row button,
+.trash-toggle-button {
+  min-height: 30px !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  box-shadow: none !important;
+}
+
+.trash-bulk-bar button {
+  padding: 6px 10px !important;
+}
+
+.trash-bulk-bar button:disabled,
+.trash-selection-row button:disabled {
+  cursor: not-allowed;
+  opacity: .48;
+}
+
+.trash-bulk-restore {
+  border: 1px solid #0f766e !important;
+  background: #0f766e !important;
+  color: #ffffff !important;
+}
+
+.trash-bulk-danger {
+  border: 1px solid #fca5a5 !important;
+  background: #fff1f2 !important;
+  color: #991b1b !important;
+}
+
+.trash-section-tools {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.trash-toggle-button {
+  width: 30px;
+  min-width: 30px;
+  padding: 0 !important;
+  border: 1px solid #d6e3df !important;
+  background: #ffffff !important;
+  color: #0f766e !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+}
+
+.trash-selection-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: -2px 0 10px;
+  padding: 7px 8px;
+  border: 1px solid #dbe7e3;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .74);
+}
+
+.trash-selection-row > span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.trash-selection-row > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.trash-selection-row button {
+  padding: 5px 9px !important;
+  border: 1px solid #d6e3df !important;
+  background: #ffffff !important;
+  color: #0f766e !important;
+}
+
+.trash-list {
+  display: grid;
+  gap: 8px;
+}
+
+.trash-card {
+  gap: 7px !important;
+  padding: 10px 11px 10px 16px !important;
+}
+
+.trash-card-top {
+  gap: 7px !important;
+}
+
+.trash-card-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.trash-card-check input {
+  width: 15px;
+  height: 15px;
+  accent-color: #0f766e;
+  flex: 0 0 auto;
+}
+
+.trash-card-meta span {
+  padding: 3px 7px;
+  font-size: 11px;
+}
+
+.trash-note-preview {
+  -webkit-line-clamp: 2;
+  font-size: 13px;
+}
+
+.trash-quarantine {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: flex-start;
+  justify-self: start;
+  max-width: 100%;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.trash-card-actions {
+  grid-template-columns: minmax(82px, max-content) minmax(132px, max-content);
+  gap: 6px !important;
+}
+
+.trash-card-actions button {
+  min-height: 29px !important;
+  padding: 5px 10px !important;
+  font-size: 11px !important;
+}
+
+@media (max-width: 640px) {
+  .trash-bulk-bar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 7px;
+    padding: 8px;
+  }
+
+  .trash-bulk-bar > div {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .trash-bulk-bar button {
+    width: 100% !important;
+  }
+
+  .trash-section-header {
+    align-items: flex-start;
+  }
+
+  .trash-section-tools {
+    flex-direction: row;
+  }
+
+  .trash-selection-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .trash-selection-row > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .trash-selection-row button {
+    width: 100% !important;
+  }
+
+  .trash-card {
+    padding: 10px 10px 10px 15px !important;
+  }
+
+  .trash-quarantine {
+    width: 100%;
+    border-radius: 10px;
+    white-space: normal;
+  }
+
+  .trash-card-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trash-card-actions button {
+    min-width: 0 !important;
+    padding: 5px 7px !important;
+  }
+}

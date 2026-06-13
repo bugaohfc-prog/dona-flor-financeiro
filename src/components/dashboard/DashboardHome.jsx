@@ -3,6 +3,26 @@ import { useEffect, useMemo } from 'react'
 import { useApp } from '../../context/AppContext.jsx'
 import { useResumoGestaoPessoasPainel } from '../../hooks/useResumoGestaoPessoasPainel.js'
 
+function DashboardAction({ children, variant = 'primary', className = '', ...props }) {
+  return (
+    <button className={`dashboard-home-action dashboard-home-action-${variant} ${className}`} type="button" {...props}>
+      {children}
+    </button>
+  )
+}
+
+function DashboardWidgetHeader({ kicker, title, badge }) {
+  return (
+    <div className="dashboard-home-widget-header">
+      <div>
+        <span className="dashboard-home-kicker">{kicker}</span>
+        <strong>{title}</strong>
+      </div>
+      {badge && <span className="dashboard-home-badge">{badge}</span>}
+    </div>
+  )
+}
+
 export default function DashboardHome({
   styles,
   formatarValor,
@@ -33,57 +53,6 @@ export default function DashboardHome({
   const valorSeguro = (valor) => Number(valor || 0)
   const filialSelecionada = (filiais || []).find((filial) => filial.id === filtroFilial)
   const LIMITE_NOTAS_PAINEL = 5
-  const operacionalCardStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-    padding: 18
-  }
-  const agendaCardStyle = {
-    ...operacionalCardStyle,
-    minHeight: 236
-  }
-  const gestaoPessoasCardStyle = {
-    ...operacionalCardStyle,
-    alignSelf: 'flex-start',
-    flex: '0 0 auto',
-    gap: 10,
-    gridRow: 'auto',
-    height: 'auto',
-    maxHeight: 'none',
-    minHeight: 0,
-    width: '100%'
-  }
-  const operacionalHeaderStyle = {
-    alignItems: 'flex-start',
-    display: 'flex',
-    gap: 12,
-    justifyContent: 'space-between',
-    minHeight: 46
-  }
-  const operacionalBadgeStyle = {
-    alignItems: 'center',
-    display: 'inline-flex',
-    flexShrink: 0,
-    minHeight: 34,
-    padding: '7px 12px'
-  }
-  const operacionalItemStyle = {
-    alignItems: 'flex-start',
-    border: '1px solid #e2e8f0',
-    borderRadius: 12,
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    minHeight: 58,
-    padding: '10px 12px'
-  }
-  const gestaoPessoasItemStyle = {
-    ...operacionalItemStyle,
-    justifyContent: 'flex-start',
-    minHeight: 'auto',
-    padding: '9px 11px'
-  }
   const perfilUsuario = String(perfilEmpresaAtiva || '').trim().toLowerCase()
   const podeAcessarGestaoPessoas = ['admin', 'master'].includes(perfilUsuario)
   const {
@@ -160,6 +129,12 @@ export default function DashboardHome({
   const proximaConta = contasAgenda.find((conta) => diferencaDias(conta.data_vencimento) >= 0) || contasAgenda[0]
   const totalHoje = contasHoje.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
   const totalSemana = contasSemana.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
+  const resumoFinanceiro = [
+    { label: 'Total', valor: formatarValor(total), tone: 'default' },
+    { label: 'Pago', valor: formatarValor(pago), tone: 'success' },
+    { label: 'Pendente', valor: formatarValor(pendente), tone: 'warning' },
+    { label: 'Vencido', valor: formatarValor(vencido), tone: 'danger' }
+  ]
   const itensPessoas = useMemo(() => {
     const itens = []
 
@@ -178,7 +153,7 @@ export default function DashboardHome({
       itens.push({
         id: 'exames-atrasados',
         tipo: 'exames',
-        titulo: 'Exames Atrasados',
+        titulo: 'Exames atrasados',
         descricao: 'Pendências de acompanhamento',
         quantidade: resumoPessoas.examesVencidos,
         rotaDestino: 'relatorios-pessoas'
@@ -187,7 +162,7 @@ export default function DashboardHome({
       itens.push({
         id: 'exames-a-vencer',
         tipo: 'exames',
-        titulo: 'Exames a Vencer',
+        titulo: 'Exames a vencer',
         descricao: 'Próximos 30 dias',
         quantidade: resumoPessoas.examesAVencer,
         rotaDestino: 'relatorios-pessoas'
@@ -198,7 +173,7 @@ export default function DashboardHome({
       itens.push({
         id: 'ferias-vencidas',
         tipo: 'ferias',
-        titulo: 'Férias a Vencer',
+        titulo: 'Férias a vencer',
         descricao: 'Ciclos exigem revisão',
         quantidade: resumoPessoas.feriasVencidas,
         rotaDestino: 'relatorios-ferias'
@@ -207,7 +182,7 @@ export default function DashboardHome({
       itens.push({
         id: 'ferias-proximas',
         tipo: 'ferias',
-        titulo: 'Férias a Vencer',
+        titulo: 'Férias a vencer',
         descricao: 'Próximos 30 dias',
         quantidade: resumoPessoas.feriasProximas,
         rotaDestino: 'ferias'
@@ -238,380 +213,174 @@ export default function DashboardHome({
 
   return (
     <>
-      <style>{`
-        .dashboard-notes-card .note-toggle-small {
-          border-radius: 999px !important;
-          font-size: 15px !important;
-          font-weight: 900 !important;
-          line-height: 1 !important;
-        }
-        .dashboard-note-actions {
-          display: flex;
-          align-items: center;
-          justify-content: flex-start;
-          gap: 6px;
-          flex-wrap: wrap;
-          margin-top: 8px;
-        }
-        .dashboard-note-actions button {
-          width: auto !important;
-          min-width: 0 !important;
-          min-height: 30px !important;
-          padding: 6px 10px !important;
-          border-radius: 999px !important;
-          font-size: 12px !important;
-          font-weight: 800 !important;
-          box-shadow: none !important;
-        }
-        .dashboard-note-actions .dashboard-note-secondary,
-        .dashboard-note-actions .dashboard-note-danger {
-          opacity: 0.78;
-        }
-        .dashboard-note-actions .dashboard-note-secondary {
-          background: #ffffff !important;
-          color: #475569 !important;
-          border: 1px solid #cbd5e1 !important;
-        }
-        .dashboard-note-actions .dashboard-note-danger {
-          background: #fffafa !important;
-          color: #991b1b !important;
-          border: 1px solid #fecaca !important;
-        }
-        @media (max-width: 640px) {
-          .dashboard-notes-card {
-            padding: 12px !important;
-          }
-          .dashboard-notes-card .notes-header-clean {
-            gap: 8px !important;
-            margin-bottom: 10px !important;
-          }
-          .dashboard-notes-card .notes-title {
-            font-size: 15px !important;
-          }
-          .dashboard-notes-card .notes-stats-row {
-            gap: 5px !important;
-          }
-          .dashboard-notes-card .note-stat {
-            font-size: 10.5px !important;
-            padding: 4px 7px !important;
-          }
-          .dashboard-notes-card .dashboard-see-all-link {
-            min-height: 30px !important;
-            padding: 5px 9px !important;
-            font-size: 11px !important;
-          }
-          .dashboard-notes-card .note-toggle-small {
-            width: 30px !important;
-            min-width: 30px !important;
-            height: 30px !important;
-            min-height: 30px !important;
-            padding: 0 !important;
-          }
-          .dashboard-notes-card .note-card-action {
-            padding: 12px !important;
-          }
-          .dashboard-notes-card .note-card-action p {
-            font-size: 12px !important;
-            line-height: 1.38 !important;
-            margin-top: 6px !important;
-          }
-          .dashboard-note-actions {
-            gap: 5px;
-            margin-top: 7px;
-          }
-          .dashboard-note-actions button {
-            min-height: 28px !important;
-            padding: 4px 8px !important;
-            font-size: 11px !important;
-          }
-          .dashboard-note-actions .dashboard-note-secondary,
-          .dashboard-note-actions .dashboard-note-danger {
-            padding-inline: 7px !important;
-          }
-        }
-      `}</style>
-      <section className="dashboard-branch-filter no-print" aria-label="Filtro de filial do painel">
-        <div className="dashboard-branch-filter-card">
-          <div>
-            <span className="analytics-kicker">Visão por filial</span>
-            <strong>{filialSelecionada ? filialSelecionada.nome : 'Todas as filiais'}</strong>
-            <small>O resumo e os próximos vencimentos respeitam a filial selecionada.</small>
-          </div>
-
-          <select
-            style={styles.input}
-            value={filtroFilial}
-            onChange={(e) => setFiltroFilial(e.target.value)}
-            aria-label="Filtrar painel por filial"
-          >
-            <option value="">Todas as filiais</option>
-            {(filiais || []).map((filial) => (
-              <option key={filial.id} value={filial.id}>{filial.nome}</option>
-            ))}
-          </select>
+      <section className="dashboard-home-branch no-print" aria-label="Filtro de filial do painel">
+        <div className="dashboard-home-branch-copy">
+          <span className="dashboard-home-kicker">Visão por filial</span>
+          <strong>{filialSelecionada ? filialSelecionada.nome : 'Todas as filiais'}</strong>
+          <small>Resumo e próximos vencimentos respeitam o filtro selecionado.</small>
         </div>
+
+        <select
+          className="dashboard-home-select"
+          value={filtroFilial}
+          onChange={(e) => setFiltroFilial(e.target.value)}
+          aria-label="Filtrar painel por filial"
+        >
+          <option value="">Todas as filiais</option>
+          {(filiais || []).map((filial) => (
+            <option key={filial.id} value={filial.id}>{filial.nome}</option>
+          ))}
+        </select>
       </section>
 
-      <section className="dashboard-kpi-row" aria-label="Resumo financeiro rápido">
+      <section className="dashboard-home-finance" aria-label="Resumo financeiro rápido">
         {loading ? (
           <SummarySkeleton items={4} />
         ) : (
-          <div
-            style={{
-              background: '#ffffff',
-              border: '1px solid #dbe7e3',
-              borderRadius: 18,
-              padding: 14,
-              marginBottom: 12,
-              boxShadow: '0 10px 24px rgba(15, 23, 42, 0.05)'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
-              <span style={{ color: '#0f766e', fontSize: 12, fontWeight: 800, letterSpacing: 0, textTransform: 'uppercase' }}>Resumo financeiro rápido</span>
-              <button
-                type="button"
-                onClick={() => navegarPara('relatorios')}
-                style={{
-                  background: '#ecfdf5',
-                  border: '1px solid #bbf7d0',
-                  borderRadius: 999,
-                  color: '#0f766e',
-                  cursor: 'pointer',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  padding: '6px 10px'
-                }}
-              >
-                Ver Análise Financeira
-              </button>
+          <div className="dashboard-home-card dashboard-home-finance-card">
+            <div className="dashboard-home-section-head">
+              <div>
+                <span className="dashboard-home-kicker">Resumo financeiro rápido</span>
+                <strong>Visão operacional</strong>
+              </div>
+              <DashboardAction variant="secondary" onClick={() => navegarPara('relatorios')}>
+                Ver relatórios
+              </DashboardAction>
             </div>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                gap: 8
-              }}
-            >
-              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px', minWidth: 0 }}>
-                <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700, lineHeight: 1.2 }}>Total</span>
-                <strong style={{ color: '#111827', display: 'block', fontSize: 15, lineHeight: 1.25, marginTop: 3 }}>{formatarValor(total)}</strong>
-              </div>
-              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px', minWidth: 0 }}>
-                <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700, lineHeight: 1.2 }}>Pago</span>
-                <strong style={{ color: '#166534', display: 'block', fontSize: 15, lineHeight: 1.25, marginTop: 3 }}>{formatarValor(pago)}</strong>
-              </div>
-              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px', minWidth: 0 }}>
-                <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700, lineHeight: 1.2 }}>Pendente</span>
-                <strong style={{ color: '#92400e', display: 'block', fontSize: 15, lineHeight: 1.25, marginTop: 3 }}>{formatarValor(pendente)}</strong>
-              </div>
-              <div style={{ background: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 12, padding: '9px 10px', minWidth: 0 }}>
-                <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700, lineHeight: 1.2 }}>Vencido</span>
-                <strong style={{ color: '#991b1b', display: 'block', fontSize: 15, lineHeight: 1.25, marginTop: 3 }}>{formatarValor(vencido)}</strong>
-              </div>
+            <div className="dashboard-home-kpi-grid">
+              {resumoFinanceiro.map((item) => (
+                <div className={`dashboard-home-kpi dashboard-home-kpi-${item.tone}`} key={item.label}>
+                  <span>{item.label}</span>
+                  <strong>{item.valor}</strong>
+                </div>
+              ))}
             </div>
           </div>
         )}
       </section>
 
       {!loading && (
-        <section className="dashboard-operational-grid dashboard-analytics-grid no-print" style={{ alignItems: 'flex-start' }}>
-          <div className="dashboard-analytics-card executive-agenda-widget" style={agendaCardStyle}>
-            <div className="analytics-card-header" style={operacionalHeaderStyle}>
-              <div>
-                <span className="analytics-kicker">Agenda</span>
-                <strong>Próximos vencimentos</strong>
-              </div>
-              <span className="analytics-badge neutral" style={operacionalBadgeStyle}>{contasAgenda.length} abertas</span>
-            </div>
+        <section className="dashboard-home-widgets no-print" aria-label="Widgets operacionais do painel">
+          <article className="dashboard-home-card dashboard-home-widget">
+            <DashboardWidgetHeader
+              kicker="Agenda"
+              title="Próximos vencimentos"
+              badge={`${contasAgenda.length} abertas`}
+            />
 
-            <div className="executive-agenda-metrics" style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
-              <div style={operacionalItemStyle}>
-                <small>Hoje</small>
+            <div className="dashboard-home-mini-grid">
+              <div className="dashboard-home-metric">
+                <span>Hoje</span>
                 <strong>{formatarValor(totalHoje)}</strong>
               </div>
-              <div style={operacionalItemStyle}>
-                <small>7 dias</small>
+              <div className="dashboard-home-metric">
+                <span>7 dias</span>
                 <strong>{formatarValor(totalSemana)}</strong>
               </div>
             </div>
 
             {proximaConta ? (
-              <div className="executive-agenda-next" style={operacionalItemStyle}>
+              <div className="dashboard-home-feature-item">
                 <span>Próximo compromisso</span>
                 <strong>{proximaConta.descricao}</strong>
                 <small>{formatarData(proximaConta.data_vencimento)} • {formatarValor(proximaConta.valor)}</small>
               </div>
             ) : (
-              <div className="analytics-empty executive-agenda-empty" style={{ ...operacionalItemStyle, alignItems: 'center' }}>Agenda financeira limpa.</div>
+              <div className="dashboard-home-empty">Agenda financeira limpa.</div>
             )}
 
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 'auto' }}>
-              <button
-                className="executive-agenda-cta"
-                style={{
-                  background: '#0f766e',
-                  borderColor: '#0f766e',
-                  color: '#ffffff',
-                  flex: '1 1 140px'
-                }}
-                onClick={() => navegarPara('agenda')}
-              >
+            <div className="dashboard-home-actions">
+              <DashboardAction onClick={() => navegarPara('agenda')}>
                 Ver agenda
-              </button>
-              <button
-                type="button"
-                style={{
-                  alignItems: 'center',
-                  background: '#f0fdfa',
-                  border: '1px solid #99f6e4',
-                  borderRadius: 999,
-                  boxShadow: 'none',
-                  color: '#0f766e',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  flex: '0 1 auto',
-                  fontSize: 12,
-                  fontWeight: 800,
-                  justifyContent: 'center',
-                  minHeight: 34,
-                  minWidth: 0,
-                  opacity: 1,
-                  padding: '7px 12px',
-                  textAlign: 'center',
-                  whiteSpace: 'nowrap'
-                }}
-                onClick={() => navegarPara('contas')}
-              >
+              </DashboardAction>
+              <DashboardAction variant="secondary" onClick={() => navegarPara('contas')}>
                 Ver contas
-              </button>
+              </DashboardAction>
             </div>
-          </div>
+          </article>
 
           {podeVisualizarResumoPessoas && (
-            <div className="dashboard-people-card dashboard-analytics-card" style={gestaoPessoasCardStyle} aria-label="Resumo de Gestão de Pessoas">
-              <div className="analytics-card-header" style={operacionalHeaderStyle}>
-                <div>
-                  <span className="analytics-kicker">Gestão de Pessoas</span>
-                  <strong>Resumo da equipe</strong>
-                </div>
-                <span className="analytics-badge neutral" style={operacionalBadgeStyle}>Equipe Ativa: {resumoPessoas.funcionariosAtivos}</span>
-              </div>
+            <article className="dashboard-home-card dashboard-home-widget" aria-label="Resumo de Gestão de Pessoas">
+              <DashboardWidgetHeader
+                kicker="Gestão de Pessoas"
+                title="Resumo da equipe"
+                badge={`Equipe ativa: ${resumoPessoas.funcionariosAtivos}`}
+              />
 
               {loadingResumoPessoas ? (
-                <div className="dashboard-people-item analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>Carregando resumo de pessoas...</div>
+                <div className="dashboard-home-empty">Carregando resumo de pessoas...</div>
               ) : erroResumoPessoas ? (
-                <div className="dashboard-people-item analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>Não foi possível carregar o resumo de Gestão de Pessoas.</div>
+                <div className="dashboard-home-empty">Não foi possível carregar o resumo de Gestão de Pessoas.</div>
               ) : (
                 <>
                   {itensPessoas.length === 0 ? (
-                    <div className="dashboard-people-item analytics-empty" style={{ ...gestaoPessoasItemStyle, alignItems: 'center' }}>{'Sem alertas principais no momento.'}</div>
+                    <div className="dashboard-home-empty">Sem alertas principais no momento.</div>
                   ) : (
-                    <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+                    <div className="dashboard-home-people-list">
                       {itensPessoas.map((item) => (
                         <button
-                          className="dashboard-people-item"
+                          className="dashboard-home-people-item"
                           key={item.id}
                           type="button"
                           onClick={() => item.rotaDestino && navegarPara(item.rotaDestino)}
-                          style={{
-                            background: '#f8fafc',
-                            color: '#111827',
-                            cursor: item.rotaDestino ? 'pointer' : 'default',
-                            textAlign: 'left',
-                            gap: 8,
-                            ...gestaoPessoasItemStyle
-                          }}
                         >
-                          <span style={{ alignItems: 'center', display: 'flex', gap: 8, justifyContent: 'space-between', width: '100%' }}>
-                            <strong style={{ display: 'block', fontSize: 13, lineHeight: 1.2 }}>{item.titulo}</strong>
-                            <span style={{
-                              background: item.tipo === 'folha' ? '#fef3c7' : item.tipo === 'exames' ? '#fee2e2' : '#e0f2fe',
-                              border: '1px solid rgba(15, 23, 42, .08)',
-                              borderRadius: 999,
-                              color: item.tipo === 'folha' ? '#92400e' : item.tipo === 'exames' ? '#991b1b' : '#0369a1',
-                              flex: '0 0 auto',
-                              fontSize: 12,
-                              fontWeight: 900,
-                              lineHeight: 1,
-                              padding: '5px 8px'
-                            }}>
-                              {item.quantidade}
-                            </span>
+                          <span>
+                            <strong>{item.titulo}</strong>
+                            <small>{item.descricao}</small>
                           </span>
-                          <small style={{ color: '#64748b', display: 'block', fontSize: 12, lineHeight: 1.35 }}>{item.descricao}</small>
+                          <b className={`dashboard-home-count dashboard-home-count-${item.tipo}`}>{item.quantidade}</b>
                         </button>
                       ))}
                     </div>
                   )}
+
                   <button
-                    className="dashboard-people-item"
+                    className="dashboard-home-team-row"
                     type="button"
                     onClick={() => agendaEquipePessoas.rotaDestino && navegarPara(agendaEquipePessoas.rotaDestino)}
-                    style={{
-                      ...gestaoPessoasItemStyle,
-                      alignItems: 'center',
-                      background: '#ffffff',
-                      borderStyle: 'dashed',
-                      color: '#334155',
-                      cursor: agendaEquipePessoas.rotaDestino ? 'pointer' : 'default',
-                      display: 'flex',
-                      flexDirection: 'row',
-                      gap: 10,
-                      justifyContent: 'space-between',
-                      marginTop: 2,
-                      textAlign: 'left'
-                    }}
                   >
                     <span>
-                      <strong style={{ display: 'block', fontSize: 12 }}>{agendaEquipePessoas.titulo}</strong>
-                      <small style={{ color: '#64748b', display: 'block', marginTop: 2 }}>Aniversariantes nos próximos 7 dias</small>
+                      <strong>{agendaEquipePessoas.titulo}</strong>
+                      <small>Aniversariantes nos próximos 7 dias</small>
                     </span>
-                    <span style={{
-                      background: '#f1f5f9',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: 999,
-                      color: '#475569',
-                      flex: '0 0 auto',
-                      fontSize: 12,
-                      fontWeight: 900,
-                      padding: '5px 9px'
-                    }}>
-                      Aniversariantes: {agendaEquipePessoas.aniversarios}
-                    </span>
+                    <b>{agendaEquipePessoas.aniversarios}</b>
                   </button>
                 </>
               )}
-            </div>
+            </article>
           )}
         </section>
       )}
 
       {loading ? (
-        <section className="content-block" style={styles.bloco}>
+        <section className="content-block dashboard-home-notes-loading" style={styles.bloco}>
           <div className="notes-header-clean">
             <div>
-              <h2 style={styles.subtitulo}>📝 Notas</h2>
+              <h2 style={styles.subtitulo}>Notas</h2>
               <p style={styles.textoNota}>Carregando lembretes...</p>
             </div>
           </div>
           <NotesSkeleton items={2} />
         </section>
       ) : (
-        <section className={`no-print dashboard-notes-card ${mostrarNotas ? 'notes-expanded' : 'notes-collapsed'}`} style={{ marginTop: 16, padding: 18 }}>
-          <div style={{ ...styles.notasHeaderNovo, alignItems: 'flex-start', gap: 12, marginBottom: mostrarNotas ? 14 : 0 }} className="notes-header-clean dashboard-notes-content">
+        <section className={`no-print dashboard-home-card dashboard-home-notes dashboard-notes-card ${mostrarNotas ? 'notes-expanded' : 'notes-collapsed'}`}>
+          <div className="dashboard-home-section-head dashboard-home-notes-head">
             <div className="notes-title-wrap">
-              <strong className="notes-title">{'Notas e pend\u00eancias'}</strong>
+              <span className="dashboard-home-kicker">Notas/Pendências</span>
+              <strong className="notes-title">Acompanhamento rápido</strong>
               <div className="notes-stats-row">
                 <span className="note-stat note-stat-pendente">{notasPendentes.length} pendente(s)</span>
-                <span className="note-stat note-stat-critico">{notasCriticas} {'cr\u00edtica(s)'}</span>
+                <span className="note-stat note-stat-critico">{notasCriticas} crítica(s)</span>
                 <span className="note-stat note-stat-urgente">{notasUrgentes} urgente(s)</span>
               </div>
             </div>
-            <div className="notes-header-actions">
-              <button className="dashboard-see-all-link" type="button" onClick={() => navegarPara('notas')}>Ver notas</button>
+            <div className="dashboard-home-note-tools">
+              <DashboardAction variant="secondary" onClick={() => navegarPara('notas')}>
+                Ver notas
+              </DashboardAction>
               <button
-                className="note-toggle-small"
+                className="dashboard-home-icon-button"
                 type="button"
                 onClick={() => setMostrarNotas(!mostrarNotas)}
                 title={mostrarNotas ? 'Recolher bloco de notas' : 'Expandir bloco de notas'}
@@ -623,31 +392,41 @@ export default function DashboardHome({
           </div>
 
           {mostrarNotas && notasPainel.length === 0 && (
-            <p style={styles.mensagemVazia}>{'Nenhuma nota cr\u00edtica ou urgente nos pr\u00f3ximos dias.'}</p>
+            <p className="dashboard-home-empty-text">Nenhuma nota crítica ou urgente nos próximos dias.</p>
           )}
 
           {mostrarNotas && notasPainel.length > 0 && (
-            <div style={styles.notasListaNova} className="notes-list-dashboard">
+            <div className="dashboard-home-notes-list notes-list-dashboard">
               {notasPainel.map((nota) => {
                 const prioridade = nota.prioridade || 'normal'
                 return (
-                  <div key={nota.id} className={`note-card-action note-card-${prioridade}`} style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida ? 0.65 : 1 }}>
-                    <div style={styles.cardTopo}>
-                      <strong style={{ textDecoration: nota.concluida ? 'line-through' : 'none' }}>{nota.titulo}</strong>
-                      <span className={`note-priority-badge note-priority-${prioridade}`} style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
-                        {prioridade === 'critico' ? 'Cr\u00edtico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
+                  <div key={nota.id} className={`dashboard-home-note note-card-action note-card-${prioridade} dashboard-home-note-${prioridade} ${nota.concluida ? 'is-done' : ''}`}>
+                    <div className="dashboard-home-note-top">
+                      <strong>{nota.titulo}</strong>
+                      <span className={`note-priority-badge note-priority-${prioridade}`}>
+                        {prioridade === 'critico' ? 'Crítico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
                       </span>
                     </div>
 
                     {nota.data_evento && <small className="note-event-date">Data: {formatarData(nota.data_evento)}</small>}
 
-                    {nota.conteudo && <p style={styles.textoNota}>{nota.conteudo}</p>}
+                    {nota.conteudo && <p>{nota.conteudo}</p>}
 
                     {podeEditarFinanceiro && (
                       <div className="dashboard-note-actions">
-                        <button className="dashboard-note-primary" style={styles.btnPago} onClick={() => alternarNotaConcluida(nota)}>{nota.concluida ? 'Reabrir' : 'Concluir'}</button>
-                        <button className="dashboard-note-secondary" style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
-                        <button className="dashboard-note-danger" style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficar\u00e1 em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>Excluir</button>
+                        <DashboardAction className="dashboard-note-primary" onClick={() => alternarNotaConcluida(nota)}>
+                          {nota.concluida ? 'Reabrir' : 'Concluir'}
+                        </DashboardAction>
+                        <DashboardAction className="dashboard-note-secondary" variant="secondary" onClick={() => abrirEdicaoNota(nota)}>
+                          Editar
+                        </DashboardAction>
+                        <DashboardAction
+                          className="dashboard-note-danger"
+                          variant="danger"
+                          onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}
+                        >
+                          Excluir
+                        </DashboardAction>
                       </div>
                     )}
                   </div>

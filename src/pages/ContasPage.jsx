@@ -233,14 +233,15 @@ export default function ContasPage({
     return (
       <>
       <section className="no-print filters-desktop accounts-control-panel" style={styles.filtrosBox}>
-        <input
-          className="accounts-search-input"
-          style={styles.input}
-          placeholder="Buscar por conta, valor, data, centro, observação ou status..."
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-        />
-
+        <div className="accounts-search-row">
+          <input
+            className="accounts-search-input"
+            style={styles.input}
+            placeholder="Buscar por conta, valor, data, centro, observação ou status..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
+        </div>
         <div className="accounts-filter-actions">
           <button className="filter-toggle-button" onClick={() => setMostrarFiltros(!mostrarFiltros)}>
             {mostrarFiltros ? 'Ocultar filtros' : 'Filtros'}
@@ -314,13 +315,17 @@ export default function ContasPage({
       </section>
 
       <section className="result-summary accounts-result-summary" style={styles.resumoFiltro}>
-        <strong>Resultado filtrado</strong>
-        <span>
-          Contas: {contasFiltradas.length} • Previsto: {formatarValor(resumoResultadoFiltrado.previsto)} • Realizado: {formatarValor(resumoResultadoFiltrado.realizado)}
-          {mostrarEncargosResultado && <> • Encargos: {formatarValor(resumoResultadoFiltrado.encargos)}</>}
-          {mostrarDescontosResultado && <> • Descontos: {formatarValor(resumoResultadoFiltrado.descontos)}</>}
-        </span>
-        <small>
+        <div className="accounts-result-heading">
+          <strong>Resultado filtrado</strong>
+          <small>{contasFiltradas.length} conta(s)</small>
+        </div>
+        <div className="accounts-result-metrics">
+          <span><b>Previsto</b>{formatarValor(resumoResultadoFiltrado.previsto)}</span>
+          <span><b>Realizado</b>{formatarValor(resumoResultadoFiltrado.realizado)}</span>
+          {mostrarEncargosResultado && <span><b>Encargos</b>{formatarValor(resumoResultadoFiltrado.encargos)}</span>}
+          {mostrarDescontosResultado && <span><b>Descontos</b>{formatarValor(resumoResultadoFiltrado.descontos)}</span>}
+        </div>
+        <small className="accounts-result-context">
           Filial: {filtroFilial ? (filiais || []).find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas'} •
           Centro: {filtroCentro ? centros.find((centro) => centro.id === filtroCentro)?.nome || 'Selecionado' : 'Todos'} •
           Status: {filtroStatus} •
@@ -394,7 +399,7 @@ export default function ContasPage({
                   )}
                 </div>
                 {!exibirBaixaReal && (
-                  <span>{formatarValor(valorPrevisto)}</span>
+                  <span className="account-card-value">{formatarValor(valorPrevisto)}</span>
                 )}
               </div>
 
@@ -421,15 +426,19 @@ export default function ContasPage({
               )}
 
               <div style={styles.cardInfo} className="account-meta-line">
-                <span className="account-date-badge">📅 {formatarData(conta.data_vencimento)}</span>
-                <span>{conta.df_filiais?.nome || 'Sem filial'}</span>
-                <span>{conta.df_centros_custo?.nome || '-'}</span>
-                {recorrente && (
-                  <span className="account-recurring-badge">↻ {tipoRecorrencia}</span>
-                )}
-                <span className={`status-pill ${vencida ? 'status-vencido' : conta.status === 'pago' ? 'status-pago' : 'status-pendente'}`}>
-                  {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}
-                </span>
+                <div className="account-meta-main">
+                  <span className="account-date-badge">📅 {formatarData(conta.data_vencimento)}</span>
+                  <span>{conta.df_filiais?.nome || 'Sem filial'}</span>
+                  <span>{conta.df_centros_custo?.nome || '-'}</span>
+                </div>
+                <div className="account-meta-badges">
+                  {recorrente && (
+                    <span className="account-recurring-badge">↻ {tipoRecorrencia}</span>
+                  )}
+                  <span className={`status-pill ${vencida ? 'status-vencido' : conta.status === 'pago' ? 'status-pago' : 'status-pendente'}`}>
+                    {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}
+                  </span>
+                </div>
               </div>
 
               {observacao && (

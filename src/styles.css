@@ -2389,3 +2389,391 @@
     padding-bottom: max(168px, calc(138px + env(safe-area-inset-bottom))) !important;
   }
 }
+
+/* Contas - redesenho estrutural */
+.accounts-page-header {
+  padding-inline: 0 !important;
+}
+
+.accounts-control-panel.filters-desktop {
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 14px !important;
+  border-color: #cfe4df !important;
+  border-radius: 16px !important;
+  background: #fbfefd !important;
+}
+
+.accounts-search-row {
+  grid-column: 1 / -1;
+  order: 1;
+}
+
+.accounts-control-panel .accounts-search-input {
+  min-height: 42px !important;
+  background: #ffffff !important;
+}
+
+.accounts-status-tabs {
+  grid-column: 1 / 8 !important;
+  order: 2;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-self: end;
+}
+
+.accounts-status-tab {
+  min-height: 36px;
+  border-radius: 10px;
+}
+
+.accounts-filter-actions {
+  grid-column: 8 / -1 !important;
+  order: 3;
+  display: grid;
+  grid-template-columns: minmax(92px, 1fr) minmax(104px, 1fr) minmax(72px, .75fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.accounts-filter-actions .filter-toggle-button,
+.accounts-export-toggle,
+.accounts-control-panel .accounts-clear-button {
+  min-height: 36px !important;
+  border-radius: 10px !important;
+  font-size: 12px !important;
+  padding: 7px 10px !important;
+}
+
+.accounts-control-panel .accounts-clear-button {
+  font-weight: 800 !important;
+  order: 3;
+}
+
+.accounts-export-actions {
+  min-width: 104px !important;
+  order: 2;
+}
+
+.accounts-export-toggle {
+  min-width: 104px !important;
+}
+
+.accounts-filter-actions .filter-toggle-button {
+  order: 1;
+}
+
+.accounts-export-menu {
+  right: 0;
+  min-width: 196px;
+  justify-content: space-between;
+}
+
+.accounts-sort-control-main {
+  grid-column: 8 / -1 !important;
+  order: 4;
+  max-width: none;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #dbe7e3;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.accounts-sort-control-main select {
+  min-height: 34px !important;
+  border-radius: 10px !important;
+}
+
+.accounts-control-panel .advanced-filters {
+  grid-column: 1 / -1;
+  padding-top: 2px;
+}
+
+.accounts-result-summary.result-summary {
+  display: grid !important;
+  gap: 10px;
+  background: #fbfefd !important;
+}
+
+.accounts-result-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.accounts-result-heading small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.accounts-result-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.accounts-result-metrics span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.accounts-result-metrics b {
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.accounts-result-context {
+  color: #64748b;
+}
+
+.accounts-list-section {
+  padding-right: clamp(0px, 7vw, 96px) !important;
+  padding-bottom: 180px !important;
+}
+
+.accounts-list-header {
+  align-items: center;
+  border-color: #cfe4df;
+  background: #fbfefd;
+}
+
+.account-card-desktop.print-card {
+  position: relative;
+  display: grid !important;
+  gap: 12px !important;
+  overflow: hidden;
+  padding: 14px 14px 14px 18px !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, .055) !important;
+}
+
+.account-card-desktop.print-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: #f59e0b;
+}
+
+.account-card-desktop.account-card-pendente {
+  border-color: #f6c85f !important;
+  background: #fff7d6 !important;
+}
+
+.account-card-desktop.account-card-vencida {
+  border-color: #f87171 !important;
+  background: #ffe4e6 !important;
+}
+
+.account-card-desktop.account-card-vencida::before {
+  background: #dc2626;
+}
+
+.account-card-desktop.account-card-paga {
+  border-color: #74d89a !important;
+  background: #ddfbe8 !important;
+}
+
+.account-card-desktop.account-card-paga::before {
+  background: #16a34a;
+}
+
+.account-card-head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start !important;
+  gap: 12px !important;
+}
+
+.account-title-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.account-title-wrap strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.account-card-value {
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 950;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.account-payment-real-panel {
+  border-radius: 12px !important;
+}
+
+.account-meta-line {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px !important;
+  align-items: start !important;
+}
+
+.account-meta-main,
+.account-meta-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.account-meta-main span,
+.account-meta-badges span {
+  min-width: 0;
+}
+
+.account-meta-badges {
+  justify-content: flex-end;
+}
+
+.account-card-vencida .status-vencido {
+  border-color: #dc2626 !important;
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+.account-card-pendente .status-pendente {
+  border-color: #f59e0b !important;
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.account-card-paga .status-pago {
+  border-color: #16a34a !important;
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.account-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(88px, max-content));
+  justify-content: start;
+  gap: 8px !important;
+  width: 100%;
+  padding-top: 2px;
+}
+
+.account-actions .account-action-button {
+  min-width: 88px !important;
+  min-height: 32px !important;
+  padding: 6px 12px !important;
+  border-radius: 10px !important;
+  font-size: 12px !important;
+}
+
+.account-actions .account-action-primary {
+  box-shadow: 0 6px 14px rgba(15, 118, 110, .16) !important;
+}
+
+.account-actions .account-action-danger {
+  border-color: #fca5a5 !important;
+  background: #fff1f2 !important;
+  color: #991b1b !important;
+  opacity: 1 !important;
+}
+
+@media (max-width: 900px) {
+  .accounts-control-panel.filters-desktop {
+    grid-template-columns: 1fr !important;
+  }
+
+  .accounts-search-row,
+  .accounts-status-tabs,
+  .accounts-filter-actions,
+  .accounts-sort-control-main,
+  .accounts-control-panel .advanced-filters {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .accounts-control-panel.filters-desktop {
+    gap: 9px !important;
+    padding: 11px !important;
+  }
+
+  .accounts-status-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .accounts-filter-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .accounts-control-panel .accounts-clear-button {
+    grid-column: 1 / -1;
+    justify-self: start;
+    width: auto !important;
+    min-width: 92px !important;
+  }
+
+  .accounts-sort-control-main {
+    grid-template-columns: 1fr;
+  }
+
+  .accounts-export-menu {
+    left: 0;
+    right: auto;
+  }
+
+  .accounts-result-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .accounts-list-section {
+    padding-right: 12px !important;
+    padding-bottom: max(232px, calc(196px + env(safe-area-inset-bottom))) !important;
+  }
+
+  .account-card-desktop.print-card {
+    padding: 12px 12px 12px 16px !important;
+  }
+
+  .account-card-head {
+    grid-template-columns: 1fr;
+    gap: 7px !important;
+  }
+
+  .account-card-value {
+    justify-self: start;
+  }
+
+  .account-meta-line {
+    grid-template-columns: 1fr;
+  }
+
+  .account-meta-badges {
+    justify-content: flex-start;
+  }
+
+  .account-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .account-actions .account-action-button {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 6px 8px !important;
+  }
+}

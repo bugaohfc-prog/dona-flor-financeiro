@@ -21,7 +21,7 @@ function DashboardCollapseButton({ expanded, onClick, label }) {
       aria-label={expanded ? `Recolher ${label}` : `Expandir ${label}`}
       aria-expanded={expanded}
     >
-      {expanded ? '▴' : '▾'}
+      {expanded ? '\u2212' : '+'}
     </button>
   )
 }

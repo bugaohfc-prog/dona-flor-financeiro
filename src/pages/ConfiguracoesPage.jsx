@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import HeaderExpansivel from '../components/ui/HeaderExpansivel.jsx'
 import { primeiraLetraMaiuscula } from '../utils/format'
 
@@ -55,262 +56,199 @@ export default function ConfiguracoesPage({
   setModalCentro,
   salvarConfiguracoes
 }) {
+  const [mostrarConfigFiliais, setMostrarConfigFiliais] = useState(true)
+  const [mostrarResumoUso, setMostrarResumoUso] = useState(true)
+
   if (!podeAcessarConfiguracoes) {
     return (
-      <>
-        <h1 style={styles.titulo}>⚙️ Configurações</h1>
-        <section style={styles.cardConfiguracao}>
-          <h2 style={styles.subtitulo}>Acesso restrito</h2>
-          <p style={styles.textoNota}>Seu perfil atual não permite acessar configurações.</p>
-          <button style={styles.btnCinza} onClick={() => navegarPara('contas')}>← Voltar</button>
-        </section>
-      </>
+      <div className="admin-page">
+        <div className="admin-page-hero">
+          <div>
+            <span className="admin-kicker">Administração</span>
+            <h1 style={styles.titulo}>Configurações</h1>
+            <p style={styles.textoNota}>Seu perfil atual não permite acessar configurações.</p>
+          </div>
+          <button className="admin-btn admin-btn-secondary" onClick={() => navegarPara('contas')}>← Voltar</button>
+        </div>
+      </div>
     )
   }
 
   return (
-    <>
-      <h1 style={styles.titulo}>⚙️ Configurações</h1>
+    <div className="admin-page settings-admin-page">
+      <div className="admin-page-hero">
+        <div>
+          <span className="admin-kicker">Administração da empresa</span>
+          <h1 style={styles.titulo}>Configurações</h1>
+          <p style={styles.textoNota}>Centralize alertas, dados do negócio, destinatários e parâmetros operacionais.</p>
+        </div>
+        <button className="admin-btn admin-btn-secondary" onClick={() => navegarPara('dashboard')}>← Painel</button>
+      </div>
 
-      <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>
-        ← Voltar
-      </button>
-
-      <section style={styles.cardConfiguracao} className="settings-card settings-notifications-card">
+      <section style={styles.cardConfiguracao} className="settings-card admin-config-card settings-notifications-card">
         <HeaderExpansivel
           styles={styles}
           titulo="🔔 Notificações"
+          subtitulo="Alertas de contas e notas"
+          meta={notificacoesAtivas ? 'Ativas' : 'Desligadas'}
           aberto={mostrarConfigNotificacoes}
           onClick={() => setMostrarConfigNotificacoes(!mostrarConfigNotificacoes)}
         />
 
         {mostrarConfigNotificacoes && (
-          <>
-            <label className="checkbox-row-fix" style={styles.switchLinha}>
+          <div className="admin-section-body">
+            <label className="admin-switch-row checkbox-row-fix">
               <div>
                 <strong>Notificações ativas</strong>
                 <small>Controle geral dos disparos automáticos da empresa.</small>
               </div>
-
-              <input
-                type="checkbox"
-                checked={notificacoesAtivas}
-                onChange={(e) => setNotificacoesAtivas(e.target.checked)}
-              />
+              <input type="checkbox" checked={notificacoesAtivas} onChange={(e) => setNotificacoesAtivas(e.target.checked)} />
             </label>
 
-            <div style={styles.configResumo}>
-              <strong>Contas</strong>
-              <span>Regras aplicadas automaticamente em todas as contas, sem checkbox individual no formulário.</span>
+            <div className="admin-config-grid">
+              <div className="admin-field-group">
+                <span>Contas</span>
+                <input
+                  style={styles.input}
+                  type="number"
+                  min="0"
+                  placeholder="Avisar antes do vencimento. Ex: 1"
+                  value={diasAlertaContas}
+                  onChange={(e) => { setDiasAlertaContas(e.target.value); setDiasAvisoPadrao(e.target.value) }}
+                />
+                <label className="admin-switch-row checkbox-row-fix">
+                  <div>
+                    <strong>Notificar contas vencidas</strong>
+                    <small>Exibir contas em atraso nas notificações e destaques.</small>
+                  </div>
+                  <input type="checkbox" checked={alertarContasVencidas} onChange={(e) => setAlertarContasVencidas(e.target.checked)} />
+                </label>
+                <label className="admin-switch-row checkbox-row-fix">
+                  <div>
+                    <strong>Destacar contas críticas</strong>
+                    <small>Dar prioridade visual para contas vencidas ou próximas do vencimento.</small>
+                  </div>
+                  <input type="checkbox" checked={destacarContasCriticas} onChange={(e) => setDestacarContasCriticas(e.target.checked)} />
+                </label>
+              </div>
+
+              <div className="admin-field-group">
+                <span>Notas</span>
+                <input
+                  style={styles.input}
+                  type="number"
+                  min="0"
+                  placeholder="Avisar pendências após quantos dias. Ex: 3"
+                  value={diasAlertaNotas}
+                  onChange={(e) => setDiasAlertaNotas(e.target.value)}
+                />
+                <label className="admin-switch-row checkbox-row-fix">
+                  <div>
+                    <strong>Destacar notas urgentes</strong>
+                    <small>Manter notas urgentes e críticas no topo do acompanhamento.</small>
+                  </div>
+                  <input type="checkbox" checked={destacarNotasUrgentes} onChange={(e) => setDestacarNotasUrgentes(e.target.checked)} />
+                </label>
+              </div>
             </div>
 
-            <input
-              style={styles.input}
-              type="number"
-              min="0"
-              placeholder="Avisar contas antes do vencimento. Ex: 1"
-              value={diasAlertaContas}
-              onChange={(e) => { setDiasAlertaContas(e.target.value); setDiasAvisoPadrao(e.target.value) }}
-            />
-
-            <label className="checkbox-row-fix" style={styles.switchLinha}>
-              <div>
-                <strong>Notificar contas vencidas</strong>
-                <small>Exibir contas em atraso nas notificações e destaques.</small>
-              </div>
-              <input type="checkbox" checked={alertarContasVencidas} onChange={(e) => setAlertarContasVencidas(e.target.checked)} />
-            </label>
-
-            <label className="checkbox-row-fix" style={styles.switchLinha}>
-              <div>
-                <strong>Destacar contas críticas</strong>
-                <small>Dar prioridade visual para contas vencidas ou muito próximas do vencimento.</small>
-              </div>
-              <input type="checkbox" checked={destacarContasCriticas} onChange={(e) => setDestacarContasCriticas(e.target.checked)} />
-            </label>
-
-            <div style={styles.configResumo}>
-              <strong>Notas</strong>
-              <span>Regras para pendências e prioridades do bloco de notas.</span>
+            <div className="admin-summary-strip">
+              <span>E-mail: {configEmail ? 'Ativo para alertas automáticos' : 'Desligado'}</span>
+              <span>WhatsApp e Push: não configurados no fluxo atual</span>
             </div>
-
-            <input
-              style={styles.input}
-              type="number"
-              min="0"
-              placeholder="Avisar notas pendentes após quantos dias. Ex: 3"
-              value={diasAlertaNotas}
-              onChange={(e) => setDiasAlertaNotas(e.target.value)}
-            />
-
-            <label className="checkbox-row-fix" style={styles.switchLinha}>
-              <div>
-                <strong>Destacar notas urgentes</strong>
-                <small>Manter notas urgentes e críticas no topo do acompanhamento.</small>
-              </div>
-              <input type="checkbox" checked={destacarNotasUrgentes} onChange={(e) => setDestacarNotasUrgentes(e.target.checked)} />
-            </label>
-
-            <div style={styles.configResumo}>
-              <strong>Envio automático atual</strong>
-              <span>E-mail: {configEmail ? 'Ativo para os alertas automáticos' : 'Desligado'}</span>
-              <span>WhatsApp e Push: não configurados no fluxo atual.</span>
-            </div>
-          </>
+          </div>
         )}
       </section>
 
-      <section style={styles.cardConfiguracao} className="settings-card settings-business-card">
+      <section style={styles.cardConfiguracao} className="settings-card admin-config-card settings-business-card">
         <HeaderExpansivel
           styles={styles}
           titulo="🏢 Dados do negócio"
+          subtitulo="Empresa e contatos institucionais"
           aberto={mostrarConfigNegocio}
           onClick={() => setMostrarConfigNegocio(!mostrarConfigNegocio)}
         />
 
         {mostrarConfigNegocio && (
-          <>
-            <input
-              style={styles.input}
-              placeholder="Nome da empresa"
-              value={nomeEmpresa}
-              onChange={(e) => setNomeEmpresa(primeiraLetraMaiuscula(e.target.value))}
-            />
-
-            <input
-              style={styles.input}
-              placeholder="WhatsApp da empresa (contato). Ex: 5511999999999"
-              value={whatsappPadrao}
-              onChange={(e) => setWhatsappPadrao(e.target.value)}
-            />
-
-            <input
-              style={styles.input}
-              placeholder="E-mail padrão da empresa"
-              value={emailPadrao}
-              onChange={(e) => setEmailPadrao(e.target.value)}
-            />
-          </>
+          <div className="admin-section-body admin-form-grid">
+            <label>
+              <span>Nome da empresa</span>
+              <input style={styles.input} value={nomeEmpresa} onChange={(e) => setNomeEmpresa(primeiraLetraMaiuscula(e.target.value))} />
+            </label>
+            <label>
+              <span>WhatsApp da empresa</span>
+              <input style={styles.input} placeholder="Ex: 5511999999999" value={whatsappPadrao} onChange={(e) => setWhatsappPadrao(e.target.value)} />
+            </label>
+            <label>
+              <span>E-mail padrão da empresa</span>
+              <input style={styles.input} value={emailPadrao} onChange={(e) => setEmailPadrao(e.target.value)} />
+            </label>
+          </div>
         )}
       </section>
 
-      <section style={styles.cardConfiguracao} className="settings-card settings-alert-recipients-card">
+      <section style={styles.cardConfiguracao} className="settings-card admin-config-card settings-alert-recipients-card">
         <HeaderExpansivel
           styles={styles}
           titulo="✉️ Destinatários de alertas"
+          subtitulo="E-mails administrativos sem criar usuários"
+          meta={loadingDestinatarios ? 'Carregando' : `${destinatarios.length} exibido(s)`}
           aberto={mostrarConfigDestinatarios}
           onClick={() => setMostrarConfigDestinatarios(!mostrarConfigDestinatarios)}
         />
 
         {mostrarConfigDestinatarios && (
-          <>
-            <p style={styles.textoNota}>
-              Cadastre e-mails de donos ou responsáveis para receber alertas sem criar usuários no sistema.
-            </p>
+          <div className="admin-section-body">
+            <p style={styles.textoNota}>Cadastre e-mails de donos ou responsáveis para receber alertas sem criar usuários no sistema.</p>
+            {!podeGerenciarDestinatariosAlertas && <p style={styles.textoNota}>Somente Admin/Master podem alterar destinatários.</p>}
+            {erroDestinatarios && <p className="admin-error-text">{erroDestinatarios}</p>}
 
-            {!podeGerenciarDestinatariosAlertas && (
-              <p style={styles.textoNota}>Somente Admin/Master podem alterar destinatários.</p>
-            )}
-
-            <div style={styles.configResumo}>
-              <span>{loadingDestinatarios ? 'Carregando destinatários...' : `${destinatarios.length} destinatário(s) exibido(s)`}</span>
-              <span>Integração com envio automático será feita em ciclo próprio.</span>
-            </div>
-
-            {erroDestinatarios && (
-              <p style={{ ...styles.textoNota, color: '#b91c1c', fontWeight: 700 }}>{erroDestinatarios}</p>
-            )}
-
-            <label className="checkbox-row-fix" style={styles.switchLinha}>
+            <label className="admin-switch-row checkbox-row-fix">
               <div>
                 <strong>Mostrar inativos</strong>
                 <small>Destinatários inativos ficam arquivados logicamente, sem DELETE físico.</small>
               </div>
-              <input
-                type="checkbox"
-                checked={mostrarDestinatariosInativos}
-                onChange={(e) => setMostrarDestinatariosInativos(e.target.checked)}
-              />
+              <input type="checkbox" checked={mostrarDestinatariosInativos} onChange={(e) => setMostrarDestinatariosInativos(e.target.checked)} />
             </label>
 
             {podeGerenciarDestinatariosAlertas && (
-              <form onSubmit={salvarDestinatarioAlerta} style={{ display: 'grid', gap: 10, marginTop: 12 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
-                  <input
-                    style={styles.input}
-                    placeholder="Nome do destinatário"
-                    value={formDestinatarioAlerta.nome}
-                    onChange={(e) => atualizarCampoDestinatarioAlerta('nome', primeiraLetraMaiuscula(e.target.value))}
-                    disabled={salvandoDestinatario}
-                  />
-                  <input
-                    style={styles.input}
-                    type="email"
-                    placeholder="E-mail do destinatário"
-                    value={formDestinatarioAlerta.email}
-                    onChange={(e) => atualizarCampoDestinatarioAlerta('email', e.target.value)}
-                    disabled={salvandoDestinatario}
-                  />
-                </div>
-
-                <input
-                  style={styles.input}
-                  placeholder="Observação administrativa opcional"
-                  value={formDestinatarioAlerta.observacao}
-                  onChange={(e) => atualizarCampoDestinatarioAlerta('observacao', e.target.value)}
-                  disabled={salvandoDestinatario}
-                />
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, alignItems: 'stretch' }}>
-                  <label className="checkbox-row-fix" style={{ ...styles.switchLinha, width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8 }}>
-                    <span>Contas</span>
-                    <input
-                      type="checkbox"
-                      style={{ flexShrink: 0 }}
-                      checked={formDestinatarioAlerta.recebe_contas}
-                      onChange={(e) => atualizarCampoDestinatarioAlerta('recebe_contas', e.target.checked)}
-                      disabled={salvandoDestinatario}
-                    />
+              <form onSubmit={salvarDestinatarioAlerta} className="admin-recipient-form">
+                <div className="admin-form-grid">
+                  <label>
+                    <span>Nome</span>
+                    <input style={styles.input} value={formDestinatarioAlerta.nome} onChange={(e) => atualizarCampoDestinatarioAlerta('nome', primeiraLetraMaiuscula(e.target.value))} disabled={salvandoDestinatario} />
                   </label>
-                  <label className="checkbox-row-fix" style={{ ...styles.switchLinha, width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8 }}>
-                    <span>Notas</span>
-                    <input
-                      type="checkbox"
-                      style={{ flexShrink: 0 }}
-                      checked={formDestinatarioAlerta.recebe_notas}
-                      onChange={(e) => atualizarCampoDestinatarioAlerta('recebe_notas', e.target.checked)}
-                      disabled={salvandoDestinatario}
-                    />
-                  </label>
-                  <label className="checkbox-row-fix" style={{ ...styles.switchLinha, width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8 }}>
-                    <span>Resumo</span>
-                    <input
-                      type="checkbox"
-                      style={{ flexShrink: 0 }}
-                      checked={formDestinatarioAlerta.recebe_resumo}
-                      onChange={(e) => atualizarCampoDestinatarioAlerta('recebe_resumo', e.target.checked)}
-                      disabled={salvandoDestinatario}
-                    />
-                  </label>
-                  <label className="checkbox-row-fix" style={{ ...styles.switchLinha, width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8 }}>
-                    <span>Ativo</span>
-                    <input
-                      type="checkbox"
-                      style={{ flexShrink: 0 }}
-                      checked={formDestinatarioAlerta.ativo}
-                      onChange={(e) => atualizarCampoDestinatarioAlerta('ativo', e.target.checked)}
-                      disabled={salvandoDestinatario}
-                    />
+                  <label>
+                    <span>E-mail</span>
+                    <input style={styles.input} type="email" value={formDestinatarioAlerta.email} onChange={(e) => atualizarCampoDestinatarioAlerta('email', e.target.value)} disabled={salvandoDestinatario} />
                   </label>
                 </div>
 
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <button style={styles.btnSalvar} type="submit" disabled={salvandoDestinatario}>
+                <label className="admin-field-full">
+                  <span>Observação administrativa</span>
+                  <input style={styles.input} value={formDestinatarioAlerta.observacao} onChange={(e) => atualizarCampoDestinatarioAlerta('observacao', e.target.value)} disabled={salvandoDestinatario} />
+                </label>
+
+                <div className="admin-chip-grid">
+                  {[
+                    ['recebe_contas', 'Contas'],
+                    ['recebe_notas', 'Notas'],
+                    ['recebe_resumo', 'Resumo'],
+                    ['ativo', 'Ativo']
+                  ].map(([campo, label]) => (
+                    <label key={campo} className="admin-check-chip checkbox-row-fix">
+                      <span>{label}</span>
+                      <input type="checkbox" checked={formDestinatarioAlerta[campo]} onChange={(e) => atualizarCampoDestinatarioAlerta(campo, e.target.checked)} disabled={salvandoDestinatario} />
+                    </label>
+                  ))}
+                </div>
+
+                <div className="admin-actions-row">
+                  <button className="admin-btn admin-btn-primary" type="submit" disabled={salvandoDestinatario}>
                     {destinatarioEditandoId ? 'Salvar edição' : 'Adicionar destinatário'}
                   </button>
-
                   {destinatarioEditandoId && (
-                    <button style={styles.btnCinza} type="button" onClick={limparFormularioDestinatarioAlerta} disabled={salvandoDestinatario}>
+                    <button className="admin-btn admin-btn-secondary" type="button" onClick={limparFormularioDestinatarioAlerta} disabled={salvandoDestinatario}>
                       Cancelar edição
                     </button>
                   )}
@@ -318,34 +256,27 @@ export default function ConfiguracoesPage({
               </form>
             )}
 
-            <div style={{ display: 'grid', gap: 8, marginTop: 14 }}>
+            <div className="admin-card-list">
               {!loadingDestinatarios && destinatarios.length === 0 && (
-                <p style={styles.textoNota}>Nenhum destinatário cadastrado para a empresa ativa.</p>
+                <div className="empty-state-card">
+                  <strong>Nenhum destinatário cadastrado</strong>
+                  <p>Cadastre responsáveis para receber alertas da empresa ativa.</p>
+                </div>
               )}
 
               {destinatarios.map((destinatario) => (
-                <div
-                  key={destinatario.id}
-                  style={{
-                    border: '1px solid #e2e8f0',
-                    borderRadius: 8,
-                    padding: 12,
-                    display: 'grid',
-                    gap: 8,
-                    background: destinatario.ativo === false ? '#f8fafc' : '#ffffff'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                <article key={destinatario.id} className={`admin-item-card ${destinatario.ativo === false ? 'inactive' : 'active'}`}>
+                  <div className="admin-item-head">
                     <div>
                       <strong>{destinatario.nome || 'Sem nome'}</strong>
-                      <p style={{ ...styles.textoNota, margin: 0 }}>{destinatario.email}</p>
+                      <small>{destinatario.email}</small>
                     </div>
-                    <span style={{ fontWeight: 800, color: destinatario.ativo === false ? '#64748b' : '#15803d' }}>
+                    <span className={`admin-status-badge ${destinatario.ativo === false ? 'muted' : 'success'}`}>
                       {destinatario.ativo === false ? 'Inativo' : 'Ativo'}
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 13, color: '#475569' }}>
+                  <div className="admin-item-tags">
                     {destinatario.recebe_contas !== false && <span>Contas</span>}
                     {destinatario.recebe_notas !== false && <span>Notas</span>}
                     {destinatario.recebe_resumo !== false && <span>Resumo</span>}
@@ -353,135 +284,82 @@ export default function ConfiguracoesPage({
                   </div>
 
                   {podeGerenciarDestinatariosAlertas && (
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <button style={styles.btnCinza} type="button" onClick={() => preencherFormularioDestinatarioAlerta(destinatario)}>
-                        Editar
-                      </button>
-                      <button style={styles.btnCinza} type="button" onClick={() => alternarStatusDestinatarioAlerta(destinatario)} disabled={salvandoDestinatario}>
+                    <div className="admin-actions-row">
+                      <button className="admin-btn admin-btn-secondary" type="button" onClick={() => preencherFormularioDestinatarioAlerta(destinatario)}>Editar</button>
+                      <button className={`admin-btn ${destinatario.ativo === false ? 'admin-btn-primary' : 'admin-btn-danger'}`} type="button" onClick={() => alternarStatusDestinatarioAlerta(destinatario)} disabled={salvandoDestinatario}>
                         {destinatario.ativo === false ? 'Reativar' : 'Inativar'}
                       </button>
                     </div>
                   )}
-                </div>
+                </article>
               ))}
             </div>
-          </>
+          </div>
         )}
       </section>
 
-      <section style={styles.cardConfiguracao} className="settings-card settings-recurrence-card">
-        <HeaderExpansivel
-          styles={styles}
-          titulo="🔁 Recorrências"
-          aberto={mostrarConfigRecorrencias}
-          onClick={() => setMostrarConfigRecorrencias(!mostrarConfigRecorrencias)}
-        />
-
+      <section style={styles.cardConfiguracao} className="settings-card admin-config-card settings-recurrence-card">
+        <HeaderExpansivel styles={styles} titulo="🔁 Recorrências" subtitulo="Padrão de geração mensal" aberto={mostrarConfigRecorrencias} onClick={() => setMostrarConfigRecorrencias(!mostrarConfigRecorrencias)} />
         {mostrarConfigRecorrencias && (
-          <>
-            <p style={styles.textoNota}>
-              As recorrências são cadastradas e editadas dentro de Nova Conta ou Editar Conta, mantendo o mesmo padrão de campos da conta original.
-            </p>
-
-            <div style={styles.configResumo}>
-              <strong>Padrão atual</strong>
-              <span>Frequência mensal • dia de vencimento configurável • geração automática no mês vigente quando ainda não existir.</span>
+          <div className="admin-section-body">
+            <p style={styles.textoNota}>As recorrências são cadastradas e editadas dentro de Nova Conta ou Editar Conta, mantendo o mesmo padrão de campos da conta original.</p>
+            <div className="admin-summary-strip">
+              <span>Frequência mensal</span>
+              <span>Dia de vencimento configurável</span>
+              <span>Geração automática no mês vigente quando ainda não existir</span>
             </div>
-          </>
+          </div>
         )}
       </section>
 
-      <section style={styles.cardConfiguracao} className="settings-card settings-costcenter-card">
-        <HeaderExpansivel
-          styles={styles}
-          titulo="🏷 Centros de custo"
-          aberto={mostrarConfigCentros}
-          onClick={() => setMostrarConfigCentros(!mostrarConfigCentros)}
-        />
-
+      <section style={styles.cardConfiguracao} className="settings-card admin-config-card settings-costcenter-card">
+        <HeaderExpansivel styles={styles} titulo="🏷 Centros de custo" subtitulo="Classificação financeira" meta={`${centros.length} centro(s)`} aberto={mostrarConfigCentros} onClick={() => setMostrarConfigCentros(!mostrarConfigCentros)} />
         {mostrarConfigCentros && (
-          <>
-            <p style={styles.textoNota}>
-              Cadastre e gerencie os centros usados nas contas e nos relatórios.
-            </p>
-
-            <div style={styles.configResumo}>
+          <div className="admin-section-body">
+            <p style={styles.textoNota}>Cadastre e gerencie os centros usados nas contas e nos relatórios.</p>
+            <div className="admin-summary-strip">
               <span>Total de centros: {centros.length}</span>
               <span>Uso nos filtros e relatórios</span>
             </div>
-
-            {podeGerenciarCentroCusto && (
-              <button style={styles.btnSalvar} onClick={() => setModalCentro(true)}>
-                Gerenciar centros
-              </button>
-            )}
-          </>
-        )}
-      </section>
-
-      <section style={styles.cardConfiguracao} className="settings-card settings-branches-card">
-        {podeEditarConfiguracoes ? (
-          <HeaderExpansivel
-            styles={styles}
-            titulo="🏬 Filiais / Unidades"
-            aberto={false}
-            onClick={() => navegarPara('filiais')}
-          />
-        ) : (
-          <div style={styles.headerExpansivel}>
-            <span
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                color: '#0f172a',
-                fontWeight: 900,
-                lineHeight: 1.1
-              }}
-            >
-              <span style={{ fontSize: 24, lineHeight: 1 }}>🏬</span>
-              <span>Filiais / Unidades</span>
-            </span>
+            {podeGerenciarCentroCusto && <button className="admin-btn admin-btn-primary" onClick={() => setModalCentro(true)}>Gerenciar centros</button>}
           </div>
         )}
+      </section>
 
-        <p style={styles.textoNota}>
-          Cadastre lojas, unidades, produção ou delivery dentro da empresa ativa para organizar melhor a operação.
-        </p>
-
-        <div style={styles.configResumo}>
-          <span>Organização: empresa → filial → centro de custo → conta</span>
-          <span>Isolamento por empresa ativo</span>
-        </div>
-
-        {podeEditarConfiguracoes && (
-          <button style={styles.btnSalvar} onClick={() => navegarPara('filiais')}>
-            Gerenciar filiais
-          </button>
+      <section style={styles.cardConfiguracao} className="settings-card admin-config-card settings-branches-card">
+        <HeaderExpansivel styles={styles} titulo="🏬 Filiais / Unidades" subtitulo="Unidades operacionais da empresa" aberto={mostrarConfigFiliais} onClick={() => setMostrarConfigFiliais(!mostrarConfigFiliais)} />
+        {mostrarConfigFiliais && (
+          <div className="admin-section-body">
+            <p style={styles.textoNota}>Cadastre lojas, unidades, produção ou delivery dentro da empresa ativa para organizar melhor a operação.</p>
+            <div className="admin-summary-strip">
+              <span>Organização: empresa → filial → centro de custo → conta</span>
+              <span>Isolamento por empresa ativo</span>
+            </div>
+            {podeEditarConfiguracoes && <button className="admin-btn admin-btn-primary" onClick={() => navegarPara('filiais')}>Gerenciar filiais</button>}
+          </div>
         )}
       </section>
 
-      <section style={styles.cardConfiguracao} className="settings-card settings-usage-card">
-        <h2 style={styles.subtitulo}>🧠 Como o sistema vai usar</h2>
-
-        <p style={styles.textoNota}>
-          O envio automático atual usa e-mail. WhatsApp e Push permanecem apenas como configurações
-          reservadas, sem disparo automático ativo neste fluxo.
-        </p>
-
-        <div style={styles.configResumo}>
-          <span>Geral: {notificacoesAtivas ? 'Ligado' : 'Desligado'}</span>
-          <span>E-mail: {configEmail ? 'Ativo' : 'Desligado'}</span>
-          <span>WhatsApp: não configurado para envio automático</span>
-          <span>Push: não configurado para envio automático</span>
-        </div>
+      <section style={styles.cardConfiguracao} className="settings-card admin-config-card settings-usage-card">
+        <HeaderExpansivel styles={styles} titulo="🧠 Resumo de uso" subtitulo="Canais e escopo atual" aberto={mostrarResumoUso} onClick={() => setMostrarResumoUso(!mostrarResumoUso)} />
+        {mostrarResumoUso && (
+          <div className="admin-section-body">
+            <p style={styles.textoNota}>O envio automático atual usa e-mail. WhatsApp e Push permanecem apenas como configurações reservadas, sem disparo automático ativo neste fluxo.</p>
+            <div className="admin-summary-strip">
+              <span>Geral: {notificacoesAtivas ? 'Ligado' : 'Desligado'}</span>
+              <span>E-mail: {configEmail ? 'Ativo' : 'Desligado'}</span>
+              <span>WhatsApp: não configurado</span>
+              <span>Push: não configurado</span>
+            </div>
+          </div>
+        )}
       </section>
 
       {podeEditarConfiguracoes && (
-        <button style={styles.btnSalvar} onClick={salvarConfiguracoes}>
-          Salvar configurações
-        </button>
+        <div className="admin-sticky-actions">
+          <button className="admin-btn admin-btn-primary" onClick={salvarConfiguracoes}>Salvar configurações</button>
+        </div>
       )}
-    </>
+    </div>
   )
 }

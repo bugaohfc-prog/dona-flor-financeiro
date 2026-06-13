@@ -1,24 +1,22 @@
-export default function HeaderExpansivel({ styles, titulo, aberto, onClick }) {
+export default function HeaderExpansivel({ styles, titulo, subtitulo, meta, aberto, onClick, className = '' }) {
   const partesTitulo = String(titulo || '').split(' ')
   const iconeTitulo = partesTitulo[0] || ''
   const textoTitulo = partesTitulo.slice(1).join(' ') || titulo
 
   return (
-    <button style={styles.headerExpansivel} onClick={onClick}>
-      <span
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          color: '#0f172a',
-          fontWeight: 900,
-          lineHeight: 1.1
-        }}
-      >
-        <span style={{ fontSize: 24, lineHeight: 1 }}>{iconeTitulo}</span>
-        <span>{textoTitulo}</span>
+    <button type="button" style={styles.headerExpansivel} className={`admin-section-toggle ${className}`.trim()} onClick={onClick}>
+      <span className="admin-section-title">
+        <span className="admin-section-icon">{iconeTitulo}</span>
+        <span>
+          <span>{textoTitulo}</span>
+          {subtitulo && <small>{subtitulo}</small>}
+        </span>
       </span>
-      <strong style={{ color: '#0f172a' }}>{aberto ? '−' : '+'}</strong>
+
+      <span className="admin-section-actions">
+        {meta && <em>{meta}</em>}
+        <strong>{aberto ? '−' : '+'}</strong>
+      </span>
     </button>
   )
 }

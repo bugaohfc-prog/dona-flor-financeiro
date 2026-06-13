@@ -1,5 +1,5 @@
 import { SummarySkeleton, NotesSkeleton } from '../feedback/Skeletons.jsx'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext.jsx'
 import { useResumoGestaoPessoasPainel } from '../../hooks/useResumoGestaoPessoasPainel.js'
 
@@ -11,14 +11,34 @@ function DashboardAction({ children, variant = 'primary', className = '', ...pro
   )
 }
 
-function DashboardWidgetHeader({ kicker, title, badge }) {
+function DashboardCollapseButton({ expanded, onClick, label }) {
+  return (
+    <button
+      className="dashboard-home-icon-button"
+      type="button"
+      onClick={onClick}
+      title={expanded ? `Recolher ${label}` : `Expandir ${label}`}
+      aria-label={expanded ? `Recolher ${label}` : `Expandir ${label}`}
+      aria-expanded={expanded}
+    >
+      {expanded ? '▴' : '▾'}
+    </button>
+  )
+}
+
+function DashboardWidgetHeader({ kicker, title, badge, expanded, onToggle, label }) {
   return (
     <div className="dashboard-home-widget-header">
       <div>
         <span className="dashboard-home-kicker">{kicker}</span>
         <strong>{title}</strong>
       </div>
-      {badge && <span className="dashboard-home-badge">{badge}</span>}
+      <div className="dashboard-home-header-tools">
+        {badge && <span className="dashboard-home-badge">{badge}</span>}
+        {onToggle && (
+          <DashboardCollapseButton expanded={expanded} onClick={onToggle} label={label || title} />
+        )}
+      </div>
     </div>
   )
 }
@@ -50,6 +70,9 @@ export default function DashboardHome({
   setFiltroFilial = () => {},
 }) {
   const { empresaId, perfilEmpresaAtiva } = useApp()
+  const [mostrarResumoFinanceiro, setMostrarResumoFinanceiro] = useState(true)
+  const [mostrarAgendaPainel, setMostrarAgendaPainel] = useState(true)
+  const [mostrarPessoasPainel, setMostrarPessoasPainel] = useState(true)
   const valorSeguro = (valor) => Number(valor || 0)
   const filialSelecionada = (filiais || []).find((filial) => filial.id === filtroFilial)
   const LIMITE_NOTAS_PAINEL = 5
@@ -243,19 +266,28 @@ export default function DashboardHome({
                 <span className="dashboard-home-kicker">Resumo financeiro rápido</span>
                 <strong>Visão operacional</strong>
               </div>
-              <DashboardAction variant="secondary" onClick={() => navegarPara('relatorios')}>
-                Ver relatórios
-              </DashboardAction>
+              <div className="dashboard-home-header-tools">
+                <DashboardAction variant="secondary" onClick={() => navegarPara('relatorios')}>
+                  Ver relatórios
+                </DashboardAction>
+                <DashboardCollapseButton
+                  expanded={mostrarResumoFinanceiro}
+                  onClick={() => setMostrarResumoFinanceiro((atual) => !atual)}
+                  label="Resumo financeiro rápido"
+                />
+              </div>
             </div>
 
-            <div className="dashboard-home-kpi-grid">
-              {resumoFinanceiro.map((item) => (
-                <div className={`dashboard-home-kpi dashboard-home-kpi-${item.tone}`} key={item.label}>
-                  <span>{item.label}</span>
-                  <strong>{item.valor}</strong>
-                </div>
-              ))}
-            </div>
+            {mostrarResumoFinanceiro && (
+              <div className="dashboard-home-kpi-grid">
+                {resumoFinanceiro.map((item) => (
+                  <div className={`dashboard-home-kpi dashboard-home-kpi-${item.tone}`} key={item.label}>
+                    <span>{item.label}</span>
+                    <strong>{item.valor}</strong>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -267,37 +299,44 @@ export default function DashboardHome({
               kicker="Agenda"
               title="Próximos vencimentos"
               badge={`${contasAgenda.length} abertas`}
+              expanded={mostrarAgendaPainel}
+              onToggle={() => setMostrarAgendaPainel((atual) => !atual)}
+              label="Agenda"
             />
 
-            <div className="dashboard-home-mini-grid">
-              <div className="dashboard-home-metric">
-                <span>Hoje</span>
-                <strong>{formatarValor(totalHoje)}</strong>
-              </div>
-              <div className="dashboard-home-metric">
-                <span>7 dias</span>
-                <strong>{formatarValor(totalSemana)}</strong>
-              </div>
-            </div>
+            {mostrarAgendaPainel && (
+              <>
+                <div className="dashboard-home-mini-grid">
+                  <div className="dashboard-home-metric">
+                    <span>Hoje</span>
+                    <strong>{formatarValor(totalHoje)}</strong>
+                  </div>
+                  <div className="dashboard-home-metric">
+                    <span>7 dias</span>
+                    <strong>{formatarValor(totalSemana)}</strong>
+                  </div>
+                </div>
 
-            {proximaConta ? (
-              <div className="dashboard-home-feature-item">
-                <span>Próximo compromisso</span>
-                <strong>{proximaConta.descricao}</strong>
-                <small>{formatarData(proximaConta.data_vencimento)} • {formatarValor(proximaConta.valor)}</small>
-              </div>
-            ) : (
-              <div className="dashboard-home-empty">Agenda financeira limpa.</div>
+                {proximaConta ? (
+                  <div className="dashboard-home-feature-item">
+                    <span>Próximo compromisso</span>
+                    <strong>{proximaConta.descricao}</strong>
+                    <small>{formatarData(proximaConta.data_vencimento)} • {formatarValor(proximaConta.valor)}</small>
+                  </div>
+                ) : (
+                  <div className="dashboard-home-empty">Agenda financeira limpa.</div>
+                )}
+
+                <div className="dashboard-home-actions">
+                  <DashboardAction onClick={() => navegarPara('agenda')}>
+                    Ver agenda
+                  </DashboardAction>
+                  <DashboardAction variant="secondary" onClick={() => navegarPara('contas')}>
+                    Ver contas
+                  </DashboardAction>
+                </div>
+              </>
             )}
-
-            <div className="dashboard-home-actions">
-              <DashboardAction onClick={() => navegarPara('agenda')}>
-                Ver agenda
-              </DashboardAction>
-              <DashboardAction variant="secondary" onClick={() => navegarPara('contas')}>
-                Ver contas
-              </DashboardAction>
-            </div>
           </article>
 
           {podeVisualizarResumoPessoas && (
@@ -306,47 +345,50 @@ export default function DashboardHome({
                 kicker="Gestão de Pessoas"
                 title="Resumo da equipe"
                 badge={`Equipe ativa: ${resumoPessoas.funcionariosAtivos}`}
+                expanded={mostrarPessoasPainel}
+                onToggle={() => setMostrarPessoasPainel((atual) => !atual)}
+                label="Gestão de Pessoas"
               />
 
-              {loadingResumoPessoas ? (
-                <div className="dashboard-home-empty">Carregando resumo de pessoas...</div>
-              ) : erroResumoPessoas ? (
-                <div className="dashboard-home-empty">Não foi possível carregar o resumo de Gestão de Pessoas.</div>
-              ) : (
-                <>
-                  {itensPessoas.length === 0 ? (
-                    <div className="dashboard-home-empty">Sem alertas principais no momento.</div>
-                  ) : (
-                    <div className="dashboard-home-people-list">
-                      {itensPessoas.map((item) => (
-                        <button
-                          className="dashboard-home-people-item"
-                          key={item.id}
-                          type="button"
-                          onClick={() => item.rotaDestino && navegarPara(item.rotaDestino)}
-                        >
-                          <span>
-                            <strong>{item.titulo}</strong>
-                            <small>{item.descricao}</small>
-                          </span>
-                          <b className={`dashboard-home-count dashboard-home-count-${item.tipo}`}>{item.quantidade}</b>
-                        </button>
-                      ))}
-                    </div>
-                  )}
+              {mostrarPessoasPainel && (
+                loadingResumoPessoas ? (
+                  <div className="dashboard-home-empty">Carregando resumo de pessoas...</div>
+                ) : erroResumoPessoas ? (
+                  <div className="dashboard-home-empty">Não foi possível carregar o resumo de Gestão de Pessoas.</div>
+                ) : (
+                  <div className="dashboard-home-people-grid">
+                    {itensPessoas.length === 0 && (
+                      <div className="dashboard-home-empty dashboard-home-people-empty">Sem alertas principais no momento.</div>
+                    )}
 
-                  <button
-                    className="dashboard-home-team-row"
-                    type="button"
-                    onClick={() => agendaEquipePessoas.rotaDestino && navegarPara(agendaEquipePessoas.rotaDestino)}
-                  >
-                    <span>
-                      <strong>{agendaEquipePessoas.titulo}</strong>
-                      <small>Aniversariantes nos próximos 7 dias</small>
-                    </span>
-                    <b>{agendaEquipePessoas.aniversarios}</b>
-                  </button>
-                </>
+                    {itensPessoas.map((item) => (
+                      <button
+                        className="dashboard-home-people-item"
+                        key={item.id}
+                        type="button"
+                        onClick={() => item.rotaDestino && navegarPara(item.rotaDestino)}
+                      >
+                        <span>
+                          <strong>{item.titulo}</strong>
+                          <small>{item.descricao}</small>
+                        </span>
+                        <b className={`dashboard-home-count dashboard-home-count-${item.tipo}`}>{item.quantidade}</b>
+                      </button>
+                    ))}
+
+                    <button
+                      className="dashboard-home-team-row"
+                      type="button"
+                      onClick={() => agendaEquipePessoas.rotaDestino && navegarPara(agendaEquipePessoas.rotaDestino)}
+                    >
+                      <span>
+                        <strong>{agendaEquipePessoas.titulo}</strong>
+                        <small>Aniversariantes nos próximos 7 dias</small>
+                      </span>
+                      <b>{agendaEquipePessoas.aniversarios}</b>
+                    </button>
+                  </div>
+                )
               )}
             </article>
           )}
@@ -379,15 +421,11 @@ export default function DashboardHome({
               <DashboardAction variant="secondary" onClick={() => navegarPara('notas')}>
                 Ver notas
               </DashboardAction>
-              <button
-                className="dashboard-home-icon-button"
-                type="button"
+              <DashboardCollapseButton
+                expanded={mostrarNotas}
                 onClick={() => setMostrarNotas(!mostrarNotas)}
-                title={mostrarNotas ? 'Recolher bloco de notas' : 'Expandir bloco de notas'}
-                aria-label={mostrarNotas ? 'Recolher bloco de notas' : 'Expandir bloco de notas'}
-              >
-                {mostrarNotas ? '▴' : '▾'}
-              </button>
+                label="Notas/Pendências"
+              />
             </div>
           </div>
 

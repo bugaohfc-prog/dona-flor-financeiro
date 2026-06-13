@@ -1351,6 +1351,15 @@
   line-height: 1.2;
 }
 
+.dashboard-home-header-tools {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 100%;
+}
+
 .dashboard-home-kicker {
   display: block;
   color: #0f766e;
@@ -1405,8 +1414,10 @@
 
 .dashboard-home-kpi {
   display: grid;
+  align-content: start;
   gap: 4px;
   padding: 10px 11px;
+  text-align: left;
 }
 
 .dashboard-home-kpi span,
@@ -1450,8 +1461,10 @@
 
 .dashboard-home-metric {
   display: grid;
+  align-content: start;
   gap: 4px;
   padding: 10px;
+  text-align: left;
 }
 
 .dashboard-home-metric strong {
@@ -1463,8 +1476,10 @@
 
 .dashboard-home-feature-item {
   display: grid;
+  align-content: start;
   gap: 4px;
   padding: 12px;
+  text-align: left;
 }
 
 .dashboard-home-feature-item strong {
@@ -1495,9 +1510,10 @@
 .dashboard-home-empty {
   display: grid;
   min-height: 46px;
-  place-items: center;
+  align-content: center;
+  justify-items: start;
   padding: 11px 12px;
-  text-align: center;
+  text-align: left;
 }
 
 .dashboard-home-actions,
@@ -1556,18 +1572,24 @@
   flex: 0 1 auto;
 }
 
-.dashboard-home-people-list {
+.dashboard-home-people-list,
+.dashboard-home-people-grid {
   display: grid;
   gap: 8px;
 }
 
+.dashboard-home-people-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .dashboard-home-people-item,
 .dashboard-home-team-row {
-  display: flex;
+  display: grid;
   width: 100%;
-  align-items: center;
-  justify-content: space-between;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: 10px;
+  min-height: 74px;
   padding: 10px 11px;
   color: #0f172a;
   cursor: pointer;
@@ -1578,6 +1600,7 @@
 .dashboard-home-team-row span {
   display: grid;
   gap: 3px;
+  justify-items: start;
   min-width: 0;
 }
 
@@ -1591,6 +1614,7 @@
 .dashboard-home-count,
 .dashboard-home-team-row b {
   flex: 0 0 auto;
+  align-self: start;
   min-width: 30px;
   padding: 5px 8px;
   border: 1px solid rgba(15, 23, 42, .08);
@@ -1610,6 +1634,10 @@
 .dashboard-home-team-row {
   border-style: dashed;
   background: #ffffff;
+}
+
+.dashboard-home-people-empty {
+  grid-column: 1 / -1;
 }
 
 .dashboard-home-notes {
@@ -1635,6 +1663,7 @@
   min-width: 34px;
   height: 34px;
   min-height: 34px;
+  flex: 0 0 34px;
   padding: 0;
   border: 1px solid #dbe7e3;
   border-radius: 999px;
@@ -1746,10 +1775,14 @@
 
 @media (max-width: 640px) {
   .dashboard-home-branch,
-  .dashboard-home-kpi-grid,
-  .dashboard-home-widgets,
-  .dashboard-home-mini-grid {
+  .dashboard-home-widgets {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-home-kpi-grid,
+  .dashboard-home-mini-grid,
+  .dashboard-home-people-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .dashboard-home-branch,
@@ -1763,24 +1796,40 @@
   .dashboard-home-section-head,
   .dashboard-home-widget-header,
   .dashboard-home-notes-head {
-    display: grid;
+    display: flex;
+    align-items: flex-start;
     gap: 10px;
   }
 
+  .dashboard-home-section-head > div,
+  .dashboard-home-widget-header > div {
+    flex: 1 1 auto;
+  }
+
+  .dashboard-home-header-tools,
+  .dashboard-home-note-tools {
+    flex: 0 0 auto;
+    justify-content: flex-end;
+  }
+
   .dashboard-home-badge {
-    justify-self: start;
+    max-width: 124px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .dashboard-home-actions,
-  .dashboard-home-note-tools,
   .dashboard-note-actions {
     width: 100%;
     align-items: stretch;
   }
 
-  .dashboard-home-actions .dashboard-home-action,
-  .dashboard-home-note-tools .dashboard-home-action {
+  .dashboard-home-actions .dashboard-home-action {
     flex: 1 1 130px;
+  }
+
+  .dashboard-home-note-tools .dashboard-home-action {
+    flex: 0 1 auto;
   }
 
   .dashboard-home-icon-button {
@@ -1792,7 +1841,25 @@
   }
 
   .dashboard-home-kpi strong {
-    font-size: 15px;
+    font-size: 14px;
+  }
+
+  .dashboard-home-kpi,
+  .dashboard-home-metric,
+  .dashboard-home-people-item,
+  .dashboard-home-team-row {
+    padding: 9px;
+  }
+
+  .dashboard-home-people-item,
+  .dashboard-home-team-row {
+    min-height: 82px;
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-home-count,
+  .dashboard-home-team-row b {
+    justify-self: start;
   }
 
   .dashboard-home-note-top {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from 'recharts'
 import { supabase } from '../lib/supabase'
 import { money as formatarValor, dateBR as formatarData } from '../utils/format'
@@ -105,6 +105,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
   const [filtroFilial, setFiltroFilial] = useState('')
   const [visaoExecutiva, setVisaoExecutiva] = useState('dre')
   const [metaMensal, setMetaMensal] = useState('')
+  const [exportMenuAberto, setExportMenuAberto] = useState(false)
 
   useEffect(() => {
     buscarDados()
@@ -828,69 +829,98 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       </div>
       <div className="relatorio-print-footer">Relatório gerado pelo DNA Gestão</div>
 
-      <header className="no-print" style={styles.hero}>
-        <div>
-          <div style={styles.actionsTop}>
-            <button style={styles.btnVoltar} onClick={voltar}>← Voltar</button>
-            {podeExportarDados && (
-              <>
-                <button style={styles.btnExcel} onClick={exportarExcel}>Excel</button>
-                <button style={styles.btnPDF} onClick={imprimirPDF}>PDF</button>
-                <button style={styles.btnCSV} onClick={exportarCSV}>CSV</button>
-              </>
-            )}
-          </div>
+      <header className="no-print finance-report-header" style={styles.hero}>
+        <div className="finance-report-title">
+          <span className="finance-report-kicker">Relatório executivo</span>
           <h1 style={styles.titulo}>Análise Financeira</h1>
           <p style={styles.descricaoTela}>Decida com base em previsto, realizado, pendências e riscos do período.</p>
         </div>
-        <div style={styles.heroBadge}>
+        <div className="finance-report-header-actions" style={styles.actionsTop}>
+          <button className="finance-report-back" style={styles.btnVoltar} onClick={voltar}>Voltar</button>
+          {podeExportarDados && (
+            <div className="finance-report-export">
+              <button
+                type="button"
+                className="finance-report-export-toggle"
+                onClick={() => setExportMenuAberto((aberto) => !aberto)}
+              >
+                Exportar
+              </button>
+              {exportMenuAberto && (
+                <div className="finance-report-export-menu">
+                  <button type="button" onClick={() => { imprimirPDF(); setExportMenuAberto(false) }}>PDF</button>
+                  <button type="button" onClick={() => { exportarExcel(); setExportMenuAberto(false) }}>Excel</button>
+                  <button type="button" onClick={() => { exportarCSV(); setExportMenuAberto(false) }}>CSV</button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="finance-report-score" style={styles.heroBadge}>
           <span>{statusSaude.emoji}</span>
           <strong>{scoreSaude}/100</strong>
           <small>{statusSaude.etiqueta}</small>
         </div>
       </header>
 
-      <section className="no-print relatorio-sticky-filtros" style={styles.filtrosBox}>
-        <div style={styles.filtroHeader}>
-          <strong>🎛️ Filtros</strong>
+      <section className="no-print relatorio-sticky-filtros finance-report-filters" style={styles.filtrosBox}>
+        <div className="finance-report-filter-head" style={styles.filtroHeader}>
+          <div>
+            <span className="finance-report-kicker">Filtros</span>
+            <strong>Recorte financeiro</strong>
+          </div>
           <span style={styles.filtroResumo}>{nomeMes(filtroMes || mesAtualPadrao())} • {filtroCentro ? centroSelecionado?.nome || 'Centro selecionado' : 'Todos os centros'} • {filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Filial selecionada' : 'Todas as filiais'}</span>
-          <button style={styles.btnLimpar} onClick={limparFiltros}>Limpar</button>
+          <button className="finance-report-clear" style={styles.btnLimpar} onClick={limparFiltros}>Limpar</button>
         </div>
-        <div style={styles.filtrosGrid}>
-          <input style={styles.input} placeholder="Meta mensal. Ex: 5000" value={metaMensal} onChange={(e) => setMetaMensal(e.target.value)} />
-          <select style={styles.input} value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)}>
-            <option value="">Todos os centros</option>
-            {centros.map((centro) => <option key={centro.id} value={centro.id}>{centro.nome}</option>)}
-          </select>
-          <select style={styles.input} value={filtroFilial} onChange={(e) => setFiltroFilial(e.target.value)}>
-            <option value="">Todas as filiais</option>
-            {filiais.map((filial) => <option key={filial.id} value={filial.id}>{filial.nome}</option>)}
-          </select>
-          <select style={styles.input} value={visaoExecutiva} onChange={(e) => setVisaoExecutiva(e.target.value)}>
-            <option value="dre">Visão DRE</option>
-            <option value="graficos">Visão Gráficos</option>
-            <option value="filiais">Visão Filiais</option>
-            <option value="inteligencia">Análise financeira</option>
-            <option value="preditiva">Projeções financeiras</option>
-            <option value="copilot">Assistente financeiro</option>
-          </select>
-          <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
+        <div className="finance-report-filter-grid" style={styles.filtrosGrid}>
+          <label>
+            <span>Meta mensal</span>
+            <input style={styles.input} placeholder="Ex: 5000" value={metaMensal} onChange={(e) => setMetaMensal(e.target.value)} />
+          </label>
+          <label>
+            <span>Centro</span>
+            <select style={styles.input} value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)}>
+              <option value="">Todos os centros</option>
+              {centros.map((centro) => <option key={centro.id} value={centro.id}>{centro.nome}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Filial</span>
+            <select style={styles.input} value={filtroFilial} onChange={(e) => setFiltroFilial(e.target.value)}>
+              <option value="">Todas as filiais</option>
+              {filiais.map((filial) => <option key={filial.id} value={filial.id}>{filial.nome}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Visão</span>
+            <select style={styles.input} value={visaoExecutiva} onChange={(e) => setVisaoExecutiva(e.target.value)}>
+              <option value="dre">Visão DRE</option>
+              <option value="graficos">Visão Gráficos</option>
+              <option value="filiais">Visão Filiais</option>
+              <option value="inteligencia">Análise financeira</option>
+              <option value="preditiva">Projeções financeiras</option>
+              <option value="copilot">Assistente financeiro</option>
+            </select>
+          </label>
+          <label>
+            <span>Mês</span>
+            <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
+          </label>
         </div>
-        <div style={styles.filtros}>
+        <div className="finance-report-status-tabs" style={styles.filtros}>
           {[
             ['todas', 'Todas'],
             ['pendentes', 'Pendentes'],
             ['pagas', 'Pagas'],
             ['vencidas', 'Vencidas']
           ].map(([valor, label]) => (
-            <button key={valor} style={filtroStatus === valor ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus(valor)}>{label}</button>
+            <button key={valor} className={`finance-report-status-${valor} ${filtroStatus === valor ? 'is-active' : ''}`} style={filtroStatus === valor ? styles.filtroAtivo : styles.filtro} onClick={() => setFiltroStatus(valor)}>{label}</button>
           ))}
         </div>
       </section>
-
       {loading ? <RelatorioSkeleton /> : (
         <>
-      <section className="executive-kpi-grid" style={styles.executiveKpiGrid}>
+      <section className="executive-kpi-grid finance-report-kpis" style={styles.executiveKpiGrid}>
         <ExecutiveKpiCard titulo="Previsto" valor={formatarValor(totalGeral)} detalhe={`${contasFiltradas.length} conta(s)`} tom="#364fc7" />
         <ExecutiveKpiCard titulo="Realizado" valor={formatarValor(totalPago)} detalhe={`${formatarPercentual(taxaPago)} do previsto`} tom="#12b886" />
         <ExecutiveKpiCard titulo="Pendente" valor={formatarValor(totalPendente)} detalhe="Ainda não pago" tom="#f59f00" />
@@ -899,8 +929,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
         <ExecutiveKpiCard titulo="Descontos" valor={formatarValor(totalDescontos)} detalhe="Ajustes a menor" tom="#059669" />
       </section>
 
-      <section style={styles.advancedPanel}>
-        <div style={styles.widgetHeader}>
+      <section className="finance-report-analysis-panel" style={styles.advancedPanel}>
+        <div className="finance-report-section-head" style={styles.widgetHeader}>
           <div>
             <strong>Relatórios financeiros</strong>
             <p style={styles.muted}>Visualize indicadores, tendências, filiais, projeções e recomendações em um só lugar.</p>
@@ -1114,7 +1144,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
         )}
       </section>
 
-      <section style={styles.dashboardGrid}>
+      <section className="finance-report-dashboard-grid" style={styles.dashboardGrid}>
         <Widget titulo="Resumo financeiro" emoji="📌" destaque>
           <p style={styles.executivoTexto}>{resumoExecutivo}</p>
           <div style={styles.miniStats}>
@@ -1151,8 +1181,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       </section>
 
 
-      <section style={styles.predictivePanel}>
-        <div style={styles.widgetHeader}>
+      <section className="finance-report-predictive-panel" style={styles.predictivePanel}>
+        <div className="finance-report-section-head" style={styles.widgetHeader}>
           <div>
             <strong>Projeções financeiras</strong>
             <p style={styles.muted}>Estimativa para 30, 60 e 90 dias, com risco projetado e acompanhamento da meta.</p>
@@ -1203,7 +1233,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       </section>
 
       {mostrarAcaoPrioritaria && (
-        <section className="print-card" style={styles.cardAlerta}>
+        <section className="print-card finance-report-priority-card" style={styles.cardAlerta}>
           <div>
             <strong>🚨 Ação prioritária</strong>
             <p>{formatarPercentual(semCentro.percentual)} das despesas filtradas estão sem centro de custo. Classifique os lançamentos para melhorar a análise.</p>
@@ -1213,14 +1243,14 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       )}
 
       {metaValida && (
-        <section className="print-card" style={styles.cardMeta}>
+        <section className="print-card finance-report-meta-card" style={styles.cardMeta}>
           <div style={styles.widgetHeader}><strong>🎯 Meta mensal</strong><span style={styles.badge}>{formatarPercentual(percentualMeta)}</span></div>
           <p>Meta: {formatarValor(meta)} • Atual: {formatarValor(totalGeral)}</p>
           <Progress value={Math.min(percentualMeta, 100)} color={percentualMeta > 100 ? '#dc3545' : percentualMeta >= 80 ? '#f59f00' : '#12b886'} />
         </section>
       )}
 
-      <section style={styles.twoColumns}>
+      <section className="finance-report-two-columns" style={styles.twoColumns}>
         <Widget titulo="Insights automáticos" emoji="💡">
           <div style={styles.insightList}>
             {insights.map((insight, index) => (
@@ -1245,7 +1275,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
         )}
       </section>
 
-      <section style={styles.twoColumns}>
+      <section className="finance-report-two-columns" style={styles.twoColumns}>
         {topDespesas.length > 0 && (
           <Widget titulo="Top despesas" emoji="🔥">
             {topDespesas.map((conta, index) => (
@@ -1271,10 +1301,10 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       </section>
 
       {!filtroCentro && (
-        <section style={styles.bloco}>
+        <section className="finance-report-list-section" style={styles.bloco}>
           <h2 style={styles.subtitulo}>🏆 Ranking por Centro</h2>
           {ranking.length === 0 && <p style={styles.vazio}>Nenhum dado encontrado.</p>}
-          <div style={styles.rankingGrid}>
+          <div className="finance-report-ranking-grid" style={styles.rankingGrid}>
             {ranking.map((item, index) => (
               <div className="print-card" key={item.id} style={styles.cardRanking}>
                 <div style={styles.cardLinha}>
@@ -1298,7 +1328,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       )}
 
       {filtroCentro && (
-        <section style={styles.bloco}>
+        <section className="finance-report-list-section" style={styles.bloco}>
           <h2 style={styles.subtitulo}>📊 Resumo do Centro</h2>
           <div className="print-card" style={styles.cardRanking}>
             <div style={styles.cardLinha}><strong>{centroSelecionado?.nome || 'Centro selecionado'}</strong><strong>{formatarValor(totalGeral)}</strong></div>
@@ -1307,9 +1337,9 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
         </section>
       )}
 
-      <section style={styles.bloco}>
+      <section className="finance-report-list-section finance-report-accounts-section" style={styles.bloco}>
         <h2 style={styles.subtitulo}>📄 Contas do relatório</h2>
-        <div style={styles.contasGrid}>
+        <div className="finance-report-accounts-grid" style={styles.contasGrid}>
           {contasFiltradas.map((conta) => {
             const realizado = valorRealizadoConta(conta)
             const ajuste = encargosConta(conta) > 0
@@ -1366,8 +1396,8 @@ function escapeHtml(value) {
 
 function Widget({ titulo, emoji, badge, badgeColor = '#0d9488', children, destaque }) {
   return (
-    <section className="print-card" style={destaque ? { ...styles.card, ...styles.cardDestaque } : styles.card}>
-      <div style={styles.widgetHeader}>
+    <section className={`print-card finance-report-widget ${destaque ? 'finance-report-widget-featured' : ''}`} style={destaque ? { ...styles.card, ...styles.cardDestaque } : styles.card}>
+      <div className="finance-report-widget-head" style={styles.widgetHeader}>
         <strong>{emoji} {titulo}</strong>
         {badge && <span style={{ ...styles.badge, color: badgeColor, borderColor: badgeColor }}>{badge}</span>}
       </div>
@@ -1390,7 +1420,7 @@ function KpiCard({ titulo, valor, detalhe, emoji, cor, progresso }) {
 
 function ExecutiveKpiCard({ titulo, valor, detalhe, tom }) {
   return (
-    <section className="executive-kpi-card print-card" style={{ ...styles.executiveKpiCard, borderLeftColor: tom }}>
+    <section className="executive-kpi-card print-card finance-report-kpi-card" style={{ ...styles.executiveKpiCard, borderLeftColor: tom }}>
       <small style={styles.executiveKpiLabel}>{titulo}</small>
       <strong style={styles.executiveKpiValue}>{valor}</strong>
       <span style={styles.executiveKpiDetail}>{detalhe}</span>
@@ -1400,7 +1430,7 @@ function ExecutiveKpiCard({ titulo, valor, detalhe, tom }) {
 
 function MiniStat({ label, value, sub }) {
   return (
-    <div style={styles.miniStat}>
+    <div className="finance-report-mini-stat" style={styles.miniStat}>
       <small>{label}</small>
       <strong>{value}</strong>
       {sub && <span>{sub}</span>}
@@ -1410,7 +1440,7 @@ function MiniStat({ label, value, sub }) {
 
 function Progress({ value, color }) {
   return (
-    <div style={styles.barraFundo}>
+    <div className="finance-report-progress" style={styles.barraFundo}>
       <div style={{ ...styles.barraValor, width: `${Math.min(Math.max(value || 0, 3), 100)}%`, background: color }} />
     </div>
   )

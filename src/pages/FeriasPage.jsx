@@ -237,15 +237,17 @@ function EmptyState({ titulo, descricao }) {
 function SectionHeader({ titulo, descricao, resumo, aberto, onToggle, acao }) {
   return (
     <div className="ferias-section-header">
-      <button className="ferias-section-toggle" type="button" onClick={onToggle} aria-expanded={aberto}>
-        <span aria-hidden="true">{aberto ? '−' : '+'}</span>
-        <span>
-          <strong>{titulo}</strong>
-          {descricao && <small>{descricao}</small>}
-          {!aberto && resumo && <em>{resumo}</em>}
-        </span>
-      </button>
-      {acao}
+      <div className="ferias-section-title">
+        <strong>{titulo}</strong>
+        {descricao && <small>{descricao}</small>}
+        {!aberto && resumo && <em>{resumo}</em>}
+      </div>
+      <div className="ferias-section-actions">
+        {acao}
+        <button className="ferias-section-toggle" type="button" onClick={onToggle} aria-expanded={aberto} aria-label={aberto ? `Recolher ${titulo}` : `Expandir ${titulo}`}>
+          {aberto ? '−' : '+'}
+        </button>
+      </div>
     </div>
   )
 }
@@ -1035,18 +1037,18 @@ export default function FeriasPage({
         }
       `}</style>
 
-      <div className="master-page-hero">
-        <div>
-          <span className="master-kicker">Gestão de Pessoas</span>
-          <h1 style={styles.titulo}>Férias</h1>
-          <p style={styles.textoNota}>Controle inicial de ciclos e parcelas por colaborador, usando sempre a empresa ativa.</p>
-          <small style={styles.textoAjuda}>Empresa ativa: <strong>{empresaNome || 'Empresa não identificada'}</strong></small>
+      <div className="ferias-page-hero">
+        <div className="ferias-hero-copy">
+          <span className="ferias-kicker">Gestão de Pessoas</span>
+          <h1>Férias</h1>
+          <p>Controle de ciclos, saldo e parcelas por colaborador.</p>
+          <small>Empresa ativa: <strong>{empresaNome || 'Empresa não identificada'}</strong></small>
         </div>
-        <button style={styles.btnCinza} type="button" onClick={voltarPainel}>Voltar ao painel</button>
+        <button className="ferias-btn ferias-btn-secondary" type="button" onClick={voltarPainel}>Voltar ao painel</button>
       </div>
 
       {!empresaId ? (
-        <section style={styles.cardConfiguracao}>
+        <section className="ferias-card">
           <EmptyState
             titulo="Empresa ativa necessaria"
             descricao="Selecione uma empresa para carregar funcionários e férias."
@@ -1211,7 +1213,7 @@ export default function FeriasPage({
                   </div>
                   <div className="ferias-form-actions">
                     <button
-                      style={styles.btnSalvar}
+                      className="ferias-btn ferias-btn-primary"
                       type="submit"
                       disabled={
                         !podeEditar ||
@@ -1282,7 +1284,7 @@ export default function FeriasPage({
                               <span className="ferias-selected-pill">Selecionado</span>
                             ) : (
                               <button
-                                style={styles.btnCinza}
+                                className="ferias-btn ferias-btn-secondary"
                                 type="button"
                                 disabled={loading || salvando}
                                 onClick={() => setCicloSelecionadoId(ciclo.id)}
@@ -1292,7 +1294,7 @@ export default function FeriasPage({
                             )}
                             {podeEditar && (
                               <button
-                                style={ciclo.arquivado ? styles.btnSalvar : styles.btnCinza}
+                                className={`ferias-btn ${ciclo.arquivado ? 'ferias-btn-primary' : 'ferias-btn-danger'}`}
                                 type="button"
                                 disabled={salvando}
                                 onClick={() => alternarArquivamentoCiclo(ciclo)}
@@ -1325,7 +1327,7 @@ export default function FeriasPage({
             onToggle={() => alternarSecao('resumoCiclo')}
             acao={podeEditar && !editandoCiclo ? (
               <button
-                style={styles.btnCinza}
+                className="ferias-btn ferias-btn-secondary"
                 type="button"
                 disabled={salvando || cicloSelecionado.arquivado}
                 onClick={iniciarEdicaoCiclo}
@@ -1417,14 +1419,14 @@ export default function FeriasPage({
 
               <div className="ferias-form-actions">
                 <button
-                  style={styles.btnSalvar}
+                  className="ferias-btn ferias-btn-primary"
                   type="submit"
                   disabled={salvando || Number(formularioEdicaoCiclo.dias_direito || 0) < diasLancados}
                 >
                   {salvando ? 'Salvando...' : 'Salvar ciclo'}
                 </button>
                 <button
-                  style={styles.btnCinza}
+                  className="ferias-btn ferias-btn-secondary"
                   type="button"
                   disabled={salvando}
                   onClick={cancelarEdicaoCiclo}
@@ -1536,7 +1538,7 @@ export default function FeriasPage({
 
             <div className="ferias-form-actions">
               <button
-                style={styles.btnSalvar}
+                className="ferias-btn ferias-btn-primary"
                 type="submit"
                 disabled={
                   !podeEditar ||
@@ -1667,7 +1669,7 @@ export default function FeriasPage({
                     <div className="ferias-actions">
                       {podeEditar && !editandoPeriodo && (
                         <button
-                          style={styles.btnCinza}
+                          className="ferias-btn ferias-btn-secondary"
                           type="button"
                           disabled={salvando || periodo.arquivado}
                           onClick={() => iniciarEdicaoPeriodo(periodo)}
@@ -1678,7 +1680,7 @@ export default function FeriasPage({
                       {podeEditar && editandoPeriodo && (
                         <>
                           <button
-                            style={styles.btnSalvar}
+                            className="ferias-btn ferias-btn-primary"
                             type="button"
                             disabled={
                               salvando ||
@@ -1692,7 +1694,7 @@ export default function FeriasPage({
                             {salvando ? 'Salvando...' : 'Salvar'}
                           </button>
                           <button
-                            style={styles.btnCinza}
+                            className="ferias-btn ferias-btn-secondary"
                             type="button"
                             disabled={salvando}
                             onClick={cancelarEdicaoPeriodo}
@@ -1703,7 +1705,7 @@ export default function FeriasPage({
                       )}
                       {podeEditar && !editandoPeriodo && (
                         <button
-                          style={periodo.arquivado ? styles.btnSalvar : styles.btnCinza}
+                          className={`ferias-btn ${periodo.arquivado ? 'ferias-btn-primary' : 'ferias-btn-danger'}`}
                           type="button"
                           disabled={salvando}
                           onClick={() => alternarArquivamentoPeriodo(periodo)}

@@ -5544,6 +5544,260 @@
   }
 }
 
+/* Férias */
+.ferias-page {
+  padding-bottom: 140px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.ferias-page-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid rgba(15, 23, 42, .08);
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 14px 38px rgba(15, 23, 42, .06);
+}
+
+.ferias-hero-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.ferias-kicker {
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.ferias-page h1,
+.ferias-page h2,
+.ferias-page h3 {
+  margin: 0;
+  color: #0f172a;
+  letter-spacing: 0;
+}
+
+.ferias-page h1 {
+  font-size: clamp(26px, 3vw, 36px);
+  line-height: 1.05;
+}
+
+.ferias-hero-copy p,
+.ferias-hero-copy small {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.ferias-page .ferias-card {
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, .06);
+}
+
+.ferias-page .ferias-card.is-compact {
+  position: sticky;
+  top: 14px;
+}
+
+.ferias-page .ferias-section-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.ferias-section-title {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  text-align: left;
+}
+
+.ferias-section-title strong {
+  color: #0f172a;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.ferias-section-title small,
+.ferias-section-title em {
+  color: #64748b;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.ferias-section-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ferias-page .ferias-section-toggle {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #0f766e;
+  font-size: 18px;
+  font-weight: 950;
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.ferias-btn {
+  min-height: 36px;
+  border-radius: 999px;
+  padding: 8px 13px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ferias-btn:disabled {
+  opacity: .58;
+  cursor: not-allowed;
+}
+
+.ferias-btn-primary {
+  border-color: #0f766e;
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.ferias-btn-secondary {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+}
+
+.ferias-btn-danger {
+  border-color: #fecdd3;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.ferias-page .ferias-cycle-card,
+.ferias-page .ferias-period-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, .04);
+}
+
+.ferias-page .ferias-cycle-card::before,
+.ferias-page .ferias-period-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: #14b8a6;
+}
+
+.ferias-page .ferias-cycle-card.selected::before {
+  background: #0f766e;
+}
+
+.ferias-page .ferias-cycle-card.archived::before,
+.ferias-page .ferias-period-card.archived::before {
+  background: #94a3b8;
+}
+
+.ferias-page .ferias-status {
+  border: 1px solid #a7f3d0;
+}
+
+.ferias-page .ferias-summary-box,
+.ferias-page .ferias-calculated-field {
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, .04);
+}
+
+.ferias-page .ferias-preview {
+  border-color: #99f6e4;
+  background: #f0fdfa;
+}
+
+.ferias-page .ferias-warning {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+@media (max-width: 980px) {
+  .ferias-page-hero,
+  .ferias-page .ferias-section-header {
+    grid-template-columns: 1fr;
+  }
+
+  .ferias-page .ferias-card.is-compact {
+    position: static;
+  }
+
+  .ferias-section-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .ferias-page {
+    gap: 12px;
+    padding-bottom: 160px;
+  }
+
+  .ferias-page-hero {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .ferias-page .ferias-section-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .ferias-section-actions {
+    align-items: flex-start;
+  }
+
+  .ferias-actions,
+  .ferias-form-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .ferias-btn,
+  .ferias-form-actions .ferias-btn,
+  .ferias-actions .ferias-btn {
+    width: 100%;
+  }
+}
+
 @media (max-width: 560px) {
   .funcionarios-page {
     gap: 12px;

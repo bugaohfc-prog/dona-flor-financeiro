@@ -121,17 +121,17 @@ function FolhaSectionHeader({ kicker, titulo, descricao, resumo, aberto, onToggl
 function FolhaSubsectionHeader({ titulo, descricao, aberto, onToggle }) {
   return (
     <button
-      className="folha-subsection-toggle"
+      className="folha-subsection-toggle folha-form-subsection-header"
       type="button"
       onClick={onToggle}
       aria-expanded={aberto}
       aria-label={aberto ? `Recolher ${titulo}` : `Expandir ${titulo}`}
     >
-      <span>
+      <span className="folha-form-subsection-copy">
         <strong>{titulo}</strong>
         {descricao && <small>{descricao}</small>}
       </span>
-      <b>{aberto ? '\u2212' : '+'}</b>
+      <b className="folha-form-subsection-toggle">{aberto ? '\u2212' : '+'}</b>
     </button>
   )
 }

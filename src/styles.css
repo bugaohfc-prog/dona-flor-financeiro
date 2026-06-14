@@ -7240,6 +7240,61 @@
   font-size: 14px;
 }
 
+.relatorios-contas-filters .relatorios-contas-kind-option {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #eef3f1;
+  background: #ffffff;
+  box-sizing: border-box;
+  cursor: pointer;
+  text-align: left;
+}
+
+.relatorios-contas-filters .relatorios-contas-kind-option input {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 18px;
+  accent-color: #0f766e;
+}
+
+.relatorios-contas-filters .relatorios-contas-kind-option:last-child {
+  border-bottom: 0;
+}
+
+.relatorios-contas-filters .relatorios-contas-kind-option > span {
+  display: block;
+  min-width: 0;
+  color: inherit;
+  text-align: left;
+}
+
+.relatorios-contas-filters .relatorios-contas-kind-option strong {
+  display: block;
+  color: #173332;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.relatorios-contas-filters .relatorios-contas-kind-option small {
+  display: block;
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
 .relatorios-contas-filter-wide {
   grid-column: span 2;
 }

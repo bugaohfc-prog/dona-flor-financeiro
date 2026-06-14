@@ -847,13 +847,17 @@ export default function FechamentoFolhaPage({
     }))
   }
 
-  function focarFormularioLancamento() {
+  function rolarParaElemento(id, atraso = 0) {
     window.setTimeout(() => {
-      document.getElementById('folha-form-lancamento')?.scrollIntoView({
+      document.getElementById(id)?.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
       })
-    }, 0)
+    }, atraso)
+  }
+
+  function focarFormularioLancamento() {
+    rolarParaElemento('folha-form-lancamento')
   }
 
   function iniciarNovoLancamentoFuncionario(funcionarioId) {
@@ -1079,6 +1083,15 @@ export default function FechamentoFolhaPage({
 
   function iniciarEdicaoLancamento(lancamento) {
     limparMensagens()
+    setSecoesAbertas((atual) => ({
+      ...atual,
+      lancamento: true
+    }))
+    setSecoesFormularioLancamento({
+      principais: true,
+      valores: true,
+      descricao: true
+    })
     setLancamentoEditandoId(lancamento.id)
     setFormLancamento({
       funcionario_id: lancamento.funcionario_id || '',
@@ -1093,6 +1106,7 @@ export default function FechamentoFolhaPage({
       valor: lancamento.valor ?? '',
       observacao_administrativa: lancamento.observacao_administrativa || ''
     })
+    focarFormularioLancamento()
   }
 
   function iniciarNovoItemLancamento(lancamento) {
@@ -1117,6 +1131,7 @@ export default function FechamentoFolhaPage({
       valor: item.valor ?? '',
       observacao_administrativa: item.observacao_administrativa || ''
     })
+    rolarParaElemento(`folha-form-item-${lancamento.id}`, 80)
   }
 
   function cancelarEdicaoItem(lancamento) {
@@ -1203,7 +1218,7 @@ export default function FechamentoFolhaPage({
             : 'Use para detalhar o lancamento com contexto administrativo.'
 
     return (
-      <form onSubmit={(event) => salvarItemLancamento(event, lancamento)} style={estilosLocais.itemFormularioCompacto}>
+      <form id={`folha-form-item-${lancamento.id}`} onSubmit={(event) => salvarItemLancamento(event, lancamento)} style={estilosLocais.itemFormularioCompacto}>
         <div style={estilosLocais.itemFormularioHeader}>
           <div>
             <h4 style={estilosLocais.formSectionTitle}>

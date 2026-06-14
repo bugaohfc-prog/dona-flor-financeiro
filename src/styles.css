@@ -5952,10 +5952,11 @@
 }
 
 .folha-section-actions {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+  justify-self: end;
 }
 
 .folha-section-toolbar {
@@ -5984,6 +5985,7 @@
 
 .folha-section-toggle {
   cursor: pointer;
+  justify-self: end;
 }
 
 .folha-section.is-collapsed > :not(.folha-section-header) {
@@ -6123,14 +6125,18 @@
     padding-bottom: 156px;
   }
 
-  .folha-page-hero,
-  .folha-page .folha-section-header {
+  .folha-page-hero {
     grid-template-columns: 1fr;
     align-items: stretch;
   }
 
+  .folha-page .folha-section-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
   .folha-section-actions {
-    justify-content: space-between;
+    justify-content: flex-end;
   }
 
   .folha-section-toggle {

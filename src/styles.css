@@ -7064,53 +7064,114 @@
   cursor: pointer;
 }
 
-.relatorios-contas-type-grid {
+.relatorios-contas-filters {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
 }
 
-.relatorios-contas-type {
+.relatorios-contas-kind-field {
+  grid-column: 1 / -1;
   min-width: 0;
-  min-height: 72px;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid #dce8e4;
+  border-radius: 18px;
+  background: #f8fbfa;
+}
+
+.relatorios-contas-kind-field legend {
+  padding: 0 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.relatorios-contas-kind-field > p {
+  margin: 0 0 12px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.relatorios-contas-kind-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.relatorios-contas-kind-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "check title"
+    "check desc";
+  gap: 3px 10px;
+  align-items: center;
+  min-width: 0;
+  min-height: 74px;
   padding: 12px;
   border: 1px solid #dce8e4;
   border-radius: 16px;
-  background: #f8fbfa;
-  color: #334155;
-  text-align: left;
+  background: #ffffff;
   cursor: pointer;
 }
 
-.relatorios-contas-type strong,
-.relatorios-contas-type span {
-  display: block;
-  min-width: 0;
+.relatorios-contas-kind-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.relatorios-contas-type strong {
+.relatorios-contas-kind-option > span {
+  grid-area: check;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #b7cbc6;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.relatorios-contas-kind-option strong {
+  grid-area: title;
   color: #173332;
   font-size: 14px;
+  line-height: 1.2;
 }
 
-.relatorios-contas-type span {
-  margin-top: 4px;
+.relatorios-contas-kind-option small {
+  grid-area: desc;
   color: #64748b;
   font-size: 12px;
   line-height: 1.35;
 }
 
-.relatorios-contas-type.is-active {
+.relatorios-contas-kind-option.is-selected {
   border-color: #0f766e;
-  background: #e4f8f2;
-  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.12);
+  background: #ecfdf5;
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.1);
 }
 
-.relatorios-contas-filters {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+.relatorios-contas-kind-option.is-selected > span {
+  border-color: #0f766e;
+  background: #0f766e;
+}
+
+.relatorios-contas-kind-warning {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .relatorios-contas-filters label {
@@ -7339,6 +7400,33 @@
   margin: 0;
 }
 
+.relatorios-contas-export-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.relatorios-contas-export-card h2 {
+  margin: 0;
+  color: #173332;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.relatorios-contas-export-card p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.relatorios-contas-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 @media (max-width: 980px) {
   .relatorios-contas-hero,
   .relatorios-contas-section-header {
@@ -7353,7 +7441,7 @@
     flex: 1 1 150px;
   }
 
-  .relatorios-contas-type-grid,
+  .relatorios-contas-kind-options,
   .relatorios-contas-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -7370,6 +7458,18 @@
     grid-template-columns: 1fr 1fr;
     align-items: start;
     padding: 14px;
+  }
+
+  .relatorios-contas-export-card {
+    grid-template-columns: 1fr;
+  }
+
+  .relatorios-contas-export-actions {
+    justify-content: stretch;
+  }
+
+  .relatorios-contas-export-actions .relatorios-contas-btn {
+    flex: 1 1 150px;
   }
 }
 
@@ -7401,7 +7501,7 @@
     font-size: 11px;
   }
 
-  .relatorios-contas-type-grid,
+  .relatorios-contas-kind-options,
   .relatorios-contas-summary,
   .relatorios-contas-filters {
     grid-template-columns: 1fr;
@@ -7426,5 +7526,10 @@
   .relatorios-contas-preview-meta {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .relatorios-contas-export-actions,
+  .relatorios-contas-export-actions .relatorios-contas-btn {
+    width: 100%;
   }
 }

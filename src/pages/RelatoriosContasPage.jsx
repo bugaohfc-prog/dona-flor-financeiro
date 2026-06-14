@@ -5,12 +5,10 @@ import {
   imprimirRelatorioContas
 } from '../utils/relatoriosContasExport.js'
 
-const TIPOS_RELATORIO = [
-  { valor: 'em-aberto', label: 'Em aberto', descricao: 'Vencidas e a vencer' },
-  { valor: 'vencidas', label: 'Vencidas', descricao: 'Abertas com vencimento passado' },
-  { valor: 'a-vencer', label: 'A vencer', descricao: 'Abertas dentro do prazo' },
-  { valor: 'pagas', label: 'Pagas', descricao: 'Contas já quitadas' },
-  { valor: 'todas', label: 'Todas', descricao: 'Todos os status' }
+const TIPOS_CONTAS = [
+  { valor: 'vencidas', label: 'Vencidas', descricao: 'Abertas com vencimento passado', status: 'Vencida' },
+  { valor: 'a-vencer', label: 'A vencer', descricao: 'Abertas dentro do prazo', status: 'A vencer' },
+  { valor: 'pagas', label: 'Pagas', descricao: 'Contas já quitadas', status: 'Paga' }
 ]
 
 const AGRUPAMENTOS = [
@@ -74,6 +72,66 @@ function classeStatus(status) {
   return 'is-open'
 }
 
+function contextoPorTipos(tiposSelecionados) {
+  const selecionados = new Set(tiposSelecionados)
+  const temVencidas = selecionados.has('vencidas')
+  const temAVencer = selecionados.has('a-vencer')
+  const temPagas = selecionados.has('pagas')
+  const quantidade = tiposSelecionados.length
+
+  if (quantidade === 0) {
+    return {
+      titulo: 'Relatório sem tipo selecionado',
+      descricao: 'Selecione pelo menos um tipo de conta para gerar o relatório.'
+    }
+  }
+
+  if (temVencidas && temAVencer && !temPagas) {
+    return {
+      titulo: 'Relatório em aberto',
+      descricao: 'Inclui contas vencidas e a vencer.'
+    }
+  }
+
+  if (temVencidas && !temAVencer && !temPagas) {
+    return {
+      titulo: 'Relatório de contas vencidas',
+      descricao: 'Inclui apenas contas abertas com vencimento passado.'
+    }
+  }
+
+  if (!temVencidas && temAVencer && !temPagas) {
+    return {
+      titulo: 'Relatório de contas a vencer',
+      descricao: 'Inclui apenas contas abertas dentro do prazo.'
+    }
+  }
+
+  if (!temVencidas && !temAVencer && temPagas) {
+    return {
+      titulo: 'Relatório de contas pagas',
+      descricao: 'Inclui apenas contas já quitadas.'
+    }
+  }
+
+  if (temVencidas && temAVencer && temPagas) {
+    return {
+      titulo: 'Relatório completo',
+      descricao: 'Inclui contas vencidas, a vencer e pagas.'
+    }
+  }
+
+  const partes = []
+  if (temVencidas) partes.push('contas vencidas')
+  if (temAVencer) partes.push('contas a vencer')
+  if (temPagas) partes.push('contas pagas')
+
+  return {
+    titulo: 'Relatório personalizado',
+    descricao: `Inclui ${partes.join(' e ')}.`
+  }
+}
+
 function BlocoRelatorioContas({ titulo, descricao, aberto, onToggle, children }) {
   return (
     <section className="relatorios-contas-card">
@@ -104,7 +162,7 @@ export default function RelatoriosContasPage({
   podeExportarDados = true,
   mostrarAviso
 }) {
-  const [tipoRelatorio, setTipoRelatorio] = useState('em-aberto')
+  const [tiposSelecionados, setTiposSelecionados] = useState(['vencidas', 'a-vencer'])
   const [filtroFilial, setFiltroFilial] = useState('')
   const [filtroCentro, setFiltroCentro] = useState('')
   const [dataInicial, setDataInicial] = useState('')
@@ -113,6 +171,16 @@ export default function RelatoriosContasPage({
   const [agrupamento, setAgrupamento] = useState('status')
   const [filtrosAbertos, setFiltrosAbertos] = useState(true)
   const [previaAberta, setPreviaAberta] = useState(true)
+  const contextoTipos = useMemo(() => contextoPorTipos(tiposSelecionados), [tiposSelecionados])
+  const possuiTipoSelecionado = tiposSelecionados.length > 0
+
+  function alternarTipoConta(tipo) {
+    setTiposSelecionados((atuais) => (
+      atuais.includes(tipo)
+        ? atuais.filter((item) => item !== tipo)
+        : [...atuais, tipo]
+    ))
+  }
 
   const vencida = typeof estaVencida === 'function'
     ? estaVencida
@@ -160,11 +228,11 @@ export default function RelatoriosContasPage({
 
     return contasNormalizadas
       .filter((linha) => {
-        if (tipoRelatorio === 'em-aberto') return linha.conta.status !== 'pago'
-        if (tipoRelatorio === 'vencidas') return linha.conta.status !== 'pago' && linha.statusOperacional === 'Vencida'
-        if (tipoRelatorio === 'a-vencer') return linha.conta.status !== 'pago' && linha.statusOperacional === 'A vencer'
-        if (tipoRelatorio === 'pagas') return linha.conta.status === 'pago'
-        return true
+        if (!possuiTipoSelecionado) return false
+        if (linha.statusOperacional === 'Vencida') return tiposSelecionados.includes('vencidas')
+        if (linha.statusOperacional === 'A vencer') return tiposSelecionados.includes('a-vencer')
+        if (linha.statusOperacional === 'Paga') return tiposSelecionados.includes('pagas')
+        return false
       })
       .filter((linha) => !filtroFilial || linha.conta.filial_id === filtroFilial)
       .filter((linha) => !filtroCentro || linha.conta.centro_custo_id === filtroCentro)
@@ -172,7 +240,7 @@ export default function RelatoriosContasPage({
       .filter((linha) => !dataFinal || !linha.vencimento || linha.vencimento <= dataFinal)
       .filter((linha) => !termo || linha.busca.includes(termo))
       .sort((a, b) => String(a.vencimento || '9999-12-31').localeCompare(String(b.vencimento || '9999-12-31')))
-  }, [agrupamento, busca, contasNormalizadas, dataFinal, dataInicial, filtroCentro, filtroFilial, tipoRelatorio])
+  }, [busca, contasNormalizadas, dataFinal, dataInicial, filtroCentro, filtroFilial, possuiTipoSelecionado, tiposSelecionados])
 
   const resumo = useMemo(() => {
     const totalContas = contasFiltradas.length
@@ -214,7 +282,6 @@ export default function RelatoriosContasPage({
     return Array.from(mapa.entries()).map(([titulo, linhas]) => ({ titulo, linhas }))
   }, [agrupamento, contasFiltradas])
 
-  const tipoSelecionado = TIPOS_RELATORIO.find((tipo) => tipo.valor === tipoRelatorio)
   const filialSelecionada = filiais.find((filial) => filial.id === filtroFilial)
   const centroSelecionado = centros.find((centro) => centro.id === filtroCentro)
   const periodoTexto = dataInicial || dataFinal
@@ -222,13 +289,17 @@ export default function RelatoriosContasPage({
     : 'Sem período'
 
   const contextoExportacao = {
-    tipoRelatorio: tipoSelecionado?.label || 'Relatório',
+    tipoRelatorio: contextoTipos.titulo,
     filialNome: filialSelecionada?.nome || 'Todas',
     centroNome: centroSelecionado?.nome || 'Todos',
     periodo: periodoTexto
   }
 
   function garantirPermissaoExportacao() {
+    if (!possuiTipoSelecionado) {
+      mostrarAviso?.('Selecione pelo menos um tipo de conta para exportar.', 'erro')
+      return false
+    }
     if (podeExportarDados) return true
     mostrarAviso?.('Seu perfil atual não permite exportar relatórios.', 'erro')
     return false
@@ -267,15 +338,6 @@ export default function RelatoriosContasPage({
           <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={() => navegarPara?.('contas')}>
             ← Voltar
           </button>
-          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={imprimir} disabled={!contasFiltradas.length}>
-            Imprimir / PDF
-          </button>
-          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={exportarCsv} disabled={!contasFiltradas.length}>
-            Exportar CSV
-          </button>
-          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-primary" onClick={exportarExcel} disabled={!contasFiltradas.length}>
-            Exportar Excel
-          </button>
         </div>
       </header>
 
@@ -292,21 +354,34 @@ export default function RelatoriosContasPage({
         aberto={filtrosAbertos}
         onToggle={() => setFiltrosAbertos((valor) => !valor)}
       >
-        <div className="relatorios-contas-type-grid">
-          {TIPOS_RELATORIO.map((tipo) => (
-            <button
-              key={tipo.valor}
-              type="button"
-              className={`relatorios-contas-type ${tipoRelatorio === tipo.valor ? 'is-active' : ''}`}
-              onClick={() => setTipoRelatorio(tipo.valor)}
-            >
-              <strong>{tipo.label}</strong>
-              <span>{tipo.descricao}</span>
-            </button>
-          ))}
-        </div>
-
         <div className="relatorios-contas-filters">
+          <fieldset className="relatorios-contas-kind-field">
+            <legend>Tipo de contas</legend>
+            <p>{contextoTipos.titulo}. {contextoTipos.descricao}</p>
+            <div className="relatorios-contas-kind-options">
+              {TIPOS_CONTAS.map((tipo) => {
+                const selecionado = tiposSelecionados.includes(tipo.valor)
+                return (
+                  <label key={tipo.valor} className={`relatorios-contas-kind-option ${selecionado ? 'is-selected' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={selecionado}
+                      onChange={() => alternarTipoConta(tipo.valor)}
+                    />
+                    <span aria-hidden="true">{selecionado ? '✓' : ''}</span>
+                    <strong>{tipo.label}</strong>
+                    <small>{tipo.descricao}</small>
+                  </label>
+                )
+              })}
+            </div>
+            {!possuiTipoSelecionado && (
+              <div className="relatorios-contas-kind-warning">
+                Selecione pelo menos um tipo de conta para gerar o relatório.
+              </div>
+            )}
+          </fieldset>
+
           <label>
             <span>Filial/Unidade</span>
             <select value={filtroFilial} onChange={(event) => setFiltroFilial(event.target.value)}>
@@ -362,7 +437,7 @@ export default function RelatoriosContasPage({
         <article>
           <span>Total de contas</span>
           <strong>{resumo.totalContas}</strong>
-          <small>{tipoSelecionado?.label || 'Relatório'}</small>
+          <small>{contextoTipos.titulo}</small>
         </article>
         <article>
           <span>Valor total</span>
@@ -384,6 +459,24 @@ export default function RelatoriosContasPage({
           <strong>{resumo.valorPagoFormatado}</strong>
           <small>{resumo.quantidadePagas} conta(s)</small>
         </article>
+      </section>
+
+      <section className="relatorios-contas-card relatorios-contas-export-card">
+        <div>
+          <h2>Exportação</h2>
+          <p>{possuiTipoSelecionado ? 'Exporte exatamente a lista filtrada deste relatório.' : 'Selecione pelo menos um tipo de conta para liberar a exportação.'}</p>
+        </div>
+        <div className="relatorios-contas-export-actions">
+          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={imprimir} disabled={!possuiTipoSelecionado || !contasFiltradas.length}>
+            Imprimir / PDF
+          </button>
+          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={exportarCsv} disabled={!possuiTipoSelecionado || !contasFiltradas.length}>
+            Exportar CSV
+          </button>
+          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-primary" onClick={exportarExcel} disabled={!possuiTipoSelecionado || !contasFiltradas.length}>
+            Exportar Excel
+          </button>
+        </div>
       </section>
 
       <BlocoRelatorioContas

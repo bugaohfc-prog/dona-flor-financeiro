@@ -34,7 +34,10 @@ function escaparHtml(valor) {
 }
 
 export function nomeArquivoRelatorioContas({ tipoRelatorio, filialNome, extensao }) {
-  const partes = ['relatorio-contas', normalizarSlug(tipoRelatorio)]
+  const tipoSlug = normalizarSlug(tipoRelatorio)
+    .replace(/^relatorio-de-contas-/, '')
+    .replace(/^relatorio-/, '')
+  const partes = ['relatorio-contas', tipoSlug]
   const filialSlug = normalizarSlug(filialNome)
   if (filialSlug && filialSlug !== 'todas') partes.push(filialSlug)
   return `${partes.filter(Boolean).join('-')}.${extensao}`

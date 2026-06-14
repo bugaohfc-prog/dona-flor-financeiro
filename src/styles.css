@@ -7074,46 +7074,50 @@
   grid-column: 1 / -1;
   min-width: 0;
   margin: 0;
-  padding: 14px;
-  border: 1px solid #dce8e4;
-  border-radius: 18px;
-  background: #f8fbfa;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .relatorios-contas-kind-field legend {
-  padding: 0 6px;
+  display: block;
+  width: 100%;
+  margin: 0 0 7px;
+  padding: 0;
   color: #475569;
   font-size: 12px;
   font-weight: 900;
 }
 
 .relatorios-contas-kind-field > p {
-  margin: 0 0 12px;
+  margin: 8px 0 0;
   color: #64748b;
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
 .relatorios-contas-kind-options {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 42px;
+  padding: 5px;
+  border: 1px solid #d7e8e3;
+  border-radius: 12px;
+  background: #ffffff;
 }
 
 .relatorios-contas-kind-option {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-areas:
-    "check title"
-    "check desc";
-  gap: 3px 10px;
+  display: inline-flex;
+  gap: 7px;
   align-items: center;
   min-width: 0;
-  min-height: 74px;
-  padding: 12px;
-  border: 1px solid #dce8e4;
-  border-radius: 16px;
-  background: #ffffff;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid #dbe5e2;
+  border-radius: 999px;
+  background: #f8faf9;
+  color: #334155;
   cursor: pointer;
 }
 
@@ -7124,38 +7128,35 @@
 }
 
 .relatorios-contas-kind-option > span {
-  grid-area: check;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   border: 1px solid #b7cbc6;
-  border-radius: 7px;
+  border-radius: 5px;
   background: #ffffff;
   color: #ffffff;
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 900;
+  flex: 0 0 auto;
 }
 
 .relatorios-contas-kind-option strong {
-  grid-area: title;
   color: #173332;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .relatorios-contas-kind-option small {
-  grid-area: desc;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.35;
+  display: none;
 }
 
 .relatorios-contas-kind-option.is-selected {
   border-color: #0f766e;
-  background: #ecfdf5;
-  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.1);
+  background: #e4f8f2;
+  box-shadow: none;
 }
 
 .relatorios-contas-kind-option.is-selected > span {
@@ -7164,13 +7165,13 @@
 }
 
 .relatorios-contas-kind-warning {
-  margin-top: 10px;
-  padding: 10px 12px;
+  margin-top: 8px;
+  padding: 8px 10px;
   border: 1px solid #fde68a;
   border-radius: 12px;
   background: #fffbeb;
   color: #92400e;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -7441,7 +7442,6 @@
     flex: 1 1 150px;
   }
 
-  .relatorios-contas-kind-options,
   .relatorios-contas-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -7501,7 +7501,6 @@
     font-size: 11px;
   }
 
-  .relatorios-contas-kind-options,
   .relatorios-contas-summary,
   .relatorios-contas-filters {
     grid-template-columns: 1fr;

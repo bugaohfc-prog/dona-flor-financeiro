@@ -357,7 +357,6 @@ export default function RelatoriosContasPage({
         <div className="relatorios-contas-filters">
           <fieldset className="relatorios-contas-kind-field">
             <legend>Tipo de contas</legend>
-            <p>{contextoTipos.titulo}. {contextoTipos.descricao}</p>
             <div className="relatorios-contas-kind-options">
               {TIPOS_CONTAS.map((tipo) => {
                 const selecionado = tiposSelecionados.includes(tipo.valor)
@@ -375,6 +374,7 @@ export default function RelatoriosContasPage({
                 )
               })}
             </div>
+            <p>{contextoTipos.titulo}. {contextoTipos.descricao}</p>
             {!possuiTipoSelecionado && (
               <div className="relatorios-contas-kind-warning">
                 Selecione pelo menos um tipo de conta para gerar o relatório.

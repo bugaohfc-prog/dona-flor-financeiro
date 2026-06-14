@@ -1329,9 +1329,9 @@
 }
 
 .dashboard-home-widget-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 12px;
   min-width: 0;
 }
@@ -1339,7 +1339,6 @@
 .dashboard-home-header-copy {
   display: grid;
   gap: 3px;
-  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -1347,16 +1346,20 @@
   color: #0f172a;
   font-size: 17px;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .dashboard-home-header-copy small {
   display: block;
   min-width: 0;
+  color: #64748b;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .dashboard-home-header-tools {
   display: inline-flex;
-  flex: 0 0 auto;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
@@ -1379,7 +1382,7 @@
   align-items: center;
   justify-content: center;
   min-height: 28px;
-  max-width: 100%;
+  max-width: 180px;
   padding: 5px 9px;
   border: 1px solid #dbe7e3;
   border-radius: 999px;
@@ -1390,6 +1393,8 @@
   line-height: 1;
   text-align: center;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dashboard-home-kpi-grid,
@@ -1585,18 +1590,29 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.dashboard-home-people-widget .dashboard-home-people-grid {
+  grid-template-columns: 1fr;
+  gap: 9px;
+}
+
 .dashboard-home-people-item,
 .dashboard-home-team-row {
   display: grid;
   width: 100%;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
+  align-items: center;
   gap: 10px;
-  min-height: 74px;
-  padding: 10px 11px;
+  min-height: 68px;
+  padding: 11px 12px;
   color: #0f172a;
   cursor: pointer;
   text-align: left;
+}
+
+.dashboard-home-people-widget .dashboard-home-people-item,
+.dashboard-home-people-widget .dashboard-home-team-row {
+  border-color: rgba(15, 118, 110, .12);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
 }
 
 .dashboard-home-people-item span,
@@ -1610,14 +1626,15 @@
 .dashboard-home-people-item strong,
 .dashboard-home-team-row strong {
   color: #0f172a;
-  font-size: 13px;
-  line-height: 1.2;
+  font-size: 14px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .dashboard-home-count,
 .dashboard-home-team-row b {
   flex: 0 0 auto;
-  align-self: start;
+  align-self: center;
   min-width: 30px;
   padding: 5px 8px;
   border: 1px solid rgba(15, 23, 42, .08);
@@ -1794,24 +1811,23 @@
 
   .dashboard-home-widget-header,
   .dashboard-home-notes-head {
-    display: flex;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
     gap: 10px;
   }
 
   .dashboard-home-header-copy {
-    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .dashboard-home-header-tools {
-    flex: 0 0 auto;
+    min-width: 0;
     justify-content: flex-end;
   }
 
   .dashboard-home-badge {
-    max-width: 124px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    max-width: 116px;
   }
 
   .dashboard-home-actions,
@@ -1849,17 +1865,22 @@
 
   .dashboard-home-people-item,
   .dashboard-home-team-row {
-    min-height: 82px;
-    grid-template-columns: 1fr;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
   }
 
   .dashboard-home-count,
   .dashboard-home-team-row b {
-    justify-self: start;
+    justify-self: end;
   }
 
   .dashboard-home-note-top {
     align-items: flex-start;
+  }
+
+  .dashboard-home-notes {
+    margin-bottom: 110px !important;
   }
 }
 

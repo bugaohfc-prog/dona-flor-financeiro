@@ -338,7 +338,7 @@ export default function DashboardHome({
           </article>
 
           {podeVisualizarResumoPessoas && (
-            <article className="dashboard-home-card dashboard-home-widget" aria-label="Resumo de Gestão de Pessoas">
+            <article className="dashboard-home-card dashboard-home-widget dashboard-home-people-widget" aria-label="Resumo de Gestão de Pessoas">
               <DashboardWidgetHeader
                 kicker="Gestão de Pessoas"
                 title="Resumo da equipe"

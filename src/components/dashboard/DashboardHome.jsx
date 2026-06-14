@@ -155,10 +155,10 @@ export default function DashboardHome({
   const totalHoje = contasHoje.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
   const totalSemana = contasSemana.reduce((acc, conta) => acc + valorSeguro(conta.valor), 0)
   const resumoFinanceiro = [
-    { label: 'Total', valor: formatarValor(total), tone: 'default' },
-    { label: 'Pago', valor: formatarValor(pago), tone: 'success' },
-    { label: 'Pendente', valor: formatarValor(pendente), tone: 'warning' },
-    { label: 'Vencido', valor: formatarValor(vencido), tone: 'danger' }
+    { label: 'Total', valor: formatarValor(total), detalhe: 'Previsto no período', tone: 'default' },
+    { label: 'Pago', valor: formatarValor(pago), detalhe: 'Realizado', tone: 'success' },
+    { label: 'Pendente', valor: formatarValor(pendente), detalhe: 'Ainda em aberto', tone: 'warning' },
+    { label: 'Vencido', valor: formatarValor(vencido), detalhe: 'Atenção operacional', tone: 'danger' }
   ]
   const itensPessoas = useMemo(() => {
     const itens = []
@@ -282,6 +282,7 @@ export default function DashboardHome({
                   <div className={`dashboard-home-kpi dashboard-home-kpi-${item.tone}`} key={item.label}>
                     <span>{item.label}</span>
                     <strong>{item.valor}</strong>
+                    <small>{item.detalhe}</small>
                   </div>
                 ))}
               </div>

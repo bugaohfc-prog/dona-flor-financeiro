@@ -93,6 +93,49 @@ const CATEGORIAS_VALOR_ZERO_INFORMATIVO = new Set([
 
 const CATEGORIAS_ITENS_DETALHADOS = new Set(CATEGORIAS_ITENS_DETALHADOS_FOLHA)
 
+function FolhaSectionHeader({ kicker, titulo, descricao, resumo, aberto, onToggle, acao }) {
+  return (
+    <div className="folha-section-header">
+      <div className="folha-section-title">
+        {kicker && <span>{kicker}</span>}
+        <strong>{titulo}</strong>
+        {descricao && <small>{descricao}</small>}
+        {!aberto && resumo && <em>{resumo}</em>}
+      </div>
+      <div className="folha-section-actions">
+        {acao}
+        <button
+          className="folha-section-toggle"
+          type="button"
+          onClick={onToggle}
+          aria-expanded={aberto}
+          aria-label={aberto ? `Recolher ${titulo}` : `Expandir ${titulo}`}
+        >
+          {aberto ? '\u2212' : '+'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function FolhaSubsectionHeader({ titulo, descricao, aberto, onToggle }) {
+  return (
+    <button
+      className="folha-subsection-toggle"
+      type="button"
+      onClick={onToggle}
+      aria-expanded={aberto}
+      aria-label={aberto ? `Recolher ${titulo}` : `Expandir ${titulo}`}
+    >
+      <span>
+        <strong>{titulo}</strong>
+        {descricao && <small>{descricao}</small>}
+      </span>
+      <b>{aberto ? '\u2212' : '+'}</b>
+    </button>
+  )
+}
+
 const estilosLocais = {
   pageActions: {
     display: 'flex',
@@ -672,6 +715,17 @@ export default function FechamentoFolhaPage({
   const [itemEditandoId, setItemEditandoId] = useState('')
   const [formItem, setFormItem] = useState(criarFormularioItemInicial)
   const [erroFormulario, setErroFormulario] = useState('')
+  const [secoesAbertas, setSecoesAbertas] = useState({
+    competencias: true,
+    resumo: true,
+    lancamento: true,
+    lancamentos: true
+  })
+  const [secoesFormularioLancamento, setSecoesFormularioLancamento] = useState({
+    principais: true,
+    valores: true,
+    descricao: true
+  })
 
   const {
     competencias,
@@ -757,6 +811,20 @@ export default function FechamentoFolhaPage({
 
   const categoriaHorasExtras = CATEGORIAS_HORAS_EXTRAS.has(formLancamento.categoria)
   const categoriaFalta = formLancamento.categoria === 'falta_injustificada'
+
+  function alternarSecao(chave) {
+    setSecoesAbertas((atual) => ({
+      ...atual,
+      [chave]: !atual[chave]
+    }))
+  }
+
+  function alternarSecaoFormularioLancamento(chave) {
+    setSecoesFormularioLancamento((atual) => ({
+      ...atual,
+      [chave]: !atual[chave]
+    }))
+  }
 
   function definirCategoria(categoria) {
     setFormLancamento((atual) => ({
@@ -938,6 +1006,11 @@ export default function FechamentoFolhaPage({
   async function salvarLancamento(event) {
     event.preventDefault()
     limparMensagens()
+    setSecoesFormularioLancamento({
+      principais: true,
+      valores: true,
+      descricao: true
+    })
     const formularioParaSalvar = prepararFormularioLancamentoParaSalvar(formLancamento)
     if (formularioParaSalvar.valor !== formLancamento.valor) {
       setFormLancamento(formularioParaSalvar)
@@ -1383,28 +1456,31 @@ export default function FechamentoFolhaPage({
     return (
       <div className="folha-card-actions" style={estilosLocais.acoesTabela}>
         <button
+          className="folha-btn folha-btn-secondary"
           type="button"
           style={styles.btnCinza}
           onClick={() => abrirItensLancamento(lancamento)}
           disabled={!CATEGORIAS_ITENS_DETALHADOS.has(lancamento.categoria)}
         >
-          {lancamentoItensAbertoId === lancamento.id ? 'Ocultar itens' : 'Ver itens'}
+          {lancamentoItensAbertoId === lancamento.id ? '\u2212 itens' : '+ itens'}
         </button>
         <button
+          className="folha-btn folha-btn-secondary"
           type="button"
           style={styles.btnCinza}
           onClick={() => iniciarEdicaoLancamento(lancamento)}
           disabled={!podeEditar || salvando || lancamento.arquivado}
         >
-          Editar lancamento
+          Editar lançamento
         </button>
         <button
+          className={`folha-btn ${lancamento.arquivado ? 'folha-btn-positive' : 'folha-btn-danger'}`}
           type="button"
           style={styles.btnCinza}
           onClick={() => alternarArquivoLancamento(lancamento)}
           disabled={!podeEditar || salvando}
         >
-          {lancamento.arquivado ? 'Reativar lancamento' : 'Arquivar lancamento'}
+          {lancamento.arquivado ? 'Reativar lançamento' : 'Arquivar lançamento'}
         </button>
       </div>
     )
@@ -1580,21 +1656,22 @@ export default function FechamentoFolhaPage({
           }
         }
       `}</style>
-      <div className="folha-page-shell">
-      <div style={estilosLocais.pageActions}>
-        <div style={estilosLocais.pageIntro}>
-          <h1 style={styles.titulo}>Fechamento de Folha</h1>
-          <p style={styles.textoNota}>Controle inicial de competências e lançamentos mensais da folha.</p>
-          {empresaNome && <p style={styles.textoNota}>Empresa ativa: <strong>{empresaNome}</strong></p>}
+      <div className="folha-page folha-page-shell">
+      <div className="folha-page-hero">
+        <div className="folha-page-intro">
+          <span>Gestão de Pessoas</span>
+          <h1>Folha / Fechamento</h1>
+          <p>Controle mensal de competências, lançamentos e conferência administrativa da folha.</p>
+          {empresaNome && <small>Empresa ativa: <strong>{empresaNome}</strong></small>}
         </div>
         {voltarPainel && (
-          <button type="button" style={styles.btnCinza} onClick={voltarPainel}>
+          <button className="folha-btn folha-btn-secondary" type="button" style={styles.btnCinza} onClick={voltarPainel}>
             Voltar
           </button>
         )}
       </div>
 
-      <section className="folha-section compact" style={styles.cardConfiguracao}>
+      <section className="folha-lgpd-card">
         <strong>Atenção LGPD</strong>
         <p style={styles.textoNota}>
           Não registre dados médicos, CID, laudos, diagnósticos, documentos ou informações clínicas.
@@ -1615,7 +1692,15 @@ export default function FechamentoFolhaPage({
         </div>
       )}
 
-      <section className="folha-section compact" style={styles.cardConfiguracao}>
+      <section className={`folha-section folha-card compact ${secoesAbertas.competencias ? 'is-open' : 'is-collapsed'}`} style={styles.cardConfiguracao}>
+        <FolhaSectionHeader
+          kicker="Competências"
+          titulo="Competências da folha"
+          descricao="Crie, selecione e acompanhe competências mensais."
+          resumo={`${competencias.length} competência(s) carregada(s)`}
+          aberto={secoesAbertas.competencias}
+          onToggle={() => alternarSecao('competencias')}
+        />
         <h2 style={styles.subtitulo}>Competências</h2>
         <p style={styles.textoNota}>Crie e selecione uma competência mensal no formato AAAA-MM.</p>
 
@@ -1752,7 +1837,15 @@ export default function FechamentoFolhaPage({
         )}
       </section>
 
-      <section className="folha-section compact" style={styles.cardConfiguracao}>
+      <section className={`folha-section folha-card compact ${secoesAbertas.resumo ? 'is-open' : 'is-collapsed'}`} style={styles.cardConfiguracao}>
+        <FolhaSectionHeader
+          kicker="Resumo"
+          titulo="Resumo da competência"
+          descricao="Totais informativos da competência selecionada."
+          resumo={competenciaSelecionada ? `${LABELS_STATUS_COMPETENCIA[competenciaSelecionada.status] || competenciaSelecionada.status} · ${resumo.quantidadeLancamentos} lançamento(s)` : 'Selecione uma competência'}
+          aberto={secoesAbertas.resumo}
+          onToggle={() => alternarSecao('resumo')}
+        />
         <h2 style={styles.subtitulo}>Resumo da competência selecionada</h2>
         {!competenciaSelecionada ? (
           <p style={styles.textoNota}>Selecione uma competência para ver o resumo e os lançamentos.</p>
@@ -1783,7 +1876,15 @@ export default function FechamentoFolhaPage({
         )}
       </section>
 
-      <section id="folha-form-lancamento" className="folha-section compact" style={styles.cardConfiguracao}>
+      <section id="folha-form-lancamento" className={`folha-section folha-card compact ${secoesAbertas.lancamento ? 'is-open' : 'is-collapsed'}`} style={styles.cardConfiguracao}>
+        <FolhaSectionHeader
+          kicker="Lançamento"
+          titulo={lancamentoEditandoId ? 'Editar lançamento' : 'Lançamento manual'}
+          descricao="Registre créditos, descontos e informações administrativas."
+          resumo={competenciaSelecionada ? `Competência ${competenciaSelecionada.competencia}` : 'Selecione uma competência'}
+          aberto={secoesAbertas.lancamento}
+          onToggle={() => alternarSecao('lancamento')}
+        />
         <h2 style={styles.subtitulo}>{lancamentoEditandoId ? 'Editar lançamento' : 'Lançamento manual'}</h2>
         <p style={styles.textoNota}>
           O lançamento manual respeita a empresa ativa, a competência selecionada e a RLS do Supabase.
@@ -1792,8 +1893,14 @@ export default function FechamentoFolhaPage({
         {!competenciaSelecionada ? (
           <p style={styles.textoNota}>Selecione uma competência antes de criar lançamentos.</p>
         ) : (
-          <form onSubmit={salvarLancamento} style={{ display: 'grid', gap: 12 }}>
-            <div style={estilosLocais.formPanelSoft}>
+          <form onSubmit={salvarLancamento} style={{ display: 'grid', gap: 12 }} noValidate>
+            <div className={`folha-form-subsection ${secoesFormularioLancamento.principais ? 'is-open' : 'is-collapsed'}`} style={estilosLocais.formPanelSoft}>
+              <FolhaSubsectionHeader
+                titulo="Dados principais"
+                descricao="Funcionário, filial, categoria e natureza."
+                aberto={secoesFormularioLancamento.principais}
+                onToggle={() => alternarSecaoFormularioLancamento('principais')}
+              />
               <h3 style={estilosLocais.formSectionTitle}>Dados principais</h3>
               <div style={estilosLocais.formGrid}>
                 <label style={estilosLocais.formField}>
@@ -1865,7 +1972,13 @@ export default function FechamentoFolhaPage({
               </div>
             </div>
 
-            <div style={estilosLocais.formPanelSoft}>
+            <div className={`folha-form-subsection ${secoesFormularioLancamento.valores ? 'is-open' : 'is-collapsed'}`} style={estilosLocais.formPanelSoft}>
+              <FolhaSubsectionHeader
+                titulo="Valores / referência"
+                descricao="Datas, quantidades, percentuais e valores."
+                aberto={secoesFormularioLancamento.valores}
+                onToggle={() => alternarSecaoFormularioLancamento('valores')}
+              />
               <h3 style={estilosLocais.formSectionTitle}>Valores e referência</h3>
               <div style={estilosLocais.formGrid}>
                 <label style={estilosLocais.formField}>
@@ -1957,7 +2070,13 @@ export default function FechamentoFolhaPage({
               )}
             </div>
 
-            <div style={estilosLocais.formPanelSoft}>
+            <div className={`folha-form-subsection ${secoesFormularioLancamento.descricao ? 'is-open' : 'is-collapsed'}`} style={estilosLocais.formPanelSoft}>
+              <FolhaSubsectionHeader
+                titulo="Descrição / conferência"
+                descricao="Contexto administrativo e observações sem dados sensíveis."
+                aberto={secoesFormularioLancamento.descricao}
+                onToggle={() => alternarSecaoFormularioLancamento('descricao')}
+              />
               <h3 style={estilosLocais.formSectionTitle}>Descrição e conferência</h3>
               <label style={estilosLocais.formField}>
                 <span style={estilosLocais.label}>Descrição</span>
@@ -2006,8 +2125,16 @@ export default function FechamentoFolhaPage({
         )}
       </section>
 
-      <section className="folha-section" style={styles.cardConfiguracao}>
-        <div style={estilosLocais.pageActions}>
+      <section className={`folha-section folha-card ${secoesAbertas.lancamentos ? 'is-open' : 'is-collapsed'}`} style={styles.cardConfiguracao}>
+        <FolhaSectionHeader
+          kicker="Conferência"
+          titulo="Lançamentos da competência"
+          descricao="Lista interna sem CPF, exportação, documentos ou integração financeira."
+          resumo={competenciaSelecionada ? `${lancamentos.length} lançamento(s)` : 'Selecione uma competência'}
+          aberto={secoesAbertas.lancamentos}
+          onToggle={() => alternarSecao('lancamentos')}
+        />
+        <div className="folha-section-toolbar" style={estilosLocais.pageActions}>
           <div>
             <h2 style={styles.subtitulo}>Lançamentos da competência</h2>
             <p style={styles.textoNota}>Lista interna sem CPF, exportação, documentos ou integração financeira.</p>

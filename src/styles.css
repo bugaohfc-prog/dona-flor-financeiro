@@ -5665,27 +5665,79 @@
 }
 
 .ferias-switch {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 32px;
+  min-height: 34px;
   border: 1px solid rgba(15, 23, 42, .12);
   border-radius: 999px;
-  padding: 6px 11px;
+  padding: 5px 10px 5px 6px;
   background: #ffffff;
   color: #475569;
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 800;
   line-height: 1;
+  cursor: pointer;
+  user-select: none;
   white-space: nowrap;
 }
 
 .ferias-switch input[type='checkbox'] {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
-  accent-color: #0f766e;
-  margin: 0;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.ferias-switch-indicator {
+  position: relative;
+  width: 30px;
+  height: 18px;
+  flex: 0 0 30px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: background .18s ease;
+}
+
+.ferias-switch-indicator::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .2);
+  transition: transform .18s ease;
+}
+
+.ferias-switch:has(input:checked) {
+  border-color: rgba(13, 148, 136, .35);
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.ferias-switch:has(input:checked) .ferias-switch-indicator {
+  background: #0f766e;
+}
+
+.ferias-switch:has(input:checked) .ferias-switch-indicator::after {
+  transform: translateX(12px);
+}
+
+.ferias-switch:has(input:disabled) {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.ferias-switch:has(input:disabled) input {
+  cursor: not-allowed;
+}
+
+.ferias-switch:has(input:focus-visible) {
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, .16);
 }
 
 .ferias-btn {

@@ -1245,7 +1245,8 @@ export default function FeriasPage({
                         onChange={(event) => setIncluirArquivados(event.target.checked)}
                         disabled={!funcionarioSelecionadoId || loading}
                       />
-                      Mostrar arquivados
+                      <span className="ferias-switch-indicator" aria-hidden="true" />
+                      <span>Mostrar arquivados</span>
                     </label>
                   )}
                 />

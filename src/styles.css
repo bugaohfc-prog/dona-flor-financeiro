@@ -5664,6 +5664,30 @@
   flex: 0 0 auto;
 }
 
+.ferias-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  border: 1px solid rgba(15, 23, 42, .12);
+  border-radius: 999px;
+  padding: 6px 11px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ferias-switch input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  accent-color: #0f766e;
+  margin: 0;
+}
+
 .ferias-btn {
   min-height: 36px;
   border-radius: 999px;

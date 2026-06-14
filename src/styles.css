@@ -5346,9 +5346,9 @@
   width: 100%;
   border: 0;
   background: transparent;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   padding: 13px 14px;
   color: #0f172a;
@@ -5359,10 +5359,21 @@
 .funcionario-modal-section-toggle span {
   display: grid;
   gap: 2px;
+  min-width: 0;
+  justify-items: start;
+  text-align: left;
 }
 
 .funcionario-modal-section-toggle strong {
   font-size: 15px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.funcionario-modal-section-toggle small {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: left;
 }
 
 .funcionario-modal-section-toggle b {
@@ -5378,6 +5389,8 @@
   font-size: 18px;
   line-height: 1;
   flex: 0 0 30px;
+  align-self: center;
+  justify-self: end;
 }
 
 .funcionario-modal-section-static {

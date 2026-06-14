@@ -5349,6 +5349,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+  justify-items: stretch;
   gap: 12px;
   padding: 13px 14px;
   color: #0f172a;
@@ -5359,18 +5360,25 @@
 .funcionario-modal-section-toggle span {
   display: grid;
   gap: 2px;
+  width: 100%;
   min-width: 0;
+  justify-self: start;
   justify-items: start;
   text-align: left;
 }
 
 .funcionario-modal-section-toggle strong {
+  display: block;
+  width: 100%;
   font-size: 15px;
   line-height: 1.2;
   overflow-wrap: anywhere;
+  text-align: left;
 }
 
 .funcionario-modal-section-toggle small {
+  display: block;
+  width: 100%;
   max-width: 100%;
   overflow-wrap: anywhere;
   text-align: left;
@@ -5389,6 +5397,7 @@
   font-size: 18px;
   line-height: 1;
   flex: 0 0 30px;
+  flex-shrink: 0;
   align-self: center;
   justify-self: end;
 }

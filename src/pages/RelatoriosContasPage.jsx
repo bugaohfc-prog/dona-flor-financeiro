@@ -132,6 +132,26 @@ function contextoPorTipos(tiposSelecionados) {
   }
 }
 
+function resumoSelecaoTipos(tiposSelecionados) {
+  const selecionados = new Set(tiposSelecionados)
+  const temVencidas = selecionados.has('vencidas')
+  const temAVencer = selecionados.has('a-vencer')
+  const temPagas = selecionados.has('pagas')
+
+  if (!tiposSelecionados.length) return 'Selecione o tipo de contas'
+  if (temVencidas && temAVencer && !temPagas) return 'Em aberto: Vencidas + A vencer'
+  if (temVencidas && !temAVencer && !temPagas) return 'Vencidas'
+  if (!temVencidas && temAVencer && !temPagas) return 'A vencer'
+  if (!temVencidas && !temAVencer && temPagas) return 'Pagas'
+  if (temVencidas && temAVencer && temPagas) return 'Completo: Vencidas + A vencer + Pagas'
+
+  const partes = []
+  if (temVencidas) partes.push('Vencidas')
+  if (temAVencer) partes.push('A vencer')
+  if (temPagas) partes.push('Pagas')
+  return `Personalizado: ${partes.join(' + ')}`
+}
+
 function BlocoRelatorioContas({ titulo, descricao, aberto, onToggle, children }) {
   return (
     <section className="relatorios-contas-card">
@@ -171,7 +191,9 @@ export default function RelatoriosContasPage({
   const [agrupamento, setAgrupamento] = useState('status')
   const [filtrosAbertos, setFiltrosAbertos] = useState(true)
   const [previaAberta, setPreviaAberta] = useState(true)
+  const [tipoDropdownAberto, setTipoDropdownAberto] = useState(false)
   const contextoTipos = useMemo(() => contextoPorTipos(tiposSelecionados), [tiposSelecionados])
+  const resumoTiposSelecionados = useMemo(() => resumoSelecaoTipos(tiposSelecionados), [tiposSelecionados])
   const possuiTipoSelecionado = tiposSelecionados.length > 0
 
   function alternarTipoConta(tipo) {
@@ -357,22 +379,38 @@ export default function RelatoriosContasPage({
         <div className="relatorios-contas-filters">
           <fieldset className="relatorios-contas-kind-field">
             <legend>Tipo de contas</legend>
-            <div className="relatorios-contas-kind-options">
-              {TIPOS_CONTAS.map((tipo) => {
-                const selecionado = tiposSelecionados.includes(tipo.valor)
-                return (
-                  <label key={tipo.valor} className={`relatorios-contas-kind-option ${selecionado ? 'is-selected' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={selecionado}
-                      onChange={() => alternarTipoConta(tipo.valor)}
-                    />
-                    <span aria-hidden="true">{selecionado ? '✓' : ''}</span>
-                    <strong>{tipo.label}</strong>
-                    <small>{tipo.descricao}</small>
-                  </label>
-                )
-              })}
+            <div className="relatorios-contas-kind-select">
+              <button
+                type="button"
+                className={`relatorios-contas-kind-trigger ${tipoDropdownAberto ? 'is-open' : ''}`}
+                aria-expanded={tipoDropdownAberto}
+                aria-haspopup="true"
+                onClick={() => setTipoDropdownAberto((aberto) => !aberto)}
+              >
+                <span>{resumoTiposSelecionados}</span>
+                <strong aria-hidden="true">{tipoDropdownAberto ? '▲' : '▼'}</strong>
+              </button>
+
+              {tipoDropdownAberto && (
+                <div className="relatorios-contas-kind-dropdown" role="group" aria-label="Selecionar tipos de contas">
+                  {TIPOS_CONTAS.map((tipo) => {
+                    const selecionado = tiposSelecionados.includes(tipo.valor)
+                    return (
+                      <label key={tipo.valor} className="relatorios-contas-kind-option">
+                        <input
+                          type="checkbox"
+                          checked={selecionado}
+                          onChange={() => alternarTipoConta(tipo.valor)}
+                        />
+                        <span>
+                          <strong>{tipo.label}</strong>
+                          <small>{tipo.descricao}</small>
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
             </div>
             <p>{contextoTipos.titulo}. {contextoTipos.descricao}</p>
             {!possuiTipoSelecionado && (

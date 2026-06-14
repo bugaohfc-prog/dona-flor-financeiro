@@ -14,6 +14,7 @@ const menuSections = [
     items: [
       { tela: 'contas', icon: '💳', label: 'Contas', desc: 'Contas a pagar e filtros' },
       { tela: 'relatorios', icon: '📊', label: 'Análise Financeira', desc: 'Indicadores e comparativos' },
+      { tela: 'relatorios-contas', icon: 'RC', label: 'Relatórios de Contas', desc: 'Impressão e exportação de contas' },
       { tela: 'importar', icon: '📥', label: 'Importar contas', desc: 'Trazer contas por planilha' }
     ]
   },
@@ -56,6 +57,7 @@ const CONTEXTO_MODULO_POR_TELA = {
 
   contas: MODULOS_TOPBAR.financeiro,
   relatorios: MODULOS_TOPBAR.financeiro,
+  'relatorios-contas': MODULOS_TOPBAR.financeiro,
   importar: MODULOS_TOPBAR.financeiro,
 
   usuarios: MODULOS_TOPBAR.administracao,

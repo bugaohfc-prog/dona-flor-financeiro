@@ -72,6 +72,7 @@ import {
   LazyNotasPage,
   LazyOnboardingPage,
   LazyRelatorios,
+  LazyRelatoriosContasPage,
   LazyRelatoriosGestaoPessoasPage,
   LazyRelatoriosFeriasPage,
   LazyRelatoriosPessoasPage,
@@ -108,6 +109,7 @@ const TELAS_RETORNO_SESSAO = new Set([
   'agenda',
   'notas',
   'contas',
+  'relatorios-contas',
   'relatorios',
   'configuracoes',
   'importar',
@@ -4428,6 +4430,24 @@ export default function App() {
         excluirConta={excluirConta}
         navegarPara={navegarPara}
       />
+    )
+  }
+
+  if (telaAtual === 'relatorios-contas') {
+    return renderAppFrame(
+      <AppSuspenseBoundary>
+        <LazyRelatoriosContasPage
+          contas={contas}
+          centros={centros}
+          filiais={filiais}
+          estaVencida={estaVencida}
+          formatarValor={formatarValor}
+          formatarData={formatarData}
+          navegarPara={navegarPara}
+          podeExportarDados={podeExportarDados()}
+          mostrarAviso={mostrarAviso}
+        />
+      </AppSuspenseBoundary>
     )
   }
 

@@ -6892,3 +6892,539 @@
     width: 100%;
   }
 }
+
+.relatorios-contas-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 0 132px;
+  color: #17212b;
+}
+
+.relatorios-contas-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 22px;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 24px;
+  background: linear-gradient(135deg, #ffffff 0%, #f3fbf8 100%);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+.relatorios-contas-hero-copy {
+  min-width: 0;
+}
+
+.relatorios-contas-hero-copy > span {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #dff7ef;
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.relatorios-contas-hero-copy h1 {
+  margin: 10px 0 6px;
+  color: #102a2a;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.relatorios-contas-hero-copy p {
+  max-width: 720px;
+  margin: 0;
+  color: #52616b;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.relatorios-contas-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.relatorios-contas-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.relatorios-contas-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  box-shadow: none;
+}
+
+.relatorios-contas-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.relatorios-contas-btn-primary {
+  background: #0f766e;
+  color: #ffffff;
+  box-shadow: 0 12px 22px rgba(15, 118, 110, 0.18);
+}
+
+.relatorios-contas-btn-secondary {
+  background: #ffffff;
+  color: #24423f;
+  border-color: #d7e8e3;
+}
+
+.relatorios-contas-flow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.relatorios-contas-flow span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid #dfe9e6;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.relatorios-contas-flow span.is-active {
+  background: #e4f8f2;
+  color: #0f766e;
+  border-color: #a9ded2;
+}
+
+.relatorios-contas-card {
+  padding: 18px;
+  border: 1px solid #dce8e4;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.07);
+}
+
+.relatorios-contas-section-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.relatorios-contas-section-header h2 {
+  margin: 0;
+  color: #173332;
+  font-size: 20px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.relatorios-contas-section-header p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.relatorios-contas-toggle {
+  justify-self: end;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid #cce2dc;
+  background: #f6fbf9;
+  color: #0f766e;
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.relatorios-contas-type-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.relatorios-contas-type {
+  min-width: 0;
+  min-height: 72px;
+  padding: 12px;
+  border: 1px solid #dce8e4;
+  border-radius: 16px;
+  background: #f8fbfa;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+}
+
+.relatorios-contas-type strong,
+.relatorios-contas-type span {
+  display: block;
+  min-width: 0;
+}
+
+.relatorios-contas-type strong {
+  color: #173332;
+  font-size: 14px;
+}
+
+.relatorios-contas-type span {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.relatorios-contas-type.is-active {
+  border-color: #0f766e;
+  background: #e4f8f2;
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.12);
+}
+
+.relatorios-contas-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.relatorios-contas-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.relatorios-contas-filters label > span {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.relatorios-contas-filters input,
+.relatorios-contas-filters select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid #d7e8e3;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #173332;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+.relatorios-contas-filter-wide {
+  grid-column: span 2;
+}
+
+.relatorios-contas-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.relatorios-contas-summary article {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #dce8e4;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+}
+
+.relatorios-contas-summary span,
+.relatorios-contas-summary small {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.relatorios-contas-summary strong {
+  display: block;
+  margin: 8px 0 6px;
+  color: #173332;
+  font-size: 22px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.relatorios-contas-summary .is-overdue {
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+
+.relatorios-contas-summary .is-open {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.relatorios-contas-summary .is-paid {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+}
+
+.relatorios-contas-preview-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.relatorios-contas-preview-meta span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 12px;
+}
+
+.relatorios-contas-preview-meta strong {
+  margin-left: 4px;
+  color: #173332;
+}
+
+.relatorios-contas-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.relatorios-contas-group {
+  border: 1px solid #e0e9e6;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.relatorios-contas-group > header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  background: #f7fbfa;
+  border-bottom: 1px solid #e0e9e6;
+}
+
+.relatorios-contas-group h3 {
+  margin: 0;
+  color: #173332;
+  font-size: 16px;
+}
+
+.relatorios-contas-group > header span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.relatorios-contas-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.relatorios-contas-table-head,
+.relatorios-contas-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) minmax(110px, 0.7fr) minmax(120px, 0.8fr) minmax(110px, 0.8fr) minmax(140px, 1fr) minmax(140px, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 11px 14px;
+}
+
+.relatorios-contas-table-head {
+  background: #fbfdfc;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.relatorios-contas-row {
+  border-top: 1px solid #edf2f0;
+  color: #334155;
+  font-size: 13px;
+}
+
+.relatorios-contas-row > div,
+.relatorios-contas-row > span {
+  min-width: 0;
+}
+
+.relatorios-contas-row strong {
+  display: block;
+  color: #173332;
+  overflow-wrap: anywhere;
+}
+
+.relatorios-contas-row small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
+.relatorios-contas-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.relatorios-contas-status.is-overdue {
+  background: #ffe4e6;
+  color: #be123c;
+}
+
+.relatorios-contas-status.is-open {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.relatorios-contas-status.is-paid {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.relatorios-contas-empty {
+  padding: 18px;
+  border: 1px dashed #cfe1dc;
+  border-radius: 18px;
+  background: #f8fbfa;
+  color: #475569;
+}
+
+.relatorios-contas-empty strong {
+  display: block;
+  color: #173332;
+  margin-bottom: 4px;
+}
+
+.relatorios-contas-empty p {
+  margin: 0;
+}
+
+@media (max-width: 980px) {
+  .relatorios-contas-hero,
+  .relatorios-contas-section-header {
+    grid-template-columns: 1fr;
+  }
+
+  .relatorios-contas-hero-actions {
+    justify-content: stretch;
+  }
+
+  .relatorios-contas-hero-actions .relatorios-contas-btn {
+    flex: 1 1 150px;
+  }
+
+  .relatorios-contas-type-grid,
+  .relatorios-contas-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .relatorios-contas-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .relatorios-contas-table-head {
+    display: none;
+  }
+
+  .relatorios-contas-row {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    padding: 14px;
+  }
+}
+
+@media (max-width: 720px) {
+  .relatorios-contas-page {
+    padding: 0 0 150px;
+    gap: 12px;
+  }
+
+  .relatorios-contas-hero,
+  .relatorios-contas-card {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .relatorios-contas-hero-actions,
+  .relatorios-contas-hero-actions .relatorios-contas-btn {
+    width: 100%;
+  }
+
+  .relatorios-contas-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .relatorios-contas-flow span {
+    min-height: 34px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  .relatorios-contas-type-grid,
+  .relatorios-contas-summary,
+  .relatorios-contas-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .relatorios-contas-filter-wide {
+    grid-column: auto;
+  }
+
+  .relatorios-contas-section-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .relatorios-contas-section-header h2 {
+    font-size: 18px;
+  }
+
+  .relatorios-contas-row {
+    grid-template-columns: 1fr;
+  }
+
+  .relatorios-contas-preview-meta {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

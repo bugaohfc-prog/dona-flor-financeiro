@@ -6006,6 +6006,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
+  justify-items: stretch;
   width: 100%;
   padding: 0;
   border: 0;
@@ -6017,7 +6018,9 @@
 .folha-subsection-toggle span {
   display: grid;
   gap: 3px;
+  justify-self: start;
   min-width: 0;
+  text-align: left;
 }
 
 .folha-subsection-toggle strong {
@@ -6029,10 +6032,21 @@
   color: #64748b;
   font-size: 12px;
   line-height: 1.35;
+  text-align: left;
+}
+
+.folha-subsection-toggle b {
+  justify-self: end;
+  flex-shrink: 0;
 }
 
 .folha-form-subsection.is-collapsed > :not(.folha-subsection-toggle) {
   display: none !important;
+}
+
+#folha-form-lancamento,
+.folha-page form[id^="folha-form-item-"] {
+  scroll-margin-top: 88px;
 }
 
 .folha-page .folha-resumo-card {

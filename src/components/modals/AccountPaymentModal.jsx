@@ -72,64 +72,81 @@ export default function AccountPaymentModal({
   if (!conta) return null
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={{ ...styles.modal, maxWidth: 420 }} onClick={(event) => event.stopPropagation()}>
-        <h3>Baixar conta</h3>
+    <div className="account-modal-backdrop" style={styles.overlay} onClick={onClose}>
+      <div className="account-modal-card account-payment-modal-card" style={{ ...styles.modal, maxWidth: 460 }} onClick={(event) => event.stopPropagation()}>
+        <header className="account-modal-header">
+          <span>Financeiro</span>
+          <h3>Baixar conta</h3>
+          <p>Registre o pagamento com valor, data e observação administrativa.</p>
+        </header>
 
-        <div style={{ marginBottom: 12 }}>
-          <strong>{conta.descricao}</strong>
-          <small style={styles.textoAjuda}>Valor previsto: {formatarValor(valorPrevisto)}</small>
+        <div className="account-modal-body">
+          <section className="account-modal-section account-payment-summary">
+            <div>
+              <span>Conta</span>
+              <strong>{conta.descricao}</strong>
+            </div>
+            <div>
+              <span>Valor previsto</span>
+              <strong>{formatarValor(valorPrevisto)}</strong>
+            </div>
+          </section>
+
+          <section className="account-modal-section">
+            <div className="account-modal-section-title">
+              <strong>Dados do pagamento</strong>
+              <small>Informe o valor realizado e a data da baixa.</small>
+            </div>
+            <div className="account-modal-grid">
+              <label className="account-modal-field">
+                <span>Valor pago</span>
+                <input
+                  id="valor-pago-conta"
+                  style={styles.inputModal}
+                  inputMode="decimal"
+                  value={valorPago}
+                  onChange={(event) => setValorPago(event.target.value)}
+                  placeholder="Ex: 105,40"
+                />
+              </label>
+
+              <label className="account-modal-field">
+                <span>Data de pagamento</span>
+                <input
+                  id="data-pagamento-conta"
+                  style={styles.inputModal}
+                  type="date"
+                  value={dataPagamento}
+                  onChange={(event) => setDataPagamento(limitarDataInput(event.target.value))}
+                />
+              </label>
+
+              <label className="account-modal-field account-modal-field-wide">
+                <span>Observação de pagamento</span>
+                <textarea
+                  id="observacao-pagamento-conta"
+                  style={{ ...styles.textareaModal, minHeight: 82 }}
+                  value={observacaoPagamento}
+                  onChange={(event) => setObservacaoPagamento(event.target.value)}
+                  placeholder="Comentário opcional da baixa..."
+                />
+              </label>
+            </div>
+          </section>
+
+          <div className={`account-payment-preview account-payment-preview-${previa.tipo}`}>
+            {previa.texto}
+          </div>
         </div>
 
-        <label style={styles.textoAjuda} htmlFor="valor-pago-conta">Valor pago</label>
-        <input
-          id="valor-pago-conta"
-          style={styles.inputModal}
-          inputMode="decimal"
-          value={valorPago}
-          onChange={(event) => setValorPago(event.target.value)}
-          placeholder="Ex: 105,40"
-        />
-
-        <label style={styles.textoAjuda} htmlFor="data-pagamento-conta">Data de pagamento</label>
-        <input
-          id="data-pagamento-conta"
-          style={styles.inputModal}
-          type="date"
-          value={dataPagamento}
-          onChange={(event) => setDataPagamento(limitarDataInput(event.target.value))}
-        />
-
-        <label style={styles.textoAjuda} htmlFor="observacao-pagamento-conta">Observacao de pagamento</label>
-        <textarea
-          id="observacao-pagamento-conta"
-          style={{ ...styles.textareaModal, minHeight: 82 }}
-          value={observacaoPagamento}
-          onChange={(event) => setObservacaoPagamento(event.target.value)}
-          placeholder="Comentario opcional da baixa..."
-        />
-
-        <div
-          style={{
-            border: '1px solid #e2e8f0',
-            borderRadius: 10,
-            padding: '9px 10px',
-            marginBottom: 12,
-            background: previa.tipo === 'encargo' ? '#fff7ed' : previa.tipo === 'desconto' ? '#ecfdf5' : '#f8fafc',
-            color: previa.tipo === 'encargo' ? '#9a3412' : previa.tipo === 'desconto' ? '#047857' : '#475569',
-            fontWeight: 800,
-            fontSize: 13
-          }}
-        >
-          {previa.texto}
-        </div>
-
-        <button style={styles.btnSalvar} type="button" onClick={confirmarBaixa} disabled={salvando}>
-          {salvando ? 'Salvando...' : 'Confirmar baixa'}
-        </button>
-        <button style={styles.btnCancelar} type="button" onClick={onClose} disabled={salvando}>
-          Cancelar
-        </button>
+        <footer className="account-modal-actions">
+          <button className="account-modal-save" style={styles.btnSalvar} type="button" onClick={confirmarBaixa} disabled={salvando}>
+            {salvando ? 'Salvando...' : 'Confirmar baixa'}
+          </button>
+          <button className="account-modal-cancel" style={styles.btnCancelar} type="button" onClick={onClose} disabled={salvando}>
+            Cancelar
+          </button>
+        </footer>
       </div>
     </div>
   )

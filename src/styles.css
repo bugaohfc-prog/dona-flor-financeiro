@@ -2125,14 +2125,17 @@
 }
 
 .agenda-page .agenda-page-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
 }
 
 .agenda-page .agenda-group-card {
   display: grid;
   gap: 12px;
+  width: 100%;
   min-width: 0;
   padding: 16px;
   border: 1px solid #dce8e4;
@@ -2165,11 +2168,12 @@
 
 .agenda-page .agenda-event-item {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
-  gap: 12px !important;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, auto) !important;
+  gap: 16px !important;
   align-items: center !important;
   min-width: 0 !important;
-  padding: 12px 12px 12px 14px !important;
+  width: 100% !important;
+  padding: 13px 14px 13px 16px !important;
   border: 1px solid #e2e8f0 !important;
   border-left: 4px solid var(--agenda-event-color, #0f766e) !important;
   border-radius: 16px !important;
@@ -2215,10 +2219,11 @@
 
 .agenda-page .agenda-event-side {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  justify-content: flex-end;
   align-items: flex-end;
-  gap: 7px;
-  min-width: 0;
+  gap: 10px;
+  min-width: 160px;
 }
 
 .agenda-page .agenda-event-side > strong {
@@ -2277,9 +2282,20 @@
 }
 
 @media (max-width: 900px) {
-  .agenda-page .agenda-kpi-grid,
-  .agenda-page .agenda-page-grid {
+  .agenda-page .agenda-kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .agenda-page .agenda-event-item {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+  }
+
+  .agenda-page .agenda-event-side {
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
   }
 }
 
@@ -2322,13 +2338,10 @@
     text-align: left;
   }
 
-  .agenda-page .agenda-event-item {
-    grid-template-columns: 1fr !important;
-    align-items: start !important;
-  }
-
   .agenda-page .agenda-event-side {
     width: 100%;
+    min-width: 0;
+    flex-direction: column;
     align-items: stretch;
   }
 
@@ -2342,8 +2355,7 @@
 }
 
 @media (max-width: 430px) {
-  .agenda-page .agenda-kpi-grid,
-  .agenda-page .agenda-page-grid {
+  .agenda-page .agenda-kpi-grid {
     grid-template-columns: 1fr;
   }
 }

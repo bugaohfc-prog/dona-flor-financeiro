@@ -586,7 +586,7 @@ export default function AgendaPage({
             padding: 8px 6px;
           }
           .agenda-event-item-rh {
-            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-columns: 1fr;
             padding: 9px 10px !important;
           }
           .agenda-event-action-rh {

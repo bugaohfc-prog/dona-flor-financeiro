@@ -2488,16 +2488,16 @@ export default function App() {
 
       return `
         <tr>
-          <td>
+          <td class="col-conta">
             <strong>${escapeHtml(conta.descricao || '-')}</strong>
             ${conta.observacao ? `<small>Obs: ${escapeHtml(conta.observacao)}</small>` : ''}
             ${conta.observacao_pagamento ? `<small>Obs. pagamento: ${escapeHtml(conta.observacao_pagamento)}</small>` : ''}
           </td>
-          <td>${escapeHtml(conta.df_filiais?.nome || '-')}</td>
-          <td>${escapeHtml(conta.df_centros_custo?.nome || '-')}</td>
-          <td>${escapeHtml(formatarData(conta.data_vencimento))}</td>
-          <td>${escapeHtml(conta.data_pagamento ? formatarData(conta.data_pagamento) : '-')}</td>
-          <td><span class="status ${status.toLowerCase()}">${status}</span></td>
+          <td class="col-filial">${escapeHtml(conta.df_filiais?.nome || '-')}</td>
+          <td class="col-centro">${escapeHtml(conta.df_centros_custo?.nome || '-')}</td>
+          <td class="col-data">${escapeHtml(formatarData(conta.data_vencimento))}</td>
+          <td class="col-data">${escapeHtml(conta.data_pagamento ? formatarData(conta.data_pagamento) : '-')}</td>
+          <td class="col-status"><span class="status ${status.toLowerCase()}">${status}</span></td>
           <td class="valor">${escapeHtml(formatarValor(conta.valor))}</td>
           <td class="valor">${valorPago == null ? '-' : escapeHtml(formatarValor(valorPago))}</td>
           <td class="valor">${jurosMulta > 0 ? escapeHtml(formatarValor(jurosMulta)) : '-'}</td>
@@ -2515,25 +2515,36 @@ export default function App() {
           <title>Relatório de contas</title>
           <style>
             * { box-sizing: border-box; }
+            @page { size: A4 landscape; margin: 8mm; }
             html, body { width: 100%; min-height: 100%; }
             body { margin: 0; font-family: Arial, sans-serif; color: #111827; background: #f8fafc; -webkit-text-size-adjust: 100%; }
-            .page { width: min(100%, 920px); margin: 0 auto; padding: 18px; background: #fff; min-height: 100vh; }
-            header { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; border-bottom: 2px solid #ccfbf1; padding-bottom: 18px; margin-bottom: 18px; }
-            h1 { margin: 0; font-size: 24px; color: #0f766e; }
-            .empresa { margin-top: 6px; color: #475569; font-size: 14px; }
-            .data { text-align: right; color: #64748b; font-size: 13px; }
-            .summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 18px 0; }
-            .box { border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px; background: #f8fafc; }
-            .box span { display: block; font-size: 12px; color: #64748b; font-weight: 700; }
-            .box strong { display: block; margin-top: 4px; font-size: 17px; }
-            .table-wrap { width: 100%; overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 16px; }
-            footer { margin-top: 18px; padding-top: 12px; border-top: 1px solid #e5e7eb; color: #64748b; font-size: 12px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-            table { width: 100%; border-collapse: collapse; min-width: 620px; }
-            th { background: #f0fdfa; color: #0f766e; text-align: left; padding: 11px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
-            td { border-bottom: 1px solid #e5e7eb; padding: 11px; vertical-align: top; font-size: 13px; }
+            .page { width: 100%; max-width: 100%; margin: 0 auto; padding: 14px; background: #fff; min-height: 100vh; overflow: visible; }
+            header { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; border-bottom: 2px solid #ccfbf1; padding-bottom: 12px; margin-bottom: 12px; }
+            h1 { margin: 0; font-size: 22px; color: #0f766e; }
+            .empresa { margin-top: 5px; color: #475569; font-size: 13px; }
+            .data { text-align: right; color: #64748b; font-size: 12px; }
+            .summary { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+            .box { border: 1px solid #e5e7eb; border-radius: 12px; padding: 9px; background: #f8fafc; min-width: 0; }
+            .box span { display: block; font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; }
+            .box strong { display: block; margin-top: 3px; font-size: 13px; overflow-wrap: anywhere; }
+            .table-wrap { width: 100%; max-width: 100%; overflow: visible; border: 1px solid #e5e7eb; border-radius: 12px; }
+            footer { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e5e7eb; color: #64748b; font-size: 11px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+            table { width: 100%; max-width: 100%; border-collapse: collapse; table-layout: fixed; }
+            col.col-conta { width: 22%; }
+            col.col-filial { width: 10%; }
+            col.col-centro { width: 11%; }
+            col.col-data { width: 8%; }
+            col.col-status { width: 8%; }
+            col.col-valor { width: 8%; }
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
+            tr { break-inside: avoid; page-break-inside: avoid; }
+            th { background: #f0fdfa; color: #0f766e; text-align: left; padding: 7px 6px; font-size: 9px; text-transform: uppercase; letter-spacing: .02em; line-height: 1.15; overflow-wrap: anywhere; }
+            td { border-bottom: 1px solid #e5e7eb; padding: 7px 6px; vertical-align: top; font-size: 10px; line-height: 1.25; overflow-wrap: anywhere; word-break: break-word; }
+            td strong { display: block; overflow-wrap: anywhere; word-break: break-word; }
             td small { display: block; color: #64748b; margin-top: 4px; line-height: 1.35; }
-            .valor { text-align: right; font-weight: 700; white-space: nowrap; }
-            .status { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+            .valor { text-align: right; font-weight: 700; white-space: normal; overflow-wrap: anywhere; }
+            .status { display: inline-block; max-width: 100%; padding: 3px 6px; border-radius: 999px; font-size: 9px; font-weight: 800; line-height: 1.1; overflow-wrap: anywhere; }
             .status.pago { background: #dcfce7; color: #166534; }
             .status.pendente { background: #fef3c7; color: #92400e; }
             .status.vencido { background: #fee2e2; color: #991b1b; }
@@ -2542,8 +2553,9 @@ export default function App() {
             button.primary { background: #0f766e; border-color: #0f766e; color: white; }
             @media print {
               body { background: #fff; }
-              .page { margin: 0; border: 0; border-radius: 0; max-width: none; }
+              .page { margin: 0; border: 0; border-radius: 0; max-width: none; padding: 0; }
               .toolbar { display: none; }
+              .table-wrap { border-radius: 0; }
             }
             @media (max-width: 760px) {
               .page { width: 100%; margin: 0; border-radius: 0; padding: 16px; }
@@ -2553,7 +2565,6 @@ export default function App() {
               .data { text-align: left; margin-top: 8px; }
               .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
               .box strong { font-size: 15px; }
-              th:nth-child(2), td:nth-child(2) { display: none; }
             }
           </style>
         </head>
@@ -2580,6 +2591,18 @@ export default function App() {
             </section>
             <div class="table-wrap">
               <table>
+                <colgroup>
+                  <col class="col-conta" />
+                  <col class="col-filial" />
+                  <col class="col-centro" />
+                  <col class="col-data" />
+                  <col class="col-data" />
+                  <col class="col-status" />
+                  <col class="col-valor" />
+                  <col class="col-valor" />
+                  <col class="col-valor" />
+                  <col class="col-valor" />
+                </colgroup>
                 <thead>
                   <tr><th>Conta</th><th>Filial</th><th>Centro</th><th>Vencimento</th><th>Pagamento</th><th>Situação</th><th>Previsto</th><th>Realizado</th><th>Encargos</th><th>Desconto</th></tr>
                 </thead>

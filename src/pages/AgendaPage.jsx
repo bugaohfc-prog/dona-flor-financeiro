@@ -80,8 +80,8 @@ function CardAgenda({
   podeEditarFinanceiro
 }) {
   return (
-    <section style={styles.cardAgenda}>
-      <div style={styles.cardTopo}>
+    <section className="agenda-group-card">
+      <div className="agenda-group-head">
         <strong>{titulo}</strong>
         <span>{resumo}</span>
       </div>
@@ -103,7 +103,7 @@ function CardAgenda({
           <div
             key={evento.chave}
             className={`agenda-event-item ${ehRh ? 'agenda-event-item-rh' : ''}`}
-            style={{ ...styles.itemAgenda, borderLeft: `5px solid ${cor}` }}
+            style={{ '--agenda-event-color': cor }}
           >
             <div className="agenda-event-main">
               <div className="agenda-event-title">
@@ -113,7 +113,7 @@ function CardAgenda({
                 </span>
               </div>
 
-              <div style={styles.cardInfo}>
+              <div className="agenda-event-info">
                 {formatarData(evento.data)} • {evento.descricaoSecundaria}
                 {ehFerias && evento.dataFim ? ` • Fim: ${formatarData(evento.dataFim)}` : ''}
                 {ehFerias && evento.dataRetorno ? ` • Retorno: ${formatarData(evento.dataRetorno)}` : ''}
@@ -150,7 +150,7 @@ function CardAgenda({
               </small>
             </div>
 
-            <div style={styles.agendaDireita}>
+            <div className="agenda-event-side">
               {!ehNota && !ehPessoa && <strong>{formatarValor(evento.valor)}</strong>}
 
               {!ehNota && !ehPessoa && podeEditarFinanceiro && (
@@ -424,7 +424,7 @@ export default function AgendaPage({
   const grupos = gruposBase
 
   return (
-    <>
+    <main className="agenda-page">
       <style>{`
         .agenda-type-tabs {
           display: flex;
@@ -613,6 +613,17 @@ export default function AgendaPage({
         ← Voltar
       </button>
 
+      <header className="agenda-page-hero">
+        <div className="agenda-page-hero-copy">
+          <span>Área de trabalho</span>
+          <h1>Agenda</h1>
+          <p>Organize vencimentos, pendências e compromissos de pessoas em uma visão operacional única.</p>
+        </div>
+        <button className="agenda-page-back" type="button" onClick={() => navegarPara('dashboard')}>
+          ← Voltar
+        </button>
+      </header>
+
       <div className="agenda-type-tabs" role="tablist" aria-label="Filtro de tipo da agenda">
         {filtrosTipo.map((filtro) => (
           <button
@@ -627,9 +638,9 @@ export default function AgendaPage({
         ))}
       </div>
 
-      <section className="agenda-summary-grid" style={styles.resumo}>
+      <section className="agenda-summary-grid agenda-kpi-grid">
         {grupos.map((grupo) => (
-          <div key={grupo.chave} style={grupo.style}>
+          <div key={grupo.chave} className={`agenda-kpi-card agenda-kpi-${grupo.chave}`}>
             <span>{grupo.label}</span>
             <strong>{formatarResumo(grupo.lista)}</strong>
           </div>
@@ -686,6 +697,6 @@ export default function AgendaPage({
           )
         })}
       </div>
-    </>
+    </main>
   )
 }

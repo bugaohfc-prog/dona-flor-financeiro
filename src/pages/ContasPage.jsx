@@ -482,12 +482,13 @@ export default function ContasPage({
   return (
     <>
       <div className="page-title-actions accounts-page-header">
-        <div>
-          <h1 style={styles.titulo}>💳 Contas</h1>
-          <p style={styles.textoNota}>Consulte, filtre, exporte e administre as contas da empresa em uma página dedicada.</p>
+        <div className="accounts-page-header-copy">
+          <span>Financeiro</span>
+          <h1 style={styles.titulo}>Contas</h1>
+          <p style={styles.textoNota}>Controle vencimentos, baixas e contas por filial, centro de custo e período.</p>
         </div>
         <div className="page-actions-row">
-          <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Painel</button>
+          <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>Voltar ao Painel</button>
         </div>
       </div>
       {renderListaContasConteudo()}

@@ -68,10 +68,17 @@ function formatarStatusFolha(status) {
 
 function CardAgenda({
   styles,
+  chave,
   titulo,
   resumo,
   lista,
+  totalItens,
   cor,
+  aberto,
+  completo,
+  limiteInicial,
+  onAlternarBloco,
+  onAlternarLista,
   formatarValor,
   formatarData,
   diferencaDias,
@@ -79,18 +86,31 @@ function CardAgenda({
   navegarParaOrigemAgenda,
   podeEditarFinanceiro
 }) {
+  const itensOcultos = Math.max(totalItens - limiteInicial, 0)
+
   return (
     <section className="agenda-group-card">
       <div className="agenda-group-head">
-        <strong>{titulo}</strong>
-        <span>{resumo}</span>
+        <div className="agenda-group-copy">
+          <strong>{titulo}</strong>
+          <span>{resumo}</span>
+        </div>
+        <button
+          type="button"
+          className="agenda-section-toggle"
+          onClick={() => onAlternarBloco(chave)}
+          aria-expanded={aberto}
+          aria-label={`${aberto ? 'Recolher' : 'Expandir'} ${titulo}`}
+        >
+          {aberto ? '−' : '+'}
+        </button>
       </div>
 
-      {lista.length === 0 && (
+      {aberto && lista.length === 0 && (
         <EmptyState icon="✓" title="Agenda limpa" description="Não há eventos neste grupo no momento." />
       )}
 
-      {lista.map((evento) => {
+      {aberto && lista.map((evento) => {
         const dias = diferencaDias(evento.data)
         const ehNota = evento.tipo === 'nota'
         const ehPessoa = evento.tipo === 'pessoa'
@@ -192,6 +212,16 @@ function CardAgenda({
           </div>
         )
       })}
+
+      {aberto && totalItens > limiteInicial && (
+        <button
+          type="button"
+          className="agenda-show-more"
+          onClick={() => onAlternarLista(chave)}
+        >
+          {completo ? 'Recolher' : `Ver mais ${itensOcultos} item(ns)`}
+        </button>
+      )}
     </section>
   )
 }
@@ -218,7 +248,14 @@ export default function AgendaPage({
   podeEditarFinanceiro = true
 }) {
   const [filtroTipo, setFiltroTipo] = useState('todas')
-  const [mostrarMesCompleto, setMostrarMesCompleto] = useState(false)
+  const [gruposAbertos, setGruposAbertos] = useState({
+    vencidas: true,
+    hoje: true,
+    semana: true,
+    mes: true
+  })
+  const [listasCompletas, setListasCompletas] = useState({})
+  const limiteInicialAgenda = 5
 
   const contasAgenda = useMemo(() => {
     return contas
@@ -665,35 +702,42 @@ export default function AgendaPage({
 
       <div className="agenda-page-grid">
         {grupos.map((grupo) => {
-          const limitarMes = grupo.chave === 'mes' && grupo.lista.length > 10
-          const listaVisivel = limitarMes && !mostrarMesCompleto ? grupo.lista.slice(0, 10) : grupo.lista
+          const grupoAberto = gruposAbertos[grupo.chave] !== false
+          const listaCompleta = Boolean(listasCompletas[grupo.chave])
+          const listaVisivel = listaCompleta ? grupo.lista : grupo.lista.slice(0, limiteInicialAgenda)
 
           return (
-            <div key={grupo.chave}>
-              <CardAgenda
-                styles={styles}
-                titulo={grupo.titulo}
-                resumo={formatarResumo(grupo.lista)}
-                lista={listaVisivel}
-                cor={grupo.cor}
-                formatarValor={formatarValor}
-                formatarData={formatarData}
-                diferencaDias={diferencaDias}
-                navegarPara={navegarPara}
-                navegarParaOrigemAgenda={navegarParaOrigemAgenda}
-                podeEditarFinanceiro={podeEditarFinanceiro}
-              />
-
-              {limitarMes && (
-                <button
-                  type="button"
-                  className="agenda-show-more"
-                  onClick={() => setMostrarMesCompleto((atual) => !atual)}
-                >
-                  {mostrarMesCompleto ? 'Ver menos' : `Ver mais ${grupo.lista.length - 10} item(ns)`}
-                </button>
-              )}
-            </div>
+            <CardAgenda
+              key={grupo.chave}
+              styles={styles}
+              chave={grupo.chave}
+              titulo={grupo.titulo}
+              resumo={formatarResumo(grupo.lista)}
+              lista={listaVisivel}
+              totalItens={grupo.lista.length}
+              cor={grupo.cor}
+              aberto={grupoAberto}
+              completo={listaCompleta}
+              limiteInicial={limiteInicialAgenda}
+              onAlternarBloco={(chaveGrupo) => {
+                setGruposAbertos((atual) => ({
+                  ...atual,
+                  [chaveGrupo]: atual[chaveGrupo] === false
+                }))
+              }}
+              onAlternarLista={(chaveGrupo) => {
+                setListasCompletas((atual) => ({
+                  ...atual,
+                  [chaveGrupo]: !atual[chaveGrupo]
+                }))
+              }}
+              formatarValor={formatarValor}
+              formatarData={formatarData}
+              diferencaDias={diferencaDias}
+              navegarPara={navegarPara}
+              navegarParaOrigemAgenda={navegarParaOrigemAgenda}
+              podeEditarFinanceiro={podeEditarFinanceiro}
+            />
           )
         })}
       </div>

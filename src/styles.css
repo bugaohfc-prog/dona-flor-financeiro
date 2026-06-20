@@ -4050,10 +4050,10 @@
 }
 
 .account-meta-line {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex !important;
+  flex-direction: column !important;
   gap: 8px !important;
-  align-items: start !important;
+  align-items: stretch !important;
 }
 
 .account-meta-main,
@@ -4063,6 +4063,7 @@
   gap: 6px;
   align-items: center;
   min-width: 0;
+  width: 100%;
 }
 
 .account-meta-main span,
@@ -4071,7 +4072,16 @@
 }
 
 .account-meta-badges {
-  justify-content: flex-end;
+  justify-content: flex-start;
+  order: 1;
+}
+
+.account-meta-main {
+  order: 2;
+}
+
+.account-date-badge {
+  flex: 0 0 auto;
 }
 
 .account-card-vencida .status-vencido {
@@ -4200,7 +4210,7 @@
   }
 
   .account-meta-line {
-    grid-template-columns: 1fr;
+    gap: 8px !important;
   }
 
   .account-meta-badges {
@@ -4208,7 +4218,7 @@
   }
 
   .account-actions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
   }
 
   .account-actions .account-action-button {

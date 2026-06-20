@@ -27,7 +27,7 @@ function EmptyState({ icon, title, description }) {
 export default function NotasPage({
   styles, navegarPara, notas = [], notasFiltradas, agendaFocusTarget, onAgendaFocusHandled, notasPendentes, notasCriticas, notasUrgentes,
   buscaNota, setBuscaNota, formatarData, alternarNotaConcluida, abrirEdicaoNota,
-  abrirConfirmacao, excluirNota, filtroFilial, setFiltroFilial, filiais, podeEditarFinanceiro = true
+  abrirConfirmacao, excluirNota, abrirNovaNota, filtroFilial, setFiltroFilial, filiais, podeEditarFinanceiro = true
 }) {
   const [abaStatusNotas, setAbaStatusNotas] = useState('abertas')
   const [ordenacaoNotas, setOrdenacaoNotas] = useState('prioridade')
@@ -123,11 +123,15 @@ export default function NotasPage({
     <>
       <div className="page-title-actions notes-page-title notes-redesign-header">
         <div>
-          <h1 style={styles.titulo}>📝 Notas</h1>
-          <p style={styles.textoNota}>Central de notas e lembretes da empresa, separada do painel financeiro para reduzir poluição visual.</p>
+          <span className="notes-page-kicker">Operação</span>
+          <h1 style={styles.titulo}>Notas</h1>
+          <p style={styles.textoNota}>Acompanhamento de pendências, lembretes e observações operacionais.</p>
         </div>
         <div className="page-actions-row">
-          <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Painel</button>
+          <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>Voltar ao Painel</button>
+          {podeEditarFinanceiro && (
+            <button className="note-create-button" style={styles.btnSalvar} onClick={abrirNovaNota}>Nova nota</button>
+          )}
         </div>
       </div>
 
@@ -183,7 +187,7 @@ export default function NotasPage({
 
         {notasOrdenadas.length === 0 && (
           <EmptyState
-            icon="📝"
+            icon="Notas"
             title="Nenhuma nota encontrada"
             description={abaStatusNotas === 'abertas'
               ? 'Nenhuma nota aberta para os filtros selecionados.'
@@ -217,8 +221,8 @@ export default function NotasPage({
                   </div>
                 </div>
 
-                {nota.data_evento && <small className="note-event-date">📅 {formatarData(nota.data_evento)}</small>}
-                {nota.df_filiais?.nome && <small className="note-event-date">🏢 {nota.df_filiais.nome}</small>}
+                {nota.data_evento && <small className="note-event-date">Data: {formatarData(nota.data_evento)}</small>}
+                {nota.df_filiais?.nome && <small className="note-event-date">Filial: {nota.df_filiais.nome}</small>}
                 {conteudo && <p className="note-content-preview" title={conteudo}>{conteudo}</p>}
 
                 {podeEditarFinanceiro && (

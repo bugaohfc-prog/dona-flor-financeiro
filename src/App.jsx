@@ -4499,6 +4499,7 @@ export default function App() {
         formatarData={formatarData}
         alternarNotaConcluida={alternarNotaConcluida}
         abrirEdicaoNota={abrirEdicaoNota}
+        abrirNovaNota={abrirNovaNota}
         abrirConfirmacao={abrirConfirmacao}
         excluirNota={excluirNota}
         podeEditarFinanceiro={podeEditarFinanceiro()}

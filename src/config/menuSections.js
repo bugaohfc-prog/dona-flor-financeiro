@@ -3,9 +3,9 @@ const menuSections = [
     id: 'dashboard',
     titulo: 'Área de trabalho',
     items: [
-      { tela: 'dashboard', icon: '🏠', label: 'Painel', desc: 'Área de trabalho da empresa' },
+      { tela: 'dashboard', icon: '🏠', label: 'Área de trabalho', desc: 'Visão principal da empresa' },
       { tela: 'agenda', icon: '📅', label: 'Agenda', desc: 'Compromissos e prazos' },
-      { tela: 'notas', icon: '📝', label: 'Notas', desc: 'Pendências e histórico' }
+      { tela: 'notas', icon: '📝', label: 'Notas', desc: 'Pendências e lembretes' }
     ]
   },
   {
@@ -13,30 +13,30 @@ const menuSections = [
     titulo: 'Financeiro',
     items: [
       { tela: 'contas', icon: '💳', label: 'Contas', desc: 'Contas a pagar e filtros' },
-      { tela: 'relatorios', icon: '📊', label: 'Análise Financeira', desc: 'Indicadores e comparativos' },
-      { tela: 'relatorios-contas', icon: 'RC', label: 'Relatórios de Contas', desc: 'Impressão e exportação de contas' },
-      { tela: 'importar', icon: '📥', label: 'Importar contas', desc: 'Trazer contas por planilha' }
+      { tela: 'relatorios', icon: '📊', label: 'Relatórios financeiros', desc: 'Análise e indicadores' },
+      { tela: 'relatorios-contas', icon: 'RC', label: 'Relatórios de contas', desc: 'Impressão e exportação' },
+      { tela: 'importar', icon: '📥', label: 'Importação', desc: 'Importar contas por CSV' }
     ]
   },
   {
     id: 'pessoas',
     titulo: 'Gestão de Pessoas',
     items: [
-      { tela: 'relatorios-gestao-pessoas', icon: 'RG', label: 'Relatórios de Gestão', desc: 'Visão geral, pessoas, férias e folha', peopleOnly: true },
+      { tela: 'relatorios-gestao-pessoas', icon: 'RG', label: 'Central de Relatórios', desc: 'Pessoas, férias e folha', peopleOnly: true },
       { tela: 'funcionarios', icon: '👥', label: 'Funcionários', desc: 'Cadastro de colaboradores', peopleOnly: true },
-      { tela: 'ferias', icon: '🌴', label: 'Férias', desc: 'Ciclos e parcelas de férias', peopleOnly: true },
-      { tela: 'fechamento-folha', icon: '🧾', label: 'Fechamento de Folha', desc: 'Competências e lançamentos mensais', peopleOnly: true }
+      { tela: 'ferias', icon: '🌴', label: 'Férias', desc: 'Períodos aquisitivos e gozos', peopleOnly: true },
+      { tela: 'fechamento-folha', icon: '🧾', label: 'Folha / Fechamento', desc: 'Competências e lançamentos', peopleOnly: true }
     ]
   },
   {
     id: 'administracao',
     titulo: 'Administração',
     items: [
-      { tela: 'usuarios', icon: '👥', label: 'Usuários', desc: 'Perfis, acessos e senhas' },
+      { tela: 'usuarios', icon: '👥', label: 'Usuários e empresa', desc: 'Perfis, acessos e empresa' },
       { tela: 'master-empresas', icon: '🏢', label: 'Empresas', desc: 'Administração de empresas', masterOnly: true },
       { tela: 'configuracoes', icon: '⚙️', label: 'Configurações', desc: 'Preferências da empresa' },
-      { tela: 'billing', icon: '💼', label: 'Plano comercial', desc: 'Planos, limites e contratação' },
-      { tela: 'onboarding', icon: '🚀', label: 'Configuração inicial', desc: 'Assistente de preparação' },
+      { tela: 'billing', icon: '💼', label: 'Planos', desc: 'Plano atual e limites' },
+      { tela: 'onboarding', icon: '🚀', label: 'Assistente inicial', desc: 'Configuração da empresa' },
       { tela: 'lixeira', icon: '🗑️', label: 'Lixeira', desc: 'Restaurar ou excluir definitivo' }
     ]
   }

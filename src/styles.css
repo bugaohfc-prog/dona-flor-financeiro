@@ -1096,6 +1096,41 @@
 }
 
 /* Ajustes visuais da gestão de usuários */
+.users-admin-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.users-admin-summary > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid #dbe7e3;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, .045);
+}
+
+.users-admin-summary span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.users-admin-summary strong {
+  min-width: 0;
+  color: #0f172a;
+  font-size: 15px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .users-management-section {
   overflow: visible !important;
 }
@@ -1137,9 +1172,9 @@
   align-items: stretch !important;
   background: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
-  border-radius: 16px !important;
-  padding: 14px !important;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, .045) !important;
+  border-radius: 18px !important;
+  padding: 15px !important;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, .052) !important;
 }
 
 .users-user-card-header {
@@ -1178,6 +1213,14 @@
   gap: 8px !important;
   align-items: center !important;
   justify-content: end !important;
+}
+
+.users-user-controls .roleBadge {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
 }
 
 .users-role-select,
@@ -1272,6 +1315,10 @@
 }
 
 @media (max-width: 980px) {
+  .users-admin-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .users-add-card-compact {
     grid-template-columns: 1fr !important;
   }
@@ -1301,6 +1348,14 @@
 }
 
 @media (max-width: 560px) {
+  .users-admin-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .users-admin-summary > div {
+    padding: 11px 12px;
+  }
+
   .users-management-header {
     display: grid !important;
     align-items: stretch !important;

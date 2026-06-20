@@ -93,6 +93,25 @@ export default function UsuariosPage({
         <button className="admin-btn admin-btn-secondary" onClick={() => navegarPara('dashboard')}>← Painel</button>
       </div>
 
+      <div className="users-admin-summary" aria-label="Resumo de usuários e empresa">
+        <div>
+          <span>Empresa ativa</span>
+          <strong>{empresasDisponiveis.find((empresa) => empresa.id === empresaId)?.nome || 'Empresa atual'}</strong>
+        </div>
+        <div>
+          <span>Usuários</span>
+          <strong>{usuariosEmpresa.length}</strong>
+        </div>
+        <div>
+          <span>Filiais</span>
+          <strong>{filiais.length}</strong>
+        </div>
+        <div>
+          <span>Seu perfil</span>
+          <strong>{normalizarPerfil(perfilUsuario)}</strong>
+        </div>
+      </div>
+
       <section style={styles.cardConfiguracao} className="users-page-section admin-config-card">
         <HeaderExpansivel
           styles={styles}

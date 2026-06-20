@@ -859,6 +859,31 @@ export default function App() {
     return temPermissao(['admin'])
   }, [temPermissao])
 
+  const configuracaoInicialCompleta = useMemo(() => {
+    const filiaisAtivas = filiais.filter((filial) => filial?.ativo !== false)
+    const contasAtivas = contas.filter((conta) => conta?.excluido !== true)
+
+    return Boolean(empresaId && filiaisAtivas.length > 0 && centros.length > 0 && contasAtivas.length > 0)
+  }, [centros, contas, empresaId, filiais])
+
+  useEffect(() => {
+    if (!empresaSessaoInicializada || !usuarioLogado?.id || !podeAcessarConfiguracoes()) return
+
+    if (configuracaoInicialCompleta && telaAtual === 'onboarding') {
+      setTelaAtualState('dashboard')
+      return
+    }
+
+    if (!configuracaoInicialCompleta && telaAtual === 'dashboard') {
+      setTelaAtualState('onboarding')
+    }
+  }, [
+    configuracaoInicialCompleta,
+    empresaSessaoInicializada,
+    podeAcessarConfiguracoes,
+    telaAtual,
+    usuarioLogado?.id
+  ])
   const {
     funcionarios: funcionariosAgenda,
     loading: loadingFuncionariosAgenda

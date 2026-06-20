@@ -1676,7 +1676,7 @@ export default function FechamentoFolhaPage({
         <div className="folha-page-intro">
           <span>Gestão de Pessoas</span>
           <h1>Folha / Fechamento</h1>
-          <p>Controle mensal de competências, lançamentos e conferência administrativa da folha.</p>
+          <p>Prepare competencias mensais e registre lancamentos manuais quando a empresa for processar a folha.</p>
           {empresaNome && <small>Empresa ativa: <strong>{empresaNome}</strong></small>}
         </div>
         {voltarPainel && (
@@ -1711,13 +1711,13 @@ export default function FechamentoFolhaPage({
         <FolhaSectionHeader
           kicker="Competências"
           titulo="Competências da folha"
-          descricao="Crie, selecione e acompanhe competências mensais."
+          descricao="Crie manualmente a competencia do mes antes de registrar lancamentos."
           resumo={`${competencias.length} competência(s) carregada(s)`}
           aberto={secoesAbertas.competencias}
           onToggle={() => alternarSecao('competencias')}
         />
         <h2 style={styles.subtitulo}>Competências</h2>
-        <p style={styles.textoNota}>Crie e selecione uma competência mensal no formato AAAA-MM.</p>
+        <p style={styles.textoNota}>A folha comeca pela competencia mensal. Nada e criado automaticamente.</p>
 
         <form onSubmit={salvarCompetencia} style={estilosLocais.formPanel}>
           <div className="folha-competencia-grid" style={estilosLocais.competenciaGrid}>
@@ -1733,7 +1733,7 @@ export default function FechamentoFolhaPage({
                 required
               />
               <small style={estilosLocais.helperText}>
-                Escolha o mês de referência. O sistema salva no formato AAAA-MM, por exemplo 2026-05.
+                Escolha o mes de referencia. O sistema salva no formato AAAA-MM, por exemplo 2026-05.
               </small>
               {formCompetencia.competencia && (
                 <span style={{ ...estilosLocais.badge, justifySelf: 'start' }}>
@@ -1755,7 +1755,7 @@ export default function FechamentoFolhaPage({
                 ))}
               </select>
               <small style={estilosLocais.helperText}>
-                Define o status inicial da competência criada.
+                Define o status inicial da competencia criada manualmente.
               </small>
             </label>
           </div>
@@ -1780,7 +1780,7 @@ export default function FechamentoFolhaPage({
               style={styles.btnPrimario}
               disabled={!empresaId || !podeEditar || salvando}
             >
-              {salvando ? 'Salvando...' : 'Criar competência'}
+              {salvando ? 'Salvando...' : 'Criar competencia'}
             </button>
             <label className={`folha-switch ${mostrarArquivadas ? 'ativo' : ''}`}>
               <input
@@ -1797,7 +1797,10 @@ export default function FechamentoFolhaPage({
         {loading && !competencias.length ? (
           <p style={styles.textoNota}>Carregando competências...</p>
         ) : competencias.length === 0 ? (
-          <p style={styles.textoNota}>Nenhuma competência encontrada para a empresa ativa.</p>
+          <div className="folha-empty-state">
+            <strong>Nenhuma competencia de folha cadastrada ainda.</strong>
+            <p>Crie uma competencia manualmente quando a empresa for processar a folha. O sistema nao cria competencias ou lancamentos sozinho.</p>
+          </div>
         ) : (
           <div style={estilosLocais.lista}>
             {competencias.map((competencia) => {
@@ -1863,7 +1866,10 @@ export default function FechamentoFolhaPage({
         />
         <h2 style={styles.subtitulo}>Resumo da competência selecionada</h2>
         {!competenciaSelecionada ? (
-          <p style={styles.textoNota}>Selecione uma competência para ver o resumo e os lançamentos.</p>
+          <div className="folha-empty-state is-muted">
+            <strong>Nenhuma competencia selecionada.</strong>
+            <p>Crie ou selecione uma competencia para ver totais, saldo e lancamentos.</p>
+          </div>
         ) : (
           <>
             <p style={styles.textoNota}>
@@ -1906,7 +1912,10 @@ export default function FechamentoFolhaPage({
         </p>
 
         {!competenciaSelecionada ? (
-          <p style={styles.textoNota}>Selecione uma competência antes de criar lançamentos.</p>
+          <div className="folha-empty-state is-muted">
+            <strong>Selecione ou crie uma competencia antes de lancar.</strong>
+            <p>O lancamento manual fica disponivel somente dentro de uma competencia mensal.</p>
+          </div>
         ) : (
           <form onSubmit={salvarLancamento} style={{ display: 'grid', gap: 12 }} noValidate>
             <div className={`folha-form-subsection ${secoesFormularioLancamento.principais ? 'is-open' : 'is-collapsed'}`} style={estilosLocais.formPanelSoft}>
@@ -2167,11 +2176,17 @@ export default function FechamentoFolhaPage({
         </div>
 
         {!competenciaSelecionada ? (
-          <p style={styles.textoNota}>Selecione uma competência para carregar lançamentos.</p>
+          <div className="folha-empty-state is-muted">
+            <strong>Selecione uma competencia para carregar lancamentos.</strong>
+            <p>Depois de selecionar uma competencia, a lista mostra os lancamentos ativos e arquivados conforme o filtro.</p>
+          </div>
         ) : loadingLancamentos ? (
           <p style={styles.textoNota}>Carregando lançamentos...</p>
         ) : lancamentos.length === 0 ? (
-          <p style={styles.textoNota}>Nenhum lançamento encontrado para a competência selecionada.</p>
+          <div className="folha-empty-state">
+            <strong>Nenhum lancamento encontrado para a competencia selecionada.</strong>
+            <p>Lancamentos de folha nao sao criados automaticamente. Registre apenas valores conferidos para esta competencia.</p>
+          </div>
         ) : (
           <>
           <p className="folha-mobile-note" style={styles.textoNota}>

@@ -8162,6 +8162,34 @@
   font-size: 13px;
 }
 
+.folha-empty-state {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 12px;
+  background: #f8fffc;
+  color: #475569;
+}
+
+.folha-empty-state strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.folha-empty-state p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.folha-empty-state.is-muted {
+  background: #f8fafc;
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
 .folha-page .folha-card {
   border: 1px solid rgba(15, 23, 42, 0.09) !important;
   border-radius: 14px !important;

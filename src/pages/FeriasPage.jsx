@@ -190,7 +190,7 @@ function obterDestaqueVisualCiclo(ciclo) {
   const atencao = calcularDataAtencaoLimite(limite)
 
   if (limite && limite < hoje) return { classe: 'is-overdue', rotulo: 'Limite vencido' }
-  if (atencao && atencao <= hoje) return { classe: 'is-due-soon', rotulo: 'Atenção' }
+  if (atencao && atencao <= hoje) return { classe: 'is-due-soon', rotulo: 'Atencao' }
   return { classe: 'is-on-track', rotulo: 'No prazo' }
 }
 function obterCicloMaisRecente(ciclos = []) {
@@ -1383,7 +1383,7 @@ export default function FeriasPage({
                             </div>
                             <div className="ferias-cycle-metrics">
                               <span><small>Limite de gozo</small><strong>{formatarDataCurta(ciclo.data_limite_gozo)}</strong></span>
-                              <span><small>Atenção</small><strong>{formatarDataCurta(calcularDataAtencaoLimite(ciclo.data_limite_gozo))}</strong></span>
+                              <span><small>Data de atencao</small><strong>{formatarDataCurta(calcularDataAtencaoLimite(ciclo.data_limite_gozo))}</strong></span>
                               <span><small>Dias</small><strong>{ciclo.dias_direito || 30}</strong></span>
                             </div>
                             {destaque.rotulo && <em className={`ferias-cycle-alert ${destaque.classe}`}>{destaque.rotulo}</em>}

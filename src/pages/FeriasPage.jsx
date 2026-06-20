@@ -179,6 +179,20 @@ function calcularDataAtencaoLimite(dataLimiteGozo) {
   return somarDiasISO(dataLimiteGozo, -30)
 }
 
+function obterDestaqueVisualCiclo(ciclo) {
+  if (!ciclo || ciclo.arquivado) return { classe: '', rotulo: '' }
+
+  const status = String(ciclo.status || '').toLowerCase()
+  if (['concluida', 'cancelada'].includes(status)) return { classe: '', rotulo: '' }
+
+  const hoje = obterHojeISO()
+  const limite = normalizarDataISO(ciclo.data_limite_gozo)
+  const atencao = calcularDataAtencaoLimite(limite)
+
+  if (limite && limite < hoje) return { classe: 'is-overdue', rotulo: 'Limite vencido' }
+  if (atencao && atencao <= hoje) return { classe: 'is-due-soon', rotulo: 'Atenção' }
+  return { classe: 'is-on-track', rotulo: 'No prazo' }
+}
 function obterCicloMaisRecente(ciclos = []) {
   return [...(ciclos || [])]
     .filter((ciclo) => normalizarDataISO(ciclo.periodo_aquisitivo_fim))
@@ -388,6 +402,7 @@ export default function FeriasPage({
     if (mostrarTodosCiclos) return ciclosVisiveis
     return ciclosVisiveis.slice(0, LIMITE_CICLOS_INICIAL)
   }, [ciclosVisiveis, mostrarTodosCiclos])
+  const ciclosOcultos = Math.max(ciclosVisiveis.length - ciclosRenderizados.length, 0)
 
   const periodosVisiveis = useMemo(() => {
     return incluirArquivados ? periodos : (periodos || []).filter((periodo) => !periodo.arquivado)
@@ -1346,22 +1361,32 @@ export default function FeriasPage({
                   />
                 ) : (
                   <>
+                  <div className="ferias-cycle-results">
+                    <span>{ciclosRenderizados.length} de {ciclosVisiveis.length} ciclo(s) exibido(s)</span>
+                    {ciclosOcultos > 0 && <strong>{ciclosOcultos} ciclo(s) recolhido(s)</strong>}
+                  </div>
                   <div className="ferias-cycle-list">
                     {ciclosRenderizados.map((ciclo) => {
                       const selecionado = ciclo.id === cicloSelecionadoId
                       const status = ciclo.arquivado ? 'Arquivado' : formatarStatus(ciclo.status, STATUS_CICLO_LABELS)
+                      const destaque = obterDestaqueVisualCiclo(ciclo)
 
                       return (
                         <article
                           key={ciclo.id}
-                          className={`ferias-cycle-card ${selecionado ? 'selected' : ''} ${ciclo.arquivado ? 'archived' : ''}`}
+                          className={`ferias-cycle-card ${selecionado ? 'selected' : ''} ${ciclo.arquivado ? 'archived' : ''} ${destaque.classe}`}
                         >
                           <div className="ferias-cycle-main">
-                            <strong>{formatarDataCurta(ciclo.periodo_aquisitivo_inicio)} a {formatarDataCurta(ciclo.periodo_aquisitivo_fim)}</strong>
-                            <small>Limite de gozo: {formatarDataCurta(ciclo.data_limite_gozo)}</small>
-                            <small>AtenÃ§Ã£o a partir de: {formatarDataCurta(calcularDataAtencaoLimite(ciclo.data_limite_gozo))}</small>
-                            <small>Dias de direito: {ciclo.dias_direito || 30}</small>
-                            <span className={`ferias-status ${ciclo.arquivado ? 'archived' : ''}`}>{status}</span>
+                            <div className="ferias-cycle-title-row">
+                              <strong>{formatarDataCurta(ciclo.periodo_aquisitivo_inicio)} a {formatarDataCurta(ciclo.periodo_aquisitivo_fim)}</strong>
+                              <span className={`ferias-status ${ciclo.arquivado ? 'archived' : ''}`}>{status}</span>
+                            </div>
+                            <div className="ferias-cycle-metrics">
+                              <span><small>Limite de gozo</small><strong>{formatarDataCurta(ciclo.data_limite_gozo)}</strong></span>
+                              <span><small>Atenção</small><strong>{formatarDataCurta(calcularDataAtencaoLimite(ciclo.data_limite_gozo))}</strong></span>
+                              <span><small>Dias</small><strong>{ciclo.dias_direito || 30}</strong></span>
+                            </div>
+                            {destaque.rotulo && <em className={`ferias-cycle-alert ${destaque.classe}`}>{destaque.rotulo}</em>}
                           </div>
                           <div className="ferias-actions">
                             {selecionado ? (

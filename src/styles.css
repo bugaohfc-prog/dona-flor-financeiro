@@ -7767,6 +7767,104 @@
   background: #94a3b8;
 }
 
+.ferias-page .ferias-cycle-card.is-overdue::before {
+  background: #dc2626;
+}
+
+.ferias-page .ferias-cycle-card.is-due-soon::before {
+  background: #f59e0b;
+}
+
+.ferias-cycle-results {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 9px 11px;
+  border: 1px solid rgba(15, 23, 42, .08);
+  border-radius: 14px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ferias-cycle-results strong {
+  color: #0f766e;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ferias-cycle-title-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ferias-cycle-title-row strong {
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+.ferias-cycle-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.ferias-cycle-metrics span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  padding: 8px 9px;
+  border: 1px solid rgba(15, 23, 42, .07);
+  border-radius: 12px;
+  background: rgba(248, 250, 252, .88);
+}
+
+.ferias-cycle-metrics small {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+
+.ferias-cycle-metrics strong {
+  color: #0f172a;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.ferias-cycle-alert {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.ferias-cycle-alert.is-overdue {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.ferias-cycle-alert.is-due-soon {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.ferias-cycle-alert.is-on-track {
+  background: #ecfdf5;
+  color: #047857;
+}
 .ferias-page .ferias-status {
   border: 1px solid #a7f3d0;
 }
@@ -9619,5 +9717,36 @@
   .relatorios-contas-export-actions,
   .relatorios-contas-export-actions .relatorios-contas-btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .ferias-cycle-results {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .ferias-cycle-results strong {
+    white-space: normal;
+  }
+
+  .ferias-cycle-title-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .ferias-cycle-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ferias-cycle-metrics span {
+    padding: 7px 8px;
+  }
+
+  .ferias-cycle-alert,
+  .ferias-page .ferias-status {
+    width: fit-content;
+    max-width: 100%;
   }
 }

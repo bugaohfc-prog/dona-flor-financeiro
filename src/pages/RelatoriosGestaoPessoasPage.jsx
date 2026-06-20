@@ -736,23 +736,33 @@ export default function RelatoriosGestaoPessoasPage({
     <div className="people-report-center-page">
       <style>{`
         .people-report-center-page { display: grid; gap: 18px; }
+        .people-report-hero {
+          align-items: center;
+          gap: 16px;
+        }
+        .people-report-back {
+          box-shadow: none !important;
+          opacity: .86;
+        }
         .people-report-tabs {
           display: flex;
           gap: 8px;
           flex-wrap: wrap;
-          padding: 4px;
-          border: 1px solid #e5e7eb;
-          background: #f8fafc;
-          border-radius: 8px;
+          padding: 6px;
+          border: 1px solid rgba(15, 23, 42, .08);
+          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+          border-radius: 16px;
+          box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
         }
         .people-report-tab {
           border: 1px solid transparent;
           background: transparent;
           color: #475569;
-          border-radius: 7px;
-          padding: 9px 12px;
-          font-weight: 700;
+          border-radius: 12px;
+          padding: 10px 14px;
+          font-weight: 800;
           cursor: pointer;
+          min-height: 40px;
         }
         .people-report-tab.ativo {
           background: #ffffff;
@@ -762,18 +772,20 @@ export default function RelatoriosGestaoPessoasPage({
         }
         .people-report-overview-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
-          gap: 10px;
+          grid-template-columns: repeat(auto-fit, minmax(156px, 1fr));
+          gap: 12px;
         }
         .people-report-overview-card {
-          border: 1px solid #e5e7eb;
-          background: #ffffff;
-          border-radius: 8px;
-          padding: 10px 12px;
+          border: 1px solid rgba(15, 23, 42, .08);
+          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+          border-radius: 16px;
+          padding: 16px;
           display: grid;
-          gap: 4px;
-          min-height: 86px;
+          gap: 8px;
+          min-height: 112px;
           align-content: center;
+          box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
+          min-width: 0;
         }
         .people-report-overview-card span,
         .people-report-overview-card small {
@@ -790,17 +802,18 @@ export default function RelatoriosGestaoPessoasPage({
         }
         .people-report-overview-card strong {
           color: #0f172a;
-          font-size: 22px;
+          font-size: 28px;
           line-height: 1;
         }
         .people-report-overview-note {
-          border: 1px solid #dbeafe;
-          background: #eff6ff;
-          color: #1e3a8a;
-          border-radius: 8px;
-          padding: 14px;
+          border: 1px solid rgba(13, 148, 136, .18);
+          background: #f0fdfa;
+          color: #115e59;
+          border-radius: 16px;
+          padding: 14px 16px;
           display: grid;
           gap: 6px;
+          box-shadow: 0 8px 22px rgba(15, 23, 42, .04);
         }
         .people-report-overview-note p { margin: 0; }
         .people-report-payroll {
@@ -834,12 +847,13 @@ export default function RelatoriosGestaoPessoasPage({
           color: #64748b;
         }
         .people-report-payroll-section {
-          border: 1px solid #e5e7eb;
+          border: 1px solid rgba(15, 23, 42, .08);
           background: #ffffff;
-          border-radius: 8px;
-          padding: 14px;
+          border-radius: 16px;
+          padding: 16px;
           display: grid;
           gap: 12px;
+          box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
         }
         .people-report-payroll-section-header h2 {
           margin: 0;
@@ -954,8 +968,11 @@ export default function RelatoriosGestaoPessoasPage({
           font-weight: 700;
         }
         @media (max-width: 640px) {
+          .people-report-hero { align-items: stretch; }
+          .people-report-back { width: 100%; }
           .people-report-tabs { display: grid; grid-template-columns: 1fr; }
           .people-report-tab { width: 100%; text-align: left; }
+          .people-report-overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .people-report-payroll-filter-grid { grid-template-columns: 1fr; }
           .people-report-payroll-row { grid-template-columns: 1fr; }
           .people-report-payroll-row-meta { text-align: left; }
@@ -963,14 +980,14 @@ export default function RelatoriosGestaoPessoasPage({
         }
       `}</style>
 
-      <div className="master-page-hero">
+      <div className="master-page-hero people-report-hero">
         <div>
           <span className="master-kicker">Gestão de Pessoas</span>
           <h1 style={styles.titulo}>Relatórios de Gestão de Pessoas</h1>
           <p style={styles.textoNota}>Visão central para colaboradores, exames, períodos aquisitivos de férias e folha.</p>
           <small style={styles.textoAjuda}>Empresa ativa: <strong>{empresaNome || 'Empresa não identificada'}</strong></small>
         </div>
-        <button style={styles.btnCinza} type="button" onClick={voltarPainel}>Voltar ao Painel</button>
+        <button className="people-report-back" style={styles.btnCinza} type="button" onClick={voltarPainel}>Voltar ao Painel</button>
       </div>
 
       <nav className="people-report-tabs" aria-label="Abas de relatórios de Gestão de Pessoas">

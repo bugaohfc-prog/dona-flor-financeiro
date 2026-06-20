@@ -144,8 +144,14 @@ function SecaoRelatorio({
           <h2>{titulo}</h2>
           <p>{descricao}</p>
         </div>
-        <button className="ferias-report-toggle" type="button" onClick={onAlternarAberta}>
-          {aberta ? 'Recolher' : 'Abrir'}
+        <button
+          className="ferias-report-toggle"
+          type="button"
+          onClick={onAlternarAberta}
+          aria-label={aberta ? 'Recolher seção' : 'Expandir seção'}
+          title={aberta ? 'Recolher seção' : 'Expandir seção'}
+        >
+          <span aria-hidden="true">{aberta ? '−' : '+'}</span>
         </button>
       </div>
       {aberta && (
@@ -434,11 +440,15 @@ export default function RelatoriosFeriasPage({
           min-width: 0;
         }
         .ferias-report-section-header {
-          display: flex;
-          justify-content: space-between;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
           gap: 12px;
-          align-items: flex-start;
+          align-items: center;
           margin-bottom: 12px;
+        }
+        .ferias-report-section-header > div {
+          min-width: 0;
+          text-align: left;
         }
         .ferias-report-section h2 {
           margin: 0 0 5px;
@@ -494,9 +504,17 @@ export default function RelatoriosFeriasPage({
           cursor: pointer;
         }
         .ferias-report-toggle {
-          width: fit-content;
+          width: 34px;
+          min-width: 34px;
+          height: 34px;
+          padding: 0;
           justify-self: end;
-          font-size: 12px;
+          display: inline-grid;
+          place-items: center;
+          color: #0f766e;
+          background: #ecfdf5;
+          border-color: rgba(15, 118, 110, .24);
+          font-size: 18px;
           line-height: 1;
         }
         .ferias-report-more {
@@ -575,8 +593,7 @@ export default function RelatoriosFeriasPage({
             align-items: flex-start;
           }
           .ferias-report-toggle {
-            width: auto;
-            justify-self: start;
+            justify-self: end;
           }
           .ferias-report-filters {
             display: grid;

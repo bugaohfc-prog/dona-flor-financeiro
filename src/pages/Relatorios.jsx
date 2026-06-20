@@ -593,6 +593,9 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       <div class="insight"><strong>${index + 1}.</strong> ${escapeHtml(item)}</div>
     `).join('')
 
+    const dataEmissao = new Date()
+    const dataEmissaoFormatada = dataEmissao.toLocaleString('pt-BR')
+
     const html = `<!doctype html>
       <html lang="pt-BR">
         <head>
@@ -604,6 +607,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
             h1 { margin: 0 0 4px; font-size: 24px; }
             h2 { margin: 24px 0 10px; font-size: 17px; color: #0f766e; }
             .meta { color: #64748b; margin-bottom: 18px; font-size: 12px; }
+            .brand { color: #ccfbf1; font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+            .subtitle { margin-top: 4px; color: rgba(255,255,255,.88); font-size: 13px; font-weight: 700; }
             .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0; }
             .card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; background: #f8fafc; }
             .label { color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 700; }
@@ -620,17 +625,19 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
             .cover h1 { color: #fff; }
             .cover .meta { color: rgba(255,255,255,.78); margin-bottom: 0; }
             .score { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.12); font-weight: 800; }
-            .footer { margin-top: 24px; color: #64748b; font-size: 11px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+            .footer { margin-top: 24px; color: #64748b; font-size: 11px; border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
             @page { size: A4; margin: 12mm; }
             @media print { body { margin: 0; } }
           </style>
         </head>
         <body>
           <div class="cover">
+            <div class="brand">DNA Gestão</div>
             <h1>Relatório financeiro</h1>
+            <div class="subtitle">Relatório gerencial para conferência de indicadores, DRE, prioridades e contas filtradas.</div>
             <div class="meta">
               Empresa: ${escapeHtml(nomeEmpresaRelatorio)}<br />
-              Gerado em ${new Date().toLocaleString('pt-BR')} • ${escapeHtml(nomeMes(filtroMes || mesAtualPadrao()))}<br />
+              Emitido em ${escapeHtml(dataEmissaoFormatada)} • ${escapeHtml(nomeMes(filtroMes || mesAtualPadrao()))}<br />
               Centro: ${escapeHtml(filtroCentro ? centroSelecionado?.nome || 'Selecionado' : 'Todos')} • Filial: ${escapeHtml(filtroFilial ? filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas')} • Status: ${escapeHtml(filtroStatus)}
             </div>
             <div class="score">Saúde financeira: ${copilotFinanceiro.score}/100 • ${escapeHtml(copilotFinanceiro.status.label)}</div>
@@ -662,7 +669,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
           <table><thead><tr><th>Centro</th><th>Previsto</th><th>Realizado</th><th>Pendente</th><th>Vencido</th><th>Encargos</th><th>Desconto</th><th>Participação</th></tr></thead><tbody>${linhasRanking || '<tr><td colspan="8">Nenhum centro encontrado.</td></tr>'}</tbody></table>
           <h2>Contas filtradas</h2>
           <table><thead><tr><th>Descrição</th><th>Previsto</th><th>Realizado</th><th>Encargos</th><th>Desconto</th><th>Data pagamento</th><th>Obs. pagamento</th><th>Vencimento</th><th>Status</th><th>Centro</th><th>Filial</th><th>Recorrência</th></tr></thead><tbody>${linhasContas || '<tr><td colspan="12">Nenhuma conta encontrada.</td></tr>'}</tbody></table>
-          <div class="footer">Relatório gerado pelo DNA Gestão.</div>
+          <div class="footer"><span>DNA Gestão • Documento para conferência interna.</span><span>Emitido em ${escapeHtml(dataEmissaoFormatada)}</span></div>
         </body>
       </html>`
 

@@ -2506,6 +2506,9 @@ export default function App() {
       `
     }).join('')
 
+    const dataEmissao = new Date()
+    const dataEmissaoFormatada = dataEmissao.toLocaleString('pt-BR')
+
     const html = `
       <!doctype html>
       <html lang="pt-BR">
@@ -2519,8 +2522,10 @@ export default function App() {
             html, body { width: 100%; min-height: 100%; }
             body { margin: 0; font-family: Arial, sans-serif; color: #111827; background: #f8fafc; -webkit-text-size-adjust: 100%; }
             .page { width: 100%; max-width: 100%; margin: 0 auto; padding: 14px; background: #fff; min-height: 100vh; overflow: visible; }
-            header { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; border-bottom: 2px solid #ccfbf1; padding-bottom: 12px; margin-bottom: 12px; }
-            h1 { margin: 0; font-size: 22px; color: #0f766e; }
+            header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: start; border-bottom: 2px solid #ccfbf1; padding-bottom: 12px; margin-bottom: 12px; }
+            .brand { color: #0f766e; font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+            h1 { margin: 3px 0 0; font-size: 22px; color: #0f172a; }
+            .subtitle { margin-top: 4px; color: #475569; font-size: 12px; font-weight: 700; }
             .empresa { margin-top: 5px; color: #475569; font-size: 13px; }
             .data { text-align: right; color: #64748b; font-size: 12px; }
             .summary { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
@@ -2576,10 +2581,12 @@ export default function App() {
             </div>
             <header>
               <div>
+                <div class="brand">DNA Gestão</div>
                 <h1>Relatório de Contas</h1>
+                <div class="subtitle">Documento gerencial para conferência de contas, valores e situação operacional.</div>
                 <div class="empresa">${escapeHtml(nomeEmpresa || 'Empresa não identificada')}</div>
               </div>
-              <div class="data">Gerado em ${new Date().toLocaleDateString('pt-BR')}<br/>${contasFiltradas.length} conta(s) listada(s)</div>
+              <div class="data">Emitido em ${escapeHtml(dataEmissaoFormatada)}<br/>${contasFiltradas.length} conta(s) listada(s)</div>
             </header>
             <section class="summary">
               <div class="box"><span>Previsto</span><strong>${escapeHtml(formatarValor(total))}</strong></div>
@@ -2612,8 +2619,8 @@ export default function App() {
               </table>
             </div>
             <footer>
-              <span>Gerado pelo DNA Gestão</span>
-              <span>${new Date().toLocaleString('pt-BR')}</span>
+              <span>DNA Gestão • Documento para conferência interna.</span>
+              <span>Emitido em ${escapeHtml(dataEmissaoFormatada)}</span>
             </footer>
           </div>
         </body>

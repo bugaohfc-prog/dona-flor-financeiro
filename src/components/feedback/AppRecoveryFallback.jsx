@@ -6,7 +6,7 @@ export default function AppRecoveryFallback({
   return (
     <main className="app-recovery-screen" role="alert" aria-live="assertive">
       <section className="app-recovery-card">
-        <div className="app-recovery-kicker">DNA Gestao</div>
+        <div className="app-recovery-kicker">DNA Gestão</div>
         <h1>{title}</h1>
         <p>{message}</p>
         <div className="app-recovery-actions">

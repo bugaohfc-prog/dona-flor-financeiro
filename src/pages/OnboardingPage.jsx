@@ -166,7 +166,7 @@ export default function OnboardingPage({
           <span className="onboarding-eyebrow">Guia operacional</span>
           <h2 style={styles.subtitulo}>Deixe a empresa pronta para operar</h2>
           <p style={styles.textoNota}>
-            Empresa: <strong>{empresaNome || 'Empresa atual'}</strong>. Este fluxo prepara a primeira unidade/filial, centro de custo e conta para ativar o painel financeiro.
+            Empresa: <strong>{empresaNome || 'Empresa atual'}</strong>. Este fluxo prepara a primeira unidade/filial, centro de custo e conta para ativar a área de trabalho da empresa.
           </p>
         </div>
         <div className="onboarding-progress-box">
@@ -225,7 +225,7 @@ export default function OnboardingPage({
         <StepCard
           numero="4"
           titulo="Primeira conta"
-          descricao="Registre uma conta inicial para alimentar indicadores, ranking e painel financeiro."
+          descricao="Registre uma conta inicial para alimentar indicadores e a rotina da empresa."
           concluido={status.conta}
           ativo={proximaEtapa === 'conta'}
         >
@@ -263,12 +263,12 @@ export default function OnboardingPage({
         <StepCard
           numero="5"
           titulo="Painel pronto"
-          descricao="A operação inicial já pode ser acompanhada no painel financeiro."
+          descricao="A operação inicial já pode ser acompanhada na área de trabalho."
           concluido={onboardingCompleto}
           ativo={proximaEtapa === 'dashboard'}
         >
           <p style={styles.textoNota}>Base inicial concluída. Revise os indicadores e filtros por unidade/filial.</p>
-          <button style={styles.btnSalvar} onClick={abrirDashboard}>Ir para o painel financeiro</button>
+          <button style={styles.btnSalvar} onClick={abrirDashboard}>Ir para a área de trabalho</button>
         </StepCard>
       </div>
     </div>

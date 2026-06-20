@@ -738,7 +738,7 @@ export default function App() {
       const empresaSalvaValida = empresasSessao.find((empresa) => empresa.id === empresaAtiva?.id)
       const empresaSelecionada = empresaSalvaValida || empresasSessao.find((empresa) => empresa.id === vinculo?.empresaId) || empresasSessao[0] || {
         id: vinculo?.empresaId,
-        nome: vinculo?.nomeEmpresa || 'Dona Flor',
+        nome: vinculo?.nomeEmpresa || 'Rede Dona Flor',
         perfil: vinculo?.perfil || 'operador'
       }
 
@@ -755,7 +755,7 @@ export default function App() {
       setEmpresaId(empresaSelecionada.id)
       setEmpresaAtiva({
         id: empresaSelecionada.id,
-        nome: empresaSelecionada.nome || vinculo?.nomeEmpresa || 'Dona Flor',
+        nome: empresaSelecionada.nome || vinculo?.nomeEmpresa || 'Rede Dona Flor',
         perfil: perfilSelecionado
       })
       setPerfilUsuario(perfilSelecionado)
@@ -1645,7 +1645,7 @@ export default function App() {
         enviar_email: true,
         enviar_push: false,
         dias_aviso_padrao: 1,
-        nome_empresa: 'Dona Flor Financeiro',
+        nome_empresa: 'Rede Dona Flor',
         empresa_id: empresaAtual
       }])
       .select()

@@ -12,7 +12,7 @@ function Topbar({
   empresaId = '',
   trocarEmpresaAtiva,
   trocandoEmpresa = false,
-  contextoModulo = 'Gestão Financeira'
+  contextoModulo = 'Área de trabalho'
 }) {
   const exibirSeletorEmpresa = canSwitchCompany && empresasDisponiveis.length > 0
   const empresaAtual = useMemo(
@@ -25,7 +25,7 @@ function Topbar({
   }, [empresaAtivaNome, empresaAtual?.nome, nomeEmpresa])
   const contextoModuloAtual = useMemo(() => {
     const contexto = String(contextoModulo || '').trim()
-    return contexto || 'Gestão Financeira'
+    return contexto || 'Área de trabalho'
   }, [contextoModulo])
 
   const abrirDashboard = useCallback(() => {

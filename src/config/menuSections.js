@@ -1,7 +1,7 @@
 const menuSections = [
   {
     id: 'dashboard',
-    titulo: 'Dashboard',
+    titulo: 'Área de trabalho',
     items: [
       { tela: 'dashboard', icon: '🏠', label: 'Painel', desc: 'Área de trabalho da empresa' },
       { tela: 'agenda', icon: '📅', label: 'Agenda', desc: 'Compromissos e prazos' },
@@ -82,7 +82,7 @@ const CONTEXTO_MODULO_POR_TELA = {
 
 export function resolverContextoModulo(tela) {
   const chaveTela = String(tela || '').trim()
-  return CONTEXTO_MODULO_POR_TELA[chaveTela] || MODULOS_TOPBAR.financeiro
+  return CONTEXTO_MODULO_POR_TELA[chaveTela] || MODULOS_TOPBAR.geral
 }
 
 export default menuSections

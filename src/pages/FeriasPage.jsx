@@ -467,25 +467,25 @@ export default function FeriasPage({
     ? Math.max(saldoSelecionado - quantidadePeriodo, 0)
     : saldoSelecionado
   const proximaParcelaTexto = semSaldoDisponivel
-    ? 'Ciclo concluído'
+    ? 'Periodo concluido'
     : limiteParcelasAtingido
       ? 'Limite atingido'
       : numeroParcelaPrevisto
   const dataAtencaoCicloSelecionado = calcularDataAtencaoLimite(cicloSelecionado?.data_limite_gozo)
   const resumoFuncionario = funcionarioSelecionado
-    ? `${funcionarioSelecionado.nome || 'Funcionário selecionado'}${funcionarioSelecionado.cargo ? ` · ${funcionarioSelecionado.cargo}` : ''}`
-    : 'Nenhum funcionário selecionado'
+    ? `${funcionarioSelecionado.nome || 'Colaborador selecionado'}${funcionarioSelecionado.cargo ? ` - ${funcionarioSelecionado.cargo}` : ''}`
+    : 'Nenhum colaborador selecionado'
   const resumoCicloSelecionado = cicloSelecionado
     ? `${formatarDataCurta(cicloSelecionado.periodo_aquisitivo_inicio)} a ${formatarDataCurta(cicloSelecionado.periodo_aquisitivo_fim)}`
-    : 'Nenhum ciclo selecionado'
+    : 'Nenhum periodo selecionado'
   const novaParcelaBloqueada = semSaldoDisponivel || limiteParcelasAtingido
   const textoBotaoNovaParcela = semSaldoDisponivel
-    ? 'Sem saldo disponível'
+    ? 'Sem saldo disponivel'
     : limiteParcelasAtingido
-      ? 'Limite de parcelas atingido'
+      ? 'Limite de gozos atingido'
       : salvando
         ? 'Salvando...'
-        : 'Adicionar parcela'
+        : 'Adicionar gozo'
 
   const previsaoPeriodo = useMemo(() => criarPrevisaoPeriodo({
     formularioPeriodo,
@@ -1094,10 +1094,10 @@ export default function FeriasPage({
 
       <div className="ferias-page-hero">
         <div className="ferias-hero-copy">
-          <span className="ferias-kicker">Gestão de Pessoas</span>
-          <h1>Férias</h1>
-          <p>Controle de ciclos, saldo e parcelas por colaborador.</p>
-          <small>Empresa ativa: <strong>{empresaNome || 'Empresa não identificada'}</strong></small>
+          <span className="ferias-kicker">Gestao de Pessoas</span>
+          <h1>Ferias</h1>
+          <p>Consulte periodos aquisitivos, limites de gozo e saldo por colaborador.</p>
+          <small>Empresa ativa: <strong>{empresaNome || 'Empresa nao identificada'}</strong></small>
         </div>
         <button className="ferias-btn ferias-btn-secondary" type="button" onClick={voltarPainel}>Voltar ao painel</button>
       </div>
@@ -1106,15 +1106,15 @@ export default function FeriasPage({
         <section className="ferias-card">
           <EmptyState
             titulo="Empresa ativa necessaria"
-            descricao="Selecione uma empresa para carregar funcionários e férias."
+            descricao="Selecione uma empresa para carregar colaboradores e ferias."
           />
         </section>
       ) : (
         <div className="ferias-page-grid">
           <section className="ferias-card is-compact">
             <SectionHeader
-              titulo="Funcionário"
-              descricao="Colaborador da empresa ativa."
+              titulo="1. Escolha o colaborador"
+              descricao="A consulta comeca pela selecao de um colaborador."
               resumo={resumoFuncionario}
               aberto={secoesAbertas.funcionario}
               onToggle={() => alternarSecao('funcionario')}
@@ -1122,12 +1122,12 @@ export default function FeriasPage({
 
             {secoesAbertas.funcionario && (
               <>
-                <p style={{ marginTop: 10 }}>CPF e observações não aparecem nesta tela.</p>
+                <p style={{ marginTop: 10 }}>CPF e observacoes sensiveis nao aparecem nesta tela.</p>
 
                 {loadingFuncionarios ? (
-                  <p style={{ ...styles.textoNota, marginTop: 12 }}>Carregando funcionários...</p>
+                  <p style={{ ...styles.textoNota, marginTop: 12 }}>Carregando colaboradores...</p>
                 ) : erroFuncionarios ? (
-                  <EmptyState titulo="Não foi possível carregar" descricao={erroFuncionarios} />
+                  <EmptyState titulo="Nao foi possivel carregar" descricao={erroFuncionarios} />
                 ) : (
                   <>
                     <div className="ferias-employee-picker">
@@ -1158,9 +1158,9 @@ export default function FeriasPage({
                               aria-pressed={selecionado}
                             >
                               <span>
-                                <strong>{funcionario.nome || 'Funcionário sem nome'}</strong>
+                                <strong>{funcionario.nome || 'Colaborador sem nome'}</strong>
                                 <small>
-                                  {funcionario.cargo || 'Cargo não informado'} · {formatarStatus(funcionario.status, { ativo: 'Ativo', afastado: 'Afastado', desligado: 'Desligado' })}
+                                  {funcionario.cargo || 'Cargo nao informado'} - {formatarStatus(funcionario.status, { ativo: 'Ativo', afastado: 'Afastado', desligado: 'Desligado' })}
                                 </small>
                               </span>
                               <em>{formatarDataCurta(funcionario.data_admissao)}</em>
@@ -1189,8 +1189,8 @@ export default function FeriasPage({
 
                     {funcionariosOrdenados.length === 0 && (
                       <EmptyState
-                        titulo="Nenhum funcionário ativo"
-                        descricao="Cadastre um funcionário antes de registrar ciclos de férias."
+                        titulo="Nenhum colaborador ativo"
+                        descricao="Cadastre um colaborador antes de registrar periodos aquisitivos."
                       />
                     )}
                   </>
@@ -1198,17 +1198,17 @@ export default function FeriasPage({
 
                 {funcionarioSelecionado && (
                   <div className="ferias-preview">
-                    <strong>{funcionarioSelecionado.nome || 'Funcionário selecionado'}</strong>
+                    <strong>{funcionarioSelecionado.nome || 'Colaborador selecionado'}</strong>
                     <br />
-                    <span>{funcionarioSelecionado.cargo || 'Cargo não informado'}</span>
+                    <span>{funcionarioSelecionado.cargo || 'Cargo nao informado'}</span>
                     <br />
-                    <span>Admissão: {formatarDataCurta(funcionarioSelecionado.data_admissao)}</span>
+                    <span>Admissao: {formatarDataCurta(funcionarioSelecionado.data_admissao)}</span>
                   </div>
                 )}
 
                 <div className="ferias-warning">
-                  Esta tela registra apenas dados trabalhistas estruturados de férias. Não há documentos, anexos,
-                  exportação ou integração financeira neste ciclo.
+                  Esta tela prioriza a consulta dos periodos aquisitivos importados. Periodos de gozo so devem ser lancados quando houver data real de inicio/fim.
+                  Nenhuma data deve ser estimada a partir do limite de gozo.
                 </div>
               </>
             )}
@@ -1217,17 +1217,17 @@ export default function FeriasPage({
           <div className="ferias-main-column">
           <section className="ferias-card">
             <SectionHeader
-              titulo="Criar novo ciclo"
-              descricao="O sistema sugere o período aquisitivo e o limite de gozo."
-              resumo={sugestaoCiclo.erro || sugestaoCiclo.origem || 'Aguardando funcionário'}
+              titulo="Adicionar periodo aquisitivo"
+              descricao="Acao administrativa secundaria para cadastrar um periodo que ainda nao existe."
+              resumo={sugestaoCiclo.erro || sugestaoCiclo.origem || 'Aguardando colaborador'}
               aberto={secoesAbertas.criarCiclo}
               onToggle={() => alternarSecao('criarCiclo')}
             />
 
             {!funcionarioSelecionadoId ? (
               <EmptyState
-                titulo="Selecione um funcionário"
-                descricao="Os ciclos de férias aparecem depois da seleção do colaborador."
+                titulo="Selecione um colaborador"
+                descricao="Os periodos aquisitivos aparecem depois da selecao do colaborador."
               />
             ) : (
               <>
@@ -1241,7 +1241,7 @@ export default function FeriasPage({
                     <>
                       <div className="ferias-calculated-grid">
                         <div className="ferias-calculated-field">
-                          <span>Início calculado</span>
+                          <span>Inicio calculado</span>
                           <strong>{formatarDataCurta(sugestaoCiclo.ciclo?.periodo_aquisitivo_inicio)}</strong>
                         </div>
                         <div className="ferias-calculated-field">
@@ -1253,24 +1253,24 @@ export default function FeriasPage({
                           <strong>{formatarDataCurta(sugestaoCiclo.ciclo?.data_limite_gozo)}</strong>
                         </div>
                         <div className="ferias-calculated-field">
-                          <span>Atenção a partir de</span>
+                          <span>Atencao em</span>
                           <strong>{formatarDataCurta(calcularDataAtencaoLimite(sugestaoCiclo.ciclo?.data_limite_gozo))}</strong>
                         </div>
                       </div>
 
                       <div className="ferias-preview">
-                        <strong>Ciclo sugerido automaticamente.</strong>
+                        <strong>Periodo aquisitivo sugerido automaticamente.</strong>
                         <br />
                         <span>{sugestaoCiclo.origem}</span>
                         <br />
-                        <span>A data limite de gozo é calculada pelo sistema e não fica editável no fluxo normal.</span>
+                        <span>A data limite de gozo e calculada pelo sistema e nao fica editavel no fluxo normal.</span>
                         <br />
-                        <span>A data de atenção é um prazo operacional interno calculado 30 dias antes do limite de gozo.</span>
+                        <span>Atencao em e um prazo operacional interno calculado 30 dias antes do limite de gozo.</span>
                       </div>
 
                       {cicloDuplicadoSugerido && (
                         <div className="ferias-warning">
-                          Já existe um ciclo com o mesmo período aquisitivo para este funcionário.
+                          Ja existe um periodo aquisitivo com as mesmas datas para este colaborador.
                         </div>
                       )}
                     </>
@@ -1299,7 +1299,7 @@ export default function FeriasPage({
                         <option value="pendente">Pendente</option>
                         <option value="agendada">Agendada</option>
                         <option value="parcial">Parcial</option>
-                        <option value="concluida">Concluída</option>
+                        <option value="concluida">Concluida</option>
                         <option value="vencida">Vencida</option>
                         <option value="cancelada">Cancelada</option>
                       </select>
@@ -1319,16 +1319,16 @@ export default function FeriasPage({
                         cicloDuplicadoSugerido
                       }
                     >
-                      {salvando ? 'Salvando...' : 'Criar ciclo'}
+                      {salvando ? 'Salvando...' : 'Adicionar periodo'}
                     </button>
                   </div>
                 </form>
                 )}
 
                 <SectionHeader
-                  titulo="Ciclos de férias"
-                  descricao="Histórico de períodos aquisitivos do funcionário selecionado."
-                  resumo={`${ciclosVisiveis.length} ciclo(s) visível(is)`}
+                  titulo="Periodos aquisitivos"
+                  descricao="Consulta dos periodos ja cadastrados para o colaborador selecionado."
+                  resumo={`${ciclosVisiveis.length} periodo(s) visivel(is)`}
                   aberto={secoesAbertas.ciclos}
                   onToggle={() => alternarSecao('ciclos')}
                   acao={(
@@ -1351,19 +1351,19 @@ export default function FeriasPage({
                 {secoesAbertas.ciclos && (
                   <>
                 {loadingCiclos ? (
-                  <p style={{ ...styles.textoNota, marginTop: 12 }}>Carregando ciclos...</p>
+                  <p style={{ ...styles.textoNota, marginTop: 12 }}>Carregando periodos...</p>
                 ) : erro ? (
-                  <EmptyState titulo="Não foi possível carregar férias" descricao={erro} />
+                  <EmptyState titulo="Nao foi possivel carregar ferias" descricao={erro} />
                 ) : ciclosVisiveis.length === 0 ? (
                   <EmptyState
-                    titulo={ciclos.length > 0 ? 'Nenhum ciclo visível' : 'Nenhum ciclo cadastrado'}
-                    descricao={ciclos.length > 0 ? 'Ative Mostrar arquivados para ver ciclos arquivados.' : 'Crie o primeiro ciclo de férias para este funcionário.'}
+                    titulo={ciclos.length > 0 ? 'Nenhum periodo visivel' : 'Nenhum periodo aquisitivo cadastrado'}
+                    descricao={ciclos.length > 0 ? 'Ative Mostrar arquivados para ver periodos arquivados.' : 'Use Adicionar periodo aquisitivo apenas se este colaborador ainda nao tiver periodo cadastrado.'}
                   />
                 ) : (
                   <>
                   <div className="ferias-cycle-results">
-                    <span>{ciclosRenderizados.length} de {ciclosVisiveis.length} ciclo(s) exibido(s)</span>
-                    {ciclosOcultos > 0 && <strong>{ciclosOcultos} ciclo(s) recolhido(s)</strong>}
+                    <span>{ciclosRenderizados.length} de {ciclosVisiveis.length} periodo(s) exibido(s)</span>
+                    {ciclosOcultos > 0 && <strong>{ciclosOcultos} periodo(s) recolhido(s)</strong>}
                   </div>
                   <div className="ferias-cycle-list">
                     {ciclosRenderizados.map((ciclo) => {
@@ -1383,7 +1383,7 @@ export default function FeriasPage({
                             </div>
                             <div className="ferias-cycle-metrics">
                               <span><small>Limite de gozo</small><strong>{formatarDataCurta(ciclo.data_limite_gozo)}</strong></span>
-                              <span><small>Data de atencao</small><strong>{formatarDataCurta(calcularDataAtencaoLimite(ciclo.data_limite_gozo))}</strong></span>
+                              <span><small>Atencao em</small><strong>{formatarDataCurta(calcularDataAtencaoLimite(ciclo.data_limite_gozo))}</strong></span>
                               <span><small>Dias</small><strong>{ciclo.dias_direito || 30}</strong></span>
                             </div>
                             {destaque.rotulo && <em className={`ferias-cycle-alert ${destaque.classe}`}>{destaque.rotulo}</em>}
@@ -1422,7 +1422,7 @@ export default function FeriasPage({
                       type="button"
                       onClick={() => setMostrarTodosCiclos((atual) => !atual)}
                     >
-                      {mostrarTodosCiclos ? 'Recolher ciclos' : `Ver todos os ${ciclosVisiveis.length} ciclos`}
+                      {mostrarTodosCiclos ? 'Recolher periodos' : `Ver todos os ${ciclosVisiveis.length} periodos`}
                     </button>
                   )}
                   </>
@@ -1439,8 +1439,8 @@ export default function FeriasPage({
       {empresaId && funcionarioSelecionadoId && cicloSelecionado && (
         <section className="ferias-card">
           <SectionHeader
-            titulo="Resumo do ciclo selecionado"
-            descricao="Datas, saldo e situação calculada do ciclo."
+            titulo="Resumo do periodo aquisitivo"
+            descricao="Datas, saldo e situacao calculada do periodo."
             resumo={resumoCicloSelecionado}
             aberto={secoesAbertas.resumoCiclo}
             onToggle={() => alternarSecao('resumoCiclo')}
@@ -1451,7 +1451,7 @@ export default function FeriasPage({
                 disabled={salvando || cicloSelecionado.arquivado}
                 onClick={iniciarEdicaoCiclo}
               >
-                Editar ciclo
+                Editar periodo
               </button>
             ) : null}
           />
@@ -1464,7 +1464,7 @@ export default function FeriasPage({
               <strong>{formatarDataCurta(cicloSelecionado.data_limite_gozo)}</strong>
             </div>
             <div className="ferias-summary-box">
-              <span>Atenção a partir de</span>
+              <span>Atencao em</span>
               <strong>{formatarDataCurta(dataAtencaoCicloSelecionado)}</strong>
             </div>
             <div className="ferias-summary-box">
@@ -1472,7 +1472,7 @@ export default function FeriasPage({
               <strong>{cicloSelecionado.dias_direito || 30}</strong>
             </div>
             <div className="ferias-summary-box">
-              <span>Dias já lançados</span>
+              <span>Dias ja lancados</span>
               <strong>{diasLancados}</strong>
             </div>
             <div className="ferias-summary-box">
@@ -1480,7 +1480,7 @@ export default function FeriasPage({
               <strong>{saldoSelecionado ?? 'N/I'}</strong>
             </div>
             <div className="ferias-summary-box">
-              <span>Saldo após lançamento</span>
+              <span>Saldo apos lancamento</span>
               <strong>{quantidadePeriodo ? saldoAposLancamento : 'N/I'}</strong>
             </div>
             <div className="ferias-summary-box">
@@ -1488,14 +1488,14 @@ export default function FeriasPage({
               <strong>{formatarStatus(statusCalculadoSelecionado, STATUS_CICLO_LABELS)}</strong>
             </div>
             <div className="ferias-summary-box">
-              <span>Próxima ação</span>
+              <span>Proxima acao</span>
               <strong>{proximaParcelaTexto}</strong>
             </div>
           </div>
 
           <div className="ferias-preview">
-            A data de atenção é um prazo operacional interno calculado 30 dias antes do limite de gozo.
-            Ela não substitui o limite de gozo e não gera automação.
+            Atencao em e um prazo operacional interno calculado 30 dias antes do limite de gozo.
+            Ela nao substitui o limite de gozo e nao gera automacao.
           </div>
 
           {editandoCiclo && (
@@ -1523,7 +1523,7 @@ export default function FeriasPage({
                     <option value="pendente">Pendente</option>
                     <option value="agendada">Agendada</option>
                     <option value="parcial">Parcial</option>
-                    <option value="concluida">Concluída</option>
+                    <option value="concluida">Concluida</option>
                     <option value="vencida">Vencida</option>
                     <option value="cancelada">Cancelada</option>
                   </select>
@@ -1532,7 +1532,7 @@ export default function FeriasPage({
 
               {Number(formularioEdicaoCiclo.dias_direito || 0) < diasLancados && (
                 <div className="ferias-warning">
-                  Dias de direito não pode ser menor que os dias já lançados neste ciclo.
+                  Dias de direito nao pode ser menor que os dias ja lancados neste periodo.
                 </div>
               )}
 
@@ -1542,7 +1542,7 @@ export default function FeriasPage({
                   type="submit"
                   disabled={salvando || Number(formularioEdicaoCiclo.dias_direito || 0) < diasLancados}
                 >
-                  {salvando ? 'Salvando...' : 'Salvar ciclo'}
+                  {salvando ? 'Salvando...' : 'Salvar periodo'}
                 </button>
                 <button
                   className="ferias-btn ferias-btn-secondary"
@@ -1557,16 +1557,16 @@ export default function FeriasPage({
           )}
 
           <div className="ferias-warning">
-            Não existe seleção manual de férias integral ou parcelada. A situação e o saldo são calculados pela soma
-            das parcelas ativas deste ciclo.
+            Esta tela nao estima ferias gozadas. Periodo de gozo so deve ser lancado quando houver data real de inicio/fim e quantidade de dias.
+            Saldos parciais informados na base original nao viram periodo lancado sem essas datas.
           </div>
             </>
           )}
 
           <SectionHeader
-            titulo="Nova parcela"
-            descricao="Informe início e quantidade de dias; fim e retorno são calculados."
-            resumo={novaParcelaBloqueada ? proximaParcelaTexto : 'Pronta para lançamento'}
+            titulo="Lancar periodo de gozo"
+            descricao="Use apenas quando houver data real de inicio do gozo."
+            resumo={novaParcelaBloqueada ? proximaParcelaTexto : 'Pronto para lancamento com data real'}
             aberto={secoesAbertas.novaParcela}
             onToggle={() => alternarSecao('novaParcela')}
           />
@@ -1576,14 +1576,14 @@ export default function FeriasPage({
           {novaParcelaBloqueada ? (
             <div className="ferias-warning">
               {semSaldoDisponivel
-                ? 'O saldo calculado deste ciclo está zerado. Não há dias disponíveis para nova parcela.'
-                : 'O limite planejado de 3 parcelas ativas foi atingido para este ciclo.'}
+                ? 'O saldo calculado deste periodo esta zerado. Nao ha dias disponiveis para novo gozo.'
+                : 'O limite planejado de 3 periodos de gozo ativos foi atingido para este periodo aquisitivo.'}
             </div>
           ) : (
           <form onSubmit={salvarPeriodo}>
             <div className="ferias-form-grid">
               <label>
-                Data de início
+                Data de inicio
                 <input
                   style={styles.input}
                   type="date"
@@ -1615,7 +1615,7 @@ export default function FeriasPage({
                   disabled={novaParcelaBloqueada}
                 >
                   <option value="agendada">Agendada</option>
-                  <option value="concluida">Concluída</option>
+                  <option value="concluida">Concluida</option>
                   <option value="cancelada">Cancelada</option>
                 </select>
               </label>
@@ -1631,7 +1631,7 @@ export default function FeriasPage({
                     <br />
                     <span>Retorno ao trabalho: {formatarDataCurta(previsaoPeriodo.dataRetorno)}</span>
                     <br />
-                    <span>Essas datas serão enviadas junto com a parcela, sem campo manual de fim ou retorno.</span>
+                    <span>Essas datas serao enviadas junto com o periodo de gozo, sem campo manual de fim ou retorno.</span>
                   </>
                 )}
               </div>
@@ -1639,19 +1639,19 @@ export default function FeriasPage({
 
             {limiteParcelasAtingido && (
               <div className="ferias-warning">
-                O limite planejado de 3 parcelas ativas foi atingido para este ciclo.
+                O limite planejado de 3 periodos de gozo ativos foi atingido para este periodo aquisitivo.
               </div>
             )}
 
             {semSaldoDisponivel && (
               <div className="ferias-warning">
-                O saldo calculado deste ciclo está zerado. Não há dias disponíveis para nova parcela.
+                O saldo calculado deste periodo esta zerado. Nao ha dias disponiveis para novo gozo.
               </div>
             )}
 
             {quantidadeMaiorQueSaldo && (
               <div className="ferias-warning">
-                A quantidade de dias informada é maior que o saldo disponível do ciclo.
+                A quantidade de dias informada e maior que o saldo disponivel do periodo aquisitivo.
               </div>
             )}
 
@@ -1678,20 +1678,20 @@ export default function FeriasPage({
           )}
 
           <SectionHeader
-            titulo="Parcelas do ciclo selecionado"
-            descricao="Histórico de parcelas lançadas para o ciclo."
-            resumo={`${periodosVisiveis.length} parcela(s) visível(is)`}
+            titulo="Periodos de gozo lancados"
+            descricao="Somente gozos com data real de inicio aparecem aqui."
+            resumo={`${periodosVisiveis.length} lancamento(s) visivel(is)`}
             aberto={secoesAbertas.parcelas}
             onToggle={() => alternarSecao('parcelas')}
           />
 
           {secoesAbertas.parcelas && (
           loadingPeriodos ? (
-            <p style={{ ...styles.textoNota, marginTop: 12 }}>Carregando parcelas...</p>
+            <p style={{ ...styles.textoNota, marginTop: 12 }}>Carregando periodos de gozo...</p>
           ) : periodosVisiveis.length === 0 ? (
             <EmptyState
-              titulo={periodos.length > 0 ? 'Nenhuma parcela visível' : 'Nenhuma parcela cadastrada'}
-              descricao={periodos.length > 0 ? 'Ative Mostrar arquivados para ver parcelas arquivadas.' : 'Adicione a primeira parcela de férias deste ciclo.'}
+              titulo={periodos.length > 0 ? 'Nenhum gozo visivel' : 'Nenhum periodo de gozo lancado'}
+              descricao={periodos.length > 0 ? 'Ative Mostrar arquivados para ver gozos arquivados.' : 'Nenhum periodo de gozo lancado com data real.'}
             />
           ) : (
             <div className="ferias-period-list">
@@ -1717,7 +1717,7 @@ export default function FeriasPage({
                     <div className="ferias-period-main">
                       {!editandoPeriodo ? (
                         <>
-                          <strong>Parcela {periodo.numero_parcela || '-'} - {formatarDataCurta(periodo.data_inicio)}</strong>
+                          <strong>Gozo {periodo.numero_parcela || '-'} - {formatarDataCurta(periodo.data_inicio)}</strong>
                           <small>{periodo.quantidade_dias} dia(s) - fim {formatarDataCurta(periodo.data_fim_calculada)} - retorno {formatarDataCurta(periodo.data_retorno_trabalho)}</small>
                           <span className={`ferias-status ${periodo.arquivado ? 'archived' : ''}`}>
                             {obterStatusVisualPeriodo(periodo)}
@@ -1725,7 +1725,7 @@ export default function FeriasPage({
                         </>
                       ) : (
                         <>
-                          <strong>Editar parcela {periodo.numero_parcela || '-'}</strong>
+                          <strong>Editar gozo {periodo.numero_parcela || '-'}</strong>
                           <div className="ferias-form-grid">
                             <label>
                               Data de início
@@ -1779,7 +1779,7 @@ export default function FeriasPage({
 
                           {edicaoMaiorQueSaldo && (
                             <div className="ferias-warning">
-                              A quantidade de dias informada é maior que o saldo disponível considerando esta parcela.
+                              A quantidade de dias informada e maior que o saldo disponivel considerando este gozo.
                             </div>
                           )}
                         </>

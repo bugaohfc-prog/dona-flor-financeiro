@@ -498,9 +498,9 @@ export default function RelatoriosGestaoPessoasPage({
           <IndicadorCard label="Afastados" valor={resumoFuncionarios.afastados} detalhe="Status cadastral" />
           <IndicadorCard label="Desligados" valor={resumoFuncionarios.desligados} detalhe="Não arquivados" />
           <IndicadorCard label="Arquivados" valor={resumoFuncionarios.arquivados} detalhe="Arquivamento lógico" />
-          <IndicadorCard label="Férias vencidas" valor={resumoOperacional.feriasVencidas} detalhe="Ciclos com saldo vencido" />
+          <IndicadorCard label="Períodos vencidos" valor={resumoOperacional.feriasVencidas} detalhe="Aquisitivos com saldo" />
           <IndicadorCard label="Férias a vencer" valor={resumoOperacional.feriasAVencer} detalhe="Próximos 30 dias" />
-          <IndicadorCard label="Férias agendadas" valor={resumoOperacional.feriasAgendadas} detalhe="Períodos ativos" />
+          <IndicadorCard label="Gozos agendados" valor={resumoOperacional.feriasAgendadas} detalhe="Com data real lançada" />
           <IndicadorCard label="Exames previstos" valor={resumoOperacional.examesPrevistos} detalhe="Próximos 30 dias" />
         </section>
 
@@ -508,7 +508,8 @@ export default function RelatoriosGestaoPessoasPage({
           <strong>Consulta visual interna.</strong>
           <p>
             Esta visão não exibe CPF, telefone, e-mail, salário, documentos, laudos, anexos,
-            CID, diagnósticos, resultados de exame ou dados médicos.
+            CID, diagnósticos, resultados de exame ou dados médicos. Relatórios de férias
+            diferenciam período aquisitivo e gozo lançado com data real.
           </p>
         </section>
       </>
@@ -553,8 +554,11 @@ export default function RelatoriosGestaoPessoasPage({
         <section style={styles.cardConfiguracao}>
           <div className="empty-state-card">
             <div className="empty-state-icon">F</div>
-            <strong>Nenhuma competência cadastrada</strong>
-            <p>Crie competências no Fechamento de Folha para consultar o relatório sintético.</p>
+            <strong>Nenhuma competência de folha cadastrada ainda</strong>
+            <p>
+              A base de folha está vazia. Crie manualmente uma competência em Fechamento de Folha
+              quando a empresa for processar a folha; este relatório não cria competência ou lançamento.
+            </p>
           </div>
         </section>
       )
@@ -607,8 +611,8 @@ export default function RelatoriosGestaoPessoasPage({
               {gruposFolha.length === 0 ? (
                 <div className="empty-state-card">
                   <div className="empty-state-icon">F</div>
-                  <strong>Sem lançamentos ativos</strong>
-                  <p>Não há lançamentos ativos para a competência selecionada.</p>
+                  <strong>Nenhum lançamento ativo nesta competência</strong>
+                  <p>Lançamentos de folha são manuais. Este relatório apenas apresenta o que já foi cadastrado.</p>
                 </div>
               ) : (
                 <div className="people-report-payroll-list">
@@ -963,7 +967,7 @@ export default function RelatoriosGestaoPessoasPage({
         <div>
           <span className="master-kicker">Gestão de Pessoas</span>
           <h1 style={styles.titulo}>Relatórios de Gestão de Pessoas</h1>
-          <p style={styles.textoNota}>Visão central para indicadores internos de pessoas, férias e exames.</p>
+          <p style={styles.textoNota}>Visão central para colaboradores, exames, períodos aquisitivos de férias e folha.</p>
           <small style={styles.textoAjuda}>Empresa ativa: <strong>{empresaNome || 'Empresa não identificada'}</strong></small>
         </div>
         <button style={styles.btnCinza} type="button" onClick={voltarPainel}>Voltar ao Painel</button>

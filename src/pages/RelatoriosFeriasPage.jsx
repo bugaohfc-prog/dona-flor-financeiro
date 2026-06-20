@@ -592,7 +592,7 @@ export default function RelatoriosFeriasPage({
         <div>
           <span className="master-kicker">Gestão de Pessoas</span>
           <h1 style={styles.titulo}>Relatórios de Férias</h1>
-          <p style={styles.textoNota}>Visão interna de vencimentos, saldos e períodos por empresa ativa, sem exportação de dados.</p>
+          <p style={styles.textoNota}>Visão interna de períodos aquisitivos, limites de gozo e gozos lançados com data real, sem exportação de dados.</p>
           <small style={styles.textoAjuda}>Empresa ativa: <strong>{empresaNome || 'Empresa não identificada'}</strong></small>
         </div>
         <button style={styles.btnCinza} type="button" onClick={voltarPainel}>← Painel</button>
@@ -633,23 +633,23 @@ export default function RelatoriosFeriasPage({
       ) : (
         <>
           <section className="ferias-report-grid" aria-label="Resumo de férias">
-            <ResumoCard label="Ciclos ativos" valor={relatorio.resumo.ciclosAtivos} detalhe="Ciclos não arquivados" />
-            <ResumoCard label="Férias vencidas" valor={relatorio.resumo.vencidas} detalhe="Com saldo e limite ultrapassado" />
-            <ResumoCard label="Férias a vencer" valor={relatorio.resumo.aVencer} detalhe="Com saldo e limite futuro" />
-            <ResumoCard label="Férias agendadas" valor={relatorio.resumo.agendadas} detalhe="Períodos ativos em aberto" />
-            <ResumoCard label="Férias concluídas" valor={relatorio.resumo.concluidas} detalhe="Inclui conclusão calculada" />
+            <ResumoCard label="Períodos aquisitivos" valor={relatorio.resumo.ciclosAtivos} detalhe="Períodos não arquivados" />
+            <ResumoCard label="Períodos vencidos" valor={relatorio.resumo.vencidas} detalhe="Com saldo e limite ultrapassado" />
+            <ResumoCard label="Períodos a vencer" valor={relatorio.resumo.aVencer} detalhe="Com saldo e limite futuro" />
+            <ResumoCard label="Gozos agendados" valor={relatorio.resumo.agendadas} detalhe="Com data real lançada" />
+            <ResumoCard label="Gozos concluídos" valor={relatorio.resumo.concluidas} detalhe="Com retorno calculado" />
             <ResumoCard label="Com saldo" valor={relatorio.resumo.funcionariosComSaldo} detalhe="Colaboradores com saldo pendente" />
           </section>
 
           <section className="ferias-report-filters" aria-label="Filtros locais dos relatorios de ferias">
             <label className="ferias-report-filter">
-              <span>Secao</span>
+              <span>Seção</span>
               <select value={filtroSecao} onChange={(event) => setFiltroSecao(event.target.value)}>
-                <option value="todos">Todas as secoes</option>
-                <option value="vencidas">Ferias vencidas</option>
-                <option value="aVencer">Ferias a vencer</option>
-                <option value="agendadas">Ferias agendadas</option>
-                <option value="concluidas">Ferias concluidas</option>
+                <option value="todos">Todas as seções</option>
+                <option value="vencidas">Períodos vencidos</option>
+                <option value="aVencer">Períodos a vencer</option>
+                <option value="agendadas">Gozos agendados</option>
+                <option value="concluidas">Gozos concluídos</option>
                 <option value="saldos">Saldos por colaborador</option>
               </select>
             </label>
@@ -657,9 +657,9 @@ export default function RelatoriosFeriasPage({
 
           <div className="ferias-report-columns">
             <SecaoRelatorio
-              titulo="Férias vencidas"
-              descricao="Ciclos com saldo restante e limite de gozo anterior à data atual."
-              vazio="Nenhuma férias vencida encontrada."
+              titulo="Períodos vencidos"
+              descricao="Períodos aquisitivos com saldo restante e limite de gozo anterior à data atual."
+              vazio="Nenhum período aquisitivo vencido com saldo."
               total={relatorio.vencidas.length}
               aberta={secoesAbertas.vencidas}
               expandida={Boolean(listasExpandidas.vencidas)}
@@ -677,9 +677,9 @@ export default function RelatoriosFeriasPage({
             </SecaoRelatorio>
 
             <SecaoRelatorio
-              titulo="Férias a vencer"
-              descricao="Ciclos com saldo restante e limite de gozo futuro. Itens em atenção destacam o prazo interno de 30 dias."
-              vazio="Nenhuma férias a vencer encontrada."
+              titulo="Períodos a vencer"
+              descricao="Períodos aquisitivos com saldo restante e limite de gozo futuro. Itens em atenção destacam o prazo interno de 30 dias."
+              vazio="Nenhum período aquisitivo a vencer com saldo."
               total={relatorio.aVencer.length}
               aberta={secoesAbertas.aVencer}
               expandida={Boolean(listasExpandidas.aVencer)}
@@ -699,9 +699,9 @@ export default function RelatoriosFeriasPage({
 
           <div className="ferias-report-columns">
             <SecaoRelatorio
-              titulo="Férias agendadas"
-              descricao="Períodos ativos com status agendada e retorno ao trabalho ainda não ultrapassado."
-              vazio="Nenhuma férias agendada encontrada."
+              titulo="Gozos agendados"
+              descricao="Períodos de gozo com data real, status agendada e retorno ao trabalho ainda não ultrapassado."
+              vazio="Nenhum período de gozo agendado com data real."
               total={relatorio.agendadas.length}
               aberta={secoesAbertas.agendadas}
               expandida={Boolean(listasExpandidas.agendadas)}
@@ -719,9 +719,9 @@ export default function RelatoriosFeriasPage({
             </SecaoRelatorio>
 
             <SecaoRelatorio
-              titulo="Férias concluídas"
-              descricao="Períodos concluídos ou agendados com retorno já ultrapassado, sem atualização automática no banco."
-              vazio="Nenhuma férias concluída encontrada."
+              titulo="Gozos concluídos"
+              descricao="Períodos de gozo concluídos ou agendados com retorno já ultrapassado, sem atualização automática no banco."
+              vazio="Nenhum período de gozo concluído com data real."
               total={relatorio.concluidas.length}
               aberta={secoesAbertas.concluidas}
               expandida={Boolean(listasExpandidas.concluidas)}
@@ -741,8 +741,8 @@ export default function RelatoriosFeriasPage({
 
           <SecaoRelatorio
             titulo="Saldos por colaborador"
-            descricao="Ciclos ativos com dias de direito, dias lançados, saldo restante e status calculado."
-            vazio="Nenhum ciclo ativo encontrado para exibir saldo."
+            descricao="Períodos aquisitivos ativos com dias de direito, dias lançados, saldo restante e status calculado."
+            vazio="Nenhum período aquisitivo ativo encontrado para exibir saldo."
             total={relatorio.saldos.length}
             aberta={secoesAbertas.saldos}
             expandida={Boolean(listasExpandidas.saldos)}
@@ -770,7 +770,7 @@ export default function RelatoriosFeriasPage({
           </SecaoRelatorio>
 
           <div className="ferias-report-note">
-            Relatórios internos somente para consulta visual. Não há PDF, Excel, CSV, impressão, anexos, documentos,
+            Relatórios internos somente para consulta visual. Períodos de gozo não são estimados; só aparecem quando houver data real lançada. Não há PDF, Excel, CSV, impressão, anexos, documentos,
             valores financeiros, conta a pagar, integração financeira, observações sensíveis ou atualização automática de status.
           </div>
         </>

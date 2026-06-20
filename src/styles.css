@@ -29,12 +29,6 @@
   text-transform: uppercase;
 }
 
-.app-recovery-logo {
-  width: min(220px, 100%);
-  height: auto;
-  max-width: 100%;
-}
-
 .app-recovery-card h1 {
   margin: 0;
   font-size: 24px;
@@ -621,20 +615,6 @@
   flex: 0 0 48px;
 }
 
-.top-shell-clean .top-shell-logo > img.top-shell-logo-horizontal {
-  width: clamp(118px, 14vw, 168px) !important;
-  height: auto !important;
-  max-width: 42vw;
-  flex: 0 1 auto;
-}
-
-.top-shell-clean .top-shell-logo > img.top-shell-logo-icon {
-  display: none !important;
-  width: 38px !important;
-  height: 38px !important;
-  flex: 0 0 38px;
-}
-
 .top-shell-clean .top-shell-logo > span {
   display: flex !important;
   flex-direction: column !important;
@@ -660,40 +640,8 @@
   color: #0f172a !important;
 }
 
-.top-shell-clean .top-shell-logo > span.top-shell-logo-copy strong {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
 .top-shell-clean .top-shell-logo > span small {
   color: #64748b !important;
-}
-
-@media (max-width: 640px) {
-  .top-shell-clean .top-shell-logo {
-    gap: 8px !important;
-  }
-
-  .top-shell-clean .top-shell-logo > img.top-shell-logo-horizontal {
-    display: none !important;
-  }
-
-  .top-shell-clean .top-shell-logo > img.top-shell-logo-icon {
-    display: block !important;
-  }
-
-  .top-shell-clean .top-shell-logo > span.top-shell-logo-copy strong {
-    position: static;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    clip: auto;
-    white-space: nowrap;
-  }
 }
 
 /* Configuracoes */

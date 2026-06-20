@@ -40,9 +40,8 @@ function Topbar({
     <section className="no-print top-shell top-shell-clean" style={styles.usuarioTopo}>
       <div className="top-shell-context">
         <button className="top-shell-logo" style={styles.logoMarca} onClick={abrirDashboard} title="Ir para o painel">
-          <img className="top-shell-logo-horizontal" src="/assets/branding/dna_gestao_logo_horizontal.svg" alt="DNA Gestão" />
-          <img className="top-shell-logo-icon" src="/assets/branding/dna_gestao_icone_app.svg" alt="" aria-hidden="true" />
-          <span className="top-shell-logo-copy">
+          <img src="/icon-192.png" alt="DNA Gestão" style={styles.logoImagem} />
+          <span>
             <strong>DNA Gestão</strong>
             <small>{nomeEmpresaAtiva} &bull; {contextoModuloAtual}</small>
           </span>

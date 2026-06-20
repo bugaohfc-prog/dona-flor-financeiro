@@ -74,7 +74,7 @@ function Sidebar({
   return (
     <aside className={`desktop-sidebar no-print ${sidebarCompacta ? 'compacta' : ''}`}>
       <div className="desktop-sidebar-brand sidebar-brand-clean" title="DNA Gestão">
-        <img src="/assets/branding/dna_gestao_icone_app.svg" alt="DNA Gestão" />
+        <img src="/icon-192.png" alt="DNA Gestão" />
         {!sidebarCompacta && (
           <div>
             <strong>DNA Gestão</strong>

@@ -125,7 +125,7 @@ function MobileMenu({
         onTouchMove={(e) => e.stopPropagation()}
       >
         <div style={styles.menuPerfil}>
-          <img src="/assets/branding/dna_gestao_icone_app.svg" alt="DNA Gestão" style={styles.menuPerfilIcone} />
+          <img src="/icon-192.png" alt="DNA Gestão" style={styles.menuPerfilIcone} />
           <div style={{ display: 'grid', gap: 2 }}>
             <strong>DNA Gestão</strong>
             <small>{nomeExibicao} • {perfilExibicao}</small>

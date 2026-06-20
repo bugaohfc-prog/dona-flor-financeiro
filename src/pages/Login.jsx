@@ -47,7 +47,7 @@ export default function Login({ onLogin }) {
   return (
     <div style={styles.page}>
       <form style={styles.card} onSubmit={handleLogin}>
-        <img src="/assets/branding/dna_gestao_logo_horizontal.svg" alt="DNA Gestão" style={styles.logo} />
+        <h1 style={styles.titulo}>DNA Gestão</h1>
         <p style={styles.subtitulo}>Acesse sua conta para continuar</p>
 
         <input
@@ -99,11 +99,9 @@ const styles = {
     flexDirection: 'column',
     gap: 10
   },
-  logo: {
-    width: 'min(220px, 100%)',
-    height: 'auto',
-    alignSelf: 'center',
-    marginBottom: 4
+  titulo: {
+    margin: 0,
+    fontSize: 26
   },
   subtitulo: {
     margin: '0 0 10px',

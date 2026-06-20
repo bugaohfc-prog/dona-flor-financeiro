@@ -5521,6 +5521,152 @@
   }
 }
 
+/* Lixeira - refinamento final responsivo */
+.trash-page,
+.trash-page * {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.trash-page-header {
+  padding: 18px;
+  border: 1px solid #dbe7e3;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 54%, #eef8f5 100%);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, .06);
+}
+
+.trash-page-header h1 {
+  line-height: 1.08;
+}
+
+.trash-summary {
+  margin-top: 12px;
+}
+
+.trash-summary div {
+  position: relative;
+  overflow: hidden;
+}
+
+.trash-summary div::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0f766e, #14b8a6);
+}
+
+.trash-bulk-bar {
+  position: sticky;
+  top: 8px;
+  z-index: 6;
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, .94);
+}
+
+.trash-sections-grid {
+  align-items: stretch;
+}
+
+.trash-section {
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.trash-section-accounts {
+  background: linear-gradient(180deg, #fbfefd 0%, #f0fdfa 100%) !important;
+}
+
+.trash-section-notes {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+}
+
+.trash-section-header {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #edf2f0;
+}
+
+.trash-section-tools {
+  align-self: flex-start;
+}
+
+.trash-selection-row {
+  margin-top: 0;
+}
+
+.trash-list {
+  align-content: start;
+}
+
+.trash-card {
+  transition: border-color .16s ease, transform .16s ease, box-shadow .16s ease;
+}
+
+.trash-card:hover {
+  border-color: #99f6e4 !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, .08) !important;
+  transform: translateY(-1px);
+}
+
+.trash-card-check {
+  align-self: start;
+}
+
+.trash-card-actions {
+  justify-content: end;
+}
+
+.trash-action-danger {
+  font-weight: 950 !important;
+}
+
+@media (min-width: 1180px) {
+  .trash-list {
+    gap: 10px;
+  }
+
+  .trash-card-top {
+    grid-template-columns: auto minmax(0, 1fr) max-content;
+  }
+}
+
+@media (max-width: 760px) {
+  .trash-page-header {
+    padding: 15px;
+    border-radius: 18px;
+  }
+
+  .trash-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .trash-section-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .trash-card:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 460px) {
+  .trash-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .trash-card-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .trash-card-top {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /* Relatorios financeiros */
 .relatorios-page {
   width: min(100%, var(--df-dashboard-max, 1280px));

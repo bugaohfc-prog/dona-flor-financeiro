@@ -36,7 +36,7 @@ const menuSections = [
       { tela: 'master-empresas', icon: '🏢', label: 'Empresas', desc: 'Administração de empresas', masterOnly: true },
       { tela: 'configuracoes', icon: '⚙️', label: 'Configurações', desc: 'Preferências da empresa' },
       { tela: 'billing', icon: '💼', label: 'Plano comercial', desc: 'Planos, limites e contratação' },
-      { tela: 'onboarding', icon: '🚀', label: 'Configuração inicial', desc: 'Preparação da empresa' },
+      { tela: 'onboarding', icon: '🚀', label: 'Configuração inicial', desc: 'Assistente de preparação' },
       { tela: 'lixeira', icon: '🗑️', label: 'Lixeira', desc: 'Restaurar ou excluir definitivo' }
     ]
   }

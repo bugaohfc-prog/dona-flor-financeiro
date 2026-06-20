@@ -16,7 +16,7 @@ function StepCard({ numero, titulo, descricao, concluido, ativo, children }) {
     <section className={`onboarding-step-card ${concluido ? 'done' : ''} ${ativo ? 'active' : ''}`}>
       <div className="onboarding-step-head">
         <div className="onboarding-step-number">{concluido ? '✓' : numero}</div>
-        <div>
+        <div className="onboarding-step-copy">
           <span>{concluido ? 'Concluído' : ativo ? 'Próximo passo' : 'Pendente'}</span>
           <h3>{titulo}</h3>
           <p>{descricao}</p>
@@ -151,16 +151,22 @@ export default function OnboardingPage({
   }
 
   return (
-    <>
-      <h1 style={styles.titulo}>Configuração inicial</h1>
-      <button style={styles.btnCinza} onClick={voltarPainel}>← Voltar</button>
+    <div className="onboarding-page">
+      <header className="onboarding-page-header">
+        <div className="onboarding-page-heading">
+          <span className="onboarding-eyebrow">Assistente de configuração inicial</span>
+          <h1>Configuração inicial</h1>
+          <p>Prepare a empresa para operar com unidade/filial, centro de custo e primeira conta.</p>
+        </div>
+        <button style={styles.btnCinza} className="onboarding-back-button" onClick={voltarPainel}>Voltar</button>
+      </header>
 
-      <section style={styles.cardConfiguracao} className="onboarding-hero">
+      <section style={styles.cardConfiguracao} className="onboarding-panel onboarding-hero">
         <div>
-          <span className="onboarding-eyebrow">Configuração inicial</span>
+          <span className="onboarding-eyebrow">Guia operacional</span>
           <h2 style={styles.subtitulo}>Deixe a empresa pronta para operar</h2>
           <p style={styles.textoNota}>
-            Empresa: <strong>{empresaNome || 'Empresa atual'}</strong>. Este fluxo prepara a primeira unidade, centro de custo e conta para ativar o painel financeiro.
+            Empresa: <strong>{empresaNome || 'Empresa atual'}</strong>. Este fluxo prepara a primeira unidade/filial, centro de custo e conta para ativar o painel financeiro.
           </p>
         </div>
         <div className="onboarding-progress-box">
@@ -171,7 +177,7 @@ export default function OnboardingPage({
       </section>
 
       <section className="onboarding-kpi-grid">
-        <div><span>Filiais</span><strong>{filiaisAtivas.length}</strong></div>
+        <div><span>Unidades/Filiais</span><strong>{filiaisAtivas.length}</strong></div>
         <div><span>Centros de custo</span><strong>{centros.length}</strong></div>
         <div><span>Contas ativas</span><strong>{contasAtivas.length}</strong></div>
         <div><span>Status</span><strong>{onboardingCompleto ? 'Pronto' : 'Em andamento'}</strong></div>
@@ -190,13 +196,16 @@ export default function OnboardingPage({
 
         <StepCard
           numero="2"
-          titulo="Primeira filial"
+          titulo="Primeira unidade/filial"
           descricao="Crie a unidade inicial para separar operação e indicadores."
           concluido={status.filial}
           ativo={proximaEtapa === 'filial'}
         >
-          <input style={styles.input} value={nomeFilial} onChange={(e) => setNomeFilial(e.target.value)} placeholder="Ex: Loja Centro" />
-          <button style={styles.btnSalvar} disabled={salvando} onClick={criarPrimeiraFilial}>{salvando ? 'Criando...' : 'Criar primeira filial'}</button>
+          <label className="onboarding-field">
+            <span>Nome da unidade/filial</span>
+            <input style={styles.input} value={nomeFilial} onChange={(e) => setNomeFilial(e.target.value)} placeholder="Ex: Loja Centro" />
+          </label>
+          <button style={styles.btnSalvar} disabled={salvando} onClick={criarPrimeiraFilial}>{salvando ? 'Criando...' : 'Criar primeira unidade/filial'}</button>
         </StepCard>
 
         <StepCard
@@ -206,7 +215,10 @@ export default function OnboardingPage({
           concluido={status.centro}
           ativo={proximaEtapa === 'centro'}
         >
-          <input style={styles.input} value={nomeCentro} onChange={(e) => setNomeCentro(e.target.value)} placeholder="Ex: Operacional" />
+          <label className="onboarding-field">
+            <span>Nome do centro de custo</span>
+            <input style={styles.input} value={nomeCentro} onChange={(e) => setNomeCentro(e.target.value)} placeholder="Ex: Operacional" />
+          </label>
           <button style={styles.btnSalvar} disabled={salvando} onClick={criarPrimeiroCentro}>{salvando ? 'Criando...' : 'Criar centro de custo'}</button>
         </StepCard>
 
@@ -218,17 +230,32 @@ export default function OnboardingPage({
           ativo={proximaEtapa === 'conta'}
         >
           <div className="onboarding-form-grid">
-            <input style={styles.input} value={contaDescricao} onChange={(e) => setContaDescricao(e.target.value)} placeholder="Descrição" />
-            <input style={styles.input} value={contaValor} onChange={(e) => setContaValor(e.target.value)} placeholder="Valor" />
-            <input style={styles.input} type="date" value={contaData} onChange={(e) => setContaData(e.target.value)} />
-            <select style={styles.input} value={filialContaId} onChange={(e) => setFilialContaId(e.target.value)}>
-              <option value="">{filiaisAtivas[0]?.nome || 'Filial padrão'}</option>
-              {filiaisAtivas.map((filial) => <option key={filial.id} value={filial.id}>{filial.nome}</option>)}
-            </select>
-            <select style={styles.input} value={centroContaId} onChange={(e) => setCentroContaId(e.target.value)}>
-              <option value="">{centros[0]?.nome || 'Centro padrão'}</option>
-              {centros.map((centro) => <option key={centro.id} value={centro.id}>{centro.nome}</option>)}
-            </select>
+            <label className="onboarding-field">
+              <span>Descrição</span>
+              <input style={styles.input} value={contaDescricao} onChange={(e) => setContaDescricao(e.target.value)} placeholder="Descrição" />
+            </label>
+            <label className="onboarding-field">
+              <span>Valor</span>
+              <input style={styles.input} value={contaValor} onChange={(e) => setContaValor(e.target.value)} placeholder="Valor" />
+            </label>
+            <label className="onboarding-field">
+              <span>Vencimento</span>
+              <input style={styles.input} type="date" value={contaData} onChange={(e) => setContaData(e.target.value)} />
+            </label>
+            <label className="onboarding-field">
+              <span>Unidade/Filial</span>
+              <select style={styles.input} value={filialContaId} onChange={(e) => setFilialContaId(e.target.value)}>
+                <option value="">{filiaisAtivas[0]?.nome || 'Unidade/filial padrão'}</option>
+                {filiaisAtivas.map((filial) => <option key={filial.id} value={filial.id}>{filial.nome}</option>)}
+              </select>
+            </label>
+            <label className="onboarding-field">
+              <span>Centro de custo</span>
+              <select style={styles.input} value={centroContaId} onChange={(e) => setCentroContaId(e.target.value)}>
+                <option value="">{centros[0]?.nome || 'Centro padrão'}</option>
+                {centros.map((centro) => <option key={centro.id} value={centro.id}>{centro.nome}</option>)}
+              </select>
+            </label>
           </div>
           <button style={styles.btnSalvar} disabled={salvando} onClick={criarPrimeiraConta}>{salvando ? 'Criando...' : 'Criar primeira conta'}</button>
         </StepCard>
@@ -240,10 +267,10 @@ export default function OnboardingPage({
           concluido={onboardingCompleto}
           ativo={proximaEtapa === 'dashboard'}
         >
-          <p style={styles.textoNota}>Base inicial concluída. Revise os indicadores, ranking de unidades e filtros por filial.</p>
+          <p style={styles.textoNota}>Base inicial concluída. Revise os indicadores e filtros por unidade/filial.</p>
           <button style={styles.btnSalvar} onClick={abrirDashboard}>Ir para o painel financeiro</button>
         </StepCard>
       </div>
-    </>
+    </div>
   )
 }

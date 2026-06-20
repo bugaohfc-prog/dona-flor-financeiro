@@ -337,13 +337,14 @@ export default function RelatoriosContasPage({
     exportarRelatorioContasExcel(contasFiltradas, contextoExportacao)
   }
 
-  function imprimir() {
+  function imprimir(modo = 'compacto') {
     if (!garantirPermissaoExportacao()) return
     const abriu = imprimirRelatorioContas({
       linhas: contasFiltradas,
       grupos,
       contexto: contextoExportacao,
-      resumo
+      resumo,
+      modo
     })
     if (!abriu) mostrarAviso?.('Não foi possível abrir a janela de impressão. Verifique o bloqueador de pop-ups.', 'erro')
   }
@@ -505,8 +506,11 @@ export default function RelatoriosContasPage({
           <p>{possuiTipoSelecionado ? 'Exporte exatamente a lista filtrada deste relatório.' : 'Selecione pelo menos um tipo de conta para liberar a exportação.'}</p>
         </div>
         <div className="relatorios-contas-export-actions">
-          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={imprimir} disabled={!possuiTipoSelecionado || !contasFiltradas.length}>
-            Imprimir / PDF
+          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={() => imprimir('compacto')} disabled={!possuiTipoSelecionado || !contasFiltradas.length}>
+            PDF compacto
+          </button>
+          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={() => imprimir('gerencial')} disabled={!possuiTipoSelecionado || !contasFiltradas.length}>
+            PDF gerencial
           </button>
           <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={exportarCsv} disabled={!possuiTipoSelecionado || !contasFiltradas.length}>
             Exportar CSV

@@ -12,19 +12,20 @@
       <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#0B2D33" flood-opacity="0.16"/>
     </filter>
   </defs>
-  <rect x="26" y="26" width="460" height="460" rx="116" fill="#0F5B56" filter="url(#softShadow)"/>
+  <rect x="18" y="18" width="476" height="476" rx="126" fill="#EAF6F3"/>
+  <rect x="64" y="64" width="384" height="384" rx="104" fill="url(#dgGradient)" filter="url(#softShadow)"/>
 
   <g transform="translate(128 144) scale(1.42)">
     <path d="M23 18 H89 C132 18 166 50 166 93 C166 136 132 168 89 168 H23 Z
              M54 49 V137 H89 C113 137 132 118 132 93 C132 68 113 49 89 49 Z"
-          fill="#FFFFFF" fill-rule="evenodd"/>
+          fill="#EAF6F3" fill-rule="evenodd"/>
     <path d="M88 76 H166 C173 76 178 81 178 88 V106 H139
              C130 106 123 113 123 122 C123 131 130 138 139 138 H178
              V151 C178 159 172 165 164 165 H96 C63 165 37 139 37 106
              C37 99 38 92 40 86 H79 C75 91 73 98 73 106
              C73 121 84 132 99 132 H137 V113 H100 V96 H178
              V87 C178 81 173 76 167 76 Z"
-          fill="#EAF6F3"/>
-    <path d="M55 102 C77 80 105 75 134 86" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+          fill="#1AA187"/>
+    <path d="M55 102 C77 80 105 75 134 86" fill="none" stroke="#0B2D33" stroke-width="14" stroke-linecap="round"/>
   </g>
 </svg>

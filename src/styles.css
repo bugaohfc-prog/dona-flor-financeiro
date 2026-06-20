@@ -630,9 +630,9 @@
 
 .top-shell-clean .top-shell-logo > img.top-shell-logo-icon {
   display: none !important;
-  width: 42px !important;
-  height: 42px !important;
-  flex: 0 0 42px;
+  width: 38px !important;
+  height: 38px !important;
+  flex: 0 0 38px;
 }
 
 .top-shell-clean .top-shell-logo > span {

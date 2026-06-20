@@ -4009,6 +4009,11 @@
   background: #ddfbe8 !important;
 }
 
+.account-card-desktop.account-card-hidden {
+  border-color: #99f6e4 !important;
+  background: #f0fdfa !important;
+}
+
 .account-card-desktop.account-card-paga::before {
   background: #16a34a;
 }
@@ -4087,9 +4092,15 @@
   color: #166534 !important;
 }
 
+.account-card-hidden .status-oculto {
+  border-color: #14b8a6 !important;
+  background: #ccfbf1 !important;
+  color: #115e59 !important;
+}
+
 .account-actions {
   display: grid !important;
-  grid-template-columns: repeat(3, minmax(88px, max-content));
+  grid-template-columns: repeat(auto-fit, minmax(88px, max-content));
   justify-content: start;
   gap: 8px !important;
   width: 100%;
@@ -4113,6 +4124,13 @@
   background: #fff1f2 !important;
   color: #991b1b !important;
   opacity: 1 !important;
+}
+
+.account-actions .account-action-hide,
+.account-actions .account-action-restore {
+  border-color: #99f6e4 !important;
+  background: #ecfdf5 !important;
+  color: #0f766e !important;
 }
 
 @media (max-width: 900px) {

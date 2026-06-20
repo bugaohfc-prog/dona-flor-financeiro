@@ -16,6 +16,7 @@ const ABAS_STATUS_CONTAS = [
   { valor: 'pendentes', label: 'Abertas' },
   { valor: 'vencidas', label: 'Vencidas' },
   { valor: 'pagas', label: 'Pagas' },
+  { valor: 'ocultas', label: 'Ocultas' },
   { valor: 'todas', label: 'Todas' }
 ]
 
@@ -52,6 +53,13 @@ const ACCOUNT_DANGER_ACTION_STYLE = {
   border: '1px solid #fecaca',
   background: '#fffafa',
   opacity: 0.78
+}
+
+const ACCOUNT_HIDE_ACTION_STYLE = {
+  ...ACCOUNT_SECONDARY_ACTION_STYLE,
+  color: '#0f766e',
+  border: '1px solid #99f6e4',
+  background: '#ecfdf5'
 }
 
 function obterTimestampVencimento(conta, fallback) {
@@ -175,7 +183,7 @@ export default function ContasPage({
   filtroStatus, setFiltroStatus, centros, filtroCentro, setFiltroCentro, filiais, filtroFilial, setFiltroFilial, filtroMes, setFiltroMes,
   dataInicial, setDataInicial, dataFinal, setDataFinal, limitarDataInput, contas = [], contasFiltradas, agendaFocusTarget, onAgendaFocusHandled, total, formatarValor,
   loading, mostrarContas, setMostrarContas, estaVencida, formatarData, formatarTipoRecorrencia,
-  obterTipoRecorrenciaConta, abrirConfirmacao, marcarComoPago, voltarParaPendente, abrirEdicaoConta, excluirConta,
+  obterTipoRecorrenciaConta, abrirConfirmacao, marcarComoPago, voltarParaPendente, abrirEdicaoConta, excluirConta, ocultarConta, reexibirConta,
   navegarPara, podeEditarFinanceiro = true, podeExportarDados = true
 }) {
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
@@ -192,10 +200,12 @@ export default function ContasPage({
   }, [contaAlvoAgendaId, contas, contasFiltradas])
   const contasParaListagem = useMemo(() => {
     if (!contaAlvoAgenda) return contasFiltradas
+    if (contaAlvoAgenda.oculto === true && filtroStatus !== 'ocultas') return contasFiltradas
     const jaEstaFiltrada = contasFiltradas.some((conta) => String(conta.id) === String(contaAlvoAgenda.id))
     return jaEstaFiltrada ? contasFiltradas : [contaAlvoAgenda, ...contasFiltradas]
-  }, [contaAlvoAgenda, contasFiltradas])
+  }, [contaAlvoAgenda, contasFiltradas, filtroStatus])
   const contasOrdenadas = ordenarContasParaListagem(contasParaListagem, ordenacaoContas, filtroStatus, estaVencida)
+  const statusAtualLabel = ABAS_STATUS_CONTAS.find((aba) => aba.valor === filtroStatus)?.label || filtroStatus
   const resumoResultadoFiltrado = useMemo(
     () => calcularResumoResultadoFiltrado(contasFiltradas),
     [contasFiltradas]
@@ -328,7 +338,7 @@ export default function ContasPage({
         <small className="accounts-result-context">
           Filial: {filtroFilial ? (filiais || []).find((filial) => filial.id === filtroFilial)?.nome || 'Selecionada' : 'Todas'} •
           Centro: {filtroCentro ? centros.find((centro) => centro.id === filtroCentro)?.nome || 'Selecionado' : 'Todos'} •
-          Status: {filtroStatus} •
+          Status: {statusAtualLabel} •
           Mês: {filtroMes || 'Todos'}
         </small>
       </section>
@@ -356,8 +366,10 @@ export default function ContasPage({
         {!loading && mostrarContas && contasOrdenadas.length === 0 && (
           <EmptyState
             icon="💳"
-            title="Nenhuma conta encontrada"
-            description="Ajuste os filtros ou cadastre uma nova conta para acompanhar os vencimentos da empresa."
+            title={filtroStatus === 'ocultas' ? 'Nenhuma conta oculta' : 'Nenhuma conta encontrada'}
+            description={filtroStatus === 'ocultas'
+              ? 'As contas ocultas aparecerão aqui quando forem retiradas da visão principal.'
+              : 'Ajuste os filtros ou cadastre uma nova conta para acompanhar os vencimentos da empresa.'}
           />
         )}
 
@@ -373,11 +385,12 @@ export default function ContasPage({
           const desconto = Number(conta.desconto || 0)
           const exibirBaixaReal = conta.status === 'pago' && conta.valor_pago !== null && conta.valor_pago !== undefined
           const valorPrincipal = exibirBaixaReal ? valorPago : valorPrevisto
+          const oculta = conta.oculto === true
 
           return (
             <div
               ref={destacadaPelaAgenda ? contaDestacadaRef : null}
-              className={`print-card account-card-desktop ${destacadaPelaAgenda ? 'account-card-agenda-focus' : ''} ${exibirBaixaReal ? 'account-card-payment-real' : ''} ${vencida ? 'account-card-vencida' : conta.status === 'pago' ? 'account-card-paga' : 'account-card-pendente'}`}
+              className={`print-card account-card-desktop ${destacadaPelaAgenda ? 'account-card-agenda-focus' : ''} ${exibirBaixaReal ? 'account-card-payment-real' : ''} ${oculta ? 'account-card-hidden' : ''} ${vencida ? 'account-card-vencida' : conta.status === 'pago' ? 'account-card-paga' : 'account-card-pendente'}`}
               key={conta.id}
               style={{
                 ...styles.cardConta,
@@ -438,6 +451,7 @@ export default function ContasPage({
                   <span className={`status-pill ${vencida ? 'status-vencido' : conta.status === 'pago' ? 'status-pago' : 'status-pendente'}`}>
                     {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}
                   </span>
+                  {oculta && <span className="status-pill status-oculto">Oculta</span>}
                 </div>
               </div>
 
@@ -464,6 +478,16 @@ export default function ContasPage({
                 <button className="account-action-button account-action-secondary" style={{ ...styles.btnEditar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirEdicaoConta(conta)}>
                   Editar
                 </button>
+
+                {oculta ? (
+                  <button className="account-action-button account-action-restore" style={ACCOUNT_HIDE_ACTION_STYLE} onClick={() => abrirConfirmacao({ titulo: 'Reexibir conta', mensagem: `Deseja reexibir a conta ${conta.descricao} na visão principal?`, textoConfirmar: 'Reexibir', tipo: 'aviso', acao: () => reexibirConta(conta.id) })}>
+                    Reexibir
+                  </button>
+                ) : (
+                  <button className="account-action-button account-action-hide" style={ACCOUNT_HIDE_ACTION_STYLE} onClick={() => abrirConfirmacao({ titulo: 'Ocultar conta', mensagem: `Ocultar esta conta da visão principal? A conta ${conta.descricao} não será excluída e poderá ser reexibida depois.`, textoConfirmar: 'Ocultar', tipo: 'aviso', acao: () => ocultarConta(conta.id) })}>
+                    Ocultar
+                  </button>
+                )}
 
                 <button className="account-action-button account-action-danger" style={{ ...styles.btnExcluir, ...ACCOUNT_DANGER_ACTION_STYLE }} onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
                   Excluir

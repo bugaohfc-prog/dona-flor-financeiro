@@ -14,6 +14,8 @@ import {
   listarContasDoMesParaRecorrencia,
   listarRecorrenciasAtivas,
   listarRecorrenciasPorDia,
+  ocultarConta as ocultarContaService,
+  reexibirConta as reexibirContaService,
   validarCentroCustoDaEmpresa,
   validarFilialDaEmpresa,
   vincularRecorrenciaNaConta
@@ -563,6 +565,32 @@ export function useContas() {
     mostrarAviso?.('Conta enviada para a lixeira.', 'sucesso')
   }
 
+  async function ocultarConta(contexto) {
+    const { supabase, id, empresaId, avisarErro, buscarContas, mostrarAviso } = contexto
+    const { error } = await ocultarContaService(supabase, id, empresaId)
+
+    if (error) {
+      avisarErro(error)
+      return
+    }
+
+    await buscarContas()
+    mostrarAviso?.('Conta oculta da visão principal.', 'sucesso')
+  }
+
+  async function reexibirConta(contexto) {
+    const { supabase, id, empresaId, avisarErro, buscarContas, mostrarAviso } = contexto
+    const { error } = await reexibirContaService(supabase, id, empresaId)
+
+    if (error) {
+      avisarErro(error)
+      return
+    }
+
+    await buscarContas()
+    mostrarAviso?.('Conta reexibida na visão principal.', 'sucesso')
+  }
+
   return {
     contas,
     setContas,
@@ -623,6 +651,8 @@ export function useContas() {
     salvarConta,
     marcarComoPago,
     voltarParaPendente,
-    excluirConta
+    excluirConta,
+    ocultarConta,
+    reexibirConta
   }
 }

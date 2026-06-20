@@ -270,7 +270,9 @@ export default function App() {
     salvarConta: salvarContaHook,
     marcarComoPago: marcarComoPagoHook,
     voltarParaPendente: voltarParaPendenteHook,
-    excluirConta: excluirContaHook
+    excluirConta: excluirContaHook,
+    ocultarConta: ocultarContaHook,
+    reexibirConta: reexibirContaHook
   } = useContas()
 
   // =========================
@@ -1766,6 +1768,8 @@ export default function App() {
 
   const contasFiltradas = useMemo(() => contas
     .filter((conta) => {
+      if (filtroStatus === 'ocultas') return conta.oculto === true
+      if (conta.oculto === true) return false
       if (filtroStatus === 'pendentes') return conta.status !== 'pago'
       if (filtroStatus === 'pagas') return conta.status === 'pago'
       if (filtroStatus === 'vencidas') return estaVencida(conta.data_vencimento, conta.status)
@@ -1810,6 +1814,7 @@ export default function App() {
 
   const contasOperacionaisFiliais = useMemo(() => contas
     .filter((conta) => {
+      if (conta.oculto === true) return false
       if (filtroStatus === 'pendentes') return conta.status !== 'pago'
       if (filtroStatus === 'pagas') return conta.status === 'pago'
       if (filtroStatus === 'vencidas') return estaVencida(conta.data_vencimento, conta.status)
@@ -2021,6 +2026,24 @@ export default function App() {
     }
 
     return excluirContaHook({ supabase, id, empresaId, avisarErro, buscarContas, buscarLixeira, mostrarAviso })
+  }
+
+  async function ocultarConta(id) {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
+    return ocultarContaHook({ supabase, id, empresaId, avisarErro, buscarContas, mostrarAviso })
+  }
+
+  async function reexibirConta(id) {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
+    return reexibirContaHook({ supabase, id, empresaId, avisarErro, buscarContas, mostrarAviso })
   }
 
   // =========================
@@ -4483,6 +4506,8 @@ export default function App() {
         voltarParaPendente={voltarParaPendente}
         abrirEdicaoConta={abrirEdicaoConta}
         excluirConta={excluirConta}
+        ocultarConta={ocultarConta}
+        reexibirConta={reexibirConta}
         navegarPara={navegarPara}
       />
     )

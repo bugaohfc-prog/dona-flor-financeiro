@@ -159,6 +159,20 @@ export async function enviarContaParaLixeira(supabase, id, empresaId) {
   })
 }
 
+export async function ocultarConta(supabase, id, empresaId) {
+  return atualizarConta(supabase, id, empresaId, {
+    oculto: true,
+    oculto_em: new Date().toISOString()
+  })
+}
+
+export async function reexibirConta(supabase, id, empresaId) {
+  return atualizarConta(supabase, id, empresaId, {
+    oculto: false,
+    oculto_em: null
+  })
+}
+
 
 function deveTentarSemFilial(error, payload) {
   return Boolean(error && payload && Object.prototype.hasOwnProperty.call(payload, 'filial_id') && ehErroColunaFilialAusente(error))

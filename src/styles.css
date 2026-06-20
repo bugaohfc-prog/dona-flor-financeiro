@@ -6100,6 +6100,78 @@
   box-shadow: 0 12px 30px rgba(15, 23, 42, .055) !important;
 }
 
+.settings-admin-page {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+  max-width: 1180px;
+}
+
+.settings-admin-page > .admin-page-hero,
+.settings-admin-page > .settings-notifications-card,
+.settings-admin-page > .settings-alert-recipients-card,
+.settings-admin-page > .admin-sticky-actions {
+  grid-column: 1 / -1;
+}
+
+.settings-admin-page > .settings-business-card,
+.settings-admin-page > .settings-recurrence-card,
+.settings-admin-page > .settings-costcenter-card,
+.settings-admin-page > .settings-branches-card {
+  grid-column: span 6;
+}
+
+.settings-admin-page > .settings-usage-card {
+  grid-column: 1 / -1;
+}
+
+.settings-admin-page .admin-page-hero {
+  padding: 20px;
+  border-radius: 22px;
+}
+
+.settings-admin-page .admin-config-card {
+  position: relative;
+  max-width: 100%;
+}
+
+.settings-admin-page .admin-config-card::before {
+  content: "";
+  display: block;
+  height: 4px;
+  background: linear-gradient(90deg, #0f766e, #14b8a6);
+}
+
+.settings-admin-page .settings-alert-recipients-card::before {
+  background: linear-gradient(90deg, #0f766e, #2563eb);
+}
+
+.settings-admin-page .settings-recurrence-card::before,
+.settings-admin-page .settings-usage-card::before {
+  background: linear-gradient(90deg, #334155, #0f766e);
+}
+
+.settings-admin-page .settings-costcenter-card::before,
+.settings-admin-page .settings-branches-card::before {
+  background: linear-gradient(90deg, #0f766e, #84cc16);
+}
+
+.settings-admin-page .admin-card-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-admin-page .admin-recipient-form {
+  background: linear-gradient(135deg, #f8fffd 0%, #f8fafc 100%);
+}
+
+.settings-admin-page .admin-summary-strip {
+  align-items: center;
+}
+
+.settings-admin-page .admin-summary-strip span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
 .admin-page .admin-section-toggle {
   width: 100% !important;
   min-height: auto !important;
@@ -6508,6 +6580,21 @@
 }
 
 @media (max-width: 980px) {
+  .settings-admin-page {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-admin-page > .settings-business-card,
+  .settings-admin-page > .settings-recurrence-card,
+  .settings-admin-page > .settings-costcenter-card,
+  .settings-admin-page > .settings-branches-card {
+    grid-column: 1 / -1;
+  }
+
+  .settings-admin-page .admin-card-list {
+    grid-template-columns: 1fr;
+  }
+
   .admin-page-hero,
   .admin-form-grid,
   .admin-config-grid,
@@ -6543,6 +6630,10 @@
     padding-bottom: 130px;
   }
 
+  .settings-admin-page {
+    gap: 12px;
+  }
+
   .admin-page-hero,
   .admin-section-body {
     padding: 14px;
@@ -6555,6 +6646,25 @@
 
   .admin-page .admin-section-actions em {
     display: none;
+  }
+
+  .settings-admin-page .admin-page-hero {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .settings-admin-page .admin-switch-row {
+    align-items: flex-start;
+  }
+
+  .settings-admin-page .admin-summary-strip {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding: 8px;
+  }
+
+  .settings-admin-page .admin-summary-strip span {
+    border-radius: 12px;
   }
 
   .admin-chip-grid {

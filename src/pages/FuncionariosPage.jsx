@@ -31,6 +31,8 @@ const MODAL_SECOES_INICIAIS = {
   exames: true
 }
 
+const LIMITE_FUNCIONARIOS_INICIAL = 8
+
 const CONECTIVOS_NOME_CARGO = new Set(['de', 'da', 'do', 'das', 'dos', 'e'])
 
 function apenasDigitos(valor) {
@@ -144,6 +146,7 @@ export default function FuncionariosPage({
   const [dataExamePeriodico, setDataExamePeriodico] = useState('')
   const [exameEditandoId, setExameEditandoId] = useState('')
   const [dataExameEditando, setDataExameEditando] = useState('')
+  const [mostrarTodosFuncionarios, setMostrarTodosFuncionarios] = useState(false)
   const [modalSecoesAbertas, setModalSecoesAbertas] = useState(MODAL_SECOES_INICIAIS)
 
   const {
@@ -203,6 +206,11 @@ export default function FuncionariosPage({
       return camposBusca.some((campo) => campo.includes(termo))
     })
   }, [busca, filiaisPorId, funcionarios, statusFiltro])
+
+  const funcionariosRenderizados = useMemo(() => {
+    if (mostrarTodosFuncionarios) return funcionariosFiltrados
+    return funcionariosFiltrados.slice(0, LIMITE_FUNCIONARIOS_INICIAL)
+  }, [funcionariosFiltrados, mostrarTodosFuncionarios])
 
   const resumoEquipe = useMemo(() => {
     const lista = funcionarios || []
@@ -467,7 +475,10 @@ export default function FuncionariosPage({
             <input
               style={styles.input}
               value={busca}
-              onChange={(event) => setBusca(event.target.value)}
+              onChange={(event) => {
+                setBusca(event.target.value)
+                setMostrarTodosFuncionarios(false)
+              }}
               placeholder="Buscar por nome, cargo ou filial"
               disabled={!empresaId}
             />
@@ -477,7 +488,10 @@ export default function FuncionariosPage({
             <select
               style={styles.input}
               value={statusFiltro}
-              onChange={(event) => setStatusFiltro(event.target.value)}
+              onChange={(event) => {
+                setStatusFiltro(event.target.value)
+                setMostrarTodosFuncionarios(false)
+              }}
               disabled={!empresaId}
             >
               <option value="todos">Todos os status</option>
@@ -490,7 +504,10 @@ export default function FuncionariosPage({
             <input
               type="checkbox"
               checked={incluirArquivados}
-              onChange={(event) => setIncluirArquivados(event.target.checked)}
+              onChange={(event) => {
+                setIncluirArquivados(event.target.checked)
+                setMostrarTodosFuncionarios(false)
+              }}
               disabled={!empresaId}
             />
             <span className="funcionarios-switch-indicator" aria-hidden="true" />
@@ -541,8 +558,16 @@ export default function FuncionariosPage({
             <p>{podeEditar ? 'Cadastre o primeiro colaborador desta empresa.' : 'Não há colaboradores disponíveis para esta empresa.'}</p>
           </div>
         ) : (
+          <>
+          <div className="funcionarios-results-strip">
+            <span>{funcionariosFiltrados.length} colaborador(es) no recorte atual</span>
+            {!mostrarTodosFuncionarios && funcionariosFiltrados.length > LIMITE_FUNCIONARIOS_INICIAL && (
+              <small>Exibindo {LIMITE_FUNCIONARIOS_INICIAL} inicialmente para facilitar a leitura no mobile.</small>
+            )}
+          </div>
+
           <div className="funcionarios-list">
-            {funcionariosFiltrados.map((funcionario) => {
+            {funcionariosRenderizados.map((funcionario) => {
               const status = funcionario.arquivado ? 'arquivado' : (funcionario.status || 'ativo')
               const filialNome = filiaisPorId[funcionario.filial_id] || 'Sem filial'
 
@@ -585,6 +610,16 @@ export default function FuncionariosPage({
               )
             })}
           </div>
+          {funcionariosFiltrados.length > LIMITE_FUNCIONARIOS_INICIAL && (
+            <button
+              className="funcionarios-inline-action"
+              type="button"
+              onClick={() => setMostrarTodosFuncionarios((atual) => !atual)}
+            >
+              {mostrarTodosFuncionarios ? 'Recolher lista' : `Ver todos os ${funcionariosFiltrados.length} colaboradores`}
+            </button>
+          )}
+          </>
         )}
       </section>
 

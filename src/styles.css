@@ -7089,6 +7089,42 @@
   gap: 12px;
 }
 
+.funcionarios-results-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(13, 148, 136, .18);
+  border-radius: 16px;
+  background: #f0fdfa;
+  color: #115e59;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.funcionarios-results-strip small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.funcionarios-inline-action {
+  width: fit-content;
+  min-height: 36px;
+  border: 1px solid rgba(13, 148, 136, .24);
+  border-radius: 999px;
+  padding: 8px 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0fdfa;
+  color: #0f766e;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
 .funcionario-card {
   position: relative;
   overflow: hidden;
@@ -7158,6 +7194,7 @@
   color: #0f172a;
   font-size: 16px;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .funcionario-main small,
@@ -7168,11 +7205,11 @@
 }
 
 .funcionario-meta {
-  display: flex;
-  gap: 7px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, auto));
+  gap: 6px 10px;
   color: #64748b;
   font-size: 12px;
-  flex-wrap: wrap;
   align-items: center;
   min-width: 0;
 }
@@ -7187,6 +7224,7 @@
   font-weight: 950;
   letter-spacing: .04em;
   text-transform: uppercase;
+  grid-column: 1 / -1;
 }
 
 .funcionario-status.afastado {
@@ -7341,8 +7379,8 @@
 }
 
 .funcionario-exames-header {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: flex-start;
 }
@@ -7368,6 +7406,7 @@
   border: 1px solid rgba(15, 23, 42, .07);
   border-radius: 14px;
   background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, .035);
 }
 
 .funcionario-exame-main {
@@ -7379,6 +7418,7 @@
 .funcionario-exame-main strong {
   color: #0f172a;
   font-size: 14px;
+  line-height: 1.2;
 }
 
 .funcionario-exame-status {
@@ -7441,6 +7481,27 @@
   .funcionario-actions,
   .funcionario-exame-actions {
     justify-content: flex-start;
+  }
+
+  .funcionarios-results-strip {
+    display: grid;
+    align-items: start;
+  }
+
+  .funcionario-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .funcionarios-inline-action {
+    width: 100%;
+  }
+
+  .funcionario-exames-header {
+    grid-template-columns: 1fr;
+  }
+
+  .funcionario-exames-header .funcionarios-switch {
+    width: 100%;
   }
 }
 

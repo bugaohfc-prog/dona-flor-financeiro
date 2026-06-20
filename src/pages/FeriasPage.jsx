@@ -34,6 +34,9 @@ const STATUS_PERIODO_LABELS = {
   cancelada: 'Cancelada'
 }
 
+const LIMITE_FUNCIONARIOS_SELECTOR = 8
+const LIMITE_CICLOS_INICIAL = 6
+
 function criarFormularioCicloInicial() {
   return { ...FORMULARIO_CICLO_INICIAL }
 }
@@ -125,6 +128,13 @@ function obterHojeISO() {
 
 function normalizarTexto(valor) {
   return String(valor || '').trim()
+}
+
+function normalizarBusca(valor) {
+  return normalizarTexto(valor)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
 }
 
 function ordenarFuncionarios(lista = []) {
@@ -295,6 +305,9 @@ export default function FeriasPage({
   const [formularioEdicaoCiclo, setFormularioEdicaoCiclo] = useState(criarFormularioEdicaoCicloInicial)
   const [periodoEditandoId, setPeriodoEditandoId] = useState('')
   const [formularioEdicaoPeriodo, setFormularioEdicaoPeriodo] = useState(criarFormularioPeriodoInicial)
+  const [buscaFuncionario, setBuscaFuncionario] = useState('')
+  const [mostrarTodosFuncionarios, setMostrarTodosFuncionarios] = useState(false)
+  const [mostrarTodosCiclos, setMostrarTodosCiclos] = useState(false)
   const [secoesAbertas, setSecoesAbertas] = useState({
     funcionario: true,
     criarCiclo: false,
@@ -314,6 +327,26 @@ export default function FeriasPage({
   })
 
   const funcionariosOrdenados = useMemo(() => ordenarFuncionarios(funcionarios), [funcionarios])
+  const funcionariosFiltradosSelector = useMemo(() => {
+    const termo = normalizarBusca(buscaFuncionario)
+    if (!termo) return funcionariosOrdenados
+
+    return funcionariosOrdenados.filter((funcionario) => {
+      const alvo = normalizarBusca([
+        funcionario.nome,
+        funcionario.cargo,
+        funcionario.status
+      ].filter(Boolean).join(' '))
+
+      return alvo.includes(termo)
+    })
+  }, [buscaFuncionario, funcionariosOrdenados])
+
+  const funcionariosSelectorVisiveis = useMemo(() => {
+    if (mostrarTodosFuncionarios) return funcionariosFiltradosSelector
+    return funcionariosFiltradosSelector.slice(0, LIMITE_FUNCIONARIOS_SELECTOR)
+  }, [funcionariosFiltradosSelector, mostrarTodosFuncionarios])
+
   const funcionarioSelecionado = useMemo(() => {
     return funcionariosOrdenados.find((funcionario) => funcionario.id === funcionarioSelecionadoId) || null
   }, [funcionarioSelecionadoId, funcionariosOrdenados])
@@ -351,6 +384,10 @@ export default function FeriasPage({
   const ciclosVisiveis = useMemo(() => {
     return incluirArquivados ? ciclos : (ciclos || []).filter((ciclo) => !ciclo.arquivado)
   }, [ciclos, incluirArquivados])
+  const ciclosRenderizados = useMemo(() => {
+    if (mostrarTodosCiclos) return ciclosVisiveis
+    return ciclosVisiveis.slice(0, LIMITE_CICLOS_INICIAL)
+  }, [ciclosVisiveis, mostrarTodosCiclos])
 
   const periodosVisiveis = useMemo(() => {
     return incluirArquivados ? periodos : (periodos || []).filter((periodo) => !periodo.arquivado)
@@ -526,6 +563,9 @@ export default function FeriasPage({
   function selecionarFuncionario(valor) {
     setFuncionarioSelecionadoId(valor)
     setCicloSelecionadoId('')
+    setBuscaFuncionario('')
+    setMostrarTodosFuncionarios(false)
+    setMostrarTodosCiclos(false)
     setFormularioPeriodo(criarFormularioPeriodoInicial())
     setEditandoCiclo(false)
     setPeriodoEditandoId('')
@@ -1075,22 +1115,61 @@ export default function FeriasPage({
                   <EmptyState titulo="Não foi possível carregar" descricao={erroFuncionarios} />
                 ) : (
                   <>
-                    <div className="ferias-form-row">
-                      <label>
-                        Colaborador
-                        <select
+                    <div className="ferias-employee-picker">
+                      <label className="ferias-employee-search">
+                        Buscar colaborador
+                        <input
                           style={styles.input}
-                          value={funcionarioSelecionadoId}
-                          onChange={(event) => selecionarFuncionario(event.target.value)}
-                        >
-                          <option value="">Selecione um funcionário</option>
-                          {funcionariosOrdenados.map((funcionario) => (
-                            <option key={funcionario.id} value={funcionario.id}>
-                              {funcionario.nome || 'Funcionário sem nome'}{funcionario.cargo ? ` - ${funcionario.cargo}` : ''}
-                            </option>
-                          ))}
-                        </select>
+                          type="search"
+                          value={buscaFuncionario}
+                          onChange={(event) => {
+                            setBuscaFuncionario(event.target.value)
+                            setMostrarTodosFuncionarios(false)
+                          }}
+                          placeholder="Digite nome, cargo ou status"
+                        />
                       </label>
+
+                      <div className="ferias-employee-list" role="listbox" aria-label="Selecionar colaborador">
+                        {funcionariosSelectorVisiveis.map((funcionario) => {
+                          const selecionado = funcionario.id === funcionarioSelecionadoId
+
+                          return (
+                            <button
+                              key={funcionario.id}
+                              className={`ferias-employee-option ${selecionado ? 'selected' : ''}`}
+                              type="button"
+                              onClick={() => selecionarFuncionario(funcionario.id)}
+                              aria-pressed={selecionado}
+                            >
+                              <span>
+                                <strong>{funcionario.nome || 'Funcionário sem nome'}</strong>
+                                <small>
+                                  {funcionario.cargo || 'Cargo não informado'} · {formatarStatus(funcionario.status, { ativo: 'Ativo', afastado: 'Afastado', desligado: 'Desligado' })}
+                                </small>
+                              </span>
+                              <em>{formatarDataCurta(funcionario.data_admissao)}</em>
+                            </button>
+                          )
+                        })}
+                      </div>
+
+                      {funcionariosFiltradosSelector.length > LIMITE_FUNCIONARIOS_SELECTOR && (
+                        <button
+                          className="ferias-inline-action"
+                          type="button"
+                          onClick={() => setMostrarTodosFuncionarios((atual) => !atual)}
+                        >
+                          {mostrarTodosFuncionarios ? 'Recolher lista' : `Ver mais ${funcionariosFiltradosSelector.length - LIMITE_FUNCIONARIOS_SELECTOR} colaborador(es)`}
+                        </button>
+                      )}
+
+                      {funcionariosFiltradosSelector.length === 0 && (
+                        <div className="ferias-empty-state">
+                          <strong>Nenhum colaborador encontrado.</strong>
+                          Ajuste a busca para localizar outro cadastro ativo.
+                        </div>
+                      )}
                     </div>
 
                     {funcionariosOrdenados.length === 0 && (
@@ -1242,7 +1321,10 @@ export default function FeriasPage({
                       <input
                         type="checkbox"
                         checked={incluirArquivados}
-                        onChange={(event) => setIncluirArquivados(event.target.checked)}
+                        onChange={(event) => {
+                          setIncluirArquivados(event.target.checked)
+                          setMostrarTodosCiclos(false)
+                        }}
                         disabled={!funcionarioSelecionadoId || loading}
                       />
                       <span className="ferias-switch-indicator" aria-hidden="true" />
@@ -1263,8 +1345,9 @@ export default function FeriasPage({
                     descricao={ciclos.length > 0 ? 'Ative Mostrar arquivados para ver ciclos arquivados.' : 'Crie o primeiro ciclo de férias para este funcionário.'}
                   />
                 ) : (
+                  <>
                   <div className="ferias-cycle-list">
-                    {ciclosVisiveis.map((ciclo) => {
+                    {ciclosRenderizados.map((ciclo) => {
                       const selecionado = ciclo.id === cicloSelecionadoId
                       const status = ciclo.arquivado ? 'Arquivado' : formatarStatus(ciclo.status, STATUS_CICLO_LABELS)
 
@@ -1308,6 +1391,16 @@ export default function FeriasPage({
                       )
                     })}
                   </div>
+                  {ciclosVisiveis.length > LIMITE_CICLOS_INICIAL && (
+                    <button
+                      className="ferias-inline-action ferias-cycle-more"
+                      type="button"
+                      onClick={() => setMostrarTodosCiclos((atual) => !atual)}
+                    >
+                      {mostrarTodosCiclos ? 'Recolher ciclos' : `Ver todos os ${ciclosVisiveis.length} ciclos`}
+                    </button>
+                  )}
+                  </>
                 )}
                   </>
                 )}

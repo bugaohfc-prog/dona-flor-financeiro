@@ -1,0 +1,21 @@
+{
+  "marca": "DNA Gestão",
+  "conceito": "Opção 2 — Monograma Inteligente",
+  "slogan": "Gestão completa. Resultados reais.",
+  "paleta": {
+    "verde_profundo": "#0F5B56",
+    "verde_esmeralda": "#1AA187",
+    "azul_petroleo": "#0B2D33",
+    "verde_claro": "#EAF6F3",
+    "cinza_suave": "#F3F5F7",
+    "cinza_texto": "#586275",
+    "branco": "#FFFFFF"
+  },
+  "usos_recomendados": {
+    "topbar": "dna_gestao_logo_horizontal.svg",
+    "icone_app_pwa": "dna_gestao_icone_app.svg",
+    "favicon": "favicon.svg",
+    "pdf_relatorios": "dna_gestao_logo_horizontal_mono.svg ou dna_gestao_logo_horizontal.svg",
+    "fundo_escuro": "dna_gestao_logo_horizontal_fundo_escuro.svg"
+  }
+}

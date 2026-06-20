@@ -257,6 +257,87 @@
   box-shadow: 0 18px 38px rgba(15, 118, 110, .28) !important;
   transition: transform .18s ease, box-shadow .18s ease, filter .18s ease !important;
 }
+
+.global-fab span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.global-fab-menu {
+  right: 22px !important;
+  bottom: 92px !important;
+  width: min(260px, calc(100vw - 32px)) !important;
+  max-width: calc(100vw - 32px) !important;
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.global-fab-menu .global-fab-menu-item {
+  display: grid !important;
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 56px !important;
+  padding: 9px 12px !important;
+  border: 1px solid rgba(20, 184, 166, .18) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, .98) !important;
+  color: #0f172a !important;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, .14) !important;
+  text-align: left !important;
+  white-space: normal !important;
+}
+
+.global-fab-menu .global-fab-menu-item:hover {
+  border-color: rgba(15, 118, 110, .32) !important;
+  background: #f8fffc !important;
+  transform: translateY(-1px);
+}
+
+.global-fab-menu-icon {
+  width: 34px !important;
+  min-width: 34px !important;
+  height: 34px !important;
+  border-radius: 12px;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #dff7ef;
+  color: #0f766e;
+  font-size: 14px !important;
+  font-weight: 900;
+}
+
+.global-fab-menu-copy {
+  display: grid !important;
+  gap: 2px;
+  min-width: 0;
+  color: #0f172a !important;
+  line-height: 1.2 !important;
+}
+
+.global-fab-menu-copy strong {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.global-fab-menu-copy small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
 .global-fab:hover {
   transform: translateY(-2px) !important;
   box-shadow: 0 22px 44px rgba(15, 118, 110, .34) !important;
@@ -271,11 +352,22 @@
 
 @media (max-width: 979px) {
   .global-fab {
-    right: 18px !important;
-    bottom: max(20px, env(safe-area-inset-bottom)) !important;
+    right: 16px !important;
+    bottom: max(24px, calc(18px + env(safe-area-inset-bottom))) !important;
     width: 52px !important;
     height: 52px !important;
     border-radius: 18px !important;
+  }
+
+  .global-fab-menu {
+    right: 16px !important;
+    bottom: max(86px, calc(80px + env(safe-area-inset-bottom))) !important;
+    width: min(250px, calc(100vw - 32px)) !important;
+  }
+
+  .global-fab-menu .global-fab-menu-item {
+    min-height: 54px !important;
+    padding: 8px 10px !important;
   }
 }
 

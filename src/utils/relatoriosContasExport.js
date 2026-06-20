@@ -157,7 +157,7 @@ export function imprimirRelatorioContas({ linhas, grupos, contexto, resumo }) {
               <td>${escaparHtml(linha.statusOperacional)}</td>
               <td>${escaparHtml(linha.centroNome)}</td>
               <td>${escaparHtml(linha.filialNome)}</td>
-              <td>${escaparHtml(linha.observacao)}</td>
+              <td class="observacao-cell">${escaparHtml(linha.observacao)}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -172,28 +172,29 @@ export function imprimirRelatorioContas({ linhas, grupos, contexto, resumo }) {
         <meta charset="utf-8" />
         <style>
           * { box-sizing: border-box; }
-          @page { size: A4 landscape; margin: 7mm; }
+          @page { size: A4 landscape; margin: 6mm; }
           body { font-family: Arial, sans-serif; color: #17212b; margin: 0; background: #ffffff; }
-          .page { width: 100%; max-width: 100%; padding: 12px; overflow: visible; }
-          header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; border-bottom: 1px solid #ccfbf1; margin-bottom: 8px; padding-bottom: 7px; }
-          .brand { color: #0f766e; font-size: 9px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-          h1 { margin: 2px 0 2px; font-size: 18px; color: #0f172a; line-height: 1.15; }
-          .subtitle { color: #586275; font-size: 10px; font-weight: 700; line-height: 1.25; }
-          p { margin: 3px 0; color: #4b5563; }
-          .meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px 12px; margin-top: 7px; font-size: 9px; line-height: 1.2; }
+          .page { width: 100%; max-width: 100%; padding: 9px; overflow: visible; }
+          header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; border-bottom: 1px solid #ccfbf1; margin-bottom: 5px; padding-bottom: 5px; }
+          .brand { color: #0f766e; font-size: 8px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+          h1 { margin: 1px 0 1px; font-size: 16px; color: #0f172a; line-height: 1.05; }
+          .subtitle { color: #586275; font-size: 9px; font-weight: 700; line-height: 1.15; }
+          p { margin: 2px 0; color: #4b5563; }
+          .meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 10px; margin-top: 5px; font-size: 8px; line-height: 1.12; }
           .issued { color: #64748b; font-size: 9px; text-align: right; line-height: 1.2; }
-          .resumo { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 8px 0 10px; }
-          .resumo div { border: 1px solid #d8e3df; border-radius: 7px; padding: 5px 7px; font-size: 9px; color: #475569; }
-          .resumo strong { display: inline-block; margin-left: 6px; font-size: 12px; color: #0f172a; }
-          h2 { margin: 12px 0 5px; font-size: 12px; line-height: 1.2; }
-          h2 span { color: #64748b; font-size: 9px; font-weight: 500; }
-          table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8.4px; line-height: 1.15; page-break-inside: auto; }
-          th, td { border: 1px solid #d9e2df; padding: 3px 4px; text-align: left; vertical-align: top; overflow-wrap: anywhere; word-break: break-word; }
+          .resumo { display: flex; gap: 0; margin: 5px 0 6px; border: 1px solid #d8e3df; border-radius: 6px; overflow: hidden; }
+          .resumo div { flex: 1 1 0; padding: 3px 6px; font-size: 8px; color: #475569; border-right: 1px solid #d8e3df; min-width: 0; white-space: nowrap; }
+          .resumo div:last-child { border-right: 0; }
+          .resumo strong { display: inline-block; margin-left: 4px; font-size: 10px; color: #0f172a; }
+          h2 { margin: 7px 0 3px; font-size: 10px; line-height: 1.1; }
+          h2 span { color: #64748b; font-size: 8px; font-weight: 500; }
+          table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 7.6px; line-height: 1.05; page-break-inside: auto; }
+          th, td { border: 1px solid #d9e2df; padding: 2px 3px; text-align: left; vertical-align: top; overflow-wrap: anywhere; word-break: break-word; }
           th { background: #eef8f5; color: #0f4f49; }
-          td:last-child { font-size: 8px; line-height: 1.12; }
+          .observacao-cell { font-size: 7px; line-height: 1.02; color: #475569; }
           thead { display: table-header-group; }
           tr { page-break-inside: auto; page-break-after: auto; }
-          footer { margin-top: 8px; padding-top: 6px; border-top: 1px solid #d9e2df; color: #64748b; font-size: 8px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+          footer { margin-top: 5px; padding-top: 4px; border-top: 1px solid #d9e2df; color: #64748b; font-size: 7px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
           @media print { .page { padding: 0; } }
           @media (max-width: 760px) {
             .page { padding: 16px; }

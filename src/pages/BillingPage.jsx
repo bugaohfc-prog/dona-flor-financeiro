@@ -130,12 +130,20 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
   }
 
   return (
-    <>
-      <h1 style={styles.titulo}>💼 Plano comercial</h1>
+    <div className="billing-page">
+      <header className="billing-page-header">
+        <div className="billing-page-heading">
+          <span className="billing-page-kicker">Plano comercial</span>
+          <h1>Planos e assinatura</h1>
+          <p>Controle o plano atual, limites e status comercial da empresa sem alterar a operação.</p>
+        </div>
+        <div className="billing-page-actions">
+          {assinatura?.status && <span className="billing-status-chip">{assinatura.status}</span>}
+          <button style={styles.btnCinza} className="billing-back-button" onClick={voltarPainel}>Voltar</button>
+        </div>
+      </header>
 
-      <button style={styles.btnCinza} onClick={voltarPainel}>← Voltar</button>
-
-      <section style={styles.cardConfiguracao} className="billing-hero">
+      <section style={styles.cardConfiguracao} className="billing-panel billing-hero">
         <div>
           <h2 style={styles.subtitulo}>Base comercial da empresa</h2>
           <p style={styles.textoNota}>
@@ -174,8 +182,13 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
         </div>
       </section>
 
-      <section style={styles.cardConfiguracao}>
-        <h2 style={styles.subtitulo}>Planos disponíveis</h2>
+      <section style={styles.cardConfiguracao} className="billing-panel">
+        <div className="billing-panel-header">
+          <div>
+            <h2 style={styles.subtitulo}>Planos disponíveis</h2>
+            <p style={styles.textoNota}>Escolha entre as opções comerciais já configuradas para esta empresa.</p>
+          </div>
+        </div>
         <div className="billing-plan-grid">
           {planos.map((plano) => (
             <button
@@ -196,7 +209,7 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
         </div>
       </section>
 
-      <section style={styles.cardConfiguracao}>
+      <section style={styles.cardConfiguracao} className="billing-panel">
         <div className="billing-section-header">
           <div>
             <h2 style={styles.subtitulo}>Plano e limites</h2>
@@ -245,6 +258,6 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
           </button>
         )}
       </section>
-    </>
+    </div>
   )
 }

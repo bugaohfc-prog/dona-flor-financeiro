@@ -4237,22 +4237,39 @@
   min-width: 0;
 }
 
-.accounts-recurring-disable {
+.accounts-recurring-disable,
+.accounts-recurring-enable {
   min-height: 34px;
   padding: 0 12px;
-  border: 1px solid #f5c16c;
   border-radius: 999px;
-  background: #fff7ed;
-  color: #92400e;
   font-size: 12px;
   font-weight: 850;
   cursor: pointer;
+}
+
+.accounts-recurring-disable {
+  border: 1px solid #f5c16c;
+  background: #fff7ed;
+  color: #92400e;
+}
+
+.accounts-recurring-enable {
+  border: 1px solid #99f6e4;
+  background: #ecfdf5;
+  color: #0f766e;
 }
 
 .accounts-recurring-disable:hover,
 .accounts-recurring-disable:focus-visible {
   border-color: #d97706;
   background: #ffedd5;
+  outline: none;
+}
+
+.accounts-recurring-enable:hover,
+.accounts-recurring-enable:focus-visible {
+  border-color: #14b8a6;
+  background: #ccfbf1;
   outline: none;
 }
 

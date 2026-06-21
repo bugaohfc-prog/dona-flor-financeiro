@@ -147,6 +147,10 @@ export async function desativarRecorrencia(supabase, id, empresaId) {
   return atualizarRecorrencia(supabase, id, empresaId, { ativo: false })
 }
 
+export async function reativarRecorrencia(supabase, id, empresaId) {
+  return atualizarRecorrencia(supabase, id, empresaId, { ativo: true })
+}
+
 export async function atualizarStatusConta(supabase, id, empresaId, status) {
   return atualizarConta(supabase, id, empresaId, { status })
 }

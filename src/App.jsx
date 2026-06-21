@@ -276,7 +276,8 @@ export default function App() {
     excluirConta: excluirContaHook,
     ocultarConta: ocultarContaHook,
     reexibirConta: reexibirContaHook,
-    desativarSerieRecorrente: desativarSerieRecorrenteHook
+    desativarSerieRecorrente: desativarSerieRecorrenteHook,
+    reativarSerieRecorrente: reativarSerieRecorrenteHook
   } = useContas()
 
   // =========================
@@ -2066,6 +2067,22 @@ export default function App() {
     }
 
     return desativarSerieRecorrenteHook({
+      supabase,
+      id,
+      empresaId,
+      avisarErro,
+      buscarContas: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
+      mostrarAviso
+    })
+  }
+
+  async function reativarSerieRecorrente(id) {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return false
+    }
+
+    return reativarSerieRecorrenteHook({
       supabase,
       id,
       empresaId,
@@ -4558,6 +4575,7 @@ export default function App() {
           navegarPara={navegarPara}
           abrirConfirmacao={abrirConfirmacao}
           desativarSerieRecorrente={desativarSerieRecorrente}
+          reativarSerieRecorrente={reativarSerieRecorrente}
         />
       </AppSuspenseBoundary>
     )

@@ -17,6 +17,7 @@ import {
   listarRecorrenciasAtivas,
   listarRecorrenciasPorDia,
   ocultarConta as ocultarContaService,
+  reativarRecorrencia,
   reexibirConta as reexibirContaService,
   validarCentroCustoDaEmpresa,
   validarFilialDaEmpresa,
@@ -633,6 +634,20 @@ export function useContas() {
     return true
   }
 
+  async function reativarSerieRecorrente(contexto) {
+    const { supabase, id, empresaId, avisarErro, buscarContas, mostrarAviso } = contexto
+    const { error } = await reativarRecorrencia(supabase, id, empresaId)
+
+    if (error) {
+      avisarErro(error)
+      return false
+    }
+
+    await buscarContas()
+    mostrarAviso?.('Série recorrente reativada.', 'sucesso')
+    return true
+  }
+
   return {
     contas,
     setContas,
@@ -699,6 +714,7 @@ export function useContas() {
     excluirConta,
     ocultarConta,
     reexibirConta,
-    desativarSerieRecorrente
+    desativarSerieRecorrente,
+    reativarSerieRecorrente
   }
 }

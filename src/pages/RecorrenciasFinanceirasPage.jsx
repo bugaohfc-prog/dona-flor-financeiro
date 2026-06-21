@@ -62,7 +62,8 @@ export default function RecorrenciasFinanceirasPage({
   formatarTipoRecorrencia,
   navegarPara,
   abrirConfirmacao,
-  desativarSerieRecorrente
+  desativarSerieRecorrente,
+  reativarSerieRecorrente
 }) {
   const [filtroSeriesRecorrentes, setFiltroSeriesRecorrentes] = useState('ativas')
   const [buscaSeriesRecorrentes, setBuscaSeriesRecorrentes] = useState('')
@@ -130,6 +131,18 @@ export default function RecorrenciasFinanceirasPage({
       textoConfirmar: 'Desativar',
       tipo: 'aviso',
       acao: () => desativarSerieRecorrente?.(serie.id)
+    })
+  }
+
+  function confirmarReativacaoSerie(serie) {
+    if (!serie?.id) return
+
+    abrirConfirmacao?.({
+      titulo: 'Reativar série recorrente',
+      mensagem: `Reativar a série "${serie.descricao || 'sem descrição'}"? A série será reativada, contas já existentes não serão alteradas, nenhuma conta será criada imediatamente e a série voltará a participar da geração automática conforme a regra atual do sistema.`,
+      textoConfirmar: 'Reativar',
+      tipo: 'aviso',
+      acao: () => reativarSerieRecorrente?.(serie.id)
     })
   }
 
@@ -236,8 +249,8 @@ export default function RecorrenciasFinanceirasPage({
                       Possível duplicidade: mesma descrição, valor, dia, centro e filial.
                     </div>
                   )}
-                  {serie.ativo === true && (
-                    <div className="accounts-recurring-actions">
+                  <div className="accounts-recurring-actions">
+                    {serie.ativo === true ? (
                       <button
                         type="button"
                         className="accounts-recurring-disable"
@@ -245,8 +258,16 @@ export default function RecorrenciasFinanceirasPage({
                       >
                         Desativar
                       </button>
-                    </div>
-                  )}
+                    ) : (
+                      <button
+                        type="button"
+                        className="accounts-recurring-enable"
+                        onClick={() => confirmarReativacaoSerie(serie)}
+                      >
+                        Reativar
+                      </button>
+                    )}
+                  </div>
                 </article>
               )
             })}

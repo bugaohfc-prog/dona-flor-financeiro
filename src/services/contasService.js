@@ -155,6 +155,10 @@ export async function atualizarStatusConta(supabase, id, empresaId, status) {
   return atualizarConta(supabase, id, empresaId, { status })
 }
 
+export async function estornarBaixaConta(supabase, id, empresaId) {
+  return atualizarConta(supabase, id, empresaId, { status: 'pendente' })
+}
+
 export async function baixarContaComoPaga(supabase, id, empresaId, payload = {}) {
   return atualizarConta(supabase, id, empresaId, {
     status: 'pago',

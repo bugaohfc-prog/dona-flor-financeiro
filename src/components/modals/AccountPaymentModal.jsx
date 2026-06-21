@@ -85,11 +85,11 @@ export default function AccountPaymentModal({
       <div className="account-modal-card account-payment-modal-card" style={{ ...styles.modal, maxWidth: 460 }} onClick={(event) => event.stopPropagation()}>
         <header className="account-modal-header">
           <span>Financeiro</span>
-          <h3>{corrigindoPagamento ? 'Corrigir pagamento' : 'Baixar conta'}</h3>
+          <h3>{corrigindoPagamento ? 'Corrigir pagamento' : 'Baixar pagamento'}</h3>
           <p>
             {corrigindoPagamento
               ? 'Atualize valor, data ou observação do pagamento. A conta continuará marcada como paga.'
-              : 'Registre o pagamento com valor, data e observação administrativa.'}
+              : 'Registre a baixa com valor pago, data de pagamento e observação administrativa.'}
           </p>
         </header>
 
@@ -116,7 +116,7 @@ export default function AccountPaymentModal({
           <section className="account-modal-section">
             <div className="account-modal-section-title">
               <strong>Dados do pagamento</strong>
-              <small>{corrigindoPagamento ? 'Ajuste os dados registrados na baixa.' : 'Informe o valor realizado e a data da baixa.'}</small>
+              <small>{corrigindoPagamento ? 'Ajuste os dados registrados na baixa. A conta continuará paga.' : 'Informe o valor realizado e a data da baixa.'}</small>
             </div>
             <div className="account-modal-grid">
               <label className="account-modal-field">

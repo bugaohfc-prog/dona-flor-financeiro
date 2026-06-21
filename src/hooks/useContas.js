@@ -8,6 +8,7 @@ import {
   corrigirPagamentoConta,
   criarConta,
   criarContasEmLote,
+  estornarBaixaConta,
   listarRecorrencias,
   criarRecorrencia,
   desativarRecorrencia,
@@ -569,16 +570,16 @@ export function useContas() {
 
   async function voltarParaPendente(contexto) {
     const { supabase, id, empresaId, buscarContas, mostrarAviso } = contexto
-    const { error } = await atualizarStatusConta(supabase, id, empresaId, 'pendente')
+    const { error } = await estornarBaixaConta(supabase, id, empresaId)
 
     if (error) {
-      console.warn('Falha ao voltar conta para pendente:', error)
-      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível voltar a conta para pendente.'), 'erro')
+      console.warn('Falha ao estornar baixa da conta:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível estornar a baixa da conta.'), 'erro')
       return
     }
 
     await buscarContas()
-    mostrarAviso?.('Conta voltou para pendente.', 'sucesso')
+    mostrarAviso?.('Baixa estornada. A conta voltou para aberta.', 'sucesso')
   }
 
   async function excluirConta(contexto) {

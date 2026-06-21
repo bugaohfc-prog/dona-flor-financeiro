@@ -464,8 +464,8 @@ export default function ContasPage({
             </button>
           ) : (
             <>
-              <button className="account-action-button account-action-secondary" style={{ ...styles.btnVoltar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirConfirmacao({ titulo: 'Voltar para pendente', mensagem: `Deseja voltar a conta ${conta.descricao} para pendente?`, textoConfirmar: 'Voltar', tipo: 'aviso', acao: () => voltarParaPendente(conta.id) })}>
-                Voltar
+              <button className="account-action-button account-action-secondary" style={{ ...styles.btnVoltar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirConfirmacao({ titulo: 'Estornar baixa desta conta?', mensagem: `A conta ${conta.descricao} deixará de constar como paga e os dados do pagamento serão removidos. A conta não será excluída e continuará com descrição, vencimento, valor, filial, centro e recorrência intactos.`, textoConfirmar: 'Estornar baixa', tipo: 'aviso', acao: () => voltarParaPendente(conta.id) })}>
+                Estornar
               </button>
               <button className="account-action-button account-action-secondary" style={{ ...styles.btnEditar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirCorrecaoPagamento(conta)}>
                 Corrigir

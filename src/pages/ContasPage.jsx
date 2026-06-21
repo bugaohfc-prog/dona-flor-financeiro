@@ -20,6 +20,21 @@ const ABAS_STATUS_CONTAS = [
   { valor: 'todas', label: 'Todas' }
 ]
 
+const MESES_PT_BR = [
+  'Janeiro',
+  'Fevereiro',
+  'Mar\u00e7o',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro'
+]
+
 const ACCOUNT_ACTIONS_STYLE = {
   marginTop: 10,
   gap: 6,
@@ -79,6 +94,55 @@ function obterTimestampVencimento(conta, fallback) {
 
   const timestamp = Date.parse(valor)
   return Number.isNaN(timestamp) ? fallback : timestamp
+}
+
+function obterChavePeriodoConta(conta) {
+  const data = String(conta?.data_vencimento || '').trim()
+  const partes = data.match(/^(\d{4})-(\d{2})/)
+  if (!partes) return 'sem-data'
+  return `${partes[1]}-${partes[2]}`
+}
+
+function obterRotuloPeriodo(chave) {
+  if (chave === 'sem-data') return 'Sem data'
+  const [ano, mes] = chave.split('-')
+  const indiceMes = Number(mes) - 1
+  const nomeMes = MESES_PT_BR[indiceMes]
+  return nomeMes && ano ? `${nomeMes}/${ano}` : 'Sem data'
+}
+
+function obterChaveMesAtual() {
+  const hoje = new Date()
+  return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`
+}
+
+function agruparContasPorPeriodo(contas, estaVencida) {
+  const mesAtual = obterChaveMesAtual()
+  const mapa = new Map()
+
+  contas.forEach((conta) => {
+    const chave = obterChavePeriodoConta(conta)
+    if (!mapa.has(chave)) {
+      mapa.set(chave, {
+        chave,
+        rotulo: obterRotuloPeriodo(chave),
+        contas: [],
+        totalPrevisto: 0,
+        temVencidas: false,
+        abertoInicial: chave === 'sem-data' || chave <= mesAtual
+      })
+    }
+
+    const grupo = mapa.get(chave)
+    grupo.contas.push(conta)
+    grupo.totalPrevisto += Number(conta.valor || 0)
+    grupo.temVencidas = grupo.temVencidas || estaVencida(conta.data_vencimento, conta.status)
+  })
+
+  return Array.from(mapa.values()).map((grupo) => ({
+    ...grupo,
+    abertoInicial: grupo.abertoInicial || grupo.temVencidas
+  }))
 }
 
 function ordenarContasParaListagem(contas, ordenacao, filtroStatus, estaVencida) {
@@ -191,6 +255,7 @@ export default function ContasPage({
   const [modoPagamento, setModoPagamento] = useState('baixa')
   const [contaDestacadaId, setContaDestacadaId] = useState('')
   const [mostrarExportacoes, setMostrarExportacoes] = useState(false)
+  const [gruposPeriodoFechados, setGruposPeriodoFechados] = useState({})
   const contaDestacadaRef = useRef(null)
   const contaAlvoAgendaId = agendaFocusTarget?.tipo === 'conta' ? agendaFocusTarget.id : ''
   const contaAlvoAgenda = useMemo(() => {
@@ -206,6 +271,10 @@ export default function ContasPage({
     return jaEstaFiltrada ? contasFiltradas : [contaAlvoAgenda, ...contasFiltradas]
   }, [contaAlvoAgenda, contasFiltradas, filtroStatus])
   const contasOrdenadas = ordenarContasParaListagem(contasParaListagem, ordenacaoContas, filtroStatus, estaVencida)
+  const gruposPorPeriodo = useMemo(
+    () => agruparContasPorPeriodo(contasOrdenadas, estaVencida),
+    [contasOrdenadas, estaVencida]
+  )
   const statusAtualLabel = ABAS_STATUS_CONTAS.find((aba) => aba.valor === filtroStatus)?.label || filtroStatus
   const resumoResultadoFiltrado = useMemo(
     () => calcularResumoResultadoFiltrado(contasFiltradas),
@@ -235,6 +304,21 @@ export default function ContasPage({
     setModoPagamento('baixa')
   }
 
+  function grupoPeriodoAberto(grupo) {
+    if (Object.prototype.hasOwnProperty.call(gruposPeriodoFechados, grupo.chave)) {
+      return !gruposPeriodoFechados[grupo.chave]
+    }
+    return grupo.abertoInicial
+  }
+
+  function alternarGrupoPeriodo(grupo) {
+    const abertoAgora = grupoPeriodoAberto(grupo)
+    setGruposPeriodoFechados((atuais) => ({
+      ...atuais,
+      [grupo.chave]: abertoAgora
+    }))
+  }
+
   useEffect(() => {
     if (!contaAlvoAgendaId) return undefined
 
@@ -255,6 +339,136 @@ export default function ContasPage({
       window.clearTimeout(clearTimer)
     }
   }, [contaAlvoAgendaId, setMostrarContas, onAgendaFocusHandled])
+
+  function renderContaCard(conta) {
+    const destacadaPelaAgenda = String(conta.id) === String(contaDestacadaId)
+    const vencida = estaVencida(conta.data_vencimento, conta.status)
+    const recorrente = ehContaRecorrente(conta)
+    const tipoRecorrencia = recorrente ? formatarTipoRecorrencia(obterTipoRecorrenciaConta(conta)) : ''
+    const observacao = String(conta.observacao || '').trim()
+    const valorPrevisto = Number(conta.valor || 0)
+    const valorPago = Number(conta.valor_pago || 0)
+    const jurosMulta = Number(conta.juros_multa || 0)
+    const desconto = Number(conta.desconto || 0)
+    const exibirBaixaReal = conta.status === 'pago' && conta.valor_pago !== null && conta.valor_pago !== undefined
+    const valorPrincipal = exibirBaixaReal ? valorPago : valorPrevisto
+    const oculta = conta.oculto === true
+
+    return (
+      <div
+        ref={destacadaPelaAgenda ? contaDestacadaRef : null}
+        className={`print-card account-card-desktop ${destacadaPelaAgenda ? 'account-card-agenda-focus' : ''} ${exibirBaixaReal ? 'account-card-payment-real' : ''} ${oculta ? 'account-card-hidden' : ''} ${vencida ? 'account-card-vencida' : conta.status === 'pago' ? 'account-card-paga' : 'account-card-pendente'}`}
+        key={conta.id}
+        style={{
+          ...styles.cardConta,
+          background:
+            conta.status === 'pago'
+              ? '#d4edda'
+              : vencida
+                ? '#ffb3b3'
+                : '#fff3cd'
+        }}
+      >
+        <div style={styles.cardTopo} className="account-card-head">
+          <div className="account-title-wrap">
+            <strong>{conta.descricao}</strong>
+            {recorrente && (
+              <span className="account-recurring-badge account-recurring-title-badge" title={`Conta recorrente ${tipoRecorrencia}`}>
+                ↻ Recorrente
+              </span>
+            )}
+          </div>
+          {!exibirBaixaReal && (
+            <span className="account-card-value">{formatarValor(valorPrevisto)}</span>
+          )}
+        </div>
+
+        {exibirBaixaReal && (
+          <div className="account-payment-real-panel">
+            <strong className="account-payment-paid-value">{formatarValor(valorPrincipal)}</strong>
+            <span className="account-payment-expected-value">Previsto: {formatarValor(valorPrevisto)}</span>
+            {jurosMulta > 0 && (
+              <span className="account-payment-adjustment account-payment-fee">
+                Encargos: {formatarValor(jurosMulta)}
+              </span>
+            )}
+            {desconto > 0 && (
+              <span className="account-payment-adjustment account-payment-discount">
+                Desconto: {formatarValor(desconto)}
+              </span>
+            )}
+            {jurosMulta <= 0 && desconto <= 0 && (
+              <span className="account-payment-adjustment account-payment-neutral">
+                Pago sem ajuste
+              </span>
+            )}
+          </div>
+        )}
+
+        <div style={styles.cardInfo} className="account-meta-line">
+          <div className="account-meta-main">
+            <span className="account-date-badge">📅 {formatarData(conta.data_vencimento)}</span>
+            <span>{conta.df_filiais?.nome || 'Sem filial'}</span>
+            <span>{conta.df_centros_custo?.nome || '-'}</span>
+          </div>
+          <div className="account-meta-badges">
+            {recorrente && (
+              <span className="account-recurring-badge">↻ {tipoRecorrencia}</span>
+            )}
+            <span className={`status-pill ${vencida ? 'status-vencido' : conta.status === 'pago' ? 'status-pago' : 'status-pendente'}`}>
+              {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}
+            </span>
+            {oculta && <span className="status-pill status-oculto">Oculta</span>}
+          </div>
+        </div>
+
+        {observacao && (
+          <div className="account-observation-preview" title={observacao}>
+            <span className="account-observation-text">
+              <span aria-hidden="true">📝</span> {observacao}
+            </span>
+          </div>
+        )}
+
+        {podeEditarFinanceiro && (
+          <div className={`account-actions ${conta.status === 'pago' ? 'account-actions-paid' : ''}`} style={{ ...styles.acoes, ...ACCOUNT_ACTIONS_STYLE }}>
+          {conta.status !== 'pago' ? (
+            <button className="account-action-button account-action-primary" style={{ ...styles.btnPago, ...ACCOUNT_PRIMARY_ACTION_STYLE }} onClick={() => abrirBaixaConta(conta)}>
+              Baixar
+            </button>
+          ) : (
+            <>
+              <button className="account-action-button account-action-secondary" style={{ ...styles.btnVoltar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirConfirmacao({ titulo: 'Voltar para pendente', mensagem: `Deseja voltar a conta ${conta.descricao} para pendente?`, textoConfirmar: 'Voltar', tipo: 'aviso', acao: () => voltarParaPendente(conta.id) })}>
+                Voltar
+              </button>
+              <button className="account-action-button account-action-secondary" style={{ ...styles.btnEditar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirCorrecaoPagamento(conta)}>
+                Corrigir
+              </button>
+            </>
+          )}
+
+          <button className="account-action-button account-action-secondary" style={{ ...styles.btnEditar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirEdicaoConta(conta)}>
+            Editar
+          </button>
+
+          {oculta ? (
+            <button className="account-action-button account-action-restore" style={ACCOUNT_HIDE_ACTION_STYLE} onClick={() => abrirConfirmacao({ titulo: 'Reexibir conta', mensagem: `Deseja reexibir a conta ${conta.descricao} na visão principal?`, textoConfirmar: 'Reexibir', tipo: 'aviso', acao: () => reexibirConta(conta.id) })}>
+              Reexibir
+            </button>
+          ) : (
+            <button className="account-action-button account-action-hide" style={ACCOUNT_HIDE_ACTION_STYLE} onClick={() => abrirConfirmacao({ titulo: 'Ocultar conta', mensagem: `Ocultar esta conta da visão principal? A conta ${conta.descricao} não será excluída e poderá ser reexibida depois.`, textoConfirmar: 'Ocultar', tipo: 'aviso', acao: () => ocultarConta(conta.id) })}>
+              Ocultar
+            </button>
+          )}
+
+          <button className="account-action-button account-action-danger" style={{ ...styles.btnExcluir, ...ACCOUNT_DANGER_ACTION_STYLE }} onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
+            Excluir
+          </button>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   function renderListaContasConteudo() {
     return (
@@ -390,133 +604,34 @@ export default function ContasPage({
           />
         )}
 
-        {!loading && mostrarContas && contasOrdenadas.map((conta) => {
-          const destacadaPelaAgenda = String(conta.id) === String(contaDestacadaId)
-          const vencida = estaVencida(conta.data_vencimento, conta.status)
-          const recorrente = ehContaRecorrente(conta)
-          const tipoRecorrencia = recorrente ? formatarTipoRecorrencia(obterTipoRecorrenciaConta(conta)) : ''
-          const observacao = String(conta.observacao || '').trim()
-          const valorPrevisto = Number(conta.valor || 0)
-          const valorPago = Number(conta.valor_pago || 0)
-          const jurosMulta = Number(conta.juros_multa || 0)
-          const desconto = Number(conta.desconto || 0)
-          const exibirBaixaReal = conta.status === 'pago' && conta.valor_pago !== null && conta.valor_pago !== undefined
-          const valorPrincipal = exibirBaixaReal ? valorPago : valorPrevisto
-          const oculta = conta.oculto === true
+        {!loading && mostrarContas && gruposPorPeriodo.map((grupo) => {
+          const aberto = grupoPeriodoAberto(grupo)
+          const textoAlternar = aberto ? 'Recolher grupo' : 'Expandir grupo'
 
           return (
-            <div
-              ref={destacadaPelaAgenda ? contaDestacadaRef : null}
-              className={`print-card account-card-desktop ${destacadaPelaAgenda ? 'account-card-agenda-focus' : ''} ${exibirBaixaReal ? 'account-card-payment-real' : ''} ${oculta ? 'account-card-hidden' : ''} ${vencida ? 'account-card-vencida' : conta.status === 'pago' ? 'account-card-paga' : 'account-card-pendente'}`}
-              key={conta.id}
-              style={{
-                ...styles.cardConta,
-                background:
-                  conta.status === 'pago'
-                    ? '#d4edda'
-                    : vencida
-                      ? '#ffb3b3'
-                      : '#fff3cd'
-              }}
-            >
-              <div style={styles.cardTopo} className="account-card-head">
-                <div className="account-title-wrap">
-                  <strong>{conta.descricao}</strong>
-                  {recorrente && (
-                    <span className="account-recurring-badge account-recurring-title-badge" title={`Conta recorrente ${tipoRecorrencia}`}>
-                      ↻ Recorrente
-                    </span>
-                  )}
+            <section className="accounts-period-group" key={grupo.chave}>
+              <div className="accounts-period-header">
+                <div className="accounts-period-copy">
+                  <strong>{grupo.rotulo}</strong>
+                  <span>{grupo.contas.length} conta(s) - {formatarValor(grupo.totalPrevisto)}</span>
                 </div>
-                {!exibirBaixaReal && (
-                  <span className="account-card-value">{formatarValor(valorPrevisto)}</span>
-                )}
-              </div>
-
-              {exibirBaixaReal && (
-                <div className="account-payment-real-panel">
-                  <strong className="account-payment-paid-value">{formatarValor(valorPrincipal)}</strong>
-                  <span className="account-payment-expected-value">Previsto: {formatarValor(valorPrevisto)}</span>
-                  {jurosMulta > 0 && (
-                    <span className="account-payment-adjustment account-payment-fee">
-                      Encargos: {formatarValor(jurosMulta)}
-                    </span>
-                  )}
-                  {desconto > 0 && (
-                    <span className="account-payment-adjustment account-payment-discount">
-                      Desconto: {formatarValor(desconto)}
-                    </span>
-                  )}
-                  {jurosMulta <= 0 && desconto <= 0 && (
-                    <span className="account-payment-adjustment account-payment-neutral">
-                      Pago sem ajuste
-                    </span>
-                  )}
-                </div>
-              )}
-
-              <div style={styles.cardInfo} className="account-meta-line">
-                <div className="account-meta-main">
-                  <span className="account-date-badge">📅 {formatarData(conta.data_vencimento)}</span>
-                  <span>{conta.df_filiais?.nome || 'Sem filial'}</span>
-                  <span>{conta.df_centros_custo?.nome || '-'}</span>
-                </div>
-                <div className="account-meta-badges">
-                  {recorrente && (
-                    <span className="account-recurring-badge">↻ {tipoRecorrencia}</span>
-                  )}
-                  <span className={`status-pill ${vencida ? 'status-vencido' : conta.status === 'pago' ? 'status-pago' : 'status-pendente'}`}>
-                    {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}
-                  </span>
-                  {oculta && <span className="status-pill status-oculto">Oculta</span>}
-                </div>
-              </div>
-
-              {observacao && (
-                <div className="account-observation-preview" title={observacao}>
-                  <span className="account-observation-text">
-                    <span aria-hidden="true">📝</span> {observacao}
-                  </span>
-                </div>
-              )}
-
-              {podeEditarFinanceiro && (
-                <div className={`account-actions ${conta.status === 'pago' ? 'account-actions-paid' : ''}`} style={{ ...styles.acoes, ...ACCOUNT_ACTIONS_STYLE }}>
-                {conta.status !== 'pago' ? (
-                  <button className="account-action-button account-action-primary" style={{ ...styles.btnPago, ...ACCOUNT_PRIMARY_ACTION_STYLE }} onClick={() => abrirBaixaConta(conta)}>
-                    Baixar
-                  </button>
-                ) : (
-                  <>
-                    <button className="account-action-button account-action-secondary" style={{ ...styles.btnVoltar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirConfirmacao({ titulo: 'Voltar para pendente', mensagem: `Deseja voltar a conta ${conta.descricao} para pendente?`, textoConfirmar: 'Voltar', tipo: 'aviso', acao: () => voltarParaPendente(conta.id) })}>
-                      Voltar
-                    </button>
-                    <button className="account-action-button account-action-secondary" style={{ ...styles.btnEditar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirCorrecaoPagamento(conta)}>
-                      Corrigir
-                    </button>
-                  </>
-                )}
-
-                <button className="account-action-button account-action-secondary" style={{ ...styles.btnEditar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirEdicaoConta(conta)}>
-                  Editar
+                <button
+                  type="button"
+                  className="accounts-period-toggle"
+                  onClick={() => alternarGrupoPeriodo(grupo)}
+                  aria-expanded={aberto}
+                  aria-label={`${textoAlternar}: ${grupo.rotulo}`}
+                  title={textoAlternar}
+                >
+                  {aberto ? '\u2212' : '+'}
                 </button>
-
-                {oculta ? (
-                  <button className="account-action-button account-action-restore" style={ACCOUNT_HIDE_ACTION_STYLE} onClick={() => abrirConfirmacao({ titulo: 'Reexibir conta', mensagem: `Deseja reexibir a conta ${conta.descricao} na visão principal?`, textoConfirmar: 'Reexibir', tipo: 'aviso', acao: () => reexibirConta(conta.id) })}>
-                    Reexibir
-                  </button>
-                ) : (
-                  <button className="account-action-button account-action-hide" style={ACCOUNT_HIDE_ACTION_STYLE} onClick={() => abrirConfirmacao({ titulo: 'Ocultar conta', mensagem: `Ocultar esta conta da visão principal? A conta ${conta.descricao} não será excluída e poderá ser reexibida depois.`, textoConfirmar: 'Ocultar', tipo: 'aviso', acao: () => ocultarConta(conta.id) })}>
-                    Ocultar
-                  </button>
-                )}
-
-                <button className="account-action-button account-action-danger" style={{ ...styles.btnExcluir, ...ACCOUNT_DANGER_ACTION_STYLE }} onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
-                  Excluir
-                </button>
+              </div>
+              {aberto && (
+                <div className="accounts-period-list">
+                  {grupo.contas.map((conta) => renderContaCard(conta))}
                 </div>
               )}
-            </div>
+            </section>
           )
         })}
       </section>

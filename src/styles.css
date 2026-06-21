@@ -4014,6 +4014,75 @@
   background: #f0fdfa !important;
 }
 
+.accounts-period-group {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.accounts-period-group + .accounts-period-group {
+  margin-top: 6px;
+}
+
+.accounts-period-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(15, 118, 110, .14);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f8fafc 0%, #eefdf9 100%);
+  box-sizing: border-box;
+}
+
+.accounts-period-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.accounts-period-copy strong {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.accounts-period-copy span {
+  min-width: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.accounts-period-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(15, 118, 110, .18);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0f766e;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, .06);
+}
+
+.accounts-period-list {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
 .account-card-desktop.account-card-paga::before {
   background: #16a34a;
 }

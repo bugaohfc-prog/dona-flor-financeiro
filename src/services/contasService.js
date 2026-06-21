@@ -26,6 +26,14 @@ export async function listarRecorrenciasAtivas(supabase, empresaId) {
     .eq('ativo', true)
 }
 
+export async function listarRecorrencias(supabase, empresaId) {
+  assertEmpresaId(empresaId)
+  return selecionarPorEmpresa(supabase, 'df_contas_recorrentes', empresaId)
+    .order('ativo', { ascending: false })
+    .order('data_inicio', { ascending: false })
+    .order('created_at', { ascending: false })
+}
+
 
 export async function validarCentroCustoDaEmpresa(supabase, centroCustoId, empresaId) {
   if (!centroCustoId) return null

@@ -4098,6 +4098,143 @@
   box-shadow: 0 10px 20px rgba(15, 23, 42, .06);
 }
 
+.accounts-recurring-section {
+  display: grid;
+  gap: 14px;
+}
+
+.accounts-recurring-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.accounts-recurring-summary span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(15, 118, 110, .12);
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.accounts-recurring-summary b {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.accounts-recurring-summary .has-warning {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.accounts-recurring-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+  gap: 10px;
+  align-items: center;
+}
+
+.accounts-recurring-tabs {
+  width: 100%;
+}
+
+.accounts-recurring-search {
+  width: 100% !important;
+}
+
+.accounts-recurring-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.accounts-recurring-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(15, 118, 110, .14);
+  border-left: 4px solid #14b8a6;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, .06);
+}
+
+.accounts-recurring-card.is-inactive {
+  border-left-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.accounts-recurring-card.is-duplicate {
+  border-color: #f59e0b;
+  border-left-color: #f59e0b;
+}
+
+.accounts-recurring-card-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.accounts-recurring-card-head strong {
+  min-width: 0;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.accounts-recurring-value {
+  color: #0f766e;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.accounts-recurring-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.accounts-recurring-meta span {
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.accounts-recurring-warning {
+  padding: 8px 10px;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.accounts-recurring-more {
+  margin: 0 auto;
+}
+
 .account-card-desktop.account-card-paga::before {
   background: #16a34a;
 }
@@ -4299,6 +4436,18 @@
 
   .account-meta-badges {
     justify-content: flex-start;
+  }
+
+  .accounts-recurring-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .accounts-recurring-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .accounts-recurring-grid {
+    grid-template-columns: 1fr;
   }
 
   .account-actions {

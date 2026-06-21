@@ -215,6 +215,7 @@ export default function App() {
     setContas,
     contasLixeira,
     setContasLixeira,
+    seriesRecorrentes,
     busca,
     setBusca,
     filtroStatus,
@@ -4499,6 +4500,7 @@ export default function App() {
         limitarDataInput={limitarDataInput}
         contas={contas}
         contasFiltradas={contasFiltradas}
+        seriesRecorrentes={seriesRecorrentes}
         agendaFocusTarget={agendaFocusTarget}
         onAgendaFocusHandled={() => setAgendaFocusTarget(null)}
         total={total}

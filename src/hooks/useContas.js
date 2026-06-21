@@ -8,6 +8,7 @@ import {
   corrigirPagamentoConta,
   criarConta,
   criarContasEmLote,
+  listarRecorrencias,
   criarRecorrencia,
   desativarRecorrencia,
   enviarContaParaLixeira,
@@ -29,6 +30,7 @@ const CENTRO_CUSTO_INVALIDO_MENSAGEM = 'Centro de custo indisponível. Atualize 
 export function useContas() {
   const [contas, setContas] = useState([])
   const [contasLixeira, setContasLixeira] = useState([])
+  const [seriesRecorrentes, setSeriesRecorrentes] = useState([])
   const [busca, setBusca] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('todas')
   const [filtroCentro, setFiltroCentro] = useState('')
@@ -188,11 +190,21 @@ export function useContas() {
     if (!empresaAtual) return
 
     try {
-      const { data, error } = await listarContasAtivas(supabase, empresaAtual)
+      const [{ data, error }, respostaRecorrencias] = await Promise.all([
+        listarContasAtivas(supabase, empresaAtual),
+        listarRecorrencias(supabase, empresaAtual)
+      ])
 
       if (error) {
         avisarErro(error)
         return
+      }
+
+      if (respostaRecorrencias.error) {
+        console.warn('Não foi possível carregar séries recorrentes:', respostaRecorrencias.error.message)
+        setSeriesRecorrentes([])
+      } else {
+        setSeriesRecorrentes(respostaRecorrencias.data || [])
       }
 
       const contasAtuais = data || []
@@ -612,6 +624,8 @@ export function useContas() {
     setContas,
     contasLixeira,
     setContasLixeira,
+    seriesRecorrentes,
+    setSeriesRecorrentes,
     busca,
     setBusca,
     filtroStatus,

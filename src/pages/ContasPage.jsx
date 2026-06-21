@@ -697,6 +697,7 @@ export default function ContasPage({
           styles={styles}
           conta={contaEmBaixa}
           formatarValor={formatarValor}
+          formatarData={formatarData}
           limitarDataInput={limitarDataInput}
           modo={modoPagamento}
           onClose={fecharModalPagamento}

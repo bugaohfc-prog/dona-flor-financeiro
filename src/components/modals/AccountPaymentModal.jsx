@@ -27,6 +27,7 @@ export default function AccountPaymentModal({
   styles,
   conta,
   formatarValor,
+  formatarData,
   limitarDataInput,
   modo = 'baixa',
   onClose,
@@ -60,6 +61,11 @@ export default function AccountPaymentModal({
 
     const valorNumerico = normalizarValor(valorPago)
     if (!valorNumerico || valorNumerico < 0 || !dataPagamento) return
+
+    if (corrigindoPagamento) {
+      const confirmou = window.confirm('Salvar correção desta baixa?\n\nA conta continuará marcada como paga, apenas os dados do pagamento serão atualizados.')
+      if (!confirmou) return
+    }
 
     setSalvando(true)
     const sucesso = await onConfirm({
@@ -96,6 +102,14 @@ export default function AccountPaymentModal({
             <div>
               <span>Valor previsto</span>
               <strong>{formatarValor(valorPrevisto)}</strong>
+            </div>
+            <div>
+              <span>Vencimento</span>
+              <strong>{conta.data_vencimento ? formatarData(conta.data_vencimento) : '-'}</strong>
+            </div>
+            <div>
+              <span>Status</span>
+              <strong>{corrigindoPagamento ? 'Pago' : conta.status === 'pago' ? 'Pago' : 'Aberta'}</strong>
             </div>
           </section>
 

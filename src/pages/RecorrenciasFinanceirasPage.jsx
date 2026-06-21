@@ -60,7 +60,9 @@ export default function RecorrenciasFinanceirasPage({
   formatarValor,
   formatarData,
   formatarTipoRecorrencia,
-  navegarPara
+  navegarPara,
+  abrirConfirmacao,
+  desativarSerieRecorrente
 }) {
   const [filtroSeriesRecorrentes, setFiltroSeriesRecorrentes] = useState('ativas')
   const [buscaSeriesRecorrentes, setBuscaSeriesRecorrentes] = useState('')
@@ -118,6 +120,18 @@ export default function RecorrenciasFinanceirasPage({
   useEffect(() => {
     setLimiteSeriesRecorrentes(LIMITE_SERIES_RECORRENTES)
   }, [buscaSeriesRecorrentes, filtroSeriesRecorrentes])
+
+  function confirmarDesativacaoSerie(serie) {
+    if (!serie?.id) return
+
+    abrirConfirmacao?.({
+      titulo: 'Desativar série recorrente',
+      mensagem: `Desativar a série "${serie.descricao || 'sem descrição'}"? A série será desativada, contas já geradas não serão apagadas e novas contas futuras dessa série não devem ser geradas automaticamente.`,
+      textoConfirmar: 'Desativar',
+      tipo: 'aviso',
+      acao: () => desativarSerieRecorrente?.(serie.id)
+    })
+  }
 
   return (
     <main className="accounts-page recurring-page">
@@ -220,6 +234,17 @@ export default function RecorrenciasFinanceirasPage({
                   {duplicada && (
                     <div className="accounts-recurring-warning">
                       Possível duplicidade: mesma descrição, valor, dia, centro e filial.
+                    </div>
+                  )}
+                  {serie.ativo === true && (
+                    <div className="accounts-recurring-actions">
+                      <button
+                        type="button"
+                        className="accounts-recurring-disable"
+                        onClick={() => confirmarDesativacaoSerie(serie)}
+                      >
+                        Desativar
+                      </button>
                     </div>
                   )}
                 </article>

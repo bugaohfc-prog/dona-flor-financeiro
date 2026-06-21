@@ -4231,6 +4231,31 @@
   line-height: 1.35;
 }
 
+.accounts-recurring-actions {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.accounts-recurring-disable {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #f5c16c;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.accounts-recurring-disable:hover,
+.accounts-recurring-disable:focus-visible {
+  border-color: #d97706;
+  background: #ffedd5;
+  outline: none;
+}
+
 .accounts-recurring-more {
   margin: 0 auto;
 }

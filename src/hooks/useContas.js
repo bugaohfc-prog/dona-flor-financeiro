@@ -619,6 +619,20 @@ export function useContas() {
     mostrarAviso?.('Conta reexibida na visão principal.', 'sucesso')
   }
 
+  async function desativarSerieRecorrente(contexto) {
+    const { supabase, id, empresaId, avisarErro, buscarContas, mostrarAviso } = contexto
+    const { error } = await desativarRecorrencia(supabase, id, empresaId)
+
+    if (error) {
+      avisarErro(error)
+      return false
+    }
+
+    await buscarContas()
+    mostrarAviso?.('Série recorrente desativada.', 'sucesso')
+    return true
+  }
+
   return {
     contas,
     setContas,
@@ -684,6 +698,7 @@ export function useContas() {
     voltarParaPendente,
     excluirConta,
     ocultarConta,
-    reexibirConta
+    reexibirConta,
+    desativarSerieRecorrente
   }
 }

@@ -5,6 +5,7 @@ import {
   atualizarStatusConta,
   baixarContaComoPaga,
   buscarRecorrenciaPorId,
+  corrigirPagamentoConta,
   criarConta,
   criarContasEmLote,
   criarRecorrencia,
@@ -538,6 +539,21 @@ export function useContas() {
     return true
   }
 
+  async function corrigirPagamento(contexto) {
+    const { supabase, id, empresaId, buscarContas, mostrarAviso, pagamento } = contexto
+    const { error } = await corrigirPagamentoConta(supabase, id, empresaId, pagamento)
+
+    if (error) {
+      console.warn('Falha ao corrigir pagamento da conta:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível corrigir o pagamento da conta.'), 'erro')
+      return false
+    }
+
+    await buscarContas()
+    mostrarAviso?.('Pagamento corrigido com sucesso.', 'sucesso')
+    return true
+  }
+
   async function voltarParaPendente(contexto) {
     const { supabase, id, empresaId, buscarContas, mostrarAviso } = contexto
     const { error } = await atualizarStatusConta(supabase, id, empresaId, 'pendente')
@@ -650,6 +666,7 @@ export function useContas() {
     fecharConta,
     salvarConta,
     marcarComoPago,
+    corrigirPagamento,
     voltarParaPendente,
     excluirConta,
     ocultarConta,

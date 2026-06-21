@@ -269,6 +269,7 @@ export default function App() {
     fecharConta: fecharContaHook,
     salvarConta: salvarContaHook,
     marcarComoPago: marcarComoPagoHook,
+    corrigirPagamento: corrigirPagamentoHook,
     voltarParaPendente: voltarParaPendenteHook,
     excluirConta: excluirContaHook,
     ocultarConta: ocultarContaHook,
@@ -2008,6 +2009,15 @@ export default function App() {
     }
 
     return marcarComoPagoHook({ supabase, id, empresaId, buscarContas, mostrarAviso, pagamento })
+  }
+
+  async function corrigirPagamento(id, pagamento) {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return false
+    }
+
+    return corrigirPagamentoHook({ supabase, id, empresaId, buscarContas, mostrarAviso, pagamento })
   }
 
   async function voltarParaPendente(id) {
@@ -4503,6 +4513,7 @@ export default function App() {
         obterTipoRecorrenciaConta={obterTipoRecorrenciaConta}
         abrirConfirmacao={abrirConfirmacao}
         marcarComoPago={marcarComoPago}
+        corrigirPagamento={corrigirPagamento}
         voltarParaPendente={voltarParaPendente}
         abrirEdicaoConta={abrirEdicaoConta}
         excluirConta={excluirConta}

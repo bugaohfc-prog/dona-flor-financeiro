@@ -183,11 +183,12 @@ export default function ContasPage({
   filtroStatus, setFiltroStatus, centros, filtroCentro, setFiltroCentro, filiais, filtroFilial, setFiltroFilial, filtroMes, setFiltroMes,
   dataInicial, setDataInicial, dataFinal, setDataFinal, limitarDataInput, contas = [], contasFiltradas, agendaFocusTarget, onAgendaFocusHandled, total, formatarValor,
   loading, mostrarContas, setMostrarContas, estaVencida, formatarData, formatarTipoRecorrencia,
-  obterTipoRecorrenciaConta, abrirConfirmacao, marcarComoPago, voltarParaPendente, abrirEdicaoConta, excluirConta, ocultarConta, reexibirConta,
+  obterTipoRecorrenciaConta, abrirConfirmacao, marcarComoPago, corrigirPagamento, voltarParaPendente, abrirEdicaoConta, excluirConta, ocultarConta, reexibirConta,
   navegarPara, podeEditarFinanceiro = true, podeExportarDados = true
 }) {
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
   const [contaEmBaixa, setContaEmBaixa] = useState(null)
+  const [modoPagamento, setModoPagamento] = useState('baixa')
   const [contaDestacadaId, setContaDestacadaId] = useState('')
   const [mostrarExportacoes, setMostrarExportacoes] = useState(false)
   const contaDestacadaRef = useRef(null)
@@ -215,7 +216,23 @@ export default function ContasPage({
 
   async function confirmarBaixaConta(payload) {
     if (!contaEmBaixa?.id) return false
+    if (modoPagamento === 'corrigir') return corrigirPagamento(contaEmBaixa.id, payload)
     return marcarComoPago(contaEmBaixa.id, payload)
+  }
+
+  function abrirBaixaConta(conta) {
+    setModoPagamento('baixa')
+    setContaEmBaixa(conta)
+  }
+
+  function abrirCorrecaoPagamento(conta) {
+    setModoPagamento('corrigir')
+    setContaEmBaixa(conta)
+  }
+
+  function fecharModalPagamento() {
+    setContaEmBaixa(null)
+    setModoPagamento('baixa')
   }
 
   useEffect(() => {
@@ -464,15 +481,20 @@ export default function ContasPage({
               )}
 
               {podeEditarFinanceiro && (
-                <div className="account-actions" style={{ ...styles.acoes, ...ACCOUNT_ACTIONS_STYLE }}>
+                <div className={`account-actions ${conta.status === 'pago' ? 'account-actions-paid' : ''}`} style={{ ...styles.acoes, ...ACCOUNT_ACTIONS_STYLE }}>
                 {conta.status !== 'pago' ? (
-                  <button className="account-action-button account-action-primary" style={{ ...styles.btnPago, ...ACCOUNT_PRIMARY_ACTION_STYLE }} onClick={() => setContaEmBaixa(conta)}>
+                  <button className="account-action-button account-action-primary" style={{ ...styles.btnPago, ...ACCOUNT_PRIMARY_ACTION_STYLE }} onClick={() => abrirBaixaConta(conta)}>
                     Baixar
                   </button>
                 ) : (
-                  <button className="account-action-button account-action-secondary" style={{ ...styles.btnVoltar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirConfirmacao({ titulo: 'Voltar para pendente', mensagem: `Deseja voltar a conta ${conta.descricao} para pendente?`, textoConfirmar: 'Voltar', tipo: 'aviso', acao: () => voltarParaPendente(conta.id) })}>
-                    Voltar
-                  </button>
+                  <>
+                    <button className="account-action-button account-action-secondary" style={{ ...styles.btnVoltar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirConfirmacao({ titulo: 'Voltar para pendente', mensagem: `Deseja voltar a conta ${conta.descricao} para pendente?`, textoConfirmar: 'Voltar', tipo: 'aviso', acao: () => voltarParaPendente(conta.id) })}>
+                      Voltar
+                    </button>
+                    <button className="account-action-button account-action-secondary" style={{ ...styles.btnEditar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirCorrecaoPagamento(conta)}>
+                      Corrigir
+                    </button>
+                  </>
                 )}
 
                 <button className="account-action-button account-action-secondary" style={{ ...styles.btnEditar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirEdicaoConta(conta)}>
@@ -522,7 +544,8 @@ export default function ContasPage({
           conta={contaEmBaixa}
           formatarValor={formatarValor}
           limitarDataInput={limitarDataInput}
-          onClose={() => setContaEmBaixa(null)}
+          modo={modoPagamento}
+          onClose={fecharModalPagamento}
           onConfirm={confirmarBaixaConta}
         />
       )}

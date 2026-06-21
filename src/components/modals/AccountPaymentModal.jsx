@@ -28,13 +28,16 @@ export default function AccountPaymentModal({
   conta,
   formatarValor,
   limitarDataInput,
+  modo = 'baixa',
   onClose,
   onConfirm
 }) {
+  const corrigindoPagamento = modo === 'corrigir'
   const valorPrevisto = normalizarValor(conta?.valor)
-  const [valorPago, setValorPago] = useState(formatarValorInput(valorPrevisto))
-  const [dataPagamento, setDataPagamento] = useState(dataAtualBanco())
-  const [observacaoPagamento, setObservacaoPagamento] = useState('')
+  const valorPagamentoInicial = corrigindoPagamento && conta?.valor_pago != null ? conta.valor_pago : valorPrevisto
+  const [valorPago, setValorPago] = useState(formatarValorInput(valorPagamentoInicial))
+  const [dataPagamento, setDataPagamento] = useState(corrigindoPagamento && conta?.data_pagamento ? conta.data_pagamento : dataAtualBanco())
+  const [observacaoPagamento, setObservacaoPagamento] = useState(corrigindoPagamento ? conta?.observacao_pagamento || '' : '')
   const [salvando, setSalvando] = useState(false)
 
   const previa = useMemo(() => {
@@ -76,8 +79,12 @@ export default function AccountPaymentModal({
       <div className="account-modal-card account-payment-modal-card" style={{ ...styles.modal, maxWidth: 460 }} onClick={(event) => event.stopPropagation()}>
         <header className="account-modal-header">
           <span>Financeiro</span>
-          <h3>Baixar conta</h3>
-          <p>Registre o pagamento com valor, data e observação administrativa.</p>
+          <h3>{corrigindoPagamento ? 'Corrigir pagamento' : 'Baixar conta'}</h3>
+          <p>
+            {corrigindoPagamento
+              ? 'Atualize valor, data ou observação do pagamento. A conta continuará marcada como paga.'
+              : 'Registre o pagamento com valor, data e observação administrativa.'}
+          </p>
         </header>
 
         <div className="account-modal-body">
@@ -95,7 +102,7 @@ export default function AccountPaymentModal({
           <section className="account-modal-section">
             <div className="account-modal-section-title">
               <strong>Dados do pagamento</strong>
-              <small>Informe o valor realizado e a data da baixa.</small>
+              <small>{corrigindoPagamento ? 'Ajuste os dados registrados na baixa.' : 'Informe o valor realizado e a data da baixa.'}</small>
             </div>
             <div className="account-modal-grid">
               <label className="account-modal-field">
@@ -141,7 +148,7 @@ export default function AccountPaymentModal({
 
         <footer className="account-modal-actions">
           <button className="account-modal-save" style={styles.btnSalvar} type="button" onClick={confirmarBaixa} disabled={salvando}>
-            {salvando ? 'Salvando...' : 'Confirmar baixa'}
+            {salvando ? 'Salvando...' : corrigindoPagamento ? 'Salvar correção' : 'Confirmar baixa'}
           </button>
           <button className="account-modal-cancel" style={styles.btnCancelar} type="button" onClick={onClose} disabled={salvando}>
             Cancelar

@@ -4434,6 +4434,10 @@
     line-height: 1 !important;
     white-space: nowrap !important;
   }
+
+  .account-card-desktop.print-card .account-actions.account-actions-paid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
 }
 
 /* Notas - modal premium */

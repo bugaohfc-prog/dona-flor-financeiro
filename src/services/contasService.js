@@ -15,9 +15,10 @@ export async function listarContasAtivas(supabase, empresaId) {
 
 export async function listarContasDoMesParaRecorrencia(supabase, empresaId, dataInicial, dataFinal) {
   assertEmpresaId(empresaId)
-  return selecionarPorEmpresa(supabase, 'df_contas', empresaId, 'id, descricao, valor, data_vencimento, recorrencia_id, excluido, excluido_em')
+  return selecionarPorEmpresa(supabase, 'df_contas', empresaId, 'id, descricao, valor, data_vencimento, centro_custo_id, filial_id, recorrencia_id, excluido, excluido_em')
     .gte('data_vencimento', dataInicial)
     .lte('data_vencimento', dataFinal)
+    .or('excluido.is.null,excluido.eq.false')
 }
 
 export async function listarRecorrenciasAtivas(supabase, empresaId) {

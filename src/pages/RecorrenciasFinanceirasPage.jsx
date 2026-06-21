@@ -172,6 +172,12 @@ export default function RecorrenciasFinanceirasPage({
           </div>
         </div>
 
+        <div className="accounts-recurring-guidance" role="note">
+          <span>Reativar uma série não cria contas imediatamente.</span>
+          <span>A geração automática usa a série ativa, o mês atual e a trava por série + vencimento.</span>
+          <span>O valor da série é usado como base; contas geradas podem ser ajustadas individualmente.</span>
+        </div>
+
         <div className="accounts-recurring-summary">
           <span><b>Total</b>{resumoSeriesRecorrentes.total}</span>
           <span><b>Ativas</b>{resumoSeriesRecorrentes.ativas}</span>
@@ -246,7 +252,7 @@ export default function RecorrenciasFinanceirasPage({
                   </div>
                   {duplicada && (
                     <div className="accounts-recurring-warning">
-                      Possível duplicidade: mesma descrição, valor, dia, centro e filial.
+                      Possível duplicidade visual: mesma descrição, valor, dia, centro e filial. Nenhum dado é alterado por este alerta.
                     </div>
                   )}
                   <div className="accounts-recurring-actions">

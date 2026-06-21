@@ -29,6 +29,29 @@ import { mensagemSeguraErro } from '../utils/session'
 
 const CENTRO_CUSTO_INVALIDO_MENSAGEM = 'Centro de custo indisponível. Atualize a página ou selecione outro centro de custo.'
 
+function normalizarTextoRecorrencia(valor) {
+  return String(valor || '').trim().toLowerCase()
+}
+
+function normalizarValorRecorrencia(valor) {
+  return Number(valor || 0).toFixed(2)
+}
+
+function recorrenciaTemContaGerada(contasReferencia, recorrencia, dataGerada) {
+  return (contasReferencia || []).some((conta) => {
+    if (conta.data_vencimento !== dataGerada) return false
+    if (recorrencia.id && conta.recorrencia_id === recorrencia.id) return true
+    if (recorrencia.id) return false
+
+    return (
+      normalizarTextoRecorrencia(conta.descricao) === normalizarTextoRecorrencia(recorrencia.descricao) &&
+      normalizarValorRecorrencia(conta.valor) === normalizarValorRecorrencia(recorrencia.valor) &&
+      String(conta.centro_custo_id || '') === String(recorrencia.centro_custo_id || '') &&
+      String(conta.filial_id || '') === String(recorrencia.filial_id || '')
+    )
+  })
+}
+
 export function useContas() {
   const [contas, setContas] = useState([])
   const [contasLixeira, setContasLixeira] = useState([])
@@ -131,11 +154,7 @@ export function useContas() {
 
       const dataGerada = montarDataRecorrente(ano, mes, recorrencia.dia_vencimento)
 
-      const jaExiste = contasReferencia.some((conta) => {
-        const mesmaRecorrencia = recorrencia.id && conta.recorrencia_id === recorrencia.id
-        const mesmaDescricao = String(conta.descricao || '').trim().toLowerCase() === String(recorrencia.descricao || '').trim().toLowerCase()
-        return conta.data_vencimento === dataGerada && (mesmaRecorrencia || mesmaDescricao)
-      })
+      const jaExiste = recorrenciaTemContaGerada(contasReferencia, recorrencia, dataGerada)
 
       if (jaExiste) continue
 

@@ -4127,6 +4127,12 @@
   overflow-wrap: anywhere;
 }
 
+.account-modal-save:disabled {
+  opacity: .72;
+  cursor: wait;
+  pointer-events: none;
+}
+
 .accounts-recurring-summary span {
   display: flex;
   flex-direction: column;

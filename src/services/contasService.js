@@ -105,6 +105,29 @@ export async function criarConta(supabase, payload) {
   return inserirComEmpresa(supabase, 'df_contas', payload, { select: true })
 }
 
+export async function buscarRecorrenciaSemelhante(supabase, payload) {
+  assertEmpresaId(payload?.empresa_id)
+
+  let consulta = selecionarPorEmpresa(supabase, 'df_contas_recorrentes', payload.empresa_id)
+    .eq('ativo', true)
+    .eq('descricao', payload.descricao)
+    .eq('valor', payload.valor)
+    .eq('tipo_recorrencia', payload.tipo_recorrencia || 'mensal')
+    .eq('dia_vencimento', payload.dia_vencimento)
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  consulta = payload.centro_custo_id
+    ? consulta.eq('centro_custo_id', payload.centro_custo_id)
+    : consulta.is('centro_custo_id', null)
+
+  consulta = payload.filial_id
+    ? consulta.eq('filial_id', payload.filial_id)
+    : consulta.is('filial_id', null)
+
+  return consulta.maybeSingle()
+}
+
 export async function atualizarConta(supabase, id, empresaId, payload) {
   return atualizarPorEmpresa(supabase, 'df_contas', id, empresaId, payload)
 }

@@ -23,6 +23,7 @@ export default function AccountModal({
   setDiaVencimentoRecorrencia,
   fecharConta,
   salvarConta,
+  salvandoConta,
   primeiraLetraMaiuscula,
   limitarDataInput,
   formatarDataParaBanco,
@@ -172,7 +173,20 @@ export default function AccountModal({
         </div>
 
         <footer className="account-modal-actions">
-          <button className="account-modal-save" style={styles.btnSalvar} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); salvarConta() }}>Salvar</button>
+          <button
+            className="account-modal-save"
+            style={styles.btnSalvar}
+            type="button"
+            disabled={salvandoConta}
+            aria-busy={salvandoConta ? 'true' : 'false'}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              if (!salvandoConta) salvarConta()
+            }}
+          >
+            {salvandoConta ? 'Salvando...' : 'Salvar'}
+          </button>
           <button className="account-modal-cancel" style={styles.btnCancelar} type="button" onClick={fecharConta}>Cancelar</button>
         </footer>
       </div>

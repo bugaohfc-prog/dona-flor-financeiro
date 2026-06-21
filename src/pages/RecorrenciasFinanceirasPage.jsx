@@ -252,7 +252,7 @@ export default function RecorrenciasFinanceirasPage({
                   </div>
                   {duplicada && (
                     <div className="accounts-recurring-warning">
-                      Possível duplicidade visual: mesma descrição, valor, dia, centro e filial. Nenhum dado é alterado por este alerta.
+                      Possível duplicidade visual: revise antes de alterar. Nenhum dado foi alterado por este alerta.
                     </div>
                   )}
                   <div className="accounts-recurring-actions">

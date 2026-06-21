@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   atualizarConta,
   atualizarRecorrencia,
@@ -11,6 +11,7 @@ import {
   estornarBaixaConta,
   listarRecorrencias,
   criarRecorrencia,
+  buscarRecorrenciaSemelhante,
   desativarRecorrencia,
   enviarContaParaLixeira,
   listarContasAtivas,
@@ -64,6 +65,8 @@ export function useContas() {
   const [dataInicial, setDataInicial] = useState('')
   const [dataFinal, setDataFinal] = useState('')
   const [loading, setLoading] = useState(true)
+  const [salvandoConta, setSalvandoConta] = useState(false)
+  const salvandoContaRef = useRef(false)
 
   const [modalConta, setModalConta] = useState(false)
   const [editandoContaId, setEditandoContaId] = useState(null)
@@ -334,6 +337,20 @@ export function useContas() {
   }
 
   async function salvarConta(contexto) {
+    if (salvandoContaRef.current) return false
+
+    salvandoContaRef.current = true
+    setSalvandoConta(true)
+
+    try {
+      return await salvarContaInterno(contexto)
+    } finally {
+      salvandoContaRef.current = false
+      setSalvandoConta(false)
+    }
+  }
+
+  async function salvarContaInterno(contexto) {
     const {
       supabase,
       empresaId,
@@ -433,7 +450,15 @@ export function useContas() {
               return
             }
           } else {
-            const { data: dataRecorrencia, error: erroRecorrencia } = await criarRecorrencia(supabase, payloadRecorrencia)
+            const { data: recorrenciaSemelhante, error: erroRecorrenciaSemelhante } = await buscarRecorrenciaSemelhante(supabase, payloadRecorrencia)
+
+            if (erroRecorrenciaSemelhante) {
+              console.warn('Falha ao verificar recorrência semelhante:', erroRecorrenciaSemelhante)
+            }
+
+            const { data: dataRecorrencia, error: erroRecorrencia } = recorrenciaSemelhante?.id
+              ? { data: recorrenciaSemelhante, error: null }
+              : await criarRecorrencia(supabase, payloadRecorrencia)
 
             if (erroRecorrencia) {
               console.warn('Falha ao criar recorrência da conta atualizada:', erroRecorrencia)
@@ -493,7 +518,15 @@ export function useContas() {
       error = resposta.error
 
       if (!error && contaRecorrente) {
-        const { data: dataRecorrencia, error: erroRecorrencia } = await criarRecorrencia(supabase, payloadRecorrencia)
+        const { data: recorrenciaSemelhante, error: erroRecorrenciaSemelhante } = await buscarRecorrenciaSemelhante(supabase, payloadRecorrencia)
+
+        if (erroRecorrenciaSemelhante) {
+          console.warn('Falha ao verificar recorrência semelhante:', erroRecorrenciaSemelhante)
+        }
+
+        const { data: dataRecorrencia, error: erroRecorrencia } = recorrenciaSemelhante?.id
+          ? { data: recorrenciaSemelhante, error: null }
+          : await criarRecorrencia(supabase, payloadRecorrencia)
 
         if (erroRecorrencia) {
           console.warn('Falha ao criar recorrência da nova conta:', erroRecorrencia)
@@ -691,6 +724,7 @@ export function useContas() {
     setDataFinal,
     loading,
     setLoading,
+    salvandoConta,
     modalConta,
     setModalConta,
     editandoContaId,

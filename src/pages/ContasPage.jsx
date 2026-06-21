@@ -116,8 +116,7 @@ function obterChaveMesAtual() {
   return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`
 }
 
-function agruparContasPorPeriodo(contas, estaVencida) {
-  const mesAtual = obterChaveMesAtual()
+function agruparContasPorPeriodo(contas) {
   const mapa = new Map()
 
   contas.forEach((conta) => {
@@ -127,22 +126,27 @@ function agruparContasPorPeriodo(contas, estaVencida) {
         chave,
         rotulo: obterRotuloPeriodo(chave),
         contas: [],
-        totalPrevisto: 0,
-        temVencidas: false,
-        abertoInicial: chave === 'sem-data' || chave <= mesAtual
+        totalPrevisto: 0
       })
     }
 
     const grupo = mapa.get(chave)
     grupo.contas.push(conta)
     grupo.totalPrevisto += Number(conta.valor || 0)
-    grupo.temVencidas = grupo.temVencidas || estaVencida(conta.data_vencimento, conta.status)
   })
 
-  return Array.from(mapa.values()).map((grupo) => ({
-    ...grupo,
-    abertoInicial: grupo.abertoInicial || grupo.temVencidas
-  }))
+  return Array.from(mapa.values())
+}
+
+function obterChaveGrupoAbertoInicial(grupos, filtroStatus) {
+  if (!grupos.length) return ''
+  if (filtroStatus === 'todas') {
+    const chaveMesAtual = obterChaveMesAtual()
+    return grupos.some((grupo) => grupo.chave === chaveMesAtual)
+      ? chaveMesAtual
+      : grupos[0].chave
+  }
+  return grupos[0].chave
 }
 
 function ordenarContasParaListagem(contas, ordenacao, filtroStatus, estaVencida) {
@@ -272,8 +276,25 @@ export default function ContasPage({
   }, [contaAlvoAgenda, contasFiltradas, filtroStatus])
   const contasOrdenadas = ordenarContasParaListagem(contasParaListagem, ordenacaoContas, filtroStatus, estaVencida)
   const gruposPorPeriodo = useMemo(
-    () => agruparContasPorPeriodo(contasOrdenadas, estaVencida),
-    [contasOrdenadas, estaVencida]
+    () => agruparContasPorPeriodo(contasOrdenadas),
+    [contasOrdenadas]
+  )
+  const chaveGrupoAbertoInicial = useMemo(
+    () => obterChaveGrupoAbertoInicial(gruposPorPeriodo, filtroStatus),
+    [gruposPorPeriodo, filtroStatus]
+  )
+  const assinaturaGruposPeriodo = useMemo(
+    () => [
+      filtroStatus,
+      busca,
+      filtroFilial,
+      filtroCentro,
+      filtroMes,
+      dataInicial,
+      dataFinal,
+      gruposPorPeriodo.map((grupo) => grupo.chave).join(',')
+    ].join('|'),
+    [busca, dataFinal, dataInicial, filtroCentro, filtroFilial, filtroMes, filtroStatus, gruposPorPeriodo]
   )
   const statusAtualLabel = ABAS_STATUS_CONTAS.find((aba) => aba.valor === filtroStatus)?.label || filtroStatus
   const resumoResultadoFiltrado = useMemo(
@@ -308,7 +329,7 @@ export default function ContasPage({
     if (Object.prototype.hasOwnProperty.call(gruposPeriodoFechados, grupo.chave)) {
       return !gruposPeriodoFechados[grupo.chave]
     }
-    return grupo.abertoInicial
+    return grupo.chave === chaveGrupoAbertoInicial
   }
 
   function alternarGrupoPeriodo(grupo) {
@@ -339,6 +360,10 @@ export default function ContasPage({
       window.clearTimeout(clearTimer)
     }
   }, [contaAlvoAgendaId, setMostrarContas, onAgendaFocusHandled])
+
+  useEffect(() => {
+    setGruposPeriodoFechados({})
+  }, [assinaturaGruposPeriodo])
 
   function renderContaCard(conta) {
     const destacadaPelaAgenda = String(conta.id) === String(contaDestacadaId)

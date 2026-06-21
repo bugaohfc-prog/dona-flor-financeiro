@@ -16,6 +16,14 @@ function obterChaveDuplicidadeSerie(serie) {
   ].join('|')
 }
 
+function obterStatusDuplicidadeSerie(serie, duplicidadesSeries) {
+  const resumo = duplicidadesSeries.get(obterChaveDuplicidadeSerie(serie))
+  if (!resumo || resumo.total <= 1) return 'nenhuma'
+  if (resumo.ativas > 1) return 'ativa'
+  if (resumo.ativas === 1 && resumo.inativas > 0) return 'historica'
+  return 'inativa'
+}
+
 function calcularProximaReferenciaSerie(serie) {
   if (serie?.ativo !== true) return ''
   const tipo = String(serie.tipo_recorrencia || 'mensal').toLowerCase()
@@ -81,19 +89,27 @@ export default function RecorrenciasFinanceirasPage({
     const mapa = new Map()
     ;(seriesRecorrentes || []).forEach((serie) => {
       const chave = obterChaveDuplicidadeSerie(serie)
-      mapa.set(chave, (mapa.get(chave) || 0) + 1)
+      const resumo = mapa.get(chave) || { total: 0, ativas: 0, inativas: 0 }
+      resumo.total += 1
+      if (serie.ativo === true) {
+        resumo.ativas += 1
+      } else {
+        resumo.inativas += 1
+      }
+      mapa.set(chave, resumo)
     })
     return mapa
   }, [seriesRecorrentes])
 
   const resumoSeriesRecorrentes = useMemo(() => {
     const lista = seriesRecorrentes || []
-    const duplicadas = lista.filter((serie) => (duplicidadesSeries.get(obterChaveDuplicidadeSerie(serie)) || 0) > 1).length
+    const grupos = Array.from(duplicidadesSeries.values())
     return {
       total: lista.length,
       ativas: lista.filter((serie) => serie.ativo === true).length,
       inativas: lista.filter((serie) => serie.ativo !== true).length,
-      duplicadas
+      duplicadasAtivas: grupos.filter((grupo) => grupo.ativas > 1).length,
+      historicas: grupos.filter((grupo) => grupo.total > 1 && grupo.ativas === 1 && grupo.inativas > 0).length
     }
   }, [duplicidadesSeries, seriesRecorrentes])
 
@@ -101,10 +117,11 @@ export default function RecorrenciasFinanceirasPage({
     const termo = normalizarTextoSerie(buscaSeriesRecorrentes)
     return (seriesRecorrentes || [])
       .filter((serie) => {
-        const duplicada = (duplicidadesSeries.get(obterChaveDuplicidadeSerie(serie)) || 0) > 1
+        const statusDuplicidade = obterStatusDuplicidadeSerie(serie, duplicidadesSeries)
         if (filtroSeriesRecorrentes === 'ativas' && serie.ativo !== true) return false
         if (filtroSeriesRecorrentes === 'inativas' && serie.ativo === true) return false
-        if (filtroSeriesRecorrentes === 'duplicadas' && !duplicada) return false
+        if (filtroSeriesRecorrentes === 'duplicadas' && statusDuplicidade !== 'ativa') return false
+        if (filtroSeriesRecorrentes === 'historicas' && statusDuplicidade !== 'historica') return false
         if (!termo) return true
         return [
           serie.descricao,
@@ -182,8 +199,11 @@ export default function RecorrenciasFinanceirasPage({
           <span><b>Total</b>{resumoSeriesRecorrentes.total}</span>
           <span><b>Ativas</b>{resumoSeriesRecorrentes.ativas}</span>
           <span><b>Inativas</b>{resumoSeriesRecorrentes.inativas}</span>
-          <span className={resumoSeriesRecorrentes.duplicadas ? 'has-warning' : ''}>
-            <b>Possíveis duplicidades</b>{resumoSeriesRecorrentes.duplicadas}
+          <span className={resumoSeriesRecorrentes.duplicadasAtivas ? 'has-warning' : ''}>
+            <b>Duplicidades ativas</b>{resumoSeriesRecorrentes.duplicadasAtivas}
+          </span>
+          <span className={resumoSeriesRecorrentes.historicas ? 'has-info' : ''}>
+            <b>Pares históricos</b>{resumoSeriesRecorrentes.historicas}
           </span>
         </div>
 
@@ -192,7 +212,8 @@ export default function RecorrenciasFinanceirasPage({
             {[
               ['ativas', 'Ativas'],
               ['inativas', 'Inativas'],
-              ['duplicadas', 'Possíveis duplicadas'],
+              ['duplicadas', 'Atenção'],
+              ['historicas', 'Históricas'],
               ['todas', 'Todas']
             ].map(([valor, label]) => (
               <button
@@ -229,11 +250,13 @@ export default function RecorrenciasFinanceirasPage({
               const centroNome = (centros || []).find((centro) => centro.id === serie.centro_custo_id)?.nome || 'Sem centro'
               const filialNome = (filiais || []).find((filial) => filial.id === serie.filial_id)?.nome || 'Sem filial'
               const quantidadeVinculada = contasPorRecorrencia.get(serie.id) || 0
-              const duplicada = (duplicidadesSeries.get(obterChaveDuplicidadeSerie(serie)) || 0) > 1
+              const statusDuplicidade = obterStatusDuplicidadeSerie(serie, duplicidadesSeries)
+              const duplicadaAtiva = statusDuplicidade === 'ativa'
+              const duplicidadeHistorica = statusDuplicidade === 'historica'
               const proximaReferencia = calcularProximaReferenciaSerie(serie)
 
               return (
-                <article className={`accounts-recurring-card ${serie.ativo === true ? 'is-active' : 'is-inactive'} ${duplicada ? 'is-duplicate' : ''}`} key={serie.id}>
+                <article className={`accounts-recurring-card ${serie.ativo === true ? 'is-active' : 'is-inactive'} ${duplicadaAtiva ? 'is-duplicate' : ''} ${duplicidadeHistorica ? 'is-historical-duplicate' : ''}`} key={serie.id}>
                   <div className="accounts-recurring-card-head">
                     <strong>{serie.descricao || 'Série sem descrição'}</strong>
                     <span className={`status-pill ${serie.ativo === true ? 'status-pago' : 'status-pendente'}`}>
@@ -250,9 +273,14 @@ export default function RecorrenciasFinanceirasPage({
                     <span>{filialNome}</span>
                     <span>{quantidadeVinculada} conta(s) vinculada(s)</span>
                   </div>
-                  {duplicada && (
+                  {duplicadaAtiva && (
                     <div className="accounts-recurring-warning">
-                      Possível duplicidade visual: revise antes de alterar. Nenhum dado foi alterado por este alerta.
+                      Atenção: existe mais de uma série ativa semelhante. Revise antes de gerar ou alterar recorrências.
+                    </div>
+                  )}
+                  {duplicidadeHistorica && (
+                    <div className="accounts-recurring-info">
+                      Há séries semelhantes, mas apenas uma está ativa. Não há ação obrigatória; revise antes de reativar uma série inativa semelhante.
                     </div>
                   )}
                   <div className="accounts-recurring-actions">

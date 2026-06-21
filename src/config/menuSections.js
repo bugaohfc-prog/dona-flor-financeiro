@@ -13,6 +13,7 @@ const menuSections = [
     titulo: 'Financeiro',
     items: [
       { tela: 'contas', icon: '💳', label: 'Contas', desc: 'Contas a pagar e filtros' },
+      { tela: 'recorrencias', icon: '↻', label: 'Recorrências', desc: 'Séries financeiras recorrentes' },
       { tela: 'relatorios', icon: '📊', label: 'Relatórios financeiros', desc: 'Análise e indicadores' },
       { tela: 'relatorios-contas', icon: 'RC', label: 'Relatórios de contas', desc: 'Impressão e exportação' },
       { tela: 'importar', icon: '📥', label: 'Importação', desc: 'Importar contas por CSV' }
@@ -56,6 +57,7 @@ const CONTEXTO_MODULO_POR_TELA = {
   notas: MODULOS_TOPBAR.geral,
 
   contas: MODULOS_TOPBAR.financeiro,
+  recorrencias: MODULOS_TOPBAR.financeiro,
   relatorios: MODULOS_TOPBAR.financeiro,
   'relatorios-contas': MODULOS_TOPBAR.financeiro,
   importar: MODULOS_TOPBAR.financeiro,

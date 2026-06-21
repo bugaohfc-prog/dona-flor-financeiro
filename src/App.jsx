@@ -71,6 +71,7 @@ import {
   LazyMasterPanelPage,
   LazyNotasPage,
   LazyOnboardingPage,
+  LazyRecorrenciasFinanceirasPage,
   LazyRelatorios,
   LazyRelatoriosContasPage,
   LazyRelatoriosGestaoPessoasPage,
@@ -4500,7 +4501,6 @@ export default function App() {
         limitarDataInput={limitarDataInput}
         contas={contas}
         contasFiltradas={contasFiltradas}
-        seriesRecorrentes={seriesRecorrentes}
         agendaFocusTarget={agendaFocusTarget}
         onAgendaFocusHandled={() => setAgendaFocusTarget(null)}
         total={total}
@@ -4523,6 +4523,24 @@ export default function App() {
         reexibirConta={reexibirConta}
         navegarPara={navegarPara}
       />
+    )
+  }
+
+  if (telaAtual === 'recorrencias') {
+    return renderAppFrame(
+      <AppSuspenseBoundary>
+        <LazyRecorrenciasFinanceirasPage
+          styles={styles}
+          contas={contas}
+          seriesRecorrentes={seriesRecorrentes}
+          centros={centros}
+          filiais={filiais}
+          formatarValor={formatarValor}
+          formatarData={formatarData}
+          formatarTipoRecorrencia={formatarTipoRecorrencia}
+          navegarPara={navegarPara}
+        />
+      </AppSuspenseBoundary>
     )
   }
 

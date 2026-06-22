@@ -42,24 +42,38 @@ function obterFilial(conta, filiais) {
 }
 
 function classificarImposto(conta, centros) {
+  const tipoFiscal = String(conta?.imposto_tipo || '').trim()
+  if (tipoFiscal === 'simples_nacional') {
+    return { tipo: 'simples', label: 'Simples Nacional', prioridade: 1, origem: 'informada' }
+  }
+  if (tipoFiscal === 'fgts') {
+    return { tipo: 'fgts', label: 'FGTS', prioridade: 2, origem: 'informada' }
+  }
+  if (tipoFiscal === 'inss') {
+    return { tipo: 'inss', label: 'INSS', prioridade: 3, origem: 'informada' }
+  }
+  if (tipoFiscal === 'outro') {
+    return { tipo: 'outros', label: 'Outro imposto', prioridade: 4, origem: 'informada' }
+  }
+
   const descricaoNormalizada = normalizarTexto(conta?.descricao)
   const centro = obterCentro(conta, centros)
   const centroNormalizado = normalizarTexto(centro?.nome)
 
   if (descricaoNormalizada.includes('simples')) {
-    return { tipo: 'simples', label: 'Simples Nacional', prioridade: 1 }
+    return { tipo: 'simples', label: 'Simples Nacional', prioridade: 1, origem: 'estimada' }
   }
 
   if (descricaoNormalizada.includes('fgts')) {
-    return { tipo: 'fgts', label: 'FGTS', prioridade: 2 }
+    return { tipo: 'fgts', label: 'FGTS', prioridade: 2, origem: 'estimada' }
   }
 
   if (descricaoNormalizada.includes('inss')) {
-    return { tipo: 'inss', label: 'INSS', prioridade: 3 }
+    return { tipo: 'inss', label: 'INSS', prioridade: 3, origem: 'estimada' }
   }
 
   if (centroNormalizado === 'impostos e taxas') {
-    return { tipo: 'outros', label: 'Outros impostos', prioridade: 4 }
+    return { tipo: 'outros', label: 'Outros impostos', prioridade: 4, origem: 'estimada' }
   }
 
   return null
@@ -95,6 +109,24 @@ function obterCompetenciaEstimada(conta) {
   if (!ano || indiceMes < 0 || indiceMes > 11) return 'Sem data'
 
   return `${MESES[indiceMes]}/${ano}`
+}
+
+function obterCompetenciaFiscal(conta) {
+  if (conta?.competencia) {
+    const [ano, mes] = String(conta.competencia).split('-')
+    const indiceMes = Number(mes) - 1
+    if (ano && indiceMes >= 0 && indiceMes <= 11) {
+      return {
+        label: `${MESES[indiceMes]}/${ano}`,
+        origem: 'informada'
+      }
+    }
+  }
+
+  return {
+    label: obterCompetenciaEstimada(conta),
+    origem: 'estimada'
+  }
 }
 
 function ordenarImpostos(a, b) {
@@ -137,16 +169,19 @@ export default function ControleImpostosPage({
         const centro = obterCentro(conta, centros)
         const filial = obterFilial(conta, filiais)
         const statusOperacional = obterStatusOperacional(conta)
+        const competenciaFiscal = obterCompetenciaFiscal(conta)
 
         return {
           ...conta,
           impostoTipo: classificacao.tipo,
           impostoLabel: classificacao.label,
           impostoPrioridade: classificacao.prioridade,
+          impostoOrigem: classificacao.origem,
           centroNome: centro?.nome || 'Sem centro',
           filialNome: filial?.nome || 'Sem filial',
           statusOperacional,
-          competenciaEstimada: obterCompetenciaEstimada(conta)
+          competenciaFiscal: competenciaFiscal.label,
+          competenciaOrigem: competenciaFiscal.origem
         }
       })
       .filter(Boolean)
@@ -164,7 +199,7 @@ export default function ControleImpostosPage({
           conta.descricao,
           conta.centroNome,
           conta.filialNome,
-          conta.competenciaEstimada
+          conta.competenciaFiscal
         ].some((valor) => normalizarTexto(valor).includes(termo))
       })
       .sort((a, b) => {
@@ -209,7 +244,7 @@ export default function ControleImpostosPage({
       <section className="content-block accounts-recurring-section tax-control-section">
         <div className="accounts-recurring-guidance tax-control-guidance" role="note">
           <span>Visão somente leitura baseada nas contas existentes.</span>
-          <span>Competência estimada pelo vencimento. Ajuste definitivo depende de campo próprio.</span>
+          <span>Contas classificadas usam competência informada; contas antigas continuam com competência estimada pelo vencimento.</span>
           <span>Nenhuma conta é criada, baixada ou reclassificada por esta tela.</span>
         </div>
 
@@ -267,7 +302,10 @@ export default function ControleImpostosPage({
 
                 <div className="tax-control-meta">
                   <span>Vencimento: {obterDataVencimento(conta) ? formatarData(obterDataVencimento(conta)) : '-'}</span>
-                  <span>Competência estimada: {conta.competenciaEstimada}</span>
+                  <span>
+                    {conta.competenciaOrigem === 'informada' ? 'Competência informada' : 'Competência estimada'}: {conta.competenciaFiscal}
+                  </span>
+                  {conta.impostoOrigem === 'informada' && <span>Classificação informada</span>}
                   <span>Filial: {conta.filialNome}</span>
                   <span>Centro: {conta.centroNome}</span>
                   <span className={`tax-control-status is-${conta.statusOperacional}`}>

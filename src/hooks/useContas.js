@@ -78,6 +78,8 @@ export function useContas() {
   const [centroCustoId, setCentroCustoId] = useState('')
   const [filialId, setFilialId] = useState('')
   const [observacaoConta, setObservacaoConta] = useState('')
+  const [impostoTipoConta, setImpostoTipoConta] = useState('')
+  const [competenciaConta, setCompetenciaConta] = useState('')
   const [contaWhatsapp, setContaWhatsapp] = useState(false)
   const [contaEmail, setContaEmail] = useState(false)
   const [contaPush, setContaPush] = useState(false)
@@ -95,6 +97,8 @@ export function useContas() {
     setCentroCustoId('')
     setFilialId('')
     setObservacaoConta('')
+    setImpostoTipoConta('')
+    setCompetenciaConta('')
     setContaWhatsapp(false)
     setContaEmail(false)
     setContaPush(false)
@@ -340,6 +344,8 @@ export function useContas() {
     setCentroCustoId(conta.centro_custo_id || '')
     setFilialId(conta.filial_id || '')
     setObservacaoConta(conta.observacao || '')
+    setImpostoTipoConta(conta.imposto_tipo || '')
+    setCompetenciaConta(conta.competencia ? String(conta.competencia).slice(0, 7) : '')
     setContaWhatsapp(conta.enviar_whatsapp ?? false)
     setContaEmail(conta.enviar_email ?? false)
     setContaPush(conta.enviar_push ?? false)
@@ -427,6 +433,8 @@ export function useContas() {
     const filialSegura = await resolverFilialSegura(supabase, empresaId, filialId)
     const dataBanco = formatarDataParaBanco(dataVencimento)
     const diaRecorrencia = contaRecorrente ? Number(diaVencimentoRecorrencia || String(dataBanco).slice(8, 10)) : null
+    const tipoFiscal = impostoTipoConta || null
+    const competenciaFiscal = tipoFiscal && competenciaConta ? `${competenciaConta}-01` : null
 
     if (contaRecorrente && (!diaRecorrencia || diaRecorrencia < 1 || diaRecorrencia > 31)) {
       mostrarAviso('Informe um dia válido para a recorrência.', 'erro')
@@ -441,6 +449,8 @@ export function useContas() {
       centro_custo_id: centroCustoSeguro,
       filial_id: filialSegura,
       observacao: observacaoConta.trim() || null,
+      imposto_tipo: tipoFiscal,
+      competencia: competenciaFiscal,
       enviar_whatsapp: contaWhatsapp,
       enviar_email: contaEmail,
       enviar_push: contaPush,
@@ -776,6 +786,10 @@ export function useContas() {
     setFilialId,
     observacaoConta,
     setObservacaoConta,
+    impostoTipoConta,
+    setImpostoTipoConta,
+    competenciaConta,
+    setCompetenciaConta,
     contaWhatsapp,
     setContaWhatsapp,
     contaEmail,

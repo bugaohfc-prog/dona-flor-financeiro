@@ -15,6 +15,10 @@ export default function AccountModal({
   filiais,
   observacaoConta,
   setObservacaoConta,
+  impostoTipoConta,
+  setImpostoTipoConta,
+  competenciaConta,
+  setCompetenciaConta,
   contaRecorrente,
   setContaRecorrente,
   tipoRecorrencia,
@@ -152,6 +156,48 @@ export default function AccountModal({
                   </small>
                 </div>
               )}
+            </div>
+          </section>
+
+          <section className="account-modal-section">
+            <div className="account-modal-section-title">
+              <strong>Fiscal</strong>
+              <small>Classifique obrigações como Simples Nacional, FGTS ou INSS.</small>
+            </div>
+            <div className="account-modal-grid">
+              <label className="account-modal-field">
+                <span>Tipo de imposto</span>
+                <select
+                  style={styles.inputModal}
+                  value={impostoTipoConta}
+                  onChange={(e) => {
+                    const valorSelecionado = e.target.value
+                    setImpostoTipoConta(valorSelecionado)
+                    if (!valorSelecionado) setCompetenciaConta('')
+                  }}
+                >
+                  <option value="">Não é imposto</option>
+                  <option value="simples_nacional">Simples Nacional</option>
+                  <option value="fgts">FGTS</option>
+                  <option value="inss">INSS</option>
+                  <option value="outro">Outro imposto</option>
+                </select>
+              </label>
+
+              <label className="account-modal-field">
+                <span>Competência</span>
+                <input
+                  style={styles.inputModal}
+                  type="month"
+                  value={competenciaConta}
+                  disabled={!impostoTipoConta}
+                  onChange={(e) => setCompetenciaConta(e.target.value)}
+                />
+              </label>
+
+              <small className="account-modal-help account-modal-field-wide">
+                Competência é opcional. Use quando a obrigação fiscal se referir a um mês específico.
+              </small>
             </div>
           </section>
 

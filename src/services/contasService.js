@@ -6,6 +6,34 @@ import {
 } from './supabaseQueryService'
 import { assertEmpresaId } from './tenantService'
 
+export const STATUS_OPERACIONAL_PAGAMENTO_PARCIAL = Object.freeze({
+  ABERTA: 'aberta',
+  PARCIAL: 'parcial',
+  PAGA: 'paga'
+})
+
+function arredondarValorFinanceiro(valor) {
+  const numero = Number(valor || 0)
+  if (!Number.isFinite(numero)) return 0
+  return Math.round((numero + Number.EPSILON) * 100) / 100
+}
+
+function obterValorPagamentoParcial(pagamento) {
+  return arredondarValorFinanceiro(pagamento?.valor_pago)
+}
+
+function pagamentoParcialEstaAtivo(pagamento) {
+  return pagamento && pagamento.arquivado !== true && obterValorPagamentoParcial(pagamento) > 0
+}
+
+function obterUltimoPagamentoEm(pagamentos) {
+  return pagamentos.reduce((ultimo, pagamento) => {
+    if (!pagamento?.data_pagamento) return ultimo
+    if (!ultimo || pagamento.data_pagamento > ultimo) return pagamento.data_pagamento
+    return ultimo
+  }, null)
+}
+
 export async function listarContasAtivas(supabase, empresaId) {
   assertEmpresaId(empresaId)
   return selecionarPorEmpresa(supabase, 'df_contas', empresaId, '*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia)')
@@ -33,6 +61,61 @@ export async function listarRecorrencias(supabase, empresaId) {
     .order('ativo', { ascending: false })
     .order('data_inicio', { ascending: false })
     .order('created_at', { ascending: false })
+}
+
+export async function listarPagamentosParciaisPorContas(supabase, empresaId, contaIds = []) {
+  assertEmpresaId(empresaId)
+  const idsNormalizados = Array.from(new Set((contaIds || []).filter(Boolean)))
+  if (!idsNormalizados.length) return { data: [], error: null }
+
+  return selecionarPorEmpresa(
+    supabase,
+    'df_contas_pagamentos',
+    empresaId,
+    'id, empresa_id, conta_id, valor_pago, data_pagamento, observacao, arquivado, arquivado_em, criado_em, atualizado_em'
+  )
+    .in('conta_id', idsNormalizados)
+    .eq('arquivado', false)
+    .order('data_pagamento', { ascending: true })
+    .order('criado_em', { ascending: true })
+}
+
+export function consolidarPagamentosParciaisDaConta(conta, pagamentos = []) {
+  const contaId = conta?.id || null
+  const valorOriginal = arredondarValorFinanceiro(conta?.valor)
+  const pagamentosAtivos = (pagamentos || []).filter((pagamento) => (
+    pagamento?.conta_id === contaId && pagamentoParcialEstaAtivo(pagamento)
+  ))
+  const totalPagoParcial = arredondarValorFinanceiro(
+    pagamentosAtivos.reduce((total, pagamento) => total + obterValorPagamentoParcial(pagamento), 0)
+  )
+  const saldoPendente = arredondarValorFinanceiro(Math.max(valorOriginal - totalPagoParcial, 0))
+
+  let statusOperacionalDerivado = STATUS_OPERACIONAL_PAGAMENTO_PARCIAL.ABERTA
+  if (totalPagoParcial > 0 && totalPagoParcial < valorOriginal) {
+    statusOperacionalDerivado = STATUS_OPERACIONAL_PAGAMENTO_PARCIAL.PARCIAL
+  } else if (totalPagoParcial > 0 && totalPagoParcial >= valorOriginal) {
+    statusOperacionalDerivado = STATUS_OPERACIONAL_PAGAMENTO_PARCIAL.PAGA
+  }
+
+  return {
+    contaId,
+    valorOriginal,
+    totalPagoParcial,
+    saldoPendente,
+    quantidadePagamentos: pagamentosAtivos.length,
+    ultimoPagamentoEm: obterUltimoPagamentoEm(pagamentosAtivos),
+    statusOperacionalDerivado
+  }
+}
+
+export function consolidarPagamentosParciaisPorConta(contas = [], pagamentos = []) {
+  return new Map(
+    (contas || []).map((conta) => [
+      conta.id,
+      consolidarPagamentosParciaisDaConta(conta, pagamentos)
+    ])
+  )
 }
 
 

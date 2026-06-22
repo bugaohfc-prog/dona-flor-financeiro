@@ -10,12 +10,14 @@ import {
   criarContasEmLote,
   estornarBaixaConta,
   listarRecorrencias,
+  consolidarPagamentosParciaisPorConta,
   criarRecorrencia,
   buscarRecorrenciaSemelhante,
   desativarRecorrencia,
   enviarContaParaLixeira,
   listarContasAtivas,
   listarContasDoMesParaRecorrencia,
+  listarPagamentosParciaisPorContas,
   listarRecorrenciasAtivas,
   listarRecorrenciasPorDia,
   ocultarConta as ocultarContaService,
@@ -197,6 +199,37 @@ export function useContas() {
     )
   }
 
+  async function enriquecerContasComPagamentosParciais(supabase, empresaId, contasReferencia) {
+    const contasBase = Array.isArray(contasReferencia) ? contasReferencia : []
+    if (!contasBase.length) return contasBase
+
+    const contaIds = contasBase.map((conta) => conta.id).filter(Boolean)
+    if (!contaIds.length) return contasBase
+
+    const { data: pagamentosParciais, error } = await listarPagamentosParciaisPorContas(supabase, empresaId, contaIds)
+
+    if (error) {
+      console.warn('NÃ£o foi possÃ­vel carregar pagamentos parciais das contas:', error.message)
+      return contasBase
+    }
+
+    const consolidacaoPorConta = consolidarPagamentosParciaisPorConta(contasBase, pagamentosParciais || [])
+
+    return contasBase.map((conta) => {
+      const consolidacao = consolidacaoPorConta.get(conta.id)
+      if (!consolidacao) return conta
+
+      return {
+        ...conta,
+        pagamentosParciaisTotal: consolidacao.totalPagoParcial,
+        saldoPendenteParcial: consolidacao.saldoPendente,
+        quantidadePagamentosParciais: consolidacao.quantidadePagamentos,
+        ultimoPagamentoParcialEm: consolidacao.ultimoPagamentoEm,
+        statusOperacionalDerivado: consolidacao.statusOperacionalDerivado
+      }
+    })
+  }
+
   async function buscarContas(contexto) {
     const {
       supabase,
@@ -234,7 +267,8 @@ export function useContas() {
       const contasAtuais = data || []
 
       if (!permitirGerarRecorrencias) {
-        setContas(contasAtuais)
+        const contasEnriquecidas = await enriquecerContasComPagamentosParciais(supabase, empresaAtual, contasAtuais)
+        setContas(contasEnriquecidas)
         return
       }
 
@@ -248,7 +282,8 @@ export function useContas() {
         diasAlertaContas,
         diasAvisoPadrao
       })
-      setContas(contasComRecorrencias)
+      const contasEnriquecidas = await enriquecerContasComPagamentosParciais(supabase, empresaAtual, contasComRecorrencias)
+      setContas(contasEnriquecidas)
     } finally {
       if (!silencioso) setLoading(false)
     }

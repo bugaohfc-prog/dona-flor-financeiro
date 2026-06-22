@@ -6,6 +6,7 @@ export const lazyRouteImports = {
   agenda: () => import('../pages/AgendaPage.jsx'),
   configuracoes: () => import('../pages/ConfiguracoesPage.jsx'),
   contas: () => import('../pages/ContasPage.jsx'),
+  controleImpostos: () => import('../pages/ControleImpostosPage.jsx'),
   recorrenciasFinanceiras: () => import('../pages/RecorrenciasFinanceirasPage.jsx'),
   relatoriosContas: () => import('../pages/RelatoriosContasPage.jsx'),
   importar: () => import('../pages/ImportarPage.jsx'),
@@ -32,6 +33,7 @@ export const routeImportByScreen = {
   agenda: 'agenda',
   configuracoes: 'configuracoes',
   contas: 'contas',
+  'controle-impostos': 'controleImpostos',
   recorrencias: 'recorrenciasFinanceiras',
   'relatorios-contas': 'relatoriosContas',
   importar: 'importar',
@@ -70,6 +72,7 @@ export const LazyDashboardRouteComposition = lazyWithRecovery('dashboard')
 export const LazyAgendaPage = lazyWithRecovery('agenda')
 export const LazyConfiguracoesPage = lazyWithRecovery('configuracoes')
 export const LazyContasPage = lazyWithRecovery('contas')
+export const LazyControleImpostosPage = lazyWithRecovery('controleImpostos')
 export const LazyRecorrenciasFinanceirasPage = lazyWithRecovery('recorrenciasFinanceiras')
 export const LazyRelatoriosContasPage = lazyWithRecovery('relatoriosContas')
 export const LazyImportarPage = lazyWithRecovery('importar')

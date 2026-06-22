@@ -60,6 +60,7 @@ import {
   LazyBillingPage,
   LazyConfiguracoesPage,
   LazyContasPage,
+  LazyControleImpostosPage,
   LazyCopilotDrawer,
   LazyDashboardRouteComposition,
   LazyFechamentoFolhaPage,
@@ -4578,6 +4579,21 @@ export default function App() {
           abrirConfirmacao={abrirConfirmacao}
           desativarSerieRecorrente={desativarSerieRecorrente}
           reativarSerieRecorrente={reativarSerieRecorrente}
+        />
+      </AppSuspenseBoundary>
+    )
+  }
+
+  if (telaAtual === 'controle-impostos') {
+    return renderAppFrame(
+      <AppSuspenseBoundary>
+        <LazyControleImpostosPage
+          contas={contas}
+          centros={centros}
+          filiais={filiais}
+          formatarValor={formatarValor}
+          formatarData={formatarData}
+          navegarPara={navegarPara}
         />
       </AppSuspenseBoundary>
     )

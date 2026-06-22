@@ -4323,6 +4323,172 @@
   margin: 0 auto;
 }
 
+.tax-control-page {
+  padding-bottom: 96px;
+}
+
+.tax-control-section {
+  display: grid;
+  gap: 14px;
+}
+
+.tax-control-guidance {
+  background: #f0fdfa;
+}
+
+.tax-control-summary {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.tax-control-controls {
+  align-items: stretch;
+}
+
+.tax-control-tabs {
+  flex-wrap: wrap;
+}
+
+.tax-control-search {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #dbe3ea;
+  border-radius: 12px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  box-sizing: border-box;
+}
+
+.tax-control-list {
+  display: grid;
+  gap: 10px;
+}
+
+.tax-control-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(15, 118, 110, .13);
+  border-left: 4px solid #14b8a6;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, .06);
+}
+
+.tax-control-card.is-vencido {
+  border-left-color: #f59e0b;
+}
+
+.tax-control-card.is-pago {
+  border-left-color: #16a34a;
+}
+
+.tax-control-card-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.tax-control-card-main h2 {
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.tax-control-card-main strong {
+  color: #0f766e;
+  font-size: 16px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.tax-control-type {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #ccfbf1;
+  border-radius: 999px;
+  background: #f0fdfa;
+  color: #0f766e;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tax-control-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tax-control-meta span {
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.tax-control-status.is-vencido {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.tax-control-status.is-aberto {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.tax-control-status.is-pago {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.tax-control-actions {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.tax-control-actions button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #dbe3ea;
+  border-radius: 999px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.tax-control-actions button:hover,
+.tax-control-actions button:focus-visible {
+  border-color: #14b8a6;
+  color: #0f766e;
+  outline: none;
+}
+
+.tax-control-empty {
+  width: 100%;
+}
+
 .account-card-desktop.account-card-paga::before {
   background: #16a34a;
 }
@@ -4536,6 +4702,27 @@
 
   .accounts-recurring-grid {
     grid-template-columns: 1fr;
+  }
+
+  .tax-control-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tax-control-card {
+    padding: 12px;
+  }
+
+  .tax-control-card-main {
+    grid-template-columns: 1fr;
+  }
+
+  .tax-control-card-main strong {
+    white-space: normal;
+  }
+
+  .tax-control-actions,
+  .tax-control-actions button {
+    width: 100%;
   }
 
   .account-actions {

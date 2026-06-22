@@ -193,6 +193,7 @@ export default function RecorrenciasFinanceirasPage({
           <span>Reativar uma série não cria contas imediatamente.</span>
           <span>A geração automática usa a série ativa, o mês atual e a trava por série + vencimento.</span>
           <span>O valor da série é usado como base; contas geradas podem ser ajustadas individualmente.</span>
+          <span>Para despesas variáveis, confira o valor de cada competência antes de baixar a conta.</span>
         </div>
 
         <div className="accounts-recurring-summary">

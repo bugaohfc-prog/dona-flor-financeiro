@@ -149,6 +149,7 @@ export default function AccountModal({
 
                   <small className="account-modal-help">
                     O sistema criará automaticamente essa conta no mês vigente quando ela ainda não existir.
+                    Para despesas com valor vari�vel, use o valor como base estimada e confira a conta gerada antes da baixa.
                   </small>
                 </div>
               )}

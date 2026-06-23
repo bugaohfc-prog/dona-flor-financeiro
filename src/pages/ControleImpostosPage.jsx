@@ -5,7 +5,7 @@ const FILTROS_IMPOSTOS = [
   ['simples', 'Simples Nacional'],
   ['fgts', 'FGTS'],
   ['inss', 'INSS'],
-  ['abertos', 'Em aberto'],
+  ['abertos', 'A vencer'],
   ['vencidos', 'Vencidos'],
   ['pagos', 'Pagos']
 ]
@@ -136,6 +136,40 @@ function ordenarImpostos(a, b) {
   return String(a.descricao || '').localeCompare(String(b.descricao || ''))
 }
 
+function mapearPossiveisDuplicidadesVisuais(lista) {
+  const grupos = new Map()
+
+  lista.forEach((conta) => {
+    const chave = [
+      conta.filial_id || conta.filialNome,
+      conta.impostoTipo,
+      conta.competenciaFiscal,
+      obterDataVencimento(conta) || 'sem-vencimento'
+    ].join('|')
+
+    if (!grupos.has(chave)) grupos.set(chave, [])
+    grupos.get(chave).push(conta)
+  })
+
+  const idsDuplicados = new Set()
+
+  grupos.forEach((contasGrupo) => {
+    if (contasGrupo.length < 2) return
+
+    contasGrupo.forEach((conta, indice) => {
+      const valor = Number(conta.valor || 0)
+      const temValorProximo = contasGrupo.some((comparada, indiceComparado) => {
+        if (indice === indiceComparado) return false
+        return Math.abs(valor - Number(comparada.valor || 0)) <= 1
+      })
+
+      if (temValorProximo) idsDuplicados.add(conta.id)
+    })
+  })
+
+  return idsDuplicados
+}
+
 function EmptyState({ title, description }) {
   return (
     <div className="empty-state-card tax-control-empty">
@@ -157,9 +191,7 @@ export default function ControleImpostosPage({
   const [filtro, setFiltro] = useState('todos')
   const [busca, setBusca] = useState('')
 
-  const impostosEncontrados = useMemo(() => {
-    const termo = normalizarTexto(busca)
-
+  const impostosBase = useMemo(() => {
     return (contas || [])
       .filter((conta) => conta && conta.excluido !== true)
       .map((conta) => {
@@ -185,6 +217,12 @@ export default function ControleImpostosPage({
         }
       })
       .filter(Boolean)
+  }, [centros, contas, filiais])
+
+  const impostosEncontrados = useMemo(() => {
+    const termo = normalizarTexto(busca)
+
+    const filtrados = impostosBase
       .filter((conta) => {
         if (filtro === 'simples' && conta.impostoTipo !== 'simples') return false
         if (filtro === 'fgts' && conta.impostoTipo !== 'fgts') return false
@@ -206,11 +244,18 @@ export default function ControleImpostosPage({
         if (a.impostoPrioridade !== b.impostoPrioridade) return a.impostoPrioridade - b.impostoPrioridade
         return ordenarImpostos(a, b)
       })
-  }, [busca, centros, contas, filiais, filtro])
+
+    const idsDuplicados = mapearPossiveisDuplicidadesVisuais(filtrados)
+
+    return filtrados.map((conta) => ({
+      ...conta,
+      possivelDuplicidadeVisual: idsDuplicados.has(conta.id)
+    }))
+  }, [busca, filtro, impostosBase])
 
   const resumo = useMemo(() => {
     const lista = impostosEncontrados
-    const abertos = lista.filter((conta) => conta.statusOperacional === 'aberto')
+    const aVencer = lista.filter((conta) => conta.statusOperacional === 'aberto')
     const vencidos = lista.filter((conta) => conta.statusOperacional === 'vencido')
     const pagos = lista.filter((conta) => conta.statusOperacional === 'pago')
     const proximos = lista
@@ -219,7 +264,7 @@ export default function ControleImpostosPage({
 
     return {
       total: lista.length,
-      abertos: abertos.length,
+      aVencer: aVencer.length,
       vencidos: vencidos.length,
       pagos: pagos.length,
       proximo: proximos[0] || null
@@ -250,7 +295,7 @@ export default function ControleImpostosPage({
 
         <div className="accounts-recurring-summary tax-control-summary">
           <span><b>Total encontrado</b>{resumo.total}</span>
-          <span><b>Em aberto</b>{resumo.abertos}</span>
+          <span><b>A vencer</b>{resumo.aVencer}</span>
           <span className={resumo.vencidos ? 'has-warning' : ''}><b>Vencidos</b>{resumo.vencidos}</span>
           <span><b>Pagos</b>{resumo.pagos}</span>
           <span className="has-info">
@@ -295,6 +340,9 @@ export default function ControleImpostosPage({
                 <div className="tax-control-card-main">
                   <div>
                     <span className="tax-control-type">{conta.impostoLabel}</span>
+                    {conta.possivelDuplicidadeVisual && (
+                      <span className="tax-control-review-badge">Revisar possível duplicidade</span>
+                    )}
                     <h2>{conta.descricao || 'Conta sem descrição'}</h2>
                   </div>
                   <strong>{formatarValor(Number(conta.valor || 0))}</strong>
@@ -309,7 +357,7 @@ export default function ControleImpostosPage({
                   <span>Filial: {conta.filialNome}</span>
                   <span>Centro: {conta.centroNome}</span>
                   <span className={`tax-control-status is-${conta.statusOperacional}`}>
-                    {conta.statusOperacional === 'pago' ? 'Pago' : conta.statusOperacional === 'vencido' ? 'Vencido' : 'Em aberto'}
+                    {conta.statusOperacional === 'pago' ? 'Pago' : conta.statusOperacional === 'vencido' ? 'Vencido' : 'A vencer'}
                   </span>
                 </div>
 

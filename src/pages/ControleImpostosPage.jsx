@@ -258,16 +258,24 @@ export default function ControleImpostosPage({
     const aVencer = lista.filter((conta) => conta.statusOperacional === 'aberto')
     const vencidos = lista.filter((conta) => conta.statusOperacional === 'vencido')
     const pagos = lista.filter((conta) => conta.statusOperacional === 'pago')
-    const proximos = lista
-      .filter((conta) => conta.statusOperacional !== 'pago' && obterDataVencimento(conta))
+    const proximos = aVencer
+      .filter((conta) => obterDataVencimento(conta))
       .sort(ordenarImpostos)
+    const vencidosOrdenados = vencidos
+      .filter((conta) => obterDataVencimento(conta))
+      .sort(ordenarImpostos)
+    const cardVencimento = proximos[0]
+      ? { label: 'Próximo vencimento', conta: proximos[0], vazio: 'Nenhum' }
+      : vencidosOrdenados[0]
+        ? { label: 'Vencido mais antigo', conta: vencidosOrdenados[0], vazio: 'Nenhum' }
+        : { label: 'Próximo vencimento', conta: null, vazio: 'Nenhum' }
 
     return {
       total: lista.length,
       aVencer: aVencer.length,
       vencidos: vencidos.length,
       pagos: pagos.length,
-      proximo: proximos[0] || null
+      cardVencimento
     }
   }, [impostosEncontrados])
 
@@ -299,8 +307,8 @@ export default function ControleImpostosPage({
           <span className={resumo.vencidos ? 'has-warning' : ''}><b>Vencidos</b>{resumo.vencidos}</span>
           <span><b>Pagos</b>{resumo.pagos}</span>
           <span className="has-info">
-            <b>Próximo vencimento</b>
-            {resumo.proximo ? formatarData(obterDataVencimento(resumo.proximo)) : '-'}
+            <b>{resumo.cardVencimento.label}</b>
+            {resumo.cardVencimento.conta ? formatarData(obterDataVencimento(resumo.cardVencimento.conta)) : resumo.cardVencimento.vazio}
           </span>
         </div>
 

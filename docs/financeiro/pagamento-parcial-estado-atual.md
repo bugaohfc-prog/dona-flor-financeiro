@@ -14,6 +14,8 @@ Data: 24/06/2026
   `arquivado = true` e `arquivado_em` preenchido.
 - Quando os pagamentos ativos quitam o saldo, o modal oferece a ação manual
   `Baixar conta agora`.
+- Se um novo pagamento parcial zerar o saldo, o modal permanece aberto,
+  recarrega o histórico e apresenta imediatamente a ação de baixa.
 
 ## Validações
 

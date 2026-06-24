@@ -95,9 +95,32 @@ export default function AccountPartialPaymentModal({
       data_pagamento: dataPagamento,
       observacao: observacao.trim() || null
     })
+
+    if (!sucesso) {
+      setSalvando(false)
+      return
+    }
+
+    const pagamentosAtualizados = await listarPagamentos(conta.id)
+    if (!pagamentosAtualizados.length) {
+      setErro('Pagamento salvo, mas não foi possível atualizar o histórico. Feche e abra o modal novamente.')
+      setSalvando(false)
+      return
+    }
+
+    const totalAtualizado = pagamentosAtualizados.reduce(
+      (total, pagamento) => total + normalizarValor(pagamento.valor_pago),
+      0
+    )
+    const saldoAtualizado = Math.max(Number((valorConta - totalAtualizado).toFixed(2)), 0)
+
+    setPagamentos(pagamentosAtualizados)
+    setCarregandoPagamentos(false)
+    setValorPago('')
+    setObservacao('')
     setSalvando(false)
 
-    if (sucesso) onClose()
+    if (saldoAtualizado > 0) onClose()
   }
 
   async function confirmarEstorno(pagamento) {

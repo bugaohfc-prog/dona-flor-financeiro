@@ -8,6 +8,16 @@ Permitir que uma série recorrente seja identificada como de valor variável, ma
 
 Este documento é somente planejamento. Nenhuma migration, alteração de dados, mudança de UI ou mudança de regra foi executada neste ciclo.
 
+## Estado da implementação estrutural
+
+Em 24/06/2026 foi criada e aplicada a migration
+`20260624224625_add_valor_variavel_df_contas_recorrentes.sql`.
+
+A migration adiciona somente `public.df_contas_recorrentes.valor_variavel`
+como `boolean not null default false`. Todas as séries existentes permanecem
+com comportamento de valor fixo. UI, services, hooks, geração, duplicidade,
+edição de parcela/série, RLS e policies continuam inalterados.
+
 ## Estado atual
 
 ### Banco

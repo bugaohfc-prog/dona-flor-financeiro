@@ -379,6 +379,12 @@ export default function ContasPage({
     const exibirBaixaReal = conta.status === 'pago' && conta.valor_pago !== null && conta.valor_pago !== undefined
     const valorPrincipal = exibirBaixaReal ? valorPago : valorPrevisto
     const oculta = conta.oculto === true
+    const pagamentosParciaisTotal = Number(conta.pagamentosParciaisTotal || 0)
+    const saldoPendenteParcial = Number(conta.saldoPendenteParcial || 0)
+    const quantidadePagamentosParciais = Number(conta.quantidadePagamentosParciais || 0)
+    const possuiPagamentosParciais = quantidadePagamentosParciais > 0 || pagamentosParciaisTotal > 0
+    const pagamentoParcialQuitado = conta.status === 'pago' && saldoPendenteParcial <= 0
+    const exibirPagamentoParcial = possuiPagamentosParciais && !pagamentoParcialQuitado
 
     return (
       <div
@@ -447,6 +453,32 @@ export default function ContasPage({
             {oculta && <span className="status-pill status-oculto">Oculta</span>}
           </div>
         </div>
+
+        {exibirPagamentoParcial && (
+          <div className="account-partial-payment-panel">
+            <span className="status-pill account-partial-payment-badge">Pagamento parcial</span>
+            <dl className="account-partial-payment-details">
+              <div>
+                <dt>Pago</dt>
+                <dd>{formatarValor(pagamentosParciaisTotal)}</dd>
+              </div>
+              <div>
+                <dt>Saldo</dt>
+                <dd>{formatarValor(saldoPendenteParcial)}</dd>
+              </div>
+              <div>
+                <dt>Pagamentos</dt>
+                <dd>{quantidadePagamentosParciais}</dd>
+              </div>
+              {conta.ultimoPagamentoParcialEm && (
+                <div>
+                  <dt>Último</dt>
+                  <dd>{formatarData(conta.ultimoPagamentoParcialEm)}</dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        )}
 
         {observacao && (
           <div className="account-observation-preview" title={observacao}>

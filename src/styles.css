@@ -4600,6 +4600,57 @@
   color: #115e59 !important;
 }
 
+.account-partial-payment-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #bae6fd;
+  border-radius: 10px;
+  background: #f0f9ff;
+}
+
+.account-partial-payment-badge {
+  flex: 0 0 auto;
+  border-color: #38bdf8 !important;
+  background: #e0f2fe !important;
+  color: #075985 !important;
+}
+
+.account-partial-payment-details {
+  display: flex;
+  flex: 1 1 360px;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  min-width: 0;
+  margin: 0;
+}
+
+.account-partial-payment-details div {
+  display: inline-flex;
+  gap: 4px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.account-partial-payment-details dt,
+.account-partial-payment-details dd {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.account-partial-payment-details dt {
+  color: #475569;
+}
+
+.account-partial-payment-details dd {
+  color: #0f172a;
+  font-weight: 850;
+}
+
 .account-actions {
   display: grid !important;
   grid-template-columns: repeat(auto-fit, minmax(88px, max-content));
@@ -4707,6 +4758,23 @@
 
   .account-meta-badges {
     justify-content: flex-start;
+  }
+
+  .account-partial-payment-panel {
+    align-items: flex-start;
+    gap: 7px;
+    padding: 8px;
+  }
+
+  .account-partial-payment-details {
+    flex-basis: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px 10px;
+  }
+
+  .account-partial-payment-details div {
+    white-space: normal;
   }
 
   .accounts-recurring-summary {

@@ -281,6 +281,7 @@ export default function App() {
     registrarPagamentoParcial: registrarPagamentoParcialHook,
     listarPagamentosParciaisConta: listarPagamentosParciaisContaHook,
     estornarPagamentoParcial: estornarPagamentoParcialHook,
+    baixarContaQuitadaPorParciais: baixarContaQuitadaPorParciaisHook,
     voltarParaPendente: voltarParaPendenteHook,
     excluirConta: excluirContaHook,
     ocultarConta: ocultarContaHook,
@@ -2067,6 +2068,21 @@ export default function App() {
     return estornarPagamentoParcialHook({
       supabase,
       pagamentoId,
+      contaId,
+      empresaId,
+      buscarContas: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
+      mostrarAviso
+    })
+  }
+
+  async function baixarContaQuitadaPorParciais(contaId) {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return false
+    }
+
+    return baixarContaQuitadaPorParciaisHook({
+      supabase,
       contaId,
       empresaId,
       buscarContas: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
@@ -4608,6 +4624,7 @@ export default function App() {
         registrarPagamentoParcial={registrarPagamentoParcial}
         listarPagamentosParciaisConta={listarPagamentosParciaisConta}
         estornarPagamentoParcial={estornarPagamentoParcial}
+        baixarContaQuitadaPorParciais={baixarContaQuitadaPorParciais}
         voltarParaPendente={voltarParaPendente}
         abrirEdicaoConta={abrirEdicaoConta}
         excluirConta={excluirConta}

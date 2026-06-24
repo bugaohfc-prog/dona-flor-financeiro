@@ -20,6 +20,7 @@ import {
   listarPagamentosParciaisPorContas,
   registrarPagamentoParcial as registrarPagamentoParcialService,
   estornarPagamentoParcial as estornarPagamentoParcialService,
+  baixarContaQuitadaPorParciais as baixarContaQuitadaPorParciaisService,
   listarRecorrenciasAtivas,
   listarRecorrenciasPorDia,
   ocultarConta as ocultarContaService,
@@ -718,6 +719,24 @@ export function useContas() {
     return true
   }
 
+  async function baixarContaQuitadaPorParciais(contexto) {
+    const { supabase, contaId, empresaId, buscarContas, mostrarAviso } = contexto
+    const { data, error } = await baixarContaQuitadaPorParciaisService(supabase, contaId, empresaId)
+
+    if (error || !data?.id) {
+      console.warn('Falha ao baixar conta quitada por pagamentos parciais:', error)
+      mostrarAviso?.(
+        mensagemSeguraErro(error, 'Não foi possível baixar a conta após os pagamentos parciais.'),
+        'erro'
+      )
+      return false
+    }
+
+    await buscarContas()
+    mostrarAviso?.('Conta baixada após a quitação pelos pagamentos parciais.', 'sucesso')
+    return true
+  }
+
   async function voltarParaPendente(contexto) {
     const { supabase, id, empresaId, buscarContas, mostrarAviso } = contexto
     const { error } = await estornarBaixaConta(supabase, id, empresaId)
@@ -869,6 +888,7 @@ export function useContas() {
     registrarPagamentoParcial,
     listarPagamentosParciaisConta,
     estornarPagamentoParcial,
+    baixarContaQuitadaPorParciais,
     voltarParaPendente,
     excluirConta,
     ocultarConta,

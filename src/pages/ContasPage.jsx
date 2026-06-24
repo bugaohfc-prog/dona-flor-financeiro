@@ -242,6 +242,7 @@ export default function ContasPage({
   registrarPagamentoParcial,
   listarPagamentosParciaisConta,
   estornarPagamentoParcial,
+  baixarContaQuitadaPorParciais,
   navegarPara, podeEditarFinanceiro = true, podeExportarDados = true
 }) {
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
@@ -777,6 +778,7 @@ export default function ContasPage({
           limitarDataInput={limitarDataInput}
           listarPagamentos={listarPagamentosParciaisConta}
           estornarPagamento={estornarPagamentoParcial}
+          baixarContaQuitada={baixarContaQuitadaPorParciais}
           onClose={() => setContaEmPagamentoParcial(null)}
           onConfirm={confirmarPagamentoParcial}
         />

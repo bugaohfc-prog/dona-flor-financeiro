@@ -25,6 +25,7 @@ export default function AccountPartialPaymentModal({
   limitarDataInput,
   listarPagamentos,
   estornarPagamento,
+  baixarContaQuitada,
   onClose,
   onConfirm
 }) {
@@ -37,13 +38,20 @@ export default function AccountPartialPaymentModal({
   const [carregandoPagamentos, setCarregandoPagamentos] = useState(true)
   const [pagamentos, setPagamentos] = useState([])
   const [pagamentoEmEstorno, setPagamentoEmEstorno] = useState('')
+  const [baixandoConta, setBaixandoConta] = useState(false)
 
   const totalPagoParcial = carregandoPagamentos
     ? normalizarValor(conta?.pagamentosParciaisTotal)
     : pagamentos.reduce((total, pagamento) => total + normalizarValor(pagamento.valor_pago), 0)
   const saldoPendente = Math.max(Number((valorConta - totalPagoParcial).toFixed(2)), 0)
   const podeRegistrarNovo = conta.status !== 'pago' && saldoPendente > 0
-  const ocupado = salvando || Boolean(pagamentoEmEstorno)
+  const podeBaixarConta = (
+    !carregandoPagamentos
+    && pagamentos.length > 0
+    && saldoPendente <= 0
+    && conta.status !== 'pago'
+  )
+  const ocupado = salvando || baixandoConta || Boolean(pagamentoEmEstorno)
   const valorNumerico = useMemo(() => normalizarValor(valorPago), [valorPago])
   const saldoDepois = Math.max(Number((saldoPendente - valorNumerico).toFixed(2)), 0)
 
@@ -107,6 +115,20 @@ export default function AccountPartialPaymentModal({
     setPagamentoEmEstorno('')
   }
 
+  async function confirmarBaixaDaConta() {
+    if (ocupado || !podeBaixarConta) return
+    const confirmou = window.confirm(
+      'Os pagamentos parciais completam o valor da conta. Deseja marcar esta conta como paga?'
+    )
+    if (!confirmou) return
+
+    setBaixandoConta(true)
+    const sucesso = await baixarContaQuitada(conta.id)
+    setBaixandoConta(false)
+
+    if (sucesso) onClose()
+  }
+
   if (!conta) return null
 
   return (
@@ -121,8 +143,8 @@ export default function AccountPartialPaymentModal({
       >
         <header className="account-modal-header">
           <span>Financeiro</span>
-          <h3 id="titulo-pagamento-parcial">Registrar pagamento parcial</h3>
-          <p>Registre uma parte do pagamento sem alterar o status ou a baixa integral da conta.</p>
+          <h3 id="titulo-pagamento-parcial">Pagamentos parciais</h3>
+          <p>Registre, confira ou estorne pagamentos sem alterar automaticamente a baixa integral.</p>
         </header>
 
         <div className="account-modal-body">
@@ -193,6 +215,22 @@ export default function AccountPartialPaymentModal({
                   />
                 </label>
               </div>
+            </section>
+          )}
+
+          {podeBaixarConta && (
+            <section className="account-partial-settlement">
+              <div>
+                <strong>O valor total da conta já foi pago parcialmente.</strong>
+                <span>Confirme a baixa para marcar a conta principal como paga.</span>
+              </div>
+              <button
+                type="button"
+                onClick={confirmarBaixaDaConta}
+                disabled={ocupado}
+              >
+                {baixandoConta ? 'Baixando...' : 'Baixar conta agora'}
+              </button>
             </section>
           )}
 

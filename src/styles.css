@@ -5511,6 +5511,52 @@
   font-weight: 800;
 }
 
+.account-partial-settlement {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 13px;
+  border: 1px solid #86efac;
+  border-radius: 14px;
+  background: #f0fdf4;
+}
+
+.account-partial-settlement div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.account-partial-settlement strong {
+  color: #166534;
+  font-size: 14px;
+}
+
+.account-partial-settlement span {
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.account-partial-settlement button {
+  min-height: 38px;
+  padding: 6px 13px;
+  border: 1px solid #16a34a;
+  border-radius: 999px;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.account-partial-settlement button:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+
 .account-partial-list-message {
   margin: 0;
   color: #64748b;
@@ -5651,6 +5697,14 @@
   }
 
   .account-partial-payment-reverse {
+    width: 100%;
+  }
+
+  .account-partial-settlement {
+    grid-template-columns: 1fr;
+  }
+
+  .account-partial-settlement button {
     width: 100%;
   }
 }

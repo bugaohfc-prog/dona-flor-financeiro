@@ -34,6 +34,19 @@ function obterUltimoPagamentoEm(pagamentos) {
   }, null)
 }
 
+function dataAtualBanco() {
+  const hoje = new Date()
+  const ano = hoje.getFullYear()
+  const mes = String(hoje.getMonth() + 1).padStart(2, '0')
+  const dia = String(hoje.getDate()).padStart(2, '0')
+  return `${ano}-${mes}-${dia}`
+}
+
+function acrescentarObservacaoPagamento(observacaoAtual, texto) {
+  const atual = String(observacaoAtual || '').trim()
+  return atual ? `${atual} | ${texto}` : texto
+}
+
 export async function listarContasAtivas(supabase, empresaId) {
   assertEmpresaId(empresaId)
   return selecionarPorEmpresa(supabase, 'df_contas', empresaId, '*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia)')
@@ -185,6 +198,64 @@ export async function estornarPagamentoParcial(supabase, pagamentoId, contaId, e
     .eq('conta_id', contaId)
     .eq('arquivado', false)
     .select('id, conta_id, arquivado, arquivado_em')
+    .maybeSingle()
+}
+
+export async function baixarContaQuitadaPorParciais(supabase, contaId, empresaId) {
+  assertEmpresaId(empresaId)
+
+  const { data: contaAtual, error: erroConta } = await selecionarPorEmpresa(
+    supabase,
+    'df_contas',
+    empresaId,
+    'id, valor, status, valor_pago, data_pagamento, observacao_pagamento, oculto, excluido, deletado'
+  )
+    .eq('id', contaId)
+    .maybeSingle()
+
+  if (erroConta) return { data: null, error: erroConta }
+  if (!contaAtual?.id) return { data: null, error: new Error('Conta não encontrada.') }
+  if (contaAtual.status === 'pago') {
+    return { data: null, error: new Error('A conta já está marcada como paga.') }
+  }
+  if (contaAtual.oculto === true || contaAtual.excluido === true || contaAtual.deletado === true) {
+    return { data: null, error: new Error('A conta não está disponível para baixa por pagamentos parciais.') }
+  }
+
+  const { data: pagamentosAtuais, error: erroPagamentos } = await listarPagamentosParciaisPorContas(
+    supabase,
+    empresaId,
+    [contaId]
+  )
+  if (erroPagamentos) return { data: null, error: erroPagamentos }
+
+  const consolidacao = consolidarPagamentosParciaisDaConta(contaAtual, pagamentosAtuais || [])
+  if (consolidacao.quantidadePagamentos <= 0 || consolidacao.saldoPendente > 0) {
+    return { data: null, error: new Error('Os pagamentos parciais ainda não quitaram o valor total da conta.') }
+  }
+
+  const observacao = acrescentarObservacaoPagamento(
+    contaAtual.observacao_pagamento,
+    'Conta baixada após pagamentos parciais completarem o valor total.'
+  )
+
+  return atualizarPorEmpresa(
+    supabase,
+    'df_contas',
+    contaId,
+    empresaId,
+    {
+      status: 'pago',
+      valor_pago: arredondarValorFinanceiro(contaAtual.valor),
+      data_pagamento: consolidacao.ultimoPagamentoEm || dataAtualBanco(),
+      observacao_pagamento: observacao
+    }
+  )
+    .eq('status', contaAtual.status)
+    .or('oculto.is.null,oculto.eq.false')
+    .or('excluido.is.null,excluido.eq.false')
+    .or('deletado.is.null,deletado.eq.false')
+    .select('id, status, valor_pago, data_pagamento, observacao_pagamento')
     .maybeSingle()
 }
 

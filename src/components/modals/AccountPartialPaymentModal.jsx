@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 function dataAtualBanco() {
   const hoje = new Date()
@@ -23,23 +23,46 @@ export default function AccountPartialPaymentModal({
   conta,
   formatarValor,
   limitarDataInput,
+  listarPagamentos,
+  estornarPagamento,
   onClose,
   onConfirm
 }) {
   const valorConta = normalizarValor(conta?.valor)
-  const totalPagoParcial = normalizarValor(conta?.pagamentosParciaisTotal)
-  const saldoPendente = Math.max(
-    normalizarValor(conta?.saldoPendenteParcial ?? valorConta),
-    0
-  )
   const [valorPago, setValorPago] = useState('')
   const [dataPagamento, setDataPagamento] = useState(dataAtualBanco())
   const [observacao, setObservacao] = useState('')
   const [erro, setErro] = useState('')
   const [salvando, setSalvando] = useState(false)
+  const [carregandoPagamentos, setCarregandoPagamentos] = useState(true)
+  const [pagamentos, setPagamentos] = useState([])
+  const [pagamentoEmEstorno, setPagamentoEmEstorno] = useState('')
 
+  const totalPagoParcial = carregandoPagamentos
+    ? normalizarValor(conta?.pagamentosParciaisTotal)
+    : pagamentos.reduce((total, pagamento) => total + normalizarValor(pagamento.valor_pago), 0)
+  const saldoPendente = Math.max(Number((valorConta - totalPagoParcial).toFixed(2)), 0)
+  const podeRegistrarNovo = conta.status !== 'pago' && saldoPendente > 0
+  const ocupado = salvando || Boolean(pagamentoEmEstorno)
   const valorNumerico = useMemo(() => normalizarValor(valorPago), [valorPago])
   const saldoDepois = Math.max(Number((saldoPendente - valorNumerico).toFixed(2)), 0)
+
+  useEffect(() => {
+    let ativo = true
+
+    async function carregar() {
+      setCarregandoPagamentos(true)
+      const lista = await listarPagamentos(conta.id)
+      if (!ativo) return
+      setPagamentos(lista)
+      setCarregandoPagamentos(false)
+    }
+
+    carregar()
+    return () => {
+      ativo = false
+    }
+  }, [conta.id, listarPagamentos])
 
   async function confirmarPagamento() {
     if (salvando) return
@@ -69,10 +92,25 @@ export default function AccountPartialPaymentModal({
     if (sucesso) onClose()
   }
 
+  async function confirmarEstorno(pagamento) {
+    if (pagamentoEmEstorno) return
+    const confirmou = window.confirm(
+      'Deseja estornar este pagamento parcial? A conta voltará a ter o saldo pendente atualizado.'
+    )
+    if (!confirmou) return
+
+    setPagamentoEmEstorno(pagamento.id)
+    const sucesso = await estornarPagamento(pagamento.id, conta.id)
+    if (sucesso) {
+      setPagamentos((atuais) => atuais.filter((item) => item.id !== pagamento.id))
+    }
+    setPagamentoEmEstorno('')
+  }
+
   if (!conta) return null
 
   return (
-    <div className="account-modal-backdrop" style={styles.overlay} onClick={salvando ? undefined : onClose}>
+    <div className="account-modal-backdrop" style={styles.overlay} onClick={ocupado ? undefined : onClose}>
       <div
         className="account-modal-card account-payment-modal-card account-partial-modal-card"
         style={{ ...styles.modal, maxWidth: 500 }}
@@ -107,56 +145,91 @@ export default function AccountPartialPaymentModal({
             </div>
           </section>
 
+          {podeRegistrarNovo && (
+            <section className="account-modal-section">
+              <div className="account-modal-section-title">
+                <strong>Dados do pagamento parcial</strong>
+                <small>O registro ficará no histórico parcial e a conta continuará aberta.</small>
+              </div>
+              <div className="account-modal-grid">
+                <label className="account-modal-field">
+                  <span>Valor pago</span>
+                  <input
+                    id="valor-pagamento-parcial"
+                    style={styles.inputModal}
+                    inputMode="decimal"
+                    value={valorPago}
+                    onChange={(event) => {
+                      setValorPago(event.target.value)
+                      setErro('')
+                    }}
+                    placeholder="Ex: 300,00"
+                    autoFocus
+                  />
+                </label>
+
+                <label className="account-modal-field">
+                  <span>Data do pagamento</span>
+                  <input
+                    id="data-pagamento-parcial"
+                    style={styles.inputModal}
+                    type="date"
+                    value={dataPagamento}
+                    onChange={(event) => {
+                      setDataPagamento(limitarDataInput(event.target.value))
+                      setErro('')
+                    }}
+                  />
+                </label>
+
+                <label className="account-modal-field account-modal-field-wide">
+                  <span>Observação</span>
+                  <textarea
+                    id="observacao-pagamento-parcial"
+                    style={{ ...styles.textareaModal, minHeight: 82 }}
+                    value={observacao}
+                    onChange={(event) => setObservacao(event.target.value)}
+                    placeholder="Comentário opcional..."
+                  />
+                </label>
+              </div>
+            </section>
+          )}
+
           <section className="account-modal-section">
             <div className="account-modal-section-title">
-              <strong>Dados do pagamento parcial</strong>
-              <small>O registro ficará no histórico parcial e a conta continuará aberta.</small>
+              <strong>Pagamentos parciais registrados</strong>
+              <small>Estorne apenas o registro incorreto. A conta principal não será alterada.</small>
             </div>
-            <div className="account-modal-grid">
-              <label className="account-modal-field">
-                <span>Valor pago</span>
-                <input
-                  id="valor-pagamento-parcial"
-                  style={styles.inputModal}
-                  inputMode="decimal"
-                  value={valorPago}
-                  onChange={(event) => {
-                    setValorPago(event.target.value)
-                    setErro('')
-                  }}
-                  placeholder="Ex: 300,00"
-                  autoFocus
-                />
-              </label>
 
-              <label className="account-modal-field">
-                <span>Data do pagamento</span>
-                <input
-                  id="data-pagamento-parcial"
-                  style={styles.inputModal}
-                  type="date"
-                  value={dataPagamento}
-                  onChange={(event) => {
-                    setDataPagamento(limitarDataInput(event.target.value))
-                    setErro('')
-                  }}
-                />
-              </label>
-
-              <label className="account-modal-field account-modal-field-wide">
-                <span>Observação</span>
-                <textarea
-                  id="observacao-pagamento-parcial"
-                  style={{ ...styles.textareaModal, minHeight: 82 }}
-                  value={observacao}
-                  onChange={(event) => setObservacao(event.target.value)}
-                  placeholder="Comentário opcional..."
-                />
-              </label>
-            </div>
+            {carregandoPagamentos ? (
+              <p className="account-partial-list-message">Carregando pagamentos...</p>
+            ) : pagamentos.length === 0 ? (
+              <p className="account-partial-list-message">Nenhum pagamento parcial registrado.</p>
+            ) : (
+              <div className="account-partial-payment-list">
+                {pagamentos.map((pagamento) => (
+                  <article className="account-partial-payment-item" key={pagamento.id}>
+                    <div className="account-partial-payment-item-copy">
+                      <strong>{formatarValor(pagamento.valor_pago)}</strong>
+                      <span>{new Date(`${pagamento.data_pagamento}T00:00:00`).toLocaleDateString('pt-BR')}</span>
+                      {pagamento.observacao && <small>{pagamento.observacao}</small>}
+                    </div>
+                    <button
+                      type="button"
+                      className="account-partial-payment-reverse"
+                      onClick={() => confirmarEstorno(pagamento)}
+                      disabled={ocupado}
+                    >
+                      {pagamentoEmEstorno === pagamento.id ? 'Estornando...' : 'Estornar parcial'}
+                    </button>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
 
-          {valorNumerico > 0 && valorNumerico <= saldoPendente && (
+          {podeRegistrarNovo && valorNumerico > 0 && valorNumerico <= saldoPendente && (
             <div className="account-payment-preview account-partial-payment-preview">
               Saldo após este registro: {formatarValor(saldoDepois)}
               {saldoDepois === 0 && ' — a conta não será baixada automaticamente.'}
@@ -167,21 +240,23 @@ export default function AccountPartialPaymentModal({
         </div>
 
         <footer className="account-modal-actions">
-          <button
-            className="account-modal-save"
-            style={styles.btnSalvar}
-            type="button"
-            onClick={confirmarPagamento}
-            disabled={salvando}
-          >
-            {salvando ? 'Salvando...' : 'Salvar pagamento parcial'}
-          </button>
+          {podeRegistrarNovo && (
+            <button
+              className="account-modal-save"
+              style={styles.btnSalvar}
+              type="button"
+              onClick={confirmarPagamento}
+              disabled={ocupado}
+            >
+              {salvando ? 'Salvando...' : 'Salvar pagamento parcial'}
+            </button>
+          )}
           <button
             className="account-modal-cancel"
             style={styles.btnCancelar}
             type="button"
             onClick={onClose}
-            disabled={salvando}
+            disabled={ocupado}
           >
             Cancelar
           </button>

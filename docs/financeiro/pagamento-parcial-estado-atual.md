@@ -9,6 +9,9 @@ Data: 24/06/2026
 - O registro é inserido em `public.df_contas_pagamentos`.
 - A listagem é recarregada após o salvamento e exibe total pago, saldo,
   quantidade de pagamentos e data do último pagamento.
+- O modal lista os pagamentos parciais ativos da conta.
+- Um pagamento individual pode ser estornado por inativação lógica:
+  `arquivado = true` e `arquivado_em` preenchido.
 
 ## Validações
 
@@ -19,6 +22,8 @@ Data: 24/06/2026
   `INSERT`;
 - conta paga, oculta, excluída ou deletada não aceita novo pagamento parcial;
 - duplo envio é bloqueado enquanto o salvamento está em andamento.
+- estorno valida novamente empresa, conta e pagamento antes da atualização;
+- exclusão física não é usada e permanece bloqueada pelo banco.
 
 ## Limites deste ciclo
 
@@ -26,5 +31,5 @@ Data: 24/06/2026
 - `df_contas.valor_pago` e `df_contas.data_pagamento` não são alterados;
 - saldo zerado por pagamentos parciais não executa baixa integral automática;
 - baixa, correção e estorno existentes permanecem separados;
-- não há edição ou estorno de um pagamento parcial neste ciclo;
+- não há edição de um pagamento parcial neste ciclo;
 - nenhuma migration, policy ou regra de RLS foi alterada.

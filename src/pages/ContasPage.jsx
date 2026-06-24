@@ -240,6 +240,8 @@ export default function ContasPage({
   loading, mostrarContas, setMostrarContas, estaVencida, formatarData, formatarTipoRecorrencia,
   obterTipoRecorrenciaConta, abrirConfirmacao, marcarComoPago, corrigirPagamento, voltarParaPendente, abrirEdicaoConta, excluirConta, ocultarConta, reexibirConta,
   registrarPagamentoParcial,
+  listarPagamentosParciaisConta,
+  estornarPagamentoParcial,
   navegarPara, podeEditarFinanceiro = true, podeExportarDados = true
 }) {
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
@@ -394,13 +396,17 @@ export default function ContasPage({
     const pagamentoParcialQuitado = conta.status === 'pago' && saldoPendenteParcial <= 0
     const exibirPagamentoParcial = possuiPagamentosParciais && !pagamentoParcialQuitado
     const saldoDisponivelParcial = possuiPagamentosParciais ? saldoPendenteParcial : valorPrevisto
-    const podeRegistrarPagamentoParcial = (
-      conta.status !== 'pago'
-      && !oculta
+    const contaDisponivelParaParciais = (
+      !oculta
       && conta.excluido !== true
       && conta.deletado !== true
+    )
+    const podeRegistrarPagamentoParcial = (
+      contaDisponivelParaParciais
+      && conta.status !== 'pago'
       && saldoDisponivelParcial > 0
     )
+    const podeGerenciarPagamentosParciais = contaDisponivelParaParciais && possuiPagamentosParciais
 
     return (
       <div
@@ -505,7 +511,7 @@ export default function ContasPage({
         )}
 
         {podeEditarFinanceiro && (
-          <div className={`account-actions ${conta.status === 'pago' ? 'account-actions-paid' : ''} ${podeRegistrarPagamentoParcial ? 'account-actions-with-partial' : ''}`} style={{ ...styles.acoes, ...ACCOUNT_ACTIONS_STYLE }}>
+          <div className={`account-actions ${conta.status === 'pago' ? 'account-actions-paid' : ''} ${(podeRegistrarPagamentoParcial || podeGerenciarPagamentosParciais) ? 'account-actions-with-partial' : ''}`} style={{ ...styles.acoes, ...ACCOUNT_ACTIONS_STYLE }}>
           {conta.status !== 'pago' ? (
             <button className="account-action-button account-action-primary" style={{ ...styles.btnPago, ...ACCOUNT_PRIMARY_ACTION_STYLE }} onClick={() => abrirBaixaConta(conta)}>
               Baixar
@@ -521,14 +527,14 @@ export default function ContasPage({
             </>
           )}
 
-          {podeRegistrarPagamentoParcial && (
+          {(podeRegistrarPagamentoParcial || podeGerenciarPagamentosParciais) && (
             <button
               className="account-action-button account-action-partial"
               style={ACCOUNT_SECONDARY_ACTION_STYLE}
               onClick={() => setContaEmPagamentoParcial(conta)}
-              title="Registrar pagamento parcial"
+              title={podeGerenciarPagamentosParciais ? 'Ver pagamentos parciais' : 'Registrar pagamento parcial'}
             >
-              Parcial
+              {podeGerenciarPagamentosParciais ? 'Parciais' : 'Parcial'}
             </button>
           )}
 
@@ -769,6 +775,8 @@ export default function ContasPage({
           conta={contaEmPagamentoParcial}
           formatarValor={formatarValor}
           limitarDataInput={limitarDataInput}
+          listarPagamentos={listarPagamentosParciaisConta}
+          estornarPagamento={estornarPagamentoParcial}
           onClose={() => setContaEmPagamentoParcial(null)}
           onConfirm={confirmarPagamentoParcial}
         />

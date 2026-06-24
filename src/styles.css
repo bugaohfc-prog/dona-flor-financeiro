@@ -5046,6 +5046,10 @@
   .account-card-desktop.print-card .account-actions.account-actions-paid {
     grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
   }
+
+  .account-card-desktop.print-card .account-actions.account-actions-with-partial {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
 }
 
 /* Notas - modal premium */
@@ -5507,6 +5511,66 @@
   font-weight: 800;
 }
 
+.account-partial-list-message {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.account-partial-payment-list {
+  display: grid;
+  gap: 8px;
+}
+
+.account-partial-payment-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #dbe7e3;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.account-partial-payment-item-copy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 9px;
+  min-width: 0;
+}
+
+.account-partial-payment-item-copy strong,
+.account-partial-payment-item-copy span {
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.account-partial-payment-item-copy small {
+  flex-basis: 100%;
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
+.account-partial-payment-reverse {
+  min-height: 34px;
+  padding: 5px 10px;
+  border: 1px solid #fdba74;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.account-partial-payment-reverse:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
 .account-modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -5580,6 +5644,14 @@
 
   .account-modal-actions button {
     width: 100% !important;
+  }
+
+  .account-partial-payment-item {
+    grid-template-columns: 1fr;
+  }
+
+  .account-partial-payment-reverse {
+    width: 100%;
   }
 }
 

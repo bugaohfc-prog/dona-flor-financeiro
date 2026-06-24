@@ -19,6 +19,7 @@ import {
   listarContasDoMesParaRecorrencia,
   listarPagamentosParciaisPorContas,
   registrarPagamentoParcial as registrarPagamentoParcialService,
+  estornarPagamentoParcial as estornarPagamentoParcialService,
   listarRecorrenciasAtivas,
   listarRecorrenciasPorDia,
   ocultarConta as ocultarContaService,
@@ -681,6 +682,42 @@ export function useContas() {
     return true
   }
 
+  async function listarPagamentosParciaisConta(contexto) {
+    const { supabase, id, empresaId, mostrarAviso } = contexto
+    const { data, error } = await listarPagamentosParciaisPorContas(supabase, empresaId, [id])
+
+    if (error) {
+      console.warn('Falha ao listar pagamentos parciais:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível carregar os pagamentos parciais.'), 'erro')
+      return []
+    }
+
+    return data || []
+  }
+
+  async function estornarPagamentoParcial(contexto) {
+    const { supabase, pagamentoId, contaId, empresaId, buscarContas, mostrarAviso } = contexto
+    const { data, error } = await estornarPagamentoParcialService(
+      supabase,
+      pagamentoId,
+      contaId,
+      empresaId
+    )
+
+    if (error || !data?.id) {
+      console.warn('Falha ao estornar pagamento parcial:', error)
+      mostrarAviso?.(
+        mensagemSeguraErro(error, 'Não foi possível estornar o pagamento parcial. Verifique sua permissão e tente novamente.'),
+        'erro'
+      )
+      return false
+    }
+
+    await buscarContas()
+    mostrarAviso?.('Pagamento parcial estornado com sucesso.', 'sucesso')
+    return true
+  }
+
   async function voltarParaPendente(contexto) {
     const { supabase, id, empresaId, buscarContas, mostrarAviso } = contexto
     const { error } = await estornarBaixaConta(supabase, id, empresaId)
@@ -830,6 +867,8 @@ export function useContas() {
     marcarComoPago,
     corrigirPagamento,
     registrarPagamentoParcial,
+    listarPagamentosParciaisConta,
+    estornarPagamentoParcial,
     voltarParaPendente,
     excluirConta,
     ocultarConta,

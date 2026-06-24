@@ -138,6 +138,56 @@ export async function registrarPagamentoParcial(supabase, contaId, empresaId, pa
   )
 }
 
+export async function estornarPagamentoParcial(supabase, pagamentoId, contaId, empresaId) {
+  assertEmpresaId(empresaId)
+
+  const { data: contaAtual, error: erroConta } = await selecionarPorEmpresa(
+    supabase,
+    'df_contas',
+    empresaId,
+    'id, oculto, excluido, deletado'
+  )
+    .eq('id', contaId)
+    .maybeSingle()
+
+  if (erroConta) return { data: null, error: erroConta }
+  if (!contaAtual?.id) return { data: null, error: new Error('Conta não encontrada.') }
+  if (contaAtual.oculto === true || contaAtual.excluido === true || contaAtual.deletado === true) {
+    return { data: null, error: new Error('A conta não está disponível para estorno parcial.') }
+  }
+
+  const { data: pagamentoAtual, error: erroPagamento } = await selecionarPorEmpresa(
+    supabase,
+    'df_contas_pagamentos',
+    empresaId,
+    'id, conta_id, arquivado'
+  )
+    .eq('id', pagamentoId)
+    .eq('conta_id', contaId)
+    .eq('arquivado', false)
+    .maybeSingle()
+
+  if (erroPagamento) return { data: null, error: erroPagamento }
+  if (!pagamentoAtual?.id) {
+    return { data: null, error: new Error('Pagamento parcial não encontrado ou já estornado.') }
+  }
+
+  return atualizarPorEmpresa(
+    supabase,
+    'df_contas_pagamentos',
+    pagamentoId,
+    empresaId,
+    {
+      arquivado: true,
+      arquivado_em: new Date().toISOString()
+    }
+  )
+    .eq('conta_id', contaId)
+    .eq('arquivado', false)
+    .select('id, conta_id, arquivado, arquivado_em')
+    .maybeSingle()
+}
+
 export function consolidarPagamentosParciaisDaConta(conta, pagamentos = []) {
   const contaId = conta?.id || null
   const valorOriginal = arredondarValorFinanceiro(conta?.valor)

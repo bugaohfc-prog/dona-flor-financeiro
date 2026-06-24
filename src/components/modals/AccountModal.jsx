@@ -25,6 +25,8 @@ export default function AccountModal({
   setTipoRecorrencia,
   diaVencimentoRecorrencia,
   setDiaVencimentoRecorrencia,
+  valorVariavelRecorrencia,
+  setValorVariavelRecorrencia,
   fecharConta,
   salvarConta,
   salvandoConta,
@@ -148,6 +150,18 @@ export default function AccountModal({
                       placeholder="Dia de vencimento mensal. Ex: 5"
                       value={diaVencimentoRecorrencia || (dataVencimento ? String(Number(formatarDataParaBanco(dataVencimento).slice(8, 10))) : '')}
                       onChange={(e) => setDiaVencimentoRecorrencia(e.target.value)}
+                    />
+                  </label>
+
+                  <label className="checkbox-row-fix account-modal-switch account-modal-variable-switch account-modal-field-wide">
+                    <span>
+                      <strong>Valor variável</strong>
+                      <small>Use quando esta recorrência pode mudar de valor a cada mês. O valor informado será tratado como estimativa.</small>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={valorVariavelRecorrencia}
+                      onChange={(e) => setValorVariavelRecorrencia(e.target.checked)}
                     />
                   </label>
 

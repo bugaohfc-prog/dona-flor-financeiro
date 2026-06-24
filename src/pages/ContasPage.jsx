@@ -382,6 +382,7 @@ export default function ContasPage({
     const vencida = estaVencida(conta.data_vencimento, conta.status)
     const recorrente = ehContaRecorrente(conta)
     const tipoRecorrencia = recorrente ? formatarTipoRecorrencia(obterTipoRecorrenciaConta(conta)) : ''
+    const valorVariavel = recorrente && conta.df_contas_recorrentes?.valor_variavel === true
     const observacao = String(conta.observacao || '').trim()
     const valorPrevisto = Number(conta.valor || 0)
     const valorPago = Number(conta.valor_pago || 0)
@@ -469,6 +470,9 @@ export default function ContasPage({
           <div className="account-meta-badges">
             {recorrente && (
               <span className="account-recurring-badge">↻ {tipoRecorrencia}</span>
+            )}
+            {valorVariavel && (
+              <span className="status-pill account-variable-value-badge">Valor variável</span>
             )}
             <span className={`status-pill ${vencida ? 'status-vencido' : conta.status === 'pago' ? 'status-pago' : 'status-pendente'}`}>
               {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}

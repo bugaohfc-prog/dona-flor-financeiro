@@ -15,8 +15,17 @@ Em 24/06/2026 foi criada e aplicada a migration
 
 A migration adiciona somente `public.df_contas_recorrentes.valor_variavel`
 como `boolean not null default false`. Todas as séries existentes permanecem
-com comportamento de valor fixo. UI, services, hooks, geração, duplicidade,
-edição de parcela/série, RLS e policies continuam inalterados.
+com comportamento de valor fixo. Na etapa estrutural, UI, services, hooks,
+geração, duplicidade, edição de parcela/série, RLS e policies não foram
+alterados.
+
+Em 24/06/2026, o campo passou a ser usado pelo fluxo existente de contas:
+
+- o modal exibe `Valor variável` somente para conta recorrente;
+- criação e edição da série persistem `valor_variavel`;
+- edição de conta vinculada carrega o valor da série, com fallback `false`;
+- cards de contas vinculadas exibem o badge `Valor variável` quando aplicável;
+- geração e prevenção de duplicidade permanecem com a regra anterior.
 
 ## Estado atual
 

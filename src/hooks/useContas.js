@@ -90,6 +90,7 @@ export function useContas() {
   const [contaRecorrente, setContaRecorrente] = useState(false)
   const [tipoRecorrencia, setTipoRecorrencia] = useState('mensal')
   const [diaVencimentoRecorrencia, setDiaVencimentoRecorrencia] = useState('')
+  const [valorVariavelRecorrencia, setValorVariavelRecorrencia] = useState(false)
   const [recorrenciaContaId, setRecorrenciaContaId] = useState(null)
 
   function resetarFormularioConta() {
@@ -109,6 +110,7 @@ export function useContas() {
     setContaRecorrente(false)
     setTipoRecorrencia('mensal')
     setDiaVencimentoRecorrencia('')
+    setValorVariavelRecorrencia(false)
     setRecorrenciaContaId(null)
   }
 
@@ -357,6 +359,7 @@ export function useContas() {
     setRecorrenciaContaId(conta.recorrencia_id || null)
     setTipoRecorrencia('mensal')
     setDiaVencimentoRecorrencia(diaPadrao)
+    setValorVariavelRecorrencia(false)
     setModalConta(true)
 
     const recorrenciaEncontrada = await localizarRecorrenciaDaConta({
@@ -372,6 +375,7 @@ export function useContas() {
       setRecorrenciaContaId(recorrenciaEncontrada.id)
       setTipoRecorrencia(recorrenciaEncontrada.frequencia || recorrenciaEncontrada.tipo_recorrencia || 'mensal')
       setDiaVencimentoRecorrencia(String(recorrenciaEncontrada.dia_vencimento || diaPadrao || ''))
+      setValorVariavelRecorrencia(recorrenciaEncontrada.valor_variavel === true)
     }
   }
 
@@ -470,6 +474,7 @@ export function useContas() {
       tipo_recorrencia: tipoRecorrencia || 'mensal',
       dia_vencimento: diaRecorrencia,
       data_inicio: dataBanco,
+      valor_variavel: valorVariavelRecorrencia === true,
       ativo: true
     } : null
 
@@ -516,6 +521,20 @@ export function useContas() {
 
             const recorrenciaCriada = Array.isArray(dataRecorrencia) ? dataRecorrencia[0] : dataRecorrencia
             let recorrenciaIdCriada = recorrenciaCriada?.id
+
+            if (recorrenciaSemelhante?.id) {
+              const { error: erroValorVariavel } = await atualizarRecorrencia(
+                supabase,
+                recorrenciaSemelhante.id,
+                empresaId,
+                { valor_variavel: valorVariavelRecorrencia === true }
+              )
+
+              if (erroValorVariavel) {
+                mostrarAviso(mensagemSeguraErro(erroValorVariavel, 'A conta foi atualizada, mas o tipo de valor da recorrência não foi salvo.'), 'erro')
+                return
+              }
+            }
 
             if (!recorrenciaIdCriada) {
               const recorrenciaEncontrada = await localizarRecorrenciaDaConta({
@@ -584,6 +603,20 @@ export function useContas() {
           const recorrenciaCriada = Array.isArray(dataRecorrencia) ? dataRecorrencia[0] : dataRecorrencia
           const contaCriada = Array.isArray(resposta.data) ? resposta.data[0] : resposta.data
           let recorrenciaIdCriada = recorrenciaCriada?.id
+
+          if (recorrenciaSemelhante?.id) {
+            const { error: erroValorVariavel } = await atualizarRecorrencia(
+              supabase,
+              recorrenciaSemelhante.id,
+              empresaId,
+              { valor_variavel: valorVariavelRecorrencia === true }
+            )
+
+            if (erroValorVariavel) {
+              mostrarAviso(mensagemSeguraErro(erroValorVariavel, 'A conta foi criada, mas o tipo de valor da recorrência não foi salvo.'), 'erro')
+              return
+            }
+          }
 
           if (!recorrenciaIdCriada && contaCriada?.id) {
             const recorrenciaEncontrada = await localizarRecorrenciaDaConta({
@@ -876,6 +909,8 @@ export function useContas() {
     setTipoRecorrencia,
     diaVencimentoRecorrencia,
     setDiaVencimentoRecorrencia,
+    valorVariavelRecorrencia,
+    setValorVariavelRecorrencia,
     recorrenciaContaId,
     setRecorrenciaContaId,
     buscarContas,

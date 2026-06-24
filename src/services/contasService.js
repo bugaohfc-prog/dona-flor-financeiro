@@ -49,7 +49,7 @@ function acrescentarObservacaoPagamento(observacaoAtual, texto) {
 
 export async function listarContasAtivas(supabase, empresaId) {
   assertEmpresaId(empresaId)
-  return selecionarPorEmpresa(supabase, 'df_contas', empresaId, '*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia)')
+  return selecionarPorEmpresa(supabase, 'df_contas', empresaId, '*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia, valor_variavel)')
     .or('excluido.is.null,excluido.eq.false')
     .order('data_vencimento', { ascending: true })
 }
@@ -359,7 +359,7 @@ export async function validarFilialDaEmpresa(supabase, filialId, empresaId) {
 
 export async function criarContasEmLote(supabase, contas) {
   return inserirLoteComEmpresa(supabase, 'df_contas', contas, {
-    select: '*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia)'
+    select: '*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia, valor_variavel)'
   })
 }
 

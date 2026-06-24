@@ -4619,6 +4619,14 @@
   color: #075985 !important;
 }
 
+.account-variable-value-badge {
+  flex: 0 0 auto;
+  border-color: #f5c16c !important;
+  background: #fff7ed !important;
+  color: #9a3412 !important;
+  white-space: nowrap;
+}
+
 .account-partial-payment-details {
   display: flex;
   flex: 1 1 360px;
@@ -5440,6 +5448,13 @@
   width: 22px;
   height: 22px;
   accent-color: #0f766e;
+}
+
+.account-modal-variable-switch {
+  padding: 10px 12px !important;
+  border: 1px solid #c7eee6 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
 }
 
 .account-modal-recurrence .recurrence-fields {

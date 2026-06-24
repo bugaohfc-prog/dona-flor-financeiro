@@ -278,6 +278,7 @@ export default function App() {
     salvarConta: salvarContaHook,
     marcarComoPago: marcarComoPagoHook,
     corrigirPagamento: corrigirPagamentoHook,
+    registrarPagamentoParcial: registrarPagamentoParcialHook,
     voltarParaPendente: voltarParaPendenteHook,
     excluirConta: excluirContaHook,
     ocultarConta: ocultarContaHook,
@@ -2028,6 +2029,22 @@ export default function App() {
     }
 
     return corrigirPagamentoHook({ supabase, id, empresaId, buscarContas, mostrarAviso, pagamento })
+  }
+
+  async function registrarPagamentoParcial(id, pagamento) {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return false
+    }
+
+    return registrarPagamentoParcialHook({
+      supabase,
+      id,
+      empresaId,
+      buscarContas: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
+      mostrarAviso,
+      pagamento
+    })
   }
 
   async function voltarParaPendente(id) {
@@ -4561,6 +4578,7 @@ export default function App() {
         abrirConfirmacao={abrirConfirmacao}
         marcarComoPago={marcarComoPago}
         corrigirPagamento={corrigirPagamento}
+        registrarPagamentoParcial={registrarPagamentoParcial}
         voltarParaPendente={voltarParaPendente}
         abrirEdicaoConta={abrirEdicaoConta}
         excluirConta={excluirConta}

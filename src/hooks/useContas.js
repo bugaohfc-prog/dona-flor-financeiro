@@ -18,6 +18,7 @@ import {
   listarContasAtivas,
   listarContasDoMesParaRecorrencia,
   listarPagamentosParciaisPorContas,
+  registrarPagamentoParcial as registrarPagamentoParcialService,
   listarRecorrenciasAtivas,
   listarRecorrenciasPorDia,
   ocultarConta as ocultarContaService,
@@ -665,6 +666,21 @@ export function useContas() {
     return true
   }
 
+  async function registrarPagamentoParcial(contexto) {
+    const { supabase, id, empresaId, buscarContas, mostrarAviso, pagamento } = contexto
+    const { error } = await registrarPagamentoParcialService(supabase, id, empresaId, pagamento)
+
+    if (error) {
+      console.warn('Falha ao registrar pagamento parcial:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível registrar o pagamento parcial.'), 'erro')
+      return false
+    }
+
+    await buscarContas()
+    mostrarAviso?.('Pagamento parcial registrado com sucesso.', 'sucesso')
+    return true
+  }
+
   async function voltarParaPendente(contexto) {
     const { supabase, id, empresaId, buscarContas, mostrarAviso } = contexto
     const { error } = await estornarBaixaConta(supabase, id, empresaId)
@@ -813,6 +829,7 @@ export function useContas() {
     salvarConta,
     marcarComoPago,
     corrigirPagamento,
+    registrarPagamentoParcial,
     voltarParaPendente,
     excluirConta,
     ocultarConta,

@@ -2,6 +2,7 @@ import { AccountListSkeleton } from '../components/feedback/Skeletons.jsx'
 import { ehContaRecorrente } from '../utils/recorrencia'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import AccountPaymentModal from '../components/modals/AccountPaymentModal.jsx'
+import AccountPartialPaymentModal from '../components/modals/AccountPartialPaymentModal.jsx'
 
 const OPCOES_ORDENACAO_CONTAS = [
   { valor: 'vencimento_asc', label: 'Vencimento mais próximo' },
@@ -238,10 +239,12 @@ export default function ContasPage({
   dataInicial, setDataInicial, dataFinal, setDataFinal, limitarDataInput, contas = [], contasFiltradas, agendaFocusTarget, onAgendaFocusHandled, total, formatarValor,
   loading, mostrarContas, setMostrarContas, estaVencida, formatarData, formatarTipoRecorrencia,
   obterTipoRecorrenciaConta, abrirConfirmacao, marcarComoPago, corrigirPagamento, voltarParaPendente, abrirEdicaoConta, excluirConta, ocultarConta, reexibirConta,
+  registrarPagamentoParcial,
   navegarPara, podeEditarFinanceiro = true, podeExportarDados = true
 }) {
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
   const [contaEmBaixa, setContaEmBaixa] = useState(null)
+  const [contaEmPagamentoParcial, setContaEmPagamentoParcial] = useState(null)
   const [modoPagamento, setModoPagamento] = useState('baixa')
   const [contaDestacadaId, setContaDestacadaId] = useState('')
   const [mostrarExportacoes, setMostrarExportacoes] = useState(false)
@@ -306,6 +309,11 @@ export default function ContasPage({
   function fecharModalPagamento() {
     setContaEmBaixa(null)
     setModoPagamento('baixa')
+  }
+
+  async function confirmarPagamentoParcial(payload) {
+    if (!contaEmPagamentoParcial?.id) return false
+    return registrarPagamentoParcial(contaEmPagamentoParcial.id, payload)
   }
 
   function grupoPeriodoAberto(grupo) {
@@ -385,6 +393,14 @@ export default function ContasPage({
     const possuiPagamentosParciais = quantidadePagamentosParciais > 0 || pagamentosParciaisTotal > 0
     const pagamentoParcialQuitado = conta.status === 'pago' && saldoPendenteParcial <= 0
     const exibirPagamentoParcial = possuiPagamentosParciais && !pagamentoParcialQuitado
+    const saldoDisponivelParcial = possuiPagamentosParciais ? saldoPendenteParcial : valorPrevisto
+    const podeRegistrarPagamentoParcial = (
+      conta.status !== 'pago'
+      && !oculta
+      && conta.excluido !== true
+      && conta.deletado !== true
+      && saldoDisponivelParcial > 0
+    )
 
     return (
       <div
@@ -489,7 +505,7 @@ export default function ContasPage({
         )}
 
         {podeEditarFinanceiro && (
-          <div className={`account-actions ${conta.status === 'pago' ? 'account-actions-paid' : ''}`} style={{ ...styles.acoes, ...ACCOUNT_ACTIONS_STYLE }}>
+          <div className={`account-actions ${conta.status === 'pago' ? 'account-actions-paid' : ''} ${podeRegistrarPagamentoParcial ? 'account-actions-with-partial' : ''}`} style={{ ...styles.acoes, ...ACCOUNT_ACTIONS_STYLE }}>
           {conta.status !== 'pago' ? (
             <button className="account-action-button account-action-primary" style={{ ...styles.btnPago, ...ACCOUNT_PRIMARY_ACTION_STYLE }} onClick={() => abrirBaixaConta(conta)}>
               Baixar
@@ -503,6 +519,17 @@ export default function ContasPage({
                 Corrigir
               </button>
             </>
+          )}
+
+          {podeRegistrarPagamentoParcial && (
+            <button
+              className="account-action-button account-action-partial"
+              style={ACCOUNT_SECONDARY_ACTION_STYLE}
+              onClick={() => setContaEmPagamentoParcial(conta)}
+              title="Registrar pagamento parcial"
+            >
+              Parcial
+            </button>
           )}
 
           <button className="account-action-button account-action-secondary" style={{ ...styles.btnEditar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirEdicaoConta(conta)}>
@@ -734,6 +761,16 @@ export default function ContasPage({
           modo={modoPagamento}
           onClose={fecharModalPagamento}
           onConfirm={confirmarBaixaConta}
+        />
+      )}
+      {contaEmPagamentoParcial && (
+        <AccountPartialPaymentModal
+          styles={styles}
+          conta={contaEmPagamentoParcial}
+          formatarValor={formatarValor}
+          limitarDataInput={limitarDataInput}
+          onClose={() => setContaEmPagamentoParcial(null)}
+          onConfirm={confirmarPagamentoParcial}
         />
       )}
     </>

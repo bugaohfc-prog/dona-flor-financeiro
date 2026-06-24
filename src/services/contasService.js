@@ -80,6 +80,64 @@ export async function listarPagamentosParciaisPorContas(supabase, empresaId, con
     .order('criado_em', { ascending: true })
 }
 
+export async function registrarPagamentoParcial(supabase, contaId, empresaId, pagamento = {}) {
+  assertEmpresaId(empresaId)
+
+  const valorNovo = arredondarValorFinanceiro(pagamento.valor_pago)
+  if (valorNovo <= 0) {
+    return { data: null, error: new Error('Informe um valor de pagamento maior que zero.') }
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(pagamento.data_pagamento || ''))) {
+    return { data: null, error: new Error('Informe uma data de pagamento válida.') }
+  }
+
+  const { data: contaAtual, error: erroConta } = await selecionarPorEmpresa(
+    supabase,
+    'df_contas',
+    empresaId,
+    'id, empresa_id, valor, status, oculto, excluido, deletado'
+  )
+    .eq('id', contaId)
+    .maybeSingle()
+
+  if (erroConta) return { data: null, error: erroConta }
+  if (!contaAtual?.id) return { data: null, error: new Error('Conta não encontrada.') }
+  if (contaAtual.status === 'pago') {
+    return { data: null, error: new Error('A conta já está marcada como paga.') }
+  }
+  if (contaAtual.oculto === true || contaAtual.excluido === true || contaAtual.deletado === true) {
+    return { data: null, error: new Error('A conta não está disponível para pagamento parcial.') }
+  }
+
+  const { data: pagamentosAtuais, error: erroPagamentos } = await listarPagamentosParciaisPorContas(
+    supabase,
+    empresaId,
+    [contaId]
+  )
+  if (erroPagamentos) return { data: null, error: erroPagamentos }
+
+  const consolidacao = consolidarPagamentosParciaisDaConta(contaAtual, pagamentosAtuais || [])
+  if (valorNovo > consolidacao.saldoPendente) {
+    return {
+      data: null,
+      error: new Error(`O valor informado supera o saldo pendente de R$ ${consolidacao.saldoPendente.toFixed(2).replace('.', ',')}.`)
+    }
+  }
+
+  return inserirComEmpresa(
+    supabase,
+    'df_contas_pagamentos',
+    {
+      empresa_id: empresaId,
+      conta_id: contaId,
+      valor_pago: valorNovo,
+      data_pagamento: pagamento.data_pagamento,
+      observacao: String(pagamento.observacao || '').trim() || null
+    },
+    { select: true }
+  )
+}
+
 export function consolidarPagamentosParciaisDaConta(conta, pagamentos = []) {
   const contaId = conta?.id || null
   const valorOriginal = arredondarValorFinanceiro(conta?.valor)

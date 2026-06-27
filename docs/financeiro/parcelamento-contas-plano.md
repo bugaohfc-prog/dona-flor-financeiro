@@ -26,6 +26,14 @@ Atualização estrutural:
 - contas existentes devem permanecer sem parcelamento, com os novos campos nulos, apos aplicacao da migration;
 - parcelamento funcional continua pendente para ciclo futuro.
 
+Validacao remota em 2026-06-27:
+
+- a migration ja esta versionada no Git no commit `9d2cfc23eb745579afc0f0457e996ad6857293bb`;
+- a validacao/aplicacao no Supabase remoto ainda ficou pendente nesta sessao;
+- o conector Supabase falhou antes de executar SQL com erro de handshake: `MCP startup failed: timed out handshaking with MCP server after 12.4668774s`;
+- nenhuma consulta, migration ou alteracao de dados foi executada no banco remoto neste ciclo;
+- quando o conector estiver disponivel, validar colunas, constraint, total de contas e campos nulos nas contas existentes antes de iniciar a UI.
+
 Campos relevantes atuais:
 
 - identificação e multiempresa:

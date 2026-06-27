@@ -329,3 +329,12 @@ Em 27/06/2026, a edicao de conta vinculada passou a separar explicitamente o esc
 - editar o valor de uma parcela de serie com valor variavel nao altera o valor base/estimado da serie;
 - parcelas ja lancadas nao sao reescritas ao editar a serie;
 - geracao automatica e prevencao de duplicidade permanecem com a regra anterior.
+
+## Atualizacao de implementacao - duplicidade de serie variavel
+
+Em 27/06/2026, a busca de serie semelhante passou a respeitar `valor_variavel`:
+
+- series fixas continuam comparando valor, descricao, tipo, dia, centro, filial, empresa e status ativo;
+- series variaveis comparam descricao, tipo, dia, centro, filial, empresa, status ativo e `valor_variavel = true`, sem usar valor como identidade;
+- editar uma parcela individual nao cria nem atualiza serie;
+- geracao automatica de parcelas permanece inalterada.

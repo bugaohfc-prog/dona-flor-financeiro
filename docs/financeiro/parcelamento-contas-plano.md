@@ -17,6 +17,15 @@ Este ciclo foi somente leitura/documentação:
 
 A tabela real `public.df_contas` foi auditada por metadados do Supabase e pelo código/migrations do repositório.
 
+Atualização estrutural:
+
+- migration criada em `supabase/migrations/20260627180000_add_parcelamento_df_contas.sql`;
+- campos opcionais de parcelamento definidos para `df_contas`;
+- UI de parcelamento ainda não foi implementada;
+- services/hooks ainda não criam parcelamentos;
+- contas existentes devem permanecer sem parcelamento, com os novos campos nulos, apos aplicacao da migration;
+- parcelamento funcional continua pendente para ciclo futuro.
+
 Campos relevantes atuais:
 
 - identificação e multiempresa:
@@ -280,7 +289,20 @@ Ela pode ser considerada depois se houver necessidade de:
 
 ## Migration proposta para ciclo futuro
 
-Não executar neste ciclo.
+Migration estrutural criada para este ciclo:
+
+- `supabase/migrations/20260627180000_add_parcelamento_df_contas.sql`
+
+Campos definidos na migration:
+
+- `grupo_parcelamento_id uuid null`
+- `parcela_numero integer null`
+- `parcelas_total integer null`
+- `valor_total_parcelamento numeric(12,2) null`
+
+A migration tambem inclui a constraint `df_contas_parcelamento_consistente`, que mantem contas antigas validas com todos os campos nulos e exige consistencia quando uma conta pertencer a um grupo de parcelamento.
+
+SQL base:
 
 ```sql
 alter table public.df_contas

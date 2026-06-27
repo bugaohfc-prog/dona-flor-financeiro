@@ -319,3 +319,13 @@ alter table public.df_contas_recorrentes
 ```
 
 Se houver séries marcadas, exportar o snapshot de `id`, `empresa_id` e `valor_variavel` antes de remover a coluna. O rollback estrutural não deve ser executado enquanto código publicado depender do campo.
+
+## Atualizacao de implementacao - separacao de edicao
+
+Em 27/06/2026, a edicao de conta vinculada passou a separar explicitamente o escopo:
+
+- `Editar somente esta conta` atualiza apenas `df_contas` e nao altera `df_contas_recorrentes`;
+- `Editar serie recorrente` atualiza apenas os dados da serie, incluindo `valor_variavel`;
+- editar o valor de uma parcela de serie com valor variavel nao altera o valor base/estimado da serie;
+- parcelas ja lancadas nao sao reescritas ao editar a serie;
+- geracao automatica e prevencao de duplicidade permanecem com a regra anterior.

@@ -27,6 +27,10 @@ export default function AccountModal({
   setDiaVencimentoRecorrencia,
   valorVariavelRecorrencia,
   setValorVariavelRecorrencia,
+  recorrenciaContaId,
+  escopoEdicaoRecorrencia,
+  recorrenciaEdicaoCarregada,
+  alterarEscopoEdicaoRecorrencia,
   fecharConta,
   salvarConta,
   salvandoConta,
@@ -38,6 +42,13 @@ export default function AccountModal({
   setMenuAberto,
   setMenuNavegacaoAberto
 }) {
+  const contaVinculadaRecorrencia = Boolean(editandoContaId && recorrenciaContaId)
+  const editandoSerieRecorrente = contaVinculadaRecorrencia && escopoEdicaoRecorrencia === 'serie'
+  const tituloModal = editandoSerieRecorrente ? 'Editar serie recorrente' : editandoContaId ? 'Editar conta' : 'Nova conta'
+  const textoHeader = editandoSerieRecorrente
+    ? 'Atualize a serie recorrente sem reescrever parcelas ja lancadas.'
+    : 'Preencha os dados principais para acompanhar vencimentos, recorrencia e classificacao.'
+
   function fecharTudo() {
     fecharConta()
     fecharNota()
@@ -56,6 +67,25 @@ export default function AccountModal({
         </header>
 
         <div className="account-modal-body">
+          {contaVinculadaRecorrencia && (
+            <section className="account-modal-section account-edit-scope-section">
+              <div className="account-modal-section-title">
+                <strong>Escopo da edicao</strong>
+                <small>Escolha se esta alteracao vale so para a conta aberta ou para a serie.</small>
+              </div>
+              <div className="account-edit-scope-options" role="radiogroup" aria-label="Escopo da edicao de recorrencia">
+                <button type="button" className={`account-edit-scope-option ${escopoEdicaoRecorrencia !== 'serie' ? 'active' : ''}`} aria-pressed={escopoEdicaoRecorrencia !== 'serie'} onClick={() => alterarEscopoEdicaoRecorrencia('conta')}>
+                  <strong>Editar somente esta conta</strong>
+                  <span>Altera apenas esta parcela. A serie permanece igual.</span>
+                </button>
+                <button type="button" className={`account-edit-scope-option ${escopoEdicaoRecorrencia === 'serie' ? 'active' : ''}`} aria-pressed={escopoEdicaoRecorrencia === 'serie'} disabled={!recorrenciaEdicaoCarregada} onClick={() => alterarEscopoEdicaoRecorrencia('serie')}>
+                  <strong>Editar serie recorrente</strong>
+                  <span>Altera a serie para proximas geracoes. Parcelas antigas nao sao reescritas.</span>
+                </button>
+              </div>
+            </section>
+          )}
+
           <section className="account-modal-section">
             <div className="account-modal-section-title">
               <strong>Dados principais</strong>
@@ -68,7 +98,7 @@ export default function AccountModal({
               </label>
 
               <label className="account-modal-field">
-                <span>Valor</span>
+                <span>{editandoSerieRecorrente ? 'Valor estimado' : 'Valor'}</span>
                 <input style={styles.inputModal} placeholder="Valor. Ex: 150,90" value={valor} onChange={(e) => setValor(e.target.value)} />
               </label>
             </div>
@@ -81,7 +111,7 @@ export default function AccountModal({
             </div>
             <div className="account-modal-grid">
               <label className="account-modal-field">
-                <span>Vencimento</span>
+                <span>{editandoSerieRecorrente ? 'Inicio da serie' : 'Vencimento'}</span>
                 <input style={styles.inputModal} type="date" value={dataVencimento} onChange={(e) => setDataVencimento(limitarDataInput(e.target.value))} />
               </label>
 
@@ -113,7 +143,13 @@ export default function AccountModal({
               <small>Use para contas fixas que se repetem mensalmente.</small>
             </div>
             <div className="recurrence-box account-modal-recurrence" style={styles.blocoRecorrenciaConta}>
-              <label className="checkbox-row-fix account-modal-switch" style={styles.switchLinhaCompacta}>
+              {contaVinculadaRecorrencia ? (
+                <div className="account-recurring-linked-note">
+                  <strong>{editandoSerieRecorrente ? 'Editando a serie recorrente' : 'Editando somente esta conta'}</strong>
+                  <span>{editandoSerieRecorrente ? 'Valor variavel e valor base serao salvos na serie. Parcelas antigas nao serao atualizadas.' : 'As alteracoes abaixo serao salvas apenas nesta conta. A serie permanece igual.'}</span>
+                </div>
+              ) : (
+                <label className="checkbox-row-fix account-modal-switch" style={styles.switchLinhaCompacta}>
                 <span>
                   <strong>Conta recorrente</strong>
                   <small style={styles.textoAjuda}>Ideal para aluguel, internet, sistema, mensalidades e contas fixas.</small>
@@ -129,9 +165,10 @@ export default function AccountModal({
                     }
                   }}
                 />
-              </label>
+                </label>
+              )}
 
-              {contaRecorrente && (
+              {contaRecorrente && (!contaVinculadaRecorrencia || editandoSerieRecorrente) && (
                 <div className="recurrence-fields account-modal-grid">
                   <label className="account-modal-field">
                     <span>Tipo de recorrência</span>
@@ -173,6 +210,8 @@ export default function AccountModal({
             </div>
           </section>
 
+          {!editandoSerieRecorrente && (
+            <>
           <section className="account-modal-section">
             <div className="account-modal-section-title">
               <strong>Fiscal</strong>
@@ -230,6 +269,8 @@ export default function AccountModal({
               />
             </label>
           </section>
+            </>
+          )}
         </div>
 
         <footer className="account-modal-actions">

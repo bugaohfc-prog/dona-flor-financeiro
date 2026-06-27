@@ -92,6 +92,10 @@ export function useContas() {
   const [diaVencimentoRecorrencia, setDiaVencimentoRecorrencia] = useState('')
   const [valorVariavelRecorrencia, setValorVariavelRecorrencia] = useState(false)
   const [recorrenciaContaId, setRecorrenciaContaId] = useState(null)
+  const [escopoEdicaoRecorrencia, setEscopoEdicaoRecorrencia] = useState('conta')
+  const [recorrenciaEdicaoCarregada, setRecorrenciaEdicaoCarregada] = useState(false)
+  const contaEdicaoSnapshotRef = useRef(null)
+  const recorrenciaEdicaoSnapshotRef = useRef(null)
 
   function resetarFormularioConta() {
     setEditandoContaId(null)
@@ -112,6 +116,72 @@ export function useContas() {
     setDiaVencimentoRecorrencia('')
     setValorVariavelRecorrencia(false)
     setRecorrenciaContaId(null)
+    setEscopoEdicaoRecorrencia('conta')
+    setRecorrenciaEdicaoCarregada(false)
+    contaEdicaoSnapshotRef.current = null
+    recorrenciaEdicaoSnapshotRef.current = null
+  }
+
+  function aplicarContaNoFormulario(conta, diasAvisoPadrao) {
+    const dataConta = conta?.data_vencimento || ''
+    const diaPadrao = dataConta ? String(Number(String(dataConta).slice(8, 10))) : ''
+
+    setDescricao(conta?.descricao || '')
+    setValor(conta?.valor || '')
+    setDataVencimento(dataConta)
+    setCentroCustoId(conta?.centro_custo_id || '')
+    setFilialId(conta?.filial_id || '')
+    setObservacaoConta(conta?.observacao || '')
+    setImpostoTipoConta(conta?.imposto_tipo || '')
+    setCompetenciaConta(conta?.competencia ? String(conta.competencia).slice(0, 7) : '')
+    setContaWhatsapp(conta?.enviar_whatsapp ?? false)
+    setContaEmail(conta?.enviar_email ?? false)
+    setContaPush(conta?.enviar_push ?? false)
+    setContaDiasAviso(String(conta?.dias_aviso ?? diasAvisoPadrao ?? 1))
+    setContaRecorrente(Boolean(conta?.recorrencia_id))
+    setRecorrenciaContaId(conta?.recorrencia_id || null)
+    setTipoRecorrencia('mensal')
+    setDiaVencimentoRecorrencia(diaPadrao)
+    setValorVariavelRecorrencia(false)
+  }
+
+  function aplicarRecorrenciaNoFormulario(recorrencia, fallbackDia = '') {
+    if (!recorrencia) return
+
+    setDescricao(recorrencia.descricao || '')
+    setValor(recorrencia.valor || '')
+    setDataVencimento(recorrencia.data_inicio || '')
+    setCentroCustoId(recorrencia.centro_custo_id || '')
+    setFilialId(recorrencia.filial_id || '')
+    setContaRecorrente(true)
+    setRecorrenciaContaId(recorrencia.id || null)
+    setTipoRecorrencia(recorrencia.frequencia || recorrencia.tipo_recorrencia || 'mensal')
+    setDiaVencimentoRecorrencia(String(recorrencia.dia_vencimento || fallbackDia || ''))
+    setValorVariavelRecorrencia(recorrencia.valor_variavel === true)
+  }
+
+  function sincronizarDadosRecorrencia(recorrencia, fallbackDia = '') {
+    if (!recorrencia) return
+
+    setContaRecorrente(true)
+    setRecorrenciaContaId(recorrencia.id)
+    setTipoRecorrencia(recorrencia.frequencia || recorrencia.tipo_recorrencia || 'mensal')
+    setDiaVencimentoRecorrencia(String(recorrencia.dia_vencimento || fallbackDia || ''))
+    setValorVariavelRecorrencia(recorrencia.valor_variavel === true)
+    setRecorrenciaEdicaoCarregada(true)
+  }
+
+  function alterarEscopoEdicaoRecorrencia(escopo) {
+    const novoEscopo = escopo === 'serie' ? 'serie' : 'conta'
+    setEscopoEdicaoRecorrencia(novoEscopo)
+
+    if (novoEscopo === 'serie') {
+      aplicarRecorrenciaNoFormulario(recorrenciaEdicaoSnapshotRef.current)
+      return
+    }
+
+    aplicarContaNoFormulario(contaEdicaoSnapshotRef.current, contaEdicaoSnapshotRef.current?.dias_aviso)
+    sincronizarDadosRecorrencia(recorrenciaEdicaoSnapshotRef.current)
   }
 
 
@@ -343,23 +413,11 @@ export function useContas() {
     const diaPadrao = dataBanco ? String(Number(String(dataBanco).slice(8, 10))) : ''
 
     setEditandoContaId(conta.id)
-    setDescricao(conta.descricao || '')
-    setValor(conta.valor || '')
-    setDataVencimento(conta.data_vencimento || '')
-    setCentroCustoId(conta.centro_custo_id || '')
-    setFilialId(conta.filial_id || '')
-    setObservacaoConta(conta.observacao || '')
-    setImpostoTipoConta(conta.imposto_tipo || '')
-    setCompetenciaConta(conta.competencia ? String(conta.competencia).slice(0, 7) : '')
-    setContaWhatsapp(conta.enviar_whatsapp ?? false)
-    setContaEmail(conta.enviar_email ?? false)
-    setContaPush(conta.enviar_push ?? false)
-    setContaDiasAviso(String(conta.dias_aviso ?? diasAvisoPadrao ?? 1))
-    setContaRecorrente(Boolean(conta.recorrencia_id))
-    setRecorrenciaContaId(conta.recorrencia_id || null)
-    setTipoRecorrencia('mensal')
-    setDiaVencimentoRecorrencia(diaPadrao)
-    setValorVariavelRecorrencia(false)
+    contaEdicaoSnapshotRef.current = { ...conta }
+    recorrenciaEdicaoSnapshotRef.current = null
+    setEscopoEdicaoRecorrencia('conta')
+    setRecorrenciaEdicaoCarregada(false)
+    aplicarContaNoFormulario(conta, diasAvisoPadrao)
     setModalConta(true)
 
     const recorrenciaEncontrada = await localizarRecorrenciaDaConta({
@@ -371,11 +429,8 @@ export function useContas() {
     })
 
     if (recorrenciaEncontrada) {
-      setContaRecorrente(true)
-      setRecorrenciaContaId(recorrenciaEncontrada.id)
-      setTipoRecorrencia(recorrenciaEncontrada.frequencia || recorrenciaEncontrada.tipo_recorrencia || 'mensal')
-      setDiaVencimentoRecorrencia(String(recorrenciaEncontrada.dia_vencimento || diaPadrao || ''))
-      setValorVariavelRecorrencia(recorrenciaEncontrada.valor_variavel === true)
+      recorrenciaEdicaoSnapshotRef.current = recorrenciaEncontrada
+      sincronizarDadosRecorrencia(recorrenciaEncontrada, diaPadrao)
     }
   }
 
@@ -442,6 +497,8 @@ export function useContas() {
     const diaRecorrencia = contaRecorrente ? Number(diaVencimentoRecorrencia || String(dataBanco).slice(8, 10)) : null
     const tipoFiscal = impostoTipoConta || null
     const competenciaFiscal = tipoFiscal && competenciaConta ? `${competenciaConta}-01` : null
+    const contaVinculadaRecorrencia = Boolean(editandoContaId && recorrenciaContaId)
+    const editandoSerieRecorrente = contaVinculadaRecorrencia && escopoEdicaoRecorrencia === 'serie'
 
     if (contaRecorrente && (!diaRecorrencia || diaRecorrencia < 1 || diaRecorrencia > 31)) {
       mostrarAviso('Informe um dia válido para a recorrência.', 'erro')
@@ -474,16 +531,37 @@ export function useContas() {
       tipo_recorrencia: tipoRecorrencia || 'mensal',
       dia_vencimento: diaRecorrencia,
       data_inicio: dataBanco,
-      valor_variavel: valorVariavelRecorrencia === true,
-      ativo: true
+      valor_variavel: valorVariavelRecorrencia === true
     } : null
 
     let error
 
     if (editandoContaId) {
+      if (editandoSerieRecorrente) {
+        if (!recorrenciaContaId || !payloadRecorrencia) {
+          mostrarAviso('Nao foi possivel localizar a serie recorrente desta conta.', 'erro')
+          return
+        }
+
+        const { error: erroRecorrencia } = await atualizarRecorrencia(supabase, recorrenciaContaId, empresaId, payloadRecorrencia)
+
+        if (erroRecorrencia) {
+          console.warn('Falha ao atualizar recorrencia da conta:', erroRecorrencia)
+          mostrarAviso(mensagemSeguraErro(erroRecorrencia, 'Nao foi possivel atualizar a serie recorrente.'), 'erro')
+          return
+        }
+
+        fecharConta()
+        await buscarContas()
+        mostrarAviso('Serie recorrente atualizada com sucesso.', 'sucesso')
+        return
+      }
+
       const payloadConta = { ...payload }
 
-      if (contaRecorrente && recorrenciaContaId) {
+      if (contaVinculadaRecorrencia) {
+        payloadConta.recorrencia_id = recorrenciaContaId
+      } else if (contaRecorrente && recorrenciaContaId) {
         payloadConta.recorrencia_id = recorrenciaContaId
       } else if (!contaRecorrente && recorrenciaContaId) {
         payloadConta.recorrencia_id = null
@@ -493,29 +571,30 @@ export function useContas() {
       error = resposta.error
 
       if (!error) {
-        if (contaRecorrente) {
+        if (!contaVinculadaRecorrencia && contaRecorrente) {
           if (recorrenciaContaId) {
             const { error: erroRecorrencia } = await atualizarRecorrencia(supabase, recorrenciaContaId, empresaId, payloadRecorrencia)
 
             if (erroRecorrencia) {
-              console.warn('Falha ao atualizar recorrência da conta:', erroRecorrencia)
-              mostrarAviso(mensagemSeguraErro(erroRecorrencia, 'A conta foi atualizada, mas a recorrência não foi salva.'), 'erro')
+              console.warn('Falha ao atualizar recorrencia da conta:', erroRecorrencia)
+              mostrarAviso(mensagemSeguraErro(erroRecorrencia, 'A conta foi atualizada, mas a recorrencia nao foi salva.'), 'erro')
               return
             }
           } else {
             const { data: recorrenciaSemelhante, error: erroRecorrenciaSemelhante } = await buscarRecorrenciaSemelhante(supabase, payloadRecorrencia)
 
             if (erroRecorrenciaSemelhante) {
-              console.warn('Falha ao verificar recorrência semelhante:', erroRecorrenciaSemelhante)
+              console.warn('Falha ao verificar recorrencia semelhante:', erroRecorrenciaSemelhante)
             }
 
+            const payloadNovaRecorrencia = { ...payloadRecorrencia, ativo: true }
             const { data: dataRecorrencia, error: erroRecorrencia } = recorrenciaSemelhante?.id
               ? { data: recorrenciaSemelhante, error: null }
-              : await criarRecorrencia(supabase, payloadRecorrencia)
+              : await criarRecorrencia(supabase, payloadNovaRecorrencia)
 
             if (erroRecorrencia) {
-              console.warn('Falha ao criar recorrência da conta atualizada:', erroRecorrencia)
-              mostrarAviso(mensagemSeguraErro(erroRecorrencia, 'A conta foi atualizada, mas a recorrência não foi salva.'), 'erro')
+              console.warn('Falha ao criar recorrencia da conta atualizada:', erroRecorrencia)
+              mostrarAviso(mensagemSeguraErro(erroRecorrencia, 'A conta foi atualizada, mas a recorrencia nao foi salva.'), 'erro')
               return
             }
 
@@ -531,7 +610,7 @@ export function useContas() {
               )
 
               if (erroValorVariavel) {
-                mostrarAviso(mensagemSeguraErro(erroValorVariavel, 'A conta foi atualizada, mas o tipo de valor da recorrência não foi salvo.'), 'erro')
+                mostrarAviso(mensagemSeguraErro(erroValorVariavel, 'A conta foi atualizada, mas o tipo de valor da recorrencia nao foi salvo.'), 'erro')
                 return
               }
             }
@@ -553,15 +632,15 @@ export function useContas() {
             }
 
             if (!recorrenciaIdCriada) {
-              mostrarAviso('A recorrência foi criada, mas o sistema não conseguiu localizar o vínculo.', 'erro')
+              mostrarAviso('A recorrencia foi criada, mas o sistema nao conseguiu localizar o vinculo.', 'erro')
               return
             }
 
             const { error: erroVinculoRecorrencia } = await vincularRecorrenciaNaConta(supabase, editandoContaId, empresaId, recorrenciaIdCriada)
 
             if (erroVinculoRecorrencia) {
-              console.warn('Falha ao vincular recorrência criada:', erroVinculoRecorrencia)
-              mostrarAviso(mensagemSeguraErro(erroVinculoRecorrencia, 'A recorrência foi criada, mas não foi vinculada à conta.'), 'erro')
+              console.warn('Falha ao vincular recorrencia criada:', erroVinculoRecorrencia)
+              mostrarAviso(mensagemSeguraErro(erroVinculoRecorrencia, 'A recorrencia foi criada, mas nao foi vinculada a conta.'), 'erro')
               return
             }
 
@@ -570,12 +649,12 @@ export function useContas() {
               conta.id === editandoContaId ? { ...conta, recorrencia_id: recorrenciaIdCriada } : conta
             ))
           }
-        } else if (recorrenciaContaId) {
+        } else if (!contaVinculadaRecorrencia && recorrenciaContaId) {
           const { error: erroDesativarRecorrencia } = await desativarRecorrencia(supabase, recorrenciaContaId, empresaId)
 
           if (erroDesativarRecorrencia) {
-            console.warn('Falha ao desativar recorrência da conta:', erroDesativarRecorrencia)
-            mostrarAviso(mensagemSeguraErro(erroDesativarRecorrencia, 'A conta foi atualizada, mas a recorrência não foi desativada.'), 'erro')
+            console.warn('Falha ao desativar recorrencia da conta:', erroDesativarRecorrencia)
+            mostrarAviso(mensagemSeguraErro(erroDesativarRecorrencia, 'A conta foi atualizada, mas a recorrencia nao foi desativada.'), 'erro')
             return
           }
         }
@@ -591,9 +670,10 @@ export function useContas() {
           console.warn('Falha ao verificar recorrência semelhante:', erroRecorrenciaSemelhante)
         }
 
+        const payloadNovaRecorrencia = { ...payloadRecorrencia, ativo: true }
         const { data: dataRecorrencia, error: erroRecorrencia } = recorrenciaSemelhante?.id
           ? { data: recorrenciaSemelhante, error: null }
-          : await criarRecorrencia(supabase, payloadRecorrencia)
+          : await criarRecorrencia(supabase, payloadNovaRecorrencia)
 
         if (erroRecorrencia) {
           console.warn('Falha ao criar recorrência da nova conta:', erroRecorrencia)
@@ -913,6 +993,9 @@ export function useContas() {
     setValorVariavelRecorrencia,
     recorrenciaContaId,
     setRecorrenciaContaId,
+    escopoEdicaoRecorrencia,
+    recorrenciaEdicaoCarregada,
+    alterarEscopoEdicaoRecorrencia,
     buscarContas,
     abrirNovaConta,
     abrirEdicaoConta,

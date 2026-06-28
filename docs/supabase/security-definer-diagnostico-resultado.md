@@ -185,6 +185,8 @@ Status em 2026-06-28: plano de validação/rollback para restrição futura cria
 
 Status em 2026-06-28: restrição executada apenas para grants diretos de `anon` e `authenticated`. `PUBLIC` foi preservado, então o Advisor ainda lista a função porque `anon`/`authenticated` seguem com `EXECUTE` efetivo por `PUBLIC`.
 
+Status em 2026-06-28: `EXECUTE` de `PUBLIC` também foi revogado para `df_auditoria_admin_sanitize_destinatario_alerta`. Após a mudança, `PUBLIC`, `anon` e `authenticated` ficaram sem `EXECUTE` efetivo nessa função; validações transacionais de `INSERT`/`UPDATE` e auditoria passaram; o Advisor deixou de listar essa função nos alertas `anon`/`authenticated`.
+
 Objetivo do próximo ciclo:
 
 - confirmar se a função é usada apenas pelo trigger `trg_df_destinatarios_alertas_auditoria_admin`;

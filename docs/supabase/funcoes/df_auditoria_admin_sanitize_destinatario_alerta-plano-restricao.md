@@ -236,3 +236,94 @@ grant execute on function public.df_auditoria_admin_sanitize_destinatario_alerta
 ### Próximo passo recomendado
 
 Preparar novo ciclo específico para decidir se `PUBLIC` deve perder `EXECUTE` nessa função. Esse ciclo deve repetir a mesma matriz e deixar explícito que a mudança efetiva do Advisor depende de remover o caminho por `PUBLIC`.
+
+## Execução da restrição de PUBLIC em 2026-06-28
+
+Status: executada com sucesso.
+
+Comando executado no Supabase:
+
+```sql
+revoke execute on function public.df_auditoria_admin_sanitize_destinatario_alerta() from public;
+```
+
+Não foram executados `ALTER FUNCTION`, alteração de trigger, alteração de RLS/policy/view/índice, migration, alteração persistente de dados, alteração de frontend, service, hook ou autenticação.
+
+### Diagnóstico antes
+
+- ACL antes: `{=X/postgres,postgres=X/postgres,service_role=X/postgres}`.
+- Grants diretos antes: `PUBLIC`, `postgres`, `service_role`.
+- Grants diretos de `anon` e `authenticated`: ausentes.
+- `PUBLIC` tinha `EXECUTE` efetivo: `true`.
+- `anon` tinha `EXECUTE` efetivo via `PUBLIC`: `true`.
+- `authenticated` tinha `EXECUTE` efetivo via `PUBLIC`: `true`.
+- Função existente, `SECURITY DEFINER`, retorno `trigger`, `search_path=public`.
+- Hash da definição antes: `004a9239b3160638608137e7f330a244`.
+- Trigger `trg_df_destinatarios_alertas_auditoria_admin` ativo em `public.df_destinatarios_alertas`, `AFTER INSERT OR UPDATE`.
+- Policies que citam textualmente a função: `0`.
+- Busca no código: nenhuma chamada direta à função alvo em `src`, `supabase/functions` ou `scripts`.
+
+### Validação funcional antes
+
+Teste executado em transação com `ROLLBACK`, sem persistir destinatário de teste:
+
+- `INSERT` controlado em `public.df_destinatarios_alertas`: sucesso.
+- `UPDATE` controlado no mesmo registro: sucesso.
+- Auditoria de `INSERT` em `public.df_auditoria_admin`: `1`.
+- Auditoria de `UPDATE` em `public.df_auditoria_admin`: `1`.
+- `origem='database_trigger'`: confirmado.
+- `email_hash` no detalhe de auditoria: confirmado.
+
+### Diagnóstico depois
+
+- ACL depois: `{postgres=X/postgres,service_role=X/postgres}`.
+- Grants diretos restantes: `postgres`, `service_role`.
+- `PUBLIC` tem `EXECUTE` efetivo: `false`.
+- `anon` tem `EXECUTE` efetivo: `false`.
+- `authenticated` tem `EXECUTE` efetivo: `false`.
+- Hash da definição depois: `004a9239b3160638608137e7f330a244`.
+- Trigger `trg_df_destinatarios_alertas_auditoria_admin` continuou ativo e apontando para a mesma função.
+
+### Validação funcional depois
+
+Teste repetido em transação com `ROLLBACK`, sem persistir destinatário de teste:
+
+- `INSERT` controlado em `public.df_destinatarios_alertas`: sucesso.
+- `UPDATE` controlado no mesmo registro: sucesso.
+- Auditoria de `INSERT` em `public.df_auditoria_admin`: `1`.
+- Auditoria de `UPDATE` em `public.df_auditoria_admin`: `1`.
+- `origem='database_trigger'`: confirmado.
+- `email_hash` no detalhe de auditoria: confirmado.
+- Registros de teste persistidos: `0`.
+
+### Advisor depois
+
+O Security Advisor foi consultado após o `REVOKE` de `PUBLIC`.
+
+Resultado para `public.df_auditoria_admin_sanitize_destinatario_alerta()`:
+
+- não apareceu mais em `anon_security_definer_function_executable`;
+- não apareceu mais em `authenticated_security_definer_function_executable`.
+
+Outras funções `SECURITY DEFINER` continuam aparecendo e devem ser tratadas em ciclos próprios.
+
+### Rollback
+
+Rollback Supabase não foi executado porque a validação funcional antes/depois passou e o Advisor deixou de listar a função alvo.
+
+Rollback Supabase disponível, se necessário:
+
+```sql
+grant execute on function public.df_auditoria_admin_sanitize_destinatario_alerta() to public;
+```
+
+Se for necessário restaurar também os grants diretos do ciclo anterior:
+
+```sql
+grant execute on function public.df_auditoria_admin_sanitize_destinatario_alerta() to anon;
+grant execute on function public.df_auditoria_admin_sanitize_destinatario_alerta() to authenticated;
+```
+
+### Próximo passo recomendado
+
+Escolher a próxima função trigger-only candidata, repetindo o mesmo padrão: auditoria específica, plano de restrição, validação transacional antes/depois, `REVOKE` mínimo e documentação.

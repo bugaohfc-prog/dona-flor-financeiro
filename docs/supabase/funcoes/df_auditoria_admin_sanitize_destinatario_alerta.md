@@ -32,6 +32,8 @@ Plano de validação e rollback para uma restrição futura: `docs/supabase/func
 
 Status em 2026-06-28: `EXECUTE` direto foi revogado de `anon` e `authenticated`. `PUBLIC` foi mantido conforme escopo autorizado, portanto `anon` e `authenticated` ainda mantêm `EXECUTE` efetivo por herança de `PUBLIC`.
 
+Status em 2026-06-28: `EXECUTE` também foi revogado de `PUBLIC`. Após a alteração, `PUBLIC`, `anon` e `authenticated` ficaram sem `EXECUTE` efetivo; o trigger continuou funcionando nos testes transacionais com `ROLLBACK`; o Advisor deixou de listar esta função nos alertas `anon`/`authenticated`.
+
 ## Evidências do catálogo Postgres
 
 Metadados consultados por `SELECT` em catálogos Postgres:

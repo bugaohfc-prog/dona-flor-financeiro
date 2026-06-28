@@ -21,6 +21,7 @@ import {
   registrarPagamentoParcial as registrarPagamentoParcialService,
   estornarPagamentoParcial as estornarPagamentoParcialService,
   baixarContaQuitadaPorParciais as baixarContaQuitadaPorParciaisService,
+  listarParcelasParcelamento,
   listarRecorrenciasAtivas,
   listarRecorrenciasPorDia,
   ocultarConta as ocultarContaService,
@@ -166,6 +167,10 @@ export function useContas() {
   const [recorrenciaContaId, setRecorrenciaContaId] = useState(null)
   const [escopoEdicaoRecorrencia, setEscopoEdicaoRecorrencia] = useState('conta')
   const [recorrenciaEdicaoCarregada, setRecorrenciaEdicaoCarregada] = useState(false)
+  const [parcelamentoGrupoConta, setParcelamentoGrupoConta] = useState(null)
+  const [parcelamentoGrupoParcelas, setParcelamentoGrupoParcelas] = useState([])
+  const [carregandoParcelamentoGrupo, setCarregandoParcelamentoGrupo] = useState(false)
+  const [erroParcelamentoGrupo, setErroParcelamentoGrupo] = useState('')
   const contaEdicaoSnapshotRef = useRef(null)
   const recorrenciaEdicaoSnapshotRef = useRef(null)
 
@@ -194,6 +199,10 @@ export function useContas() {
     setRecorrenciaContaId(null)
     setEscopoEdicaoRecorrencia('conta')
     setRecorrenciaEdicaoCarregada(false)
+    setParcelamentoGrupoConta(null)
+    setParcelamentoGrupoParcelas([])
+    setCarregandoParcelamentoGrupo(false)
+    setErroParcelamentoGrupo('')
     contaEdicaoSnapshotRef.current = null
     recorrenciaEdicaoSnapshotRef.current = null
   }
@@ -491,14 +500,32 @@ export function useContas() {
     const { conta, supabase, empresaId, diasAvisoPadrao, formatarDataParaBanco } = contexto
     const dataBanco = formatarDataParaBanco(conta.data_vencimento || '')
     const diaPadrao = dataBanco ? String(Number(String(dataBanco).slice(8, 10))) : ''
+    const grupoParcelamentoId = conta?.grupo_parcelamento_id || null
 
     setEditandoContaId(conta.id)
     contaEdicaoSnapshotRef.current = { ...conta }
     recorrenciaEdicaoSnapshotRef.current = null
     setEscopoEdicaoRecorrencia('conta')
     setRecorrenciaEdicaoCarregada(false)
+    setParcelamentoGrupoConta(grupoParcelamentoId ? { ...conta } : null)
+    setParcelamentoGrupoParcelas(grupoParcelamentoId ? [conta] : [])
+    setCarregandoParcelamentoGrupo(Boolean(grupoParcelamentoId))
+    setErroParcelamentoGrupo('')
     aplicarContaNoFormulario(conta, diasAvisoPadrao)
     setModalConta(true)
+
+    if (grupoParcelamentoId) {
+      const { data, error } = await listarParcelasParcelamento(supabase, empresaId, grupoParcelamentoId)
+
+      if (error) {
+        console.warn('Falha ao carregar parcelas do grupo:', error)
+        setErroParcelamentoGrupo('Nao foi possivel carregar todas as parcelas deste grupo.')
+      } else {
+        setParcelamentoGrupoParcelas(Array.isArray(data) ? data : [])
+      }
+
+      setCarregandoParcelamentoGrupo(false)
+    }
 
     const recorrenciaEncontrada = await localizarRecorrenciaDaConta({
       supabase,
@@ -1135,6 +1162,10 @@ export function useContas() {
     setRecorrenciaContaId,
     escopoEdicaoRecorrencia,
     recorrenciaEdicaoCarregada,
+    parcelamentoGrupoConta,
+    parcelamentoGrupoParcelas,
+    carregandoParcelamentoGrupo,
+    erroParcelamentoGrupo,
     alterarEscopoEdicaoRecorrencia,
     buscarContas,
     abrirNovaConta,

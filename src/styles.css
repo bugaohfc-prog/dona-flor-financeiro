@@ -5507,6 +5507,111 @@
   line-height: 1.35;
 }
 
+.account-installment-summary-section {
+  border-color: #bfdbfe;
+  background: #f8fbff;
+}
+
+.account-installment-current {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.account-installment-current span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.account-installment-current strong {
+  color: #1d4ed8;
+  font-size: 13px;
+}
+
+.account-installment-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.account-installment-summary-grid span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.account-installment-summary-grid b {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.account-installment-list {
+  display: grid;
+  gap: 8px;
+  max-height: 220px;
+  min-width: 0;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.account-installment-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 1.1fr) minmax(82px, .9fr) minmax(84px, .9fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.account-installment-row > * {
+  min-width: 0;
+}
+
+.account-installment-row strong {
+  color: #0f172a;
+}
+
+.account-installment-message {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.account-installment-message-warning {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
 .account-modal-recurrence .recurrence-fields {
   margin-top: 12px;
   padding-top: 12px;
@@ -5816,7 +5921,12 @@
 
   .account-modal-grid,
   .account-payment-summary,
-  .account-edit-scope-options {
+  .account-edit-scope-options,
+  .account-installment-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-installment-row {
     grid-template-columns: 1fr;
   }
 

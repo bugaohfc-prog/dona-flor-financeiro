@@ -13,6 +13,18 @@ A constraint `df_contas_parcelamento_consistente` garante que uma conta sem parc
 
 A criação atual gera várias contas independentes no mesmo lote. Todas compartilham o mesmo `grupo_parcelamento_id`, mas baixa, estorno, pagamento parcial, edição, ocultação e lixeira continuam funcionando no nível da conta individual.
 
+## Primeira etapa implementada
+
+Foi implementada apenas a visão/resumo do grupo de parcelamento ao abrir uma parcela parcelada.
+
+- O modal de conta carrega as contas do mesmo `grupo_parcelamento_id`.
+- A consulta respeita `empresa_id` e ignora contas enviadas para lixeira.
+- O resumo mostra parcela atual, valor total, soma das parcelas, quantidade de parcelas, abertas, pagas, vencidas e próximo vencimento aberto.
+- A lista mostra parcela, vencimento, valor, status e marcação de oculta quando aplicável.
+- Não há botão de edição em lote.
+- Não há botão de ocultação/cancelamento em lote.
+- Baixa, estorno, pagamento parcial, recorrência, impostos e relatórios não foram alterados.
+
 ## Arquivos e fluxos auditados
 
 - `src/hooks/useContas.js`

@@ -54,6 +54,22 @@ export async function listarContasAtivas(supabase, empresaId) {
     .order('data_vencimento', { ascending: true })
 }
 
+export async function listarParcelasParcelamento(supabase, empresaId, grupoParcelamentoId) {
+  assertEmpresaId(empresaId)
+  if (!grupoParcelamentoId) return { data: [], error: null }
+
+  return selecionarPorEmpresa(
+    supabase,
+    'df_contas',
+    empresaId,
+    'id, descricao, valor, data_vencimento, vencimento, status, valor_pago, data_pagamento, oculto, excluido, deletado, grupo_parcelamento_id, parcela_numero, parcelas_total, valor_total_parcelamento'
+  )
+    .eq('grupo_parcelamento_id', grupoParcelamentoId)
+    .or('excluido.is.null,excluido.eq.false')
+    .order('parcela_numero', { ascending: true })
+    .order('data_vencimento', { ascending: true })
+}
+
 export async function listarContasDoMesParaRecorrencia(supabase, empresaId, dataInicial, dataFinal) {
   assertEmpresaId(empresaId)
   return selecionarPorEmpresa(supabase, 'df_contas', empresaId, 'id, descricao, valor, data_vencimento, centro_custo_id, filial_id, recorrencia_id, excluido, excluido_em')

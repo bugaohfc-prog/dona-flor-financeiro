@@ -38,6 +38,10 @@ export default function AccountModal({
   recorrenciaContaId,
   escopoEdicaoRecorrencia,
   recorrenciaEdicaoCarregada,
+  parcelamentoGrupoConta,
+  parcelamentoGrupoParcelas,
+  carregandoParcelamentoGrupo,
+  erroParcelamentoGrupo,
   alterarEscopoEdicaoRecorrencia,
   fecharConta,
   salvarConta,
@@ -57,6 +61,47 @@ export default function AccountModal({
     ? 'Atualize a serie recorrente sem reescrever parcelas ja lancadas.'
     : 'Preencha os dados principais para acompanhar vencimentos, recorrencia e classificacao.'
   const podeParcelarConta = !editandoContaId && !contaVinculadaRecorrencia
+  const parcelasDoGrupo = Array.isArray(parcelamentoGrupoParcelas) ? parcelamentoGrupoParcelas : []
+  const contaParceladaEmEdicao = Boolean(editandoContaId && parcelamentoGrupoConta?.grupo_parcelamento_id)
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+  const parcelasOrdenadas = [...parcelasDoGrupo].sort((a, b) => (
+    Number(a?.parcela_numero || 0) - Number(b?.parcela_numero || 0)
+    || String(a?.data_vencimento || '').localeCompare(String(b?.data_vencimento || ''))
+  ))
+  const somaParcelas = parcelasOrdenadas.reduce((total, parcela) => total + Number(parcela?.valor || 0), 0)
+  const totalParcelamento = Number(parcelamentoGrupoConta?.valor_total_parcelamento || parcelasOrdenadas[0]?.valor_total_parcelamento || 0)
+  const parcelasPagas = parcelasOrdenadas.filter((parcela) => parcela?.status === 'pago').length
+  const parcelasAbertas = parcelasOrdenadas.filter((parcela) => parcela?.status !== 'pago').length
+  const parcelasVencidas = parcelasOrdenadas.filter((parcela) => {
+    if (parcela?.status === 'pago' || !parcela?.data_vencimento) return false
+    const vencimento = new Date(`${String(parcela.data_vencimento).slice(0, 10)}T00:00:00`)
+    return !Number.isNaN(vencimento.getTime()) && vencimento < hoje
+  }).length
+  const proximoVencimentoAberto = parcelasOrdenadas
+    .filter((parcela) => parcela?.status !== 'pago' && parcela?.data_vencimento)
+    .sort((a, b) => String(a.data_vencimento).localeCompare(String(b.data_vencimento)))[0]?.data_vencimento || null
+
+  function formatarValorModal(valorEntrada) {
+    return Number(valorEntrada || 0).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    })
+  }
+
+  function formatarDataModal(dataEntrada) {
+    if (!dataEntrada) return '-'
+    return new Date(`${String(dataEntrada).slice(0, 10)}T00:00:00`).toLocaleDateString('pt-BR')
+  }
+
+  function obterStatusParcela(parcela) {
+    if (parcela?.status === 'pago') return 'Pago'
+    if (!parcela?.data_vencimento) return 'Pendente'
+
+    const vencimento = new Date(`${String(parcela.data_vencimento).slice(0, 10)}T00:00:00`)
+    if (!Number.isNaN(vencimento.getTime()) && vencimento < hoje) return 'Vencido'
+    return 'Pendente'
+  }
 
   function fecharTudo() {
     fecharConta()
@@ -182,6 +227,57 @@ export default function AccountModal({
                     Cada parcela sera criada como uma conta independente, com baixa, estorno e pagamento parcial proprios.
                   </small>
                 </div>
+              )}
+            </section>
+          )}
+
+          {contaParceladaEmEdicao && (
+            <section className="account-modal-section account-installment-summary-section">
+              <div className="account-modal-section-title">
+                <strong>Parcelamento</strong>
+                <small>Resumo somente leitura das parcelas vinculadas a este grupo.</small>
+              </div>
+
+              <div className="account-installment-current">
+                <span>Parcela atual</span>
+                <strong>Parcela {parcelamentoGrupoConta?.parcela_numero || '-'}/{parcelamentoGrupoConta?.parcelas_total || '-'}</strong>
+              </div>
+
+              {carregandoParcelamentoGrupo ? (
+                <p className="account-installment-message">Carregando parcelas do grupo...</p>
+              ) : erroParcelamentoGrupo ? (
+                <p className="account-installment-message account-installment-message-warning">{erroParcelamentoGrupo}</p>
+              ) : (
+                <>
+                  <div className="account-installment-summary-grid">
+                    <span><b>Total</b>{formatarValorModal(totalParcelamento)}</span>
+                    <span><b>Soma parcelas</b>{formatarValorModal(somaParcelas)}</span>
+                    <span><b>Parcelas</b>{parcelasOrdenadas.length}</span>
+                    <span><b>Abertas</b>{parcelasAbertas}</span>
+                    <span><b>Pagas</b>{parcelasPagas}</span>
+                    <span><b>Vencidas</b>{parcelasVencidas}</span>
+                    <span><b>Proximo aberto</b>{formatarDataModal(proximoVencimentoAberto)}</span>
+                  </div>
+
+                  <div className="account-installment-list" aria-label="Parcelas do grupo">
+                    {parcelasOrdenadas.length === 0 ? (
+                      <p className="account-installment-message">Nenhuma parcela do grupo foi carregada.</p>
+                    ) : parcelasOrdenadas.map((parcela) => {
+                      const statusParcela = obterStatusParcela(parcela)
+                      return (
+                        <div className="account-installment-row" key={parcela.id}>
+                          <strong>Parcela {parcela.parcela_numero}/{parcela.parcelas_total}</strong>
+                          <span>{formatarDataModal(parcela.data_vencimento)}</span>
+                          <span>{formatarValorModal(parcela.valor)}</span>
+                          <span className={`status-pill ${statusParcela === 'Pago' ? 'status-pago' : statusParcela === 'Vencido' ? 'status-vencido' : 'status-pendente'}`}>
+                            {statusParcela}
+                          </span>
+                          {parcela.oculto === true && <span className="status-pill status-oculto">Oculta</span>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
               )}
             </section>
           )}

@@ -30,6 +30,8 @@ Recomendação desta auditoria: a função é candidata forte para restringir `E
 
 Plano de validação e rollback para uma restrição futura: `docs/supabase/funcoes/df_auditoria_admin_sanitize_destinatario_alerta-plano-restricao.md`.
 
+Status em 2026-06-28: `EXECUTE` direto foi revogado de `anon` e `authenticated`. `PUBLIC` foi mantido conforme escopo autorizado, portanto `anon` e `authenticated` ainda mantêm `EXECUTE` efetivo por herança de `PUBLIC`.
+
 ## Evidências do catálogo Postgres
 
 Metadados consultados por `SELECT` em catálogos Postgres:

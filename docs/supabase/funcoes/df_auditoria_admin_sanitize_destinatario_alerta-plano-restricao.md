@@ -143,7 +143,7 @@ Se o ciclo futuro também revogar `PUBLIC`, o rollback desse grant deve ser incl
 7. Reexecutar Advisor, se disponível.
 8. Aplicar rollback imediatamente se qualquer validação crítica falhar.
 
-## Estado final deste ciclo
+## Estado final do ciclo de planejamento
 
 - Banco: não alterado.
 - Grants: não alterados.
@@ -154,3 +154,85 @@ Se o ciclo futuro também revogar `PUBLIC`, o rollback desse grant deve ser incl
 - Dados: não alterados.
 - Frontend/service/hook: não alterados.
 - Auth/secrets/GitHub Actions/envio real: não alterados.
+
+## Execução da restrição em 2026-06-28
+
+Status: executada parcialmente, conforme escopo autorizado.
+
+Comandos executados no Supabase:
+
+```sql
+revoke execute on function public.df_auditoria_admin_sanitize_destinatario_alerta() from anon;
+revoke execute on function public.df_auditoria_admin_sanitize_destinatario_alerta() from authenticated;
+```
+
+Não foi executado `REVOKE` de `PUBLIC`.
+
+### Diagnóstico antes
+
+- ACL antes: `{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}`.
+- `anon` tinha `EXECUTE` efetivo: `true`.
+- `authenticated` tinha `EXECUTE` efetivo: `true`.
+- `PUBLIC` tinha `EXECUTE` efetivo: `true`.
+- Função existente, `SECURITY DEFINER`, retorno `trigger`, `search_path=public`.
+- Hash da definição antes: `004a9239b3160638608137e7f330a244`.
+- Trigger `trg_df_destinatarios_alertas_auditoria_admin` ativo em `public.df_destinatarios_alertas`, `AFTER INSERT OR UPDATE`.
+- Policies que citam textualmente a função: `0`.
+- Busca no código: sem chamada RPC direta em `src`, `supabase/functions` ou `scripts`; ocorrências restritas a docs/migrations e uso da tabela relacionada.
+
+### Validação funcional antes
+
+Teste executado em transação com `ROLLBACK`, sem persistir destinatário de teste:
+
+- `INSERT` controlado em `public.df_destinatarios_alertas`: sucesso.
+- `UPDATE` controlado no mesmo registro: sucesso.
+- Auditoria de `INSERT` em `public.df_auditoria_admin`: `1`.
+- Auditoria de `UPDATE` em `public.df_auditoria_admin`: `1`.
+- `origem='database_trigger'`: confirmado.
+- `email_hash` no detalhe de auditoria: confirmado.
+
+### Diagnóstico depois
+
+- ACL depois: `{=X/postgres,postgres=X/postgres,service_role=X/postgres}`.
+- Grants diretos restantes em `information_schema.routine_privileges`: `PUBLIC`, `postgres`, `service_role`.
+- Grants diretos removidos: `anon`, `authenticated`.
+- `anon` ainda tem `EXECUTE` efetivo: `true`, por causa de `PUBLIC`.
+- `authenticated` ainda tem `EXECUTE` efetivo: `true`, por causa de `PUBLIC`.
+- `PUBLIC` continua com `EXECUTE` efetivo: `true`.
+- Hash da definição depois: `004a9239b3160638608137e7f330a244`.
+- Trigger `trg_df_destinatarios_alertas_auditoria_admin` continuou ativo e apontando para a mesma função.
+
+### Validação funcional depois
+
+Teste repetido em transação com `ROLLBACK`, sem persistir destinatário de teste:
+
+- `INSERT` controlado em `public.df_destinatarios_alertas`: sucesso.
+- `UPDATE` controlado no mesmo registro: sucesso.
+- Auditoria de `INSERT` em `public.df_auditoria_admin`: `1`.
+- Auditoria de `UPDATE` em `public.df_auditoria_admin`: `1`.
+- `origem='database_trigger'`: confirmado.
+- `email_hash` no detalhe de auditoria: confirmado.
+
+### Advisor depois
+
+O Security Advisor ainda listou a função em:
+
+- `anon_security_definer_function_executable`;
+- `authenticated_security_definer_function_executable`.
+
+Leitura: a permanência do alerta é esperada porque `PUBLIC` continua com `EXECUTE`, e `anon`/`authenticated` mantêm execução efetiva por esse caminho. Não houve improviso para revogar `PUBLIC`, pois isso estava fora do escopo autorizado.
+
+### Rollback
+
+Rollback Supabase não foi executado porque a validação funcional antes/depois passou.
+
+Rollback Supabase disponível, se necessário:
+
+```sql
+grant execute on function public.df_auditoria_admin_sanitize_destinatario_alerta() to anon;
+grant execute on function public.df_auditoria_admin_sanitize_destinatario_alerta() to authenticated;
+```
+
+### Próximo passo recomendado
+
+Preparar novo ciclo específico para decidir se `PUBLIC` deve perder `EXECUTE` nessa função. Esse ciclo deve repetir a mesma matriz e deixar explícito que a mudança efetiva do Advisor depende de remover o caminho por `PUBLIC`.

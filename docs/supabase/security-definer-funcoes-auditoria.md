@@ -208,7 +208,9 @@ Sem alteração de banco.
 
 ### Etapa 2 - diagnóstico SQL versionado para próximo ciclo
 
-Criar SQL somente leitura em `docs/security/diagnostics` para capturar:
+Status em 2026-06-28: SQL somente leitura criado em `docs/supabase/sql/diagnostico-security-definer.sql`, com documentação de uso em `docs/supabase/security-definer-diagnostico-sql.md`.
+
+O diagnóstico captura:
 
 - definição atual por `pg_get_functiondef`;
 - `proacl`;

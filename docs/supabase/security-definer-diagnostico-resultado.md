@@ -210,9 +210,11 @@ Objetivo recomendado após a auditoria de `criar_usuario`:
 
 Status em 2026-06-28: plano de validação/rollback para restrição futura de `criar_usuario` criado em `docs/supabase/funcoes/criar_usuario-plano-restricao.md`. O plano propõe Fase 1 para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated` temporariamente se houver incerteza de uso legado, e Fase 2 para avaliar `authenticated` somente após monitoramento e confirmação de ausência de uso externo de `/rpc/criar_usuario`.
 
+Status em 2026-06-28: Fase 1 da restrição de `criar_usuario` executada. `EXECUTE` foi revogado de `anon` e `PUBLIC`; `authenticated` foi mantido com `EXECUTE`; `postgres` e `service_role` foram preservados; hash da definição permaneceu `abd9a262dc9057bcce0ff5fb8b6db1f4`; não houve alteração de função, senha, autenticação, RLS, policy, view, índice, Edge Function, frontend, service ou hook. O Advisor deixou de listar `criar_usuario` no alerta `anon_security_definer_function_executable`, mas manteve `authenticated_security_definer_function_executable` e `function_search_path_mutable`.
+
 ## O que não mexer agora
 
-- Não executar `REVOKE`.
+- Não executar novos `REVOKE` sem ciclo autorizado.
 - Não executar `GRANT`.
 - Não alterar funções.
 - Não alterar `search_path`.

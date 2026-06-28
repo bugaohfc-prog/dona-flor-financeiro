@@ -28,6 +28,8 @@ Recomendação segura: não alterar neste ciclo. Preparar plano próprio de aute
 
 Plano de validação e rollback para uma restrição futura: `docs/supabase/funcoes/criar_usuario-plano-restricao.md`.
 
+Status em 2026-06-28: Fase 1 executada. `EXECUTE` foi revogado de `anon` e `PUBLIC`; `authenticated` foi mantido temporariamente; `postgres` e `service_role` foram preservados. O Advisor deixou de listar `criar_usuario` no alerta de `anon`, mas manteve o alerta de `authenticated` e o alerta de `search_path`, conforme esperado.
+
 ## Definição funcional em linguagem simples
 
 A função recebe nome, usuário, senha, e-mail, tipo/perfil, loja e permissão de pagamento.
@@ -265,8 +267,8 @@ Não executar sem novo ciclo autorizado ou necessidade real de rollback.
 
 ## Estado final deste ciclo
 
-- Banco: não alterado.
-- Grants: não alterados.
+- Banco: alterado apenas em grants da função `criar_usuario`.
+- Grants: `EXECUTE` revogado de `anon` e `PUBLIC`; `authenticated`, `postgres` e `service_role` preservados.
 - Função: não alterada.
 - Autenticação/senhas: não alteradas.
 - RLS/policies: não alteradas.
@@ -274,3 +276,10 @@ Não executar sem novo ciclo autorizado ou necessidade real de rollback.
 - Dados: não alterados.
 - Frontend/service/hook: não alterados.
 - Auth/secrets/GitHub Actions/envio real: não alterados.
+
+Rollback operacional da Fase 1, se necessário:
+
+```sql
+grant execute on function public.criar_usuario(text, text, text, text, text, text, boolean) to public;
+grant execute on function public.criar_usuario(text, text, text, text, text, text, boolean) to anon;
+```

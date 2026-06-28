@@ -65,9 +65,80 @@ export async function listarParcelasParcelamento(supabase, empresaId, grupoParce
     'id, descricao, valor, data_vencimento, vencimento, status, valor_pago, data_pagamento, oculto, excluido, deletado, grupo_parcelamento_id, parcela_numero, parcelas_total, valor_total_parcelamento'
   )
     .eq('grupo_parcelamento_id', grupoParcelamentoId)
-    .or('excluido.is.null,excluido.eq.false')
     .order('parcela_numero', { ascending: true })
     .order('data_vencimento', { ascending: true })
+}
+
+export async function cancelarGrupoParcelamento(supabase, empresaId, grupoParcelamentoId) {
+  assertEmpresaId(empresaId)
+  if (!grupoParcelamentoId) {
+    return { data: null, error: new Error('Grupo de parcelamento nao informado.') }
+  }
+
+  const { data: parcelas, error: erroParcelas } = await selecionarPorEmpresa(
+    supabase,
+    'df_contas',
+    empresaId,
+    'id, status, valor_pago, data_pagamento, oculto, excluido, deletado, grupo_parcelamento_id'
+  )
+    .eq('grupo_parcelamento_id', grupoParcelamentoId)
+
+  if (erroParcelas) return { data: null, error: erroParcelas }
+  if (!Array.isArray(parcelas) || parcelas.length === 0) {
+    return { data: null, error: new Error('Nenhuma parcela encontrada para este parcelamento.') }
+  }
+
+  const possuiPaga = parcelas.some((parcela) => parcela?.status === 'pago')
+  if (possuiPaga) {
+    return { data: null, error: new Error('Este parcelamento nao pode ser cancelado porque ha parcela paga.') }
+  }
+
+  const possuiBaixa = parcelas.some((parcela) => (
+    Number(parcela?.valor_pago || 0) > 0 || Boolean(parcela?.data_pagamento)
+  ))
+  if (possuiBaixa) {
+    return { data: null, error: new Error('Este parcelamento nao pode ser cancelado porque ha dados de baixa em uma parcela.') }
+  }
+
+  const possuiOcultaOuLixeira = parcelas.some((parcela) => (
+    parcela?.oculto === true || parcela?.excluido === true || parcela?.deletado === true
+  ))
+  if (possuiOcultaOuLixeira) {
+    return { data: null, error: new Error('Este parcelamento possui parcelas ocultas ou na lixeira e precisa de revisao individual.') }
+  }
+
+  const idsParcelas = parcelas.map((parcela) => parcela.id).filter(Boolean)
+  const { data: pagamentosParciais, error: erroPagamentos } = await selecionarPorEmpresa(
+    supabase,
+    'df_contas_pagamentos',
+    empresaId,
+    'id, conta_id, arquivado'
+  )
+    .in('conta_id', idsParcelas)
+    .or('arquivado.is.null,arquivado.eq.false')
+
+  if (erroPagamentos) return { data: null, error: erroPagamentos }
+  if (Array.isArray(pagamentosParciais) && pagamentosParciais.length > 0) {
+    return { data: null, error: new Error('Este parcelamento nao pode ser cancelado porque ha pagamento parcial registrado.') }
+  }
+
+  const ocultoEm = new Date().toISOString()
+  const { data, error } = await supabase
+    .from('df_contas')
+    .update({ oculto: true, oculto_em: ocultoEm })
+    .eq('empresa_id', empresaId)
+    .eq('grupo_parcelamento_id', grupoParcelamentoId)
+    .or('oculto.is.null,oculto.eq.false')
+    .or('excluido.is.null,excluido.eq.false')
+    .or('deletado.is.null,deletado.eq.false')
+    .select('id, oculto, oculto_em, grupo_parcelamento_id')
+
+  if (error) return { data: null, error }
+  if (!Array.isArray(data) || data.length !== parcelas.length) {
+    return { data, error: new Error('Nem todas as parcelas elegiveis foram ocultadas. Revise o grupo antes de continuar.') }
+  }
+
+  return { data, error: null }
 }
 
 export async function listarContasDoMesParaRecorrencia(supabase, empresaId, dataInicial, dataFinal) {

@@ -5612,6 +5612,29 @@
   color: #9a3412;
 }
 
+.account-installment-cancel-button {
+  justify-self: start;
+  min-height: 38px;
+  max-width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fff1f2;
+  color: #991b1b;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.account-installment-cancel-button:hover {
+  background: #ffe4e6;
+}
+
+.account-installment-cancel-button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
 .account-modal-recurrence .recurrence-fields {
   margin-top: 12px;
   padding-top: 12px;
@@ -5928,6 +5951,11 @@
 
   .account-installment-row {
     grid-template-columns: 1fr;
+  }
+
+  .account-installment-cancel-button {
+    width: 100%;
+    justify-self: stretch;
   }
 
   .account-modal-actions {

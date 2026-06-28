@@ -42,6 +42,7 @@ export default function AccountModal({
   parcelamentoGrupoParcelas,
   carregandoParcelamentoGrupo,
   erroParcelamentoGrupo,
+  cancelarGrupoParcelamento,
   alterarEscopoEdicaoRecorrencia,
   fecharConta,
   salvarConta,
@@ -52,7 +53,8 @@ export default function AccountModal({
   fecharNota,
   setModalCentro,
   setMenuAberto,
-  setMenuNavegacaoAberto
+  setMenuNavegacaoAberto,
+  abrirConfirmacao
 }) {
   const contaVinculadaRecorrencia = Boolean(editandoContaId && recorrenciaContaId)
   const editandoSerieRecorrente = contaVinculadaRecorrencia && escopoEdicaoRecorrencia === 'serie'
@@ -73,6 +75,12 @@ export default function AccountModal({
   const totalParcelamento = Number(parcelamentoGrupoConta?.valor_total_parcelamento || parcelasOrdenadas[0]?.valor_total_parcelamento || 0)
   const parcelasPagas = parcelasOrdenadas.filter((parcela) => parcela?.status === 'pago').length
   const parcelasAbertas = parcelasOrdenadas.filter((parcela) => parcela?.status !== 'pago').length
+  const possuiPagamentoParcialGrupo = parcelasOrdenadas.some((parcela) => (
+    Number(parcela?.quantidadePagamentosParciais || 0) > 0 || Number(parcela?.pagamentosParciaisTotal || 0) > 0
+  ))
+  const possuiParcelaOcultaOuLixeira = parcelasOrdenadas.some((parcela) => (
+    parcela?.oculto === true || parcela?.excluido === true || parcela?.deletado === true
+  ))
   const parcelasVencidas = parcelasOrdenadas.filter((parcela) => {
     if (parcela?.status === 'pago' || !parcela?.data_vencimento) return false
     const vencimento = new Date(`${String(parcela.data_vencimento).slice(0, 10)}T00:00:00`)
@@ -102,6 +110,22 @@ export default function AccountModal({
     if (!Number.isNaN(vencimento.getTime()) && vencimento < hoje) return 'Vencido'
     return 'Pendente'
   }
+
+  function obterMotivoBloqueioCancelamento() {
+    if (carregandoParcelamentoGrupo) return ''
+    if (erroParcelamentoGrupo) return erroParcelamentoGrupo
+    if (!parcelasOrdenadas.length) return 'Este parcelamento ainda nao carregou parcelas suficientes para cancelamento em lote.'
+    if (parcelasPagas > 0) return 'Este parcelamento nao pode ser cancelado porque ha parcela paga.'
+    if (possuiPagamentoParcialGrupo) return 'Este parcelamento nao pode ser cancelado porque ha pagamento parcial registrado.'
+    if (possuiParcelaOcultaOuLixeira) return 'Este parcelamento possui parcelas ocultas ou na lixeira e precisa de revisao individual.'
+    return ''
+  }
+
+  const motivoBloqueioCancelamento = obterMotivoBloqueioCancelamento()
+  const podeCancelarParcelamento = contaParceladaEmEdicao
+    && !carregandoParcelamentoGrupo
+    && !motivoBloqueioCancelamento
+    && Boolean(parcelamentoGrupoConta?.grupo_parcelamento_id)
 
   function fecharTudo() {
     fecharConta()
@@ -273,10 +297,32 @@ export default function AccountModal({
                             {statusParcela}
                           </span>
                           {parcela.oculto === true && <span className="status-pill status-oculto">Oculta</span>}
+                          {(parcela.excluido === true || parcela.deletado === true) && <span className="status-pill status-oculto">Lixeira</span>}
                         </div>
                       )
                     })}
                   </div>
+
+                  {motivoBloqueioCancelamento ? (
+                    <p className="account-installment-message account-installment-message-warning">
+                      {motivoBloqueioCancelamento}
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      className="account-installment-cancel-button"
+                      onClick={() => abrirConfirmacao?.({
+                        titulo: 'Cancelar parcelamento',
+                        mensagem: 'Esta acao ocultara todas as parcelas abertas deste parcelamento. Nenhuma conta sera excluida definitivamente.',
+                        textoConfirmar: 'Confirmar cancelamento',
+                        tipo: 'perigo',
+                        acao: () => cancelarGrupoParcelamento?.(parcelamentoGrupoConta?.grupo_parcelamento_id)
+                      })}
+                      disabled={!podeCancelarParcelamento}
+                    >
+                      Cancelar parcelamento
+                    </button>
+                  )}
                 </>
               )}
             </section>

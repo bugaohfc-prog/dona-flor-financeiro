@@ -22,8 +22,21 @@ Foi implementada apenas a visão/resumo do grupo de parcelamento ao abrir uma pa
 - O resumo mostra parcela atual, valor total, soma das parcelas, quantidade de parcelas, abertas, pagas, vencidas e próximo vencimento aberto.
 - A lista mostra parcela, vencimento, valor, status e marcação de oculta quando aplicável.
 - Não há botão de edição em lote.
-- Não há botão de ocultação/cancelamento em lote.
 - Baixa, estorno, pagamento parcial, recorrência, impostos e relatórios não foram alterados.
+
+## Cancelamento em lote implementado
+
+O cancelamento em lote foi implementado como ocultação reversível do grupo.
+
+- A ação aparece no resumo do parcelamento como `Cancelar parcelamento`.
+- Antes de executar, o sistema pede confirmação explícita.
+- Nenhuma conta é deletada fisicamente.
+- O update altera somente `oculto = true` e `oculto_em = now()`.
+- O service revalida o grupo no banco antes de atualizar.
+- O cancelamento bloqueia qualquer grupo com parcela paga.
+- O cancelamento bloqueia qualquer grupo com `valor_pago`, `data_pagamento` ou pagamento parcial ativo.
+- O cancelamento bloqueia grupos com parcelas já ocultas, excluídas ou deletadas.
+- Baixa, estorno, pagamento parcial, recorrência, impostos e relatórios permanecem inalterados.
 
 ## Arquivos e fluxos auditados
 

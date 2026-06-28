@@ -13,6 +13,7 @@ import {
   consolidarPagamentosParciaisPorConta,
   criarRecorrencia,
   buscarRecorrenciaSemelhante,
+  cancelarGrupoParcelamento as cancelarGrupoParcelamentoService,
   desativarRecorrencia,
   enviarContaParaLixeira,
   listarContasAtivas,
@@ -521,7 +522,27 @@ export function useContas() {
         console.warn('Falha ao carregar parcelas do grupo:', error)
         setErroParcelamentoGrupo('Nao foi possivel carregar todas as parcelas deste grupo.')
       } else {
-        setParcelamentoGrupoParcelas(Array.isArray(data) ? data : [])
+        const parcelas = Array.isArray(data) ? data : []
+        const idsParcelas = parcelas.map((parcela) => parcela.id).filter(Boolean)
+        const { data: pagamentos, error: erroPagamentos } = await listarPagamentosParciaisPorContas(supabase, empresaId, idsParcelas)
+
+        if (erroPagamentos) {
+          console.warn('Falha ao carregar pagamentos parciais do grupo:', erroPagamentos)
+          setErroParcelamentoGrupo('Nao foi possivel validar pagamentos parciais deste grupo.')
+        } else {
+          const consolidacoes = consolidarPagamentosParciaisPorConta(parcelas, pagamentos || [])
+          setParcelamentoGrupoParcelas(parcelas.map((parcela) => {
+            const consolidacao = consolidacoes.get(parcela.id)
+            return {
+              ...parcela,
+              pagamentosParciaisTotal: consolidacao?.totalPagoParcial || 0,
+              saldoPendenteParcial: consolidacao?.saldoPendente || Number(parcela.valor || 0),
+              quantidadePagamentosParciais: consolidacao?.quantidadePagamentos || 0,
+              ultimoPagamentoParcialEm: consolidacao?.ultimoPagamentoEm || null,
+              statusOperacionalDerivado: consolidacao?.statusOperacionalDerivado || null
+            }
+          }))
+        }
       }
 
       setCarregandoParcelamentoGrupo(false)
@@ -1062,6 +1083,22 @@ export function useContas() {
     mostrarAviso?.('Conta reexibida na visão principal.', 'sucesso')
   }
 
+  async function cancelarGrupoParcelamento(contexto) {
+    const { supabase, empresaId, grupoParcelamentoId, buscarContas, mostrarAviso, fecharConta } = contexto
+    const { data, error } = await cancelarGrupoParcelamentoService(supabase, empresaId, grupoParcelamentoId)
+
+    if (error) {
+      console.warn('Falha ao cancelar parcelamento:', error)
+      mostrarAviso?.(mensagemSeguraErro(error, 'Nao foi possivel cancelar o parcelamento.'), 'erro')
+      return false
+    }
+
+    await buscarContas()
+    fecharConta?.()
+    mostrarAviso?.('Parcelamento cancelado. As parcelas foram ocultadas.', 'sucesso')
+    return Array.isArray(data) && data.length > 0
+  }
+
   async function desativarSerieRecorrente(contexto) {
     const { supabase, id, empresaId, avisarErro, buscarContas, mostrarAviso } = contexto
     const { error } = await desativarRecorrencia(supabase, id, empresaId)
@@ -1182,6 +1219,7 @@ export function useContas() {
     excluirConta,
     ocultarConta,
     reexibirConta,
+    cancelarGrupoParcelamento,
     desativarSerieRecorrente,
     reativarSerieRecorrente
   }

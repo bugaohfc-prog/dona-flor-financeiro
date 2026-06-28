@@ -303,6 +303,7 @@ export default function App() {
     excluirConta: excluirContaHook,
     ocultarConta: ocultarContaHook,
     reexibirConta: reexibirContaHook,
+    cancelarGrupoParcelamento: cancelarGrupoParcelamentoHook,
     desativarSerieRecorrente: desativarSerieRecorrenteHook,
     reativarSerieRecorrente: reativarSerieRecorrenteHook
   } = useContas()
@@ -2143,6 +2144,22 @@ export default function App() {
     return reexibirContaHook({ supabase, id, empresaId, avisarErro, buscarContas, mostrarAviso })
   }
 
+  async function cancelarGrupoParcelamento(grupoParcelamentoId) {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return false
+    }
+
+    return cancelarGrupoParcelamentoHook({
+      supabase,
+      empresaId,
+      grupoParcelamentoId,
+      buscarContas,
+      mostrarAviso,
+      fecharConta
+    })
+  }
+
   async function desativarSerieRecorrente(id) {
     if (!podeEditarFinanceiro()) {
       bloquearAcaoSemPermissao()
@@ -3462,6 +3479,7 @@ export default function App() {
           parcelamentoGrupoParcelas,
           carregandoParcelamentoGrupo,
           erroParcelamentoGrupo,
+          cancelarGrupoParcelamento,
           alterarEscopoEdicaoRecorrencia,
           fecharConta,
           salvarConta,
@@ -3472,7 +3490,8 @@ export default function App() {
           fecharNota,
           setModalCentro,
           setMenuAberto,
-          setMenuNavegacaoAberto
+          setMenuNavegacaoAberto,
+          abrirConfirmacao
         }}
         modalNota={modalNota}
         notaProps={{

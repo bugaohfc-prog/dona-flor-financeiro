@@ -205,14 +205,153 @@ Após rollback, repetir:
 - Sem homologação, executar somente em ciclo curto, com rollback imediato.
 - Não misturar esta restrição com ajustes de RLS, policies, views, índices ou frontend.
 
+## Execução da restrição em 2026-06-28
+
+Restrição executada em ciclo curto autorizado, após validação funcional antes com transação e `ROLLBACK`.
+
+SQL executado:
+
+```sql
+revoke execute on function public.df_folha_lancamentos_validar_vinculos() from anon;
+revoke execute on function public.df_folha_lancamentos_validar_vinculos() from authenticated;
+revoke execute on function public.df_folha_lancamentos_validar_vinculos() from public;
+```
+
+### Diagnóstico antes
+
+ACL observada antes:
+
+```text
+{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+```
+
+Privilégios efetivos antes:
+
+| Role | EXECUTE efetivo |
+| --- | --- |
+| `PUBLIC` | `true` |
+| `anon` | `true` |
+| `authenticated` | `true` |
+| `postgres` | `true` |
+| `service_role` | `true` |
+
+Função antes:
+
+- `SECURITY DEFINER`: `true`;
+- retorno: `trigger`;
+- linguagem: `plpgsql`;
+- owner: `postgres`;
+- `search_path=public`;
+- hash da definição: `4cf0e419b9c7d5da0feef089c332faab`.
+
+Trigger antes:
+
+- `trg_df_folha_lancamentos_validar_vinculos`;
+- tabela: `public.df_folha_lancamentos`;
+- status: habilitado (`tgenabled=O`);
+- definição: `BEFORE INSERT OR UPDATE OF empresa_id, competencia_id, funcionario_id, filial_id`.
+
+Não foi encontrada policy citando textualmente a função. A busca local também não encontrou chamada RPC direta no app, Edge Functions ou scripts.
+
+### Validação funcional antes
+
+Foi executado teste controlado em transação com `ROLLBACK`.
+
+O teste:
+
+- criou dados mínimos de empresa, funcionário, competência e filial dentro da transação;
+- inseriu um lançamento em `public.df_folha_lancamentos`;
+- atualizou o mesmo lançamento;
+- tentou trocar `competencia_id` para uma competência de outra empresa;
+- confirmou rejeição por `check_violation`, validando que o trigger executou a regra de vínculo;
+- executou `ROLLBACK`;
+- confirmou `0` registros de teste persistidos.
+
+Resultado antes:
+
+```text
+insert_update_ok_invalid_rejected_ok_rollback_ok
+registros_teste_persistidos=0
+```
+
+### Diagnóstico depois
+
+ACL observada depois:
+
+```text
+{postgres=X/postgres,service_role=X/postgres}
+```
+
+Privilégios efetivos depois:
+
+| Role | EXECUTE efetivo |
+| --- | --- |
+| `PUBLIC` | `false` |
+| `anon` | `false` |
+| `authenticated` | `false` |
+| `postgres` | `true` |
+| `service_role` | `true` |
+
+Grants diretos finais:
+
+| Grantee | Privilégio | Grantable |
+| --- | --- | --- |
+| `postgres` | `EXECUTE` | `YES` |
+| `service_role` | `EXECUTE` | `NO` |
+
+Função depois:
+
+- `SECURITY DEFINER`: `true`;
+- retorno: `trigger`;
+- linguagem: `plpgsql`;
+- owner: `postgres`;
+- `search_path=public`;
+- hash da definição preservado: `4cf0e419b9c7d5da0feef089c332faab`.
+
+Trigger depois:
+
+- `trg_df_folha_lancamentos_validar_vinculos` permaneceu habilitado;
+- definição preservada.
+
+### Validação funcional depois
+
+Foi repetido o mesmo teste controlado em transação com `ROLLBACK`.
+
+Resultado depois:
+
+```text
+insert_update_ok_invalid_rejected_ok_rollback_ok
+registros_teste_persistidos=0
+```
+
+Leitura: a restrição de `EXECUTE` não quebrou a execução interna do trigger no teste transacional. A validação de vínculos continuou funcionando.
+
+### Advisor
+
+O Supabase Security Advisor foi consultado após a restrição.
+
+Resultado: `public.df_folha_lancamentos_validar_vinculos()` deixou de aparecer nos alertas `anon_security_definer_function_executable` e `authenticated_security_definer_function_executable`.
+
+### Rollback
+
+Não houve rollback neste ciclo.
+
+Rollback Supabase, se necessário:
+
+```sql
+grant execute on function public.df_folha_lancamentos_validar_vinculos() to public;
+grant execute on function public.df_folha_lancamentos_validar_vinculos() to anon;
+grant execute on function public.df_folha_lancamentos_validar_vinculos() to authenticated;
+```
+
 ## Estado final deste ciclo
 
-- Banco: não alterado.
-- Grants: não alterados.
+- Banco: alterado somente nos grants autorizados da função alvo.
+- Grants: `EXECUTE` removido de `PUBLIC`, `anon` e `authenticated`.
 - Função: não alterada.
 - Trigger: não alterado.
 - RLS/policies: não alteradas.
 - Views/índices: não alterados.
-- Dados: não alterados.
+- Dados: nenhum dado persistente alterado; testes executados com `ROLLBACK`.
 - Frontend/service/hook: não alterados.
 - Auth/secrets/GitHub Actions/envio real: não alterados.

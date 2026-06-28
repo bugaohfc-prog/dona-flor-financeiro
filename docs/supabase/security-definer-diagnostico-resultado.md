@@ -191,12 +191,13 @@ Status em 2026-06-28: relatório específico criado para `df_folha_lancamentos_v
 
 Status em 2026-06-28: plano de validação/rollback para restrição futura de `df_folha_lancamentos_validar_vinculos` criado em `docs/supabase/funcoes/df_folha_lancamentos_validar_vinculos-plano-restricao.md`. O plano mantém a restrição para ciclo futuro autorizado, com testes antes/depois em transação com `ROLLBACK`.
 
-Objetivo recomendado após a auditoria de `df_folha_lancamentos_validar_vinculos`:
+Status em 2026-06-28: restrição executada para `df_folha_lancamentos_validar_vinculos`. `EXECUTE` foi revogado de `PUBLIC`, `anon` e `authenticated`; `postgres` e `service_role` foram preservados; a função e o trigger permaneceram intactos; validações transacionais de `INSERT`/`UPDATE` e rejeição de vínculo inválido passaram antes/depois; nenhum dado de teste persistiu; o Advisor deixou de listar essa função nos alertas `anon`/`authenticated`.
 
-- preparar matriz de validação e rollback para eventual restrição futura;
-- confirmar cenário controlado de `INSERT`/`UPDATE` em `df_folha_lancamentos`;
-- validar que o trigger `trg_df_folha_lancamentos_validar_vinculos` continua executando após eventual restrição;
-- restringir `PUBLIC`, `anon` e `authenticated` somente em ciclo futuro autorizado, curto e com rollback imediato.
+Objetivo recomendado após a restrição de `df_folha_lancamentos_validar_vinculos`:
+
+- monitorar o fluxo de folha quando houver uso operacional real;
+- manter rollback SQL pronto durante o período de observação;
+- seguir para a próxima função trigger-only somente em ciclo separado.
 
 ## O que não mexer agora
 

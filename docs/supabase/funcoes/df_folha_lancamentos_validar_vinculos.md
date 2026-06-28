@@ -33,6 +33,8 @@ Recomendação desta auditoria: candidata a restringir `EXECUTE` público em cic
 
 Plano de validação e rollback para uma restrição futura: `docs/supabase/funcoes/df_folha_lancamentos_validar_vinculos-plano-restricao.md`.
 
+Status em 2026-06-28: restrição executada para `PUBLIC`, `anon` e `authenticated`. Após a mudança, os três papéis ficaram sem `EXECUTE` efetivo; `postgres` e `service_role` foram preservados; o trigger continuou funcionando em validações transacionais com `ROLLBACK`; o Advisor deixou de listar esta função nos alertas `anon`/`authenticated`.
+
 ## Evidências do catálogo Postgres
 
 Metadados consultados por `SELECT` em catálogos Postgres:
@@ -242,12 +244,12 @@ Não executar sem novo ciclo autorizado.
 
 ## Estado final deste ciclo
 
-- Banco: não alterado.
-- Grants: não alterados.
+- Banco: alterado posteriormente somente nos grants autorizados da função alvo.
+- Grants: `EXECUTE` removido de `PUBLIC`, `anon` e `authenticated` em 2026-06-28.
 - Função: não alterada.
 - Trigger: não alterado.
 - RLS/policies: não alteradas.
 - Views/índices: não alterados.
-- Dados: não alterados.
+- Dados: nenhum dado persistente alterado no ciclo de restrição; testes executados com `ROLLBACK`.
 - Frontend/service/hook: não alterados.
 - Auth/secrets/GitHub Actions/envio real: não alterados.

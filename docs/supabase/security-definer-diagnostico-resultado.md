@@ -193,6 +193,8 @@ Status em 2026-06-28: plano de validação/rollback para restrição futura de `
 
 Status em 2026-06-28: restrição executada para `df_folha_lancamentos_validar_vinculos`. `EXECUTE` foi revogado de `PUBLIC`, `anon` e `authenticated`; `postgres` e `service_role` foram preservados; a função e o trigger permaneceram intactos; validações transacionais de `INSERT`/`UPDATE` e rejeição de vínculo inválido passaram antes/depois; nenhum dado de teste persistiu; o Advisor deixou de listar essa função nos alertas `anon`/`authenticated`.
 
+Status em 2026-06-28: relatório específico criado para `df_funcionarios_exames_periodicos_validar_funcionario_empresa` em `docs/supabase/funcoes/df_funcionarios_exames_periodicos_validar_funcionario_empresa.md`. A função foi classificada como trigger-only/validação interna, sem evidência de RPC direta no app, sem uso em policies/views/outras funções, e candidata a restrição futura de `EXECUTE` para `PUBLIC`, `anon` e `authenticated` após plano de validação/rollback.
+
 Objetivo recomendado após a restrição de `df_folha_lancamentos_validar_vinculos`:
 
 - monitorar o fluxo de folha quando houver uso operacional real;

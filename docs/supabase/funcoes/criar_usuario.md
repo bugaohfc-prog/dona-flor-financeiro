@@ -26,6 +26,8 @@ Classificação desta auditoria: **crítico**.
 
 Recomendação segura: não alterar neste ciclo. Preparar plano próprio de autenticação/legado para restringir `anon` e `PUBLIC` com prioridade alta. Manter `authenticated` temporariamente até confirmar se há algum fluxo legado externo; restringir `authenticated` somente após matriz de testes do app e validação operacional.
 
+Plano de validação e rollback para uma restrição futura: `docs/supabase/funcoes/criar_usuario-plano-restricao.md`.
+
 ## Definição funcional em linguagem simples
 
 A função recebe nome, usuário, senha, e-mail, tipo/perfil, loja e permissão de pagamento.
@@ -255,7 +257,8 @@ Não executar sem novo ciclo autorizado ou necessidade real de rollback.
 
 ## Próximos passos
 
-- Criar plano de restrição específico para `criar_usuario`.
+- Usar o plano em `docs/supabase/funcoes/criar_usuario-plano-restricao.md` como matriz antes/depois para qualquer ciclo futuro de `REVOKE`.
+- Executar a Fase 1 do plano somente em ciclo futuro autorizado, curto e com rollback imediato.
 - Validar o fluxo atual de criação manual via Edge Function `criar-usuario-manual`.
 - Confirmar se há uso externo do RPC legado.
 - Não alterar autenticação, grants ou função sem ciclo próprio e rollback imediato.

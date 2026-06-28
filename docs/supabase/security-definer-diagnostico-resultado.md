@@ -208,6 +208,8 @@ Objetivo recomendado após a auditoria de `criar_usuario`:
 - priorizar avaliação de `anon` e `PUBLIC`;
 - tratar `authenticated` somente após confirmar ausência de uso legado externo.
 
+Status em 2026-06-28: plano de validação/rollback para restrição futura de `criar_usuario` criado em `docs/supabase/funcoes/criar_usuario-plano-restricao.md`. O plano propõe Fase 1 para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated` temporariamente se houver incerteza de uso legado, e Fase 2 para avaliar `authenticated` somente após monitoramento e confirmação de ausência de uso externo de `/rpc/criar_usuario`.
+
 ## O que não mexer agora
 
 - Não executar `REVOKE`.

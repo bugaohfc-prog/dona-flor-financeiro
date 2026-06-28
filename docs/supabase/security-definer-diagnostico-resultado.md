@@ -179,6 +179,8 @@ Recomendação: rastrear antes de remover, restringir ou substituir.
 
 Auditar primeiro a função `df_auditoria_admin_sanitize_destinatario_alerta`, sem executar `REVOKE`.
 
+Status em 2026-06-28: relatório específico criado em `docs/supabase/funcoes/df_auditoria_admin_sanitize_destinatario_alerta.md`.
+
 Objetivo do próximo ciclo:
 
 - confirmar se a função é usada apenas pelo trigger `trg_df_destinatarios_alertas_auditoria_admin`;

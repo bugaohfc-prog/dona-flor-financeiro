@@ -1,235 +1,492 @@
 # Auditoria Supabase Advisor
 
-Projeto: `contas-donaflor`
-Project ID: `vyhjjtzdvofoqoericak`
 Data: 2026-06-28
-Status: inventario documental, sem correcao aplicada.
 
-## Escopo
+Projeto Supabase: `contas-donaflor`
 
-Este documento organiza os avisos do Supabase Advisor em ordem segura de tratamento.
+Project ID: `vyhjjtzdvofoqoericak`
 
-Este ciclo nao altera banco, dados, RLS, policies, funcoes, views, indices, frontend, services ou hooks.
+Branch Git: `main` em produção. Não há ambiente de homologação.
 
-## Fonte e limitacao
+## Objetivo
 
-Foram feitas tentativas de reconsulta pelo conector Supabase MCP para:
+Registrar uma auditoria documental dos avisos atuais do Supabase Advisor, classificando riscos e definindo uma ordem segura de correção futura.
 
-- Security Advisor;
-- Performance Advisor.
+Este ciclo é somente documentação e inventário. Não corrige banco, não cria migration, não altera RLS, policies, funções, views, índices, dados, frontend, services, hooks, automações ou secrets.
 
-As chamadas falharam antes de retornar dados por timeout no handshake do MCP. A CLI `supabase` tambem nao esta disponivel no PATH local. Por isso, esta auditoria registra os achados ja levantados no ciclo operacional e os exemplos informados para priorizacao. Antes de qualquer correcao, o proximo ciclo deve reexecutar o Advisor ou diagnosticos SQL de catalogo e anexar o resultado bruto ao plano de execucao.
+## Fonte da auditoria
+
+Consulta executada em 2026-06-28 pelo conector Supabase:
+
+- Security Advisor
+- Performance Advisor
+
+## Diretriz de segurança deste inventário
+
+- Não remover policy sem confirmar uso real pelo app.
+- Não executar `REVOKE` de função sem mapear chamadas RPC, triggers, policies e rotinas internas.
+- Não apagar índice marcado como unused sem auditoria de consultas reais e janela de observação.
+- Não mexer em autenticação sem plano próprio.
+- Não misturar correções de segurança e performance no mesmo ciclo.
+- Em produção, preferir ciclos pequenos com rollback explícito, diagnóstico antes/depois e validação anon/auth quando envolver RLS.
 
 ## Resumo executivo
 
-Prioridade recomendada:
+Os achados mais relevantes são:
 
-1. Auditar funcoes `SECURITY DEFINER` executaveis por `anon`, `authenticated` ou `PUBLIC`.
-2. Auditar views com comportamento de `SECURITY DEFINER` ou sem `security_invoker`.
-3. Corrigir `search_path` de funcoes sensiveis quando confirmado que a mudanca e segura.
-4. Criar indices faltantes em foreign keys de alto uso.
-5. Revisar RLS auth initplan e policies permissivas/duplicadas em ciclo separado.
-6. Avaliar indices duplicados ou unused somente depois de medir uso real.
+- Funções `SECURITY DEFINER` no schema `public` executáveis por `anon` e `authenticated`.
+- View `public.df_lembretes_hoje` definida como `SECURITY DEFINER`.
+- Tabelas públicas com RLS habilitado e nenhuma policy: `public.contas` e `public.df_push_tokens`.
+- Funções sem `search_path` fixo.
+- Proteção contra senhas vazadas desativada no Supabase Auth.
+- Foreign keys sem índice em tabelas ativas, principalmente no financeiro.
+- Avisos de performance em RLS (`auth_rls_initplan`) e múltiplas policies permissivas.
+- Índices duplicados, que devem ser tratados somente após auditoria.
 
-Nao remover policy, nao revogar funcao e nao apagar indice apenas com base no Advisor sem confirmar impacto no app.
+## Classificação por grupo
 
-## A. Seguranca critica ou alta prioridade
+### A. Segurança crítica ou alta prioridade
 
-### A1. `SECURITY DEFINER` executavel por `anon`/`authenticated`
+#### A1. `Public Can Execute SECURITY DEFINER Function`
 
-- Alerta: funcoes privilegiadas potencialmente executaveis por papeis publicos.
-- Afetado: funcoes em schema exposto, especialmente `public`.
-- Risco pratico: uma funcao `SECURITY DEFINER` roda com privilegio do dono e pode contornar RLS. Se estiver executavel por `PUBLIC`, `anon` ou `authenticated`, vira superficie de API privilegiada.
-- Legado ou ativo: precisa inventario. O projeto possui historico de funcoes `SECURITY DEFINER` em migrations de auditoria, folha, usuarios e triggers.
-- Decisao: corrigir depois de auditoria individual.
-- Proposta de correcao: listar funcoes, argumentos, dono, `prosecdef`, `proconfig`, grants de execute e uso no app; depois decidir entre `REVOKE EXECUTE`, migrar para schema privado, adicionar checagem explicita de `auth.uid()`/empresa ou manter com justificativa.
-- Risco de quebra: alto, porque algumas funcoes podem ser triggers ou helpers de RLS/cadastro.
-- Rollback previsto: restaurar grants anteriores e definicao original da funcao a partir de snapshot `pg_proc`/`pg_get_functiondef`.
+Alerta: `anon_security_definer_function_executable`
 
-### A2. View com comportamento de `SECURITY DEFINER`
+Afetados:
 
-- Alerta: view que pode bypassar RLS por nao usar `security_invoker`.
-- Afetado: views publicas, se existirem no schema exposto.
-- Risco pratico: usuarios podem ler dados que a RLS da tabela base bloquearia.
-- Legado ou ativo: precisa inventario por `pg_views`/`pg_class`.
-- Decisao: auditar antes de corrigir.
-- Proposta de correcao: confirmar se a view e usada pelo app; para Postgres 17, preferir `ALTER VIEW ... SET (security_invoker = true)` quando compativel com a regra de negocio.
-- Risco de quebra: medio/alto, pois views administrativas podem depender de privilegio do dono.
-- Rollback previsto: remover `security_invoker` ou restaurar definicao anterior da view.
+- `public.criar_usuario(p_nome text, p_usuario text, p_senha text, p_email text, p_tipo text, p_loja text, p_pode_pagar boolean)`
+- `public.df_auditoria_admin_sanitize_destinatario_alerta()`
+- `public.df_empresas_do_usuario()`
+- `public.df_folha_lancamentos_validar_vinculos()`
+- `public.df_funcionarios_exames_periodicos_validar_funcionario_empresa()`
+- `public.df_funcionarios_ferias_ciclos_validar_funcionario_empresa()`
+- `public.df_funcionarios_ferias_periodos_validar_vinculos()`
+- `public.df_funcionarios_pode_escrever(p_empresa_id uuid)`
+- `public.df_funcionarios_validar_filial_empresa()`
+- `public.df_usuario_alvo_eh_master(p_user_id uuid, p_email text, p_usuario_id uuid)`
+- `public.df_usuario_eh_admin(p_empresa_id uuid)`
+- `public.df_usuario_tem_perfil_empresa(p_empresa_id uuid, p_perfis text[])`
+- `public.get_empresa_usuario()`
+- `public.handle_new_user()`
+- `public.is_admin()`
+- `public.is_master()`
+- `public.login_usuario(p_usuario text, p_senha text)`
+- `public.vincular_usuario_logado()`
 
-### A3. RLS habilitado sem policy em tabela publica
+Risco prático: funções `SECURITY DEFINER` rodam com privilégios do dono e podem contornar RLS. Quando expostas no schema `public`, podem virar endpoints RPC acessíveis por usuários anônimos, dependendo de grants e configuração da API.
 
-- Alerta: tabela publica com RLS habilitado e sem policy efetiva.
-- Afetado: tabelas publicas que aparecam no Advisor.
-- Risco pratico: pode bloquear uso legitimo do app, ou indicar tabela exposta sem modelo de acesso revisado.
-- Legado ou ativo: precisa cruzar com services/hooks e migrations.
-- Decisao: revisar em ciclo de RLS proprio.
-- Proposta de correcao: decidir se a tabela deve ficar privada, se precisa grants minimos ou policies por `empresa_id`.
-- Risco de quebra: alto se a tabela for usada em producao.
-- Rollback previsto: restaurar policies/grants anteriores a partir de snapshot.
+Legado ou ativo: misto. Há funções claramente legadas (`login_usuario`, `is_admin`, `get_empresa_usuario`) e funções ativas/recém-criadas em permissões, auditoria, Gestão de Pessoas e fechamento de folha. O uso real precisa ser confirmado no app, em triggers e em policies antes de qualquer revogação.
 
-## B. Seguranca media/baixa
+Decisão: corrigir depois, em ciclo próprio de auditoria, sem alterar permissões inicialmente.
 
-### B1. Funcoes sem `search_path` fixo
+Proposta de correção em alto nível:
 
-- Alerta: function search path mutable.
-- Afetado: funcoes sem `SET search_path`.
-- Risco pratico: risco de resolucao insegura de objetos, mais sensivel em `SECURITY DEFINER`.
-- Legado ou ativo: provavelmente misto.
-- Decisao: corrigir em etapa propria, comecando pelas funcoes `SECURITY DEFINER`.
-- Proposta de correcao: recriar funcoes com `SET search_path = public` ou schema minimo necessario.
-- Risco de quebra: medio, principalmente se a funcao acessa objetos fora de `public`.
-- Rollback previsto: restaurar `CREATE OR REPLACE FUNCTION` original.
+- inventariar chamadas no código, migrations, triggers, policies e RPC;
+- classificar cada função como RPC pública intencional, helper interno, trigger-only ou legado;
+- para helpers internos, avaliar `REVOKE EXECUTE` de `PUBLIC`, `anon` e/ou `authenticated`;
+- para funções necessárias via app, exigir checagens explícitas de identidade/empresa/perfil dentro da função;
+- avaliar mover funções internas para schema não exposto ou trocar para `SECURITY INVOKER` quando seguro;
+- manter `SECURITY DEFINER` apenas onde houver justificativa e `search_path` fixo.
 
-### B2. Leaked password protection desativado
+Risco de quebra: alto. Revogar ou alterar modo de execução pode quebrar login legado, onboarding, vínculos de usuário, permissões, triggers de auditoria e validações de Gestão de Pessoas.
 
-- Alerta: protecao de senha vazada desativada no Auth.
-- Afetado: configuracao de autenticacao Supabase.
-- Risco pratico: usuarios podem usar senhas comprometidas conhecidas.
-- Legado ou ativo: configuracao de plataforma, nao schema.
-- Decisao: tratar em ciclo proprio de autenticacao.
-- Proposta de correcao: avaliar impacto de habilitar protecao e comunicacao ao usuario final.
-- Risco de quebra: baixo/medio; pode afetar login/troca de senha de usuarios com credenciais fracas.
-- Rollback previsto: desabilitar a configuracao se causar bloqueio operacional inesperado.
+Rollback previsto: migration reversível restaurando grants/modo da função exatamente como estavam; diagnóstico antes/depois com lista de `prosecdef`, grants de execução e smoke test dos fluxos afetados.
 
-## C. Performance com impacto provavel
+Remediação Supabase: https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable
 
-### C1. Foreign keys sem indice em tabelas usadas
+#### A2. `Signed-In Users Can Execute SECURITY DEFINER Function`
 
-- Alerta: foreign key sem indice.
-- Afetado conhecido:
-  - `df_contas.centro_custo_id`;
-  - `df_contas.user_id`;
-  - `df_contas.recorrencia_id`;
-  - `df_contas_pagamentos.conta_id`.
-- Risco pratico: consultas por relacionamento e updates/deletes na tabela referenciada podem ficar mais caros. Em financeiro, `df_contas` e `df_contas_pagamentos` sao tabelas ativas.
-- Legado ou ativo: ativo.
-- Decisao: corrigir em ciclo de performance separado, depois de confirmar indices existentes reais.
-- Proposta de correcao: criar indices `CREATE INDEX CONCURRENTLY` quando permitido pelo fluxo; para `df_contas_pagamentos`, avaliar se o indice composto `(empresa_id, conta_id)` ja cobre o uso real antes de criar indice redundante em `conta_id`.
-- Risco de quebra: baixo funcional, medio operacional se criar indice pesado sem janela adequada.
-- Rollback previsto: `DROP INDEX CONCURRENTLY IF EXISTS <indice>`.
+Alerta: `authenticated_security_definer_function_executable`
 
-## D. Performance para ciclo separado
+Afetados: mesmo conjunto principal de funções listadas em A1.
 
-### D1. RLS auth initplan
+Risco prático: usuários autenticados podem chamar helpers privilegiados diretamente via RPC, mesmo quando a função foi desenhada para ser usada por policy, trigger ou rotina interna.
 
-- Alerta: chamadas a `auth.uid()` ou helpers em policies sem subselect, gerando reavaliacao por linha.
-- Afetado: policies de tabelas com RLS.
-- Risco pratico: degradacao em tabelas grandes.
-- Legado ou ativo: provavelmente ativo em policies antigas.
-- Decisao: ciclo separado de RLS/performance.
-- Proposta de correcao: trocar chamadas diretas por padrao `(select auth.uid())` e validar resultado identico por perfil.
-- Risco de quebra: medio, pois erro em policy pode bloquear ou expor dados.
-- Rollback previsto: restaurar policy anterior.
+Legado ou ativo: misto. Como o app opera com usuário autenticado, este alerta deve ser auditado com mais cuidado que uma remoção ampla de grants.
 
-### D2. Multiplas policies permissivas
+Decisão: corrigir depois, junto com A1, começando por auditoria sem mudança.
 
-- Alerta: multiplas policies permissivas cobrindo mesma acao/role.
-- Afetado: tabelas com policies legadas ou evoluidas em ciclos anteriores.
-- Risco pratico: custo de avaliacao e dificuldade de auditar regra efetiva.
-- Legado ou ativo: precisa inventario.
-- Decisao: nao mexer junto com seguranca critica.
-- Proposta de correcao: consolidar uma tabela por vez, com matriz Admin/Master/Gerente/Operador e cross-tenant.
-- Risco de quebra: alto.
-- Rollback previsto: recriar policies antigas.
+Proposta de correção em alto nível:
 
-### D3. Indices duplicados
+- identificar quais funções são chamadas diretamente pelo frontend/service;
+- validar quais são chamadas indiretamente por RLS, triggers ou Edge Functions;
+- separar funções de leitura de perfil/empresa das funções de escrita ou administração;
+- remover execução direta somente após comprovar que não quebra fluxo ativo;
+- para funções que continuarem expostas, reforçar validação interna de `auth.uid()`, `empresa_id` e perfil.
 
-- Alerta: indices equivalentes ou redundantes.
-- Afetado: indices apontados pelo Performance Advisor.
-- Risco pratico: escrita mais lenta e mais armazenamento.
-- Legado ou ativo: precisa medir.
-- Decisao: nao remover agora.
-- Proposta de correcao: coletar `pg_stat_user_indexes`, tamanho, definicao e queries do app antes de decidir.
-- Risco de quebra: medio se remover indice usado por consulta critica.
-- Rollback previsto: recriar indice com a definicao original.
+Risco de quebra: alto.
 
-## E. Nao mexer agora / precisa auditoria antes
+Rollback previsto: restaurar grants anteriores e, se necessário, restaurar definição anterior da função.
 
-### E1. Unused indexes
+Remediação Supabase: https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable
 
-- Alerta: indices sem uso observado.
-- Afetado: indices listados pelo Advisor.
-- Risco pratico: consumo de armazenamento e custo de escrita.
-- Decisao: nao apagar neste momento.
-- Motivo: estatistica de uso pode zerar apos restart, deploy, baixa volumetria ou janela curta.
-- Proposta futura: observar por periodo maior e cruzar com queries reais antes de qualquer `DROP INDEX`.
-- Rollback previsto: recriar indice removido com definicao exata, se futuramente removido.
+#### A3. `Security Definer View`
 
-### E2. Tabelas legadas
+Alerta: `security_definer_view`
 
-- Alerta: tabelas antigas com grants/policies/indices nao alinhados ao padrao atual.
-- Afetado: tabelas legadas identificadas por Advisor ou diagnostico de catalogo.
-- Decisao: auditar uso antes de alterar.
-- Proposta futura: cruzar com services/hooks, imports, migrations antigas e logs de uso.
-- Rollback previsto: restaurar grants/policies/indices originais.
+Afetado: view `public.df_lembretes_hoje`
 
-### E3. Policies legadas sem impacto confirmado
+Risco prático: uma view `SECURITY DEFINER` usa permissões/RLS do criador, não do usuário que consulta. Isso pode expor dados além do escopo esperado, especialmente em base multiempresa.
 
-- Alerta: policies antigas potencialmente permissivas ou duplicadas.
-- Afetado: policies publicas legadas.
-- Decisao: nao remover sem matriz de permissao.
-- Proposta futura: testar Admin, Master, Gerente, Operador e cross-tenant antes/depois.
-- Rollback previsto: recriar policy anterior.
+Legado ou ativo: precisa auditoria. Pelo nome, parece relacionada a lembretes/agenda, possivelmente ativa em fluxo operacional.
 
-## Plano seguro por etapas
+Decisão: corrigir depois, em ciclo de segurança próprio.
 
-### Etapa 1 - Documentacao e inventario
+Proposta de correção em alto nível:
 
-- Reexecutar Security Advisor e Performance Advisor quando MCP/CLI estiver operacional.
-- Exportar ou registrar resultado bruto no relatorio do ciclo.
-- Criar inventario de funcoes, views, policies e indices afetados.
-- Sem alteracao de banco.
+- localizar uso da view no frontend, services, scripts e automações;
+- validar se a view filtra por `empresa_id` e usuário/perfil;
+- avaliar recriar como `security_invoker = true` se compatível;
+- se não for usada, planejar descontinuação com prova de não uso;
+- se for necessária, validar comportamento por Admin, Master, Gerente e Operador.
 
-### Etapa 2 - `search_path` de funcoes
+Risco de quebra: médio/alto. Pode afetar agenda/lembretes e consultas usadas pelo painel.
 
-- Corrigir primeiro funcoes `SECURITY DEFINER` com `search_path` ausente.
-- Fazer uma funcao por vez ou por grupo de mesma familia.
-- Validar app, triggers e policies dependentes.
+Rollback previsto: recriar a view anterior em migration de rollback e validar consultas impactadas.
 
-### Etapa 3 - `SECURITY DEFINER` expostas
+Remediação Supabase: https://supabase.com/docs/guides/database/database-linter?lint=0010_security_definer_view
 
-- Auditar grants de `EXECUTE`.
-- Confirmar uso pelo app.
-- Remover exposicao publica apenas quando houver certeza e rollback.
+#### A4. `RLS Enabled No Policy`
 
-### Etapa 4 - Indices faltantes em foreign keys criticas
+Alerta: `rls_enabled_no_policy`
 
-- Priorizar `df_contas` e `df_contas_pagamentos`.
-- Confirmar se indices compostos existentes ja cobrem a consulta.
-- Nao misturar com RLS.
+Afetados:
+
+- tabela `public.contas`
+- tabela `public.df_push_tokens`
+
+Risco prático: RLS habilitado sem policy bloqueia acesso comum, mas o risco real depende de grants, FORCE RLS e uso por roles privilegiadas. Em tabela pública, pode indicar objeto legado ou parcialmente endurecido.
+
+Legado ou ativo:
+
+- `public.contas`: documentação anterior indica provável tabela legada, sem uso direto confirmado pelo frontend atual.
+- `public.df_push_tokens`: parece relacionada a push, canal atualmente não configurado no fluxo principal; precisa confirmar se há automação futura ou resíduo técnico.
+
+Decisão: não mexer agora. Precisa auditoria antes.
+
+Proposta de correção em alto nível:
+
+- confirmar uso no app, scripts e automações;
+- confirmar grants para `anon` e `authenticated`;
+- confirmar volume de dados e sensibilidade;
+- se legado sem uso, manter bloqueado e documentar;
+- se ativo, criar plano de policy mínimo por `empresa_id` e perfil em ciclo próprio.
+
+Risco de quebra: médio. Criar policy errada pode abrir acesso indevido; bloquear/remover pode afetar fluxo oculto.
+
+Rollback previsto: reverter policies/grants criados no ciclo específico, preservando RLS.
+
+Remediação Supabase: https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy
+
+### B. Segurança média/baixa
+
+#### B1. `Function Search Path Mutable`
+
+Alerta: `function_search_path_mutable`
+
+Afetados:
+
+- `public.atualizar_data_modificacao`
+- `public.login_usuario`
+- `public.criar_usuario`
+- `public.handle_new_user`
+- `public.bloquear_exclusao_usuario_master`
+- `public.df_contas_calcular_baixa_pagamento`
+
+Risco prático: função sem `search_path` fixo pode resolver objetos de forma inesperada conforme o contexto de execução. Em funções privilegiadas, isso aumenta risco de comportamento indevido.
+
+Legado ou ativo: misto. `login_usuario`, `criar_usuario` e `handle_new_user` parecem sensíveis. `df_contas_calcular_baixa_pagamento` parece ativa no financeiro.
+
+Decisão: corrigir depois, como primeira correção candidata após este inventário, desde que cada função seja inspecionada.
+
+Proposta de correção em alto nível:
+
+- extrair definição atual de cada função;
+- confirmar dependências de schema;
+- fixar `search_path` mínimo, preferencialmente `public` e/ou schemas necessários;
+- não alterar lógica da função no mesmo ciclo;
+- validar fluxo que aciona cada função.
+
+Risco de quebra: baixo/médio se a função já usa objetos no `public`; maior se depender implicitamente de outro schema.
+
+Rollback previsto: restaurar definição anterior da função, incluindo atributos originais.
+
+Remediação Supabase: https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable
+
+#### B2. `Leaked Password Protection Disabled`
+
+Alerta: `auth_leaked_password_protection`
+
+Afetado: Supabase Auth
+
+Risco prático: novos usuários podem cadastrar senhas já comprometidas em vazamentos conhecidos.
+
+Legado ou ativo: ativo no Auth.
+
+Decisão: depois, em plano próprio de autenticação.
+
+Proposta de correção em alto nível:
+
+- avaliar impacto em UX de login/cadastro;
+- documentar comunicação para usuários;
+- ativar proteção em ciclo de Auth próprio;
+- validar criação/troca de senha.
+
+Risco de quebra: baixo/médio. Pode bloquear senhas fracas/comprometidas de usuários existentes em fluxos de troca ou cadastro.
+
+Rollback previsto: desativar a configuração se houver impacto operacional inesperado.
+
+Remediação Supabase: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+
+### C. Performance com impacto provável
+
+#### C1. `Unindexed foreign keys` em tabelas financeiras centrais
+
+Alerta: `unindexed_foreign_keys`
+
+Afetados prioritários:
+
+- `public.df_contas`, FK `df_contas_centro_custo_id_fkey`
+- `public.df_contas`, FK `df_contas_user_id_fkey`
+- `public.df_contas`, FK `fk_conta_recorrencia`
+- `public.df_contas_pagamentos`, FK `df_contas_pagamentos_conta_id_fkey`
+
+Risco prático: operações de join, filtros, exclusões/atualizações referenciadas e validação de integridade podem ficar mais lentas conforme a base cresce.
+
+Legado ou ativo: ativo. `df_contas` e `df_contas_pagamentos` são núcleo financeiro.
+
+Decisão: corrigir depois, em ciclo específico de performance, separado de segurança.
+
+Proposta de correção em alto nível:
+
+- confirmar nomes reais das colunas das FKs;
+- verificar índices compostos existentes que já cubram as colunas;
+- criar índices simples ou compostos apenas onde houver benefício claro;
+- preferir criação concorrente se compatível com o fluxo de migration adotado;
+- validar plano de consulta e ausência de duplicidade com índices existentes.
+
+Risco de quebra: baixo para leitura/escrita funcional, médio para lock/custo operacional em produção se aplicado sem cuidado.
+
+Rollback previsto: `DROP INDEX` dos índices novos, com nomes explícitos e diagnóstico antes/depois.
+
+Remediação Supabase: https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys
+
+#### C2. `Unindexed foreign keys` em tabelas operacionais/RH
+
+Alerta: `unindexed_foreign_keys`
+
+Afetados adicionais observados:
+
+- `public.df_folha_lancamento_itens`, FK `df_folha_lancamento_itens_filial_id_fkey`
+- `public.df_folha_lancamentos`, FK `df_folha_lancamentos_filial_id_fkey`
+- `public.df_funcionarios`, FK `df_funcionarios_filial_id_fkey`
+- `public.df_notas`, FK `df_notas_user_id_fkey`
+- `public.df_usuarios_empresas`, FK `df_usuarios_empresas_user_id_fkey`
+
+Risco prático: impacto provável em consultas e manutenção conforme Gestão de Pessoas, notas e vínculos de usuários crescem.
+
+Legado ou ativo: ativo, mas com domínios diferentes. Não deve ser misturado com o pacote financeiro.
+
+Decisão: depois. Priorizar financeiro primeiro; RH/usuários/notas em etapa separada se métricas indicarem necessidade.
+
+Proposta de correção em alto nível: mesma abordagem de C1, separando por domínio.
+
+Risco de quebra: baixo/médio por lock e custo operacional.
+
+Rollback previsto: `DROP INDEX` dos índices criados no ciclo específico.
+
+### D. Performance para ciclo separado
+
+#### D1. `Auth RLS Initialization Plan`
+
+Alerta: `auth_rls_initplan`
+
+Afetados observados:
+
+- `public.profiles`
+- `public.df_centros_custo`
+- `public.df_usuarios_empresas`
+- `public.df_configuracoes_alertas`
+- `public.df_folha_competencias`
+- `public.df_folha_lancamentos`
+- `public.df_contas`
+
+Risco prático: chamadas a `auth.uid()`/funções similares podem ser reavaliadas por linha em policies, degradando performance em tabelas maiores.
+
+Legado ou ativo: misto. Há policies antigas e novas, incluindo áreas ativas.
+
+Decisão: ciclo separado. Não alterar junto com security definer nem índices.
+
+Proposta de correção em alto nível:
+
+- exportar policies atuais;
+- trocar chamadas por forma initplan quando semanticamente equivalente, por exemplo `(select auth.uid())`;
+- manter mesma regra de autorização;
+- validar por perfil e isolamento multiempresa.
+
+Risco de quebra: médio. Pequena alteração de policy pode mudar escopo de acesso se feita sem equivalência exata.
+
+Rollback previsto: restaurar definitions anteriores das policies.
+
+Remediação Supabase: https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan
+
+#### D2. `Multiple Permissive Policies`
+
+Alerta: `multiple_permissive_policies`
+
+Afetados observados:
+
+- `public.df_centros_custo`
+- `public.df_usuarios_empresas`
+- `public.profiles`
+
+Risco prático: múltiplas policies permissivas para mesmo papel/ação aumentam custo de execução e podem esconder sobreposição ou regra legada perigosa.
+
+Legado ou ativo: provável mistura de legado e saneamentos posteriores.
+
+Decisão: ciclo separado, depois dos itens de segurança alta e dos índices críticos.
+
+Proposta de correção em alto nível:
+
+- listar policies por tabela, role e action;
+- provar equivalência antes de consolidar;
+- não remover policy sem teste anon/auth por perfil;
+- preservar Admin/Master e nunca ampliar Operador.
+
+Risco de quebra: alto se policy removida/consolidada sem matriz de acesso.
+
+Rollback previsto: recriar policies removidas com nomes e expressões originais.
+
+Remediação Supabase: https://supabase.com/docs/guides/database/database-linter?lint=0006_multiple_permissive_policies
+
+#### D3. `Duplicate Index`
+
+Alerta: `duplicate_index`
+
+Afetados:
+
+- `public.df_centros_custo`: `idx_df_centros_custo_empresa_id`, `idx_df_centros_empresa`
+- `public.df_contas`: `idx_df_contas_empresa`, `idx_df_contas_empresa_id`
+- `public.df_notas`: `idx_df_notas_empresa`, `idx_df_notas_empresa_id`
+- `public.df_usuarios_empresas`: `df_usuarios_empresas_id_unique`, `df_usuarios_empresas_pkey`
+
+Risco prático: índices duplicados aumentam custo de escrita, storage e manutenção.
+
+Legado ou ativo: provavelmente legado/migrações acumuladas. `df_usuarios_empresas_id_unique` vs PK exige cuidado extra por constraint.
+
+Decisão: não mexer agora. Tratar somente após auditoria de constraints, queries e uso real.
+
+Proposta de correção em alto nível:
+
+- identificar se índice sustenta constraint;
+- confirmar definição exata e dependências;
+- avaliar impacto em queries e migrations antigas;
+- remover somente duplicata comprovada e reversível.
+
+Risco de quebra: médio. Remover índice errado pode quebrar constraint, performance ou expectativa de migration.
+
+Rollback previsto: recriar índice removido com definição original.
+
+Remediação Supabase: https://supabase.com/docs/guides/database/database-linter?lint=0009_duplicate_index
+
+### E. Não mexer agora / precisa auditoria antes
+
+Itens nesta categoria:
+
+- Índices marcados como duplicados ou unused.
+- Tabelas legadas como `public.contas`, até confirmar ausência de uso real.
+- `public.df_push_tokens`, por estar ligada a canal Push ainda não configurado no fluxo atual.
+- Policies legadas em `profiles`, `df_usuarios_empresas` e `df_centros_custo` sem impacto confirmado.
+- Configurações de Auth, incluindo leaked password protection, até plano próprio.
+
+Risco prático: mudanças aparentemente simples podem quebrar produção porque `main` é produção e não há homologação.
+
+Decisão: não mexer neste ciclo.
+
+Proposta de correção em alto nível: criar diagnósticos somente leitura, mapear uso no código e no banco, e só depois propor migration/rollback.
+
+Rollback previsto: dependerá do ciclo específico, mas deve sempre restaurar definição anterior de policy, grant, função, view, índice ou configuração.
+
+## Ordem segura de correção futura
+
+### Etapa 1 - documentação e inventário
+
+Status: esta etapa.
+
+Escopo:
+
+- registrar os achados do Advisor;
+- classificar risco e prioridade;
+- evitar qualquer mudança em produção;
+- definir próximos ciclos pequenos.
+
+### Etapa 2 - `search_path` das funções, se seguro
+
+Escopo futuro:
+
+- auditar definição das funções afetadas;
+- fixar `search_path` sem alterar lógica;
+- criar rollback e diagnóstico.
+
+Motivo: tende a ser a menor correção de segurança, mas ainda exige cuidado em funções de autenticação e financeiro.
+
+### Etapa 3 - revisar `SECURITY DEFINER` expostas
+
+Escopo futuro:
+
+- começar por auditoria, sem alterar permissões;
+- mapear chamadas RPC, triggers, policies, Edge Functions e frontend;
+- propor correção por função ou por grupos pequenos.
+
+Preferência atual: iniciar pelo inventário das funções `SECURITY DEFINER` executáveis por `anon`/`authenticated`, sem `REVOKE` no primeiro ciclo.
+
+### Etapa 4 - índices faltantes em foreign keys críticas
+
+Escopo futuro:
+
+- priorizar `df_contas` e `df_contas_pagamentos`;
+- separar performance financeira de RH/usuários/notas;
+- validar duplicidade antes de criar índice.
 
 ### Etapa 5 - RLS/policies duplicadas
 
-- Revisar uma tabela por ciclo.
-- Validar matriz de perfis e isolamento por `empresa_id`.
-- Evitar policy `ALL` e `DELETE`.
+Escopo futuro:
 
-### Etapa 6 - Indices duplicados/unused
+- tratar `auth_rls_initplan` e `multiple_permissive_policies`;
+- não consolidar policy sem prova por perfil;
+- preservar isolamento por `empresa_id`.
 
-- Tratar somente depois de observacao e confirmacao de baixo uso.
-- Nao remover indices ligados a filtros financeiros sem plano de rollback.
+### Etapa 6 - índices duplicados/unused somente após auditoria
 
-## Proximo ciclo recomendado
+Escopo futuro:
 
-Preferencia operacional: auditar funcoes `SECURITY DEFINER` expostas para `anon`/`authenticated`, sem alterar permissoes ainda.
+- não apagar índice unused agora;
+- confirmar dependências e janela de observação;
+- remover somente duplicata comprovada.
 
-Entregaveis do proximo ciclo:
+## Próximo ciclo recomendado
 
-1. Lista de funcoes `SECURITY DEFINER` em `public`.
-2. Grants de `EXECUTE` por role.
-3. `search_path` atual.
-4. Se a funcao e trigger, RPC ou helper interno.
-5. Uso conhecido no frontend/service/migration.
-6. Classificacao: manter, corrigir `search_path`, restringir execute, mover futuramente ou revisar manualmente.
-7. Nenhum `REVOKE` ainda.
+Começar por auditoria das funções `SECURITY DEFINER` expostas para `anon` e `authenticated`, sem alterar permissões ainda.
 
-## Confirmacoes deste ciclo
+Entregáveis sugeridos para o próximo ciclo:
 
-- Banco nao alterado.
-- Dados nao alterados.
-- Migrations nao criadas.
-- RLS/policies nao alteradas.
-- Funcoes/views nao alteradas.
-- Indices nao criados, removidos ou alterados.
-- Frontend/services/hooks nao alterados.
+- relatório de uso por função;
+- classificação por função: RPC ativa, helper interno, trigger-only, policy helper ou legado;
+- busca no código e migrations;
+- consulta somente leitura de grants/definições;
+- proposta de correção por pacote pequeno;
+- rollback planejado para cada função candidata;
+- nenhuma execução de `REVOKE`, `DROP`, `ALTER FUNCTION` ou migration sem autorização explícita.
+
+## Estado final deste ciclo
+
+- Banco: não alterado.
+- RLS/policies: não alteradas.
+- Funções: não alteradas.
+- Views: não alteradas.
+- Índices: não alterados.
+- Dados: não alterados.
+- Frontend: não alterado.
+- Services/hooks: não alterados.
+- GitHub Actions/scripts/secrets: não alterados.
+- Envio real: não executado.
+- Build: não necessário, pois houve somente documentação.

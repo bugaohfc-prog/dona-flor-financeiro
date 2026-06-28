@@ -212,6 +212,8 @@ Status em 2026-06-28: plano de validação/rollback para restrição futura de `
 
 Status em 2026-06-28: Fase 1 da restrição de `criar_usuario` executada. `EXECUTE` foi revogado de `anon` e `PUBLIC`; `authenticated` foi mantido com `EXECUTE`; `postgres` e `service_role` foram preservados; hash da definição permaneceu `abd9a262dc9057bcce0ff5fb8b6db1f4`; não houve alteração de função, senha, autenticação, RLS, policy, view, índice, Edge Function, frontend, service ou hook. O Advisor deixou de listar `criar_usuario` no alerta `anon_security_definer_function_executable`, mas manteve `authenticated_security_definer_function_executable` e `function_search_path_mutable`.
 
+Status em 2026-06-28: `criar_usuario` foi mantida em observação e a frente de pontos críticos avançou para auditoria específica de `login_usuario`, documentada em `docs/supabase/funcoes/login_usuario.md`. A função foi classificada como crítica por validar senha legada contra `df_usuarios.senha_hash`, retornar dados de perfil/permissão, estar executável por `PUBLIC`, `anon` e `authenticated`, e não ter `search_path` fixo. Não houve alteração no Supabase neste ciclo.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

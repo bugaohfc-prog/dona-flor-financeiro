@@ -1,5 +1,19 @@
 # Plano: parcelamento de contas
 
+## Estado publicado em 2026-06-27
+
+- Migration estrutural aplicada e validada no Supabase remoto.
+- Campos confirmados em `public.df_contas`: `grupo_parcelamento_id`, `parcela_numero`, `parcelas_total`, `valor_total_parcelamento`.
+- Constraint confirmada: `df_contas_parcelamento_consistente`.
+- Total confirmado antes da UI: 975 contas, 975 sem parcelamento e 0 com parcelamento.
+- UI minima de criacao de parcelamento implementada no modal de nova conta.
+- Parcelamento e recorrencia sao mutuamente exclusivos no cadastro.
+- O hook cria as parcelas em lote como contas independentes em `df_contas`.
+- Cada parcela compartilha `grupo_parcelamento_id` e recebe `parcela_numero`, `parcelas_total` e `valor_total_parcelamento`.
+- Cards de contas exibem badge `Parcelado` e `Parcela X/Y`.
+- Baixa, estorno, pagamento parcial, recorrencia e impostos continuam nos fluxos existentes por conta/parcela.
+- Edicao e exclusao em lote de parcelamento continuam fora do escopo.
+
 ## Contexto
 
 Este documento audita a estrutura atual do Financeiro e propõe um caminho seguro para implementar parcelamento de contas em ciclo futuro.

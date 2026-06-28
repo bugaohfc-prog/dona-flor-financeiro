@@ -43,6 +43,74 @@ function normalizarValorRecorrencia(valor) {
   return Number(valor || 0).toFixed(2)
 }
 
+function arredondarCentavos(valor) {
+  return Math.round((Number(valor || 0) + Number.EPSILON) * 100)
+}
+
+function valorCentavosParaDecimal(centavos) {
+  return Math.round(Number(centavos || 0)) / 100
+}
+
+function gerarUuidLocal() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (caractere) => {
+    const aleatorio = Math.random() * 16 | 0
+    const valor = caractere === 'x' ? aleatorio : (aleatorio & 0x3 | 0x8)
+    return valor.toString(16)
+  })
+}
+
+function somarMesesDataBanco(dataBanco, mesesAdicionar) {
+  const partes = String(dataBanco || '').match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!partes) return ''
+
+  const ano = Number(partes[1])
+  const mesIndice = Number(partes[2]) - 1
+  const diaOriginal = Number(partes[3])
+  const primeiroDiaMesAlvo = new Date(ano, mesIndice + Number(mesesAdicionar || 0), 1)
+  const anoAlvo = primeiroDiaMesAlvo.getFullYear()
+  const mesAlvo = primeiroDiaMesAlvo.getMonth()
+  const ultimoDiaMesAlvo = new Date(anoAlvo, mesAlvo + 1, 0).getDate()
+  const dia = Math.min(diaOriginal, ultimoDiaMesAlvo)
+  const data = new Date(anoAlvo, mesAlvo, dia)
+  const mesFormatado = String(data.getMonth() + 1).padStart(2, '0')
+  const diaFormatado = String(data.getDate()).padStart(2, '0')
+
+  return `${data.getFullYear()}-${mesFormatado}-${diaFormatado}`
+}
+
+function montarParcelasConta({ payloadBase, valorTotal, parcelasTotal, primeiroVencimento }) {
+  const quantidade = Number(parcelasTotal)
+  const totalCentavos = arredondarCentavos(valorTotal)
+  const valorBaseCentavos = Math.floor(totalCentavos / quantidade)
+  const sobraCentavos = totalCentavos - (valorBaseCentavos * quantidade)
+  const grupoParcelamentoId = gerarUuidLocal()
+
+  return Array.from({ length: quantidade }, (_, indice) => {
+    const numeroParcela = indice + 1
+    const centavosParcela = indice === quantidade - 1
+      ? valorBaseCentavos + sobraCentavos
+      : valorBaseCentavos
+    const vencimentoParcela = somarMesesDataBanco(primeiroVencimento, indice)
+
+    return {
+      ...payloadBase,
+      valor: valorCentavosParaDecimal(centavosParcela),
+      data_vencimento: vencimentoParcela,
+      vencimento: vencimentoParcela,
+      status: 'pendente',
+      excluido: false,
+      grupo_parcelamento_id: grupoParcelamentoId,
+      parcela_numero: numeroParcela,
+      parcelas_total: quantidade,
+      valor_total_parcelamento: valorCentavosParaDecimal(totalCentavos)
+    }
+  })
+}
+
 function recorrenciaTemContaGerada(contasReferencia, recorrencia, dataGerada) {
   return (contasReferencia || []).some((conta) => {
     if (conta.data_vencimento !== dataGerada) return false
@@ -88,6 +156,10 @@ export function useContas() {
   const [contaPush, setContaPush] = useState(false)
   const [contaDiasAviso, setContaDiasAviso] = useState('1')
   const [contaRecorrente, setContaRecorrente] = useState(false)
+  const [contaParcelada, setContaParcelada] = useState(false)
+  const [parcelamentoTotal, setParcelamentoTotal] = useState('')
+  const [parcelamentoQuantidade, setParcelamentoQuantidade] = useState('2')
+  const [parcelamentoPrimeiroVencimento, setParcelamentoPrimeiroVencimento] = useState('')
   const [tipoRecorrencia, setTipoRecorrencia] = useState('mensal')
   const [diaVencimentoRecorrencia, setDiaVencimentoRecorrencia] = useState('')
   const [valorVariavelRecorrencia, setValorVariavelRecorrencia] = useState(false)
@@ -112,6 +184,10 @@ export function useContas() {
     setContaPush(false)
     setContaDiasAviso('1')
     setContaRecorrente(false)
+    setContaParcelada(false)
+    setParcelamentoTotal('')
+    setParcelamentoQuantidade('2')
+    setParcelamentoPrimeiroVencimento('')
     setTipoRecorrencia('mensal')
     setDiaVencimentoRecorrencia('')
     setValorVariavelRecorrencia(false)
@@ -139,6 +215,10 @@ export function useContas() {
     setContaPush(conta?.enviar_push ?? false)
     setContaDiasAviso(String(conta?.dias_aviso ?? diasAvisoPadrao ?? 1))
     setContaRecorrente(Boolean(conta?.recorrencia_id))
+    setContaParcelada(false)
+    setParcelamentoTotal('')
+    setParcelamentoQuantidade('2')
+    setParcelamentoPrimeiroVencimento('')
     setRecorrenciaContaId(conta?.recorrencia_id || null)
     setTipoRecorrencia('mensal')
     setDiaVencimentoRecorrencia(diaPadrao)
@@ -478,7 +558,7 @@ export function useContas() {
       return
     }
 
-    if (!descricao || !valor || !dataVencimento) {
+    if (!descricao || (!contaParcelada && (!valor || !dataVencimento))) {
       mostrarAviso('Preencha descrição, valor e vencimento.', 'erro')
       return
     }
@@ -499,10 +579,41 @@ export function useContas() {
     const competenciaFiscal = tipoFiscal && competenciaConta ? `${competenciaConta}-01` : null
     const contaVinculadaRecorrencia = Boolean(editandoContaId && recorrenciaContaId)
     const editandoSerieRecorrente = contaVinculadaRecorrencia && escopoEdicaoRecorrencia === 'serie'
+    const criandoParcelamento = !editandoContaId && contaParcelada === true
 
     if (contaRecorrente && (!diaRecorrencia || diaRecorrencia < 1 || diaRecorrencia > 31)) {
       mostrarAviso('Informe um dia válido para a recorrência.', 'erro')
       return
+    }
+
+    if (criandoParcelamento && contaRecorrente) {
+      mostrarAviso('Parcelamento e recorrencia nao podem ser usados no mesmo cadastro.', 'erro')
+      return
+    }
+
+    const valorTotalParcelamento = criandoParcelamento ? converterValor(parcelamentoTotal || valor) : null
+    const quantidadeParcelas = criandoParcelamento ? Number(parcelamentoQuantidade) : null
+    const primeiroVencimentoParcelamento = criandoParcelamento
+      ? formatarDataParaBanco(parcelamentoPrimeiroVencimento || dataVencimento)
+      : null
+
+    if (criandoParcelamento) {
+      const dataPrimeiroVencimento = new Date(`${primeiroVencimentoParcelamento}T00:00:00`)
+
+      if (!valorTotalParcelamento || valorTotalParcelamento <= 0) {
+        mostrarAviso('Informe um valor total valido para o parcelamento.', 'erro')
+        return
+      }
+
+      if (!Number.isInteger(quantidadeParcelas) || quantidadeParcelas <= 1) {
+        mostrarAviso('Informe um numero de parcelas maior que 1.', 'erro')
+        return
+      }
+
+      if (!primeiroVencimentoParcelamento || Number.isNaN(dataPrimeiroVencimento.getTime())) {
+        mostrarAviso('Informe o primeiro vencimento do parcelamento.', 'erro')
+        return
+      }
     }
 
     const payload = {
@@ -660,6 +771,27 @@ export function useContas() {
         }
       }
     } else {
+      if (criandoParcelamento) {
+        const parcelas = montarParcelasConta({
+          payloadBase: payload,
+          valorTotal: valorTotalParcelamento,
+          parcelasTotal: quantidadeParcelas,
+          primeiroVencimento: primeiroVencimentoParcelamento
+        })
+        const { error: erroParcelamento } = await criarContasEmLote(supabase, parcelas)
+
+        if (erroParcelamento) {
+          console.warn('Falha ao criar parcelamento:', erroParcelamento)
+          mostrarAviso(mensagemSeguraErro(erroParcelamento, 'Nao foi possivel criar o parcelamento.'), 'erro')
+          return
+        }
+
+        fecharConta()
+        await buscarContas()
+        mostrarAviso(`Parcelamento criado com ${quantidadeParcelas} parcelas.`, 'sucesso')
+        return
+      }
+
       const resposta = await criarConta(supabase, { ...payload, status: 'pendente', excluido: false })
       error = resposta.error
 
@@ -985,6 +1117,14 @@ export function useContas() {
     setContaDiasAviso,
     contaRecorrente,
     setContaRecorrente,
+    contaParcelada,
+    setContaParcelada,
+    parcelamentoTotal,
+    setParcelamentoTotal,
+    parcelamentoQuantidade,
+    setParcelamentoQuantidade,
+    parcelamentoPrimeiroVencimento,
+    setParcelamentoPrimeiroVencimento,
     tipoRecorrencia,
     setTipoRecorrencia,
     diaVencimentoRecorrencia,

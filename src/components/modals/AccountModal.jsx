@@ -21,6 +21,14 @@ export default function AccountModal({
   setCompetenciaConta,
   contaRecorrente,
   setContaRecorrente,
+  contaParcelada,
+  setContaParcelada,
+  parcelamentoTotal,
+  setParcelamentoTotal,
+  parcelamentoQuantidade,
+  setParcelamentoQuantidade,
+  parcelamentoPrimeiroVencimento,
+  setParcelamentoPrimeiroVencimento,
   tipoRecorrencia,
   setTipoRecorrencia,
   diaVencimentoRecorrencia,
@@ -48,6 +56,7 @@ export default function AccountModal({
   const textoHeader = editandoSerieRecorrente
     ? 'Atualize a serie recorrente sem reescrever parcelas ja lancadas.'
     : 'Preencha os dados principais para acompanhar vencimentos, recorrencia e classificacao.'
+  const podeParcelarConta = !editandoContaId && !contaVinculadaRecorrencia
 
   function fecharTudo() {
     fecharConta()
@@ -62,8 +71,8 @@ export default function AccountModal({
       <div className="account-modal-card" style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <header className="account-modal-header">
           <span>Financeiro</span>
-          <h3>{editandoContaId ? 'Editar conta' : 'Nova conta'}</h3>
-          <p>Preencha os dados principais para acompanhar vencimentos, recorrência e classificação.</p>
+          <h3>{tituloModal}</h3>
+          <p>{textoHeader}</p>
         </header>
 
         <div className="account-modal-body">
@@ -103,6 +112,79 @@ export default function AccountModal({
               </label>
             </div>
           </section>
+
+          {podeParcelarConta && (
+            <section className="account-modal-section account-modal-installment">
+              <div className="account-modal-section-title">
+                <strong>Parcelamento</strong>
+                <small>Crie contas independentes para cada parcela. Nao e recorrencia.</small>
+              </div>
+              <label className="checkbox-row-fix account-modal-switch" style={styles.switchLinhaCompacta}>
+                <span>
+                  <strong>Parcelar conta</strong>
+                  <small style={styles.textoAjuda}>Use para compras ou despesas divididas em parcelas finitas.</small>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={contaParcelada}
+                  onChange={(e) => {
+                    const marcado = e.target.checked
+                    setContaParcelada(marcado)
+                    if (marcado) {
+                      setContaRecorrente(false)
+                      setParcelamentoTotal(parcelamentoTotal || valor)
+                      setParcelamentoPrimeiroVencimento(parcelamentoPrimeiroVencimento || dataVencimento)
+                    }
+                  }}
+                />
+              </label>
+
+              {contaParcelada && (
+                <div className="account-modal-grid account-modal-installment-fields">
+                  <label className="account-modal-field">
+                    <span>Valor total do parcelamento</span>
+                    <input
+                      style={styles.inputModal}
+                      placeholder="Valor total. Ex: 100,00"
+                      value={parcelamentoTotal}
+                      onChange={(e) => setParcelamentoTotal(e.target.value)}
+                    />
+                  </label>
+
+                  <label className="account-modal-field">
+                    <span>Numero de parcelas</span>
+                    <input
+                      style={styles.inputModal}
+                      type="number"
+                      min="2"
+                      step="1"
+                      value={parcelamentoQuantidade}
+                      onChange={(e) => setParcelamentoQuantidade(e.target.value)}
+                    />
+                  </label>
+
+                  <label className="account-modal-field">
+                    <span>Primeiro vencimento</span>
+                    <input
+                      style={styles.inputModal}
+                      type="date"
+                      value={parcelamentoPrimeiroVencimento}
+                      onChange={(e) => setParcelamentoPrimeiroVencimento(limitarDataInput(e.target.value))}
+                    />
+                  </label>
+
+                  <div className="account-modal-installment-summary">
+                    <strong>Periodicidade mensal</strong>
+                    <span>As proximas parcelas vencem mensalmente, preservando o dia quando possivel.</span>
+                  </div>
+
+                  <small className="account-modal-help account-modal-field-wide">
+                    Cada parcela sera criada como uma conta independente, com baixa, estorno e pagamento parcial proprios.
+                  </small>
+                </div>
+              )}
+            </section>
+          )}
 
           <section className="account-modal-section">
             <div className="account-modal-section-title">
@@ -160,6 +242,7 @@ export default function AccountModal({
                   onChange={(e) => {
                     const marcado = e.target.checked
                     setContaRecorrente(marcado)
+                    if (marcado) setContaParcelada(false)
                     if (marcado && dataVencimento) {
                       setDiaVencimentoRecorrencia(String(Number(formatarDataParaBanco(dataVencimento).slice(8, 10))))
                     }

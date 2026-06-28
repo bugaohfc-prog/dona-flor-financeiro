@@ -4627,6 +4627,24 @@
   white-space: nowrap;
 }
 
+.account-installment-badge,
+.account-installment-step-badge {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.account-installment-badge {
+  border-color: #c4b5fd !important;
+  background: #f5f3ff !important;
+  color: #5b21b6 !important;
+}
+
+.account-installment-step-badge {
+  border-color: #bae6fd !important;
+  background: #f0f9ff !important;
+  color: #075985 !important;
+}
+
 .account-partial-payment-details {
   display: flex;
   flex: 1 1 360px;
@@ -5455,6 +5473,38 @@
   border: 1px solid #c7eee6 !important;
   border-radius: 12px !important;
   background: #ffffff !important;
+}
+
+.account-modal-installment {
+  border-color: #ddd6fe;
+  background: #f8f7ff;
+}
+
+.account-modal-installment-fields {
+  padding-top: 12px;
+  border-top: 1px solid #ddd6fe;
+}
+
+.account-modal-installment-summary {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #dbe4ef;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.account-modal-installment-summary strong {
+  color: #5b21b6;
+  font-size: 12px;
+}
+
+.account-modal-installment-summary span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .account-modal-recurrence .recurrence-fields {

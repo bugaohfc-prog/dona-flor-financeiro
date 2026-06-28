@@ -187,14 +187,14 @@ Status em 2026-06-28: restrição executada apenas para grants diretos de `anon`
 
 Status em 2026-06-28: `EXECUTE` de `PUBLIC` também foi revogado para `df_auditoria_admin_sanitize_destinatario_alerta`. Após a mudança, `PUBLIC`, `anon` e `authenticated` ficaram sem `EXECUTE` efetivo nessa função; validações transacionais de `INSERT`/`UPDATE` e auditoria passaram; o Advisor deixou de listar essa função nos alertas `anon`/`authenticated`.
 
-Objetivo do próximo ciclo:
+Status em 2026-06-28: relatório específico criado para `df_folha_lancamentos_validar_vinculos` em `docs/supabase/funcoes/df_folha_lancamentos_validar_vinculos.md`. A função foi classificada como trigger-only/validação interna, sem evidência de RPC direta no app, sem uso em policies/views/outras funções, e candidata a restrição futura de `EXECUTE` para `PUBLIC`, `anon` e `authenticated` após validação funcional transacional.
 
-- confirmar se a função é usada apenas pelo trigger `trg_df_destinatarios_alertas_auditoria_admin`;
-- confirmar ausência de chamada RPC no frontend, services, hooks, Edge Functions e scripts;
-- levantar grants atuais completos;
-- preparar proposta de `REVOKE EXECUTE` de `anon`/`authenticated` somente se a auditoria confirmar segurança;
-- preparar rollback com restauração dos grants atuais;
-- validar que o trigger em `df_destinatarios_alertas` continuaria executando após eventual restrição futura.
+Objetivo recomendado após a auditoria de `df_folha_lancamentos_validar_vinculos`:
+
+- preparar matriz de validação e rollback para eventual restrição futura;
+- confirmar cenário controlado de `INSERT`/`UPDATE` em `df_folha_lancamentos`;
+- validar que o trigger `trg_df_folha_lancamentos_validar_vinculos` continua executando após eventual restrição;
+- restringir `PUBLIC`, `anon` e `authenticated` somente em ciclo futuro autorizado, curto e com rollback imediato.
 
 ## O que não mexer agora
 

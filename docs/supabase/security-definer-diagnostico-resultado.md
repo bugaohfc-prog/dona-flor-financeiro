@@ -195,6 +195,8 @@ Status em 2026-06-28: restrição executada para `df_folha_lancamentos_validar_v
 
 Status em 2026-06-28: relatório específico criado para `df_funcionarios_exames_periodicos_validar_funcionario_empresa` em `docs/supabase/funcoes/df_funcionarios_exames_periodicos_validar_funcionario_empresa.md`. A função foi classificada como trigger-only/validação interna, sem evidência de RPC direta no app, sem uso em policies/views/outras funções, e candidata a restrição futura de `EXECUTE` para `PUBLIC`, `anon` e `authenticated` após plano de validação/rollback.
 
+Status em 2026-06-28: plano de validação/rollback para restrição futura de `df_funcionarios_exames_periodicos_validar_funcionario_empresa` criado em `docs/supabase/funcoes/df_funcionarios_exames_periodicos_validar_funcionario_empresa-plano-restricao.md`. O plano mantém a restrição para ciclo futuro autorizado, com testes antes/depois em transação com `ROLLBACK` e cuidado LGPD para não registrar dados médicos, laudos, resultados ou anexos.
+
 Objetivo recomendado após a restrição de `df_folha_lancamentos_validar_vinculos`:
 
 - monitorar o fluxo de folha quando houver uso operacional real;

@@ -31,6 +31,8 @@ O Supabase Advisor ainda lista esta função nos alertas `anon_security_definer_
 
 Recomendação desta auditoria: candidata a restringir `EXECUTE` público em ciclo futuro, começando por plano de validação/rollback e teste transacional de `INSERT`/`UPDATE` em `df_funcionarios_exames_periodicos`.
 
+Plano de validação e rollback para uma restrição futura: `docs/supabase/funcoes/df_funcionarios_exames_periodicos_validar_funcionario_empresa-plano-restricao.md`.
+
 ## Evidências do catálogo Postgres
 
 Metadados consultados por `SELECT` em catálogos Postgres:

@@ -210,6 +210,8 @@ Sem alteração de banco.
 
 Status em 2026-06-28: SQL somente leitura criado em `docs/supabase/sql/diagnostico-security-definer.sql`, com documentação de uso em `docs/supabase/security-definer-diagnostico-sql.md`.
 
+Resultado da execução somente leitura registrado em `docs/supabase/security-definer-diagnostico-resultado.md`.
+
 O diagnóstico captura:
 
 - definição atual por `pg_get_functiondef`;

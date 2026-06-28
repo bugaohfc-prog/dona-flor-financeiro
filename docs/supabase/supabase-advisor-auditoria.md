@@ -469,6 +469,8 @@ Começar por auditoria das funções `SECURITY DEFINER` expostas para `anon` e `
 
 Status em 2026-06-28: inventário documental criado em `docs/supabase/security-definer-funcoes-auditoria.md`, ainda sem alteração de banco, grants, funções, RLS ou policies.
 
+Resultado da execução do SQL diagnóstico registrado em `docs/supabase/security-definer-diagnostico-resultado.md`, também sem alteração no Supabase.
+
 Entregáveis sugeridos para o próximo ciclo:
 
 - relatório de uso por função;

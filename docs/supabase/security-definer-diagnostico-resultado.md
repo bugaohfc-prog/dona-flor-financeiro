@@ -1,0 +1,211 @@
+# Resultado do diagnóstico SECURITY DEFINER
+
+Data da execução: 2026-06-28
+
+Projeto Supabase: `contas-donaflor`
+
+Project ID: `vyhjjtzdvofoqoericak`
+
+Branch Git: `main` em produção. Não há ambiente de homologação.
+
+## Escopo
+
+Este documento registra o resultado da execução do SQL diagnóstico versionado em `docs/supabase/sql/diagnostico-security-definer.sql`.
+
+A execução foi somente leitura, com consultas `SELECT` contra catálogos/metadados do Postgres e views de policies. Não houve alteração no Supabase.
+
+Não foram executados `REVOKE`, `GRANT`, `ALTER FUNCTION`, `DROP`, `CREATE/DROP POLICY`, `ALTER VIEW`, `CREATE/DROP INDEX`, migration, alteração de dados, alteração de frontend, service, hook ou autenticação.
+
+## Resumo da execução
+
+- Total de funções `SECURITY DEFINER` no schema `public`: 22.
+- Funções `SECURITY DEFINER` executáveis por `anon`: 18.
+- Funções `SECURITY DEFINER` executáveis por `authenticated`: 18.
+- Funções expostas para `anon` ou `authenticated`: 18.
+- Funções `SECURITY DEFINER` em `public` sem execute para `anon`/`authenticated`: 4.
+- Funções expostas sem `search_path` fixo: 3.
+- Funções expostas usadas por triggers: 7.
+- Funções expostas citadas por policies: 6.
+- Views públicas que citam textualmente as funções alvo: nenhuma encontrada na consulta executada.
+- Chamadas textuais entre funções alvo: nenhuma encontrada na checagem agregada.
+
+Funções expostas sem `search_path` fixo:
+
+- `criar_usuario`
+- `handle_new_user`
+- `login_usuario`
+
+Funções `SECURITY DEFINER` não expostas para `anon`/`authenticated`:
+
+- `df_auditoria_admin_sanitize_lixeira_financeira`
+- `df_folha_lancamento_itens_recalcular_lancamento`
+- `df_folha_lancamento_itens_recalcular_lancamento_trigger`
+- `df_folha_lancamento_itens_validar_vinculos`
+
+## Funções com EXECUTE para anon e authenticated
+
+As 18 funções abaixo estavam com `EXECUTE` efetivo para `anon` e para `authenticated` na execução do diagnóstico:
+
+- `criar_usuario`
+- `df_auditoria_admin_sanitize_destinatario_alerta`
+- `df_empresas_do_usuario`
+- `df_folha_lancamentos_validar_vinculos`
+- `df_funcionarios_exames_periodicos_validar_funcionario_empresa`
+- `df_funcionarios_ferias_ciclos_validar_funcionario_empresa`
+- `df_funcionarios_ferias_periodos_validar_vinculos`
+- `df_funcionarios_pode_escrever`
+- `df_funcionarios_validar_filial_empresa`
+- `df_usuario_alvo_eh_master`
+- `df_usuario_eh_admin`
+- `df_usuario_tem_perfil_empresa`
+- `get_empresa_usuario`
+- `handle_new_user`
+- `is_admin`
+- `is_master`
+- `login_usuario`
+- `vincular_usuario_logado`
+
+## Uso por triggers
+
+Funções expostas usadas por triggers:
+
+| Função | Trigger | Tabela |
+| --- | --- | --- |
+| `df_auditoria_admin_sanitize_destinatario_alerta` | `trg_df_destinatarios_alertas_auditoria_admin` | `public.df_destinatarios_alertas` |
+| `df_folha_lancamentos_validar_vinculos` | `trg_df_folha_lancamentos_validar_vinculos` | `public.df_folha_lancamentos` |
+| `df_funcionarios_exames_periodicos_validar_funcionario_empresa` | `trg_df_funcionarios_exames_periodicos_validar_funcionario_empre` | `public.df_funcionarios_exames_periodicos` |
+| `df_funcionarios_ferias_ciclos_validar_funcionario_empresa` | `trg_df_funcionarios_ferias_ciclos_validar_funcionario_empresa` | `public.df_funcionarios_ferias_ciclos` |
+| `df_funcionarios_ferias_periodos_validar_vinculos` | `trg_df_funcionarios_ferias_periodos_validar_vinculos` | `public.df_funcionarios_ferias_periodos` |
+| `df_funcionarios_validar_filial_empresa` | `trg_df_funcionarios_validar_filial_empresa` | `public.df_funcionarios` |
+| `handle_new_user` | `on_auth_user_created` | `auth.users` |
+
+Leitura inicial: as funções de trigger/validação interna são candidatas futuras a restringir execução direta por RPC, mas ainda precisam de auditoria por função antes de qualquer `REVOKE`.
+
+## Uso por policies
+
+Funções expostas citadas por policies:
+
+| Função | Referências em policies | Tabelas citadas |
+| --- | ---: | --- |
+| `is_master` | 27 | `df_assinaturas`, `df_auditoria_admin`, `df_contas`, `df_contas_pagamentos`, `df_destinatarios_alertas`, `df_notas`, `df_usuarios_empresas`, `df_usuarios_filiais` |
+| `df_usuario_eh_admin` | 24 | `df_assinaturas`, `df_auditoria_admin`, `df_contas`, `df_contas_pagamentos`, `df_destinatarios_alertas`, `df_notas`, `df_usuarios_empresas`, `df_usuarios_filiais` |
+| `df_funcionarios_pode_escrever` | 21 | `df_folha_competencias`, `df_folha_lancamento_itens`, `df_folha_lancamentos`, `df_funcionarios`, `df_funcionarios_exames_periodicos`, `df_funcionarios_ferias_ciclos`, `df_funcionarios_ferias_periodos` |
+| `df_usuario_tem_perfil_empresa` | 14 | `df_contas`, `df_contas_pagamentos`, `df_destinatarios_alertas`, `df_funcionarios`, `df_notas` |
+| `df_usuario_alvo_eh_master` | 6 | `df_usuarios_empresas`, `df_usuarios_filiais` |
+| `df_empresas_do_usuario` | 1 | `df_usuarios_empresas` |
+
+Leitura inicial: não revogar `authenticated` dessas funções sem matriz de teste por perfil, isolamento multiempresa e validação das policies dependentes.
+
+## Evidência de uso direto no código/RPC
+
+Chamadas diretas encontradas no código versionado durante o inventário anterior:
+
+- `vincular_usuario_logado`: chamada por `src/pages/Login.jsx` e `src/services/tenantService.js`.
+- `is_master`: chamada por `supabase/functions/convidar-usuario/index.ts` e por script diagnóstico de RLS.
+- `df_usuario_eh_admin`: chamada por `supabase/functions/convidar-usuario/index.ts`.
+- `df_funcionarios_pode_escrever`: chamada por script diagnóstico de RLS.
+
+Sem evidência de chamada direta pelo frontend/service/hook principal:
+
+- `criar_usuario`
+- `login_usuario`
+- `handle_new_user`
+- `get_empresa_usuario`
+- `is_admin`
+- `df_empresas_do_usuario`
+- `df_usuario_tem_perfil_empresa`
+- `df_usuario_alvo_eh_master`
+- `df_auditoria_admin_sanitize_destinatario_alerta`
+- `df_folha_lancamentos_validar_vinculos`
+- `df_funcionarios_exames_periodicos_validar_funcionario_empresa`
+- `df_funcionarios_ferias_ciclos_validar_funcionario_empresa`
+- `df_funcionarios_ferias_periodos_validar_vinculos`
+- `df_funcionarios_validar_filial_empresa`
+
+Essa ausência de evidência não prova ausência de uso. Antes de qualquer restrição, repetir busca em frontend, services, hooks, Edge Functions, scripts e logs operacionais relevantes.
+
+## Classificação por grupo
+
+### A. Não mexer agora - autenticação/login/fluxo sensível
+
+- `login_usuario`
+- `criar_usuario`
+- `handle_new_user`
+- `vincular_usuario_logado`
+
+Risco prático: quebrar login legado, provisionamento de usuário, trigger de Auth ou vínculo automático usuário/empresa.
+
+Recomendação: manter por enquanto. Tratar em ciclo próprio de autenticação/legado, sem misturar com policies ou funções trigger-only.
+
+### B. Não mexer agora - usadas por RLS/policies
+
+- `is_master`
+- `df_usuario_eh_admin`
+- `df_usuario_tem_perfil_empresa`
+- `df_usuario_alvo_eh_master`
+- `df_funcionarios_pode_escrever`
+- `df_empresas_do_usuario`
+- `get_empresa_usuario`
+
+Risco prático: quebrar leitura/escrita em áreas financeiras, usuários, filiais, destinatários de alertas, notas, Gestão de Pessoas e folha.
+
+Recomendação: não revogar `authenticated` agora. Avaliar `anon` somente depois de mapear policies com role `{public}` e testar perfis.
+
+### C. Candidatas futuras para restringir EXECUTE público
+
+- `df_auditoria_admin_sanitize_destinatario_alerta`
+- `df_folha_lancamentos_validar_vinculos`
+- `df_funcionarios_exames_periodicos_validar_funcionario_empresa`
+- `df_funcionarios_ferias_ciclos_validar_funcionario_empresa`
+- `df_funcionarios_ferias_periodos_validar_vinculos`
+- `df_funcionarios_validar_filial_empresa`
+
+Risco prático: exposição desnecessária de funções internas de trigger/validação como RPC.
+
+Recomendação: candidatas a ciclo futuro de restrição de `EXECUTE` para `anon` e `authenticated`, mas somente depois de auditoria individual e rollback preparado.
+
+### D. Incertas / precisam rastreio adicional
+
+- `is_admin`
+- `get_empresa_usuario`
+- `criar_usuario`
+- `login_usuario`
+
+Risco prático: possível legado ainda dependente de fluxo histórico ou integração não evidente no código atual.
+
+Recomendação: rastrear antes de remover, restringir ou substituir.
+
+## Próximo ciclo recomendado
+
+Auditar primeiro a função `df_auditoria_admin_sanitize_destinatario_alerta`, sem executar `REVOKE`.
+
+Objetivo do próximo ciclo:
+
+- confirmar se a função é usada apenas pelo trigger `trg_df_destinatarios_alertas_auditoria_admin`;
+- confirmar ausência de chamada RPC no frontend, services, hooks, Edge Functions e scripts;
+- levantar grants atuais completos;
+- preparar proposta de `REVOKE EXECUTE` de `anon`/`authenticated` somente se a auditoria confirmar segurança;
+- preparar rollback com restauração dos grants atuais;
+- validar que o trigger em `df_destinatarios_alertas` continuaria executando após eventual restrição futura.
+
+## O que não mexer agora
+
+- Não executar `REVOKE`.
+- Não executar `GRANT`.
+- Não alterar funções.
+- Não alterar `search_path`.
+- Não alterar RLS ou policies.
+- Não alterar views ou índices.
+- Não criar migration.
+- Não alterar dados.
+- Não alterar frontend, service, hook ou autenticação.
+
+## Rollback
+
+Este ciclo não tem rollback de banco porque não houve alteração no Supabase.
+
+Rollback documental deste commit:
+
+```bash
+git revert <commit>
+```

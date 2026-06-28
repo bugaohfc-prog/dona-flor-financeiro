@@ -214,6 +214,8 @@ Status em 2026-06-28: Fase 1 da restrição de `criar_usuario` executada. `EXECU
 
 Status em 2026-06-28: `criar_usuario` foi mantida em observação e a frente de pontos críticos avançou para auditoria específica de `login_usuario`, documentada em `docs/supabase/funcoes/login_usuario.md`. A função foi classificada como crítica por validar senha legada contra `df_usuarios.senha_hash`, retornar dados de perfil/permissão, estar executável por `PUBLIC`, `anon` e `authenticated`, e não ter `search_path` fixo. Não houve alteração no Supabase neste ciclo.
 
+Status em 2026-06-28: plano de validação/rollback para restrição futura de `login_usuario` criado em `docs/supabase/funcoes/login_usuario-plano-restricao.md`. O plano propõe Fase 1 para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated` temporariamente se houver incerteza de uso legado, e Fase 2 para avaliar `authenticated` somente após monitoramento e confirmação de ausência de uso externo de `/rpc/login_usuario`.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

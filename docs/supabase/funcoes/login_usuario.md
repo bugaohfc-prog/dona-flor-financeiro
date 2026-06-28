@@ -26,6 +26,8 @@ Classificação desta auditoria: **crítico**.
 
 Recomendação segura: manter temporariamente neste ciclo. Preparar plano próprio para restringir `PUBLIC` e `anon` somente depois de validar que não existe fluxo legado externo usando `/rpc/login_usuario`. Manter `authenticated` temporariamente até confirmar se há uso legado ou administrativo indireto. Não alterar senha, Auth ou `search_path` no mesmo ciclo de grants.
 
+Plano de validação e rollback para restrição futura: `docs/supabase/funcoes/login_usuario-plano-restricao.md`.
+
 ## Assinatura da função
 
 | Campo | Valor |
@@ -278,7 +280,7 @@ Não executar sem necessidade real de rollback ou ciclo autorizado.
 
 ## Próximos passos
 
-- Criar plano de restrição específico para `login_usuario`.
+- Usar o plano em `docs/supabase/funcoes/login_usuario-plano-restricao.md` como matriz antes/depois para qualquer ciclo futuro de `REVOKE`.
 - Validar login atual por Supabase Auth sem alterar autenticação.
 - Confirmar se existe uso externo ou legado de `/rpc/login_usuario`.
 - Não alterar grants, função, Auth, senha ou `search_path` sem ciclo próprio.

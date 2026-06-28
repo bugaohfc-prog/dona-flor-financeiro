@@ -209,14 +209,155 @@ Após rollback, repetir:
 - Sem homologação, executar somente em ciclo curto, com rollback imediato.
 - Não misturar esta restrição com ajustes de RLS, policies, views, índices ou frontend.
 
+## Execução da restrição em 2026-06-28
+
+Restrição executada em ciclo curto autorizado, após validação funcional antes com transação e `ROLLBACK`.
+
+Atenção LGPD aplicada: os testes usaram apenas dados técnicos mínimos criados dentro da transação. Não foram registrados laudos, resultados, CID, diagnósticos, documentos, anexos, uploads, links públicos ou dados médicos reais.
+
+SQL executado:
+
+```sql
+revoke execute on function public.df_funcionarios_exames_periodicos_validar_funcionario_empresa() from anon;
+revoke execute on function public.df_funcionarios_exames_periodicos_validar_funcionario_empresa() from authenticated;
+revoke execute on function public.df_funcionarios_exames_periodicos_validar_funcionario_empresa() from public;
+```
+
+### Diagnóstico antes
+
+ACL observada antes:
+
+```text
+{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+```
+
+Privilégios efetivos antes:
+
+| Role | EXECUTE efetivo |
+| --- | --- |
+| `PUBLIC` | `true` |
+| `anon` | `true` |
+| `authenticated` | `true` |
+| `postgres` | `true` |
+| `service_role` | `true` |
+
+Função antes:
+
+- `SECURITY DEFINER`: `true`;
+- retorno: `trigger`;
+- linguagem: `plpgsql`;
+- owner: `postgres`;
+- `search_path=public`;
+- hash da definição: `0d8991e6d2fe071de5bc2a3e1ffb2b90`.
+
+Trigger antes:
+
+- `trg_df_funcionarios_exames_periodicos_validar_funcionario_empre`;
+- tabela: `public.df_funcionarios_exames_periodicos`;
+- status: habilitado (`tgenabled=O`);
+- definição: `BEFORE INSERT OR UPDATE OF empresa_id, funcionario_id`.
+
+Não foi encontrada policy citando textualmente a função. A busca local também não encontrou chamada RPC direta no app, Edge Functions ou scripts.
+
+### Validação funcional antes
+
+Foi executado teste controlado em transação com `ROLLBACK`.
+
+O teste:
+
+- criou dados técnicos mínimos de empresa e funcionário dentro da transação;
+- inseriu um registro em `public.df_funcionarios_exames_periodicos` apenas com `empresa_id`, `funcionario_id` e `data_exame`;
+- atualizou `data_exame` no mesmo registro;
+- tentou trocar `funcionario_id` para funcionário de outra empresa;
+- confirmou rejeição por `check_violation`, validando que o trigger executou a regra funcionário/empresa;
+- executou `ROLLBACK`;
+- confirmou `0` registros de teste persistidos.
+
+Resultado antes:
+
+```text
+insert_update_ok_invalid_rejected_ok_rollback_ok
+registros_teste_persistidos=0
+```
+
+### Diagnóstico depois
+
+ACL observada depois:
+
+```text
+{postgres=X/postgres,service_role=X/postgres}
+```
+
+Privilégios efetivos depois:
+
+| Role | EXECUTE efetivo |
+| --- | --- |
+| `PUBLIC` | `false` |
+| `anon` | `false` |
+| `authenticated` | `false` |
+| `postgres` | `true` |
+| `service_role` | `true` |
+
+Grants diretos finais:
+
+| Grantee | Privilégio | Grantable |
+| --- | --- | --- |
+| `postgres` | `EXECUTE` | `YES` |
+| `service_role` | `EXECUTE` | `NO` |
+
+Função depois:
+
+- `SECURITY DEFINER`: `true`;
+- retorno: `trigger`;
+- linguagem: `plpgsql`;
+- owner: `postgres`;
+- `search_path=public`;
+- hash da definição preservado: `0d8991e6d2fe071de5bc2a3e1ffb2b90`.
+
+Trigger depois:
+
+- `trg_df_funcionarios_exames_periodicos_validar_funcionario_empre` permaneceu habilitado;
+- definição preservada.
+
+### Validação funcional depois
+
+Foi repetido o mesmo teste controlado em transação com `ROLLBACK`.
+
+Resultado depois:
+
+```text
+insert_update_ok_invalid_rejected_ok_rollback_ok
+registros_teste_persistidos=0
+```
+
+Leitura: a restrição de `EXECUTE` não quebrou a execução interna do trigger no teste transacional. A validação funcionário/empresa continuou funcionando.
+
+### Advisor
+
+O Supabase Security Advisor foi consultado após a restrição.
+
+Resultado: `public.df_funcionarios_exames_periodicos_validar_funcionario_empresa()` deixou de aparecer nos alertas `anon_security_definer_function_executable` e `authenticated_security_definer_function_executable`.
+
+### Rollback
+
+Não houve rollback neste ciclo.
+
+Rollback Supabase, se necessário:
+
+```sql
+grant execute on function public.df_funcionarios_exames_periodicos_validar_funcionario_empresa() to public;
+grant execute on function public.df_funcionarios_exames_periodicos_validar_funcionario_empresa() to anon;
+grant execute on function public.df_funcionarios_exames_periodicos_validar_funcionario_empresa() to authenticated;
+```
+
 ## Estado final deste ciclo
 
-- Banco: não alterado.
-- Grants: não alterados.
+- Banco: alterado somente nos grants autorizados da função alvo.
+- Grants: `EXECUTE` removido de `PUBLIC`, `anon` e `authenticated`.
 - Função: não alterada.
 - Trigger: não alterado.
 - RLS/policies: não alteradas.
 - Views/índices: não alterados.
-- Dados: não alterados.
+- Dados: nenhum dado persistente alterado; testes executados com `ROLLBACK`.
 - Frontend/service/hook: não alterados.
 - Auth/secrets/GitHub Actions/envio real: não alterados.

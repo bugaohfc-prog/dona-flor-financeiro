@@ -197,9 +197,11 @@ Status em 2026-06-28: relatório específico criado para `df_funcionarios_exames
 
 Status em 2026-06-28: plano de validação/rollback para restrição futura de `df_funcionarios_exames_periodicos_validar_funcionario_empresa` criado em `docs/supabase/funcoes/df_funcionarios_exames_periodicos_validar_funcionario_empresa-plano-restricao.md`. O plano mantém a restrição para ciclo futuro autorizado, com testes antes/depois em transação com `ROLLBACK` e cuidado LGPD para não registrar dados médicos, laudos, resultados ou anexos.
 
-Objetivo recomendado após a restrição de `df_folha_lancamentos_validar_vinculos`:
+Status em 2026-06-28: restrição executada para `df_funcionarios_exames_periodicos_validar_funcionario_empresa`. `EXECUTE` foi revogado de `PUBLIC`, `anon` e `authenticated`; `postgres` e `service_role` foram preservados; a função e o trigger permaneceram intactos; validações transacionais de `INSERT`/`UPDATE` e rejeição de funcionário de outra empresa passaram antes/depois; nenhum dado de teste persistiu; não foram usados dados médicos reais; o Advisor deixou de listar essa função nos alertas `anon`/`authenticated`.
 
-- monitorar o fluxo de folha quando houver uso operacional real;
+Objetivo recomendado após a restrição de `df_funcionarios_exames_periodicos_validar_funcionario_empresa`:
+
+- monitorar o fluxo de exames periódicos quando houver uso operacional real;
 - manter rollback SQL pronto durante o período de observação;
 - seguir para a próxima função trigger-only somente em ciclo separado.
 

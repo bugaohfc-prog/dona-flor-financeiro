@@ -467,6 +467,8 @@ Escopo futuro:
 
 Começar por auditoria das funções `SECURITY DEFINER` expostas para `anon` e `authenticated`, sem alterar permissões ainda.
 
+Status em 2026-06-28: inventário documental criado em `docs/supabase/security-definer-funcoes-auditoria.md`, ainda sem alteração de banco, grants, funções, RLS ou policies.
+
 Entregáveis sugeridos para o próximo ciclo:
 
 - relatório de uso por função;

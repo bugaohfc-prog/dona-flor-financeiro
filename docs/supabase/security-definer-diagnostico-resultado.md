@@ -199,11 +199,14 @@ Status em 2026-06-28: plano de validação/rollback para restrição futura de `
 
 Status em 2026-06-28: restrição executada para `df_funcionarios_exames_periodicos_validar_funcionario_empresa`. `EXECUTE` foi revogado de `PUBLIC`, `anon` e `authenticated`; `postgres` e `service_role` foram preservados; a função e o trigger permaneceram intactos; validações transacionais de `INSERT`/`UPDATE` e rejeição de funcionário de outra empresa passaram antes/depois; nenhum dado de teste persistiu; não foram usados dados médicos reais; o Advisor deixou de listar essa função nos alertas `anon`/`authenticated`.
 
-Objetivo recomendado após a restrição de `df_funcionarios_exames_periodicos_validar_funcionario_empresa`:
+Status em 2026-06-28: frente alterada temporariamente para pontos críticos `SECURITY DEFINER`. Relatório específico criado para `criar_usuario` em `docs/supabase/funcoes/criar_usuario.md`. A função foi classificada como crítica por criar usuário legado em `df_usuarios`, gravar `senha_hash`, aceitar perfil/loja/permissão por parâmetro, estar executável por `PUBLIC`, `anon` e `authenticated`, e não ter `search_path` fixo.
 
-- monitorar o fluxo de exames periódicos quando houver uso operacional real;
-- manter rollback SQL pronto durante o período de observação;
-- seguir para a próxima função trigger-only somente em ciclo separado.
+Objetivo recomendado após a auditoria de `criar_usuario`:
+
+- criar plano próprio de restrição para `criar_usuario`;
+- validar o fluxo atual `criar-usuario-manual` antes de qualquer `REVOKE`;
+- priorizar avaliação de `anon` e `PUBLIC`;
+- tratar `authenticated` somente após confirmar ausência de uso legado externo.
 
 ## O que não mexer agora
 

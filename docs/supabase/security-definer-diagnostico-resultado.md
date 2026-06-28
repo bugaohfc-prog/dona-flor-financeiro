@@ -181,6 +181,8 @@ Auditar primeiro a função `df_auditoria_admin_sanitize_destinatario_alerta`, s
 
 Status em 2026-06-28: relatório específico criado em `docs/supabase/funcoes/df_auditoria_admin_sanitize_destinatario_alerta.md`.
 
+Status em 2026-06-28: plano de validação/rollback para restrição futura criado em `docs/supabase/funcoes/df_auditoria_admin_sanitize_destinatario_alerta-plano-restricao.md`.
+
 Objetivo do próximo ciclo:
 
 - confirmar se a função é usada apenas pelo trigger `trg_df_destinatarios_alertas_auditoria_admin`;

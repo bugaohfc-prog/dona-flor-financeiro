@@ -28,6 +28,8 @@ Não foi encontrada evidência de chamada direta pelo app via RPC, nem referênc
 
 Recomendação desta auditoria: a função é candidata forte para restringir `EXECUTE` público em ciclo futuro, começando por `anon` e `authenticated`, desde que o ciclo futuro valide o comportamento do trigger após a restrição e tenha rollback pronto.
 
+Plano de validação e rollback para uma restrição futura: `docs/supabase/funcoes/df_auditoria_admin_sanitize_destinatario_alerta-plano-restricao.md`.
+
 ## Evidências do catálogo Postgres
 
 Metadados consultados por `SELECT` em catálogos Postgres:

@@ -31,6 +31,8 @@ O Supabase Advisor ainda lista esta função nos alertas `anon_security_definer_
 
 Recomendação desta auditoria: candidata a restringir `EXECUTE` público em ciclo futuro, começando por validação funcional transacional de `INSERT`/`UPDATE` em `df_folha_lancamentos` e rollback pronto.
 
+Plano de validação e rollback para uma restrição futura: `docs/supabase/funcoes/df_folha_lancamentos_validar_vinculos-plano-restricao.md`.
+
 ## Evidências do catálogo Postgres
 
 Metadados consultados por `SELECT` em catálogos Postgres:

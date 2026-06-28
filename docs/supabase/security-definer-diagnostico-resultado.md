@@ -189,6 +189,8 @@ Status em 2026-06-28: `EXECUTE` de `PUBLIC` também foi revogado para `df_audito
 
 Status em 2026-06-28: relatório específico criado para `df_folha_lancamentos_validar_vinculos` em `docs/supabase/funcoes/df_folha_lancamentos_validar_vinculos.md`. A função foi classificada como trigger-only/validação interna, sem evidência de RPC direta no app, sem uso em policies/views/outras funções, e candidata a restrição futura de `EXECUTE` para `PUBLIC`, `anon` e `authenticated` após validação funcional transacional.
 
+Status em 2026-06-28: plano de validação/rollback para restrição futura de `df_folha_lancamentos_validar_vinculos` criado em `docs/supabase/funcoes/df_folha_lancamentos_validar_vinculos-plano-restricao.md`. O plano mantém a restrição para ciclo futuro autorizado, com testes antes/depois em transação com `ROLLBACK`.
+
 Objetivo recomendado após a auditoria de `df_folha_lancamentos_validar_vinculos`:
 
 - preparar matriz de validação e rollback para eventual restrição futura;

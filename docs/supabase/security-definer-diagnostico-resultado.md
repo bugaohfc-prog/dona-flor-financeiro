@@ -220,6 +220,8 @@ Status em 2026-06-28: Fase 1 da restrição de `login_usuario` executada. `EXECU
 
 Status em 2026-06-29: `criar_usuario` e `login_usuario` foram mantidas em observação e a frente de pontos críticos avançou para auditoria específica de `handle_new_user`, documentada em `docs/supabase/funcoes/handle_new_user.md`. A função foi classificada como alta por ser `SECURITY DEFINER`, sem `search_path`, executável por `PUBLIC`, `anon` e `authenticated`, usada pelo trigger `on_auth_user_created` em `auth.users` e responsável por inserir `new.id` em `public.profiles`. Não houve alteração no Supabase neste ciclo.
 
+Status em 2026-06-29: plano de validação/rollback para restrição futura de `handle_new_user` criado em `docs/supabase/funcoes/handle_new_user-plano-restricao.md`. O plano propõe Fase 1 para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated` temporariamente, e Fase 2 para avaliar `authenticated` somente após validar que o trigger `on_auth_user_created` continua criando `profiles` corretamente e que não há chamada externa de `/rpc/handle_new_user`.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

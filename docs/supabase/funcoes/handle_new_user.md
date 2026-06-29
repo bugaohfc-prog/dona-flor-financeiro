@@ -26,6 +26,8 @@ Classificação desta auditoria: **alto**.
 
 Recomendação segura: manter temporariamente neste ciclo. Preparar plano próprio antes de qualquer `REVOKE`, priorizando restrição de `PUBLIC` e `anon` se confirmado que a execução do trigger de Auth não depende desses grants. Manter `authenticated` temporariamente até validação operacional do fluxo de criação de usuário. Não alterar trigger, Auth ou `search_path` no mesmo ciclo de grants.
 
+Plano de validação e rollback para restrição futura: `docs/supabase/funcoes/handle_new_user-plano-restricao.md`.
+
 ## Definição funcional em linguagem simples
 
 A função roda quando um novo registro é inserido em `auth.users`.
@@ -269,7 +271,7 @@ Não executar sem necessidade real de rollback ou ciclo autorizado.
 
 ## Próximos passos
 
-- Criar plano de restrição específico para `handle_new_user`.
+- Usar o plano em `docs/supabase/funcoes/handle_new_user-plano-restricao.md` como matriz antes/depois para qualquer ciclo futuro de `REVOKE`.
 - Validar fluxo de criação de usuário/profile sem alterar Auth neste ciclo.
 - Confirmar que o trigger `on_auth_user_created` continua sendo a única dependência direta.
 - Não alterar grants, trigger, função, Auth, senha ou `search_path` sem ciclo próprio.

@@ -31,6 +31,103 @@ Achado importante da auditoria anterior:
 - ainda pode existir uso legado externo fora do código versionado;
 - por prudência, `authenticated` deve ser mantido até validação completa.
 
+## Resultado da execução da Fase 1
+
+Data da execução: 2026-06-29
+
+SQL executado:
+
+```sql
+revoke execute on function public.get_empresa_usuario() from anon;
+revoke execute on function public.get_empresa_usuario() from public;
+```
+
+Não foi executado `REVOKE` de `authenticated`.
+
+### Diagnóstico antes
+
+| Role | EXECUTE efetivo antes |
+| --- | --- |
+| `PUBLIC` | sim |
+| `anon` | sim |
+| `authenticated` | sim |
+| `postgres` | sim |
+| `service_role` | sim |
+
+ACL antes:
+
+```text
+{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+```
+
+Função antes:
+
+- assinatura: `public.get_empresa_usuario()`;
+- retorno: `uuid`;
+- linguagem: `sql`;
+- owner: `postgres`;
+- `SECURITY DEFINER`: `true`;
+- `search_path`: `public`;
+- hash da definição: `140380edd9b1c5fbcc02c2986a417712`.
+
+Uso no código confirmado antes:
+
+- não há chamada versionada da RPC em `src`, `supabase/functions` ou `scripts`;
+- `src/services/tenantService.js` carrega tenant por leitura direta de `df_usuarios_empresas`, não por `get_empresa_usuario`.
+
+### Validação antes
+
+- Login normal: não validado operacionalmente por falta de sessão/credencial real neste ambiente.
+- Carregamento de tenant/empresa: não validado operacionalmente por falta de sessão real neste ambiente.
+- Integridade de dados: não foi executado `INSERT`, `UPDATE` ou `DELETE` em `df_usuarios_empresas` neste ciclo.
+- Contagem de `df_usuarios_empresas` antes: `6`.
+- Decisão: prosseguir foi considerado seguro porque a mudança preserva `authenticated` e não há uso versionado da RPC no app atual.
+
+### Diagnóstico depois
+
+| Role | EXECUTE efetivo depois |
+| --- | --- |
+| `PUBLIC` | não |
+| `anon` | não |
+| `authenticated` | sim |
+| `postgres` | sim |
+| `service_role` | sim |
+
+ACL depois:
+
+```text
+{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+```
+
+Função depois:
+
+- assinatura preservada: `public.get_empresa_usuario()`;
+- retorno preservado: `uuid`;
+- linguagem preservada: `sql`;
+- owner preservado: `postgres`;
+- `SECURITY DEFINER` preservado: `true`;
+- `search_path` preservado: `public`;
+- hash da definição preservado: `140380edd9b1c5fbcc02c2986a417712`.
+
+### Validação depois
+
+- Login normal: não validado operacionalmente por falta de sessão/credencial real neste ambiente.
+- Carregamento de tenant/empresa: não validado operacionalmente por falta de sessão real neste ambiente.
+- Integridade de dados: não foi executado `INSERT`, `UPDATE` ou `DELETE` em `df_usuarios_empresas` neste ciclo.
+- Contagem de `df_usuarios_empresas` depois: `6`.
+- Advisor: consultado. `get_empresa_usuario` não apareceu mais no alerta `anon_security_definer_function_executable`; permaneceu no alerta `authenticated_security_definer_function_executable`, conforme esperado porque `authenticated` foi mantido.
+
+### Rollback operacional
+
+Se houver falha operacional relacionada a login ou carregamento de tenant/empresa, executar:
+
+```sql
+grant execute on function public.get_empresa_usuario() to public;
+grant execute on function public.get_empresa_usuario() to anon;
+```
+
+Não executar `GRANT` para `authenticated` como rollback padrão, pois `authenticated` não foi revogado neste ciclo.
+
 ## Estratégia em fases
 
 ### Fase 1 - reduzir exposição pública mantendo `authenticated`

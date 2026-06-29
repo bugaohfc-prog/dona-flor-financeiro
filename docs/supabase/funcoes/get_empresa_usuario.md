@@ -180,13 +180,13 @@ Justificativa:
 Recomendação desta auditoria:
 
 - **manter temporariamente** até plano de restrição próprio;
-- **candidata a restringir `anon`**;
-- **candidata a restringir `PUBLIC`**;
+- **`anon` restrito na Fase 1 em 2026-06-29**;
+- **`PUBLIC` restrito na Fase 1 em 2026-06-29**;
 - **manter `authenticated` inicialmente**, por prudência com possível legado externo;
 - **avaliar restringir `authenticated` somente após plano próprio**, checagem operacional e confirmação de ausência de uso externo;
 - **precisa plano próprio** antes de qualquer alteração.
 
-Não executar `REVOKE` neste ciclo.
+Status após Fase 1: `PUBLIC` e `anon` ficaram sem `EXECUTE` efetivo; `authenticated`, `postgres` e `service_role` foram preservados.
 
 ## SQL futuro proposto, comentado
 
@@ -231,14 +231,15 @@ Se `authenticated` for tratado em ciclo posterior:
 
 Plano de restrição específico criado em `docs/supabase/funcoes/get_empresa_usuario-plano-restricao.md`.
 
-1. Reconfirmar que o app atual não chama a RPC.
-2. Validar login e carregamento de tenant pelo fluxo atual de `tenantService.js`.
-3. Em ciclo curto futuro, avaliar remover `anon` e `PUBLIC`, mantendo `authenticated`.
-4. Não planejar revogar `authenticated` agora; isso só deve ser avaliado após confirmação completa do fluxo ou refatoração específica.
+Status da Fase 1 registrado no plano: `EXECUTE` foi revogado de `anon` e `PUBLIC`, mantendo `authenticated`.
+
+1. Monitorar login e carregamento de tenant pelo fluxo atual de `tenantService.js`.
+2. Não planejar revogar `authenticated` agora; isso só deve ser avaliado após confirmação completa do fluxo ou refatoração específica.
+3. Manter rollback operacional pronto para `PUBLIC` e `anon` caso apareça falha relacionada.
 
 ## O que não mexer agora
 
-- Não revogar `anon`, `PUBLIC` ou `authenticated` neste ciclo.
+- Não revogar `authenticated`.
 - Não alterar a função.
 - Não alterar Auth, senha, RLS, policy, view ou índice.
 - Não alterar frontend, service, hook ou Edge Function.

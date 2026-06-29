@@ -222,6 +222,8 @@ Status em 2026-06-29: `criar_usuario` e `login_usuario` foram mantidas em observ
 
 Status em 2026-06-29: plano de validação/rollback para restrição futura de `handle_new_user` criado em `docs/supabase/funcoes/handle_new_user-plano-restricao.md`. O plano propõe Fase 1 para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated` temporariamente, e Fase 2 para avaliar `authenticated` somente após validar que o trigger `on_auth_user_created` continua criando `profiles` corretamente e que não há chamada externa de `/rpc/handle_new_user`.
 
+Status em 2026-06-29: Fase 1 da restrição de `handle_new_user` executada. `EXECUTE` foi revogado de `anon` e `PUBLIC`; `authenticated` foi mantido com `EXECUTE`; `postgres` e `service_role` foram preservados; hash da definição permaneceu `63547f8592621a804d25a0111d8389d2`; o trigger `on_auth_user_created` permaneceu ativo (`O`) em `auth.users`; não houve alteração de função, trigger, Auth, senha, usuário, profiles, RLS, policy, view, índice, Edge Function, frontend, service ou hook. O Advisor deixou de listar `handle_new_user` no alerta `anon_security_definer_function_executable`, mas manteve `authenticated_security_definer_function_executable` e `function_search_path_mutable`.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

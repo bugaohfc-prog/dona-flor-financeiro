@@ -10,9 +10,9 @@ Função alvo: `public.handle_new_user()`
 
 ## Escopo
 
-Este documento prepara um ciclo futuro de restrição de `EXECUTE` da função `public.handle_new_user()`.
+Este documento preparou a restrição de `EXECUTE` da função `public.handle_new_user()` e agora registra a execução da Fase 1.
 
-Este ciclo é somente documentação. Não foram executados `REVOKE`, `GRANT`, `ALTER FUNCTION`, alteração de trigger, Auth, senha, Edge Function, frontend, service, hook, RLS/policy/view/índice, migration, alteração de dados ou outras permissões.
+Neste ciclo foram executados apenas os `REVOKE` autorizados para `anon` e `PUBLIC`. Não foi executado `REVOKE` de `authenticated`, `GRANT`, `ALTER FUNCTION`, alteração de trigger, Auth, senha, usuário, Edge Function, frontend, service, hook, RLS/policy/view/índice, migration, alteração persistente de dados ou outras permissões.
 
 ## Resumo executivo
 
@@ -21,6 +21,113 @@ A função `handle_new_user` é `SECURITY DEFINER`, owner `postgres`, sem `searc
 Ela insere `new.id` em `public.profiles(id)` com `on conflict (id) do nothing`. Não há evidência de chamada RPC direta pelo app, Edge Functions ou scripts versionados.
 
 Recomendação deste plano: restringir em fases, sem misturar grants com alteração de trigger, Auth, senha ou `search_path`.
+
+Status da Fase 1 em 2026-06-29: executada com sucesso. `EXECUTE` foi revogado de `anon` e `PUBLIC`; `authenticated` foi mantido com `EXECUTE`; `postgres` e `service_role` foram preservados. Não houve rollback.
+
+## Resultado da Fase 1
+
+### Diagnóstico antes
+
+Consulta ao catálogo Postgres antes da restrição:
+
+| Item | Resultado antes |
+| --- | --- |
+| ACL | `{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}` |
+| `PUBLIC` com `EXECUTE` efetivo | `true` |
+| `anon` com `EXECUTE` efetivo | `true` |
+| `authenticated` com `EXECUTE` efetivo | `true` |
+| `postgres` com `EXECUTE` | `true` |
+| `service_role` com `EXECUTE` | `true` |
+| `SECURITY DEFINER` | `true` |
+| `search_path` | não configurado |
+| Hash da definição | `63547f8592621a804d25a0111d8389d2` |
+
+Trigger antes:
+
+| Item | Resultado antes |
+| --- | --- |
+| Trigger | `on_auth_user_created` |
+| Tabela | `auth.users` |
+| Evento | `AFTER INSERT` |
+| Estado | `O` |
+| Definição | `CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()` |
+
+Evidência no código versionado:
+
+- sem chamada direta da RPC `handle_new_user` em `src`, `supabase/functions` e `scripts`;
+- sem uso versionado de `/rpc/handle_new_user`;
+- as ocorrências encontradas estão em documentação e SQL diagnóstico.
+
+Validação funcional antes:
+
+- não foi criado usuário real de teste em produção;
+- não foi criada linha de teste em `profiles`;
+- a validação operacional foi limitada à confirmação do trigger ativo e da definição da função;
+- nenhum dado, usuário, senha, token ou credencial foi alterado ou registrado.
+
+Advisor antes:
+
+- `handle_new_user` aparecia em `anon_security_definer_function_executable`;
+- `handle_new_user` aparecia em `authenticated_security_definer_function_executable`;
+- `handle_new_user` permanecia em `function_search_path_mutable`.
+
+### SQL executado
+
+```sql
+revoke execute on function public.handle_new_user() from anon;
+revoke execute on function public.handle_new_user() from public;
+```
+
+Não foi executado `REVOKE` de `authenticated`.
+
+### Diagnóstico depois
+
+Consulta ao catálogo Postgres depois da restrição:
+
+| Item | Resultado depois |
+| --- | --- |
+| ACL | `{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}` |
+| `PUBLIC` com `EXECUTE` efetivo | `false` |
+| `anon` com `EXECUTE` efetivo | `false` |
+| `authenticated` com `EXECUTE` efetivo | `true` |
+| `postgres` com `EXECUTE` | `true` |
+| `service_role` com `EXECUTE` | `true` |
+| `SECURITY DEFINER` | `true` |
+| `search_path` | não configurado |
+| Hash da definição | `63547f8592621a804d25a0111d8389d2` |
+
+Trigger depois:
+
+| Item | Resultado depois |
+| --- | --- |
+| Trigger | `on_auth_user_created` |
+| Tabela | `auth.users` |
+| Evento | `AFTER INSERT` |
+| Estado | `O` |
+| Definição | `CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()` |
+
+Leitura: a Fase 1 atingiu o objetivo. `PUBLIC` e `anon` ficaram sem `EXECUTE` efetivo; `authenticated` foi mantido temporariamente conforme planejado.
+
+Validação funcional depois:
+
+- não foi criado usuário real de teste em produção;
+- não foi criada linha de teste em `profiles`;
+- trigger `on_auth_user_created` permaneceu ativo em `auth.users`;
+- função permaneceu intacta pelo hash;
+- não houve alteração de Auth, trigger, usuário, `profiles`, RLS ou policy.
+
+Advisor depois:
+
+- `handle_new_user` deixou de aparecer em `anon_security_definer_function_executable`;
+- `handle_new_user` permaneceu em `authenticated_security_definer_function_executable`, como esperado porque `authenticated` foi preservado na Fase 1;
+- `handle_new_user` permaneceu em `function_search_path_mutable`, porque não houve `ALTER FUNCTION`.
+
+Rollback operacional preparado, mas não executado:
+
+```sql
+-- grant execute on function public.handle_new_user() to public;
+-- grant execute on function public.handle_new_user() to anon;
+```
 
 ## Riscos específicos
 
@@ -177,9 +284,9 @@ Não executar sem necessidade real de rollback ou ciclo autorizado.
 
 ## Próximo ciclo recomendado
 
-Executar somente a Fase 1 em ciclo curto, se confirmado que não há uso externo de `/rpc/handle_new_user`: revogar `anon` e `PUBLIC`, manter `authenticated`, validar trigger/profile e consultar Advisor.
+Monitorar a Fase 1 e confirmar se existe qualquer uso externo de `/rpc/handle_new_user`.
 
-Não avançar para Fase 2 no mesmo ciclo sem decisão explícita após monitoramento.
+Depois do monitoramento, planejar a Fase 2 para avaliar `authenticated`. Não executar a Fase 2 sem novo ciclo autorizado, validação operacional do trigger/profile e rollback imediato preparado.
 
 ## Rollback documental
 

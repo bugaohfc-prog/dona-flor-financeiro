@@ -28,6 +28,8 @@ Recomendação segura: manter temporariamente neste ciclo. Preparar plano própr
 
 Plano de validação e rollback para restrição futura: `docs/supabase/funcoes/handle_new_user-plano-restricao.md`.
 
+Status em 2026-06-29: Fase 1 executada. `EXECUTE` foi revogado de `anon` e `PUBLIC`; `authenticated` foi mantido temporariamente; `postgres` e `service_role` foram preservados. O trigger `on_auth_user_created` permaneceu ativo em `auth.users`. O Advisor deixou de listar `handle_new_user` no alerta de `anon`, mas manteve o alerta de `authenticated` e o alerta de `search_path`, conforme esperado.
+
 ## Definição funcional em linguagem simples
 
 A função roda quando um novo registro é inserido em `auth.users`.
@@ -278,8 +280,8 @@ Não executar sem necessidade real de rollback ou ciclo autorizado.
 
 ## Estado final deste ciclo
 
-- Banco: não alterado.
-- Grants: não alterados.
+- Banco: alterado apenas em grants da função `handle_new_user`.
+- Grants: `EXECUTE` revogado de `anon` e `PUBLIC`; `authenticated`, `postgres` e `service_role` preservados.
 - Função: não alterada.
 - Trigger: não alterado.
 - Autenticação/senhas: não alteradas.
@@ -288,3 +290,10 @@ Não executar sem necessidade real de rollback ou ciclo autorizado.
 - Dados: não alterados.
 - Edge Function/frontend/service/hook: não alterados.
 - Auth/secrets/GitHub Actions/envio real: não alterados.
+
+Rollback operacional da Fase 1, se necessário:
+
+```sql
+grant execute on function public.handle_new_user() to public;
+grant execute on function public.handle_new_user() to anon;
+```

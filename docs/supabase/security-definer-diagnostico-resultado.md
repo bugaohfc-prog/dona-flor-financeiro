@@ -240,6 +240,8 @@ Status em 2026-06-29: as funções críticas já tratadas seguem em observação
 
 Status em 2026-06-29: plano de validação/rollback para restrição futura de `is_admin` criado em `docs/supabase/funcoes/is_admin-plano-restricao.md`. O plano propõe Fase 1 para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated`, porque a função calcula status admin por `auth.uid()` e ainda precisa de validação operacional completa dos fluxos administrativos. A Fase 2 não prevê revogar `authenticated` agora; isso só deve ser avaliado se nenhum fluxo do app/RLS/policy depender diretamente da função ou após refatoração específica. Não houve alteração no Supabase neste ciclo.
 
+Status em 2026-06-29: Fase 1 da restrição de `is_admin` executada. `EXECUTE` foi revogado de `anon` e `PUBLIC`; `authenticated` foi mantido com `EXECUTE`; `postgres` e `service_role` foram preservados; hash da definição permaneceu `c3007d22aaf6abfbf756dba7debffdb6`; não houve alteração de função, Auth, senha, usuário, RLS, policy, view, índice, Edge Function, frontend, service ou hook; não houve alteração de dados em `df_usuarios_empresas`. O Advisor deixou de listar `is_admin` no alerta `anon_security_definer_function_executable`, mas manteve `authenticated_security_definer_function_executable`, conforme esperado.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

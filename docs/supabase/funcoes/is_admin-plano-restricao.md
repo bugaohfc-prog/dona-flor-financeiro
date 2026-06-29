@@ -33,6 +33,105 @@ Achado importante da auditoria anterior:
 - ainda pode existir uso legado externo fora do código versionado;
 - por prudência, `authenticated` deve ser mantido até validação completa.
 
+## Resultado da execução da Fase 1
+
+Data da execução: 2026-06-29
+
+SQL executado:
+
+```sql
+revoke execute on function public.is_admin() from anon;
+revoke execute on function public.is_admin() from public;
+```
+
+Não foi executado `REVOKE` de `authenticated`.
+
+### Diagnóstico antes
+
+| Role | EXECUTE efetivo antes |
+| --- | --- |
+| `PUBLIC` | sim |
+| `anon` | sim |
+| `authenticated` | sim |
+| `postgres` | sim |
+| `service_role` | sim |
+
+ACL antes:
+
+```text
+{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+```
+
+Função antes:
+
+- assinatura: `public.is_admin()`;
+- retorno: `boolean`;
+- linguagem: `sql`;
+- owner: `postgres`;
+- `SECURITY DEFINER`: `true`;
+- `search_path`: `public`;
+- hash da definição: `c3007d22aaf6abfbf756dba7debffdb6`.
+
+Uso no código e policies antes:
+
+- não há chamada versionada da RPC em `src`, `supabase/functions` ou `scripts`;
+- busca textual em policies/RLS retornou `0` policies usando `is_admin`.
+
+### Validação antes
+
+- Login normal: não validado operacionalmente por falta de sessão/credencial real neste ambiente.
+- Áreas administrativas: não validadas operacionalmente por falta de sessão real neste ambiente.
+- Permissões Admin/Master: não validadas operacionalmente por falta de sessão real neste ambiente.
+- Integridade de dados: não foi executado `INSERT`, `UPDATE` ou `DELETE` em `df_usuarios_empresas` neste ciclo.
+- Contagem de `df_usuarios_empresas` antes: `6`.
+- Decisão: prosseguir foi considerado seguro porque a mudança preserva `authenticated`, não há uso versionado da RPC no app atual e não há policy/RLS usando a função.
+
+### Diagnóstico depois
+
+| Role | EXECUTE efetivo depois |
+| --- | --- |
+| `PUBLIC` | não |
+| `anon` | não |
+| `authenticated` | sim |
+| `postgres` | sim |
+| `service_role` | sim |
+
+ACL depois:
+
+```text
+{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+```
+
+Função depois:
+
+- assinatura preservada: `public.is_admin()`;
+- retorno preservado: `boolean`;
+- linguagem preservada: `sql`;
+- owner preservado: `postgres`;
+- `SECURITY DEFINER` preservado: `true`;
+- `search_path` preservado: `public`;
+- hash da definição preservado: `c3007d22aaf6abfbf756dba7debffdb6`.
+
+### Validação depois
+
+- Login normal: não validado operacionalmente por falta de sessão/credencial real neste ambiente.
+- Áreas administrativas: não validadas operacionalmente por falta de sessão real neste ambiente.
+- Permissões Admin/Master: não validadas operacionalmente por falta de sessão real neste ambiente.
+- Integridade de dados: não foi executado `INSERT`, `UPDATE` ou `DELETE` em `df_usuarios_empresas` neste ciclo.
+- Contagem de `df_usuarios_empresas` depois: `6`.
+- Advisor: consultado. `is_admin` não apareceu mais no alerta `anon_security_definer_function_executable`; permaneceu no alerta `authenticated_security_definer_function_executable`, conforme esperado porque `authenticated` foi mantido.
+
+### Rollback operacional
+
+Se houver falha operacional relacionada a login, áreas administrativas ou permissões, executar:
+
+```sql
+grant execute on function public.is_admin() to public;
+grant execute on function public.is_admin() to anon;
+```
+
+Não executar `GRANT` para `authenticated` como rollback padrão, pois `authenticated` não foi revogado neste ciclo.
+
 ## Estratégia em fases
 
 ### Fase 1 - reduzir exposição pública mantendo `authenticated`

@@ -218,6 +218,8 @@ Status em 2026-06-28: plano de validação/rollback para restrição futura de `
 
 Status em 2026-06-28: Fase 1 da restrição de `login_usuario` executada. `EXECUTE` foi revogado de `anon` e `PUBLIC`; `authenticated` foi mantido com `EXECUTE`; `postgres` e `service_role` foram preservados; hash da definição permaneceu `a096f36a7170f162bf18c223e121a9b6`; não houve alteração de função, Auth, senha, usuário, RLS, policy, view, índice, Edge Function, frontend, service ou hook. O Advisor deixou de listar `login_usuario` no alerta `anon_security_definer_function_executable`, mas manteve `authenticated_security_definer_function_executable` e `function_search_path_mutable`.
 
+Status em 2026-06-29: `criar_usuario` e `login_usuario` foram mantidas em observação e a frente de pontos críticos avançou para auditoria específica de `handle_new_user`, documentada em `docs/supabase/funcoes/handle_new_user.md`. A função foi classificada como alta por ser `SECURITY DEFINER`, sem `search_path`, executável por `PUBLIC`, `anon` e `authenticated`, usada pelo trigger `on_auth_user_created` em `auth.users` e responsável por inserir `new.id` em `public.profiles`. Não houve alteração no Supabase neste ciclo.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

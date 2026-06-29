@@ -28,6 +28,8 @@ Recomendação segura: manter temporariamente neste ciclo. Preparar plano própr
 
 Plano de validação e rollback para restrição futura: `docs/supabase/funcoes/login_usuario-plano-restricao.md`.
 
+Status em 2026-06-28: Fase 1 executada. `EXECUTE` foi revogado de `anon` e `PUBLIC`; `authenticated` foi mantido temporariamente; `postgres` e `service_role` foram preservados. O Advisor deixou de listar `login_usuario` no alerta de `anon`, mas manteve o alerta de `authenticated` e o alerta de `search_path`, conforme esperado.
+
 ## Assinatura da função
 
 | Campo | Valor |
@@ -287,8 +289,8 @@ Não executar sem necessidade real de rollback ou ciclo autorizado.
 
 ## Estado final deste ciclo
 
-- Banco: não alterado.
-- Grants: não alterados.
+- Banco: alterado apenas em grants da função `login_usuario`.
+- Grants: `EXECUTE` revogado de `anon` e `PUBLIC`; `authenticated`, `postgres` e `service_role` preservados.
 - Função: não alterada.
 - Autenticação/senhas: não alteradas.
 - RLS/policies: não alteradas.
@@ -296,3 +298,10 @@ Não executar sem necessidade real de rollback ou ciclo autorizado.
 - Dados: não alterados.
 - Edge Function/frontend/service/hook: não alterados.
 - Auth/secrets/GitHub Actions/envio real: não alterados.
+
+Rollback operacional da Fase 1, se necessário:
+
+```sql
+grant execute on function public.login_usuario(text, text) to public;
+grant execute on function public.login_usuario(text, text) to anon;
+```

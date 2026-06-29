@@ -232,6 +232,8 @@ Status em 2026-06-29: Fase 1 da restrição de `vincular_usuario_logado` executa
 
 Status em 2026-06-29: `criar_usuario`, `login_usuario`, `handle_new_user` e `vincular_usuario_logado` seguem em observação com `authenticated` mantido, e a frente de pontos críticos avançou para auditoria específica de `get_empresa_usuario`, documentada em `docs/supabase/funcoes/get_empresa_usuario.md`. A função foi classificada como alta por ser `SECURITY DEFINER`, executável por `PUBLIC`, `anon` e `authenticated`, retornar `empresa_id` a partir de `public.df_usuarios_empresas` com filtro `user_id = auth.uid()`, e não ter evidência de chamada direta pelo app atual. A recomendação inicial é preparar plano futuro para avaliar restrição de `anon` e `PUBLIC`, mantendo `authenticated` até confirmar ausência de uso legado externo. Não houve alteração no Supabase neste ciclo.
 
+Status em 2026-06-29: plano de validação/rollback para restrição futura de `get_empresa_usuario` criado em `docs/supabase/funcoes/get_empresa_usuario-plano-restricao.md`. O plano propõe Fase 1 para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated`, porque a função resolve `empresa_id` por `auth.uid()` e ainda precisa de validação operacional completa do login/carregamento de tenant. A Fase 2 não prevê revogar `authenticated` agora; isso só deve ser avaliado se nenhum fluxo depender diretamente da RPC ou após refatoração específica. Não houve alteração no Supabase neste ciclo.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

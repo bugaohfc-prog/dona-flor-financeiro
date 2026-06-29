@@ -229,11 +229,12 @@ Se `authenticated` for tratado em ciclo posterior:
 
 ## Próximos passos
 
-1. Criar plano de restrição específico para `get_empresa_usuario`.
-2. Reconfirmar que o app atual não chama a RPC.
-3. Validar login e carregamento de tenant pelo fluxo atual de `tenantService.js`.
-4. Em ciclo curto futuro, avaliar remover `anon` e `PUBLIC`, mantendo `authenticated`.
-5. Só avaliar `authenticated` depois de monitoramento e confirmação de ausência de uso legado externo.
+Plano de restrição específico criado em `docs/supabase/funcoes/get_empresa_usuario-plano-restricao.md`.
+
+1. Reconfirmar que o app atual não chama a RPC.
+2. Validar login e carregamento de tenant pelo fluxo atual de `tenantService.js`.
+3. Em ciclo curto futuro, avaliar remover `anon` e `PUBLIC`, mantendo `authenticated`.
+4. Não planejar revogar `authenticated` agora; isso só deve ser avaliado após confirmação completa do fluxo ou refatoração específica.
 
 ## O que não mexer agora
 

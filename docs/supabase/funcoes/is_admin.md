@@ -235,12 +235,13 @@ Se `authenticated` for tratado em ciclo posterior:
 
 ## Próximos passos
 
-1. Criar plano de restrição específico para `is_admin`.
-2. Reconfirmar que o app atual não chama a RPC.
-3. Reconfirmar que nenhuma policy/RLS depende da função.
-4. Validar fluxos administrativos atuais que usam `df_usuario_eh_admin`, `is_master` e leitura direta de vínculo.
-5. Em ciclo curto futuro, avaliar remover `anon` e `PUBLIC`, mantendo `authenticated`.
-6. Só avaliar `authenticated` depois de monitoramento e confirmação de ausência de uso legado externo.
+Plano de restrição específico criado em `docs/supabase/funcoes/is_admin-plano-restricao.md`.
+
+1. Reconfirmar que o app atual não chama a RPC.
+2. Reconfirmar que nenhuma policy/RLS depende da função.
+3. Validar fluxos administrativos atuais que usam `df_usuario_eh_admin`, `is_master` e leitura direta de vínculo.
+4. Em ciclo curto futuro, avaliar remover `anon` e `PUBLIC`, mantendo `authenticated`.
+5. Não planejar revogar `authenticated` agora; isso só deve ser avaliado após confirmação completa do fluxo ou refatoração específica.
 
 ## O que não mexer agora
 

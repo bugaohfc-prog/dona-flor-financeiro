@@ -238,6 +238,8 @@ Status em 2026-06-29: Fase 1 da restrição de `get_empresa_usuario` executada. 
 
 Status em 2026-06-29: as funções críticas já tratadas seguem em observação com `authenticated` mantido, e a frente avançou para helpers críticos de permissão com auditoria específica de `is_admin`, documentada em `docs/supabase/funcoes/is_admin.md`. A função foi classificada como alta por ser `SECURITY DEFINER`, executável por `PUBLIC`, `anon` e `authenticated`, retornar booleano de status admin a partir de `public.df_usuarios_empresas` com filtro `user_id = auth.uid()` e `perfil = 'admin'`, e não ter evidência de chamada direta pelo app atual nem uso textual em policies. A recomendação inicial é preparar plano futuro para avaliar restrição de `anon` e `PUBLIC`, mantendo `authenticated` até confirmar ausência de uso legado externo. Não houve alteração no Supabase neste ciclo.
 
+Status em 2026-06-29: plano de validação/rollback para restrição futura de `is_admin` criado em `docs/supabase/funcoes/is_admin-plano-restricao.md`. O plano propõe Fase 1 para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated`, porque a função calcula status admin por `auth.uid()` e ainda precisa de validação operacional completa dos fluxos administrativos. A Fase 2 não prevê revogar `authenticated` agora; isso só deve ser avaliado se nenhum fluxo do app/RLS/policy depender diretamente da função ou após refatoração específica. Não houve alteração no Supabase neste ciclo.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

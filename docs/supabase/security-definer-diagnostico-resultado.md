@@ -224,6 +224,8 @@ Status em 2026-06-29: plano de validação/rollback para restrição futura de `
 
 Status em 2026-06-29: Fase 1 da restrição de `handle_new_user` executada. `EXECUTE` foi revogado de `anon` e `PUBLIC`; `authenticated` foi mantido com `EXECUTE`; `postgres` e `service_role` foram preservados; hash da definição permaneceu `63547f8592621a804d25a0111d8389d2`; o trigger `on_auth_user_created` permaneceu ativo (`O`) em `auth.users`; não houve alteração de função, trigger, Auth, senha, usuário, profiles, RLS, policy, view, índice, Edge Function, frontend, service ou hook. O Advisor deixou de listar `handle_new_user` no alerta `anon_security_definer_function_executable`, mas manteve `authenticated_security_definer_function_executable` e `function_search_path_mutable`.
 
+Status em 2026-06-29: `criar_usuario`, `login_usuario` e `handle_new_user` foram mantidas em observação e a frente de pontos críticos avançou para auditoria específica de `vincular_usuario_logado`, documentada em `docs/supabase/funcoes/vincular_usuario_logado.md`. A função foi classificada como alta por ser `SECURITY DEFINER`, executável por `PUBLIC`, `anon` e `authenticated`, atualizar `public.df_usuarios_empresas.user_id` com `auth.uid()` quando `email = auth.email()` e ser chamada diretamente pelo app após login. A recomendação inicial é manter `authenticated`, por dependência atual do app, e preparar ciclo futuro para avaliar restrição de `anon` e `PUBLIC`. Não houve alteração no Supabase neste ciclo.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

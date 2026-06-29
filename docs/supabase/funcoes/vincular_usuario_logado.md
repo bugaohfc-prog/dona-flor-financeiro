@@ -225,10 +225,11 @@ Fase 2, somente após substituir ou validar o fluxo do app:
 
 ## Próximos passos
 
-1. Criar plano de restrição específico para `vincular_usuario_logado`.
-2. Validar login atual e sincronização de empresa antes de qualquer `REVOKE`.
-3. Em ciclo curto futuro, avaliar remover `anon` e `PUBLIC`, mantendo `authenticated`.
-4. Tratar `authenticated` apenas em fase posterior, se o fluxo de vínculo for redesenhado ou se for confirmado que a RPC não é mais necessária.
+Plano de restrição específico criado em `docs/supabase/funcoes/vincular_usuario_logado-plano-restricao.md`.
+
+1. Validar login atual e sincronização de empresa antes de qualquer `REVOKE`.
+2. Em ciclo curto futuro, avaliar remover `anon` e `PUBLIC`, mantendo `authenticated`.
+3. Não planejar revogar `authenticated` agora; isso só deve ser avaliado se o fluxo de vínculo for redesenhado ou se a chamada RPC for removida do app.
 
 ## O que não mexer agora
 

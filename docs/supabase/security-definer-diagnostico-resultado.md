@@ -226,6 +226,8 @@ Status em 2026-06-29: Fase 1 da restrição de `handle_new_user` executada. `EXE
 
 Status em 2026-06-29: `criar_usuario`, `login_usuario` e `handle_new_user` foram mantidas em observação e a frente de pontos críticos avançou para auditoria específica de `vincular_usuario_logado`, documentada em `docs/supabase/funcoes/vincular_usuario_logado.md`. A função foi classificada como alta por ser `SECURITY DEFINER`, executável por `PUBLIC`, `anon` e `authenticated`, atualizar `public.df_usuarios_empresas.user_id` com `auth.uid()` quando `email = auth.email()` e ser chamada diretamente pelo app após login. A recomendação inicial é manter `authenticated`, por dependência atual do app, e preparar ciclo futuro para avaliar restrição de `anon` e `PUBLIC`. Não houve alteração no Supabase neste ciclo.
 
+Status em 2026-06-29: plano de validação/rollback para restrição futura de `vincular_usuario_logado` criado em `docs/supabase/funcoes/vincular_usuario_logado-plano-restricao.md`. O plano propõe Fase 1 para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated`, porque o app chama a RPC em `Login.jsx` e `tenantService.js`. A Fase 2 não prevê revogar `authenticated` agora; isso só deve ser avaliado se a chamada RPC for removida/refatorada em ciclo próprio. Não houve alteração no Supabase neste ciclo.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

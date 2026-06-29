@@ -236,6 +236,8 @@ Status em 2026-06-29: plano de validação/rollback para restrição futura de `
 
 Status em 2026-06-29: Fase 1 da restrição de `get_empresa_usuario` executada. `EXECUTE` foi revogado de `anon` e `PUBLIC`; `authenticated` foi mantido com `EXECUTE`; `postgres` e `service_role` foram preservados; hash da definição permaneceu `140380edd9b1c5fbcc02c2986a417712`; não houve alteração de função, Auth, senha, usuário, RLS, policy, view, índice, Edge Function, frontend, service ou hook; não houve alteração de dados em `df_usuarios_empresas`. O Advisor deixou de listar `get_empresa_usuario` no alerta `anon_security_definer_function_executable`, mas manteve `authenticated_security_definer_function_executable`, conforme esperado.
 
+Status em 2026-06-29: as funções críticas já tratadas seguem em observação com `authenticated` mantido, e a frente avançou para helpers críticos de permissão com auditoria específica de `is_admin`, documentada em `docs/supabase/funcoes/is_admin.md`. A função foi classificada como alta por ser `SECURITY DEFINER`, executável por `PUBLIC`, `anon` e `authenticated`, retornar booleano de status admin a partir de `public.df_usuarios_empresas` com filtro `user_id = auth.uid()` e `perfil = 'admin'`, e não ter evidência de chamada direta pelo app atual nem uso textual em policies. A recomendação inicial é preparar plano futuro para avaliar restrição de `anon` e `PUBLIC`, mantendo `authenticated` até confirmar ausência de uso legado externo. Não houve alteração no Supabase neste ciclo.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

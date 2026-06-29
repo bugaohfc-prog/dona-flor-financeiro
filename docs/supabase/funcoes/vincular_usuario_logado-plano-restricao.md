@@ -32,6 +32,101 @@ O app chama essa RPC em:
 
 Por isso, a restrição futura deve remover apenas `anon` e `PUBLIC` na Fase 1, mantendo `authenticated`.
 
+## Resultado da execução da Fase 1
+
+Data da execução: 2026-06-29
+
+SQL executado:
+
+```sql
+revoke execute on function public.vincular_usuario_logado() from anon;
+revoke execute on function public.vincular_usuario_logado() from public;
+```
+
+Não foi executado `REVOKE` de `authenticated`.
+
+### Diagnóstico antes
+
+| Role | EXECUTE efetivo antes |
+| --- | --- |
+| `PUBLIC` | sim |
+| `anon` | sim |
+| `authenticated` | sim |
+| `postgres` | sim |
+| `service_role` | sim |
+
+ACL antes:
+
+```text
+{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+```
+
+Função antes:
+
+- assinatura: `public.vincular_usuario_logado()`;
+- retorno: `void`;
+- linguagem: `plpgsql`;
+- owner: `postgres`;
+- `SECURITY DEFINER`: `true`;
+- `search_path`: `public`;
+- hash da definição: `abbae47b82a0d609393b5782f08ffe49`.
+
+Uso no código confirmado antes:
+
+- `src/pages/Login.jsx`;
+- `src/services/tenantService.js`.
+
+### Validação antes
+
+- Login normal: não validado operacionalmente por falta de sessão/credencial real neste ambiente.
+- Sincronização de empresa/tenant: não validada operacionalmente por falta de sessão real neste ambiente.
+- Integridade de dados: não foi executado `INSERT`, `UPDATE` ou `DELETE` em `df_usuarios_empresas` neste ciclo.
+- Decisão: prosseguir foi considerado seguro porque a mudança preserva `authenticated`, que é a role necessária para a chamada RPC do app após login.
+
+### Diagnóstico depois
+
+| Role | EXECUTE efetivo depois |
+| --- | --- |
+| `PUBLIC` | não |
+| `anon` | não |
+| `authenticated` | sim |
+| `postgres` | sim |
+| `service_role` | sim |
+
+ACL depois:
+
+```text
+{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+```
+
+Função depois:
+
+- assinatura preservada: `public.vincular_usuario_logado()`;
+- retorno preservado: `void`;
+- linguagem preservada: `plpgsql`;
+- owner preservado: `postgres`;
+- `SECURITY DEFINER` preservado: `true`;
+- `search_path` preservado: `public`;
+- hash da definição preservado: `abbae47b82a0d609393b5782f08ffe49`.
+
+### Validação depois
+
+- Login normal: não validado operacionalmente por falta de sessão/credencial real neste ambiente.
+- Sincronização de empresa/tenant: não validada operacionalmente por falta de sessão real neste ambiente.
+- Integridade de dados: não foi executado `INSERT`, `UPDATE` ou `DELETE` em `df_usuarios_empresas` neste ciclo.
+- Advisor: consultado. `vincular_usuario_logado` não apareceu mais no alerta `anon_security_definer_function_executable`; permaneceu no alerta `authenticated_security_definer_function_executable`, conforme esperado porque `authenticated` foi mantido.
+
+### Rollback operacional
+
+Se houver falha operacional relacionada a login/sincronização de empresa, executar:
+
+```sql
+grant execute on function public.vincular_usuario_logado() to public;
+grant execute on function public.vincular_usuario_logado() to anon;
+```
+
+Não executar `GRANT` para `authenticated` como rollback padrão, pois `authenticated` não foi revogado neste ciclo.
+
 ## Estratégia em fases
 
 ### Fase 1 - reduzir exposição pública mantendo o fluxo atual

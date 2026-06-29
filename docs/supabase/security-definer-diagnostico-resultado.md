@@ -228,6 +228,8 @@ Status em 2026-06-29: `criar_usuario`, `login_usuario` e `handle_new_user` foram
 
 Status em 2026-06-29: plano de validação/rollback para restrição futura de `vincular_usuario_logado` criado em `docs/supabase/funcoes/vincular_usuario_logado-plano-restricao.md`. O plano propõe Fase 1 para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated`, porque o app chama a RPC em `Login.jsx` e `tenantService.js`. A Fase 2 não prevê revogar `authenticated` agora; isso só deve ser avaliado se a chamada RPC for removida/refatorada em ciclo próprio. Não houve alteração no Supabase neste ciclo.
 
+Status em 2026-06-29: Fase 1 da restrição de `vincular_usuario_logado` executada. `EXECUTE` foi revogado de `anon` e `PUBLIC`; `authenticated` foi mantido com `EXECUTE`; `postgres` e `service_role` foram preservados; hash da definição permaneceu `abbae47b82a0d609393b5782f08ffe49`; não houve alteração de função, Auth, senha, usuário, RLS, policy, view, índice, Edge Function, frontend, service ou hook. O Advisor deixou de listar `vincular_usuario_logado` no alerta `anon_security_definer_function_executable`, mas manteve `authenticated_security_definer_function_executable`, conforme esperado.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

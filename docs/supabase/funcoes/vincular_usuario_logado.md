@@ -182,12 +182,12 @@ Justificativa:
 Recomendação desta auditoria:
 
 - **manter temporariamente** a função ativa;
-- **candidata a restringir `anon`** em ciclo futuro;
-- **candidata a restringir `PUBLIC`** em ciclo futuro;
+- **`anon` restrito na Fase 1 em 2026-06-29**;
+- **`PUBLIC` restrito na Fase 1 em 2026-06-29**;
 - **manter `authenticated` por enquanto**, porque o app atual chama a RPC depois do login;
 - **restringir `authenticated` somente após plano próprio**, substituição do fluxo ou validação de que o vínculo automático não depende mais da RPC.
 
-Não executar `REVOKE` neste ciclo.
+Status após Fase 1: `PUBLIC` e `anon` ficaram sem `EXECUTE` efetivo; `authenticated`, `postgres` e `service_role` foram preservados.
 
 ## SQL futuro proposto, comentado
 
@@ -227,14 +227,15 @@ Fase 2, somente após substituir ou validar o fluxo do app:
 
 Plano de restrição específico criado em `docs/supabase/funcoes/vincular_usuario_logado-plano-restricao.md`.
 
-1. Validar login atual e sincronização de empresa antes de qualquer `REVOKE`.
-2. Em ciclo curto futuro, avaliar remover `anon` e `PUBLIC`, mantendo `authenticated`.
-3. Não planejar revogar `authenticated` agora; isso só deve ser avaliado se o fluxo de vínculo for redesenhado ou se a chamada RPC for removida do app.
+Status da Fase 1 registrado no plano: `EXECUTE` foi revogado de `anon` e `PUBLIC`, mantendo `authenticated`.
+
+1. Monitorar login atual e sincronização de empresa.
+2. Não planejar revogar `authenticated` agora; isso só deve ser avaliado se o fluxo de vínculo for redesenhado ou se a chamada RPC for removida do app.
+3. Manter rollback operacional pronto para `PUBLIC` e `anon` caso apareça falha relacionada.
 
 ## O que não mexer agora
 
 - Não revogar `authenticated`.
-- Não revogar `anon` ou `PUBLIC` neste ciclo.
 - Não alterar a função.
 - Não alterar Auth, senha, trigger, RLS, policy, view ou índice.
 - Não alterar frontend, service, hook ou Edge Function.

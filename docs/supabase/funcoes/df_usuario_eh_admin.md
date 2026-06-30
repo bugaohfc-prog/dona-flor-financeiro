@@ -12,7 +12,9 @@ Branch Git: `main` em produção. Não há ambiente de homologação.
 
 Este documento audita exclusivamente a função `public.df_usuario_eh_admin(p_empresa_id uuid)`, por ser `SECURITY DEFINER` sensível ligada à verificação de permissão Admin por empresa.
 
-O ciclo foi somente leitura/documentação. Não foram executados `REVOKE`, `GRANT`, `ALTER FUNCTION`, `DROP FUNCTION`, alteração de Auth, senha, RLS, policy, view, índice, migration, dados, frontend, service, hook ou Edge Function.
+O ciclo original de auditoria foi somente leitura/documentação. Não foram executados `REVOKE`, `GRANT`, `ALTER FUNCTION`, `DROP FUNCTION`, alteração de Auth, senha, RLS, policy, view, índice, migration, dados, frontend, service, hook ou Edge Function.
+
+Atualização em 2026-06-30: em ciclo posterior autorizado, foram executados apenas `REVOKE` de `anon` e `PUBLIC`. `authenticated` foi mantido.
 
 ## Resumo executivo
 
@@ -20,18 +22,20 @@ O ciclo foi somente leitura/documentação. Não foram executados `REVOKE`, `GRA
 
 A função lê `public.df_usuarios_empresas` e retorna `true` quando o usuário autenticado (`auth.uid()`) possui vínculo na empresa informada com `perfil = 'admin'`.
 
-Achados principais:
+Achados principais da auditoria inicial:
 
-- `PUBLIC`, `anon` e `authenticated` têm `EXECUTE` efetivo;
+- `PUBLIC`, `anon` e `authenticated` tinham `EXECUTE` efetivo;
 - `postgres` e `service_role` também têm `EXECUTE`;
 - a função é chamada diretamente pela Edge Function `supabase/functions/convidar-usuario/index.ts`;
 - a função é citada por 24 policies em 8 tabelas, todas para role `{authenticated}`;
 - não foram encontradas dependências por trigger, view ou chamada textual em outra função `public`;
 - não há chamada direta em `src`.
 
+Status em 2026-06-30: `EXECUTE` foi removido de `anon` e `PUBLIC`, mantendo `authenticated`, conforme diagnóstico específico de `anon`/`PUBLIC`.
+
 Classificação desta auditoria: **crítico**.
 
-Motivo: a função participa de autorização Admin em policies de produção e em fluxo de convite de usuário. `authenticated` não deve ser revogado enquanto houver dependência de RLS/app. `anon` e `PUBLIC` são candidatos a diagnóstico específico, mas não devem ser alterados sem matriz própria e ciclo curto autorizado.
+Motivo: a função participa de autorização Admin em policies de produção e em fluxo de convite de usuário. `authenticated` não deve ser revogado enquanto houver dependência de RLS/app. A exposição por `anon` e `PUBLIC` foi mitigada em 2026-06-30 após matriz própria e ciclo curto autorizado.
 
 ## Assinatura
 
@@ -94,24 +98,24 @@ Ela não altera dados.
 ACL catalogada:
 
 ```text
-{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
 ```
 
 | Role | EXECUTE efetivo |
 | --- | --- |
-| `PUBLIC` | sim |
-| `anon` | sim |
+| `PUBLIC` | não |
+| `anon` | não |
 | `authenticated` | sim |
 | `postgres` | sim |
 | `service_role` | sim |
 
-Leitura de risco: `PUBLIC` mantém execução efetiva aberta; `anon` também tem grant direto. `authenticated` é necessário para policies e para a Edge Function `convidar-usuario`.
+Leitura de risco atual: a exposição anônima direta foi mitigada neste ciclo. `authenticated` permanece necessário para as 24 policies e para a Edge Function `convidar-usuario`.
 
 Diagnóstico específico de `anon`/`PUBLIC` criado em ciclo posterior:
 
 - `docs/supabase/funcoes/df_usuario_eh_admin-diagnostico-anon-public.md`
 
-Esse diagnóstico confirmou que as 24 policies com `df_usuario_eh_admin` são para `{authenticated}` e não há policy dependente da função para `anon` ou `PUBLIC`. A conclusão documental é favorável a preparar ciclo futuro para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated`.
+Esse diagnóstico confirmou que as 24 policies com `df_usuario_eh_admin` são para `{authenticated}` e não há policy dependente da função para `anon` ou `PUBLIC`. Em 2026-06-30, a restrição foi executada para `anon` e `PUBLIC`, mantendo `authenticated`.
 
 ## Dependências encontradas
 
@@ -203,11 +207,11 @@ Dados não retornados:
 
 ### Risco se `anon` puder executar
 
-**Alto.** Em contexto anônimo, `auth.uid()` tende a ser nulo e a função provavelmente retorna `false`. Ainda assim, expor uma função `SECURITY DEFINER` de permissão Admin para `anon` é desnecessário e aumenta superfície de ataque.
+**Alto, mitigado para execução direta em 2026-06-30.** Em contexto anônimo, `auth.uid()` tende a ser nulo e a função provavelmente retorna `false`. Ainda assim, expor uma função `SECURITY DEFINER` de permissão Admin para `anon` era desnecessário e aumentava superfície de ataque.
 
 ### Risco se `PUBLIC` mantiver EXECUTE
 
-**Alto.** Enquanto `PUBLIC` tiver `EXECUTE`, roles que herdam de `PUBLIC` podem manter execução efetiva. Para remover exposição pública real, `PUBLIC` precisa ser tratado junto com `anon`.
+**Alto, mitigado para execução direta em 2026-06-30.** Enquanto `PUBLIC` tinha `EXECUTE`, roles que herdam de `PUBLIC` podiam manter execução efetiva. Por isso `PUBLIC` foi tratado junto com `anon`.
 
 ### Risco se `authenticated` puder executar
 
@@ -228,7 +232,8 @@ Classificação final: **crítico**.
 Justificativa:
 
 - `SECURITY DEFINER` em schema `public`;
-- executável por `PUBLIC`, `anon` e `authenticated`;
+- executável por `authenticated`;
+- historicamente era executável por `PUBLIC` e `anon`, removidos em 2026-06-30;
 - calcula permissão Admin por empresa;
 - usada por 24 policies;
 - chamada pela Edge Function `convidar-usuario`;
@@ -238,14 +243,13 @@ Justificativa:
 
 Recomendação desta auditoria:
 
-- **manter temporariamente** até diagnóstico específico de `anon`/`PUBLIC`;
-- **avaliar restrição de `anon`** somente com matriz/diagnóstico e validação;
-- **avaliar restrição de `PUBLIC`** somente com matriz/diagnóstico e validação;
+- **manter `anon` sem `EXECUTE`**;
+- **manter `PUBLIC` sem `EXECUTE`**;
 - **manter `authenticated`**;
 - **não restringir `authenticated` enquanto usado por RLS/app**;
-- **precisa plano próprio** antes de qualquer alteração.
+- **precisa plano próprio** antes de qualquer alteração adicional.
 
-Não executar `REVOKE` neste ciclo.
+Não executar novo `REVOKE` neste ciclo.
 
 ## SQL futuro proposto, comentado
 
@@ -260,7 +264,7 @@ Diagnóstico antes de qualquer restrição futura:
 --   has_function_privilege('service_role', 'public.df_usuario_eh_admin(uuid)', 'EXECUTE') as service_role_has_execute;
 ```
 
-Fase futura candidata, somente após ciclo autorizado:
+Executado em 2026-06-30, mantido como histórico:
 
 ```sql
 -- revoke execute on function public.df_usuario_eh_admin(uuid) from anon;
@@ -288,16 +292,14 @@ Se `authenticated` for tratado em algum ciclo posterior:
 
 ## Próximos passos
 
-1. Criar diagnóstico específico de `anon`/`PUBLIC` para confirmar se a remoção é segura, como foi feito para `is_master`.
-2. Revisar `docs/supabase/funcoes/df_usuario_eh_admin-diagnostico-anon-public.md`.
-3. Manter `authenticated` preservado.
-4. Validar impacto na Edge Function `convidar-usuario` no ciclo de restrição.
-5. Só depois avaliar remoção de `anon` e `PUBLIC` em ciclo curto futuro com rollback imediato.
-6. Não planejar revogar `authenticated` enquanto a função for usada por RLS/policies/app.
+1. Manter `authenticated` preservado enquanto houver uso por RLS/policies e pela Edge Function `convidar-usuario`.
+2. Validar operacionalmente `convidar-usuario` em janela segura, sem criar usuário indevido.
+3. Não planejar revogar `authenticated` enquanto a função for usada por RLS/policies/app.
+4. Tratar grants diretos de tabelas e policies `{public}` em ciclo separado, sem misturar com grants da função.
 
 ## O que não mexer agora
 
-- Não revogar `anon`, `PUBLIC` ou `authenticated` neste ciclo.
+- Não revogar `authenticated` neste ciclo.
 - Não alterar a função.
 - Não alterar Auth, senha, RLS, policy, view ou índice.
 - Não alterar frontend, service, hook ou Edge Function.

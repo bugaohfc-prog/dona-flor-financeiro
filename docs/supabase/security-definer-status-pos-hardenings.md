@@ -26,6 +26,8 @@ Motivo: é helper crítico de proteção de Master, ainda aparece em `anon_secur
 
 Status em 2026-06-30: auditoria específica criada em `docs/supabase/funcoes/df_usuario_alvo_eh_master.md`. A função foi classificada como crítica, com `PUBLIC` já sem `EXECUTE` efetivo, `anon` ainda com `EXECUTE` efetivo direto e `authenticated` preservado por uso em 6 policies `{authenticated}`.
 
+Status em 2026-06-30: diagnóstico específico para remoção de `anon` criado em `docs/supabase/funcoes/df_usuario_alvo_eh_master-diagnostico-anon.md`. Foram confirmadas 6 policies `{authenticated}` nas tabelas `df_usuarios_empresas` e `df_usuarios_filiais`, ausência de chamada direta em `src`, `supabase/functions` e `scripts`, `PUBLIC` sem `EXECUTE` efetivo e conclusão favorável para remover apenas `anon` em ciclo futuro autorizado.
+
 ## Funções saneadas de `anon`
 
 | Função | Estado atual no Advisor |
@@ -91,17 +93,18 @@ Leitura: `search_path` deve ser tratado em ciclo próprio, sem misturar com gran
 
 ## Próximo ciclo recomendado
 
-Criar diagnóstico específico para avaliar remoção de `anon` de `public.df_usuario_alvo_eh_master(p_user_id uuid, p_email text, p_usuario_id uuid)`, mantendo `authenticated` e preservando `PUBLIC` sem `EXECUTE`.
+Executar ciclo curto para remover `EXECUTE` de `anon` de `public.df_usuario_alvo_eh_master(p_user_id uuid, p_email text, p_usuario_id uuid)`, mantendo `authenticated` e preservando `PUBLIC` sem `EXECUTE`.
 
 Escopo recomendado:
 
 - confirmar grants atuais, hash e `search_path`;
 - confirmar que as 6 policies seguem `{authenticated}`;
 - confirmar que não há chamada direta em `src`, `supabase/functions` ou `scripts`;
-- avaliar impacto de remover apenas `anon`;
+- executar somente `revoke execute on function public.df_usuario_alvo_eh_master(uuid, text, uuid) from anon;`;
 - preservar `PUBLIC` sem `EXECUTE`;
-- manter `authenticated` até prova contrária;
-- não executar `REVOKE` nesse próximo ciclo de diagnóstico.
+- manter `authenticated`;
+- consultar Advisor depois, se possível;
+- preparar rollback imediato com `grant execute on function public.df_usuario_alvo_eh_master(uuid, text, uuid) to anon;`.
 
 ## Restrições para próximos ciclos
 

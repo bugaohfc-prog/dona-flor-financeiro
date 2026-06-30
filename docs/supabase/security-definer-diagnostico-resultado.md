@@ -266,6 +266,8 @@ Status em 2026-06-30: Security Advisor consultado novamente após os últimos ha
 
 Status em 2026-06-30: auditoria específica de `df_usuario_alvo_eh_master` criada em `docs/supabase/funcoes/df_usuario_alvo_eh_master.md`. A função foi classificada como crítica por ser `SECURITY DEFINER`, retornar booleano de identificação de alvo Master a partir de `public.df_usuarios_master`, aceitar `user_id`, `usuario_id` ou e-mail como entrada, permanecer com `EXECUTE` efetivo para `anon` e ser usada por 6 policies `{authenticated}` nas tabelas `df_usuarios_empresas` e `df_usuarios_filiais`. `PUBLIC` já está sem `EXECUTE` efetivo, `authenticated` deve ser mantido por dependência de RLS/policies, e o próximo passo recomendado é criar diagnóstico específico para remover apenas `anon`. Não houve alteração no Supabase neste ciclo.
 
+Status em 2026-06-30: diagnóstico específico de `anon` para `df_usuario_alvo_eh_master` criado em `docs/supabase/funcoes/df_usuario_alvo_eh_master-diagnostico-anon.md`. Foram confirmados `PUBLIC` sem `EXECUTE` efetivo, `anon` com `EXECUTE` efetivo direto, `authenticated`, `postgres` e `service_role` com `EXECUTE`; função intacta com `search_path=public, pg_temp` e hash `1992f08acf3d76c506b58b7a3485bbc7`; 6 policies com `df_usuario_alvo_eh_master` em 2 tabelas, todas para `{authenticated}`; nenhuma policy dependente da função para `anon` ou `PUBLIC`; nenhuma chamada direta em `src`, `supabase/functions` ou `scripts`. A conclusão documental é favorável a preparar ciclo futuro para remover `EXECUTE` de `anon`, mantendo `authenticated` e preservando `PUBLIC` sem `EXECUTE`. Não houve alteração no Supabase neste ciclo.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

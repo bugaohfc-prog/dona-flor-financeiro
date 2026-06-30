@@ -119,6 +119,12 @@ Tabelas com policies que citam `is_master`:
 
 Leitura: `authenticated` não deve ser revogado sem redesenho ou matriz de validação RLS completa.
 
+Matriz detalhada criada em ciclo posterior:
+
+- `docs/supabase/funcoes/is_master-matriz-rls.md`
+
+Essa matriz mapeia as 27 policies em 8 tabelas antes de qualquer plano de restrição. A recomendação atual continua sendo não revogar `authenticated` e não executar `REVOKE` de `anon`/`PUBLIC` até a matriz ser revisada e validada operacionalmente.
+
 ## Evidência de uso no código
 
 Chamadas diretas encontradas:
@@ -242,12 +248,11 @@ Se `authenticated` for tratado em ciclo posterior:
 
 ## Próximos passos
 
-1. Criar plano de restrição específico para `is_master`.
-2. Reconfirmar chamadas em Edge Functions e scripts.
-3. Gerar matriz RLS antes/depois para todas as tabelas com policies dependentes.
-4. Validar fluxos Master/Admin em áreas administrativas, financeiro, usuários, filiais, destinatários, auditoria e notas.
-5. Só avaliar remoção de `anon` e `PUBLIC` em ciclo curto futuro com rollback imediato.
-6. Não planejar revogar `authenticated` enquanto a função for usada por RLS/policies/app.
+1. Revisar a matriz RLS específica em `docs/supabase/funcoes/is_master-matriz-rls.md`.
+2. Executar ciclo de diagnóstico operacional, ainda sem `REVOKE`, para Master/Admin/Gerente/Operador nas 8 tabelas afetadas.
+3. Validar a Edge Function `convidar-usuario` e o script `validar-rls-df-funcionarios.mjs`.
+4. Só depois avaliar se `anon` e `PUBLIC` podem ser removidos em ciclo curto futuro com rollback imediato.
+5. Não planejar revogar `authenticated` enquanto a função for usada por RLS/policies/app.
 
 ## O que não mexer agora
 

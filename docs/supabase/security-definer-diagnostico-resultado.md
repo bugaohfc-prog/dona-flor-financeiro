@@ -244,6 +244,8 @@ Status em 2026-06-29: Fase 1 da restrição de `is_admin` executada. `EXECUTE` f
 
 Status em 2026-06-29: a frente avançou para helper crítico de permissão Master com auditoria específica de `is_master`, documentada em `docs/supabase/funcoes/is_master.md`. A função foi classificada como crítica por ser `SECURITY DEFINER`, executável por `PUBLIC`, `anon` e `authenticated`, retornar booleano de status Master a partir de `public.df_usuarios_master` com filtro `user_id = auth.uid()`, ser chamada por `supabase/functions/convidar-usuario/index.ts` e aparecer em 27 policies de RLS nas tabelas `df_assinaturas`, `df_auditoria_admin`, `df_contas`, `df_contas_pagamentos`, `df_destinatarios_alertas`, `df_notas`, `df_usuarios_empresas` e `df_usuarios_filiais`. A recomendação inicial é não mexer em `authenticated` e preparar plano próprio antes de qualquer restrição de `anon` ou `PUBLIC`. Não houve alteração no Supabase neste ciclo.
 
+Status em 2026-06-29: matriz RLS específica de `is_master` criada em `docs/supabase/funcoes/is_master-matriz-rls.md`. Foram mapeadas 27 policies `PERMISSIVE` para role `authenticated` em 8 tabelas: `df_assinaturas`, `df_auditoria_admin`, `df_contas`, `df_contas_pagamentos`, `df_destinatarios_alertas`, `df_notas`, `df_usuarios_empresas` e `df_usuarios_filiais`. A matriz registra impacto por policy, uso em `supabase/functions/convidar-usuario/index.ts`, uso no script `scripts/validar-rls-df-funcionarios.mjs` e recomenda não revogar `authenticated`; `anon` e `PUBLIC` só devem ser avaliados após revisão da matriz e diagnóstico operacional adicional. Não houve alteração no Supabase neste ciclo.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

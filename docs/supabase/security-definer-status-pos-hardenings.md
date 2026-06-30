@@ -20,9 +20,11 @@ As funções críticas já tratadas saíram do alerta `anon_security_definer_fun
 
 O Security Advisor atual ainda lista 6 funções executáveis por `anon` e 15 funções executáveis por `authenticated`.
 
-Próximo candidato recomendado: `public.df_usuario_alvo_eh_master(p_user_id uuid, p_email text, p_usuario_id uuid)`.
+Próximo candidato recomendado no status anterior: `public.df_usuario_alvo_eh_master(p_user_id uuid, p_email text, p_usuario_id uuid)`.
 
 Motivo: é helper crítico de proteção de Master, ainda aparece em `anon_security_definer_function_executable`, não é trigger interna, e deve ser auditado antes de qualquer restrição. Não executar `REVOKE` sem auditoria específica e matriz de impacto.
+
+Status em 2026-06-30: auditoria específica criada em `docs/supabase/funcoes/df_usuario_alvo_eh_master.md`. A função foi classificada como crítica, com `PUBLIC` já sem `EXECUTE` efetivo, `anon` ainda com `EXECUTE` efetivo direto e `authenticated` preservado por uso em 6 policies `{authenticated}`.
 
 ## Funções saneadas de `anon`
 
@@ -89,16 +91,17 @@ Leitura: `search_path` deve ser tratado em ciclo próprio, sem misturar com gran
 
 ## Próximo ciclo recomendado
 
-Auditar exclusivamente `public.df_usuario_alvo_eh_master(p_user_id uuid, p_email text, p_usuario_id uuid)`.
+Criar diagnóstico específico para avaliar remoção de `anon` de `public.df_usuario_alvo_eh_master(p_user_id uuid, p_email text, p_usuario_id uuid)`, mantendo `authenticated` e preservando `PUBLIC` sem `EXECUTE`.
 
 Escopo recomendado:
 
-- descobrir definição completa, grants e hash da função;
-- mapear policies que citam a função;
-- confirmar se há chamada direta em `src`, `supabase/functions` ou `scripts`;
-- avaliar impacto de remover `anon` e, se existir, `PUBLIC`;
+- confirmar grants atuais, hash e `search_path`;
+- confirmar que as 6 policies seguem `{authenticated}`;
+- confirmar que não há chamada direta em `src`, `supabase/functions` ou `scripts`;
+- avaliar impacto de remover apenas `anon`;
+- preservar `PUBLIC` sem `EXECUTE`;
 - manter `authenticated` até prova contrária;
-- não executar `REVOKE` nesse próximo ciclo de auditoria.
+- não executar `REVOKE` nesse próximo ciclo de diagnóstico.
 
 ## Restrições para próximos ciclos
 

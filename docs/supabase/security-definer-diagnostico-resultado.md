@@ -252,6 +252,8 @@ Status em 2026-06-30: restrição de `is_master` executada para `anon` e `PUBLIC
 
 Status em 2026-06-30: a frente avançou para helper crítico de permissão Admin com auditoria específica de `df_usuario_eh_admin`, documentada em `docs/supabase/funcoes/df_usuario_eh_admin.md`. A função foi classificada como crítica por ser `SECURITY DEFINER`, executável por `PUBLIC`, `anon` e `authenticated`, retornar booleano de status Admin por empresa a partir de `public.df_usuarios_empresas` com filtro `empresa_id = p_empresa_id`, `user_id = auth.uid()` e `perfil = 'admin'`, ser chamada por `supabase/functions/convidar-usuario/index.ts` e aparecer em 24 policies de RLS nas tabelas `df_assinaturas`, `df_auditoria_admin`, `df_contas`, `df_contas_pagamentos`, `df_destinatarios_alertas`, `df_notas`, `df_usuarios_empresas` e `df_usuarios_filiais`. A recomendação inicial é não mexer em `authenticated` e preparar diagnóstico próprio de `anon`/`PUBLIC` antes de qualquer restrição. Não houve alteração no Supabase neste ciclo.
 
+Status em 2026-06-30: diagnóstico específico de `anon`/`PUBLIC` para `df_usuario_eh_admin` criado em `docs/supabase/funcoes/df_usuario_eh_admin-diagnostico-anon-public.md`. Foram confirmados `PUBLIC`, `anon`, `authenticated`, `postgres` e `service_role` com `EXECUTE` efetivo; função intacta com `search_path=public` e hash `cf45999529ac743d9db7696a3e4ad53c`; 24 policies com `df_usuario_eh_admin` em 8 tabelas, todas para `{authenticated}`; nenhuma policy dependente da função para `anon` ou `PUBLIC`. A conclusão documental é favorável a preparar ciclo futuro para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated`. Não houve alteração no Supabase neste ciclo.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

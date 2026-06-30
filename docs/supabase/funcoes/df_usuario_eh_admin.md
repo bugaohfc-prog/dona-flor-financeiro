@@ -107,6 +107,12 @@ ACL catalogada:
 
 Leitura de risco: `PUBLIC` mantém execução efetiva aberta; `anon` também tem grant direto. `authenticated` é necessário para policies e para a Edge Function `convidar-usuario`.
 
+Diagnóstico específico de `anon`/`PUBLIC` criado em ciclo posterior:
+
+- `docs/supabase/funcoes/df_usuario_eh_admin-diagnostico-anon-public.md`
+
+Esse diagnóstico confirmou que as 24 policies com `df_usuario_eh_admin` são para `{authenticated}` e não há policy dependente da função para `anon` ou `PUBLIC`. A conclusão documental é favorável a preparar ciclo futuro para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated`.
+
 ## Dependências encontradas
 
 | Tipo | Resultado |
@@ -283,10 +289,11 @@ Se `authenticated` for tratado em algum ciclo posterior:
 ## Próximos passos
 
 1. Criar diagnóstico específico de `anon`/`PUBLIC` para confirmar se a remoção é segura, como foi feito para `is_master`.
-2. Manter `authenticated` preservado.
-3. Validar impacto na Edge Function `convidar-usuario`.
-4. Só depois avaliar remoção de `anon` e `PUBLIC` em ciclo curto futuro com rollback imediato.
-5. Não planejar revogar `authenticated` enquanto a função for usada por RLS/policies/app.
+2. Revisar `docs/supabase/funcoes/df_usuario_eh_admin-diagnostico-anon-public.md`.
+3. Manter `authenticated` preservado.
+4. Validar impacto na Edge Function `convidar-usuario` no ciclo de restrição.
+5. Só depois avaliar remoção de `anon` e `PUBLIC` em ciclo curto futuro com rollback imediato.
+6. Não planejar revogar `authenticated` enquanto a função for usada por RLS/policies/app.
 
 ## O que não mexer agora
 

@@ -12,7 +12,9 @@ Branch Git: `main` em produção. Não há ambiente de homologação.
 
 Este documento audita exclusivamente a função `public.df_usuario_tem_perfil_empresa(p_empresa_id uuid, p_perfis text[])`, por ser `SECURITY DEFINER` sensível ligada à verificação de perfil/permissão por empresa.
 
-O ciclo foi somente leitura/documentação. Foram executadas apenas consultas `SELECT` em catálogos/metadados do Postgres e busca textual no código versionado. Não foram executados `REVOKE`, `GRANT`, `ALTER FUNCTION`, `DROP FUNCTION`, alteração de Auth, senha, RLS, policy, view, índice, migration, dados, Edge Function, frontend, service ou hook.
+O ciclo original de auditoria foi somente leitura/documentação. Foram executadas apenas consultas `SELECT` em catálogos/metadados do Postgres e busca textual no código versionado. Não foram executados `REVOKE`, `GRANT`, `ALTER FUNCTION`, `DROP FUNCTION`, alteração de Auth, senha, RLS, policy, view, índice, migration, dados, Edge Function, frontend, service ou hook.
+
+Atualização em 2026-06-30: em ciclo posterior autorizado, foi executado apenas `REVOKE` de `anon`. `authenticated` foi mantido e `PUBLIC` continuou sem `EXECUTE`.
 
 ## Resumo executivo
 
@@ -20,10 +22,10 @@ O ciclo foi somente leitura/documentação. Foram executadas apenas consultas `S
 
 A função lê `public.df_usuarios_empresas` e retorna `true` quando o usuário autenticado possui vínculo na empresa informada com perfil contido em `p_perfis`. A identificação do usuário usa `auth.uid()` e também compara `ue.email` com o e-mail presente em `auth.jwt()`.
 
-Achados principais:
+Achados principais da auditoria inicial:
 
 - `PUBLIC` já está sem `EXECUTE` efetivo;
-- `anon` ainda tem `EXECUTE` efetivo por grant direto;
+- `anon` ainda tinha `EXECUTE` efetivo por grant direto;
 - `authenticated`, `postgres` e `service_role` têm `EXECUTE` efetivo;
 - a função é citada por 14 policies em 5 tabelas, todas para role `{authenticated}`;
 - não foram encontradas dependências por trigger, view ou chamada textual em outra função `public`;
@@ -32,7 +34,9 @@ Achados principais:
 
 Classificação desta auditoria: **crítico**.
 
-Motivo: a função participa de autorização por perfil/empresa em policies de produção de financeiro, notas, destinatários de alertas e Gestão de Pessoas. `authenticated` não deve ser revogado enquanto houver dependência de RLS. `anon` é candidato forte a remoção em ciclo futuro curto, pois nenhuma policy dependente usa role `anon`. `PUBLIC` já deve permanecer sem `EXECUTE`.
+Status em 2026-06-30: `EXECUTE` foi removido de `anon`, mantendo `authenticated` e `PUBLIC` sem `EXECUTE`, conforme diagnóstico específico de `anon`.
+
+Motivo: a função participa de autorização por perfil/empresa em policies de produção de financeiro, notas, destinatários de alertas e Gestão de Pessoas. `authenticated` não deve ser revogado enquanto houver dependência de RLS. A exposição por `anon` foi mitigada em 2026-06-30 após diagnóstico próprio e ciclo curto autorizado. `PUBLIC` deve permanecer sem `EXECUTE`.
 
 ## Assinatura
 
@@ -95,13 +99,13 @@ Ela não altera dados.
 ACL catalogada:
 
 ```text
-{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
 ```
 
 | Role | EXECUTE efetivo | Observação |
 | --- | --- | --- |
 | `PUBLIC` | não | sem exposição herdada por `PUBLIC` |
-| `anon` | sim | grant direto ainda existente |
+| `anon` | não | exposição direta removida em 2026-06-30 |
 | `authenticated` | sim | necessário para policies/RLS atuais |
 | `postgres` | sim | preservado |
 | `service_role` | sim | preservado |
@@ -110,18 +114,17 @@ Grants diretos encontrados:
 
 | Grantee | Privilégio |
 | --- | --- |
-| `anon` | `EXECUTE` |
 | `authenticated` | `EXECUTE` |
 | `postgres` | `EXECUTE` |
 | `service_role` | `EXECUTE` |
 
-Leitura de risco: a exposição por `PUBLIC` já está mitigada, mas `anon` ainda consegue executar a RPC diretamente. `authenticated` deve ser mantido porque a função é usada por 14 policies `{authenticated}`.
+Leitura de risco atual: a exposição por `PUBLIC` e por `anon` está mitigada. `authenticated` deve ser mantido porque a função é usada por 14 policies `{authenticated}`.
 
 Diagnóstico específico de `anon` criado em ciclo posterior:
 
 - `docs/supabase/funcoes/df_usuario_tem_perfil_empresa-diagnostico-anon.md`
 
-Esse diagnóstico confirmou que as 14 policies com `df_usuario_tem_perfil_empresa` são para `{authenticated}`, nenhuma das 5 tabelas afetadas tem privilégio real para `anon`, não há chamada direta em `src`, `supabase/functions` ou `scripts`, e a conclusão documental é favorável a preparar ciclo futuro para remover `EXECUTE` de `anon`, mantendo `authenticated` e `PUBLIC` sem `EXECUTE`.
+Esse diagnóstico confirmou que as 14 policies com `df_usuario_tem_perfil_empresa` são para `{authenticated}`, nenhuma das 5 tabelas afetadas tem privilégio real para `anon`, não há chamada direta em `src`, `supabase/functions` ou `scripts`. Em 2026-06-30, a restrição foi executada para `anon`, mantendo `authenticated` e `PUBLIC` sem `EXECUTE`.
 
 ## Dependências encontradas
 
@@ -209,7 +212,7 @@ Dados não retornados:
 
 ### Risco se `anon` puder executar
 
-**Alto.** A função é `SECURITY DEFINER` e expõe via RPC uma verificação de perfil por empresa. Mesmo com `auth.uid() is not null`, manter `anon` com `EXECUTE` direto é desnecessário e preserva superfície pública sobre um helper de autorização.
+**Alto, mitigado para execução direta em 2026-06-30.** A função é `SECURITY DEFINER` e expõe via RPC uma verificação de perfil por empresa. Mesmo com `auth.uid() is not null`, manter `anon` com `EXECUTE` direto era desnecessário e preservava superfície pública sobre um helper de autorização.
 
 ### Risco se `PUBLIC` mantiver EXECUTE
 
@@ -234,7 +237,8 @@ Classificação final: **crítico**.
 Justificativa:
 
 - `SECURITY DEFINER` em schema `public`;
-- `anon` ainda tem `EXECUTE` efetivo por grant direto;
+- `authenticated` tem `EXECUTE` efetivo;
+- historicamente `anon` tinha `EXECUTE` efetivo por grant direto, removido em 2026-06-30;
 - `authenticated` é usado por 14 policies;
 - calcula perfil/permissão por empresa;
 - usa `auth.uid()` e e-mail do JWT;
@@ -244,14 +248,13 @@ Justificativa:
 
 Recomendação desta auditoria:
 
-- **manter temporariamente** até diagnóstico específico de `anon`;
-- **restringir `anon`** em ciclo futuro curto, se o diagnóstico confirmar que não há uso externo necessário;
+- **manter `anon` sem `EXECUTE`**;
 - **manter `PUBLIC` sem `EXECUTE`**;
 - **manter `authenticated`**;
 - **não restringir `authenticated` enquanto usado por RLS/policies**;
 - **precisa plano próprio** antes de qualquer alteração adicional.
 
-Não executar `REVOKE` neste ciclo.
+Não executar novo `REVOKE` neste ciclo.
 
 ## SQL futuro proposto, comentado
 
@@ -266,7 +269,7 @@ Diagnóstico antes de qualquer restrição futura:
 --   has_function_privilege('service_role', 'public.df_usuario_tem_perfil_empresa(uuid,text[])', 'EXECUTE') as service_role_has_execute;
 ```
 
-Fase futura candidata, somente após ciclo autorizado:
+Executado em 2026-06-30, mantido como histórico:
 
 ```sql
 -- revoke execute on function public.df_usuario_tem_perfil_empresa(uuid, text[]) from anon;
@@ -300,15 +303,14 @@ Se algum ciclo futuro mexer indevidamente em `authenticated`, rollback separado:
 
 ## Próximos passos
 
-1. Revisar `docs/supabase/funcoes/df_usuario_tem_perfil_empresa-diagnostico-anon.md`.
-2. Confirmar novamente que as 14 policies seguem todas `{authenticated}` antes de qualquer execução.
+1. Manter `anon` sem `EXECUTE`.
+2. Confirmar novamente que as 14 policies seguem todas `{authenticated}` antes de qualquer mudança futura.
 3. Manter `PUBLIC` sem `EXECUTE`.
 4. Manter `authenticated` preservado enquanto houver uso por RLS/policies.
 5. Não misturar esse hardening de grant com refatoração de RLS, Auth, frontend ou services.
 
 ## O que não mexer agora
 
-- Não revogar `anon` neste ciclo.
 - Não revogar `authenticated`.
 - Não conceder `PUBLIC`.
 - Não alterar a função.

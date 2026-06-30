@@ -14,6 +14,8 @@ Este documento diagnostica se `anon` parece necessário para executar `public.df
 
 O ciclo foi somente leitura/documentação. Foram executadas apenas consultas `SELECT` em catálogos/metadados do Postgres e busca textual no código versionado. Não foram executados `REVOKE`, `GRANT`, `ALTER FUNCTION`, `ALTER POLICY`, alteração de Auth, senha, RLS, view, índice, migration, dados, Edge Function, frontend, service ou hook.
 
+Atualização em 2026-06-30: em ciclo posterior autorizado, a conclusão deste diagnóstico foi executada. Foi revogado apenas o grant de `anon`, mantendo `authenticated` e preservando `PUBLIC` sem `EXECUTE`. Não houve alteração de função, RLS, policy, Auth, Edge Function, frontend, service, migration ou dados persistentes.
+
 ## Resumo executivo
 
 Conclusão do diagnóstico: **favorável a preparar ciclo futuro para remover `EXECUTE` de `anon` em `public.df_usuario_tem_perfil_empresa(uuid, text[])`**, mantendo `authenticated` e preservando `PUBLIC` sem `EXECUTE`.
@@ -31,7 +33,76 @@ Motivos:
 
 Limite da conclusão: este diagnóstico avalia apenas a remoção de `EXECUTE` de `anon` na função. Ele não corrige grants de tabelas, policies, Auth, frontend, Edge Functions ou desenho de RLS.
 
-## Grants atuais
+## Status da restrição executada em 2026-06-30
+
+SQL executado:
+
+```sql
+revoke execute on function public.df_usuario_tem_perfil_empresa(uuid, text[]) from anon;
+```
+
+Não foi executado `REVOKE` de `authenticated`. Não houve `GRANT`. `PUBLIC` não foi alterado.
+
+### Diagnóstico antes
+
+| Item | Resultado |
+| --- | --- |
+| ACL | `{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}` |
+| `PUBLIC` com `EXECUTE` efetivo | não |
+| `anon` com `EXECUTE` efetivo | sim |
+| `authenticated` com `EXECUTE` efetivo | sim |
+| `postgres` com `EXECUTE` efetivo | sim |
+| `service_role` com `EXECUTE` efetivo | sim |
+| `search_path` | `public` |
+| Hash da definição | `99044d6cf258c6b12172ac972d96c78e` |
+| Policies com a função | 14 |
+| Tabelas afetadas | 5 |
+| Policies para `{authenticated}` | 14 |
+| Policies para `anon` | 0 |
+| Policies para `PUBLIC` | 0 |
+| Hash agregado das policies | `d05469c16cc7e57ee06591a78cd65c3c` |
+
+### Diagnóstico depois
+
+| Item | Resultado |
+| --- | --- |
+| ACL | `{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}` |
+| `PUBLIC` com `EXECUTE` efetivo | não |
+| `anon` com `EXECUTE` efetivo | não |
+| `authenticated` com `EXECUTE` efetivo | sim |
+| `postgres` com `EXECUTE` efetivo | sim |
+| `service_role` com `EXECUTE` efetivo | sim |
+| `search_path` | `public` |
+| Hash da definição | `99044d6cf258c6b12172ac972d96c78e` |
+| Policies com a função | 14 |
+| Tabelas afetadas | 5 |
+| Policies para `{authenticated}` | 14 |
+| Policies para `anon` | 0 |
+| Policies para `PUBLIC` | 0 |
+| Hash agregado das policies | `d05469c16cc7e57ee06591a78cd65c3c` |
+
+Leitura: a função permaneceu intacta, `PUBLIC` continuou sem `EXECUTE`, `anon` perdeu `EXECUTE`, `authenticated`, `postgres` e `service_role` foram preservados, e a matriz de policies permaneceu inalterada.
+
+### Advisor após restrição
+
+O Security Advisor deixou de listar `df_usuario_tem_perfil_empresa` em `anon_security_definer_function_executable`.
+
+A função permanece em `authenticated_security_definer_function_executable`, conforme esperado, porque `authenticated` foi mantido por dependência de RLS/policies.
+
+Não houve alerta `function_search_path_mutable` para esta função, pois o catálogo confirmou `search_path=public`.
+
+### Validação operacional
+
+Validação feita neste ciclo:
+
+- catálogo confirmou que as 14 policies dependentes continuam todas em `{authenticated}`;
+- catálogo confirmou que nenhuma dessas policies depende da função para `anon` ou `PUBLIC`;
+- busca versionada confirmou ausência de chamada direta em `src`, `supabase/functions` e `scripts`;
+- não houve teste operacional com alteração de dados.
+
+Pendência manual: validar fluxos autenticados de financeiro, notas, destinatários de alertas e Gestão de Pessoas em janela operacional segura.
+
+## Grants no diagnóstico original
 
 | Item | Resultado |
 | --- | --- |
@@ -49,7 +120,7 @@ Limite da conclusão: este diagnóstico avalia apenas a remoção de `EXECUTE` d
 | `postgres` com `EXECUTE` efetivo | sim |
 | `service_role` com `EXECUTE` efetivo | sim |
 
-Leitura: a função segue intacta, com `search_path=public`. A exposição herdada por `PUBLIC` já está mitigada, mas `anon` ainda consegue executar a RPC diretamente por grant próprio.
+Leitura do diagnóstico original: a função estava intacta, com `search_path=public`. A exposição herdada por `PUBLIC` já estava mitigada, mas `anon` ainda conseguia executar a RPC diretamente por grant próprio antes da restrição executada em 2026-06-30.
 
 ## Análise por policy/role
 
@@ -152,21 +223,15 @@ Não há motivo identificado para conceder `EXECUTE` a `PUBLIC`.
 
 ## Conclusão
 
-Conclusão: **seguro o suficiente para preparar ciclo futuro de remoção de `EXECUTE` de `anon` em `public.df_usuario_tem_perfil_empresa(uuid, text[])`**, mantendo `authenticated` e `PUBLIC` sem `EXECUTE`.
+Conclusão original: **seguro o suficiente para preparar ciclo futuro de remoção de `EXECUTE` de `anon` em `public.df_usuario_tem_perfil_empresa(uuid, text[])`**, mantendo `authenticated` e `PUBLIC` sem `EXECUTE`.
 
-Essa conclusão não autoriza mudança neste ciclo. O próximo ciclo deve ser curto, com:
+Status posterior: a remoção de `anon` foi executada em 2026-06-30, em ciclo autorizado, mantendo `authenticated` e `PUBLIC` sem `EXECUTE`.
 
-- diagnóstico antes;
-- execução somente do `REVOKE` de `anon`;
-- diagnóstico depois;
-- confirmação de que `PUBLIC` segue sem `EXECUTE`;
-- confirmação de que `authenticated` segue com `EXECUTE`;
-- confirmação de que as 14 policies seguem existentes e `{authenticated}`;
-- rollback imediato pronto.
+O ciclo executado seguiu diagnóstico antes/depois por catálogo, confirmou hash preservado, policies preservadas e rollback imediato pronto.
 
 ## SQL futuro proposto, comentado
 
-Não executar sem ciclo autorizado:
+Executado em 2026-06-30. Mantido aqui como histórico:
 
 ```sql
 -- revoke execute on function public.df_usuario_tem_perfil_empresa(uuid, text[]) from anon;
@@ -180,6 +245,8 @@ Não executar:
 ```
 
 ## Rollback futuro comentado
+
+Rollback Supabase, se necessário:
 
 ```sql
 -- grant execute on function public.df_usuario_tem_perfil_empresa(uuid, text[]) to anon;

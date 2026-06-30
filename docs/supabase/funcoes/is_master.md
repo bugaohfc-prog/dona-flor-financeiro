@@ -81,21 +81,21 @@ Ela não altera dados.
 
 ## Grants atuais
 
-ACL catalogada:
+ACL atual após restrição de 2026-06-30:
 
 ```text
-{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
 ```
 
 | Role | EXECUTE direto/efetivo |
 | --- | --- |
-| `PUBLIC` | sim |
-| `anon` | sim |
+| `PUBLIC` | não |
+| `anon` | não |
 | `authenticated` | sim |
 | `postgres` | sim |
 | `service_role` | sim |
 
-Leitura de risco: `PUBLIC` mantém execução efetiva aberta; `anon` também tem grant direto; `authenticated` é necessário para policies e fluxos versionados que dependem da função.
+Leitura de risco: `PUBLIC` e `anon` não possuem mais execução efetiva. `authenticated` foi preservado porque é necessário para policies e fluxos versionados que dependem da função.
 
 ## Dependências encontradas
 
@@ -129,7 +129,7 @@ Diagnóstico específico de `anon`/`PUBLIC` criado em ciclo posterior:
 
 - `docs/supabase/funcoes/is_master-diagnostico-anon-public.md`
 
-Esse diagnóstico confirmou que as 27 policies com `is_master()` são para `{authenticated}` e não há policy dependente de `is_master()` para `anon`. A conclusão documental é favorável a preparar ciclo futuro para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated`.
+Esse diagnóstico confirmou que as 27 policies com `is_master()` são para `{authenticated}` e não há policy dependente de `is_master()` para `anon`. Em 2026-06-30, `EXECUTE` foi removido de `anon` e `PUBLIC`, mantendo `authenticated`.
 
 ## Evidência de uso no código
 
@@ -169,11 +169,11 @@ Dados não retornados:
 
 ### Risco se `anon` puder executar
 
-**Alto.** Em contexto anônimo, `auth.uid()` tende a ser nulo e a função provavelmente retorna `false`. Ainda assim, expor uma função `SECURITY DEFINER` de permissão Master para `anon` é desnecessário e aumenta superfície de ataque.
+**Alto, mitigado em 2026-06-30.** Em contexto anônimo, `auth.uid()` tende a ser nulo e a função provavelmente retorna `false`. Ainda assim, expor uma função `SECURITY DEFINER` de permissão Master para `anon` era desnecessário e aumentava superfície de ataque. `anon` não possui mais `EXECUTE` efetivo.
 
 ### Risco se `PUBLIC` mantiver EXECUTE
 
-**Alto.** Enquanto `PUBLIC` tiver `EXECUTE`, roles que herdam de `PUBLIC` podem manter execução efetiva. Para remover exposição pública real, `PUBLIC` precisa ser tratado junto com `anon`.
+**Alto, mitigado em 2026-06-30.** Enquanto `PUBLIC` tiver `EXECUTE`, roles que herdam de `PUBLIC` podem manter execução efetiva. `PUBLIC` não possui mais `EXECUTE` efetivo.
 
 ### Risco se `authenticated` puder executar
 
@@ -202,20 +202,19 @@ Justificativa:
 
 ## Recomendação segura
 
-Recomendação desta auditoria:
+Recomendação desta auditoria após a restrição de 2026-06-30:
 
-- **manter temporariamente** até plano de restrição próprio;
-- **avaliar restrição de `anon`** somente com plano e validação;
-- **avaliar restrição de `PUBLIC`** somente com plano e validação;
+- **manter `anon` sem `EXECUTE`**;
+- **manter `PUBLIC` sem `EXECUTE`**;
 - **manter `authenticated`**;
 - **não restringir `authenticated` enquanto usado por RLS/app**;
-- **precisa plano próprio** antes de qualquer alteração.
+- **tratar qualquer mudança adicional em ciclo próprio**.
 
-Não executar `REVOKE` neste ciclo.
+Não executar novas alterações neste ciclo.
 
 ## SQL futuro proposto, comentado
 
-Diagnóstico antes de qualquer restrição futura:
+Consulta de diagnóstico de privilégios:
 
 ```sql
 -- select
@@ -226,7 +225,7 @@ Diagnóstico antes de qualquer restrição futura:
 --   has_function_privilege('service_role', 'public.is_master()', 'EXECUTE') as service_role_has_execute;
 ```
 
-Fase futura candidata, somente após ciclo autorizado e matriz RLS:
+Executado em 2026-06-30:
 
 ```sql
 -- revoke execute on function public.is_master() from anon;
@@ -254,15 +253,16 @@ Se `authenticated` for tratado em ciclo posterior:
 
 ## Próximos passos
 
-1. Revisar a matriz RLS específica em `docs/supabase/funcoes/is_master-matriz-rls.md`.
-2. Revisar o diagnóstico `anon`/`PUBLIC` em `docs/supabase/funcoes/is_master-diagnostico-anon-public.md`.
-3. Preparar ciclo curto futuro para remover `anon` e `PUBLIC`, se aprovado, mantendo `authenticated`.
-4. Validar a Edge Function `convidar-usuario` e o script `validar-rls-df-funcionarios.mjs` no ciclo de restrição.
-5. Não planejar revogar `authenticated` enquanto a função for usada por RLS/policies/app.
+1. Manter `authenticated` preservado.
+2. Não avançar para revogar `authenticated` enquanto a função for usada por RLS/policies/app.
+3. Validar a Edge Function `convidar-usuario` em janela operacional se a equipe considerar necessário.
+4. Tratar `df_usuario_eh_admin`, `df_usuario_tem_perfil_empresa`, `df_usuario_alvo_eh_master` e `df_empresas_do_usuario` em ciclos próprios.
+5. Tratar grants diretos de `anon` em tabelas e policies `{public}` como frente separada de RLS/permissões.
 
 ## O que não mexer agora
 
-- Não revogar `anon`, `PUBLIC` ou `authenticated` neste ciclo.
+- Não executar novos `REVOKE` neste ciclo.
+- Não revogar `authenticated`.
 - Não alterar a função.
 - Não alterar Auth, senha, RLS, policy, view ou índice.
 - Não alterar frontend, service, hook ou Edge Function.

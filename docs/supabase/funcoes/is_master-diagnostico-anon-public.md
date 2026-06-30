@@ -16,7 +16,7 @@ O ciclo foi somente leitura/documentação. Foram executadas apenas consultas `S
 
 ## Resumo executivo
 
-Conclusão do diagnóstico: **favorável a preparar um ciclo futuro para remover `EXECUTE` de `anon` e `PUBLIC` em `public.is_master()`**, mantendo `authenticated`.
+Conclusão do diagnóstico inicial: **favorável a preparar um ciclo futuro para remover `EXECUTE` de `anon` e `PUBLIC` em `public.is_master()`**, mantendo `authenticated`.
 
 Motivos:
 
@@ -28,6 +28,8 @@ Motivos:
 - `anon` e `PUBLIC` mantêm exposição RPC desnecessária de um helper de permissão Master.
 
 Limite da conclusão: este diagnóstico avalia o grant de execução da função `is_master()`. Ele não corrige grants ou policies das tabelas afetadas. Há riscos separados de hardening em tabelas como `df_assinaturas`, `df_usuarios_empresas` e `df_usuarios_filiais`, que aparecem com grants diretos para `anon` e devem ser tratados em ciclo próprio.
+
+Status em 2026-06-30: a remoção de `EXECUTE` de `anon` e `PUBLIC` foi executada em ciclo curto autorizado. `authenticated`, `postgres` e `service_role` foram preservados.
 
 ## Grants atuais da função
 
@@ -171,9 +173,106 @@ Leitura operacional: se em ciclo futuro for removido `anon` mas `PUBLIC` for man
 
 ## Conclusão
 
-Conclusão: **seguro o suficiente para preparar ciclo futuro de remoção de `EXECUTE` de `anon` e `PUBLIC` em `public.is_master()`**, com `authenticated` mantido.
+Conclusão inicial: **seguro o suficiente para preparar ciclo futuro de remoção de `EXECUTE` de `anon` e `PUBLIC` em `public.is_master()`**, com `authenticated` mantido.
 
-Essa conclusão não autoriza mudança neste ciclo. O próximo ciclo deve ser curto, com:
+Status em 2026-06-30: ciclo futuro executado com sucesso, sem rollback.
+
+## Execução da restrição em 2026-06-30
+
+SQL executado:
+
+```sql
+revoke execute on function public.is_master() from anon;
+revoke execute on function public.is_master() from public;
+```
+
+Não foi executado:
+
+```sql
+-- revoke execute on function public.is_master() from authenticated;
+```
+
+### Diagnóstico antes
+
+| Item | Resultado antes |
+| --- | --- |
+| ACL | `{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}` |
+| `PUBLIC` EXECUTE efetivo | sim |
+| `anon` EXECUTE efetivo | sim |
+| `authenticated` EXECUTE efetivo | sim |
+| `postgres` EXECUTE efetivo | sim |
+| `service_role` EXECUTE efetivo | sim |
+| `search_path` | `public` |
+| Hash da função | `0ae7a94df00e970385f5cf68ada3925a` |
+| Policies com `is_master()` | 27 |
+| Tabelas afetadas | 8 |
+| Policies para `{authenticated}` | 27 |
+| Policies para `anon` | 0 |
+| Policies para `PUBLIC` | 0 |
+| Hash agregado das policies | `33d87b723f5431f3dc52a22e3c0e15fe` |
+
+### Diagnóstico depois
+
+| Item | Resultado depois |
+| --- | --- |
+| ACL | `{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}` |
+| `PUBLIC` EXECUTE efetivo | não |
+| `anon` EXECUTE efetivo | não |
+| `authenticated` EXECUTE efetivo | sim |
+| `postgres` EXECUTE efetivo | sim |
+| `service_role` EXECUTE efetivo | sim |
+| `search_path` | `public` |
+| Hash da função | `0ae7a94df00e970385f5cf68ada3925a` |
+| Policies com `is_master()` | 27 |
+| Tabelas afetadas | 8 |
+| Policies para `{authenticated}` | 27 |
+| Policies para `anon` | 0 |
+| Policies para `PUBLIC` | 0 |
+| Hash agregado das policies | `33d87b723f5431f3dc52a22e3c0e15fe` |
+
+Leitura: a função e as policies permaneceram intactas. A alteração ficou restrita aos grants de execução de `anon` e `PUBLIC`.
+
+### Advisor após a restrição
+
+O Security Advisor foi consultado após a execução.
+
+Resultado para `is_master`:
+
+- `is_master` não apareceu mais em `anon_security_definer_function_executable`;
+- `is_master` permaneceu em `authenticated_security_definer_function_executable`, conforme esperado, porque `authenticated` foi mantido;
+- `is_master` não apareceu em `function_search_path_mutable`, pois a função mantém `search_path=public`.
+
+### Validação funcional
+
+Não houve teste operacional real da Edge Function `convidar-usuario` neste ciclo, para evitar alteração de usuário, Auth, convite, senha ou envio real.
+
+Validação feita:
+
+- código da Edge Function confirmado com chamada `supabaseUser.rpc('is_master')`;
+- `supabaseUser` usa service role com `Authorization` do usuário chamador;
+- `auth.getUser()` rejeita chamada sem sessão;
+- `authenticated` foi preservado.
+
+Pendência manual: validar convite autorizado em janela operacional se a equipe considerar necessário.
+
+### Rollback Supabase preparado
+
+Se houver quebra operacional relacionada a essa alteração:
+
+```sql
+grant execute on function public.is_master() to public;
+grant execute on function public.is_master() to anon;
+```
+
+Se algum ciclo futuro mexer indevidamente em `authenticated`, rollback separado:
+
+```sql
+grant execute on function public.is_master() to authenticated;
+```
+
+## Plano original do ciclo futuro
+
+O ciclo planejado deveria ser curto, com:
 
 - diagnóstico antes;
 - execução somente dos dois `REVOKE` planejados;

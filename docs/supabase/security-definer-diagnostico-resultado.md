@@ -246,6 +246,8 @@ Status em 2026-06-29: a frente avançou para helper crítico de permissão Maste
 
 Status em 2026-06-29: matriz RLS específica de `is_master` criada em `docs/supabase/funcoes/is_master-matriz-rls.md`. Foram mapeadas 27 policies `PERMISSIVE` para role `authenticated` em 8 tabelas: `df_assinaturas`, `df_auditoria_admin`, `df_contas`, `df_contas_pagamentos`, `df_destinatarios_alertas`, `df_notas`, `df_usuarios_empresas` e `df_usuarios_filiais`. A matriz registra impacto por policy, uso em `supabase/functions/convidar-usuario/index.ts`, uso no script `scripts/validar-rls-df-funcionarios.mjs` e recomenda não revogar `authenticated`; `anon` e `PUBLIC` só devem ser avaliados após revisão da matriz e diagnóstico operacional adicional. Não houve alteração no Supabase neste ciclo.
 
+Status em 2026-06-30: diagnóstico específico de `anon`/`PUBLIC` para `is_master` criado em `docs/supabase/funcoes/is_master-diagnostico-anon-public.md`. Foram confirmados `PUBLIC`, `anon`, `authenticated`, `postgres` e `service_role` com `EXECUTE` efetivo; função intacta com `search_path=public` e hash `0ae7a94df00e970385f5cf68ada3925a`; 27 policies com `is_master()` em 8 tabelas, todas para `{authenticated}`; nenhuma policy dependente de `is_master()` para `anon` ou `PUBLIC`. A conclusão documental é favorável a preparar ciclo futuro para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated`. Não houve alteração no Supabase neste ciclo.
+
 ## O que não mexer agora
 
 - Não executar novos `REVOKE` sem ciclo autorizado.

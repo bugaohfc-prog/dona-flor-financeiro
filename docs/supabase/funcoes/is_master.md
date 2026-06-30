@@ -125,6 +125,12 @@ Matriz detalhada criada em ciclo posterior:
 
 Essa matriz mapeia as 27 policies em 8 tabelas antes de qualquer plano de restrição. A recomendação atual continua sendo não revogar `authenticated` e não executar `REVOKE` de `anon`/`PUBLIC` até a matriz ser revisada e validada operacionalmente.
 
+Diagnóstico específico de `anon`/`PUBLIC` criado em ciclo posterior:
+
+- `docs/supabase/funcoes/is_master-diagnostico-anon-public.md`
+
+Esse diagnóstico confirmou que as 27 policies com `is_master()` são para `{authenticated}` e não há policy dependente de `is_master()` para `anon`. A conclusão documental é favorável a preparar ciclo futuro para remover `EXECUTE` de `anon` e `PUBLIC`, mantendo `authenticated`.
+
 ## Evidência de uso no código
 
 Chamadas diretas encontradas:
@@ -249,9 +255,9 @@ Se `authenticated` for tratado em ciclo posterior:
 ## Próximos passos
 
 1. Revisar a matriz RLS específica em `docs/supabase/funcoes/is_master-matriz-rls.md`.
-2. Executar ciclo de diagnóstico operacional, ainda sem `REVOKE`, para Master/Admin/Gerente/Operador nas 8 tabelas afetadas.
-3. Validar a Edge Function `convidar-usuario` e o script `validar-rls-df-funcionarios.mjs`.
-4. Só depois avaliar se `anon` e `PUBLIC` podem ser removidos em ciclo curto futuro com rollback imediato.
+2. Revisar o diagnóstico `anon`/`PUBLIC` em `docs/supabase/funcoes/is_master-diagnostico-anon-public.md`.
+3. Preparar ciclo curto futuro para remover `anon` e `PUBLIC`, se aprovado, mantendo `authenticated`.
+4. Validar a Edge Function `convidar-usuario` e o script `validar-rls-df-funcionarios.mjs` no ciclo de restrição.
 5. Não planejar revogar `authenticated` enquanto a função for usada por RLS/policies/app.
 
 ## O que não mexer agora

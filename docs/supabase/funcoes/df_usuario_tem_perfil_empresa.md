@@ -117,6 +117,12 @@ Grants diretos encontrados:
 
 Leitura de risco: a exposição por `PUBLIC` já está mitigada, mas `anon` ainda consegue executar a RPC diretamente. `authenticated` deve ser mantido porque a função é usada por 14 policies `{authenticated}`.
 
+Diagnóstico específico de `anon` criado em ciclo posterior:
+
+- `docs/supabase/funcoes/df_usuario_tem_perfil_empresa-diagnostico-anon.md`
+
+Esse diagnóstico confirmou que as 14 policies com `df_usuario_tem_perfil_empresa` são para `{authenticated}`, nenhuma das 5 tabelas afetadas tem privilégio real para `anon`, não há chamada direta em `src`, `supabase/functions` ou `scripts`, e a conclusão documental é favorável a preparar ciclo futuro para remover `EXECUTE` de `anon`, mantendo `authenticated` e `PUBLIC` sem `EXECUTE`.
+
 ## Dependências encontradas
 
 | Tipo | Resultado |
@@ -294,8 +300,8 @@ Se algum ciclo futuro mexer indevidamente em `authenticated`, rollback separado:
 
 ## Próximos passos
 
-1. Criar diagnóstico específico de remoção de `anon` para confirmar se a restrição é segura.
-2. Confirmar novamente que as 14 policies seguem todas `{authenticated}`.
+1. Revisar `docs/supabase/funcoes/df_usuario_tem_perfil_empresa-diagnostico-anon.md`.
+2. Confirmar novamente que as 14 policies seguem todas `{authenticated}` antes de qualquer execução.
 3. Manter `PUBLIC` sem `EXECUTE`.
 4. Manter `authenticated` preservado enquanto houver uso por RLS/policies.
 5. Não misturar esse hardening de grant com refatoração de RLS, Auth, frontend ou services.

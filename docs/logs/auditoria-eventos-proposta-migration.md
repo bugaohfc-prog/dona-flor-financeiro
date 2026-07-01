@@ -10,6 +10,8 @@ A tabela seria a base central futura de auditoria operacional do DNA Gestão, se
 
 Este ciclo é somente documentação e planejamento. Não foi criada migration real, nenhum SQL foi executado e nada foi alterado no Supabase ou no app.
 
+Status em 2026-07-01: Fase 1 executada e documentada em `docs/logs/auditoria-eventos-fase-1-execucao.md`. A migration real foi criada em `supabase/migrations/20260701120000_create_df_auditoria_eventos.sql`, aplicada no Supabase e validada com tabela vazia, RLS forçada, policy SELECT Admin/Master, grants mínimos, índices mínimos e bloqueio de `UPDATE`/`DELETE`.
+
 ## Decisão técnica proposta
 
 Decisão proposta: criar uma nova tabela `public.df_auditoria_eventos` em ciclo futuro de banco, mantendo `public.df_auditoria_admin` intacta.

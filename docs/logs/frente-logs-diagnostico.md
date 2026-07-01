@@ -10,6 +10,8 @@ Este ciclo foi somente leitura/documentacao. Foram revisados documentos, migrati
 
 Recomendacao: organizar a frente em ciclos curtos. Primeiro consolidar o modelo de eventos e a taxonomia da auditoria; depois ampliar a captura para eventos P1 em Contas e Administracao sem misturar com RLS/grants ou mudancas funcionais.
 
+Status em 2026-07-01: taxonomia e data dictionary P1 definidos em `docs/logs/auditoria-taxonomia-data-dictionary.md`. A recomendação preliminar é preparar uma futura `public.df_auditoria_eventos` para novos eventos operacionais, preservando `public.df_auditoria_admin` como trilha administrativa já existente até decisão de banco em ciclo próprio.
+
 ## Fontes revisadas
 
 Documentacao e migrations principais:

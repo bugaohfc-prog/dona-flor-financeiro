@@ -32,6 +32,8 @@ Classificação: **crítico**.
 
 Recomendação: criar diagnóstico específico para avaliar remoção de `anon`, manter `PUBLIC` sem `EXECUTE`, manter `authenticated`, e não alterar RLS/policies neste ciclo.
 
+Status em 2026-07-01: diagnóstico específico para remoção de `anon` criado em `docs/supabase/funcoes/df_funcionarios_pode_escrever-diagnostico-anon.md`. A conclusão documental é favorável a preparar ciclo futuro para remover apenas `anon`, mantendo `authenticated` e preservando `PUBLIC` sem `EXECUTE`.
+
 ## Assinatura e catálogo
 
 | Campo | Valor |
@@ -254,8 +256,8 @@ Se `authenticated` for alterado por engano:
 
 ## Próximos passos
 
-1. Criar diagnóstico específico para remoção de `anon`.
-2. Confirmar novamente que as 21 policies seguem `{authenticated}`.
-3. Confirmar que o uso direto permanece restrito ao script de validação.
+1. Preparar ciclo curto para remover apenas `anon`, se aprovado.
+2. Confirmar novamente que as 21 policies seguem `{authenticated}` antes/depois.
+3. Confirmar que o uso direto permanece restrito ao script de validação autenticado.
 4. Confirmar que `PUBLIC` continua sem `EXECUTE` efetivo.
-5. Se o diagnóstico for favorável, preparar ciclo curto para remover apenas `anon`, mantendo `authenticated`.
+5. Manter `authenticated` por dependência de RLS/policies.

@@ -32,6 +32,8 @@ Status em 2026-07-01: `EXECUTE` de `anon` foi removido de `df_usuario_alvo_eh_ma
 
 Status em 2026-07-01: auditoria específica criada em `docs/supabase/funcoes/df_funcionarios_pode_escrever.md`. A função foi classificada como crítica por ser `SECURITY DEFINER`, decidir permissão de escrita em Gestão de Pessoas/Folha, permanecer com `EXECUTE` efetivo para `anon`, ser usada por 21 policies `{authenticated}` em 7 tabelas e ter uso direto apenas em script de validação RLS. `PUBLIC` já está sem `EXECUTE` efetivo e `authenticated` deve ser mantido.
 
+Status em 2026-07-01: diagnóstico específico para remoção de `anon` criado em `docs/supabase/funcoes/df_funcionarios_pode_escrever-diagnostico-anon.md`. Foram confirmadas 21 policies `{authenticated}` em 7 tabelas, `PUBLIC` sem `EXECUTE` efetivo, `anon` ainda com `EXECUTE` efetivo direto, `authenticated` preservado, ausência de chamada direta em `src` e `supabase/functions`, e uso direto apenas no script `scripts/validar-rls-df-funcionarios.mjs`, que autentica usuário antes da RPC. A conclusão é favorável para remover apenas `anon` em ciclo futuro autorizado.
+
 ## Funções saneadas de `anon`
 
 | Função | Estado atual no Advisor |
@@ -97,17 +99,18 @@ Leitura: `search_path` deve ser tratado em ciclo próprio, sem misturar com gran
 
 ## Próximo ciclo recomendado
 
-Criar diagnóstico específico para avaliar remoção de `anon` de `public.df_funcionarios_pode_escrever(p_empresa_id uuid)`, mantendo `authenticated` e preservando `PUBLIC` sem `EXECUTE`.
+Executar ciclo curto para remover `EXECUTE` de `anon` de `public.df_funcionarios_pode_escrever(p_empresa_id uuid)`, mantendo `authenticated` e preservando `PUBLIC` sem `EXECUTE`.
 
 Escopo recomendado:
 
 - confirmar grants atuais, hash e `search_path`;
 - confirmar que as 21 policies seguem `{authenticated}`;
 - confirmar que o uso direto continua restrito ao script de validação;
-- avaliar impacto de remover apenas `anon`;
+- executar somente `revoke execute on function public.df_funcionarios_pode_escrever(uuid) from anon;`;
 - preservar `PUBLIC` sem `EXECUTE`;
 - manter `authenticated`;
-- não executar `REVOKE` no ciclo de diagnóstico.
+- consultar Advisor depois, se possível;
+- preparar rollback imediato com `grant execute on function public.df_funcionarios_pode_escrever(uuid) to anon;`.
 
 ## Restrições para próximos ciclos
 

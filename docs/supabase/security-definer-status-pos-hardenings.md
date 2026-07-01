@@ -30,6 +30,8 @@ Status em 2026-06-30: diagnóstico específico para remoção de `anon` criado e
 
 Status em 2026-07-01: `EXECUTE` de `anon` foi removido de `df_usuario_alvo_eh_master`. Resultado final: `PUBLIC` sem `EXECUTE` efetivo, `anon` sem `EXECUTE` efetivo, `authenticated` mantido com `EXECUTE`, função intacta com hash `1992f08acf3d76c506b58b7a3485bbc7`, e 6 policies `{authenticated}` preservadas. O Advisor deixou de listar a função em `anon_security_definer_function_executable` e manteve em `authenticated_security_definer_function_executable`, conforme esperado.
 
+Status em 2026-07-01: auditoria específica criada em `docs/supabase/funcoes/df_funcionarios_pode_escrever.md`. A função foi classificada como crítica por ser `SECURITY DEFINER`, decidir permissão de escrita em Gestão de Pessoas/Folha, permanecer com `EXECUTE` efetivo para `anon`, ser usada por 21 policies `{authenticated}` em 7 tabelas e ter uso direto apenas em script de validação RLS. `PUBLIC` já está sem `EXECUTE` efetivo e `authenticated` deve ser mantido.
+
 ## Funções saneadas de `anon`
 
 | Função | Estado atual no Advisor |
@@ -53,7 +55,7 @@ Status em 2026-07-01: `EXECUTE` de `anon` foi removido de `df_usuario_alvo_eh_ma
 | Função | Tipo de risco | Observação |
 | --- | --- | --- |
 | `df_empresas_do_usuario()` | helper de tenant/empresa | envolve policy legada `{public}` em `df_usuarios_empresas`; precisa matriz própria antes de grant |
-| `df_funcionarios_pode_escrever(p_empresa_id uuid)` | helper RLS de Gestão de Pessoas/Folha | amplo impacto em policies; não revogar `authenticated` |
+| `df_funcionarios_pode_escrever(p_empresa_id uuid)` | helper RLS de Gestão de Pessoas/Folha | auditoria específica criada; próximo passo é diagnóstico para remover `anon` |
 | `df_funcionarios_ferias_ciclos_validar_funcionario_empresa()` | trigger/validação interna | separar em ciclo de funções internas |
 | `df_funcionarios_ferias_periodos_validar_vinculos()` | trigger/validação interna | separar em ciclo de funções internas |
 | `df_funcionarios_validar_filial_empresa()` | trigger/validação interna | separar em ciclo de funções internas |
@@ -95,16 +97,17 @@ Leitura: `search_path` deve ser tratado em ciclo próprio, sem misturar com gran
 
 ## Próximo ciclo recomendado
 
-Auditar o próximo helper crítico ainda exposto para `anon`: `public.df_funcionarios_pode_escrever(p_empresa_id uuid)`.
+Criar diagnóstico específico para avaliar remoção de `anon` de `public.df_funcionarios_pode_escrever(p_empresa_id uuid)`, mantendo `authenticated` e preservando `PUBLIC` sem `EXECUTE`.
 
 Escopo recomendado:
 
-- confirmar definição, grants, hash e `search_path`;
-- mapear policies que usam a função;
-- confirmar que não há chamada direta em `src`, `supabase/functions` ou `scripts`;
-- avaliar impacto de remover `anon` e, se aplicável, `PUBLIC`;
+- confirmar grants atuais, hash e `search_path`;
+- confirmar que as 21 policies seguem `{authenticated}`;
+- confirmar que o uso direto continua restrito ao script de validação;
+- avaliar impacto de remover apenas `anon`;
+- preservar `PUBLIC` sem `EXECUTE`;
 - manter `authenticated`;
-- não executar `REVOKE` no ciclo de auditoria.
+- não executar `REVOKE` no ciclo de diagnóstico.
 
 ## Restrições para próximos ciclos
 

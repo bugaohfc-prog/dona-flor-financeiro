@@ -65,6 +65,8 @@ Filtro base:
 
 Estes grupos não foram alterados porque não havia par 1082 + 1099.
 
+Diagnóstico posterior dos 4 pendentes: `docs/operacional/contas-revisao-pendentes-inss-cp-segur-1099.md`.
+
 | Empresa | Filial | Competência | Vencimento | Motivo | Conta | Valor |
 | --- | --- | --- | --- | --- | --- | ---: |
 | Rede Dona Flor | Brilho Dourado | 01/2026 | 2026-02-20 | Apenas receita 1082 encontrada | `659b2282-b0dc-4780-befe-2d850d0c93d9` | R$ 202,05 |

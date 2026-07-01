@@ -208,9 +208,60 @@ Não executar neste ciclo. O próximo ciclo deve ser curto, com:
 - consulta ao Security Advisor, se possível;
 - rollback imediato pronto.
 
+## Execução da remoção de `anon`
+
+Status em 2026-07-01: ciclo curto executado para remover `EXECUTE` de `anon`, mantendo `authenticated` e preservando `PUBLIC` sem `EXECUTE`.
+
+SQL executado:
+
+```sql
+revoke execute on function public.df_usuario_alvo_eh_master(uuid, text, uuid) from anon;
+```
+
+Diagnóstico antes:
+
+| Role | EXECUTE efetivo antes |
+| --- | --- |
+| `PUBLIC` | não |
+| `anon` | sim |
+| `authenticated` | sim |
+| `postgres` | sim |
+| `service_role` | sim |
+
+Diagnóstico depois:
+
+| Role | EXECUTE efetivo depois |
+| --- | --- |
+| `PUBLIC` | não |
+| `anon` | não |
+| `authenticated` | sim |
+| `postgres` | sim |
+| `service_role` | sim |
+
+Validações depois:
+
+- função intacta;
+- `search_path=public, pg_temp` preservado;
+- hash preservado: `1992f08acf3d76c506b58b7a3485bbc7`;
+- 6 policies seguem existentes;
+- 6 policies seguem `{authenticated}`;
+- tabelas preservadas: `df_usuarios_empresas` e `df_usuarios_filiais`;
+- nenhuma alteração de RLS/policy foi executada;
+- nenhuma chamada direta encontrada em `src`, `supabase/functions` ou `scripts`;
+- Security Advisor deixou de listar `df_usuario_alvo_eh_master` em `anon_security_definer_function_executable`;
+- Security Advisor manteve `df_usuario_alvo_eh_master` em `authenticated_security_definer_function_executable`, conforme esperado.
+
+Rollback Supabase, se necessário:
+
+```sql
+grant execute on function public.df_usuario_alvo_eh_master(uuid, text, uuid) to anon;
+```
+
+Não houve rollback neste ciclo.
+
 ## SQL futuro proposto
 
-Somente em ciclo futuro autorizado:
+Executado em 2026-07-01:
 
 ```sql
 -- revoke execute on function public.df_usuario_alvo_eh_master(uuid, text, uuid) from anon;

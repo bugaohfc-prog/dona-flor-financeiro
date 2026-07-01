@@ -34,6 +34,8 @@ Recomendação: criar diagnóstico específico para avaliar remoção de `anon`,
 
 Status em 2026-07-01: diagnóstico específico para remoção de `anon` criado em `docs/supabase/funcoes/df_funcionarios_pode_escrever-diagnostico-anon.md`. A conclusão documental é favorável a preparar ciclo futuro para remover apenas `anon`, mantendo `authenticated` e preservando `PUBLIC` sem `EXECUTE`.
 
+Status em 2026-07-01: `EXECUTE` de `anon` foi removido. Resultado final: `PUBLIC` sem `EXECUTE` efetivo, `anon` sem `EXECUTE` efetivo, `authenticated` mantido com `EXECUTE`, `postgres` e `service_role` preservados. A função permaneceu intacta com `search_path=public` e hash `72b0de412fdc4e2c3dd14c8d0b48a787`; as 21 policies em 7 tabelas permaneceram `{authenticated}`. O Security Advisor deixou de listar a função em `anon_security_definer_function_executable` e manteve em `authenticated_security_definer_function_executable`, conforme esperado.
+
 ## Assinatura e catálogo
 
 | Campo | Valor |
@@ -256,8 +258,8 @@ Se `authenticated` for alterado por engano:
 
 ## Próximos passos
 
-1. Preparar ciclo curto para remover apenas `anon`, se aprovado.
-2. Confirmar novamente que as 21 policies seguem `{authenticated}` antes/depois.
-3. Confirmar que o uso direto permanece restrito ao script de validação autenticado.
-4. Confirmar que `PUBLIC` continua sem `EXECUTE` efetivo.
-5. Manter `authenticated` por dependência de RLS/policies.
+1. Manter `authenticated` por dependência de RLS/policies.
+2. Não revogar `authenticated` sem plano próprio de RLS e validação operacional.
+3. Manter `PUBLIC` sem `EXECUTE`.
+4. Monitorar Advisor e uso operacional.
+5. Seguir para o próximo helper crítico ainda exposto para `anon`.

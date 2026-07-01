@@ -18,7 +18,7 @@ O ciclo foi somente diagnóstico/documentação. Não foram executados `REVOKE`,
 
 As funções críticas já tratadas saíram do alerta `anon_security_definer_function_executable`. Elas permanecem, quando aplicável, no alerta `authenticated_security_definer_function_executable` porque `authenticated` foi preservado por dependência de app, RLS ou fluxo operacional.
 
-O Security Advisor atual ainda lista 5 funções executáveis por `anon` e 15 funções executáveis por `authenticated`.
+O Security Advisor atual ainda lista 4 funções executáveis por `anon` e 15 funções executáveis por `authenticated`.
 
 Próximo candidato recomendado no status anterior: `public.df_usuario_alvo_eh_master(p_user_id uuid, p_email text, p_usuario_id uuid)`.
 
@@ -34,6 +34,8 @@ Status em 2026-07-01: auditoria específica criada em `docs/supabase/funcoes/df_
 
 Status em 2026-07-01: diagnóstico específico para remoção de `anon` criado em `docs/supabase/funcoes/df_funcionarios_pode_escrever-diagnostico-anon.md`. Foram confirmadas 21 policies `{authenticated}` em 7 tabelas, `PUBLIC` sem `EXECUTE` efetivo, `anon` ainda com `EXECUTE` efetivo direto, `authenticated` preservado, ausência de chamada direta em `src` e `supabase/functions`, e uso direto apenas no script `scripts/validar-rls-df-funcionarios.mjs`, que autentica usuário antes da RPC. A conclusão é favorável para remover apenas `anon` em ciclo futuro autorizado.
 
+Status em 2026-07-01: `EXECUTE` de `anon` foi removido de `df_funcionarios_pode_escrever`. Resultado final: `PUBLIC` sem `EXECUTE` efetivo, `anon` sem `EXECUTE` efetivo, `authenticated` mantido com `EXECUTE`, função intacta com hash `72b0de412fdc4e2c3dd14c8d0b48a787`, e 21 policies `{authenticated}` preservadas. O Advisor deixou de listar a função em `anon_security_definer_function_executable` e manteve em `authenticated_security_definer_function_executable`, conforme esperado. O script de validação não foi executado porque pode criar, atualizar, arquivar e excluir dados de teste antes da limpeza.
+
 ## Funções saneadas de `anon`
 
 | Função | Estado atual no Advisor |
@@ -48,6 +50,7 @@ Status em 2026-07-01: diagnóstico específico para remoção de `anon` criado e
 | `df_usuario_eh_admin` | fora de `anon`; permanece em `authenticated` |
 | `df_usuario_tem_perfil_empresa` | fora de `anon`; permanece em `authenticated` |
 | `df_usuario_alvo_eh_master` | fora de `anon`; permanece em `authenticated` |
+| `df_funcionarios_pode_escrever` | fora de `anon`; permanece em `authenticated` |
 | `df_auditoria_admin_sanitize_destinatario_alerta` | fora de `anon` e `authenticated` |
 | `df_folha_lancamentos_validar_vinculos` | fora de `anon` e `authenticated` |
 | `df_funcionarios_exames_periodicos_validar_funcionario_empresa` | fora de `anon` e `authenticated` |
@@ -57,7 +60,6 @@ Status em 2026-07-01: diagnóstico específico para remoção de `anon` criado e
 | Função | Tipo de risco | Observação |
 | --- | --- | --- |
 | `df_empresas_do_usuario()` | helper de tenant/empresa | envolve policy legada `{public}` em `df_usuarios_empresas`; precisa matriz própria antes de grant |
-| `df_funcionarios_pode_escrever(p_empresa_id uuid)` | helper RLS de Gestão de Pessoas/Folha | auditoria específica criada; próximo passo é diagnóstico para remover `anon` |
 | `df_funcionarios_ferias_ciclos_validar_funcionario_empresa()` | trigger/validação interna | separar em ciclo de funções internas |
 | `df_funcionarios_ferias_periodos_validar_vinculos()` | trigger/validação interna | separar em ciclo de funções internas |
 | `df_funcionarios_validar_filial_empresa()` | trigger/validação interna | separar em ciclo de funções internas |
@@ -99,18 +101,20 @@ Leitura: `search_path` deve ser tratado em ciclo próprio, sem misturar com gran
 
 ## Próximo ciclo recomendado
 
-Executar ciclo curto para remover `EXECUTE` de `anon` de `public.df_funcionarios_pode_escrever(p_empresa_id uuid)`, mantendo `authenticated` e preservando `PUBLIC` sem `EXECUTE`.
+Auditar o próximo item ainda exposto para `anon`. Candidatos restantes:
+
+- `df_empresas_do_usuario()`, helper de tenant/empresa com policy legada `{public}`;
+- `df_funcionarios_ferias_ciclos_validar_funcionario_empresa()`, trigger/validação interna;
+- `df_funcionarios_ferias_periodos_validar_vinculos()`, trigger/validação interna;
+- `df_funcionarios_validar_filial_empresa()`, trigger/validação interna.
 
 Escopo recomendado:
 
 - confirmar grants atuais, hash e `search_path`;
-- confirmar que as 21 policies seguem `{authenticated}`;
-- confirmar que o uso direto continua restrito ao script de validação;
-- executar somente `revoke execute on function public.df_funcionarios_pode_escrever(uuid) from anon;`;
-- preservar `PUBLIC` sem `EXECUTE`;
+- mapear dependências de RLS, triggers e código;
+- separar helper de tenant das funções trigger-only;
 - manter `authenticated`;
-- consultar Advisor depois, se possível;
-- preparar rollback imediato com `grant execute on function public.df_funcionarios_pode_escrever(uuid) to anon;`.
+- não executar `REVOKE` no ciclo de auditoria.
 
 ## Restrições para próximos ciclos
 

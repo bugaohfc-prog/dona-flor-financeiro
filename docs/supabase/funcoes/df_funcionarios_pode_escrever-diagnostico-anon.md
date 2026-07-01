@@ -277,9 +277,62 @@ Não executar neste ciclo. O próximo ciclo deve ser curto, com:
 - consulta ao Security Advisor, se possível;
 - rollback imediato pronto.
 
+## Execução da remoção de `anon`
+
+Status em 2026-07-01: ciclo curto executado para remover `EXECUTE` de `anon`, mantendo `authenticated` e preservando `PUBLIC` sem `EXECUTE`.
+
+SQL executado:
+
+```sql
+revoke execute on function public.df_funcionarios_pode_escrever(uuid) from anon;
+```
+
+Diagnóstico antes:
+
+| Role | EXECUTE efetivo antes |
+| --- | --- |
+| `PUBLIC` | não |
+| `anon` | sim |
+| `authenticated` | sim |
+| `postgres` | sim |
+| `service_role` | sim |
+
+Diagnóstico depois:
+
+| Role | EXECUTE efetivo depois |
+| --- | --- |
+| `PUBLIC` | não |
+| `anon` | não |
+| `authenticated` | sim |
+| `postgres` | sim |
+| `service_role` | sim |
+
+Validações depois:
+
+- função intacta;
+- `search_path=public` preservado;
+- hash preservado: `72b0de412fdc4e2c3dd14c8d0b48a787`;
+- 21 policies seguem existentes;
+- 21 policies seguem `{authenticated}`;
+- 7 tabelas seguem com policies preservadas;
+- nenhuma alteração de RLS/policy foi executada;
+- nenhuma chamada direta encontrada em `src` ou `supabase/functions`;
+- uso direto no script `scripts/validar-rls-df-funcionarios.mjs` permanece documentado;
+- o script não foi executado neste ciclo porque pode criar, atualizar, arquivar e excluir dados de teste antes da limpeza;
+- Security Advisor deixou de listar `df_funcionarios_pode_escrever` em `anon_security_definer_function_executable`;
+- Security Advisor manteve `df_funcionarios_pode_escrever` em `authenticated_security_definer_function_executable`, conforme esperado.
+
+Rollback Supabase, se necessário:
+
+```sql
+grant execute on function public.df_funcionarios_pode_escrever(uuid) to anon;
+```
+
+Não houve rollback neste ciclo.
+
 ## SQL futuro proposto
 
-Somente em ciclo futuro autorizado:
+Executado em 2026-07-01:
 
 ```sql
 -- revoke execute on function public.df_funcionarios_pode_escrever(uuid) from anon;

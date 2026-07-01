@@ -12,6 +12,8 @@ Recomendacao: organizar a frente em ciclos curtos. Primeiro consolidar o modelo 
 
 Status em 2026-07-01: taxonomia e data dictionary P1 definidos em `docs/logs/auditoria-taxonomia-data-dictionary.md`. A recomendação preliminar é preparar uma futura `public.df_auditoria_eventos` para novos eventos operacionais, preservando `public.df_auditoria_admin` como trilha administrativa já existente até decisão de banco em ciclo próprio.
 
+Status em 2026-07-01: proposta documental da futura migration para `public.df_auditoria_eventos` criada em `docs/logs/auditoria-eventos-proposta-migration.md`. O documento mantém a decisão de não substituir `public.df_auditoria_admin` e planeja criar a nova tabela em fase futura, sem executar SQL neste ciclo.
+
 ## Fontes revisadas
 
 Documentacao e migrations principais:

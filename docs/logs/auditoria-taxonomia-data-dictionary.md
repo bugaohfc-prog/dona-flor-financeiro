@@ -104,6 +104,8 @@ Justificativa:
 
 Próximo ciclo recomendado: preparar uma migration futura para `public.df_auditoria_eventos` com RLS, rollback, diagnóstico e validação, mas somente após revisão desta taxonomia.
 
+Status em 2026-07-01: proposta documental da futura migration criada em `docs/logs/auditoria-eventos-proposta-migration.md`, incluindo DDL planejado, RLS planejada, índices planejados, diagnóstico antes/depois e rollback planejado. Nenhuma migration real foi criada.
+
 ## Padrão oficial do campo `acao`
 
 Formato:

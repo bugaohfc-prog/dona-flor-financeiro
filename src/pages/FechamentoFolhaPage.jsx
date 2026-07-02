@@ -977,6 +977,10 @@ export default function FechamentoFolhaPage({
     }
   }
 
+  function formularioItemTemRascunho(formulario = formItem) {
+    return Object.values(formulario || {}).some((valor) => normalizarTexto(valor) !== '')
+  }
+
   async function salvarCompetencia(event) {
     event.preventDefault()
     limparMensagens()
@@ -1077,7 +1081,7 @@ export default function FechamentoFolhaPage({
 
     setItemEditandoId('')
     setLancamentoItensAbertoId(lancamento.id)
-    setItemFormularioAbertoId('')
+    setItemFormularioAbertoId(lancamento.id)
     setFormItem(criarFormularioItemInicial(lancamento.categoria))
   }
 
@@ -1114,7 +1118,13 @@ export default function FechamentoFolhaPage({
     setLancamentoItensAbertoId(lancamento.id)
     setItemFormularioAbertoId(lancamento.id)
     setItemEditandoId('')
-    setFormItem(criarFormularioItemInicial(lancamento.categoria))
+    setFormItem((atual) => {
+      if (itemFormularioAbertoId === lancamento.id && !itemEditandoId && formularioItemTemRascunho(atual)) {
+        return atual
+      }
+
+      return criarFormularioItemInicial(lancamento.categoria)
+    })
   }
 
   function iniciarEdicaoItemLancamento(lancamento, item) {

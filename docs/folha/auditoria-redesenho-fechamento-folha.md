@@ -190,6 +190,16 @@ Baixo risco.
 - filtrar visualmente grupos por nome/cargo;
 - sem alterar salvamento.
 
+Status em 2026-07-02: implementada em `src/pages/FechamentoFolhaPage.jsx` e documentada em `docs/folha/fase-a-busca-colaborador-conferencia.md`.
+
+Escopo entregue:
+
+- campo `Buscar colaborador...` na seção `Conferência / Lançamentos da competência`;
+- filtro local em memória sobre os lançamentos já carregados;
+- busca case-insensitive e sem acentos;
+- mensagem para busca sem resultado;
+- sem alteração de services/hooks, banco ou regra de folha.
+
 ### Fase B - Modo Edição do colaborador
 
 Risco médio.

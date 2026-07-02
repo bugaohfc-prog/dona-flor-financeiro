@@ -561,6 +561,13 @@ function normalizarTexto(valor) {
   return String(valor || '').trim()
 }
 
+function normalizarBusca(valor) {
+  return normalizarTexto(valor)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
 function parseNumeroFormulario(valor) {
   if (valor === null || valor === undefined || valor === '') return null
   const numero = Number(String(valor).replace(',', '.'))
@@ -714,6 +721,7 @@ export default function FechamentoFolhaPage({
   const [itemFormularioAbertoId, setItemFormularioAbertoId] = useState('')
   const [itemEditandoId, setItemEditandoId] = useState('')
   const [formItem, setFormItem] = useState(criarFormularioItemInicial)
+  const [buscaColaborador, setBuscaColaborador] = useState('')
   const [erroFormulario, setErroFormulario] = useState('')
   const [secoesAbertas, setSecoesAbertas] = useState({
     competencias: true,
@@ -788,6 +796,22 @@ export default function FechamentoFolhaPage({
   const gruposLancamentos = useMemo(() => {
     return agruparLancamentosPorFuncionario(lancamentos, funcionariosPorId)
   }, [funcionariosPorId, lancamentos])
+
+  const gruposLancamentosFiltrados = useMemo(() => {
+    const termo = normalizarBusca(buscaColaborador)
+    if (!termo) return gruposLancamentos
+
+    return gruposLancamentos.filter((grupo) => {
+      const nomeGrupo = normalizarBusca(grupo.nome)
+      const funcionario = funcionariosPorId.get(grupo.funcionarioId)
+      const nomeFuncionario = normalizarBusca(funcionario?.nome)
+      const cargoFuncionario = normalizarBusca(funcionario?.cargo)
+
+      return nomeGrupo.includes(termo) ||
+        nomeFuncionario.includes(termo) ||
+        cargoFuncionario.includes(termo)
+    })
+  }, [buscaColaborador, funcionariosPorId, gruposLancamentos])
 
   const itensPorLancamento = useMemo(() => {
     const mapa = new Map()
@@ -2186,6 +2210,16 @@ export default function FechamentoFolhaPage({
             <h2 style={styles.subtitulo}>Lançamentos da competência</h2>
             <p style={styles.textoNota}>Lista interna sem CPF, exportação, documentos ou integração financeira.</p>
           </div>
+          <label style={{ ...estilosLocais.formField, minWidth: 220, maxWidth: 360 }}>
+            <span style={estilosLocais.label}>Buscar colaborador</span>
+            <input
+              value={buscaColaborador}
+              onChange={(event) => setBuscaColaborador(event.target.value)}
+              style={estilosLocais.input}
+              placeholder="Buscar colaborador..."
+              disabled={!competenciaSelecionada || loadingLancamentos}
+            />
+          </label>
           <label className={`folha-switch ${mostrarLancamentosArquivados ? 'ativo' : ''} ${!competenciaSelecionada ? 'desabilitado' : ''}`}>
             <input
               type="checkbox"
@@ -2210,6 +2244,11 @@ export default function FechamentoFolhaPage({
             <strong>Nenhum lancamento encontrado para a competencia selecionada.</strong>
             <p>Lancamentos de folha nao sao criados automaticamente. Registre apenas valores conferidos para esta competencia.</p>
           </div>
+        ) : gruposLancamentosFiltrados.length === 0 ? (
+          <div className="folha-empty-state is-muted">
+            <strong>Nenhum colaborador encontrado para essa busca.</strong>
+            <p>Limpe ou ajuste o termo para voltar a exibir os lancamentos da competencia.</p>
+          </div>
         ) : (
           <>
           <p className="folha-mobile-note" style={styles.textoNota}>
@@ -2233,7 +2272,7 @@ export default function FechamentoFolhaPage({
                 </tr>
               </thead>
               <tbody>
-                {gruposLancamentos.map((grupo) => (
+                {gruposLancamentosFiltrados.map((grupo) => (
                   <Fragment key={`grupo-${grupo.funcionarioId}`}>
                     <tr style={estilosLocais.grupoTableRow}>
                       <td colSpan={11} style={{ ...estilosLocais.td, borderBottom: '1px solid #e2e8f0' }}>
@@ -2290,7 +2329,7 @@ export default function FechamentoFolhaPage({
             </table>
           </div>
           <div className="folha-mobile-list" style={estilosLocais.mobileCards}>
-            {gruposLancamentos.map((grupo) => (
+            {gruposLancamentosFiltrados.map((grupo) => (
               <div key={`mobile-grupo-${grupo.funcionarioId}`} style={estilosLocais.mobileGroup}>
                 <div style={estilosLocais.grupoLancamentosHeader}>
                   <div style={estilosLocais.grupoLancamentosNome}>

@@ -19,6 +19,14 @@ const AGRUPAMENTOS = [
   { valor: 'filial', label: 'Por filial/unidade' }
 ]
 
+const PERIODOS_CONTAS_A_VENCER = [
+  { valor: '15', label: 'Próximos 15 dias', dias: 15 },
+  { valor: '30', label: 'Próximos 30 dias', dias: 30 },
+  { valor: '60', label: 'Próximos 60 dias', dias: 60 },
+  { valor: '90', label: 'Próximos 90 dias', dias: 90 },
+  { valor: 'todas-abertas', label: 'Todas em aberto', dias: null }
+]
+
 function textoSeguro(valor, fallback = '-') {
   const texto = String(valor ?? '').trim()
   return texto || fallback
@@ -39,6 +47,21 @@ function nomeMesAno(valor) {
     month: 'long',
     year: 'numeric'
   })
+}
+
+function formatarDataBanco(data) {
+  return [
+    data.getFullYear(),
+    String(data.getMonth() + 1).padStart(2, '0'),
+    String(data.getDate()).padStart(2, '0')
+  ].join('-')
+}
+
+function somarDiasBanco(dias) {
+  const data = new Date()
+  data.setHours(0, 0, 0, 0)
+  data.setDate(data.getDate() + Number(dias || 0))
+  return formatarDataBanco(data)
 }
 
 function obterNomeCentro(conta, centros) {
@@ -187,6 +210,7 @@ export default function RelatoriosContasPage({
   const [filtroCentro, setFiltroCentro] = useState('')
   const [dataInicial, setDataInicial] = useState('')
   const [dataFinal, setDataFinal] = useState('')
+  const [periodoContasAVencer, setPeriodoContasAVencer] = useState('15')
   const [busca, setBusca] = useState('')
   const [agrupamento, setAgrupamento] = useState('status')
   const [filtrosAbertos, setFiltrosAbertos] = useState(true)
@@ -195,6 +219,16 @@ export default function RelatoriosContasPage({
   const contextoTipos = useMemo(() => contextoPorTipos(tiposSelecionados), [tiposSelecionados])
   const resumoTiposSelecionados = useMemo(() => resumoSelecaoTipos(tiposSelecionados), [tiposSelecionados])
   const possuiTipoSelecionado = tiposSelecionados.length > 0
+  const possuiContasAVencerSelecionadas = tiposSelecionados.includes('a-vencer')
+  const periodoContasAVencerSelecionado = useMemo(
+    () => PERIODOS_CONTAS_A_VENCER.find((periodo) => periodo.valor === periodoContasAVencer) || PERIODOS_CONTAS_A_VENCER[0],
+    [periodoContasAVencer]
+  )
+  const hojeBanco = useMemo(() => formatarDataBanco(new Date()), [])
+  const limiteContasAVencer = useMemo(
+    () => periodoContasAVencerSelecionado.dias ? somarDiasBanco(periodoContasAVencerSelecionado.dias) : '',
+    [periodoContasAVencerSelecionado]
+  )
 
   function alternarTipoConta(tipo) {
     setTiposSelecionados((atuais) => (
@@ -251,10 +285,20 @@ export default function RelatoriosContasPage({
     return contasNormalizadas
       .filter((linha) => {
         if (!possuiTipoSelecionado) return false
+        if (periodoContasAVencer === 'todas-abertas' && possuiContasAVencerSelecionadas) {
+          return linha.statusOperacional === 'Vencida' || linha.statusOperacional === 'A vencer'
+        }
         if (linha.statusOperacional === 'Vencida') return tiposSelecionados.includes('vencidas')
         if (linha.statusOperacional === 'A vencer') return tiposSelecionados.includes('a-vencer')
         if (linha.statusOperacional === 'Paga') return tiposSelecionados.includes('pagas')
         return false
+      })
+      .filter((linha) => {
+        if (!possuiContasAVencerSelecionadas) return true
+        if (periodoContasAVencer === 'todas-abertas') return true
+        if (linha.statusOperacional !== 'A vencer') return true
+        if (!linha.vencimento) return false
+        return linha.vencimento >= hojeBanco && linha.vencimento <= limiteContasAVencer
       })
       .filter((linha) => !filtroFilial || linha.conta.filial_id === filtroFilial)
       .filter((linha) => !filtroCentro || linha.conta.centro_custo_id === filtroCentro)
@@ -262,7 +306,7 @@ export default function RelatoriosContasPage({
       .filter((linha) => !dataFinal || !linha.vencimento || linha.vencimento <= dataFinal)
       .filter((linha) => !termo || linha.busca.includes(termo))
       .sort((a, b) => String(a.vencimento || '9999-12-31').localeCompare(String(b.vencimento || '9999-12-31')))
-  }, [busca, contasNormalizadas, dataFinal, dataInicial, filtroCentro, filtroFilial, possuiTipoSelecionado, tiposSelecionados])
+  }, [busca, contasNormalizadas, dataFinal, dataInicial, filtroCentro, filtroFilial, hojeBanco, limiteContasAVencer, periodoContasAVencer, possuiContasAVencerSelecionadas, possuiTipoSelecionado, tiposSelecionados])
 
   const resumo = useMemo(() => {
     const totalContas = contasFiltradas.length
@@ -306,9 +350,12 @@ export default function RelatoriosContasPage({
 
   const filialSelecionada = filiais.find((filial) => filial.id === filtroFilial)
   const centroSelecionado = centros.find((centro) => centro.id === filtroCentro)
-  const periodoTexto = dataInicial || dataFinal
-    ? `${dataInicial || 'início'} até ${dataFinal || 'hoje'}`
+  const periodoOperacionalTexto = possuiContasAVencerSelecionadas
+    ? periodoContasAVencerSelecionado.label
     : 'Sem período'
+  const periodoTexto = dataInicial || dataFinal
+    ? `${periodoOperacionalTexto}; datas manuais: ${dataInicial || 'início'} até ${dataFinal || 'hoje'}`
+    : periodoOperacionalTexto
 
   const contextoExportacao = {
     tipoRelatorio: contextoTipos.titulo,
@@ -420,6 +467,17 @@ export default function RelatoriosContasPage({
               </div>
             )}
           </fieldset>
+
+          {possuiContasAVencerSelecionadas && (
+            <label>
+              <span>Período do relatório</span>
+              <select value={periodoContasAVencer} onChange={(event) => setPeriodoContasAVencer(event.target.value)}>
+                {PERIODOS_CONTAS_A_VENCER.map((periodo) => (
+                  <option key={periodo.valor} value={periodo.valor}>{periodo.label}</option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <label>
             <span>Filial/Unidade</span>

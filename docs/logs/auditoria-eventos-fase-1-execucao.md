@@ -331,3 +331,7 @@ Alternativa de baixo risco:
 - Contas: não alterado.
 - RH: não alterado.
 - Tabelas operacionais: sem triggers novos.
+
+## Planejamento do primeiro evento P1
+
+Status em 2026-07-02: planejamento do primeiro evento P1 financeiro criado em `docs/logs/auditoria-primeiro-evento-p1-financeiro.md`, escolhendo `financeiro.pagamento_parcial.criado`. Nenhum evento foi inserido e nenhum app/service/hook foi alterado.

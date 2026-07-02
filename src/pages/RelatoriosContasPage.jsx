@@ -175,6 +175,12 @@ function resumoSelecaoTipos(tiposSelecionados) {
   return `Personalizado: ${partes.join(' + ')}`
 }
 
+function resumoSelecaoCentros(centrosSelecionados) {
+  if (!centrosSelecionados.length) return 'Todos os centros de custo'
+  if (centrosSelecionados.length === 1) return '1 centro selecionado'
+  return `${centrosSelecionados.length} centros selecionados`
+}
+
 function BlocoRelatorioContas({ titulo, descricao, aberto, onToggle, children }) {
   return (
     <section className="relatorios-contas-card">
@@ -207,7 +213,7 @@ export default function RelatoriosContasPage({
 }) {
   const [tiposSelecionados, setTiposSelecionados] = useState(['vencidas', 'a-vencer'])
   const [filtroFilial, setFiltroFilial] = useState('')
-  const [filtroCentro, setFiltroCentro] = useState('')
+  const [centrosSelecionados, setCentrosSelecionados] = useState([])
   const [dataInicial, setDataInicial] = useState('')
   const [dataFinal, setDataFinal] = useState('')
   const [periodoContasAVencer, setPeriodoContasAVencer] = useState('15')
@@ -216,6 +222,7 @@ export default function RelatoriosContasPage({
   const [filtrosAbertos, setFiltrosAbertos] = useState(true)
   const [previaAberta, setPreviaAberta] = useState(true)
   const [tipoDropdownAberto, setTipoDropdownAberto] = useState(false)
+  const [centroDropdownAberto, setCentroDropdownAberto] = useState(false)
   const contextoTipos = useMemo(() => contextoPorTipos(tiposSelecionados), [tiposSelecionados])
   const resumoTiposSelecionados = useMemo(() => resumoSelecaoTipos(tiposSelecionados), [tiposSelecionados])
   const possuiTipoSelecionado = tiposSelecionados.length > 0
@@ -236,6 +243,18 @@ export default function RelatoriosContasPage({
         ? atuais.filter((item) => item !== tipo)
         : [...atuais, tipo]
     ))
+  }
+
+  function alternarCentroCusto(centroId) {
+    setCentrosSelecionados((atuais) => (
+      atuais.includes(centroId)
+        ? atuais.filter((item) => item !== centroId)
+        : [...atuais, centroId]
+    ))
+  }
+
+  function selecionarTodosCentros() {
+    setCentrosSelecionados(centros.map((centro) => centro.id).filter(Boolean))
   }
 
   const vencida = typeof estaVencida === 'function'
@@ -301,12 +320,12 @@ export default function RelatoriosContasPage({
         return linha.vencimento >= hojeBanco && linha.vencimento <= limiteContasAVencer
       })
       .filter((linha) => !filtroFilial || linha.conta.filial_id === filtroFilial)
-      .filter((linha) => !filtroCentro || linha.conta.centro_custo_id === filtroCentro)
+      .filter((linha) => !centrosSelecionados.length || centrosSelecionados.includes(linha.conta.centro_custo_id || ''))
       .filter((linha) => !dataInicial || !linha.vencimento || linha.vencimento >= dataInicial)
       .filter((linha) => !dataFinal || !linha.vencimento || linha.vencimento <= dataFinal)
       .filter((linha) => !termo || linha.busca.includes(termo))
       .sort((a, b) => String(a.vencimento || '9999-12-31').localeCompare(String(b.vencimento || '9999-12-31')))
-  }, [busca, contasNormalizadas, dataFinal, dataInicial, filtroCentro, filtroFilial, hojeBanco, limiteContasAVencer, periodoContasAVencer, possuiContasAVencerSelecionadas, possuiTipoSelecionado, tiposSelecionados])
+  }, [busca, centrosSelecionados, contasNormalizadas, dataFinal, dataInicial, filtroFilial, hojeBanco, limiteContasAVencer, periodoContasAVencer, possuiContasAVencerSelecionadas, possuiTipoSelecionado, tiposSelecionados])
 
   const resumo = useMemo(() => {
     const totalContas = contasFiltradas.length
@@ -349,7 +368,12 @@ export default function RelatoriosContasPage({
   }, [agrupamento, contasFiltradas])
 
   const filialSelecionada = filiais.find((filial) => filial.id === filtroFilial)
-  const centroSelecionado = centros.find((centro) => centro.id === filtroCentro)
+  const centrosSelecionadosNomes = centros
+    .filter((centro) => centrosSelecionados.includes(centro.id))
+    .map((centro) => centro.nome)
+  const centroNomeExportacao = centrosSelecionadosNomes.length
+    ? centrosSelecionadosNomes.join(', ')
+    : 'Todos'
   const periodoOperacionalTexto = possuiContasAVencerSelecionadas
     ? periodoContasAVencerSelecionado.label
     : 'Sem período'
@@ -360,7 +384,7 @@ export default function RelatoriosContasPage({
   const contextoExportacao = {
     tipoRelatorio: contextoTipos.titulo,
     filialNome: filialSelecionada?.nome || 'Todas',
-    centroNome: centroSelecionado?.nome || 'Todos',
+    centroNome: centroNomeExportacao,
     periodo: periodoTexto
   }
 
@@ -489,15 +513,47 @@ export default function RelatoriosContasPage({
             </select>
           </label>
 
-          <label>
-            <span>Centro de custo</span>
-            <select value={filtroCentro} onChange={(event) => setFiltroCentro(event.target.value)}>
-              <option value="">Todos</option>
-              {centros.map((centro) => (
-                <option key={centro.id} value={centro.id}>{centro.nome}</option>
-              ))}
-            </select>
-          </label>
+          <fieldset className="relatorios-contas-kind-field">
+            <legend>Centro de custo</legend>
+            <div className="relatorios-contas-kind-select">
+              <button
+                type="button"
+                className={`relatorios-contas-kind-trigger ${centroDropdownAberto ? 'is-open' : ''}`}
+                aria-expanded={centroDropdownAberto}
+                aria-haspopup="true"
+                onClick={() => setCentroDropdownAberto((aberto) => !aberto)}
+              >
+                <span>{resumoSelecaoCentros(centrosSelecionados)}</span>
+                <strong aria-hidden="true">{centroDropdownAberto ? '▲' : '▼'}</strong>
+              </button>
+
+              {centroDropdownAberto && (
+                <div className="relatorios-contas-kind-dropdown" role="group" aria-label="Selecionar centros de custo">
+                  <div className="relatorios-contas-kind-actions">
+                    <button type="button" onClick={selecionarTodosCentros}>Selecionar todos</button>
+                    <button type="button" onClick={() => setCentrosSelecionados([])}>Limpar seleção</button>
+                  </div>
+
+                  {centros.map((centro) => {
+                    const selecionado = centrosSelecionados.includes(centro.id)
+                    return (
+                      <label key={centro.id} className="relatorios-contas-kind-option">
+                        <input
+                          type="checkbox"
+                          checked={selecionado}
+                          onChange={() => alternarCentroCusto(centro.id)}
+                        />
+                        <span>
+                          <strong>{centro.nome}</strong>
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+            <p>{centrosSelecionados.length ? centrosSelecionadosNomes.join(', ') : 'Todos os centros de custo'}</p>
+          </fieldset>
 
           <label>
             <span>Data inicial</span>

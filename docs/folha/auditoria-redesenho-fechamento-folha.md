@@ -8,6 +8,8 @@ A tela de Fechamento de Folha concentrou criação de competência, resumo, lan�
 
 Neste ciclo, a última correção problemática foi revertida por ter filtrado a tela para o colaborador ativo sem oferecer uma saída clara para voltar a todos os colaboradores. Não houve redesign implementado.
 
+Referência complementar: o mapeamento de contratos API/JSON para a futura V2 de Gestão de Pessoas foi documentado em `docs/gestao-pessoas/fase-0-5-contratos-api-json.md`. Qualquer próxima fase V2 deve preservar a V1 em Parallel Run e consumir os contratos reais de `funcionariosService`, `funcionariosFeriasService` e `folhaService`.
+
 ## Por que os remendos anteriores não funcionaram
 
 - `6a48ed95ee4fc9e1a026f28f1d4c87b3af7819ea`: manteve o formulário de item aberto e evitou apagar rascunho ao clicar novamente em `+ item`, mas não resolveu a perda de contexto operacional.

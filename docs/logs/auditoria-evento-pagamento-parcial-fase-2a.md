@@ -237,6 +237,19 @@ Resultado:
 - Trigger operacional: nao criado.
 - Tela de auditoria: nao criada.
 
+## Validacao Fase 2B
+
+Status em 2026-07-02: criada a validacao documental/diagnostica em `docs/logs/auditoria-evento-pagamento-parcial-fase-2b-validacao.md`.
+
+Resultado:
+
+- `public.df_auditoria_eventos` seguia com contagem `0`;
+- RLS forcada, grants e policy de SELECT Admin/Master foram preservados;
+- Edge Function `registrar-auditoria-evento` seguia `ACTIVE`, versao `1`, com `verify_jwt=true`;
+- nenhum pagamento parcial real foi criado neste ciclo;
+- nenhum evento foi inserido manualmente;
+- o teste operacional completo permanece pendente de execucao manual pelo fluxo normal do app.
+
 ## Rollback Git
 
 ```bash

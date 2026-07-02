@@ -797,6 +797,63 @@ Contrato de saída/dados:
 
 Obrigatório: o PDF detalhado deve ser gerado via backend/endpoint. O frontend deve apenas solicitar e receber o arquivo final.
 
+#### Checklist de prontidão - PDF Compras Internas / Vales
+
+| Item | Classificação | Decisão/observação |
+| --- | --- | --- |
+| Identificação de compras/vales | Pronto | Usar `categoria = 'compras_vales'` e `natureza = 'desconto'` em `df_folha_lancamentos`; itens detalhados usam a mesma categoria em `df_folha_lancamento_itens`. |
+| Origem dos itens | Pronto | A origem versionada é `public.df_folha_lancamento_itens`, lida por `listarItensLancamentosFolha`. |
+| Vínculo item/lançamento | Pronto | Usar `lancamento_id`; trigger versionado valida `empresa_id`, `competencia_id`, `funcionario_id`, `filial_id` e `categoria` iguais ao lançamento pai. |
+| Filtro por competência | Pronto | Usar `competencia_id` da competência selecionada ou resolver `competencia = YYYY-MM` para o respectivo registro de `df_folha_competencias`. |
+| Filtro por colaborador | Pronto | Opcional por `funcionario_id`; quando ausente, agrupar todos os colaboradores da competência. |
+| Arquivados | Precisa confirmar | Padrão recomendado: `incluir_arquivados = false`; incluir arquivados apenas se houver opção explícita e rótulo claro no PDF. |
+| Empresa | Pronto | `empresa_id` é obrigatório no contrato; nome da empresa deve vir do contexto/consulta de empresas no backend. |
+| Colaborador | Pronto | `funcionario_id` existe no lançamento e no item; nome/cargo vêm de `df_funcionarios`. |
+| Cargo | Pronto | Campo `cargo` existe em `df_funcionarios` e já é usado em relatórios visuais. |
+| CPF | Precisa confirmar | Campo existe no detalhe de funcionário, mas não aparece nos relatórios atuais. Recomendação inicial: não incluir CPF no PDF; se for obrigatório, mascarar e aprovar regra LGPD antes. |
+| Filial | Pronto com complemento | `filial_id` existe no lançamento e item; `filial_nome` precisa ser resolvido via cadastro de filiais ou contexto equivalente. |
+| Descrição do item | Pronto | Campo `descricao` existe no item. Se vazio, usar fallback visual controlado, sem inventar descrição fiscal. |
+| Data do lançamento/item | Pronto | Usar `data_referencia` do item; se nula, pode exibir "Não informada" e opcionalmente mostrar data do lançamento pai como fallback, desde que documentado. |
+| Quantidade | Pronto parcial | Campo `quantidade` existe, mas em `compras_vales` pode ser nulo. PDF deve aceitar vazio/1 implícito apenas como apresentação, sem alterar dado. |
+| Valor unitário | Lacuna | Não há campo `valor_unitario`; para compras/vales o contrato atual guarda `valor` como total do item. Se `quantidade` for usada futuramente, será necessário definir regra de valor unitário. |
+| Total do item | Pronto | Usar `df_folha_lancamento_itens.valor` para itens ativos de `compras_vales`. |
+| Total por colaborador | Pronto com regra | Calcular pela soma de `valor` dos itens ativos de `compras_vales` do colaborador. Não somar também o valor do lançamento pai. |
+| Total geral | Pronto com regra | Somar os totais por colaborador. Deve bater com a soma dos itens ativos e ser comparado com a V1. |
+| Data/hora de geração | Pronto | Gerar no backend no momento de emissão. |
+| Observação | Precisa confirmar | `observacao_administrativa` existe, mas deve ser sanitizada e, por padrão, não ser usada como campo principal do PDF. |
+| Comprovantes/anexos | Fora do escopo inicial | Não há contrato atual e não devem entrar no PDF inicial. |
+| Geração backend/endpoint | Pronto como decisão | Obrigatório para evitar travamento/memória no frontend. |
+
+#### Lacunas específicas do PDF de vales
+
+- Não existe `valor_unitario`; existe apenas `valor` total do item.
+- Não existe tipo formal de compra/vale nem fornecedor/estabelecimento.
+- `quantidade` pode não ser preenchida em compras/vales, então não pode ser requisito para total.
+- `filial_nome` e nome da empresa não vêm diretamente do item e precisam ser resolvidos no backend.
+- CPF existe no cadastro detalhado de funcionário, mas não é usado nos relatórios atuais e deve ficar fora do PDF inicial salvo decisão LGPD explícita.
+- Observação administrativa pode conter texto livre; se entrar no PDF, precisa sanitização e limite de tamanho.
+
+#### Riscos específicos do PDF de vales
+
+- Duplicidade de soma se o relatório somar `df_folha_lancamentos.valor` e também os itens detalhados vinculados.
+- Item sem descrição deixando o PDF pouco útil; usar fallback de categoria sem alterar o dado.
+- Colaborador sem vínculo ou funcionário arquivado dificultando nome/cargo; backend deve tratar fallback e não quebrar geração.
+- Lançamento ou item arquivado incluído indevidamente; padrão deve excluir arquivados.
+- PDF pesado se gerado no frontend ou se uma competência grande for processada sem paginação/streaming no backend.
+- Divergência entre total da V1 e total do PDF se a V2 usar regra diferente da soma de itens ativos.
+
+#### Decisão preliminar de prontidão da Fase 2
+
+A Fase 2 pode começar quando:
+
+- origem dos itens estiver confirmada em `df_folha_lancamento_itens`;
+- vínculo lançamento/item estiver confirmado por `lancamento_id`;
+- filtro de compras/vales estiver confirmado por `categoria = 'compras_vales'` e `natureza = 'desconto'`;
+- totais do PDF baterem com a V1 para uma competência pequena e uma competência real;
+- regra de arquivados estiver definida, com padrão `incluir_arquivados = false`;
+- geração estiver planejada em backend/endpoint, não no frontend;
+- CPF estiver explicitamente fora do PDF inicial ou aprovado com mascaramento e regra LGPD.
+
 ### Fase 3 - Workspace Read-Only
 
 Abas e campos:
@@ -956,9 +1013,15 @@ Obrigatório:
 
 - Contrato backend/endpoint definido para PDF de vales.
 - Dados necessários confirmados: empresa, competência, colaborador, filial, itens e totais.
+- Identificação confirmada por `categoria = 'compras_vales'` e `natureza = 'desconto'`.
+- Origem confirmada em `df_folha_lancamento_itens` com vínculo por `lancamento_id`.
+- Total por colaborador calculado somente pela soma dos itens ativos, sem duplicar o lançamento pai.
+- Regra de arquivados definida; padrão recomendado: excluir arquivados.
 - Geração no backend, não no frontend.
 - Sem payload sensível.
+- CPF fora do PDF inicial, salvo aprovação explícita com mascaramento e justificativa LGPD.
 - Teste com competência pequena antes de competência cheia.
+- Comparação obrigatória entre total V1 e total do PDF antes de liberar para uso operacional.
 - Rollback por ocultar link/ação da V2.
 
 ## Critérios para liberar fases de escrita

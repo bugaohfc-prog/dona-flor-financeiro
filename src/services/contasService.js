@@ -180,6 +180,46 @@ export async function listarPagamentosParciaisPorContas(supabase, empresaId, con
     .order('criado_em', { ascending: true })
 }
 
+function primeiroRegistro(resposta) {
+  if (Array.isArray(resposta?.data)) return resposta.data[0] || null
+  return resposta?.data || null
+}
+
+function montarPayloadAuditoriaPagamentoParcial({ contaAtual, pagamentoCriado, pagamento, consolidacaoAntes, valorNovo }) {
+  if (!contaAtual?.id || !pagamentoCriado?.id) return null
+
+  const valorPagoAnterior = arredondarValorFinanceiro(consolidacaoAntes?.totalPagoParcial)
+  const valorPagoPosterior = arredondarValorFinanceiro(valorPagoAnterior + valorNovo)
+  const saldoAnterior = arredondarValorFinanceiro(consolidacaoAntes?.saldoPendente)
+  const saldoPosterior = arredondarValorFinanceiro(Math.max(saldoAnterior - valorNovo, 0))
+  const quantidadeParciaisAnterior = Number(consolidacaoAntes?.quantidadePagamentos || 0)
+  const possuiObservacao = String(pagamento?.observacao || '').trim().length > 0
+
+  return {
+    acao: 'financeiro.pagamento_parcial.criado',
+    empresa_id: contaAtual.empresa_id,
+    conta_id: contaAtual.id,
+    pagamento_id: pagamentoCriado.id,
+    filial_id: contaAtual.filial_id || null,
+    valor_pagamento: valorNovo,
+    data_pagamento: pagamentoCriado.data_pagamento || pagamento.data_pagamento,
+    forma_pagamento: null,
+    conta_status_anterior: contaAtual.status || null,
+    conta_status_posterior: contaAtual.status || null,
+    valor_pago_anterior: valorPagoAnterior,
+    valor_pago_posterior: valorPagoPosterior,
+    saldo_anterior: saldoAnterior,
+    saldo_posterior: saldoPosterior,
+    quantidade_parciais_anterior: quantidadeParciaisAnterior,
+    quantidade_parciais_posterior: quantidadeParciaisAnterior + 1,
+    origem_fluxo: 'pagamento_parcial',
+    possui_observacao: possuiObservacao,
+    competencia: contaAtual.competencia ? String(contaAtual.competencia).slice(0, 7) : null,
+    vencimento: contaAtual.data_vencimento || contaAtual.vencimento || null,
+    correlation_id: `financeiro.pagamento_parcial.criado:${pagamentoCriado.id}`
+  }
+}
+
 export async function registrarPagamentoParcial(supabase, contaId, empresaId, pagamento = {}) {
   assertEmpresaId(empresaId)
 
@@ -195,7 +235,7 @@ export async function registrarPagamentoParcial(supabase, contaId, empresaId, pa
     supabase,
     'df_contas',
     empresaId,
-    'id, empresa_id, valor, status, oculto, excluido, deletado'
+    'id, empresa_id, valor, status, oculto, excluido, deletado, filial_id, data_vencimento, vencimento, competencia'
   )
     .eq('id', contaId)
     .maybeSingle()
@@ -224,7 +264,7 @@ export async function registrarPagamentoParcial(supabase, contaId, empresaId, pa
     }
   }
 
-  return inserirComEmpresa(
+  const resposta = await inserirComEmpresa(
     supabase,
     'df_contas_pagamentos',
     {
@@ -236,6 +276,30 @@ export async function registrarPagamentoParcial(supabase, contaId, empresaId, pa
     },
     { select: true }
   )
+
+  if (resposta.error) return resposta
+
+  const pagamentoCriado = primeiroRegistro(resposta)
+  return {
+    ...resposta,
+    auditoria: montarPayloadAuditoriaPagamentoParcial({
+      contaAtual,
+      pagamentoCriado,
+      pagamento,
+      consolidacaoAntes: consolidacao,
+      valorNovo
+    })
+  }
+}
+
+export async function registrarAuditoriaPagamentoParcialCriado(supabase, payloadAuditoria) {
+  if (!payloadAuditoria?.pagamento_id || !payloadAuditoria?.conta_id || !payloadAuditoria?.empresa_id) {
+    return { data: null, error: new Error('Payload de auditoria incompleto.') }
+  }
+
+  return supabase.functions.invoke('registrar-auditoria-evento', {
+    body: payloadAuditoria
+  })
 }
 
 export async function estornarPagamentoParcial(supabase, pagamentoId, contaId, empresaId) {

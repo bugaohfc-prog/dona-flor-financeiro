@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.listar-usuarios-empresa]
 verify_jwt = true
+
+[functions.registrar-auditoria-evento]
+verify_jwt = true

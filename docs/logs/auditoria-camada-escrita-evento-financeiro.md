@@ -641,3 +641,17 @@ Escopo:
 - Frontend: nao alterado.
 - Services/hooks: nao alterados.
 - Tela: nao criada.
+
+## Execucao da Fase 2A
+
+Status em 2026-07-02: a Fase 2A foi implementada e documentada em `docs/logs/auditoria-evento-pagamento-parcial-fase-2a.md`.
+
+Resultado:
+
+- Edge Function `registrar-auditoria-evento` criada e deployada com `verify_jwt=true`;
+- app integrado apos sucesso do pagamento parcial;
+- somente `financeiro.pagamento_parcial.criado` permitido;
+- idempotencia logica aplicada por `empresa_id`, `acao`, `entidade_tipo` e `entidade_id`;
+- `public.df_auditoria_eventos` permaneceu sem `INSERT` para `authenticated`;
+- nenhum trigger amplo foi criado;
+- nenhum evento real foi inserido durante o ciclo.

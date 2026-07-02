@@ -438,3 +438,7 @@ Rollback de dados:
 - Services/hooks: nao alterados.
 - Scripts: nao alterados.
 - Tela de auditoria: nao criada.
+
+## Camada controlada de escrita
+
+Status em 2026-07-02: a camada de escrita foi detalhada em `docs/logs/auditoria-camada-escrita-evento-financeiro.md`. A recomendacao preliminar e usar Edge Function/service-controlled em ciclo futuro, mantendo `public.df_auditoria_eventos` sem `INSERT` para `authenticated` e sem trigger amplo em `df_contas_pagamentos`.

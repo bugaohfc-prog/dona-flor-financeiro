@@ -49,6 +49,12 @@ O padrão permanece "Próximos 15 dias" para manter compatibilidade com o compor
 - Nenhum banco, RLS, policy, function, grant ou migration foi alterado.
 - O relatório continua respeitando os dados já carregados e as permissões existentes do app.
 
+## Referência futura - Fluxo de Caixa
+
+O relatório de contas a vencer continua sendo um relatório operacional por vencimento. Ele não substitui o futuro relatório de Fluxo de Caixa realizado, que deve usar data de pagamento/recebimento efetivo.
+
+Mapeamento específico: `docs/contas/mapeamento-fluxo-caixa-12-meses.md`.
+
 ## Checklist manual
 
 1. Abrir a área de Contas.

@@ -8,6 +8,8 @@ Mapear como os dados atuais do DNA Gestão podem preencher o modelo de "Declara�
 
 Este ciclo é somente diagnóstico/documentação. Não houve alteração de código funcional, banco, RLS, policies, functions, grants, regras de pagamento/baixa ou dependências.
 
+Nota V2: esta frente passa a fazer parte do plano de virada controlada V2 documentado em `docs/projeto/plano-macro-v2-dna-gestao.md`. A implementação futura deve acontecer dentro de `Contas > Relatórios de Contas > Fluxo de Caixa por filial`, preservando a V1 até validação.
+
 ## Modelo usado
 
 Referências analisadas:

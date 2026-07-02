@@ -8,6 +8,8 @@ Esta Fase 0.5 mapeia os contratos reais usados hoje pela V1 de Gestão de Pessoa
 
 Este ciclo foi somente diagnóstico e documentação. Não houve alteração funcional, banco, migration, RLS, policies, functions, grants, services, hooks ou regras de folha/férias.
 
+Nota V2: esta frente passa a fazer parte do plano de virada controlada V2 documentado em `docs/projeto/plano-macro-v2-dna-gestao.md`. A V1 deve permanecer preservada enquanto a V2 nasce em paralelo.
+
 ## Motivo da Fase 0.5
 
 A V2 não deve ser criada por suposição visual. O mapeamento evita:

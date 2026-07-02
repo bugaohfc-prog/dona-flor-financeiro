@@ -856,6 +856,18 @@ export default function FechamentoFolhaPage({
     }, atraso)
   }
 
+  function rolarParaPainelItensLancamento(lancamentoId, atraso = 0) {
+    window.setTimeout(() => {
+      const paineis = Array.from(document.querySelectorAll(`[data-folha-itens-lancamento-id="${lancamentoId}"]`))
+      const painelVisivel = paineis.find((painel) => painel.getClientRects().length > 0) || paineis[0]
+
+      painelVisivel?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }, atraso)
+  }
+
   function focarFormularioLancamento() {
     rolarParaElemento('folha-form-lancamento')
   }
@@ -1083,6 +1095,7 @@ export default function FechamentoFolhaPage({
     setLancamentoItensAbertoId(lancamento.id)
     setItemFormularioAbertoId(lancamento.id)
     setFormItem(criarFormularioItemInicial(lancamento.categoria))
+    rolarParaPainelItensLancamento(lancamento.id, 80)
   }
 
   function iniciarEdicaoLancamento(lancamento) {
@@ -1407,7 +1420,7 @@ export default function FechamentoFolhaPage({
     }
 
     return (
-      <div style={estilosLocais.itensPanel}>
+      <div data-folha-itens-lancamento-id={lancamento.id} style={estilosLocais.itensPanel}>
         <div style={estilosLocais.itensPanelHeader}>
           <div style={estilosLocais.itensPanelIntro}>
             <strong>Itens do lancamento</strong>

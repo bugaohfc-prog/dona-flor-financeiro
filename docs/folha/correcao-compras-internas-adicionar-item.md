@@ -125,80 +125,24 @@ Depois de clicar em `Adicionar item` com sucesso:
 13. Confirmar que a tela não voltou para a lista geral.
 14. Testar item incompleto e confirmar que a validação não remove o usuário do painel atual.
 
-## Correção definitiva - preservar contexto por id estável
+## Correções pontuais encerradas - migrar para redesenho controlado
 
 Data: 2026-07-02
 
-### Por que as correções anteriores não resolveram
+A última tentativa de correção pontual (`72b490767c663f6cdf5132c355eb6d3f4cf2c153`) foi revertida porque filtrava a lista para o colaborador ativo sem criar um modo de edição explícito nem um botão claro para voltar a todos os colaboradores.
 
-A primeira correção preservou o formulário aberto depois do salvamento, mas a tela continuava renderizando todos os colaboradores da competência. A segunda correção tentou reposicionar a interface por âncora/scroll, mas isso não mudava o estado real da tela: o modo visual ainda era a lista geral.
+Decisão do ciclo:
 
-Essas abordagens tratavam o sintoma, não o contexto ativo.
+- parar correções por scroll, âncora ou filtro forçado;
+- manter apenas estabilizações pontuais já aplicadas que não prendem a navegação;
+- tratar a experiência de compras internas/vales dentro de um redesenho controlado da gestão de lançamentos da folha.
 
-### Causa raiz real
+Próximo documento:
 
-O componente tinha estado estável para o painel de itens aberto (`lancamentoItensAbertoId`), mas a renderização sempre usava `gruposLancamentos`, ou seja, a lista geral completa agrupada por colaborador.
+- `docs/folha/auditoria-redesenho-fechamento-folha.md`
 
-Após salvar o item, o hook recarrega lançamentos e itens para refletir o recálculo do banco. Mesmo quando `lancamentoItensAbertoId` continuava correto, a tela seguia exibindo todos os grupos. Em uma lista longa, o usuário perdia o contexto operacional da colaboradora atual.
+Motivo:
 
-### Estado que estava sendo perdido
-
-Não era o dado salvo no banco nem o `id` do item. O que se perdia era o contexto visual de trabalho:
-
-- colaboradora ativa;
-- lançamento ativo;
-- grupo de colaborador em foco;
-- modo de edição de itens daquele lançamento.
-
-### Id estável escolhido
-
-A correção usa identificadores estáveis já existentes:
-
-- `lancamento.id` como `lancamentoItensAbertoId`;
-- `grupo.funcionarioId` derivado do lançamento aberto.
-
-Com isso, a tela calcula `contextoItensAtivo` e renderiza `gruposLancamentosVisiveis`. Enquanto existir um painel de itens aberto, a lista mostra somente o grupo do colaborador daquele lançamento. Ao fechar explicitamente o painel, a lista geral volta.
-
-### Comportamento antes
-
-Depois de salvar item:
-
-- o formulário podia continuar aberto;
-- o scroll podia tentar reposicionar a tela;
-- mas a renderização ainda era a lista geral completa;
-- o usuário continuava precisando localizar a colaboradora novamente.
-
-### Comportamento depois
-
-Depois de salvar item:
-
-- a colaboradora do lançamento permanece como contexto visível;
-- o lançamento continua ativo por `lancamento.id`;
-- o painel de itens continua aberto;
-- o formulário limpa apenas os campos do próximo item;
-- o item recém-adicionado aparece no painel daquele lançamento após recarregar;
-- a lista geral só volta quando o usuário fecha explicitamente o painel de itens.
-
-### Arquivos alterados
-
-- `src/pages/FechamentoFolhaPage.jsx`
-- `docs/folha/correcao-compras-internas-adicionar-item.md`
-
-### Checklist manual definitivo
-
-1. Abrir `Folha / Fechamento`.
-2. Ir em `Conferência / Lançamentos da competência`.
-3. Escolher uma colaboradora, por exemplo Gabrielle.
-4. Clicar em `+ itens`.
-5. Preencher o primeiro item.
-6. Clicar em `Adicionar item`.
-7. Confirmar que permanece na mesma colaboradora.
-8. Confirmar que o painel continua aberto.
-9. Confirmar que o item aparece.
-10. Preencher o segundo item.
-11. Clicar em `Adicionar item`.
-12. Confirmar que os dois itens aparecem.
-13. Confirmar que não voltou para a lista geral.
-14. Confirmar que não precisa procurar a colaboradora novamente.
-15. Testar item incompleto.
-16. Confirmar que a validação não sai do contexto.
+- o problema não é apenas o botão `Adicionar item`;
+- a tela mistura conferência geral, edição de lançamento e edição de itens;
+- falta um modo explícito de edição do colaborador com saída clara para a lista geral.

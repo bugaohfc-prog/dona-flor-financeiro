@@ -789,27 +789,6 @@ export default function FechamentoFolhaPage({
     return agruparLancamentosPorFuncionario(lancamentos, funcionariosPorId)
   }, [funcionariosPorId, lancamentos])
 
-  const contextoItensAtivo = useMemo(() => {
-    if (!lancamentoItensAbertoId) return null
-
-    for (const grupo of gruposLancamentos) {
-      const lancamento = grupo.lancamentos.find((item) => item.id === lancamentoItensAbertoId)
-      if (lancamento) {
-        return {
-          funcionarioId: grupo.funcionarioId,
-          lancamentoId: lancamento.id
-        }
-      }
-    }
-
-    return null
-  }, [gruposLancamentos, lancamentoItensAbertoId])
-
-  const gruposLancamentosVisiveis = useMemo(() => {
-    if (!contextoItensAtivo?.funcionarioId) return gruposLancamentos
-    return gruposLancamentos.filter((grupo) => grupo.funcionarioId === contextoItensAtivo.funcionarioId)
-  }, [contextoItensAtivo, gruposLancamentos])
-
   const itensPorLancamento = useMemo(() => {
     const mapa = new Map()
 
@@ -871,6 +850,18 @@ export default function FechamentoFolhaPage({
   function rolarParaElemento(id, atraso = 0) {
     window.setTimeout(() => {
       document.getElementById(id)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }, atraso)
+  }
+
+  function rolarParaPainelItensLancamento(lancamentoId, atraso = 0) {
+    window.setTimeout(() => {
+      const paineis = Array.from(document.querySelectorAll(`[data-folha-itens-lancamento-id="${lancamentoId}"]`))
+      const painelVisivel = paineis.find((painel) => painel.getClientRects().length > 0) || paineis[0]
+
+      painelVisivel?.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
       })
@@ -1104,6 +1095,7 @@ export default function FechamentoFolhaPage({
     setLancamentoItensAbertoId(lancamento.id)
     setItemFormularioAbertoId(lancamento.id)
     setFormItem(criarFormularioItemInicial(lancamento.categoria))
+    rolarParaPainelItensLancamento(lancamento.id, 80)
   }
 
   function iniciarEdicaoLancamento(lancamento) {
@@ -1428,7 +1420,7 @@ export default function FechamentoFolhaPage({
     }
 
     return (
-      <div style={estilosLocais.itensPanel}>
+      <div data-folha-itens-lancamento-id={lancamento.id} style={estilosLocais.itensPanel}>
         <div style={estilosLocais.itensPanelHeader}>
           <div style={estilosLocais.itensPanelIntro}>
             <strong>Itens do lancamento</strong>
@@ -2241,7 +2233,7 @@ export default function FechamentoFolhaPage({
                 </tr>
               </thead>
               <tbody>
-                {gruposLancamentosVisiveis.map((grupo) => (
+                {gruposLancamentos.map((grupo) => (
                   <Fragment key={`grupo-${grupo.funcionarioId}`}>
                     <tr style={estilosLocais.grupoTableRow}>
                       <td colSpan={11} style={{ ...estilosLocais.td, borderBottom: '1px solid #e2e8f0' }}>
@@ -2298,7 +2290,7 @@ export default function FechamentoFolhaPage({
             </table>
           </div>
           <div className="folha-mobile-list" style={estilosLocais.mobileCards}>
-            {gruposLancamentosVisiveis.map((grupo) => (
+            {gruposLancamentos.map((grupo) => (
               <div key={`mobile-grupo-${grupo.funcionarioId}`} style={estilosLocais.mobileGroup}>
                 <div style={estilosLocais.grupoLancamentosHeader}>
                   <div style={estilosLocais.grupoLancamentosNome}>

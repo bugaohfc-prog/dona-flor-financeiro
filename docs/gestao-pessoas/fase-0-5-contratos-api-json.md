@@ -854,6 +854,8 @@ A Fase 2 pode começar quando:
 - geração estiver planejada em backend/endpoint, não no frontend;
 - CPF estiver explicitamente fora do PDF inicial ou aprovado com mascaramento e regra LGPD.
 
+Planejamento técnico da Fase 2: `docs/gestao-pessoas/fase-2-planejamento-pdf-vales.md`.
+
 ### Fase 3 - Workspace Read-Only
 
 Abas e campos:

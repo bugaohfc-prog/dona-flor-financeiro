@@ -210,6 +210,19 @@ Risco médio.
 - adicionar `Voltar para todos os colaboradores`;
 - manter o contexto após salvar item.
 
+Status em 2026-07-02: implementada em `src/pages/FechamentoFolhaPage.jsx` e documentada em `docs/folha/fase-b-modo-edicao-colaborador.md`.
+
+Escopo entregue:
+
+- modo explícito `conferencia`;
+- modo explícito `edicao_colaborador`;
+- entrada no modo de edição ao abrir `+ itens`;
+- cabeçalho compacto com o colaborador em edição;
+- botão `Voltar para todos os colaboradores`;
+- renderização restrita ao colaborador em edição sem depender de scroll ou âncora;
+- busca preservada para retorno à conferência geral;
+- sem alteração de services/hooks, banco ou regra de folha.
+
 ### Fase C - Formulários mais compactos
 
 Risco médio.

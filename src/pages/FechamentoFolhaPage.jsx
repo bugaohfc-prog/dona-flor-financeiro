@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useFolha } from '../hooks/useFolha'
 import { useFuncionarios } from '../hooks/useFuncionarios'
 import {
@@ -92,6 +92,8 @@ const CATEGORIAS_VALOR_ZERO_INFORMATIVO = new Set([
 ])
 
 const CATEGORIAS_ITENS_DETALHADOS = new Set(CATEGORIAS_ITENS_DETALHADOS_FOLHA)
+const MODO_FOLHA_CONFERENCIA = 'conferencia'
+const MODO_FOLHA_EDICAO_COLABORADOR = 'edicao_colaborador'
 
 function FolhaSectionHeader({ kicker, titulo, descricao, resumo, aberto, onToggle, acao }) {
   return (
@@ -722,6 +724,8 @@ export default function FechamentoFolhaPage({
   const [itemEditandoId, setItemEditandoId] = useState('')
   const [formItem, setFormItem] = useState(criarFormularioItemInicial)
   const [buscaColaborador, setBuscaColaborador] = useState('')
+  const [modoTelaFolha, setModoTelaFolha] = useState(MODO_FOLHA_CONFERENCIA)
+  const [colaboradorEmEdicaoId, setColaboradorEmEdicaoId] = useState('')
   const [erroFormulario, setErroFormulario] = useState('')
   const [secoesAbertas, setSecoesAbertas] = useState({
     competencias: true,
@@ -813,6 +817,20 @@ export default function FechamentoFolhaPage({
     })
   }, [buscaColaborador, funcionariosPorId, gruposLancamentos])
 
+  const grupoColaboradorEmEdicao = useMemo(() => {
+    if (!colaboradorEmEdicaoId) return null
+    return gruposLancamentos.find((grupo) => grupo.funcionarioId === colaboradorEmEdicaoId) || null
+  }, [colaboradorEmEdicaoId, gruposLancamentos])
+
+  const gruposLancamentosConferencia = modoTelaFolha === MODO_FOLHA_EDICAO_COLABORADOR && grupoColaboradorEmEdicao
+    ? [grupoColaboradorEmEdicao]
+    : gruposLancamentosFiltrados
+
+  const colaboradorEmEdicaoNome = grupoColaboradorEmEdicao?.nome ||
+    obterNomeFuncionario(funcionariosPorId, colaboradorEmEdicaoId)
+
+  const exibindoEdicaoColaborador = modoTelaFolha === MODO_FOLHA_EDICAO_COLABORADOR && Boolean(colaboradorEmEdicaoId)
+
   const itensPorLancamento = useMemo(() => {
     const mapa = new Map()
 
@@ -835,6 +853,15 @@ export default function FechamentoFolhaPage({
 
   const categoriaHorasExtras = CATEGORIAS_HORAS_EXTRAS.has(formLancamento.categoria)
   const categoriaFalta = formLancamento.categoria === 'falta_injustificada'
+
+  useEffect(() => {
+    setModoTelaFolha(MODO_FOLHA_CONFERENCIA)
+    setColaboradorEmEdicaoId('')
+    setLancamentoItensAbertoId('')
+    setItemFormularioAbertoId('')
+    setItemEditandoId('')
+    setFormItem(criarFormularioItemInicial())
+  }, [competenciaSelecionadaId, empresaId])
 
   function alternarSecao(chave) {
     setSecoesAbertas((atual) => ({
@@ -909,6 +936,12 @@ export default function FechamentoFolhaPage({
 
   function abrirItensLancamento(lancamento) {
     limparMensagens()
+    const funcionarioId = lancamento?.funcionario_id || '__sem_funcionario'
+    if (funcionarioId !== '__sem_funcionario') {
+      setModoTelaFolha(MODO_FOLHA_EDICAO_COLABORADOR)
+      setColaboradorEmEdicaoId(funcionarioId)
+    }
+
     setLancamentoItensAbertoId((atual) => {
       const proximo = atual === lancamento.id ? '' : lancamento.id
       setItemFormularioAbertoId('')
@@ -916,6 +949,16 @@ export default function FechamentoFolhaPage({
       setFormItem(criarFormularioItemInicial(lancamento.categoria))
       return proximo
     })
+  }
+
+  function voltarParaTodosColaboradores() {
+    setModoTelaFolha(MODO_FOLHA_CONFERENCIA)
+    setColaboradorEmEdicaoId('')
+    setLancamentoItensAbertoId('')
+    setItemFormularioAbertoId('')
+    setItemEditandoId('')
+    setFormItem(criarFormularioItemInicial())
+    setErroFormulario('')
   }
 
   function limparMensagens() {
@@ -2217,7 +2260,7 @@ export default function FechamentoFolhaPage({
               onChange={(event) => setBuscaColaborador(event.target.value)}
               style={estilosLocais.input}
               placeholder="Buscar colaborador..."
-              disabled={!competenciaSelecionada || loadingLancamentos}
+              disabled={!competenciaSelecionada || loadingLancamentos || exibindoEdicaoColaborador}
             />
           </label>
           <label className={`folha-switch ${mostrarLancamentosArquivados ? 'ativo' : ''} ${!competenciaSelecionada ? 'desabilitado' : ''}`}>
@@ -2232,6 +2275,22 @@ export default function FechamentoFolhaPage({
           </label>
         </div>
 
+        {exibindoEdicaoColaborador && (
+          <div style={{ ...estilosLocais.formPanelSoft, marginBottom: 12 }}>
+            <div style={estilosLocais.itensPanelHeader}>
+              <div style={estilosLocais.itensPanelIntro}>
+                <strong>Editando lançamentos de: {colaboradorEmEdicaoNome}</strong>
+                <p style={estilosLocais.helperText}>
+                  Adicione os itens deste colaborador e volte quando concluir.
+                </p>
+              </div>
+              <button type="button" style={styles.btnCinza} onClick={voltarParaTodosColaboradores}>
+                Voltar para todos os colaboradores
+              </button>
+            </div>
+          </div>
+        )}
+
         {!competenciaSelecionada ? (
           <div className="folha-empty-state is-muted">
             <strong>Selecione uma competencia para carregar lancamentos.</strong>
@@ -2244,10 +2303,15 @@ export default function FechamentoFolhaPage({
             <strong>Nenhum lancamento encontrado para a competencia selecionada.</strong>
             <p>Lancamentos de folha nao sao criados automaticamente. Registre apenas valores conferidos para esta competencia.</p>
           </div>
-        ) : gruposLancamentosFiltrados.length === 0 ? (
+        ) : !exibindoEdicaoColaborador && gruposLancamentosFiltrados.length === 0 ? (
           <div className="folha-empty-state is-muted">
             <strong>Nenhum colaborador encontrado para essa busca.</strong>
             <p>Limpe ou ajuste o termo para voltar a exibir os lancamentos da competencia.</p>
+          </div>
+        ) : exibindoEdicaoColaborador && gruposLancamentosConferencia.length === 0 ? (
+          <div className="folha-empty-state is-muted">
+            <strong>Colaborador não encontrado nesta competência.</strong>
+            <p>Volte para todos os colaboradores e selecione outro lançamento.</p>
           </div>
         ) : (
           <>
@@ -2272,7 +2336,7 @@ export default function FechamentoFolhaPage({
                 </tr>
               </thead>
               <tbody>
-                {gruposLancamentosFiltrados.map((grupo) => (
+                {gruposLancamentosConferencia.map((grupo) => (
                   <Fragment key={`grupo-${grupo.funcionarioId}`}>
                     <tr style={estilosLocais.grupoTableRow}>
                       <td colSpan={11} style={{ ...estilosLocais.td, borderBottom: '1px solid #e2e8f0' }}>
@@ -2329,7 +2393,7 @@ export default function FechamentoFolhaPage({
             </table>
           </div>
           <div className="folha-mobile-list" style={estilosLocais.mobileCards}>
-            {gruposLancamentosFiltrados.map((grupo) => (
+            {gruposLancamentosConferencia.map((grupo) => (
               <div key={`mobile-grupo-${grupo.funcionarioId}`} style={estilosLocais.mobileGroup}>
                 <div style={estilosLocais.grupoLancamentosHeader}>
                   <div style={estilosLocais.grupoLancamentosNome}>

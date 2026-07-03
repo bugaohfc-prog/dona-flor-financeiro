@@ -438,6 +438,68 @@ const estilosLocais = {
   grupoTableRow: {
     background: '#f8fafc'
   },
+  contextoColaboradorPanel: {
+    border: '1px solid #bfdbfe',
+    borderRadius: 10,
+    padding: 12,
+    background: '#eff6ff',
+    display: 'grid',
+    gap: 10,
+    marginBottom: 12
+  },
+  contextoColaboradorHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
+    flexWrap: 'wrap'
+  },
+  contextoColaboradorTitulo: {
+    display: 'grid',
+    gap: 4,
+    minWidth: 220
+  },
+  contextoColaboradorNome: {
+    margin: 0,
+    color: '#0f172a',
+    fontSize: 20,
+    lineHeight: 1.15
+  },
+  contextoColaboradorMeta: {
+    margin: 0,
+    color: '#475569',
+    fontSize: 13
+  },
+  contextoColaboradorAcoes: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap'
+  },
+  contextoResumoGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+    gap: 8
+  },
+  contextoResumoCard: {
+    border: '1px solid rgba(37, 99, 235, 0.16)',
+    borderRadius: 8,
+    padding: 10,
+    background: '#fff',
+    display: 'grid',
+    gap: 2
+  },
+  contextoResumoLabel: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: 800,
+    textTransform: 'uppercase'
+  },
+  contextoResumoValor: {
+    color: '#1e3a8a',
+    fontSize: 15,
+    fontWeight: 800
+  },
   itensPanel: {
     border: '1px solid #e5e7eb',
     borderRadius: 8,
@@ -681,6 +743,47 @@ function calcularResumoLancamentos(lista = []) {
   })
 }
 
+function calcularResumoOperacionalGrupo(grupo, itensPorLancamento) {
+  return (grupo?.lancamentos || []).reduce((resumo, lancamento) => {
+    if (lancamento?.arquivado) {
+      resumo.arquivados += 1
+      return resumo
+    }
+
+    const valor = Number(lancamento?.valor) || 0
+    const itens = itensPorLancamento.get(lancamento.id) || []
+
+    if (lancamento?.conferido) resumo.conferidos += 1
+    else resumo.pendentes += 1
+
+    if (lancamento?.categoria === 'compras_vales') resumo.totalComprasVales += valor
+    if (lancamento?.categoria === 'falta_injustificada') resumo.faltas += Number(lancamento?.quantidade) || 0
+    if (CATEGORIAS_HORAS_EXTRAS.has(lancamento?.categoria)) resumo.horasExtras += Number(lancamento?.quantidade) || 0
+    if (CATEGORIAS_ITENS_DETALHADOS.has(lancamento?.categoria)) {
+      resumo.itensDetalhados += itens.length
+      if (itens.length === 0) resumo.lancamentosSemItens += 1
+    }
+
+    if (lancamento?.natureza === 'credito') resumo.creditos += valor
+    if (lancamento?.natureza === 'desconto') resumo.descontos += valor
+
+    resumo.totalAtual = resumo.creditos - resumo.descontos
+    return resumo
+  }, {
+    creditos: 0,
+    descontos: 0,
+    totalAtual: 0,
+    totalComprasVales: 0,
+    horasExtras: 0,
+    faltas: 0,
+    itensDetalhados: 0,
+    lancamentosSemItens: 0,
+    conferidos: 0,
+    pendentes: 0,
+    arquivados: 0
+  })
+}
+
 function agruparLancamentosPorFuncionario(lancamentos = [], funcionariosPorId) {
   const grupos = new Map()
 
@@ -843,6 +946,40 @@ export default function FechamentoFolhaPage({
     return mapa
   }, [itensLancamentos])
 
+  const funcionarioEmEdicao = useMemo(() => {
+    if (!colaboradorEmEdicaoId) return null
+    return funcionariosPorId.get(colaboradorEmEdicaoId) || null
+  }, [colaboradorEmEdicaoId, funcionariosPorId])
+
+  const resumoColaboradorEmEdicao = useMemo(() => {
+    if (!grupoColaboradorEmEdicao) return null
+    return calcularResumoOperacionalGrupo(grupoColaboradorEmEdicao, itensPorLancamento)
+  }, [grupoColaboradorEmEdicao, itensPorLancamento])
+
+  const resumoConferenciaOperacional = useMemo(() => {
+    return gruposLancamentos.reduce((resumoAtual, grupo) => {
+      const resumoGrupo = calcularResumoOperacionalGrupo(grupo, itensPorLancamento)
+      resumoAtual.colaboradores += 1
+      resumoAtual.creditos += resumoGrupo.creditos
+      resumoAtual.descontos += resumoGrupo.descontos
+      resumoAtual.totalAtual = resumoAtual.creditos - resumoAtual.descontos
+      resumoAtual.pendentes += resumoGrupo.pendentes
+      resumoAtual.conferidos += resumoGrupo.conferidos
+      resumoAtual.comComprasVales += resumoGrupo.totalComprasVales > 0 ? 1 : 0
+      resumoAtual.lancamentosSemItens += resumoGrupo.lancamentosSemItens
+      return resumoAtual
+    }, {
+      colaboradores: 0,
+      creditos: 0,
+      descontos: 0,
+      totalAtual: 0,
+      pendentes: 0,
+      conferidos: 0,
+      comComprasVales: 0,
+      lancamentosSemItens: 0
+    })
+  }, [gruposLancamentos, itensPorLancamento])
+
   const valorPremiacaoCalculado = useMemo(() => {
     return calcularValorPremiacaoFormulario(formLancamento)
   }, [formLancamento])
@@ -925,7 +1062,16 @@ export default function FechamentoFolhaPage({
 
   function iniciarNovoLancamentoFuncionario(funcionarioId) {
     limparMensagens()
+    if (funcionarioId && funcionarioId !== '__sem_funcionario') {
+      setModoTelaFolha(MODO_FOLHA_EDICAO_COLABORADOR)
+      setColaboradorEmEdicaoId(funcionarioId)
+    }
     setLancamentoEditandoId('')
+    setSecoesAbertas((atual) => ({
+      ...atual,
+      lancamento: true,
+      lancamentos: true
+    }))
     setFormLancamento({
       ...criarFormularioLancamentoInicial(),
       funcionario_id: funcionarioId,
@@ -1126,7 +1272,18 @@ export default function FechamentoFolhaPage({
     }
 
     setLancamentoEditandoId('')
-    setFormLancamento(criarFormularioLancamentoInicial())
+    const funcionarioContexto = formularioParaSalvar.funcionario_id || colaboradorEmEdicaoId
+    if (funcionarioContexto) {
+      setModoTelaFolha(MODO_FOLHA_EDICAO_COLABORADOR)
+      setColaboradorEmEdicaoId(funcionarioContexto)
+      setFormLancamento({
+        ...criarFormularioLancamentoInicial(),
+        funcionario_id: funcionarioContexto,
+        filial_id: obterFilialFuncionario(funcionariosPorId, funcionarioContexto)
+      })
+    } else {
+      setFormLancamento(criarFormularioLancamentoInicial())
+    }
   }
 
   async function salvarItemLancamento(event, lancamento) {
@@ -1248,6 +1405,19 @@ export default function FechamentoFolhaPage({
     }
   }
 
+  async function alternarConferenciaLancamento(lancamento) {
+    limparMensagens()
+    const conferido = !lancamento.conferido
+    const resposta = await atualizarLancamento(lancamento.id, {
+      conferido,
+      conferido_em: conferido ? new Date().toISOString() : null
+    })
+
+    if (resposta.error) {
+      setErroFormulario(resposta.error.message || 'Nao foi possivel atualizar a conferencia do lancamento.')
+    }
+  }
+
   async function arquivarItemDetalhado(item) {
     limparMensagens()
     const resposta = await arquivarItemLancamento(item)
@@ -1255,6 +1425,94 @@ export default function FechamentoFolhaPage({
     if (resposta.error) {
       setErroFormulario(resposta.error.message || 'Nao foi possivel arquivar o item detalhado.')
     }
+  }
+
+  function renderContextoColaboradorAtivo() {
+    if (!exibindoEdicaoColaborador) return null
+
+    const resumoAtivo = resumoColaboradorEmEdicao || {
+      creditos: 0,
+      descontos: 0,
+      totalAtual: 0,
+      totalComprasVales: 0,
+      horasExtras: 0,
+      faltas: 0,
+      itensDetalhados: 0,
+      lancamentosSemItens: 0,
+      conferidos: 0,
+      pendentes: 0
+    }
+    const cargo = funcionarioEmEdicao?.cargo || 'Cargo não informado'
+    const filialNome = obterNomeFilial(filiaisPorId, funcionarioEmEdicao?.filial_id) || 'Filial não informada'
+    const competencia = competenciaSelecionada?.competencia || 'Competência não selecionada'
+
+    return (
+      <div style={estilosLocais.contextoColaboradorPanel}>
+        <div style={estilosLocais.contextoColaboradorHeader}>
+          <div style={estilosLocais.contextoColaboradorTitulo}>
+            <span style={estilosLocais.badge}>Edição do colaborador</span>
+            <h3 style={estilosLocais.contextoColaboradorNome}>{colaboradorEmEdicaoNome}</h3>
+            <p style={estilosLocais.contextoColaboradorMeta}>
+              {cargo} | {filialNome} | {competencia}
+            </p>
+          </div>
+          <div style={estilosLocais.contextoColaboradorAcoes}>
+            <button
+              type="button"
+              style={styles.btnPrimario}
+              onClick={() => iniciarNovoLancamentoFuncionario(colaboradorEmEdicaoId)}
+              disabled={!podeEditar || salvando}
+            >
+              + lançamento para este colaborador
+            </button>
+            <button type="button" style={styles.btnCinza} onClick={voltarParaTodosColaboradores}>
+              Voltar para todos
+            </button>
+          </div>
+        </div>
+
+        <div style={estilosLocais.contextoResumoGrid}>
+          <div style={estilosLocais.contextoResumoCard}>
+            <span style={estilosLocais.contextoResumoLabel}>Total atual</span>
+            <strong style={estilosLocais.contextoResumoValor}>{formatarMoeda(resumoAtivo.totalAtual)}</strong>
+          </div>
+          <div style={estilosLocais.contextoResumoCard}>
+            <span style={estilosLocais.contextoResumoLabel}>Créditos</span>
+            <strong style={estilosLocais.contextoResumoValor}>{formatarMoeda(resumoAtivo.creditos)}</strong>
+          </div>
+          <div style={estilosLocais.contextoResumoCard}>
+            <span style={estilosLocais.contextoResumoLabel}>Descontos</span>
+            <strong style={estilosLocais.contextoResumoValor}>{formatarMoeda(resumoAtivo.descontos)}</strong>
+          </div>
+          <div style={estilosLocais.contextoResumoCard}>
+            <span style={estilosLocais.contextoResumoLabel}>Vales/compras</span>
+            <strong style={estilosLocais.contextoResumoValor}>{formatarMoeda(resumoAtivo.totalComprasVales)}</strong>
+          </div>
+          <div style={estilosLocais.contextoResumoCard}>
+            <span style={estilosLocais.contextoResumoLabel}>Horas extras</span>
+            <strong style={estilosLocais.contextoResumoValor}>{formatarNumero(resumoAtivo.horasExtras)}</strong>
+          </div>
+          <div style={estilosLocais.contextoResumoCard}>
+            <span style={estilosLocais.contextoResumoLabel}>Faltas</span>
+            <strong style={estilosLocais.contextoResumoValor}>{formatarNumero(resumoAtivo.faltas)}</strong>
+          </div>
+          <div style={estilosLocais.contextoResumoCard}>
+            <span style={estilosLocais.contextoResumoLabel}>Itens</span>
+            <strong style={estilosLocais.contextoResumoValor}>{resumoAtivo.itensDetalhados}</strong>
+          </div>
+          <div style={estilosLocais.contextoResumoCard}>
+            <span style={estilosLocais.contextoResumoLabel}>Pendentes</span>
+            <strong style={estilosLocais.contextoResumoValor}>{resumoAtivo.pendentes}</strong>
+          </div>
+        </div>
+
+        {resumoAtivo.lancamentosSemItens > 0 && (
+          <div style={estilosLocais.warning}>
+            {resumoAtivo.lancamentosSemItens} lançamento(s) detalhável(is) ainda sem item ativo. Confira vales, compras, faltas, horas extras e premiações antes de fechar.
+          </div>
+        )}
+      </div>
+    )
   }
 
   function renderResumoGrupo(resumo) {
@@ -1477,6 +1735,8 @@ export default function FechamentoFolhaPage({
   function renderItensLancamento(lancamento) {
     const itens = itensPorLancamento.get(lancamento.id) || []
     const podeDetalhar = CATEGORIAS_ITENS_DETALHADOS.has(lancamento.categoria)
+    const totalItens = itens.reduce((total, item) => total + (Number(item?.valor) || 0), 0)
+    const categoriaCompraVale = lancamento.categoria === 'compras_vales'
 
     if (!podeDetalhar) {
       return (
@@ -1494,8 +1754,13 @@ export default function FechamentoFolhaPage({
             <p style={estilosLocais.helperText}>
               {loadingItensLancamentos
                 ? 'Carregando itens...'
-                : `${itens.length} item(ns) ativo(s). Total consolidado pelo banco.`}
+                : `${itens.length} item(ns) ativo(s). Total dos itens: ${formatarMoeda(totalItens)}.`}
             </p>
+            {categoriaCompraVale && (
+              <p style={estilosLocais.helperText}>
+                Vales/compras ficam detalhados por item para facilitar conferência e relançamento.
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -1577,6 +1842,15 @@ export default function FechamentoFolhaPage({
           disabled={!podeEditar || salvando || lancamento.arquivado}
         >
           Editar lançamento
+        </button>
+        <button
+          className="folha-btn folha-btn-secondary"
+          type="button"
+          style={styles.btnCinza}
+          onClick={() => alternarConferenciaLancamento(lancamento)}
+          disabled={!podeEditar || salvando || lancamento.arquivado}
+        >
+          {lancamento.conferido ? 'Reabrir conferência' : 'Marcar conferido'}
         </button>
         <button
           className={`folha-btn ${lancamento.arquivado ? 'folha-btn-positive' : 'folha-btn-danger'}`}
@@ -2275,7 +2549,36 @@ export default function FechamentoFolhaPage({
           </label>
         </div>
 
-        {exibindoEdicaoColaborador && (
+        {!exibindoEdicaoColaborador && competenciaSelecionada && (
+          <div style={{ ...estilosLocais.contextoResumoGrid, marginBottom: 12 }}>
+            <div style={estilosLocais.contextoResumoCard}>
+              <span style={estilosLocais.contextoResumoLabel}>Colaboradores</span>
+              <strong style={estilosLocais.contextoResumoValor}>{resumoConferenciaOperacional.colaboradores}</strong>
+            </div>
+            <div style={estilosLocais.contextoResumoCard}>
+              <span style={estilosLocais.contextoResumoLabel}>Pendentes</span>
+              <strong style={estilosLocais.contextoResumoValor}>{resumoConferenciaOperacional.pendentes}</strong>
+            </div>
+            <div style={estilosLocais.contextoResumoCard}>
+              <span style={estilosLocais.contextoResumoLabel}>Conferidos</span>
+              <strong style={estilosLocais.contextoResumoValor}>{resumoConferenciaOperacional.conferidos}</strong>
+            </div>
+            <div style={estilosLocais.contextoResumoCard}>
+              <span style={estilosLocais.contextoResumoLabel}>Com vales/compras</span>
+              <strong style={estilosLocais.contextoResumoValor}>{resumoConferenciaOperacional.comComprasVales}</strong>
+            </div>
+            <div style={estilosLocais.contextoResumoCard}>
+              <span style={estilosLocais.contextoResumoLabel}>Sem itens</span>
+              <strong style={estilosLocais.contextoResumoValor}>{resumoConferenciaOperacional.lancamentosSemItens}</strong>
+            </div>
+            <div style={estilosLocais.contextoResumoCard}>
+              <span style={estilosLocais.contextoResumoLabel}>Saldo atual</span>
+              <strong style={estilosLocais.contextoResumoValor}>{formatarMoeda(resumoConferenciaOperacional.totalAtual)}</strong>
+            </div>
+          </div>
+        )}
+
+        {false && exibindoEdicaoColaborador && (
           <div style={{ ...estilosLocais.formPanelSoft, marginBottom: 12 }}>
             <div style={estilosLocais.itensPanelHeader}>
               <div style={estilosLocais.itensPanelIntro}>
@@ -2290,6 +2593,8 @@ export default function FechamentoFolhaPage({
             </div>
           </div>
         )}
+
+        {renderContextoColaboradorAtivo()}
 
         {!competenciaSelecionada ? (
           <div className="folha-empty-state is-muted">

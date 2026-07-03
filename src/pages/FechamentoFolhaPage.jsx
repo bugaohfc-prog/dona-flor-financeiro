@@ -1,6 +1,11 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useFolha } from '../hooks/useFolha'
 import { useFuncionarios } from '../hooks/useFuncionarios'
+import FolhaContextoColaboradorAtivo from '../modules/folha/components/fechamento/FolhaContextoColaboradorAtivo'
+import {
+  FolhaSectionHeader,
+  FolhaSubsectionHeader
+} from '../modules/folha/components/fechamento/FolhaSectionHeader'
 import {
   CATEGORIAS_CREDITO_FOLHA,
   CATEGORIAS_DESCONTO_FOLHA,
@@ -94,49 +99,6 @@ const CATEGORIAS_VALOR_ZERO_INFORMATIVO = new Set([
 const CATEGORIAS_ITENS_DETALHADOS = new Set(CATEGORIAS_ITENS_DETALHADOS_FOLHA)
 const MODO_FOLHA_CONFERENCIA = 'conferencia'
 const MODO_FOLHA_EDICAO_COLABORADOR = 'edicao_colaborador'
-
-function FolhaSectionHeader({ kicker, titulo, descricao, resumo, aberto, onToggle, acao }) {
-  return (
-    <div className="folha-section-header">
-      <div className="folha-section-title">
-        {kicker && <span>{kicker}</span>}
-        <strong>{titulo}</strong>
-        {descricao && <small>{descricao}</small>}
-        {!aberto && resumo && <em>{resumo}</em>}
-      </div>
-      <div className="folha-section-actions">
-        {acao}
-        <button
-          className="folha-section-toggle"
-          type="button"
-          onClick={onToggle}
-          aria-expanded={aberto}
-          aria-label={aberto ? `Recolher ${titulo}` : `Expandir ${titulo}`}
-        >
-          {aberto ? '\u2212' : '+'}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function FolhaSubsectionHeader({ titulo, descricao, aberto, onToggle }) {
-  return (
-    <button
-      className="folha-subsection-toggle folha-form-subsection-header"
-      type="button"
-      onClick={onToggle}
-      aria-expanded={aberto}
-      aria-label={aberto ? `Recolher ${titulo}` : `Expandir ${titulo}`}
-    >
-      <span className="folha-form-subsection-copy">
-        <strong>{titulo}</strong>
-        {descricao && <small>{descricao}</small>}
-      </span>
-      <b className="folha-form-subsection-toggle">{aberto ? '\u2212' : '+'}</b>
-    </button>
-  )
-}
 
 const estilosLocais = {
   pageActions: {
@@ -2594,7 +2556,23 @@ export default function FechamentoFolhaPage({
           </div>
         )}
 
-        {renderContextoColaboradorAtivo()}
+        <FolhaContextoColaboradorAtivo
+          ativo={exibindoEdicaoColaborador}
+          resumo={resumoColaboradorEmEdicao}
+          nome={colaboradorEmEdicaoNome}
+          cargo={funcionarioEmEdicao?.cargo}
+          filialNome={obterNomeFilial(filiaisPorId, funcionarioEmEdicao?.filial_id)}
+          competencia={competenciaSelecionada?.competencia}
+          colaboradorId={colaboradorEmEdicaoId}
+          estilos={estilosLocais}
+          styles={styles}
+          podeEditar={podeEditar}
+          salvando={salvando}
+          onNovoLancamento={iniciarNovoLancamentoFuncionario}
+          onVoltar={voltarParaTodosColaboradores}
+          formatarMoeda={formatarMoeda}
+          formatarNumero={formatarNumero}
+        />
 
         {!competenciaSelecionada ? (
           <div className="folha-empty-state is-muted">

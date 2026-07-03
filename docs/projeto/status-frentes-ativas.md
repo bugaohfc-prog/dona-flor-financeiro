@@ -1,50 +1,58 @@
 # Status das frentes ativas
 
-Data: 2026-07-02
+Data: 2026-07-03
+
+## Decisão atual
+
+- A V2 está pausada/abandonada.
+- Não continuar V2.
+- Não trazer código, rotas, mocks, contratos ou arquitetura V2 para produção.
+- O caminho oficial volta a ser V1 atual na branch `main`, em produção real.
 
 ## Ativas
 
-- Virada V2 controlada.
-- Contas / Fluxo de Caixa por filial.
+- V1 atual em `main` / produção real.
+- Fechamento de Folha V1.
+- Fechamento da competência 06/2026.
 
 ## Pausadas
 
-- Gestão de Pessoas remendos antigos.
-- PDF Vales implementação direta.
-- Logs/Auditoria.
+- V2 / `v2/virada-controlada`.
+- Central V2.
+- Fluxo de Caixa V2.
+- Gestão de Pessoas V2.
+- Admin V2.
+- Auditoria V2.
+- PDF Vales com backend real.
+- Logs/Auditoria com banco real.
 - Banco crítico / SECURITY DEFINER.
 - Performance Supabase.
-- Central V2.
-- Workspace de Lançamentos.
+- Workspace de Lançamentos com gravação real.
 
 ## Concluídas/controladas
 
+- Backup Git e congelamento pré-V2 documentados.
+- Redesenho operacional do Fechamento de Folha V1 aplicado na `main`.
+- Rearquitetura inicial do Fechamento de Folha V1 em componentes dedicados.
 - Correções críticas de banco parcialmente tratadas.
 - Consolidação INSS/CP-SEGUR.
 - Contas a vencer com período ampliado.
 - Filtro múltiplo de centro de custo em relatórios.
 - Mapeamento Fluxo de Caixa.
-- Fase 0.5 contratos Gestão de Pessoas.
 - Planejamento PDF Vales.
-- Auditoria do redesenho do Fechamento de Folha.
 - Auditoria operacional inicial em Logs.
 
 ## Pendentes
 
-- Exportação Fluxo de Caixa.
+- Validar Fechamento de Folha V1 na competência 06/2026 com uso real.
+- Extrair cálculos auxiliares da folha para utils dedicados.
+- Extrair itens detalhados e lista de lançamentos para componentes menores.
+- Exportação Fluxo de Caixa, se retomada em V1.
 - Cadastro completo de empresas.
 - CNPJ/endereço/dados empresariais.
-- Relatórios V2.
-- Curso/módulo pendente.
 - Logs/Auditoria tela.
-- Gestão de Pessoas V2 completa.
-- Funcionários V2.
-- Férias V2.
-- Folha V2.
-- Infra/Vercel/Node.
-- Desmembramento de páginas grandes.
 - Segurança Supabase/RLS/functions/grants remanescente.
 
 ## Regra atual
 
-A V1 fica congelada para melhorias amplas. Correções pequenas só devem entrar se forem bugs críticos de produção. Novas melhorias estruturais entram no plano V2.
+Mudanças devem ser feitas por frente, diretamente na `main`, com tag de backup quando houver risco, build obrigatório quando alterar `src`, e rollback claro. Banco, RLS, migrations, secrets, Edge Functions e permissões continuam exigindo ciclo próprio e autorização explícita.

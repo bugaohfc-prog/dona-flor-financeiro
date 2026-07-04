@@ -68,3 +68,12 @@ MudanÃ§as devem ser feitas por frente, diretamente na `main`, com tag de backup 
 - Classificacao automatica centralizada tambem prepara sugestao segura de centro de custo em novos lancamentos.
 - Dados antigos continuam intactos; a classificacao historica e logica, feita no relatorio/exportacao.
 - Pendencia principal: frente de Receitas/Entradas para preencher `FATURAMENTO BRUTO` com origem confiavel.
+
+## Atualizacao 2026-07-04 — Receitas V1
+
+- Criada frente Receitas / Entradas V1 em `Financeiro > Receitas`.
+- Criada tabela `public.df_receitas` com RLS habilitada/forcada, sem acesso anon e sem DELETE fisico.
+- Inserida carga inicial idempotente do PDF `Resultados de vendas 2025.pdf` com 48 receitas mensais.
+- Fluxo de Caixa V1 passa a preencher `FATURAMENTO BRUTO` com receitas ativas por `data_receita`.
+- Exportacao CSV/Excel do Fluxo de Caixa passa a sair com entradas, saidas por rubrica e total geral.
+- Pendencia: validar operacionalmente a rotina mensal de cadastro/importacao de receitas futuras.

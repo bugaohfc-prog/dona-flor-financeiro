@@ -24,6 +24,22 @@ const COLUNAS_CONTAS_FLUXO = [
   'df_filiais(nome)'
 ].join(', ')
 
+const COLUNAS_RECEITAS_FLUXO = [
+  'id',
+  'empresa_id',
+  'filial_id',
+  'data_receita',
+  'ano',
+  'mes',
+  'valor',
+  'origem',
+  'descricao',
+  'observacao',
+  'status',
+  'arquivado',
+  'df_filiais(nome)'
+].join(', ')
+
 export async function carregarFluxoCaixaRealizadoV1(supabase, empresaId, ano) {
   const anoNumero = Number(ano)
   if (!empresaId) return { data: null, error: new Error('Empresa ativa não selecionada.') }
@@ -32,7 +48,7 @@ export async function carregarFluxoCaixaRealizadoV1(supabase, empresaId, ano) {
   const dataInicial = `${anoNumero}-01-01`
   const dataFinal = `${anoNumero}-12-31`
 
-  const [respostaContasPagas, respostaPagamentos, respostaFiliais] = await Promise.all([
+  const [respostaContasPagas, respostaPagamentos, respostaFiliais, respostaReceitas] = await Promise.all([
     selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTAS_FLUXO)
       .eq('status', 'pago')
       .gte('data_pagamento', dataInicial)
@@ -52,12 +68,19 @@ export async function carregarFluxoCaixaRealizadoV1(supabase, empresaId, ano) {
       .or('arquivado.is.null,arquivado.eq.false')
       .order('data_pagamento', { ascending: true }),
     selecionarPorEmpresa(supabase, 'df_filiais', empresaId, 'id, nome')
-      .order('nome', { ascending: true })
+      .order('nome', { ascending: true }),
+    selecionarPorEmpresa(supabase, 'df_receitas', empresaId, COLUNAS_RECEITAS_FLUXO)
+      .gte('data_receita', dataInicial)
+      .lte('data_receita', dataFinal)
+      .eq('status', 'ativo')
+      .or('arquivado.is.null,arquivado.eq.false')
+      .order('data_receita', { ascending: true })
   ])
 
   if (respostaContasPagas.error) return { data: null, error: respostaContasPagas.error }
   if (respostaPagamentos.error) return { data: null, error: respostaPagamentos.error }
   if (respostaFiliais.error) return { data: null, error: respostaFiliais.error }
+  if (respostaReceitas.error) return { data: null, error: respostaReceitas.error }
 
   const pagamentosParciais = respostaPagamentos.data || []
   const idsContasParciais = Array.from(new Set(pagamentosParciais.map((pagamento) => pagamento.conta_id).filter(Boolean)))
@@ -86,6 +109,7 @@ export async function carregarFluxoCaixaRealizadoV1(supabase, empresaId, ano) {
     data: {
       contasPagas,
       pagamentosParciais,
+      receitas: respostaReceitas.data || [],
       contasPorId,
       filiais: respostaFiliais.data || []
     },

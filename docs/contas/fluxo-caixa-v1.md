@@ -258,3 +258,25 @@ Centros confirmados:
 - `Veiculos`
 
 Nenhum `INSERT`, `UPDATE`, `DELETE`, DDL, migration ou alteracao de RLS/policies/grants/functions/triggers foi executado.
+
+## Atualizacao 2026-07-04 — receitas e FATURAMENTO BRUTO
+
+Foi criada a frente `Receitas / Entradas V1` para preencher o `FATURAMENTO BRUTO`.
+
+O Fluxo de Caixa V1 agora:
+
+- consulta `public.df_receitas`;
+- usa `data_receita` para ano/mes da entrada;
+- soma somente receitas `status = ativo` e `arquivado = false`;
+- respeita filtro de filial;
+- preenche `FATURAMENTO BRUTO` na tela, CSV e Excel;
+- mantem saidas por rubricas;
+- calcula `TOTAL GERAL = FATURAMENTO BRUTO - saidas`.
+
+Dados 2025 do PDF `Resultados de vendas 2025.pdf` foram carregados em `df_receitas` como `Venda de Loja`:
+
+- Andradina: R$ 2.365.617,00
+- Tres Lagoas: R$ 1.708.082,00
+- Paranaiba: R$ 371.723,00
+- Brilho: R$ 406.353,00
+- Total geral: R$ 4.851.775,00

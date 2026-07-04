@@ -91,10 +91,36 @@ function enriquecerMovimentoComRubrica(movimento) {
 export function montarMovimentosFluxoCaixa({
   contasPagas = [],
   pagamentosParciais = [],
+  receitas = [],
   contasPorId = new Map(),
   filiaisPorId = new Map(),
   filialId = ''
 }) {
+  const movimentosReceitas = (receitas || [])
+    .filter((receita) => receita?.status === 'ativo')
+    .filter((receita) => receita?.arquivado !== true)
+    .filter((receita) => receita?.data_receita)
+    .filter((receita) => normalizarValor(receita.valor) > 0)
+    .filter((receita) => !filialId || (receita.filial_id || '') === filialId)
+    .map((receita) => ({
+      id: receita.id,
+      origem: 'receita',
+      receita_id: receita.id,
+      conta_id: null,
+      pagamento_id: null,
+      descricao: receita.descricao || receita.origem || 'Receita',
+      observacao: receita.observacao || '',
+      data_pagamento: receita.data_receita,
+      data_receita: receita.data_receita,
+      mes: obterMesDataPagamento(receita.data_receita),
+      valor: normalizarValor(receita.valor),
+      tipo: 'entrada',
+      filial_id: receita.filial_id || '',
+      filial_nome: filiaisPorId.get(receita.filial_id || '')?.nome || receita.df_filiais?.nome || 'Sem filial',
+      origem_receita: receita.origem || 'Receita'
+    }))
+    .filter((movimento) => movimento.mes)
+
   const pagamentosAtivos = (pagamentosParciais || []).filter((pagamento) => (
     pagamento &&
     pagamento.arquivado !== true &&
@@ -160,7 +186,7 @@ export function montarMovimentosFluxoCaixa({
     }))
     .filter((movimento) => movimento.mes && movimento.valor > 0)
 
-  return [...movimentosParciais, ...movimentosContasPagas]
+  return [...movimentosReceitas, ...movimentosParciais, ...movimentosContasPagas]
 }
 
 export function agregarSaidasPorRubrica(movimentos = []) {

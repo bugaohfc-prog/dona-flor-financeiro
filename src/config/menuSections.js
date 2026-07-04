@@ -1,56 +1,57 @@
-const menuSections = [
+﻿const menuSections = [
   {
     id: 'dashboard',
-    titulo: 'Área de trabalho',
+    titulo: 'Ãrea de trabalho',
     items: [
-      { tela: 'dashboard', icon: '🏠', label: 'Área de trabalho', desc: 'Visão principal da empresa' },
-      { tela: 'agenda', icon: '📅', label: 'Agenda', desc: 'Compromissos e prazos' },
-      { tela: 'notas', icon: '📝', label: 'Notas', desc: 'Pendências e lembretes' }
+      { tela: 'dashboard', icon: 'ðŸ ', label: 'Ãrea de trabalho', desc: 'VisÃ£o principal da empresa' },
+      { tela: 'agenda', icon: 'ðŸ“…', label: 'Agenda', desc: 'Compromissos e prazos' },
+      { tela: 'notas', icon: 'ðŸ“', label: 'Notas', desc: 'PendÃªncias e lembretes' }
     ]
   },
   {
     id: 'financeiro',
     titulo: 'Financeiro',
     items: [
-      { tela: 'contas', icon: '💳', label: 'Contas', desc: 'Contas a pagar e filtros' },
-      { tela: 'recorrencias', icon: '↻', label: 'Recorrências', desc: 'Séries financeiras recorrentes' },
+      { tela: 'contas', icon: 'ðŸ’³', label: 'Contas', desc: 'Contas a pagar e filtros' },
+      { tela: 'receitas', icon: 'RE', label: 'Receitas', desc: 'Entradas de loja' },
+      { tela: 'recorrencias', icon: 'â†»', label: 'RecorrÃªncias', desc: 'SÃ©ries financeiras recorrentes' },
       { tela: 'controle-impostos', icon: 'TX', label: 'Controle de impostos', desc: 'Simples, FGTS e INSS' },
       { tela: 'fluxo-caixa', icon: 'FC', label: 'Fluxo de Caixa', desc: 'Realizado por ano e filial' },
-      { tela: 'relatorios', icon: '📊', label: 'Relatórios financeiros', desc: 'Análise e indicadores' },
-      { tela: 'relatorios-contas', icon: 'RC', label: 'Relatórios de contas', desc: 'Impressão e exportação' },
-      { tela: 'importar', icon: '📥', label: 'Importação', desc: 'Importar contas por CSV' }
+      { tela: 'relatorios', icon: 'ðŸ“Š', label: 'RelatÃ³rios financeiros', desc: 'AnÃ¡lise e indicadores' },
+      { tela: 'relatorios-contas', icon: 'RC', label: 'RelatÃ³rios de contas', desc: 'ImpressÃ£o e exportaÃ§Ã£o' },
+      { tela: 'importar', icon: 'ðŸ“¥', label: 'ImportaÃ§Ã£o', desc: 'Importar contas por CSV' }
     ]
   },
   {
     id: 'pessoas',
-    titulo: 'Gestão de Pessoas',
+    titulo: 'GestÃ£o de Pessoas',
     items: [
-      { tela: 'relatorios-gestao-pessoas', icon: 'RG', label: 'Central de Relatórios', desc: 'Pessoas, férias e folha', peopleOnly: true },
-      { tela: 'funcionarios', icon: '👥', label: 'Funcionários', desc: 'Cadastro de colaboradores', peopleOnly: true },
-      { tela: 'ferias', icon: '🌴', label: 'Férias', desc: 'Períodos aquisitivos e gozos', peopleOnly: true },
-      { tela: 'fechamento-folha', icon: '🧾', label: 'Folha / Fechamento', desc: 'Competências e lançamentos', peopleOnly: true }
+      { tela: 'relatorios-gestao-pessoas', icon: 'RG', label: 'Central de RelatÃ³rios', desc: 'Pessoas, fÃ©rias e folha', peopleOnly: true },
+      { tela: 'funcionarios', icon: 'ðŸ‘¥', label: 'FuncionÃ¡rios', desc: 'Cadastro de colaboradores', peopleOnly: true },
+      { tela: 'ferias', icon: 'ðŸŒ´', label: 'FÃ©rias', desc: 'PerÃ­odos aquisitivos e gozos', peopleOnly: true },
+      { tela: 'fechamento-folha', icon: 'ðŸ§¾', label: 'Folha / Fechamento', desc: 'CompetÃªncias e lanÃ§amentos', peopleOnly: true }
     ]
   },
   {
     id: 'administracao',
-    titulo: 'Administração',
+    titulo: 'AdministraÃ§Ã£o',
     items: [
-      { tela: 'usuarios', icon: '👥', label: 'Usuários e empresa', desc: 'Perfis, acessos e empresa' },
-      { tela: 'master-empresas', icon: '🏢', label: 'Empresas', desc: 'Administração de empresas', masterOnly: true },
-      { tela: 'configuracoes', icon: '⚙️', label: 'Configurações', desc: 'Preferências da empresa' },
-      { tela: 'billing', icon: '💼', label: 'Planos', desc: 'Plano atual e limites' },
-      { tela: 'onboarding', icon: '🚀', label: 'Assistente inicial', desc: 'Configuração da empresa' },
-      { tela: 'lixeira', icon: '🗑️', label: 'Lixeira', desc: 'Restaurar ou excluir definitivo' }
+      { tela: 'usuarios', icon: 'ðŸ‘¥', label: 'UsuÃ¡rios e empresa', desc: 'Perfis, acessos e empresa' },
+      { tela: 'master-empresas', icon: 'ðŸ¢', label: 'Empresas', desc: 'AdministraÃ§Ã£o de empresas', masterOnly: true },
+      { tela: 'configuracoes', icon: 'âš™ï¸', label: 'ConfiguraÃ§Ãµes', desc: 'PreferÃªncias da empresa' },
+      { tela: 'billing', icon: 'ðŸ’¼', label: 'Planos', desc: 'Plano atual e limites' },
+      { tela: 'onboarding', icon: 'ðŸš€', label: 'Assistente inicial', desc: 'ConfiguraÃ§Ã£o da empresa' },
+      { tela: 'lixeira', icon: 'ðŸ—‘ï¸', label: 'Lixeira', desc: 'Restaurar ou excluir definitivo' }
     ]
   }
 ]
 
 export const MODULOS_TOPBAR = {
-  geral: 'Área de trabalho',
-  financeiro: 'Gestão Financeira',
-  administracao: 'Administração',
+  geral: 'Ãrea de trabalho',
+  financeiro: 'GestÃ£o Financeira',
+  administracao: 'AdministraÃ§Ã£o',
   conta: 'Conta',
-  pessoas: 'Gestão de Pessoas'
+  pessoas: 'GestÃ£o de Pessoas'
 }
 
 const CONTEXTO_MODULO_POR_TELA = {
@@ -59,6 +60,7 @@ const CONTEXTO_MODULO_POR_TELA = {
   notas: MODULOS_TOPBAR.geral,
 
   contas: MODULOS_TOPBAR.financeiro,
+  receitas: MODULOS_TOPBAR.financeiro,
   recorrencias: MODULOS_TOPBAR.financeiro,
   'controle-impostos': MODULOS_TOPBAR.financeiro,
   'fluxo-caixa': MODULOS_TOPBAR.financeiro,

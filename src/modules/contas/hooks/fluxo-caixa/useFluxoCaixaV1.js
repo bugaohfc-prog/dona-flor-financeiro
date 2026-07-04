@@ -47,6 +47,7 @@ export function useFluxoCaixaV1({ empresaId }) {
     return montarMovimentosFluxoCaixa({
       contasPagas: dadosOrigem.contasPagas,
       pagamentosParciais: dadosOrigem.pagamentosParciais,
+      receitas: dadosOrigem.receitas,
       contasPorId: dadosOrigem.contasPorId,
       filiaisPorId,
       filialId

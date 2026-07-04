@@ -73,6 +73,7 @@ import {
   LazyMasterPanelPage,
   LazyNotasPage,
   LazyOnboardingPage,
+  LazyReceitasPage,
   LazyRecorrenciasFinanceirasPage,
   LazyRelatorios,
   LazyRelatoriosContasPage,
@@ -112,6 +113,7 @@ const TELAS_RETORNO_SESSAO = new Set([
   'agenda',
   'notas',
   'contas',
+  'receitas',
   'fluxo-caixa',
   'relatorios-contas',
   'relatorios',
@@ -4740,6 +4742,21 @@ export default function App() {
           navegarPara={navegarPara}
           podeExportarDados={podeExportarDados()}
           mostrarAviso={mostrarAviso}
+        />
+      </AppSuspenseBoundary>
+    )
+  }
+
+  if (telaAtual === 'receitas') {
+    return renderAppFrame(
+      <AppSuspenseBoundary>
+        <LazyReceitasPage
+          empresaId={empresaId}
+          empresaNome={empresaAtiva?.nome}
+          filiais={filiais}
+          voltar={() => navegarPara('contas')}
+          mostrarAviso={mostrarAviso}
+          podeEditarFinanceiro={podeEditarFinanceiro()}
         />
       </AppSuspenseBoundary>
     )

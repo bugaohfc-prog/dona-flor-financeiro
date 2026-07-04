@@ -8,6 +8,7 @@ export const lazyRouteImports = {
   contas: () => import('../pages/ContasPage.jsx'),
   controleImpostos: () => import('../pages/ControleImpostosPage.jsx'),
   recorrenciasFinanceiras: () => import('../pages/RecorrenciasFinanceirasPage.jsx'),
+  receitas: () => import('../pages/ReceitasPage.jsx'),
   fluxoCaixa: () => import('../pages/FluxoCaixaPage.jsx'),
   relatoriosContas: () => import('../pages/RelatoriosContasPage.jsx'),
   importar: () => import('../pages/ImportarPage.jsx'),
@@ -36,6 +37,7 @@ export const routeImportByScreen = {
   contas: 'contas',
   'controle-impostos': 'controleImpostos',
   recorrencias: 'recorrenciasFinanceiras',
+  receitas: 'receitas',
   'fluxo-caixa': 'fluxoCaixa',
   'relatorios-contas': 'relatoriosContas',
   importar: 'importar',
@@ -76,6 +78,7 @@ export const LazyConfiguracoesPage = lazyWithRecovery('configuracoes')
 export const LazyContasPage = lazyWithRecovery('contas')
 export const LazyControleImpostosPage = lazyWithRecovery('controleImpostos')
 export const LazyRecorrenciasFinanceirasPage = lazyWithRecovery('recorrenciasFinanceiras')
+export const LazyReceitasPage = lazyWithRecovery('receitas')
 export const LazyFluxoCaixaPage = lazyWithRecovery('fluxoCaixa')
 export const LazyRelatoriosContasPage = lazyWithRecovery('relatoriosContas')
 export const LazyImportarPage = lazyWithRecovery('importar')

@@ -10,7 +10,7 @@ import {
   prepararLinhasCsvFluxoCaixa
 } from '../modules/contas/utils/fluxo-caixa/fluxoCaixaUtils'
 
-const OBSERVACAO_ENTRADAS = 'FATURAMENTO BRUTO/entradas ainda sem origem confiÃ¡vel no mÃ³dulo atual. Este relatÃ³rio entrega saÃ­das/pagamentos realizados por data de pagamento.'
+const OBSERVACAO_ENTRADAS = 'FATURAMENTO BRUTO usa receitas ativas em df_receitas por data_receita. Saidas usam pagamentos realizados por data_pagamento.'
 
 function slug(valor) {
   return String(valor || '')
@@ -189,7 +189,7 @@ export default function FluxoCaixaPage({
       )}
 
       <section className="fluxo-caixa-summary">
-        <FluxoResumoCard titulo="Entradas" valor={formatarMoedaFluxo(resultado.totais.entradas)} detalhe="Origem pendente" />
+        <FluxoResumoCard titulo="Entradas" valor={formatarMoedaFluxo(resultado.totais.entradas)} detalhe="Receitas ativas" />
         <FluxoResumoCard titulo="SaÃ­das" valor={formatarMoedaFluxo(resultado.totais.saidas)} detalhe="Pagamentos realizados" />
         <FluxoResumoCard titulo="Saldo" valor={formatarMoedaFluxo(resultado.totais.saldo)} detalhe="Entradas - saÃ­das" destaque />
         <FluxoResumoCard titulo="Movimentos" valor={resultado.totais.movimentos} detalhe="Pagamentos considerados" />
@@ -330,7 +330,11 @@ export default function FluxoCaixaPage({
               <div>
                 <strong>{movimento.descricao}</strong>
                 <span>{movimento.filial_nome} • {formatarDataFluxo(movimento.data_pagamento)} • {movimento.origem === 'pagamento_parcial' ? 'Pagamento parcial' : 'Conta paga'}</span>
-                <span>{movimento.rubrica} • Centro: {movimento.centro_custo_nome || '-'} • Critério: {movimento.rubrica_criterio} / {movimento.rubrica_confianca}</span>
+                {movimento.tipo === 'entrada' ? (
+                  <span>FATURAMENTO BRUTO • Origem: {movimento.origem_receita || 'Receita'}</span>
+                ) : (
+                  <span>{movimento.rubrica} • Centro: {movimento.centro_custo_nome || '-'} • Critério: {movimento.rubrica_criterio} / {movimento.rubrica_confianca}</span>
+                )}
               </div>
               <strong>{formatarMoedaFluxo(movimento.valor)}</strong>
             </article>

@@ -94,7 +94,7 @@ export default function FluxoCaixaPage({
 
   function exportarExcelFluxo() {
     if (!podeExportarDados) {
-      mostrarAviso?.('Seu perfil atual nÃ£o permite exportar relatÃ³rios.', 'erro')
+      mostrarAviso?.('Seu perfil atual não permite exportar relatórios.', 'erro')
       return
     }
 
@@ -133,9 +133,9 @@ export default function FluxoCaixaPage({
 
       <header className="fluxo-caixa-hero">
         <div>
-          <span>Contas / RelatÃ³rios</span>
+          <span>Contas / Relatórios</span>
           <h1>Fluxo de Caixa</h1>
-          <p>Realizado por data de pagamento. Usa pagamentos e baixas reais jÃ¡ registrados no sistema.</p>
+          <p>Realizado por data de pagamento. Usa pagamentos e baixas reais já registrados no sistema.</p>
         </div>
         <div className="fluxo-caixa-actions">
           <button type="button" className="fluxo-btn secondary" onClick={voltar}>Voltar</button>
@@ -176,13 +176,13 @@ export default function FluxoCaixaPage({
       <section className="fluxo-caixa-alert">
         <strong>Leitura operacional</strong>
         <p>{OBSERVACAO_ENTRADAS}</p>
-        <p>Pagamentos parciais ativos entram por `df_contas_pagamentos`. Quando uma conta tem parcial ativo, a conta-pai nÃ£o Ã© somada integralmente junto.</p>
+        <p>Pagamentos parciais ativos entram por `df_contas_pagamentos`. Quando uma conta tem parcial ativo, a conta-pai não é somada integralmente junto.</p>
         <p>Saidas sao classificadas em tempo de relatorio, sem alterar dados antigos no banco.</p>
       </section>
 
       {erro && (
         <section className="fluxo-caixa-error">
-          <strong>NÃ£o foi possÃ­vel carregar o Fluxo de Caixa.</strong>
+          <strong>Não foi possível carregar o Fluxo de Caixa.</strong>
           <p>{erro}</p>
           <button type="button" className="fluxo-btn secondary" onClick={recarregar}>Tentar novamente</button>
         </section>
@@ -190,8 +190,8 @@ export default function FluxoCaixaPage({
 
       <section className="fluxo-caixa-summary">
         <FluxoResumoCard titulo="Entradas" valor={formatarMoedaFluxo(resultado.totais.entradas)} detalhe="Receitas ativas" />
-        <FluxoResumoCard titulo="SaÃ­das" valor={formatarMoedaFluxo(resultado.totais.saidas)} detalhe="Pagamentos realizados" />
-        <FluxoResumoCard titulo="Saldo" valor={formatarMoedaFluxo(resultado.totais.saldo)} detalhe="Entradas - saÃ­das" destaque />
+        <FluxoResumoCard titulo="Saídas" valor={formatarMoedaFluxo(resultado.totais.saidas)} detalhe="Pagamentos realizados" />
+        <FluxoResumoCard titulo="Saldo" valor={formatarMoedaFluxo(resultado.totais.saldo)} detalhe="Entradas - saídas" destaque />
         <FluxoResumoCard titulo="Movimentos" valor={resultado.totais.movimentos} detalhe="Pagamentos considerados" />
       </section>
 
@@ -215,9 +215,9 @@ export default function FluxoCaixaPage({
           <table className="fluxo-table">
             <thead>
               <tr>
-                <th>MÃªs</th>
+                <th>Mês</th>
                 <th>Entradas</th>
-                <th>SaÃ­das</th>
+                <th>Saídas</th>
                 <th>Saldo</th>
                 <th>Movimentos</th>
               </tr>
@@ -251,7 +251,7 @@ export default function FluxoCaixaPage({
                 <span>{linha.movimentos} movimento(s)</span>
               </header>
               <div><span>Entradas</span><strong>{formatarMoedaFluxo(linha.entradas)}</strong></div>
-              <div><span>SaÃ­das</span><strong>{formatarMoedaFluxo(linha.saidas)}</strong></div>
+              <div><span>Saídas</span><strong>{formatarMoedaFluxo(linha.saidas)}</strong></div>
               <div><span>Saldo</span><strong className={linha.saldo < 0 ? 'is-negative' : ''}>{formatarMoedaFluxo(linha.saldo)}</strong></div>
             </article>
           ))}
@@ -321,7 +321,7 @@ export default function FluxoCaixaPage({
         <div className="fluxo-caixa-section-title">
           <div>
             <h2>Movimentos considerados</h2>
-            <p>Amostra para validaÃ§Ã£o manual mÃªs a mÃªs.</p>
+            <p>Amostra para validação manual mês a mês.</p>
           </div>
         </div>
         <div className="fluxo-movimentos">
@@ -340,7 +340,7 @@ export default function FluxoCaixaPage({
             </article>
           ))}
           {movimentos.length > 80 && (
-            <p className="fluxo-note">Exibindo 80 de {movimentos.length} movimento(s). A exportaÃ§Ã£o inclui o resumo mensal completo.</p>
+            <p className="fluxo-note">Exibindo 80 de {movimentos.length} movimento(s). A exportação inclui o resumo mensal completo.</p>
           )}
         </div>
       </section>

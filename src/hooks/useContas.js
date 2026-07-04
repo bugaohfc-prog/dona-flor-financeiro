@@ -379,7 +379,7 @@ export function useContas() {
     const { data: pagamentosParciais, error } = await listarPagamentosParciaisPorContas(supabase, empresaId, contaIds)
 
     if (error) {
-      console.warn('NÃ£o foi possÃ­vel carregar pagamentos parciais das contas:', error.message)
+      console.warn('Não foi possível carregar pagamentos parciais das contas:', error.message)
       return contasBase
     }
 

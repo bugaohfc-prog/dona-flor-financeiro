@@ -287,7 +287,7 @@ export default function FuncionariosPage({
 
     const resposta = await obterFuncionarioPorId(funcionario.id)
     if (resposta?.error) {
-      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'NÃ£o foi possÃ­vel carregar os dados completos do funcionÃ¡rio.'), 'erro')
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível carregar os dados completos do funcionário.'), 'erro')
       return
     }
 

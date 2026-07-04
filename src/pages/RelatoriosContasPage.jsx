@@ -432,6 +432,9 @@ export default function RelatoriosContasPage({
           <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={() => navegarPara?.('contas')}>
             ← Voltar
           </button>
+          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-primary" onClick={() => navegarPara?.('fluxo-caixa')}>
+            Fluxo de Caixa
+          </button>
         </div>
       </header>
 

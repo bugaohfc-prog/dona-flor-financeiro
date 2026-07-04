@@ -14,6 +14,7 @@ Data: 2026-07-03
 - V1 atual em `main` / produção real.
 - Fechamento de Folha V1.
 - Fechamento da competência 06/2026.
+- Contas / Fluxo de Caixa V1.
 
 ## Pausadas
 
@@ -35,6 +36,7 @@ Data: 2026-07-03
 - Redesenho operacional do Fechamento de Folha V1 aplicado na `main`.
 - Rearquitetura inicial do Fechamento de Folha V1 em componentes dedicados.
 - Refatoração ampla da frente de Fechamento de Folha V1 com lista, ações, itens detalhados e formatadores separados.
+- Fluxo de Caixa V1 com leitura real de pagamentos, filtro por ano/filial, consolidado e exportação CSV/Excel.
 - Correções críticas de banco parcialmente tratadas.
 - Consolidação INSS/CP-SEGUR.
 - Contas a vencer com período ampliado.
@@ -48,7 +50,8 @@ Data: 2026-07-03
 - Validar Fechamento de Folha V1 na competência 06/2026 com uso real.
 - Avaliar hook/view model para Fechamento de Folha se os handlers continuarem crescendo.
 - Revisar textos operacionais e acentuação da tela de folha em ciclo próprio.
-- Exportação Fluxo de Caixa, se retomada em V1.
+- Origem confiável de entradas/faturamento bruto para Fluxo de Caixa.
+- Rubricas detalhadas do modelo de Fluxo de Caixa por plano de contas/centro de custo.
 - Cadastro completo de empresas.
 - CNPJ/endereço/dados empresariais.
 - Logs/Auditoria tela.

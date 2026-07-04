@@ -65,6 +65,7 @@ import {
   LazyDashboardRouteComposition,
   LazyFechamentoFolhaPage,
   LazyFiliaisPage,
+  LazyFluxoCaixaPage,
   LazyFeriasPage,
   LazyFuncionariosPage,
   LazyImportarPage,
@@ -111,6 +112,7 @@ const TELAS_RETORNO_SESSAO = new Set([
   'agenda',
   'notas',
   'contas',
+  'fluxo-caixa',
   'relatorios-contas',
   'relatorios',
   'configuracoes',
@@ -4738,6 +4740,20 @@ export default function App() {
           navegarPara={navegarPara}
           podeExportarDados={podeExportarDados()}
           mostrarAviso={mostrarAviso}
+        />
+      </AppSuspenseBoundary>
+    )
+  }
+
+  if (telaAtual === 'fluxo-caixa') {
+    return renderAppFrame(
+      <AppSuspenseBoundary>
+        <LazyFluxoCaixaPage
+          empresaId={empresaId}
+          empresaNome={empresaAtiva?.nome}
+          voltar={() => navegarPara('relatorios-contas')}
+          mostrarAviso={mostrarAviso}
+          podeExportarDados={podeExportarDados()}
         />
       </AppSuspenseBoundary>
     )

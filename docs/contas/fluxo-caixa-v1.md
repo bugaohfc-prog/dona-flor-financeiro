@@ -341,3 +341,22 @@ Auditoria somente leitura em 2025:
 O relatório e a exportação exibem a observação:
 
 `Critério histórico: até 05/2026, contas pagas sem data de pagamento usam vencimento como referência. A partir de 06/2026, somente pagamentos baixados com data de pagamento entram no realizado.`
+
+## Atualização 2026-07-04 — separação de juros reais
+
+Auditoria de 2026 confirmou que a rubrica `DESPESAS FINANCEIRAS ( JUROS )` estava recebendo o `valor_pago` inteiro da conta quando `juros_multa > 0`.
+
+Regra aplicada:
+
+- a despesa principal permanece na rubrica original, sem `juros_multa`;
+- `DESPESAS FINANCEIRAS ( JUROS )` recebe somente o valor de `juros_multa`;
+- a precedência de `FGTS/INSS` como `IMPOSTOS RECOLHIDOS SOBRE FOLHA` foi preservada;
+- descrições com termos como juros/multa não movem a conta inteira para juros quando `juros_multa` está zerado;
+- pagamentos parciais não herdam `juros_multa` da conta-pai;
+- o total geral de saídas é preservado por redistribuição entre principal e juros.
+
+Impacto esperado no consolidado 2026:
+
+- antes: `DESPESAS FINANCEIRAS ( JUROS )` em R$ 5.564,74;
+- depois: `DESPESAS FINANCEIRAS ( JUROS )` em R$ 147,17;
+- diferença redistribuída para as rubricas originais das despesas.

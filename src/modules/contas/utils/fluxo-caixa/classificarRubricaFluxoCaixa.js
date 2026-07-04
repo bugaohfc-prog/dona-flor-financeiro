@@ -111,7 +111,6 @@ function obterTextoBusca(movimento = {}) {
 
 function classificarPorTermos(texto, criterio = 'descricao') {
   if (possuiTermo(texto, termos.proLabore)) return { rubrica: RUBRICA_PRO_LABORE, confianca: 'alta', criterio }
-  if (possuiTermo(texto, termos.juros)) return { rubrica: RUBRICA_JUROS, confianca: 'alta', criterio: 'juros' }
   if (possuiTermo(texto, termos.utilidades)) return { rubrica: RUBRICA_UTILIDADES, confianca: 'alta', criterio }
   if (possuiTermo(texto, termos.parcelados)) return { rubrica: RUBRICA_IMPOSTOS_PARCELADOS, confianca: 'alta', criterio }
   if (possuiTermo(texto, termos.impostosFolha)) return { rubrica: RUBRICA_IMPOSTOS_FOLHA, confianca: 'alta', criterio }
@@ -125,25 +124,20 @@ function classificarPorTermos(texto, criterio = 'descricao') {
 }
 
 export function classificarRubricaFluxoCaixa(movimento = {}) {
+  if (movimento.rubrica_forcada) {
+    return completarClassificacao({
+      rubrica: movimento.rubrica_forcada,
+      confianca: 'alta',
+      criterio: movimento.rubrica_criterio_forcado || 'juros_multa'
+    })
+  }
+
   const textoBusca = obterTextoBusca(movimento)
   const centro = normalizarTexto(movimento.centro_custo_nome || movimento.centro)
   const filial = normalizarTexto(movimento.filial_nome)
-  const jurosValor = Number(
-    movimento.valor_juros ??
-    movimento.valor_multa ??
-    movimento.valor_acrescimo ??
-    movimento.juros_pago ??
-    movimento.multa_pago ??
-    movimento.juros_multa ??
-    0
-  )
 
   if (possuiTermo(textoBusca, termos.impostosFolha)) {
     return completarClassificacao({ rubrica: RUBRICA_IMPOSTOS_FOLHA, confianca: 'alta', criterio: 'descricao' })
-  }
-
-  if (jurosValor > 0 || possuiTermo(textoBusca, termos.juros)) {
-    return completarClassificacao({ rubrica: RUBRICA_JUROS, confianca: jurosValor > 0 ? 'alta' : 'media', criterio: 'juros' })
   }
 
   if (centro === 'impostos e taxas') {
@@ -167,6 +161,12 @@ export function classificarRubricaFluxoCaixa(movimento = {}) {
   if (porTermos) return completarClassificacao(porTermos)
 
   return completarClassificacao({ rubrica: RUBRICA_OUTRAS_OPERACIONAIS, confianca: 'baixa', criterio: 'fallback' })
+}
+
+export function deveSepararJurosFluxoCaixa(movimento = {}) {
+  const textoBusca = obterTextoBusca(movimento)
+  const jurosValor = Number(movimento.juros_multa || 0)
+  return jurosValor > 0 && !possuiTermo(textoBusca, termos.impostosFolha)
 }
 
 function completarClassificacao(classificacao) {

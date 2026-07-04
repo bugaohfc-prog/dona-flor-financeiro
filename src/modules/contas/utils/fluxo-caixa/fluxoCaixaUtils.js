@@ -1,10 +1,12 @@
 import {
   RUBRICA_FATURAMENTO_BRUTO,
+  RUBRICA_JUROS,
   RUBRICA_OUTRAS_OPERACIONAIS,
   RUBRICA_OUTRAS_NAO_OPERACIONAIS,
   RUBRICA_TOTAL_GERAL,
   RUBRICAS_SAIDA_FLUXO_CAIXA,
-  classificarRubricaFluxoCaixa
+  classificarRubricaFluxoCaixa,
+  deveSepararJurosFluxoCaixa
 } from './classificarRubricaFluxoCaixa'
 
 export const MESES_FLUXO_CAIXA = [
@@ -103,6 +105,25 @@ function resolverValorConta(conta = {}) {
   return {
     valor: normalizarValor(conta.valor),
     origem: 'valor_original'
+  }
+}
+
+function resolverComponentesValorConta(conta = {}, separarJuros = false) {
+  const valorResolvido = resolverValorConta(conta)
+  const juros = separarJuros ? normalizarValor(conta.juros_multa) : 0
+
+  if (juros <= 0) {
+    return {
+      valorPrincipal: valorResolvido.valor,
+      valorJuros: 0,
+      origemValorPrincipal: valorResolvido.origem
+    }
+  }
+
+  return {
+    valorPrincipal: normalizarValor(Math.max(valorResolvido.valor - juros, 0)),
+    valorJuros: juros,
+    origemValorPrincipal: valorResolvido.origem === 'valor_pago' ? 'valor_principal_pago' : 'valor_principal_original'
   }
 }
 
@@ -221,7 +242,7 @@ export function montarMovimentosFluxoCaixa({
         centro_custo_nome: conta.df_centros_custo?.nome || conta.centro || '',
         centro: conta.centro || '',
         imposto_tipo: conta.imposto_tipo || '',
-        juros_multa: conta.juros_multa || 0,
+        juros_multa: 0,
         desconto: conta.desconto || 0
       })
     })
@@ -232,11 +253,10 @@ export function montarMovimentosFluxoCaixa({
     .filter((conta) => statusContaPaga(conta?.status))
     .filter((conta) => !contasComParciaisAtivos.has(conta.id))
     .filter((conta) => !filialId || (conta.filial_id || '') === filialId)
-    .map((conta) => {
+    .flatMap((conta) => {
       const dataResolvida = resolverDataConta(conta)
-      const valorResolvido = resolverValorConta(conta)
-
-      return enriquecerMovimentoComRubrica({
+      const movimentos = []
+      const movimentoBase = {
         id: conta.id,
         origem: 'conta_paga',
         conta_id: conta.id,
@@ -248,8 +268,6 @@ export function montarMovimentosFluxoCaixa({
         data_considerada: dataResolvida.data,
         origem_data: dataResolvida.origem,
         mes: obterMesDataPagamento(dataResolvida.data),
-        valor: valorResolvido.valor,
-        origem_valor: valorResolvido.origem,
         tipo: 'saida',
         filial_id: conta.filial_id || '',
         filial_nome: filiaisPorId.get(conta.filial_id || '')?.nome || 'Sem filial',
@@ -257,9 +275,38 @@ export function montarMovimentosFluxoCaixa({
         centro_custo_nome: conta.df_centros_custo?.nome || conta.centro || '',
         centro: conta.centro || '',
         imposto_tipo: conta.imposto_tipo || '',
-        juros_multa: conta.juros_multa || 0,
         desconto: conta.desconto || 0
+      }
+      const separarJuros = deveSepararJurosFluxoCaixa({
+        ...movimentoBase,
+        juros_multa: conta.juros_multa || 0
       })
+      const componentesValor = resolverComponentesValorConta(conta, separarJuros)
+
+      if (componentesValor.valorPrincipal > 0) {
+        movimentos.push(enriquecerMovimentoComRubrica({
+          ...movimentoBase,
+          valor: componentesValor.valorPrincipal,
+          origem_valor: componentesValor.origemValorPrincipal,
+          juros_multa: 0
+        }))
+      }
+
+      if (componentesValor.valorJuros > 0) {
+        movimentos.push(enriquecerMovimentoComRubrica({
+          ...movimentoBase,
+          id: `${conta.id}-juros`,
+          origem: 'juros_multa',
+          descricao: `Juros/multa - ${conta.descricao || 'Conta paga'}`,
+          valor: componentesValor.valorJuros,
+          origem_valor: 'juros_multa',
+          juros_multa: componentesValor.valorJuros,
+          rubrica_forcada: RUBRICA_JUROS,
+          rubrica_criterio_forcado: 'juros_multa'
+        }))
+      }
+
+      return movimentos
     })
     .filter((movimento) => movimento.mes && movimento.valor > 0)
     .filter((movimento) => !filtrarAno || obterAnoDataFluxo(movimento.data_considerada) === anoNumero)

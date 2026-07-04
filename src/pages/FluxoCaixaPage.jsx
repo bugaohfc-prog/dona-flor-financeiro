@@ -10,7 +10,7 @@ import {
   prepararLinhasCsvFluxoCaixa
 } from '../modules/contas/utils/fluxo-caixa/fluxoCaixaUtils'
 
-const OBSERVACAO_ENTRADAS = 'FATURAMENTO BRUTO usa receitas ativas em df_receitas por data_receita. Saídas usam pagamentos realizados por data_pagamento.'
+const OBSERVACAO_ENTRADAS = 'FATURAMENTO BRUTO usa receitas ativas em df_receitas por data_receita. Critério gerencial: contas sem data de pagamento foram consideradas pelo vencimento.'
 
 function slug(valor) {
   return String(valor || '')
@@ -85,6 +85,11 @@ export default function FluxoCaixaPage({
       [],
       ['Movimentos considerados', resultado.totais.movimentos],
       ['Movimentos em rubricas', diagnosticoRubricas.totalMovimentosRubricas],
+      ['Por data de pagamento', diagnosticoRubricas.movimentosPorPagamento],
+      ['Por vencimento gerencial', diagnosticoRubricas.movimentosPorVencimento],
+      ['Valor incluído por vencimento', diagnosticoRubricas.valorPorVencimento],
+      ['Com valor pago', diagnosticoRubricas.movimentosComValorPago],
+      ['Com valor original', diagnosticoRubricas.movimentosComValorOriginal],
       ['Sem centro de custo', diagnosticoRubricas.movimentosSemCentroCusto],
       ['Sem rubrica', diagnosticoRubricas.movimentosSemRubrica],
       ['Fallback operacional', diagnosticoRubricas.classificadosFallback],
@@ -272,6 +277,11 @@ export default function FluxoCaixaPage({
         <div className="fluxo-rubrica-diagnostics">
           <span><b>Por centro</b>{diagnosticoRubricas.classificadosCentroCusto}</span>
           <span><b>Por descrição/juros</b>{diagnosticoRubricas.classificadosDescricao}</span>
+          <span><b>Data pagamento</b>{diagnosticoRubricas.movimentosPorPagamento}</span>
+          <span><b>Vencimento gerencial</b>{diagnosticoRubricas.movimentosPorVencimento}</span>
+          <span><b>Valor por vencimento</b>{formatarMoedaFluxo(diagnosticoRubricas.valorPorVencimento)}</span>
+          <span><b>Valor pago</b>{diagnosticoRubricas.movimentosComValorPago}</span>
+          <span><b>Valor original</b>{diagnosticoRubricas.movimentosComValorOriginal}</span>
           <span><b>Fallback</b>{diagnosticoRubricas.classificadosFallback}</span>
           <span><b>Sem centro</b>{diagnosticoRubricas.movimentosSemCentroCusto}</span>
           <span><b>Sem rubrica</b>{diagnosticoRubricas.movimentosSemRubrica}</span>
@@ -335,11 +345,11 @@ export default function FluxoCaixaPage({
             <article key={`${movimento.origem}-${movimento.id}`} className="fluxo-movimento">
               <div>
                 <strong>{movimento.descricao}</strong>
-                <span>{movimento.filial_nome} - {formatarDataFluxo(movimento.data_pagamento)} - {movimento.origem === 'pagamento_parcial' ? 'Pagamento parcial' : 'Conta paga'}</span>
+                <span>{movimento.filial_nome} - {formatarDataFluxo(movimento.data_considerada || movimento.data_pagamento)} - {movimento.origem === 'pagamento_parcial' ? 'Pagamento parcial' : 'Conta paga'} - Data: {movimento.origem_data || '-'}</span>
                 {movimento.tipo === 'entrada' ? (
                   <span>FATURAMENTO BRUTO - Origem: {movimento.origem_receita || 'Receita'}</span>
                 ) : (
-                  <span>{movimento.rubrica} - Centro: {movimento.centro_custo_nome || '-'} - Critério: {movimento.rubrica_criterio} / {movimento.rubrica_confianca}</span>
+                  <span>{movimento.rubrica} - Centro: {movimento.centro_custo_nome || '-'} - Valor: {movimento.origem_valor || '-'} - Critério: {movimento.rubrica_criterio} / {movimento.rubrica_confianca}</span>
                 )}
               </div>
               <strong>{formatarMoedaFluxo(movimento.valor)}</strong>

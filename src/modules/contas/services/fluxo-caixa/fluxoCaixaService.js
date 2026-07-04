@@ -52,20 +52,16 @@ export async function carregarFluxoCaixaRealizadoV1(supabase, empresaId, ano) {
   const [respostaContasPagas, respostaPagamentos, respostaFiliais, respostaReceitas] = await Promise.all([
     selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTAS_FLUXO)
       .eq('status', 'pago')
-      .gte('data_pagamento', dataInicial)
-      .lte('data_pagamento', dataFinal)
       .or('oculto.is.null,oculto.eq.false')
       .or('excluido.is.null,excluido.eq.false')
       .or('deletado.is.null,deletado.eq.false')
-      .order('data_pagamento', { ascending: true }),
+      .order('data_vencimento', { ascending: true }),
     selecionarPorEmpresa(
       supabase,
       'df_contas_pagamentos',
       empresaId,
       'id, empresa_id, conta_id, valor_pago, data_pagamento, observacao, arquivado, arquivado_em, criado_em, atualizado_em'
     )
-      .gte('data_pagamento', dataInicial)
-      .lte('data_pagamento', dataFinal)
       .or('arquivado.is.null,arquivado.eq.false')
       .order('data_pagamento', { ascending: true }),
     selecionarPorEmpresa(supabase, 'df_filiais', empresaId, 'id, nome')

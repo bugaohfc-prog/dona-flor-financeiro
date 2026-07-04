@@ -19,7 +19,7 @@ export function useFluxoCaixaV1({ empresaId }) {
   async function carregar() {
     if (!empresaId) {
       setDadosOrigem(null)
-      setErro('Empresa ativa não selecionada.')
+      setErro('Empresa ativa n\u00e3o selecionada.')
       return
     }
 
@@ -27,7 +27,7 @@ export function useFluxoCaixaV1({ empresaId }) {
     setErro('')
     const resposta = await carregarFluxoCaixaRealizadoV1(supabase, empresaId, ano)
     if (resposta.error) {
-      setErro(resposta.error.message || 'Não foi possível carregar o fluxo de caixa.')
+      setErro(resposta.error.message || 'N\u00e3o foi poss\u00edvel carregar o fluxo de caixa.')
       setDadosOrigem(null)
     } else {
       setDadosOrigem(resposta.data)
@@ -50,9 +50,10 @@ export function useFluxoCaixaV1({ empresaId }) {
       receitas: dadosOrigem.receitas,
       contasPorId: dadosOrigem.contasPorId,
       filiaisPorId,
-      filialId
+      filialId,
+      ano
     })
-  }, [dadosOrigem, filialId, filiaisPorId])
+  }, [ano, dadosOrigem, filialId, filiaisPorId])
 
   const resultado = useMemo(() => agregarFluxoCaixaMensal(movimentos), [movimentos])
   const rubricas = useMemo(() => agregarSaidasPorRubrica(movimentos), [movimentos])

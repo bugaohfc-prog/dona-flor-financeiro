@@ -53,6 +53,34 @@ export function obterMesDataPagamento(dataPagamento) {
   return mes >= 1 && mes <= 12 ? mes : null
 }
 
+function obterAnoDataFluxo(data) {
+  const texto = String(data || '').slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(texto)) return null
+  return Number(texto.slice(0, 4))
+}
+
+function resolverDataConta(conta = {}) {
+  if (conta.data_pagamento) {
+    return { data: conta.data_pagamento, origem: 'pagamento' }
+  }
+  const dataGerencial = conta.data_vencimento || conta.vencimento || conta.competencia || ''
+  return {
+    data: dataGerencial,
+    origem: dataGerencial ? 'vencimento_gerencial' : 'sem_data'
+  }
+}
+
+function resolverValorConta(conta = {}) {
+  const valorPago = normalizarValor(conta.valor_pago)
+  if (valorPago > 0) {
+    return { valor: valorPago, origem: 'valor_pago' }
+  }
+  return {
+    valor: normalizarValor(conta.valor),
+    origem: 'valor_original'
+  }
+}
+
 function criarLinhaMes(mes) {
   return {
     mes: mes.numero,
@@ -95,12 +123,17 @@ export function montarMovimentosFluxoCaixa({
   receitas = [],
   contasPorId = new Map(),
   filiaisPorId = new Map(),
-  filialId = ''
+  filialId = '',
+  ano = ''
 }) {
+  const anoNumero = Number(ano)
+  const filtrarAno = Number.isInteger(anoNumero)
+
   const movimentosReceitas = (receitas || [])
     .filter((receita) => receita?.status === 'ativo')
     .filter((receita) => receita?.arquivado !== true)
     .filter((receita) => receita?.data_receita)
+    .filter((receita) => !filtrarAno || obterAnoDataFluxo(receita.data_receita) === anoNumero)
     .filter((receita) => normalizarValor(receita.valor) > 0)
     .filter((receita) => !filialId || (receita.filial_id || '') === filialId)
     .map((receita) => ({
@@ -113,8 +146,11 @@ export function montarMovimentosFluxoCaixa({
       observacao: receita.observacao || '',
       data_pagamento: receita.data_receita,
       data_receita: receita.data_receita,
+      data_considerada: receita.data_receita,
+      origem_data: 'receita',
       mes: obterMesDataPagamento(receita.data_receita),
       valor: normalizarValor(receita.valor),
+      origem_valor: 'valor_receita',
       tipo: 'entrada',
       filial_id: receita.filial_id || '',
       filial_nome: filiaisPorId.get(receita.filial_id || '')?.nome || receita.df_filiais?.nome || 'Sem filial',
@@ -125,8 +161,7 @@ export function montarMovimentosFluxoCaixa({
   const pagamentosAtivos = (pagamentosParciais || []).filter((pagamento) => (
     pagamento &&
     pagamento.arquivado !== true &&
-    normalizarValor(pagamento.valor_pago) > 0 &&
-    pagamento.data_pagamento
+    normalizarValor(pagamento.valor_pago) > 0
   ))
   const contasComParciaisAtivos = new Set(pagamentosAtivos.map((pagamento) => pagamento.conta_id).filter(Boolean))
 
@@ -136,6 +171,10 @@ export function montarMovimentosFluxoCaixa({
       const filialContaId = conta.filial_id || ''
       if (filialId && filialContaId !== filialId) return null
 
+      const dataConta = resolverDataConta(conta)
+      const dataConsiderada = pagamento.data_pagamento || dataConta.data
+      const origemData = pagamento.data_pagamento ? 'pagamento' : dataConta.origem
+
       return enriquecerMovimentoComRubrica({
         id: pagamento.id,
         origem: 'pagamento_parcial',
@@ -144,9 +183,12 @@ export function montarMovimentosFluxoCaixa({
         descricao: conta.descricao || 'Pagamento parcial',
         observacao: pagamento.observacao || conta.observacao_pagamento || conta.observacao || '',
         observacao_pagamento: conta.observacao_pagamento || '',
-        data_pagamento: pagamento.data_pagamento,
-        mes: obterMesDataPagamento(pagamento.data_pagamento),
+        data_pagamento: dataConsiderada,
+        data_considerada: dataConsiderada,
+        origem_data: origemData,
+        mes: obterMesDataPagamento(dataConsiderada),
         valor: normalizarValor(pagamento.valor_pago),
+        origem_valor: 'valor_pago',
         tipo: 'saida',
         filial_id: filialContaId,
         filial_nome: filiaisPorId.get(filialContaId)?.nome || 'Sem filial',
@@ -159,35 +201,43 @@ export function montarMovimentosFluxoCaixa({
       })
     })
     .filter(Boolean)
-    .filter((movimento) => movimento.mes)
+    .filter((movimento) => movimento.mes && (!filtrarAno || obterAnoDataFluxo(movimento.data_considerada) === anoNumero))
 
   const movimentosContasPagas = (contasPagas || [])
     .filter((conta) => conta?.status === 'pago')
-    .filter((conta) => conta?.data_pagamento)
     .filter((conta) => !contasComParciaisAtivos.has(conta.id))
     .filter((conta) => !filialId || (conta.filial_id || '') === filialId)
-    .map((conta) => enriquecerMovimentoComRubrica({
-      id: conta.id,
-      origem: 'conta_paga',
-      conta_id: conta.id,
-      pagamento_id: null,
-      descricao: conta.descricao || 'Conta paga',
-      observacao: conta.observacao_pagamento || conta.observacao || '',
-      observacao_pagamento: conta.observacao_pagamento || '',
-      data_pagamento: conta.data_pagamento,
-      mes: obterMesDataPagamento(conta.data_pagamento),
-      valor: normalizarValor(conta.valor_pago ?? conta.valor),
-      tipo: 'saida',
-      filial_id: conta.filial_id || '',
-      filial_nome: filiaisPorId.get(conta.filial_id || '')?.nome || 'Sem filial',
-      centro_custo_id: conta.centro_custo_id || '',
-      centro_custo_nome: conta.df_centros_custo?.nome || conta.centro || '',
-      centro: conta.centro || '',
-      imposto_tipo: conta.imposto_tipo || '',
-      juros_multa: conta.juros_multa || 0,
-      desconto: conta.desconto || 0
-    }))
+    .map((conta) => {
+      const dataResolvida = resolverDataConta(conta)
+      const valorResolvido = resolverValorConta(conta)
+
+      return enriquecerMovimentoComRubrica({
+        id: conta.id,
+        origem: 'conta_paga',
+        conta_id: conta.id,
+        pagamento_id: null,
+        descricao: conta.descricao || 'Conta paga',
+        observacao: conta.observacao_pagamento || conta.observacao || '',
+        observacao_pagamento: conta.observacao_pagamento || '',
+        data_pagamento: dataResolvida.data,
+        data_considerada: dataResolvida.data,
+        origem_data: dataResolvida.origem,
+        mes: obterMesDataPagamento(dataResolvida.data),
+        valor: valorResolvido.valor,
+        origem_valor: valorResolvido.origem,
+        tipo: 'saida',
+        filial_id: conta.filial_id || '',
+        filial_nome: filiaisPorId.get(conta.filial_id || '')?.nome || 'Sem filial',
+        centro_custo_id: conta.centro_custo_id || '',
+        centro_custo_nome: conta.df_centros_custo?.nome || conta.centro || '',
+        centro: conta.centro || '',
+        imposto_tipo: conta.imposto_tipo || '',
+        juros_multa: conta.juros_multa || 0,
+        desconto: conta.desconto || 0
+      })
+    })
     .filter((movimento) => movimento.mes && movimento.valor > 0)
+    .filter((movimento) => !filtrarAno || obterAnoDataFluxo(movimento.data_considerada) === anoNumero)
 
   return [...movimentosReceitas, ...movimentosParciais, ...movimentosContasPagas]
 }
@@ -216,15 +266,25 @@ export function calcularDiagnosticoRubricas(movimentos = [], rubricas = []) {
   const totalMovimentos = saidas.length
   const totalMovimentosRubricas = (rubricas || []).reduce((total, rubrica) => total + (rubrica.movimentos || 0), 0)
   const totalSaidasRubricas = normalizarValor((rubricas || []).reduce((total, rubrica) => total + (rubrica.total || 0), 0))
+  const saidasPorPagamento = saidas.filter((movimento) => movimento.origem_data === 'pagamento')
+  const saidasPorVencimento = saidas.filter((movimento) => movimento.origem_data === 'vencimento_gerencial')
 
   return {
     totalMovimentos,
     totalMovimentosRubricas,
     totalSaidasRubricas,
+    totalSaidasAntigo: normalizarValor(saidasPorPagamento.reduce((total, movimento) => total + movimento.valor, 0)),
+    totalSaidasDepois: totalSaidasRubricas,
     movimentosOperacionais: saidas.filter((movimento) => movimento.rubrica === RUBRICA_OUTRAS_OPERACIONAIS).length,
     movimentosNaoOperacionais: saidas.filter((movimento) => movimento.rubrica === RUBRICA_OUTRAS_NAO_OPERACIONAIS).length,
     movimentosSemCentroCusto: saidas.filter((movimento) => !movimento.centro_custo_id && !movimento.centro_custo_nome && !movimento.centro).length,
     movimentosSemRubrica: saidas.filter((movimento) => !movimento.rubrica).length,
+    movimentosPorPagamento: saidasPorPagamento.length,
+    movimentosPorBaixa: saidas.filter((movimento) => ['baixa', 'quitacao', 'pago_em'].includes(movimento.origem_data)).length,
+    movimentosPorVencimento: saidasPorVencimento.length,
+    valorPorVencimento: normalizarValor(saidasPorVencimento.reduce((total, movimento) => total + movimento.valor, 0)),
+    movimentosComValorPago: saidas.filter((movimento) => movimento.origem_valor === 'valor_pago').length,
+    movimentosComValorOriginal: saidas.filter((movimento) => movimento.origem_valor === 'valor_original').length,
     classificadosCentroCusto: saidas.filter((movimento) => movimento.rubrica_criterio === 'centro_custo').length,
     classificadosDescricao: saidas.filter((movimento) => ['descricao', 'juros', 'filial'].includes(movimento.rubrica_criterio)).length,
     classificadosFallback: saidas.filter((movimento) => movimento.rubrica_criterio === 'fallback').length,

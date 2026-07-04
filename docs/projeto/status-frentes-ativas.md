@@ -34,6 +34,7 @@ Data: 2026-07-03
 - Backup Git e congelamento pré-V2 documentados.
 - Redesenho operacional do Fechamento de Folha V1 aplicado na `main`.
 - Rearquitetura inicial do Fechamento de Folha V1 em componentes dedicados.
+- Refatoração ampla da frente de Fechamento de Folha V1 com lista, ações, itens detalhados e formatadores separados.
 - Correções críticas de banco parcialmente tratadas.
 - Consolidação INSS/CP-SEGUR.
 - Contas a vencer com período ampliado.
@@ -45,8 +46,8 @@ Data: 2026-07-03
 ## Pendentes
 
 - Validar Fechamento de Folha V1 na competência 06/2026 com uso real.
-- Extrair cálculos auxiliares da folha para utils dedicados.
-- Extrair itens detalhados e lista de lançamentos para componentes menores.
+- Avaliar hook/view model para Fechamento de Folha se os handlers continuarem crescendo.
+- Revisar textos operacionais e acentuação da tela de folha em ciclo próprio.
 - Exportação Fluxo de Caixa, se retomada em V1.
 - Cadastro completo de empresas.
 - CNPJ/endereço/dados empresariais.

@@ -1,11 +1,25 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useFolha } from '../hooks/useFolha'
 import { useFuncionarios } from '../hooks/useFuncionarios'
 import FolhaContextoColaboradorAtivo from '../modules/folha/components/fechamento/FolhaContextoColaboradorAtivo'
+import FolhaItensDetalhados from '../modules/folha/components/fechamento/FolhaItensDetalhados'
+import FolhaLancamentoAcoes from '../modules/folha/components/fechamento/FolhaLancamentoAcoes'
+import FolhaLancamentosLista from '../modules/folha/components/fechamento/FolhaLancamentosLista'
+import FolhaResumoGrupo from '../modules/folha/components/fechamento/FolhaResumoGrupo'
 import {
   FolhaSectionHeader,
   FolhaSubsectionHeader
 } from '../modules/folha/components/fechamento/FolhaSectionHeader'
+import {
+  formatarData,
+  formatarDataHora,
+  formatarMoeda,
+  formatarNumero,
+  formatarValorFormulario,
+  normalizarBusca,
+  normalizarTexto,
+  parseNumeroFormulario
+} from '../modules/folha/utils/fechamento/folhaFormatters'
 import {
   CATEGORIAS_CREDITO_FOLHA,
   CATEGORIAS_DESCONTO_FOLHA,
@@ -549,61 +563,6 @@ function criarFormularioItemInicial(categoria = '') {
   if (CATEGORIAS_VALOR_ZERO_INFORMATIVO.has(categoria)) formulario.valor = '0'
 
   return formulario
-}
-
-function formatarData(data) {
-  const texto = String(data || '').slice(0, 10)
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(texto)) return 'Não informada'
-  const [ano, mes, dia] = texto.split('-')
-  return `${dia}/${mes}/${ano}`
-}
-
-function formatarDataHora(data) {
-  if (!data) return 'Não informada'
-  const valor = new Date(data)
-  if (Number.isNaN(valor.getTime())) return 'Não informada'
-  return new Intl.DateTimeFormat('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(valor)
-}
-
-function formatarMoeda(valor) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(Number(valor) || 0)
-}
-
-function formatarNumero(valor) {
-  if (valor === null || valor === undefined || valor === '') return '-'
-  return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(Number(valor) || 0)
-}
-
-function normalizarTexto(valor) {
-  return String(valor || '').trim()
-}
-
-function normalizarBusca(valor) {
-  return normalizarTexto(valor)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-}
-
-function parseNumeroFormulario(valor) {
-  if (valor === null || valor === undefined || valor === '') return null
-  const numero = Number(String(valor).replace(',', '.'))
-  return Number.isFinite(numero) ? numero : null
-}
-
-function formatarValorFormulario(valor) {
-  const numero = Number(valor)
-  if (!Number.isFinite(numero)) return ''
-  return numero.toFixed(2)
 }
 
 function calcularValorPremiacaoFormulario(formulario) {
@@ -1389,444 +1348,64 @@ export default function FechamentoFolhaPage({
     }
   }
 
-  function renderContextoColaboradorAtivo() {
-    if (!exibindoEdicaoColaborador) return null
-
-    const resumoAtivo = resumoColaboradorEmEdicao || {
-      creditos: 0,
-      descontos: 0,
-      totalAtual: 0,
-      totalComprasVales: 0,
-      horasExtras: 0,
-      faltas: 0,
-      itensDetalhados: 0,
-      lancamentosSemItens: 0,
-      conferidos: 0,
-      pendentes: 0
-    }
-    const cargo = funcionarioEmEdicao?.cargo || 'Cargo não informado'
-    const filialNome = obterNomeFilial(filiaisPorId, funcionarioEmEdicao?.filial_id) || 'Filial não informada'
-    const competencia = competenciaSelecionada?.competencia || 'Competência não selecionada'
-
-    return (
-      <div style={estilosLocais.contextoColaboradorPanel}>
-        <div style={estilosLocais.contextoColaboradorHeader}>
-          <div style={estilosLocais.contextoColaboradorTitulo}>
-            <span style={estilosLocais.badge}>Edição do colaborador</span>
-            <h3 style={estilosLocais.contextoColaboradorNome}>{colaboradorEmEdicaoNome}</h3>
-            <p style={estilosLocais.contextoColaboradorMeta}>
-              {cargo} | {filialNome} | {competencia}
-            </p>
-          </div>
-          <div style={estilosLocais.contextoColaboradorAcoes}>
-            <button
-              type="button"
-              style={styles.btnPrimario}
-              onClick={() => iniciarNovoLancamentoFuncionario(colaboradorEmEdicaoId)}
-              disabled={!podeEditar || salvando}
-            >
-              + lançamento para este colaborador
-            </button>
-            <button type="button" style={styles.btnCinza} onClick={voltarParaTodosColaboradores}>
-              Voltar para todos
-            </button>
-          </div>
-        </div>
-
-        <div style={estilosLocais.contextoResumoGrid}>
-          <div style={estilosLocais.contextoResumoCard}>
-            <span style={estilosLocais.contextoResumoLabel}>Total atual</span>
-            <strong style={estilosLocais.contextoResumoValor}>{formatarMoeda(resumoAtivo.totalAtual)}</strong>
-          </div>
-          <div style={estilosLocais.contextoResumoCard}>
-            <span style={estilosLocais.contextoResumoLabel}>Créditos</span>
-            <strong style={estilosLocais.contextoResumoValor}>{formatarMoeda(resumoAtivo.creditos)}</strong>
-          </div>
-          <div style={estilosLocais.contextoResumoCard}>
-            <span style={estilosLocais.contextoResumoLabel}>Descontos</span>
-            <strong style={estilosLocais.contextoResumoValor}>{formatarMoeda(resumoAtivo.descontos)}</strong>
-          </div>
-          <div style={estilosLocais.contextoResumoCard}>
-            <span style={estilosLocais.contextoResumoLabel}>Vales/compras</span>
-            <strong style={estilosLocais.contextoResumoValor}>{formatarMoeda(resumoAtivo.totalComprasVales)}</strong>
-          </div>
-          <div style={estilosLocais.contextoResumoCard}>
-            <span style={estilosLocais.contextoResumoLabel}>Horas extras</span>
-            <strong style={estilosLocais.contextoResumoValor}>{formatarNumero(resumoAtivo.horasExtras)}</strong>
-          </div>
-          <div style={estilosLocais.contextoResumoCard}>
-            <span style={estilosLocais.contextoResumoLabel}>Faltas</span>
-            <strong style={estilosLocais.contextoResumoValor}>{formatarNumero(resumoAtivo.faltas)}</strong>
-          </div>
-          <div style={estilosLocais.contextoResumoCard}>
-            <span style={estilosLocais.contextoResumoLabel}>Itens</span>
-            <strong style={estilosLocais.contextoResumoValor}>{resumoAtivo.itensDetalhados}</strong>
-          </div>
-          <div style={estilosLocais.contextoResumoCard}>
-            <span style={estilosLocais.contextoResumoLabel}>Pendentes</span>
-            <strong style={estilosLocais.contextoResumoValor}>{resumoAtivo.pendentes}</strong>
-          </div>
-        </div>
-
-        {resumoAtivo.lancamentosSemItens > 0 && (
-          <div style={estilosLocais.warning}>
-            {resumoAtivo.lancamentosSemItens} lançamento(s) detalhável(is) ainda sem item ativo. Confira vales, compras, faltas, horas extras e premiações antes de fechar.
-          </div>
-        )}
-      </div>
-    )
-  }
-
   function renderResumoGrupo(resumo) {
     return (
-      <div className="folha-grupo-resumo" style={estilosLocais.grupoResumoGrid}>
-        <div style={estilosLocais.grupoResumoItem}>
-          <span style={estilosLocais.grupoResumoLabel}>Créditos</span>
-          <strong style={estilosLocais.grupoResumoValor}>{formatarMoeda(resumo.totalCreditos)}</strong>
-        </div>
-        <div style={estilosLocais.grupoResumoItem}>
-          <span style={estilosLocais.grupoResumoLabel}>Descontos</span>
-          <strong style={estilosLocais.grupoResumoValor}>{formatarMoeda(resumo.totalDescontos)}</strong>
-        </div>
-        <div style={estilosLocais.grupoResumoItem}>
-          <span style={estilosLocais.grupoResumoLabel}>Saldo</span>
-          <strong style={estilosLocais.grupoResumoValor}>{formatarMoeda(resumo.saldoInformativo)}</strong>
-        </div>
-        <div style={estilosLocais.grupoResumoItem}>
-          <span style={estilosLocais.grupoResumoLabel}>Lançamentos</span>
-          <strong style={estilosLocais.grupoResumoValor}>{resumo.quantidadeLancamentos}</strong>
-        </div>
-      </div>
+      <FolhaResumoGrupo
+        resumo={resumo}
+        estilos={estilosLocais}
+        formatarMoeda={formatarMoeda}
+      />
     )
   }
-
-  function renderFormularioItem(lancamento) {
-    const categoria = lancamento?.categoria
-    const podeDetalhar = CATEGORIAS_ITENS_DETALHADOS.has(categoria)
-    if (
-      !podeDetalhar ||
-      lancamentoItensAbertoId !== lancamento.id ||
-      itemFormularioAbertoId !== lancamento.id
-    ) return null
-
-    const categoriaHorasItem = CATEGORIAS_HORAS_EXTRAS.has(categoria)
-    const categoriaFaltaItem = categoria === 'falta_injustificada'
-    const categoriaPremiacaoItem = categoria === 'premiacao'
-    const categoriaCompraItem = categoria === 'compras_vales'
-    const mostrarDataItem = !categoriaPremiacaoItem
-    const mostrarQuantidadeItem = categoriaHorasItem || categoriaFaltaItem
-    const mostrarPercentualItem = categoriaPremiacaoItem
-    const mostrarValorItem = categoriaCompraItem
-    const textoCategoriaItem = categoriaCompraItem
-      ? 'Use para compras internas, vales ou descontos combinados com o colaborador.'
-      : categoriaFaltaItem
-        ? 'Informe quantidade/dias. O calculo trabalhista final deve ser conferido pela contabilidade.'
-        : categoriaHorasItem
-          ? 'Informe a quantidade de horas para conferencia. Nao substitui calculo trabalhista.'
-          : categoriaPremiacaoItem
-            ? 'Calculo gerencial de apoio. Conferir regras internas antes do fechamento.'
-            : 'Use para detalhar o lancamento com contexto administrativo.'
-
-    return (
-      <form id={`folha-form-item-${lancamento.id}`} onSubmit={(event) => salvarItemLancamento(event, lancamento)} style={estilosLocais.itemFormularioCompacto}>
-        <div style={estilosLocais.itemFormularioHeader}>
-          <div>
-            <h4 style={estilosLocais.formSectionTitle}>
-              {itemEditandoId ? 'Editar item detalhado' : 'Adicionar item detalhado'}
-            </h4>
-            <p style={estilosLocais.helperText}>
-              Formulario do item. O total do lancamento e recalculado pelo banco apos salvar.
-            </p>
-            <p style={estilosLocais.helperText}>
-              {textoCategoriaItem}
-            </p>
-          </div>
-          <button type="button" style={styles.btnCinza} onClick={() => cancelarEdicaoItem(lancamento)}>
-            Fechar formulario
-          </button>
-        </div>
-
-        <div style={estilosLocais.formGrid}>
-          {mostrarDataItem && (
-            <label style={estilosLocais.formField}>
-              <span style={estilosLocais.label}>{categoriaFaltaItem ? 'Data da falta' : 'Data'}</span>
-              <input
-                type="date"
-                value={formItem.data_referencia}
-                onChange={(event) => setFormItem((atual) => ({ ...atual, data_referencia: event.target.value }))}
-                style={estilosLocais.input}
-                disabled={!podeEditar || salvando}
-                required={categoriaFaltaItem}
-              />
-            </label>
-          )}
-
-          {categoriaPremiacaoItem && (
-            <label style={estilosLocais.formField}>
-              <span style={estilosLocais.label}>Valor base</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={formItem.valor_base}
-                onChange={(event) => setFormItem((atual) => ({ ...atual, valor_base: event.target.value }))}
-                style={estilosLocais.input}
-                disabled={!podeEditar || salvando}
-                required
-              />
-            </label>
-          )}
-
-          {mostrarQuantidadeItem && (
-            <label style={estilosLocais.formField}>
-              <span style={estilosLocais.label}>
-                {categoriaHorasItem ? 'Quantidade de horas' : 'Quantidade/dias'}
-              </span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={formItem.quantidade}
-                onChange={(event) => setFormItem((atual) => ({ ...atual, quantidade: event.target.value }))}
-                style={estilosLocais.input}
-                disabled={!podeEditar || salvando}
-                required
-              />
-            </label>
-          )}
-
-          {mostrarPercentualItem && (
-            <label style={estilosLocais.formField}>
-              <span style={estilosLocais.label}>Percentual</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={formItem.percentual}
-                onChange={(event) => setFormItem((atual) => ({ ...atual, percentual: event.target.value }))}
-                style={estilosLocais.input}
-                disabled={!podeEditar || salvando}
-                required
-              />
-            </label>
-          )}
-
-          {mostrarValorItem && (
-            <label style={estilosLocais.formField}>
-              <span style={estilosLocais.label}>Valor</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={formItem.valor}
-                onChange={(event) => setFormItem((atual) => ({ ...atual, valor: event.target.value }))}
-                style={estilosLocais.input}
-                disabled={!podeEditar || salvando}
-                required
-              />
-            </label>
-          )}
-
-          {categoriaPremiacaoItem && (
-            <label style={estilosLocais.formField}>
-              <span style={estilosLocais.label}>Valor calculado</span>
-              <input
-                value={valorItemPremiacaoCalculado ? formatarMoeda(valorItemPremiacaoCalculado) : 'Preencha valor base e percentual'}
-                style={estilosLocais.inputReadOnly}
-                disabled
-                readOnly
-              />
-            </label>
-          )}
-        </div>
-
-        {categoriaPremiacaoItem && (
-          <small style={estilosLocais.helperText}>
-            Calculo simples: valor base x percentual / 100
-            {valorItemPremiacaoCalculado ? ` = ${formatarMoeda(valorItemPremiacaoCalculado)}.` : '.'}
-          </small>
-        )}
-        {categoriaHorasItem && (
-          <small style={estilosLocais.helperText}>
-            O valor 0 e registrado automaticamente. A contabilidade confere o calculo trabalhista.
-          </small>
-        )}
-        {categoriaFaltaItem && (
-          <small style={estilosLocais.helperText}>
-            O valor 0 e registrado automaticamente. A data ajuda a contabilidade a avaliar DSR.
-          </small>
-        )}
-
-        <label style={estilosLocais.formField}>
-          <span style={estilosLocais.label}>Descricao curta</span>
-          <input
-            value={formItem.descricao}
-            onChange={(event) => setFormItem((atual) => ({ ...atual, descricao: event.target.value }))}
-            style={estilosLocais.input}
-            disabled={!podeEditar || salvando}
-            placeholder="Resumo administrativo curto do item."
-          />
-        </label>
-
-        <label style={estilosLocais.formField}>
-          <span style={estilosLocais.label}>Observacao administrativa</span>
-          <textarea
-            value={formItem.observacao_administrativa}
-            onChange={(event) => setFormItem((atual) => ({ ...atual, observacao_administrativa: event.target.value }))}
-            style={estilosLocais.textarea}
-            disabled={!podeEditar || salvando}
-            placeholder="Nao registre dados medicos, documentos, diagnosticos ou informacoes sensiveis neste campo."
-          />
-          <small style={estilosLocais.helperText}>
-            Nao registre dados medicos, documentos, diagnosticos ou informacoes sensiveis neste campo.
-          </small>
-        </label>
-
-        <div style={estilosLocais.formActions}>
-          <button type="submit" style={styles.btnPrimario} disabled={!podeEditar || salvando}>
-            {salvando ? 'Salvando...' : (itemEditandoId ? 'Salvar item' : 'Adicionar item')}
-          </button>
-          <button type="button" style={styles.btnCinza} onClick={() => cancelarEdicaoItem(lancamento)} disabled={salvando}>
-            Cancelar
-          </button>
-        </div>
-      </form>
-    )
-  }
-
   function renderItensLancamento(lancamento) {
     const itens = itensPorLancamento.get(lancamento.id) || []
     const podeDetalhar = CATEGORIAS_ITENS_DETALHADOS.has(lancamento.categoria)
-    const totalItens = itens.reduce((total, item) => total + (Number(item?.valor) || 0), 0)
-    const categoriaCompraVale = lancamento.categoria === 'compras_vales'
-
-    if (!podeDetalhar) {
-      return (
-        <p style={estilosLocais.helperText}>
-          Esta categoria permanece como lancamento consolidado, sem itens detalhados neste ciclo.
-        </p>
-      )
-    }
 
     return (
-      <div data-folha-itens-lancamento-id={lancamento.id} style={estilosLocais.itensPanel}>
-        <div style={estilosLocais.itensPanelHeader}>
-          <div style={estilosLocais.itensPanelIntro}>
-            <strong>Itens do lancamento</strong>
-            <p style={estilosLocais.helperText}>
-              {loadingItensLancamentos
-                ? 'Carregando itens...'
-                : `${itens.length} item(ns) ativo(s). Total dos itens: ${formatarMoeda(totalItens)}.`}
-            </p>
-            {categoriaCompraVale && (
-              <p style={estilosLocais.helperText}>
-                Vales/compras ficam detalhados por item para facilitar conferência e relançamento.
-              </p>
-            )}
-          </div>
-          <button
-            type="button"
-            style={styles.btnPrimario}
-            onClick={() => iniciarNovoItemLancamento(lancamento)}
-            disabled={!podeEditar || salvando || lancamento.arquivado}
-          >
-            + item
-          </button>
-        </div>
-
-        {itens.length === 0 && itemFormularioAbertoId !== lancamento.id && (
-          <p style={estilosLocais.itemVazio}>
-            Nenhum item ativo. Use + item para detalhar este lancamento.
-          </p>
-        )}
-
-        {renderFormularioItem(lancamento)}
-
-        {itens.length > 0 && (
-          <div style={estilosLocais.itensLista}>
-            {itens.map((item) => (
-              <article key={item.id} style={estilosLocais.itemDetalhado}>
-                <div style={estilosLocais.itemDetalhadoHeader}>
-                  <div>
-                    <strong>{item.descricao || LABELS_CATEGORIA[item.categoria] || item.categoria}</strong>
-                    <p style={estilosLocais.helperText}>
-                      {formatarData(item.data_referencia)} | Qtd. {formatarNumero(item.quantidade)} | {formatarNumero(item.percentual)}%
-                    </p>
-                  </div>
-                  <strong className="folha-money">{formatarMoeda(item.valor)}</strong>
-                </div>
-                {item.observacao_administrativa && (
-                  <p className="folha-card-description">{item.observacao_administrativa}</p>
-                )}
-                <div style={estilosLocais.acoesTabela}>
-                  <button
-                    type="button"
-                    style={styles.btnCinza}
-                    onClick={() => iniciarEdicaoItemLancamento(lancamento, item)}
-                    disabled={!podeEditar || salvando || lancamento.arquivado}
-                  >
-                    Editar item
-                  </button>
-                  <button
-                    type="button"
-                    style={styles.btnCinza}
-                    onClick={() => arquivarItemDetalhado(item)}
-                    disabled={!podeEditar || salvando || lancamento.arquivado}
-                  >
-                    Arquivar item
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </div>
+      <FolhaItensDetalhados
+        lancamento={lancamento}
+        itens={itens}
+        podeDetalhar={podeDetalhar}
+        formularioAberto={lancamentoItensAbertoId === lancamento.id && itemFormularioAbertoId === lancamento.id}
+        estilos={estilosLocais}
+        styles={styles}
+        podeEditar={podeEditar}
+        salvando={salvando}
+        loading={loadingItensLancamentos}
+        formItem={formItem}
+        setFormItem={setFormItem}
+        itemEditandoId={itemEditandoId}
+        valorItemPremiacaoCalculado={valorItemPremiacaoCalculado}
+        labelsCategoria={LABELS_CATEGORIA}
+        categoriasHorasExtras={CATEGORIAS_HORAS_EXTRAS}
+        formatarData={formatarData}
+        formatarNumero={formatarNumero}
+        formatarMoeda={formatarMoeda}
+        onNovoItem={iniciarNovoItemLancamento}
+        onSalvarItem={salvarItemLancamento}
+        onCancelarItem={cancelarEdicaoItem}
+        onEditarItem={iniciarEdicaoItemLancamento}
+        onArquivarItem={arquivarItemDetalhado}
+      />
     )
   }
-
   function renderAcoesLancamento(lancamento) {
     return (
-      <div className="folha-card-actions" style={estilosLocais.acoesTabela}>
-        <button
-          className="folha-btn folha-btn-secondary"
-          type="button"
-          style={styles.btnCinza}
-          onClick={() => abrirItensLancamento(lancamento)}
-          disabled={!CATEGORIAS_ITENS_DETALHADOS.has(lancamento.categoria)}
-        >
-          {lancamentoItensAbertoId === lancamento.id ? '\u2212 itens' : '+ itens'}
-        </button>
-        <button
-          className="folha-btn folha-btn-secondary"
-          type="button"
-          style={styles.btnCinza}
-          onClick={() => iniciarEdicaoLancamento(lancamento)}
-          disabled={!podeEditar || salvando || lancamento.arquivado}
-        >
-          Editar lançamento
-        </button>
-        <button
-          className="folha-btn folha-btn-secondary"
-          type="button"
-          style={styles.btnCinza}
-          onClick={() => alternarConferenciaLancamento(lancamento)}
-          disabled={!podeEditar || salvando || lancamento.arquivado}
-        >
-          {lancamento.conferido ? 'Reabrir conferência' : 'Marcar conferido'}
-        </button>
-        <button
-          className={`folha-btn ${lancamento.arquivado ? 'folha-btn-positive' : 'folha-btn-danger'}`}
-          type="button"
-          style={styles.btnCinza}
-          onClick={() => alternarArquivoLancamento(lancamento)}
-          disabled={!podeEditar || salvando}
-        >
-          {lancamento.arquivado ? 'Reativar lançamento' : 'Arquivar lançamento'}
-        </button>
-      </div>
+      <FolhaLancamentoAcoes
+        lancamento={lancamento}
+        estilos={estilosLocais}
+        styles={styles}
+        podeEditar={podeEditar}
+        salvando={salvando}
+        podeDetalhar={CATEGORIAS_ITENS_DETALHADOS.has(lancamento.categoria)}
+        itensAberto={lancamentoItensAbertoId === lancamento.id}
+        onAbrirItens={abrirItensLancamento}
+        onEditar={iniciarEdicaoLancamento}
+        onAlternarConferencia={alternarConferenciaLancamento}
+        onAlternarArquivo={alternarArquivoLancamento}
+      />
     )
   }
-
   const mensagemErro = erroFormulario || erro || erroFuncionarios
 
   return (
@@ -2540,22 +2119,6 @@ export default function FechamentoFolhaPage({
           </div>
         )}
 
-        {false && exibindoEdicaoColaborador && (
-          <div style={{ ...estilosLocais.formPanelSoft, marginBottom: 12 }}>
-            <div style={estilosLocais.itensPanelHeader}>
-              <div style={estilosLocais.itensPanelIntro}>
-                <strong>Editando lançamentos de: {colaboradorEmEdicaoNome}</strong>
-                <p style={estilosLocais.helperText}>
-                  Adicione os itens deste colaborador e volte quando concluir.
-                </p>
-              </div>
-              <button type="button" style={styles.btnCinza} onClick={voltarParaTodosColaboradores}>
-                Voltar para todos os colaboradores
-              </button>
-            </div>
-          </div>
-        )}
-
         <FolhaContextoColaboradorAtivo
           ativo={exibindoEdicaoColaborador}
           resumo={resumoColaboradorEmEdicao}
@@ -2597,148 +2160,23 @@ export default function FechamentoFolhaPage({
             <p>Volte para todos os colaboradores e selecione outro lançamento.</p>
           </div>
         ) : (
-          <>
-          <p className="folha-mobile-note" style={styles.textoNota}>
-            No celular, os lançamentos aparecem em cards para facilitar leitura e conferência.
-          </p>
-          <div className="folha-desktop-list" style={estilosLocais.tableWrap}>
-            <table className="folha-table" style={estilosLocais.table}>
-              <thead>
-                <tr>
-                  <th style={estilosLocais.th}>Funcionário</th>
-                  <th style={estilosLocais.th}>Natureza</th>
-                  <th style={estilosLocais.th}>Categoria</th>
-                  <th style={estilosLocais.th}>Descrição</th>
-                  <th style={estilosLocais.th}>Data</th>
-                  <th style={estilosLocais.th}>Qtd.</th>
-                  <th style={estilosLocais.th}>%</th>
-                  <th style={estilosLocais.th}>Valor</th>
-                  <th style={estilosLocais.th}>Conferido</th>
-                  <th style={estilosLocais.th}>Status</th>
-                  <th style={estilosLocais.th}>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {gruposLancamentosConferencia.map((grupo) => (
-                  <Fragment key={`grupo-${grupo.funcionarioId}`}>
-                    <tr style={estilosLocais.grupoTableRow}>
-                      <td colSpan={11} style={{ ...estilosLocais.td, borderBottom: '1px solid #e2e8f0' }}>
-                        <div style={estilosLocais.grupoLancamentosHeader}>
-                          <div style={estilosLocais.grupoLancamentosNome}>
-                            <strong>{grupo.nome}</strong>
-                            <span style={styles.textoNota}>
-                              {grupo.resumo.quantidadeLancamentos} lançamento(s) nesta competência.
-                            </span>
-                          </div>
-                          {renderResumoGrupo(grupo.resumo)}
-                          <button
-                            type="button"
-                            style={styles.btnPrimario}
-                            onClick={() => iniciarNovoLancamentoFuncionario(grupo.funcionarioId)}
-                            disabled={!podeEditar || salvando || grupo.funcionarioId === '__sem_funcionario'}
-                          >
-                            + lançamento
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    {grupo.lancamentos.map((lancamento) => (
-                      <Fragment key={lancamento.id}>
-                      <tr>
-                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdTexto }}>
-                          {grupo.nome}
-                        </td>
-                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{LABELS_NATUREZA[lancamento.natureza] || lancamento.natureza}</td>
-                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{LABELS_CATEGORIA[lancamento.categoria] || lancamento.categoria}</td>
-                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdTexto }}>{lancamento.descricao || '-'}</td>
-                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{formatarData(lancamento.data_referencia)}</td>
-                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{formatarNumero(lancamento.quantidade)}</td>
-                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{formatarNumero(lancamento.percentual)}</td>
-                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdValor }}>{lancamento.valor === null ? '-' : formatarMoeda(lancamento.valor)}</td>
-                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{lancamento.conferido ? 'Sim' : 'Não'}</td>
-                        <td style={{ ...estilosLocais.td, ...estilosLocais.tdMuted }}>{lancamento.arquivado ? 'Arquivado' : 'Ativo'}</td>
-                        <td style={estilosLocais.td}>
-                          {renderAcoesLancamento(lancamento)}
-                        </td>
-                      </tr>
-                      {lancamentoItensAbertoId === lancamento.id && (
-                        <tr>
-                          <td colSpan={11} style={{ ...estilosLocais.td, background: '#f8fafc' }}>
-                            {renderItensLancamento(lancamento)}
-                          </td>
-                        </tr>
-                      )}
-                      </Fragment>
-                    ))}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="folha-mobile-list" style={estilosLocais.mobileCards}>
-            {gruposLancamentosConferencia.map((grupo) => (
-              <div key={`mobile-grupo-${grupo.funcionarioId}`} style={estilosLocais.mobileGroup}>
-                <div style={estilosLocais.grupoLancamentosHeader}>
-                  <div style={estilosLocais.grupoLancamentosNome}>
-                    <strong>{grupo.nome}</strong>
-                    <span style={styles.textoNota}>
-                      {grupo.resumo.quantidadeLancamentos} lançamento(s) nesta competência.
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    style={styles.btnPrimario}
-                    onClick={() => iniciarNovoLancamentoFuncionario(grupo.funcionarioId)}
-                    disabled={!podeEditar || salvando || grupo.funcionarioId === '__sem_funcionario'}
-                  >
-                    + lançamento
-                  </button>
-                </div>
-                {renderResumoGrupo(grupo.resumo)}
-
-                {grupo.lancamentos.map((lancamento) => (
-                  <article key={`mobile-${lancamento.id}`} style={estilosLocais.mobileCard}>
-                    <div style={estilosLocais.mobileCardHeader}>
-                      <div>
-                        <strong>{LABELS_CATEGORIA[lancamento.categoria] || lancamento.categoria}</strong>
-                        <p className="folha-card-description">
-                          {LABELS_NATUREZA[lancamento.natureza] || lancamento.natureza}
-                        </p>
-                      </div>
-                      <span style={estilosLocais.badge}>{lancamento.arquivado ? 'Arquivado' : 'Ativo'}</span>
-                    </div>
-
-                    {lancamento.descricao && (
-                      <p className="folha-card-description">{lancamento.descricao}</p>
-                    )}
-
-                    <div className="folha-mobile-meta-grid" style={estilosLocais.mobileMetaGrid}>
-                      <div style={estilosLocais.mobileMetaItem}>
-                        <span style={estilosLocais.mobileMetaLabel}>Data</span>
-                        <strong>{formatarData(lancamento.data_referencia)}</strong>
-                      </div>
-                      <div style={estilosLocais.mobileMetaItem}>
-                        <span style={estilosLocais.mobileMetaLabel}>Valor</span>
-                        <strong className="folha-money">{lancamento.valor === null ? '-' : formatarMoeda(lancamento.valor)}</strong>
-                      </div>
-                      <div style={estilosLocais.mobileMetaItem}>
-                        <span style={estilosLocais.mobileMetaLabel}>Qtd. / %</span>
-                        <strong>{formatarNumero(lancamento.quantidade)} / {formatarNumero(lancamento.percentual)}</strong>
-                      </div>
-                      <div style={estilosLocais.mobileMetaItem}>
-                        <span style={estilosLocais.mobileMetaLabel}>Conferido</span>
-                        <strong>{lancamento.conferido ? 'Sim' : 'Não'}</strong>
-                      </div>
-                    </div>
-
-                    {renderAcoesLancamento(lancamento)}
-                    {lancamentoItensAbertoId === lancamento.id && renderItensLancamento(lancamento)}
-                  </article>
-                ))}
-              </div>
-            ))}
-          </div>
-          </>
+          <FolhaLancamentosLista
+            grupos={gruposLancamentosConferencia}
+            estilos={estilosLocais}
+            styles={styles}
+            podeEditar={podeEditar}
+            salvando={salvando}
+            lancamentoItensAbertoId={lancamentoItensAbertoId}
+            labelsNatureza={LABELS_NATUREZA}
+            labelsCategoria={LABELS_CATEGORIA}
+            formatarData={formatarData}
+            formatarNumero={formatarNumero}
+            formatarMoeda={formatarMoeda}
+            renderResumoGrupo={renderResumoGrupo}
+            renderAcoesLancamento={renderAcoesLancamento}
+            renderItensLancamento={renderItensLancamento}
+            onNovoLancamento={iniciarNovoLancamentoFuncionario}
+          />
         )}
       </section>
       </div>

@@ -53,20 +53,45 @@ export function obterMesDataPagamento(dataPagamento) {
   return mes >= 1 && mes <= 12 ? mes : null
 }
 
-function obterAnoDataFluxo(data) {
+function normalizarDataIso(data) {
   const texto = String(data || '').slice(0, 10)
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(texto)) return null
+  return /^\d{4}-\d{2}-\d{2}$/.test(texto) ? texto : ''
+}
+
+function obterAnoDataFluxo(data) {
+  const texto = normalizarDataIso(data)
+  if (!texto) return null
   return Number(texto.slice(0, 4))
+}
+
+const DATA_LIMITE_FALLBACK_HISTORICO = '2026-05-31'
+const STATUS_PAGOS_FLUXO = new Set(['pago', 'paga', 'quitado', 'quitada', 'baixado', 'baixada'])
+
+function statusContaPaga(status) {
+  return STATUS_PAGOS_FLUXO.has(String(status || '').toLowerCase().trim())
+}
+
+function contaPodeUsarVencimentoHistorico(conta = {}) {
+  const dataVencimento = normalizarDataIso(conta.data_vencimento || conta.vencimento)
+  return (
+    statusContaPaga(conta.status) &&
+    dataVencimento &&
+    dataVencimento <= DATA_LIMITE_FALLBACK_HISTORICO
+  )
 }
 
 function resolverDataConta(conta = {}) {
   if (conta.data_pagamento) {
     return { data: conta.data_pagamento, origem: 'pagamento' }
   }
-  const dataGerencial = conta.data_vencimento || conta.vencimento || conta.competencia || ''
+
+  const dataGerencial = contaPodeUsarVencimentoHistorico(conta)
+    ? normalizarDataIso(conta.data_vencimento || conta.vencimento)
+    : ''
+
   return {
     data: dataGerencial,
-    origem: dataGerencial ? 'vencimento_gerencial' : 'sem_data'
+    origem: dataGerencial ? 'vencimento_historico' : 'sem_data'
   }
 }
 
@@ -204,7 +229,7 @@ export function montarMovimentosFluxoCaixa({
     .filter((movimento) => movimento.mes && (!filtrarAno || obterAnoDataFluxo(movimento.data_considerada) === anoNumero))
 
   const movimentosContasPagas = (contasPagas || [])
-    .filter((conta) => conta?.status === 'pago')
+    .filter((conta) => statusContaPaga(conta?.status))
     .filter((conta) => !contasComParciaisAtivos.has(conta.id))
     .filter((conta) => !filialId || (conta.filial_id || '') === filialId)
     .map((conta) => {
@@ -267,7 +292,7 @@ export function calcularDiagnosticoRubricas(movimentos = [], rubricas = []) {
   const totalMovimentosRubricas = (rubricas || []).reduce((total, rubrica) => total + (rubrica.movimentos || 0), 0)
   const totalSaidasRubricas = normalizarValor((rubricas || []).reduce((total, rubrica) => total + (rubrica.total || 0), 0))
   const saidasPorPagamento = saidas.filter((movimento) => movimento.origem_data === 'pagamento')
-  const saidasPorVencimento = saidas.filter((movimento) => movimento.origem_data === 'vencimento_gerencial')
+  const saidasPorVencimento = saidas.filter((movimento) => movimento.origem_data === 'vencimento_historico')
 
   return {
     totalMovimentos,

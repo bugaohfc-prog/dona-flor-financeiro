@@ -10,7 +10,7 @@ import {
   prepararLinhasCsvFluxoCaixa
 } from '../modules/contas/utils/fluxo-caixa/fluxoCaixaUtils'
 
-const OBSERVACAO_ENTRADAS = 'FATURAMENTO BRUTO usa receitas ativas em df_receitas por data_receita. Critério gerencial: contas sem data de pagamento foram consideradas pelo vencimento.'
+const OBSERVACAO_ENTRADAS = 'FATURAMENTO BRUTO usa receitas ativas em df_receitas por data_receita. Critério histórico: até 05/2026, contas pagas sem data de pagamento usam vencimento como referência. A partir de 06/2026, somente pagamentos baixados com data de pagamento entram no realizado.'
 
 function slug(valor) {
   return String(valor || '')
@@ -86,8 +86,8 @@ export default function FluxoCaixaPage({
       ['Movimentos considerados', resultado.totais.movimentos],
       ['Movimentos em rubricas', diagnosticoRubricas.totalMovimentosRubricas],
       ['Por data de pagamento', diagnosticoRubricas.movimentosPorPagamento],
-      ['Por vencimento gerencial', diagnosticoRubricas.movimentosPorVencimento],
-      ['Valor incluído por vencimento', diagnosticoRubricas.valorPorVencimento],
+      ['Por vencimento histórico', diagnosticoRubricas.movimentosPorVencimento],
+      ['Valor incluído por vencimento histórico', diagnosticoRubricas.valorPorVencimento],
       ['Com valor pago', diagnosticoRubricas.movimentosComValorPago],
       ['Com valor original', diagnosticoRubricas.movimentosComValorOriginal],
       ['Sem centro de custo', diagnosticoRubricas.movimentosSemCentroCusto],
@@ -278,8 +278,8 @@ export default function FluxoCaixaPage({
           <span><b>Por centro</b>{diagnosticoRubricas.classificadosCentroCusto}</span>
           <span><b>Por descrição/juros</b>{diagnosticoRubricas.classificadosDescricao}</span>
           <span><b>Data pagamento</b>{diagnosticoRubricas.movimentosPorPagamento}</span>
-          <span><b>Vencimento gerencial</b>{diagnosticoRubricas.movimentosPorVencimento}</span>
-          <span><b>Valor por vencimento</b>{formatarMoedaFluxo(diagnosticoRubricas.valorPorVencimento)}</span>
+          <span><b>Vencimento histórico</b>{diagnosticoRubricas.movimentosPorVencimento}</span>
+          <span><b>Valor histórico</b>{formatarMoedaFluxo(diagnosticoRubricas.valorPorVencimento)}</span>
           <span><b>Valor pago</b>{diagnosticoRubricas.movimentosComValorPago}</span>
           <span><b>Valor original</b>{diagnosticoRubricas.movimentosComValorOriginal}</span>
           <span><b>Fallback</b>{diagnosticoRubricas.classificadosFallback}</span>

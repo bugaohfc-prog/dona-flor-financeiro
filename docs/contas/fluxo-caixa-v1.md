@@ -313,17 +313,18 @@ Correções aplicadas:
 
 Nenhum dado real foi alterado. Não houve `INSERT`, `UPDATE`, `DELETE`, migration ou alteração de RLS/policies/functions/triggers.
 
-## Atualização 2026-07-04 — vencimento como fallback gerencial
+## Atualização 2026-07-04 — critério histórico de data de caixa
 
-Decisão de negócio: para o relatório gerencial dos donos, contas pagas sem `data_pagamento` passam a ser consideradas pelo vencimento, sem alterar dados antigos no banco.
+Decisão de negócio: para corrigir o histórico anterior à baixa operacional mais consistente, contas pagas sem `data_pagamento` usam vencimento apenas até 31/05/2026, sem alterar dados antigos no banco.
 
 Regra aplicada para saídas:
 
 - se existir `data_pagamento`, usar `data_pagamento`;
-- se não existir data de pagamento, usar `data_vencimento` ou `vencimento` como `vencimento_gerencial`;
+- se não existir data de pagamento, usar `data_vencimento` ou `vencimento` como `vencimento_historico` somente quando a referência for até 31/05/2026;
+- a partir de 01/06/2026, contas sem `data_pagamento` não entram como realizado;
 - se existir `valor_pago` maior que zero, usar `valor_pago`;
 - se `valor_pago` estiver vazio/nulo/zero, usar `valor` original da conta;
-- considerar apenas contas `status = pago`;
+- considerar apenas contas pagas/quitadas;
 - excluir contas `oculto`, `excluido` ou `deletado`;
 - não duplicar conta-pai quando houver pagamento parcial ativo.
 
@@ -332,11 +333,11 @@ Auditoria somente leitura em 2025:
 - regra antiga: 159 movimentos, R$ 153.168,92;
 - regra nova: 426 movimentos, R$ 523.249,92;
 - entraram por `data_pagamento`: 159 movimentos, R$ 153.168,92;
-- entraram por `vencimento_gerencial`: 267 movimentos, R$ 370.081,00;
+- entraram por vencimento histórico: 267 movimentos, R$ 370.081,00;
 - usaram `valor_pago`: 159 movimentos;
 - usaram `valor` original: 267 movimentos;
 - pendentes com vencimento em 2025 foram mantidos fora do relatório.
 
 O relatório e a exportação exibem a observação:
 
-`Critério gerencial: contas sem data de pagamento foram consideradas pelo vencimento.`
+`Critério histórico: até 05/2026, contas pagas sem data de pagamento usam vencimento como referência. A partir de 06/2026, somente pagamentos baixados com data de pagamento entram no realizado.`

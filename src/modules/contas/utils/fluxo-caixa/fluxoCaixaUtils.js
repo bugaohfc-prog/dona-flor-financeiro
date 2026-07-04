@@ -1,3 +1,11 @@
+import {
+  RUBRICA_FATURAMENTO_BRUTO,
+  RUBRICA_OUTRAS_OPERACIONAIS,
+  RUBRICA_TOTAL_GERAL,
+  RUBRICAS_SAIDA_FLUXO_CAIXA,
+  classificarRubricaFluxoCaixa
+} from './classificarRubricaFluxoCaixa'
+
 export const MESES_FLUXO_CAIXA = [
   { numero: 1, chave: 'jan', nome: 'Janeiro' },
   { numero: 2, chave: 'fev', nome: 'Fevereiro' },
@@ -56,6 +64,30 @@ function criarLinhaMes(mes) {
   }
 }
 
+function criarLinhaRubrica(rubrica) {
+  const meses = MESES_FLUXO_CAIXA.reduce((acc, mes) => {
+    acc[mes.chave] = 0
+    return acc
+  }, {})
+
+  return {
+    rubrica,
+    ...meses,
+    total: 0,
+    movimentos: 0
+  }
+}
+
+function enriquecerMovimentoComRubrica(movimento) {
+  const classificacao = classificarRubricaFluxoCaixa(movimento)
+  return {
+    ...movimento,
+    rubrica: classificacao.rubrica,
+    rubrica_confianca: classificacao.confianca,
+    rubrica_criterio: classificacao.criterio
+  }
+}
+
 export function montarMovimentosFluxoCaixa({
   contasPagas = [],
   pagamentosParciais = [],
@@ -77,20 +109,26 @@ export function montarMovimentosFluxoCaixa({
       const filialContaId = conta.filial_id || ''
       if (filialId && filialContaId !== filialId) return null
 
-      return {
+      return enriquecerMovimentoComRubrica({
         id: pagamento.id,
         origem: 'pagamento_parcial',
         conta_id: pagamento.conta_id,
         pagamento_id: pagamento.id,
         descricao: conta.descricao || 'Pagamento parcial',
+        observacao: pagamento.observacao || conta.observacao_pagamento || conta.observacao || '',
+        observacao_pagamento: conta.observacao_pagamento || '',
         data_pagamento: pagamento.data_pagamento,
         mes: obterMesDataPagamento(pagamento.data_pagamento),
         valor: normalizarValor(pagamento.valor_pago),
         tipo: 'saida',
         filial_id: filialContaId,
         filial_nome: filiaisPorId.get(filialContaId)?.nome || 'Sem filial',
-        centro_custo_id: conta.centro_custo_id || ''
-      }
+        centro_custo_id: conta.centro_custo_id || '',
+        centro_custo_nome: conta.df_centros_custo?.nome || '',
+        imposto_tipo: conta.imposto_tipo || '',
+        juros_multa: conta.juros_multa || 0,
+        desconto: conta.desconto || 0
+      })
     })
     .filter(Boolean)
     .filter((movimento) => movimento.mes)
@@ -100,23 +138,67 @@ export function montarMovimentosFluxoCaixa({
     .filter((conta) => conta?.data_pagamento)
     .filter((conta) => !contasComParciaisAtivos.has(conta.id))
     .filter((conta) => !filialId || (conta.filial_id || '') === filialId)
-    .map((conta) => ({
+    .map((conta) => enriquecerMovimentoComRubrica({
       id: conta.id,
       origem: 'conta_paga',
       conta_id: conta.id,
       pagamento_id: null,
       descricao: conta.descricao || 'Conta paga',
+      observacao: conta.observacao_pagamento || conta.observacao || '',
+      observacao_pagamento: conta.observacao_pagamento || '',
       data_pagamento: conta.data_pagamento,
       mes: obterMesDataPagamento(conta.data_pagamento),
       valor: normalizarValor(conta.valor_pago ?? conta.valor),
       tipo: 'saida',
       filial_id: conta.filial_id || '',
       filial_nome: filiaisPorId.get(conta.filial_id || '')?.nome || 'Sem filial',
-      centro_custo_id: conta.centro_custo_id || ''
+      centro_custo_id: conta.centro_custo_id || '',
+      centro_custo_nome: conta.df_centros_custo?.nome || '',
+      imposto_tipo: conta.imposto_tipo || '',
+      juros_multa: conta.juros_multa || 0,
+      desconto: conta.desconto || 0
     }))
     .filter((movimento) => movimento.mes && movimento.valor > 0)
 
   return [...movimentosParciais, ...movimentosContasPagas]
+}
+
+export function agregarSaidasPorRubrica(movimentos = []) {
+  const linhasPorRubrica = new Map(RUBRICAS_SAIDA_FLUXO_CAIXA.map((rubrica) => [rubrica, criarLinhaRubrica(rubrica)]))
+  const mesesPorNumero = new Map(MESES_FLUXO_CAIXA.map((mes) => [mes.numero, mes]))
+
+  ;(movimentos || []).forEach((movimento) => {
+    if (movimento.tipo === 'entrada') return
+    const rubrica = linhasPorRubrica.has(movimento.rubrica) ? movimento.rubrica : RUBRICA_OUTRAS_OPERACIONAIS
+    const mes = mesesPorNumero.get(movimento.mes)
+    if (!mes) return
+    const linha = linhasPorRubrica.get(rubrica)
+    const valor = normalizarValor(movimento.valor)
+    linha[mes.chave] = normalizarValor(linha[mes.chave] + valor)
+    linha.total = normalizarValor(linha.total + valor)
+    linha.movimentos += 1
+  })
+
+  return RUBRICAS_SAIDA_FLUXO_CAIXA.map((rubrica) => linhasPorRubrica.get(rubrica))
+}
+
+export function calcularDiagnosticoRubricas(movimentos = [], rubricas = []) {
+  const saidas = (movimentos || []).filter((movimento) => movimento.tipo !== 'entrada')
+  const totalMovimentos = saidas.length
+  const totalMovimentosRubricas = (rubricas || []).reduce((total, rubrica) => total + (rubrica.movimentos || 0), 0)
+  const totalSaidasRubricas = normalizarValor((rubricas || []).reduce((total, rubrica) => total + (rubrica.total || 0), 0))
+
+  return {
+    totalMovimentos,
+    totalMovimentosRubricas,
+    totalSaidasRubricas,
+    movimentosOperacionais: saidas.filter((movimento) => movimento.rubrica === 'OUTRAS DESPESAS OPERACIONAIS *').length,
+    movimentosNaoOperacionais: saidas.filter((movimento) => movimento.rubrica === 'OUTRAS DESPESAS NÃO OPERACIONAIS *').length,
+    classificadosCentroCusto: saidas.filter((movimento) => movimento.rubrica_criterio === 'centro_custo').length,
+    classificadosDescricao: saidas.filter((movimento) => ['descricao', 'juros', 'filial'].includes(movimento.rubrica_criterio)).length,
+    classificadosFallback: saidas.filter((movimento) => movimento.rubrica_criterio === 'fallback').length,
+    movimentosPerdidos: Math.max(totalMovimentos - totalMovimentosRubricas, 0)
+  }
 }
 
 export function agregarFluxoCaixaMensal(movimentos = []) {
@@ -155,17 +237,32 @@ export function agregarFluxoCaixaMensal(movimentos = []) {
   }
 }
 
-export function prepararLinhasCsvFluxoCaixa(resultado) {
-  return (resultado?.linhas || []).map((linha) => [
-    linha.nome,
-    linha.entradas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-    linha.saidas.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-    linha.saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-    linha.movimentos
+export function prepararLinhasCsvFluxoCaixa(resultado, rubricas = []) {
+  const valoresPorMes = new Map((resultado?.linhas || []).map((linha) => [linha.mes, linha]))
+  const linhaFaturamento = [
+    RUBRICA_FATURAMENTO_BRUTO,
+    ...MESES_FLUXO_CAIXA.map((mes) => numeroCsv(valoresPorMes.get(mes.numero)?.entradas)),
+    numeroCsv(resultado?.totais?.entradas)
+  ]
+  const linhasRubricas = (rubricas || []).map((rubrica) => [
+    rubrica.rubrica,
+    ...MESES_FLUXO_CAIXA.map((mes) => numeroCsv(rubrica[mes.chave])),
+    numeroCsv(rubrica.total)
   ])
+  const linhaTotal = [
+    RUBRICA_TOTAL_GERAL,
+    ...MESES_FLUXO_CAIXA.map((mes) => numeroCsv(valoresPorMes.get(mes.numero)?.saldo)),
+    numeroCsv(resultado?.totais?.saldo)
+  ]
+
+  return [linhaFaturamento, ...linhasRubricas, linhaTotal]
 }
 
-export function montarAbaModeloFluxoCaixa({ titulo, filialNome, ano, resultado, observacao }) {
+function numeroCsv(valor) {
+  return normalizarValor(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+export function montarAbaModeloFluxoCaixa({ titulo, filialNome, ano, resultado, rubricas, observacao }) {
   const meses = MESES_FLUXO_CAIXA.map((mes) => mes.nome)
   const valoresPorMes = new Map((resultado?.linhas || []).map((linha) => [linha.mes, linha]))
   const linhaPorCampo = (rotulo, campo) => {
@@ -173,6 +270,11 @@ export function montarAbaModeloFluxoCaixa({ titulo, filialNome, ano, resultado, 
     const total = normalizarValor(valores.reduce((soma, valor) => soma + valor, 0))
     return [rotulo, ...valores, total]
   }
+  const linhasRubricas = (rubricas || []).map((rubrica) => [
+    rubrica.rubrica,
+    ...MESES_FLUXO_CAIXA.map((mes) => normalizarValor(rubrica[mes.chave])),
+    normalizarValor(rubrica.total)
+  ])
 
   return [
     [titulo],
@@ -183,7 +285,7 @@ export function montarAbaModeloFluxoCaixa({ titulo, filialNome, ano, resultado, 
     [],
     ['Rubrica', ...meses, 'Total anual'],
     linhaPorCampo('FATURAMENTO BRUTO', 'entradas'),
-    linhaPorCampo('DESEMBOLSOS / PAGAMENTOS REALIZADOS', 'saidas'),
+    ...linhasRubricas,
     linhaPorCampo('TOTAL GERAL', 'saldo'),
     [],
     ['Mês', ...meses, 'Total anual'],
@@ -211,6 +313,7 @@ export function agregarMovimentosPorFilial(movimentos = [], filiais = []) {
     .sort((a, b) => a.filialNome.localeCompare(b.filialNome, 'pt-BR'))
     .map((grupo) => ({
       ...grupo,
-      resultado: agregarFluxoCaixaMensal(grupo.movimentos)
+      resultado: agregarFluxoCaixaMensal(grupo.movimentos),
+      rubricas: agregarSaidasPorRubrica(grupo.movimentos)
     }))
 }

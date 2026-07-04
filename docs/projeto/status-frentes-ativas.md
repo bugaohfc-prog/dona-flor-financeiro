@@ -60,3 +60,11 @@ Data: 2026-07-03
 ## Regra atual
 
 Mudanças devem ser feitas por frente, diretamente na `main`, com tag de backup quando houver risco, build obrigatório quando alterar `src`, e rollback claro. Banco, RLS, migrations, secrets, Edge Functions e permissões continuam exigindo ciclo próprio e autorização explícita.
+
+## Atualizacao 2026-07-04
+
+- Fluxo de Caixa V1 evoluido para separar saidas pelas rubricas fixas do modelo do cliente.
+- Exportacao CSV/Excel passa a usar rubricas em vez de uma linha unica de desembolsos.
+- Classificacao automatica centralizada tambem prepara sugestao segura de centro de custo em novos lancamentos.
+- Dados antigos continuam intactos; a classificacao historica e logica, feita no relatorio/exportacao.
+- Pendencia principal: frente de Receitas/Entradas para preencher `FATURAMENTO BRUTO` com origem confiavel.

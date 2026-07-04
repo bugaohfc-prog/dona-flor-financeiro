@@ -157,3 +157,104 @@ Referências usadas:
 git revert <commit>
 git push origin main
 ```
+
+## Atualizacao 2026-07-04 — rubricas do modelo
+
+O Fluxo de Caixa V1 passou a abrir as saidas nas rubricas fixas do modelo do cliente:
+
+1. `FATURAMENTO BRUTO`
+2. `DESEMBOLSO COM FORNECEDORES/COMPRAS`
+3. `FOLHA DE PAGAMENTO`
+4. `IMPOSTOS RECOLHIDOS SOBRE FOLHA`
+5. `IMPOSTOS RECOLHIDOS SOBRE VENDAS`
+6. `ALUGUEL`
+7. `AGUA + LUZ + TELEFONE`
+8. `PRO-LABORE`
+9. `IMPOSTOS PARCELADOS`
+10. `OUTRAS DESPESAS OPERACIONAIS *`
+11. `OUTRAS DESPESAS NAO OPERACIONAIS *`
+12. `DESPESAS FINANCEIRAS ( JUROS )`
+13. `DESEMBOLSO MENSAL COM BANCOS (PRINCIPAL)`
+14. `TOTAL GERAL`
+
+A linha unica antiga `DESEMBOLSOS / PAGAMENTOS REALIZADOS` nao e mais usada na exportacao. O Excel/CSV agora exporta `Consolidado Geral` e abas por filial com janeiro a dezembro e total anual.
+
+### Classificacao automatica
+
+A regra central fica em `src/modules/contas/utils/fluxo-caixa/classificarRubricaFluxoCaixa.js`.
+
+Ela retorna rubrica, centro de custo sugerido, confianca e criterio. A mesma regra alimenta o Fluxo de Caixa e a sugestao de centro no cadastro de novas contas.
+
+Mapeamento principal:
+
+- `Mercadoria` -> `DESEMBOLSO COM FORNECEDORES/COMPRAS`
+- `RH` -> `FOLHA DE PAGAMENTO`
+- `Ocupacao` -> `ALUGUEL`
+- `Utilidades` -> `AGUA + LUZ + TELEFONE`
+- `Administrativo`, `Operacional`, `Marketing`, `Sistemas`, `Veiculos` -> `OUTRAS DESPESAS OPERACIONAIS *`
+- `Pessoais` -> `OUTRAS DESPESAS NAO OPERACIONAIS *`, salvo texto claro de pro-labore
+- `Impostos e Taxas` -> refinado por descricao, observacao, imposto e fornecedor quando existirem
+
+Regras criticas:
+
+- `FGTS`, `INSS`, `eSocial`, `DCTFWeb`, `DARF folha`, `guia folha`, `imposto folha` e encargos sobre folha entram em `IMPOSTOS RECOLHIDOS SOBRE FOLHA`, mesmo se o centro estiver como RH.
+- Pagamentos diretos a colaboradores, salario, comissao, premiacao, diaria e ajuda de custo entram em `FOLHA DE PAGAMENTO`.
+- Juros, multa, mora, encargos financeiros e `juros_multa` entram em `DESPESAS FINANCEIRAS ( JUROS )`, exceto quando o texto for claramente FGTS/INSS/encargo de folha.
+- `Pessoais` e filial `Pessoal` entram em `OUTRAS DESPESAS NAO OPERACIONAIS *`, exceto quando o texto indicar pro-labore.
+- Sem identificacao segura, o movimento cai em `OUTRAS DESPESAS OPERACIONAIS *`.
+
+### Sugestao de centro em novos lancamentos
+
+O modal de conta passou a usar a classificacao central para sugerir centro de custo em novas contas:
+
+- preenche automaticamente apenas quando a conta e nova, o centro esta vazio e a confianca e alta;
+- o usuario pode revisar e alterar antes de salvar;
+- nao bloqueia salvamento;
+- nao altera registros antigos;
+- nao executa update em massa.
+
+### Validacao operacional
+
+A tela mostra diagnosticos de classificacao:
+
+- movimentos classificados por centro de custo;
+- movimentos classificados por descricao/juros;
+- movimentos em fallback;
+- movimentos em outras despesas operacionais;
+- movimentos em outras despesas nao operacionais;
+- movimentos perdidos na agregacao.
+
+A soma das rubricas deve bater com o total de saidas do resumo mensal. A classificacao e feita em tempo de relatorio/exportacao, sem alterar dados historicos no Supabase.
+
+### Limitacoes
+
+- `FATURAMENTO BRUTO` continua zerado ate a frente de Receitas/Entradas.
+- A classificacao automatica pode exigir revisao pontual quando descricoes antigas forem genericas.
+- Quando juros/multa nao estiverem separados em campo proprio e aparecerem apenas na descricao, o movimento inteiro e classificado como juros.
+
+### Consulta Supabase somente leitura
+
+Em 2026-07-04 foi feita consulta `SELECT` somente leitura para validar metadados e centros cadastrados.
+
+Campos confirmados:
+
+- `df_contas`: `descricao`, `valor`, `valor_pago`, `juros_multa`, `desconto`, `observacao`, `observacao_pagamento`, `imposto_tipo`, `data_pagamento`, `status`, `filial_id`, `centro_custo_id`, `oculto`, `excluido`, `deletado`.
+- `df_contas_pagamentos`: `conta_id`, `valor_pago`, `data_pagamento`, `observacao`, `arquivado`, `arquivado_em`.
+- `df_centros_custo`: `id`, `nome`, `empresa_id`.
+- `df_filiais`: `id`, `nome`, `empresa_id`.
+
+Centros confirmados:
+
+- `Administrativo`
+- `Impostos e Taxas`
+- `Marketing`
+- `Mercadoria`
+- `Ocupacao`
+- `Operacional`
+- `Pessoais`
+- `RH`
+- `Sistemas`
+- `Utilidades`
+- `Veiculos`
+
+Nenhum `INSERT`, `UPDATE`, `DELETE`, DDL, migration ou alteracao de RLS/policies/grants/functions/triggers foi executado.

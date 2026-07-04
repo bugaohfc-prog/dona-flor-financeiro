@@ -3,7 +3,9 @@ import { supabase } from '../../../../lib/supabase'
 import { carregarFluxoCaixaRealizadoV1 } from '../../services/fluxo-caixa/fluxoCaixaService'
 import {
   agregarFluxoCaixaMensal,
+  agregarSaidasPorRubrica,
   anoAtual,
+  calcularDiagnosticoRubricas,
   montarMovimentosFluxoCaixa
 } from '../../utils/fluxo-caixa/fluxoCaixaUtils'
 
@@ -52,6 +54,11 @@ export function useFluxoCaixaV1({ empresaId }) {
   }, [dadosOrigem, filialId, filiaisPorId])
 
   const resultado = useMemo(() => agregarFluxoCaixaMensal(movimentos), [movimentos])
+  const rubricas = useMemo(() => agregarSaidasPorRubrica(movimentos), [movimentos])
+  const diagnosticoRubricas = useMemo(
+    () => calcularDiagnosticoRubricas(movimentos, rubricas),
+    [movimentos, rubricas]
+  )
 
   return {
     ano,
@@ -63,6 +70,8 @@ export function useFluxoCaixaV1({ empresaId }) {
     erro,
     recarregar: carregar,
     movimentos,
-    resultado
+    resultado,
+    rubricas,
+    diagnosticoRubricas
   }
 }

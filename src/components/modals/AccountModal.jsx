@@ -1,3 +1,6 @@
+import { useEffect, useMemo } from 'react'
+import { classificarRubricaFluxoCaixa } from '../../modules/contas/utils/fluxo-caixa/classificarRubricaFluxoCaixa'
+
 export default function AccountModal({
   styles,
   editandoContaId,
@@ -126,6 +129,29 @@ export default function AccountModal({
     && !carregandoParcelamentoGrupo
     && !motivoBloqueioCancelamento
     && Boolean(parcelamentoGrupoConta?.grupo_parcelamento_id)
+
+  const filialSelecionadaNome = (filiais || []).find((filial) => filial.id === filialId)?.nome || ''
+  const sugestaoClassificacao = useMemo(() => {
+    const classificacao = classificarRubricaFluxoCaixa({
+      descricao,
+      observacao: observacaoConta,
+      imposto_tipo: impostoTipoConta,
+      filial_nome: filialSelecionadaNome
+    })
+    const centroSugerido = (centros || []).find((centro) => normalizarTextoCentro(centro.nome) === normalizarTextoCentro(classificacao.centroCustoSugerido))
+
+    return {
+      ...classificacao,
+      centroCustoId: centroSugerido?.id || '',
+      centroCustoNome: centroSugerido?.nome || classificacao.centroCustoSugerido || ''
+    }
+  }, [centros, descricao, filialSelecionadaNome, impostoTipoConta, observacaoConta])
+
+  useEffect(() => {
+    if (editandoContaId || centroCustoId || !sugestaoClassificacao.centroCustoId) return
+    if (sugestaoClassificacao.confianca !== 'alta') return
+    setCentroCustoId(sugestaoClassificacao.centroCustoId)
+  }, [centroCustoId, editandoContaId, setCentroCustoId, sugestaoClassificacao])
 
   function fecharTudo() {
     fecharConta()
@@ -357,6 +383,11 @@ export default function AccountModal({
                     <option key={centro.id} value={centro.id}>{centro.nome}</option>
                   ))}
                 </select>
+                {sugestaoClassificacao.centroCustoNome && (
+                  <small className="account-modal-help">
+                    Sugestão: {sugestaoClassificacao.centroCustoNome} / {sugestaoClassificacao.rubrica} ({sugestaoClassificacao.confianca})
+                  </small>
+                )}
               </label>
             </div>
           </section>
@@ -518,4 +549,12 @@ export default function AccountModal({
       </div>
     </div>
   )
+}
+
+function normalizarTextoCentro(valor) {
+  return String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
 }

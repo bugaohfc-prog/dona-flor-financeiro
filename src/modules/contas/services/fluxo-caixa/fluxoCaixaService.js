@@ -6,6 +6,11 @@ const COLUNAS_CONTAS_FLUXO = [
   'descricao',
   'valor',
   'valor_pago',
+  'juros_multa',
+  'desconto',
+  'observacao',
+  'observacao_pagamento',
+  'imposto_tipo',
   'data_pagamento',
   'data_vencimento',
   'status',
@@ -15,6 +20,7 @@ const COLUNAS_CONTAS_FLUXO = [
   'excluido',
   'deletado',
   'excluido_em',
+  'df_centros_custo(nome)',
   'df_filiais(nome)'
 ].join(', ')
 
@@ -39,7 +45,7 @@ export async function carregarFluxoCaixaRealizadoV1(supabase, empresaId, ano) {
       supabase,
       'df_contas_pagamentos',
       empresaId,
-      'id, empresa_id, conta_id, valor_pago, data_pagamento, arquivado, arquivado_em, criado_em'
+      'id, empresa_id, conta_id, valor_pago, data_pagamento, observacao, arquivado, arquivado_em, criado_em, atualizado_em'
     )
       .gte('data_pagamento', dataInicial)
       .lte('data_pagamento', dataFinal)

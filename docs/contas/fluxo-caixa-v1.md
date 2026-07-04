@@ -280,3 +280,35 @@ Dados 2025 do PDF `Resultados de vendas 2025.pdf` foram carregados em `df_receit
 - Paranaiba: R$ 371.723,00
 - Brilho: R$ 406.353,00
 - Total geral: R$ 4.851.775,00
+
+## Atualização 2026-07-04 — diagnóstico de rubricas zeradas
+
+Foi feita auditoria somente leitura no Supabase para entender por que algumas rubricas do Excel 2025 saíram zeradas.
+
+Resultado do diagnóstico para 2025:
+
+- movimentos pagos analisados em `df_contas`: 159;
+- total de saídas pagas analisadas: R$ 153.168,92;
+- movimentos com `centro_custo_id`: 159;
+- movimentos sem `centro_custo_id`: 0;
+- pagamentos parciais em `df_contas_pagamentos` em 2025: 0;
+- centros encontrados nos pagamentos de 2025: `Impostos e Taxas` e `RH`.
+
+Distribuição por centro de custo em 2025:
+
+- `Impostos e Taxas`: 99 movimentos, R$ 96.516,37;
+- `RH`: 60 movimentos, R$ 56.652,55.
+
+Achado principal:
+
+- As rubricas `Mercadoria`, `Ocupação`, `Utilidades`, `Pessoais`, `Administrativo`, `Operacional`, `Marketing`, `Sistemas`, `Veículos` e bancos ficaram zeradas porque não existem pagamentos 2025 com esses centros de custo na base consultada.
+- Os movimentos de `RH` encontrados são majoritariamente FGTS/INSS; pela regra obrigatória, continuam classificados como `IMPOSTOS RECOLHIDOS SOBRE FOLHA`, não como `FOLHA DE PAGAMENTO`.
+
+Correções aplicadas:
+
+- o service passou a trazer também o campo legado `centro`, além de `centro_custo_id` e `df_centros_custo(nome)`;
+- a classificação central foi normalizada em UTF-8 e passou a usar `centro` como fallback quando necessário;
+- a tela passou a exibir diagnóstico adicional: sem centro, sem rubrica e movimentos perdidos;
+- a exportação mantém a soma por rubrica batendo com o total de saídas.
+
+Nenhum dado real foi alterado. Não houve `INSERT`, `UPDATE`, `DELETE`, migration ou alteração de RLS/policies/functions/triggers.

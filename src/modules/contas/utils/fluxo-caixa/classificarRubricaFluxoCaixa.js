@@ -87,7 +87,10 @@ function normalizarTexto(valor) {
 
 function possuiTermo(texto, lista) {
   const normalizado = ` ${normalizarTexto(texto)} `
-  return lista.some((termo) => normalizado.includes(` ${normalizarTexto(termo)} `) || normalizado.includes(normalizarTexto(termo)))
+  return lista.some((termo) => {
+    const termoNormalizado = normalizarTexto(termo)
+    return normalizado.includes(` ${termoNormalizado} `) || normalizado.includes(termoNormalizado)
+  })
 }
 
 function obterTextoBusca(movimento = {}) {
@@ -101,6 +104,7 @@ function obterTextoBusca(movimento = {}) {
     movimento.forma_pagamento,
     movimento.filial_nome,
     movimento.centro_custo_nome,
+    movimento.centro,
     movimento.imposto_tipo
   ].filter(Boolean).join(' ')
 }
@@ -122,7 +126,7 @@ function classificarPorTermos(texto, criterio = 'descricao') {
 
 export function classificarRubricaFluxoCaixa(movimento = {}) {
   const textoBusca = obterTextoBusca(movimento)
-  const centro = normalizarTexto(movimento.centro_custo_nome)
+  const centro = normalizarTexto(movimento.centro_custo_nome || movimento.centro)
   const filial = normalizarTexto(movimento.filial_nome)
   const jurosValor = Number(
     movimento.valor_juros ??

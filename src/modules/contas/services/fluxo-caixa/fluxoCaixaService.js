@@ -14,6 +14,7 @@ const COLUNAS_CONTAS_FLUXO = [
   'data_pagamento',
   'data_vencimento',
   'status',
+  'centro',
   'filial_id',
   'centro_custo_id',
   'oculto',

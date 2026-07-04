@@ -10,7 +10,7 @@ import {
   prepararLinhasCsvFluxoCaixa
 } from '../modules/contas/utils/fluxo-caixa/fluxoCaixaUtils'
 
-const OBSERVACAO_ENTRADAS = 'FATURAMENTO BRUTO usa receitas ativas em df_receitas por data_receita. Saidas usam pagamentos realizados por data_pagamento.'
+const OBSERVACAO_ENTRADAS = 'FATURAMENTO BRUTO usa receitas ativas em df_receitas por data_receita. Saídas usam pagamentos realizados por data_pagamento.'
 
 function slug(valor) {
   return String(valor || '')
@@ -71,21 +71,24 @@ export default function FluxoCaixaPage({
 
   function exportarCsvFluxo() {
     if (!podeExportarDados) {
-      mostrarAviso?.('Seu perfil atual nao permite exportar relatorios.', 'erro')
+      mostrarAviso?.('Seu perfil atual não permite exportar relatórios.', 'erro')
       return
     }
 
     const headers = ['Rubrica', ...MESES_FLUXO_CAIXA.map((mes) => mes.nome), 'Total anual']
     const rows = [
       ['Fluxo de Caixa', empresaNome || 'Empresa ativa', filialNome, `Ano ${ano}`, new Date().toLocaleString('pt-BR')],
-      ['Observacao', OBSERVACAO_ENTRADAS],
+      ['Observação', OBSERVACAO_ENTRADAS],
       [],
       headers,
       ...prepararLinhasCsvFluxoCaixa(resultado, rubricas),
       [],
       ['Movimentos considerados', resultado.totais.movimentos],
       ['Movimentos em rubricas', diagnosticoRubricas.totalMovimentosRubricas],
-      ['Fallback operacional', diagnosticoRubricas.classificadosFallback]
+      ['Sem centro de custo', diagnosticoRubricas.movimentosSemCentroCusto],
+      ['Sem rubrica', diagnosticoRubricas.movimentosSemRubrica],
+      ['Fallback operacional', diagnosticoRubricas.classificadosFallback],
+      ['Movimentos perdidos', diagnosticoRubricas.movimentosPerdidos]
     ]
 
     exportCsv({ filename: nomeArquivo('csv'), headers: ['Fluxo de Caixa realizado'], rows })
@@ -177,7 +180,7 @@ export default function FluxoCaixaPage({
         <strong>Leitura operacional</strong>
         <p>{OBSERVACAO_ENTRADAS}</p>
         <p>Pagamentos parciais ativos entram por `df_contas_pagamentos`. Quando uma conta tem parcial ativo, a conta-pai não é somada integralmente junto.</p>
-        <p>Saidas sao classificadas em tempo de relatorio, sem alterar dados antigos no banco.</p>
+        <p>Saídas são classificadas em tempo de relatório, sem alterar dados antigos no banco.</p>
       </section>
 
       {erro && (
@@ -261,17 +264,19 @@ export default function FluxoCaixaPage({
       <section className="fluxo-caixa-panel">
         <div className="fluxo-caixa-section-title">
           <div>
-            <h2>Saidas por rubrica</h2>
-            <p>Rubricas fixas do modelo do cliente. A soma das rubricas deve bater com o total de saidas.</p>
+            <h2>Saídas por rubrica</h2>
+            <p>Rubricas fixas do modelo do cliente. A soma das rubricas deve bater com o total de saídas.</p>
           </div>
         </div>
 
         <div className="fluxo-rubrica-diagnostics">
           <span><b>Por centro</b>{diagnosticoRubricas.classificadosCentroCusto}</span>
-          <span><b>Por descricao/juros</b>{diagnosticoRubricas.classificadosDescricao}</span>
+          <span><b>Por descrição/juros</b>{diagnosticoRubricas.classificadosDescricao}</span>
           <span><b>Fallback</b>{diagnosticoRubricas.classificadosFallback}</span>
+          <span><b>Sem centro</b>{diagnosticoRubricas.movimentosSemCentroCusto}</span>
+          <span><b>Sem rubrica</b>{diagnosticoRubricas.movimentosSemRubrica}</span>
           <span><b>Outras operacionais</b>{diagnosticoRubricas.movimentosOperacionais}</span>
-          <span><b>Nao operacionais</b>{diagnosticoRubricas.movimentosNaoOperacionais}</span>
+          <span><b>Não operacionais</b>{diagnosticoRubricas.movimentosNaoOperacionais}</span>
           <span><b>Perdidos</b>{diagnosticoRubricas.movimentosPerdidos}</span>
         </div>
 
@@ -295,7 +300,7 @@ export default function FluxoCaixaPage({
                 </tr>
               ))}
               <tr className="fluxo-total-row">
-                <td>Total saidas classificadas</td>
+                <td>Total saídas classificadas</td>
                 {MESES_FLUXO_CAIXA.map((mes) => (
                   <td key={`total-saidas-${mes.chave}`}>{formatarMoedaFluxo(resultado.linhas.find((linha) => linha.mes === mes.numero)?.saidas)}</td>
                 ))}
@@ -317,6 +322,7 @@ export default function FluxoCaixaPage({
           ))}
         </div>
       </section>
+
       <section className="fluxo-caixa-panel">
         <div className="fluxo-caixa-section-title">
           <div>
@@ -329,11 +335,11 @@ export default function FluxoCaixaPage({
             <article key={`${movimento.origem}-${movimento.id}`} className="fluxo-movimento">
               <div>
                 <strong>{movimento.descricao}</strong>
-                <span>{movimento.filial_nome} • {formatarDataFluxo(movimento.data_pagamento)} • {movimento.origem === 'pagamento_parcial' ? 'Pagamento parcial' : 'Conta paga'}</span>
+                <span>{movimento.filial_nome} - {formatarDataFluxo(movimento.data_pagamento)} - {movimento.origem === 'pagamento_parcial' ? 'Pagamento parcial' : 'Conta paga'}</span>
                 {movimento.tipo === 'entrada' ? (
-                  <span>FATURAMENTO BRUTO • Origem: {movimento.origem_receita || 'Receita'}</span>
+                  <span>FATURAMENTO BRUTO - Origem: {movimento.origem_receita || 'Receita'}</span>
                 ) : (
-                  <span>{movimento.rubrica} • Centro: {movimento.centro_custo_nome || '-'} • Critério: {movimento.rubrica_criterio} / {movimento.rubrica_confianca}</span>
+                  <span>{movimento.rubrica} - Centro: {movimento.centro_custo_nome || '-'} - Critério: {movimento.rubrica_criterio} / {movimento.rubrica_confianca}</span>
                 )}
               </div>
               <strong>{formatarMoedaFluxo(movimento.valor)}</strong>
@@ -380,7 +386,7 @@ const cssFluxoCaixa = `
 .fluxo-rubricas-table th:first-child, .fluxo-rubricas-table td:first-child { min-width: 280px; white-space: normal; }
 .fluxo-table th { background: #f8fafc; color: #334155; font-size: 12px; text-transform: uppercase; }
 .fluxo-total-row td { font-weight: 900; background: #ecfdf5; }
-.fluxo-rubrica-diagnostics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.fluxo-rubrica-diagnostics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
 .fluxo-rubrica-diagnostics span { display: grid; gap: 3px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; background: #f8fafc; color: #64748b; font-size: 12px; }
 .fluxo-rubrica-diagnostics b { color: #0f172a; font-size: 13px; }
 .fluxo-mobile-list { display: none; gap: 10px; }

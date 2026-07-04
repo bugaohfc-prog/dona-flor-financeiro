@@ -1,6 +1,7 @@
 import {
   RUBRICA_FATURAMENTO_BRUTO,
   RUBRICA_OUTRAS_OPERACIONAIS,
+  RUBRICA_OUTRAS_NAO_OPERACIONAIS,
   RUBRICA_TOTAL_GERAL,
   RUBRICAS_SAIDA_FLUXO_CAIXA,
   classificarRubricaFluxoCaixa
@@ -150,7 +151,8 @@ export function montarMovimentosFluxoCaixa({
         filial_id: filialContaId,
         filial_nome: filiaisPorId.get(filialContaId)?.nome || 'Sem filial',
         centro_custo_id: conta.centro_custo_id || '',
-        centro_custo_nome: conta.df_centros_custo?.nome || '',
+        centro_custo_nome: conta.df_centros_custo?.nome || conta.centro || '',
+        centro: conta.centro || '',
         imposto_tipo: conta.imposto_tipo || '',
         juros_multa: conta.juros_multa || 0,
         desconto: conta.desconto || 0
@@ -179,7 +181,8 @@ export function montarMovimentosFluxoCaixa({
       filial_id: conta.filial_id || '',
       filial_nome: filiaisPorId.get(conta.filial_id || '')?.nome || 'Sem filial',
       centro_custo_id: conta.centro_custo_id || '',
-      centro_custo_nome: conta.df_centros_custo?.nome || '',
+      centro_custo_nome: conta.df_centros_custo?.nome || conta.centro || '',
+      centro: conta.centro || '',
       imposto_tipo: conta.imposto_tipo || '',
       juros_multa: conta.juros_multa || 0,
       desconto: conta.desconto || 0
@@ -218,8 +221,10 @@ export function calcularDiagnosticoRubricas(movimentos = [], rubricas = []) {
     totalMovimentos,
     totalMovimentosRubricas,
     totalSaidasRubricas,
-    movimentosOperacionais: saidas.filter((movimento) => movimento.rubrica === 'OUTRAS DESPESAS OPERACIONAIS *').length,
-    movimentosNaoOperacionais: saidas.filter((movimento) => movimento.rubrica === 'OUTRAS DESPESAS NÃO OPERACIONAIS *').length,
+    movimentosOperacionais: saidas.filter((movimento) => movimento.rubrica === RUBRICA_OUTRAS_OPERACIONAIS).length,
+    movimentosNaoOperacionais: saidas.filter((movimento) => movimento.rubrica === RUBRICA_OUTRAS_NAO_OPERACIONAIS).length,
+    movimentosSemCentroCusto: saidas.filter((movimento) => !movimento.centro_custo_id && !movimento.centro_custo_nome && !movimento.centro).length,
+    movimentosSemRubrica: saidas.filter((movimento) => !movimento.rubrica).length,
     classificadosCentroCusto: saidas.filter((movimento) => movimento.rubrica_criterio === 'centro_custo').length,
     classificadosDescricao: saidas.filter((movimento) => ['descricao', 'juros', 'filial'].includes(movimento.rubrica_criterio)).length,
     classificadosFallback: saidas.filter((movimento) => movimento.rubrica_criterio === 'fallback').length,

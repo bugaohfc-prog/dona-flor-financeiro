@@ -26,6 +26,74 @@ function anosDisponiveis() {
   return Array.from({ length: 6 }, (_, index) => atual - index)
 }
 
+function formatarCnpj(valor) {
+  const digitos = String(valor || '').replace(/\D/g, '').slice(0, 14)
+  if (!digitos) return ''
+  return digitos
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+    .replace(/(\d{4})(\d)/, '$1-$2')
+}
+
+function formatarLocalidadeFilial(filial) {
+  return [filial?.cidade, filial?.uf].filter(Boolean).join('/')
+}
+
+function formatarEnderecoFilial(filial) {
+  return [
+    [filial?.endereco, filial?.numero].filter(Boolean).join(', '),
+    filial?.bairro,
+    filial?.complemento,
+    filial?.cep ? `CEP ${filial.cep}` : ''
+  ].filter(Boolean).join(' - ')
+}
+
+function montarIdentificacaoFiscalFilial(filial) {
+  if (!filial) return []
+
+  return [
+    ['Nome operacional', filial.nome],
+    ['Razão social', filial.razao_social],
+    ['Nome fantasia', filial.nome_fantasia],
+    ['CNPJ', formatarCnpj(filial.cnpj)],
+    ['Cidade/UF', formatarLocalidadeFilial(filial)],
+    ['Endereço', formatarEnderecoFilial(filial)]
+  ].filter((linha) => linha[1])
+}
+
+function montarIdentificacaoConsolidada({ empresaNome, totalFiliais }) {
+  return [
+    ['Empresa/grupo', empresaNome || 'Empresa ativa'],
+    ['Tipo de relatório', 'Consolidado geral'],
+    ['Abrangência', totalFiliais > 0 ? `Múltiplas filiais (${totalFiliais})` : 'Todas as filiais'],
+    ['CNPJ consolidado', 'Não aplicável']
+  ]
+}
+
+function FiscalInfoBlock({ filial, empresaNome, totalFiliais }) {
+  const linhas = filial
+    ? montarIdentificacaoFiscalFilial(filial)
+    : montarIdentificacaoConsolidada({ empresaNome, totalFiliais })
+
+  return (
+    <section className="fluxo-caixa-identificacao">
+      <div>
+        <span>{filial ? 'Filial selecionada' : 'Relatório consolidado'}</span>
+        <strong>{filial?.nome || empresaNome || 'Empresa ativa'}</strong>
+      </div>
+      <dl>
+        {linhas.map(([rotulo, valor]) => (
+          <div key={rotulo}>
+            <dt>{rotulo}</dt>
+            <dd>{valor}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  )
+}
+
 function FluxoResumoCard({ titulo, valor, detalhe, destaque }) {
   return (
     <article className={`fluxo-caixa-card ${destaque ? 'is-highlight' : ''}`}>
@@ -62,6 +130,9 @@ export default function FluxoCaixaPage({
   const filialNome = filialSelecionada?.nome || 'Todas as filiais'
   const gruposFiliais = useMemo(() => agregarMovimentosPorFilial(movimentos, filiais), [filiais, movimentos])
   const possuiMovimentos = movimentos.length > 0
+  const identificacaoRelatorio = filialSelecionada
+    ? montarIdentificacaoFiscalFilial(filialSelecionada)
+    : montarIdentificacaoConsolidada({ empresaNome, totalFiliais: filiais.length })
 
   function nomeArquivo(extensao) {
     const empresa = slug(empresaNome) || 'dona-flor'
@@ -78,6 +149,7 @@ export default function FluxoCaixaPage({
     const headers = ['Rubrica', ...MESES_FLUXO_CAIXA.map((mes) => mes.nome), 'Total anual']
     const rows = [
       ['Fluxo de Caixa', empresaNome || 'Empresa ativa', filialNome, `Ano ${ano}`, new Date().toLocaleString('pt-BR')],
+      ...identificacaoRelatorio,
       ['Observação', OBSERVACAO_ENTRADAS],
       [],
       headers,
@@ -111,7 +183,8 @@ export default function FluxoCaixaPage({
         name: 'Consolidado Geral',
         rows: montarAbaModeloFluxoCaixa({
           titulo: 'Fluxo de Caixa - Consolidado Geral',
-          filialNome,
+          filialNome: 'Consolidado geral',
+          identificacao: montarIdentificacaoConsolidada({ empresaNome, totalFiliais: filiais.length }),
           ano,
           resultado,
           rubricas,
@@ -123,6 +196,7 @@ export default function FluxoCaixaPage({
         rows: montarAbaModeloFluxoCaixa({
           titulo: `Fluxo de Caixa - ${grupo.filialNome}`,
           filialNome: grupo.filialNome,
+          identificacao: montarIdentificacaoFiscalFilial(grupo.filial),
           ano,
           resultado: grupo.resultado,
           rubricas: grupo.rubricas,
@@ -180,6 +254,8 @@ export default function FluxoCaixaPage({
           </button>
         </div>
       </section>
+
+      <FiscalInfoBlock filial={filialSelecionada} empresaNome={empresaNome} totalFiliais={filiais.length} />
 
       <section className="fluxo-caixa-alert">
         <strong>Leitura operacional</strong>
@@ -371,6 +447,14 @@ const cssFluxoCaixa = `
 .fluxo-caixa-hero span { color: #0f766e; font-weight: 800; font-size: 12px; text-transform: uppercase; }
 .fluxo-caixa-hero h1 { margin: 4px 0; color: #0f172a; }
 .fluxo-caixa-hero p, .fluxo-caixa-section-title p, .fluxo-note { margin: 0; color: #64748b; }
+.fluxo-caixa-identificacao { border: 1px solid #dbeafe; border-radius: 12px; background: #f8fafc; padding: 14px 16px; display: grid; gap: 12px; }
+.fluxo-caixa-identificacao > div:first-child { display: grid; gap: 3px; }
+.fluxo-caixa-identificacao > div:first-child span { color: #0f766e; font-weight: 800; font-size: 12px; text-transform: uppercase; }
+.fluxo-caixa-identificacao > div:first-child strong { color: #0f172a; font-size: 18px; }
+.fluxo-caixa-identificacao dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 14px; margin: 0; }
+.fluxo-caixa-identificacao dl div { display: grid; gap: 3px; min-width: 0; }
+.fluxo-caixa-identificacao dt { color: #64748b; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+.fluxo-caixa-identificacao dd { margin: 0; color: #0f172a; line-height: 1.35; overflow-wrap: anywhere; }
 .fluxo-caixa-actions, .fluxo-caixa-filtros { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
 .fluxo-caixa-filtros label { display: grid; gap: 6px; min-width: 180px; color: #334155; font-weight: 700; font-size: 13px; }
 .fluxo-caixa-filtros select { min-height: 40px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font: inherit; background: #fff; }
@@ -409,6 +493,7 @@ const cssFluxoCaixa = `
 @media (max-width: 760px) {
   .fluxo-caixa-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fluxo-rubrica-diagnostics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fluxo-caixa-identificacao dl { grid-template-columns: 1fr; }
   .fluxo-caixa-actions, .fluxo-caixa-filtros { width: 100%; }
   .fluxo-btn, .fluxo-caixa-filtros label { width: 100%; }
   .fluxo-table-wrap { display: none; }

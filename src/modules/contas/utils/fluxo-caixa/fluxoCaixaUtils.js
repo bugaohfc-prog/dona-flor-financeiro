@@ -425,7 +425,7 @@ function numeroCsv(valor) {
   return normalizarValor(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-export function montarAbaModeloFluxoCaixa({ titulo, filialNome, ano, resultado, rubricas, observacao }) {
+export function montarAbaModeloFluxoCaixa({ titulo, filialNome, identificacao = [], ano, resultado, rubricas, observacao }) {
   const meses = MESES_FLUXO_CAIXA.map((mes) => mes.nome)
   const valoresPorMes = new Map((resultado?.linhas || []).map((linha) => [linha.mes, linha]))
   const linhaPorCampo = (rotulo, campo) => {
@@ -442,6 +442,7 @@ export function montarAbaModeloFluxoCaixa({ titulo, filialNome, ano, resultado, 
   return [
     [titulo],
     ['Filial', filialNome || 'Todas as filiais'],
+    ...(identificacao || []),
     ['Ano', ano],
     ['Gerado em', new Date().toLocaleString('pt-BR')],
     ['Observação', observacao],
@@ -463,9 +464,11 @@ export function agregarMovimentosPorFilial(movimentos = [], filiais = []) {
   ;(movimentos || []).forEach((movimento) => {
     const chave = movimento.filial_id || 'sem-filial'
     if (!grupos.has(chave)) {
+      const filial = filiaisPorId.get(chave)
       grupos.set(chave, {
         filialId: chave,
-        filialNome: filiaisPorId.get(chave)?.nome || movimento.filial_nome || 'Sem filial',
+        filial,
+        filialNome: filial?.nome || movimento.filial_nome || 'Sem filial',
         movimentos: []
       })
     }

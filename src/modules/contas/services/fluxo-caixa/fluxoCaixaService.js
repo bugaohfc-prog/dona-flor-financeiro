@@ -41,6 +41,24 @@ const COLUNAS_RECEITAS_FLUXO = [
   'df_filiais(nome)'
 ].join(', ')
 
+const COLUNAS_FILIAIS_FLUXO = [
+  'id',
+  'nome',
+  'razao_social',
+  'nome_fantasia',
+  'cnpj',
+  'inscricao_estadual',
+  'endereco',
+  'numero',
+  'complemento',
+  'bairro',
+  'cidade',
+  'uf',
+  'cep',
+  'telefone',
+  'email'
+].join(', ')
+
 export async function carregarFluxoCaixaRealizadoV1(supabase, empresaId, ano) {
   const anoNumero = Number(ano)
   if (!empresaId) return { data: null, error: new Error('Empresa ativa não selecionada.') }
@@ -64,7 +82,7 @@ export async function carregarFluxoCaixaRealizadoV1(supabase, empresaId, ano) {
     )
       .or('arquivado.is.null,arquivado.eq.false')
       .order('data_pagamento', { ascending: true }),
-    selecionarPorEmpresa(supabase, 'df_filiais', empresaId, 'id, nome')
+    selecionarPorEmpresa(supabase, 'df_filiais', empresaId, COLUNAS_FILIAIS_FLUXO)
       .order('nome', { ascending: true }),
     selecionarPorEmpresa(supabase, 'df_receitas', empresaId, COLUNAS_RECEITAS_FLUXO)
       .gte('data_receita', dataInicial)

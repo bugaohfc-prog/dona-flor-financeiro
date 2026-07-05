@@ -241,7 +241,7 @@ Campos confirmados:
 - `df_contas`: `descricao`, `valor`, `valor_pago`, `juros_multa`, `desconto`, `observacao`, `observacao_pagamento`, `imposto_tipo`, `data_pagamento`, `status`, `filial_id`, `centro_custo_id`, `oculto`, `excluido`, `deletado`.
 - `df_contas_pagamentos`: `conta_id`, `valor_pago`, `data_pagamento`, `observacao`, `arquivado`, `arquivado_em`.
 - `df_centros_custo`: `id`, `nome`, `empresa_id`.
-- `df_filiais`: `id`, `nome`, `empresa_id`.
+- `df_filiais`: `id`, `nome`, `empresa_id` e campos fiscais/cadastrais quando disponíveis (`razao_social`, `nome_fantasia`, `cnpj`, `cidade`, `uf`, `endereco`, `numero`, `bairro`, `complemento`, `cep`).
 
 Centros confirmados:
 
@@ -272,6 +272,16 @@ O Fluxo de Caixa V1 agora:
 - preenche `FATURAMENTO BRUTO` na tela, CSV e Excel;
 - mantem saidas por rubricas;
 - calcula `TOTAL GERAL = FATURAMENTO BRUTO - saidas`.
+
+### Identificação fiscal das filiais
+
+A tela e a exportação do Fluxo de Caixa V1 usam os dados fiscais cadastrados em `df_filiais`.
+
+Quando uma filial está selecionada, a tela e o cabeçalho exportado exibem nome operacional, razão social, nome fantasia, CNPJ, cidade/UF e endereço quando existirem.
+
+No consolidado geral, o relatório identifica a empresa/grupo e indica que contém múltiplas filiais. O consolidado não exibe CNPJ único quando não há um CNPJ fiscal consolidado cadastrado.
+
+No Excel, a aba `Consolidado Geral` usa identificação de relatório consolidado. As abas por filial recebem os dados fiscais da respectiva filial quando disponíveis.
 
 Dados 2025 do PDF `Resultados de vendas 2025.pdf` foram carregados em `df_receitas` como `Venda de Loja`:
 

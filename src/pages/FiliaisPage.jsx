@@ -25,6 +25,38 @@ const CAMPOS_FISCAIS = [
   ['email', 'E-mail']
 ]
 
+const FISCAL_DETAILS_STYLE = {
+  display: 'grid',
+  gap: '10px',
+  marginTop: '12px',
+  padding: '12px',
+  border: '1px solid #e2e8f0',
+  borderRadius: '8px',
+  background: '#f8fafc'
+}
+
+const FISCAL_FIELD_STYLE = {
+  display: 'grid',
+  gap: '3px',
+  minWidth: 0
+}
+
+const FISCAL_LABEL_STYLE = {
+  color: '#64748b',
+  fontSize: '12px',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0'
+}
+
+const FISCAL_VALUE_STYLE = {
+  color: '#0f172a',
+  fontSize: '14px',
+  lineHeight: 1.35,
+  overflowWrap: 'anywhere',
+  wordBreak: 'break-word'
+}
+
 function formatarDataCurta(data) {
   if (!data) return '-'
   try {
@@ -34,21 +66,53 @@ function formatarDataCurta(data) {
   }
 }
 
+function apenasDigitos(valor) {
+  return String(valor || '').replace(/\D/g, '')
+}
+
+function formatarCnpj(valor) {
+  const digitos = apenasDigitos(valor).slice(0, 14)
+  if (!digitos) return ''
+
+  return digitos
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1/$2')
+    .replace(/(\d{4})(\d)/, '$1-$2')
+}
+
 function criarFormularioFiscal(filial = {}) {
   return CAMPOS_FISCAIS.reduce((form, [campo]) => {
-    form[campo] = filial?.[campo] || ''
+    form[campo] = campo === 'cnpj' ? formatarCnpj(filial?.[campo]) : filial?.[campo] || ''
     return form
   }, {})
 }
 
-function resumoFiscal(filial) {
-  const partes = [
-    filial?.razao_social,
-    filial?.cnpj,
-    [filial?.cidade, filial?.uf].filter(Boolean).join('/')
-  ].filter(Boolean)
+function formatarLocalidade(filial) {
+  return [filial?.cidade, filial?.uf].filter(Boolean).join('/')
+}
 
-  return partes.length > 0 ? partes.join(' | ') : 'Cadastro fiscal pendente'
+function formatarEnderecoFiscal(filial) {
+  return [
+    [filial?.endereco, filial?.numero].filter(Boolean).join(', '),
+    filial?.bairro
+  ].filter(Boolean).join(' - ')
+}
+
+function cnpjIncompleto(cnpj) {
+  const digitos = apenasDigitos(cnpj)
+  return digitos.length > 0 && digitos.length !== 14
+}
+
+function CampoFiscalResumo({ label, valor }) {
+  if (!valor) return null
+
+  return (
+    <div style={FISCAL_FIELD_STYLE}>
+      <span style={FISCAL_LABEL_STYLE}>{label}</span>
+      <span style={FISCAL_VALUE_STYLE}>{valor}</span>
+    </div>
+  )
 }
 
 export default function FiliaisPage({
@@ -148,6 +212,10 @@ export default function FiliaisPage({
 
   async function salvarCadastroFiscal(filial) {
     if (!filial?.id || salvando) return
+    if (cnpjIncompleto(formFiscal.cnpj)) {
+      mostrarAviso?.('Informe um CNPJ com 14 dígitos ou deixe o campo vazio.', 'erro')
+      return
+    }
 
     setSalvando(true)
     try {
@@ -191,7 +259,13 @@ export default function FiliaisPage({
   }
 
   function atualizarCampoFiscal(campo, valor) {
-    setFormFiscal((formAtual) => ({ ...formAtual, [campo]: valor }))
+    const proximoValor = campo === 'cnpj'
+      ? formatarCnpj(valor)
+      : campo === 'uf'
+        ? String(valor || '').toUpperCase().slice(0, 2)
+        : valor
+
+    setFormFiscal((formAtual) => ({ ...formAtual, [campo]: proximoValor }))
   }
 
   return (
@@ -280,9 +354,15 @@ export default function FiliaisPage({
                         <strong className={`admin-status-badge ${filial.ativo ? 'success' : 'muted'}`}>{filial.ativo ? 'Ativa' : 'Inativa'}</strong>
                       </div>
 
-                      <div className="admin-summary-strip">
-                        <span>{resumoFiscal(filial)}</span>
-                        {filial.endereco && <span>{[filial.endereco, filial.numero, filial.bairro].filter(Boolean).join(', ')}</span>}
+                      <div style={FISCAL_DETAILS_STYLE}>
+                        <CampoFiscalResumo label="Razão social" valor={filial.razao_social} />
+                        <CampoFiscalResumo label="Nome fantasia" valor={filial.nome_fantasia} />
+                        <CampoFiscalResumo label="CNPJ" valor={formatarCnpj(filial.cnpj)} />
+                        <CampoFiscalResumo label="Localidade" valor={formatarLocalidade(filial)} />
+                        <CampoFiscalResumo label="Endereço" valor={formatarEnderecoFiscal(filial)} />
+                        {!filial.razao_social && !filial.cnpj && !formatarLocalidade(filial) && (
+                          <span style={FISCAL_VALUE_STYLE}>Cadastro fiscal pendente</span>
+                        )}
                       </div>
 
                       {editandoFiscal && (
@@ -292,6 +372,8 @@ export default function FiliaisPage({
                               <span>{label}</span>
                               <input
                                 style={styles.input}
+                                inputMode={campo === 'cnpj' ? 'numeric' : undefined}
+                                maxLength={campo === 'cnpj' ? 18 : campo === 'uf' ? 2 : undefined}
                                 value={formFiscal[campo] || ''}
                                 onChange={(event) => atualizarCampoFiscal(campo, event.target.value)}
                               />

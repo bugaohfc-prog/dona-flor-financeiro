@@ -32,3 +32,7 @@ A migration não altera RLS ou policies. As policies existentes de `df_filiais` 
 ## Tela
 
 A tela V1 de Filiais / Unidades lista e permite editar os campos fiscais da filial, preservando o fluxo existente de nome operacional e status ativo/inativo.
+
+O resumo fiscal no card exibe razão social, nome fantasia, CNPJ, localidade e endereço em linhas separadas para manter leitura adequada no mobile.
+
+O campo CNPJ aceita digitação com ou sem máscara, exibe no padrão `00.000.000/0000-00` e bloqueia apenas CNPJ preenchido com quantidade diferente de 14 dígitos. CNPJ vazio continua permitido para filiais sem cadastro fiscal confirmado.

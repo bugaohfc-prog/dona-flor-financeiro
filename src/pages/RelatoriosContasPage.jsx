@@ -216,7 +216,7 @@ export default function RelatoriosContasPage({
   const [centrosSelecionados, setCentrosSelecionados] = useState([])
   const [dataInicial, setDataInicial] = useState('')
   const [dataFinal, setDataFinal] = useState('')
-  const [periodoContasAVencer, setPeriodoContasAVencer] = useState('15')
+  const [periodoContasAVencer, setPeriodoContasAVencer] = useState('todas-abertas')
   const [busca, setBusca] = useState('')
   const [agrupamento, setAgrupamento] = useState('status')
   const [filtrosAbertos, setFiltrosAbertos] = useState(true)

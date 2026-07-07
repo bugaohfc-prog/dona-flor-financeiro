@@ -36,7 +36,7 @@ const MESES_PT_BR = [
   'Dezembro'
 ]
 
-const LIMITE_CONTAS_POR_GRUPO = 999
+const LIMITE_CONTAS_POR_GRUPO = 10
 
 const ACCOUNT_ACTIONS_STYLE = {
   marginTop: 10,

@@ -4,7 +4,7 @@ Sistema web de controle financeiro para empresas, com contas, notas, filiais, ce
 
 ## Requisitos
 
-- Node.js 20
+- Node.js 24
 - npm
 - Projeto Supabase configurado
 
@@ -40,7 +40,7 @@ Sistema web de controle financeiro para empresas, com contas, notas, filiais, ce
 - Framework preset: Vite
 - Build command: `npm run build`
 - Output directory: `dist`
-- Node.js version: 20.x
+- Node.js version: 24.x
 
 O projeto usa `_redirects` para manter rotas de SPA funcionando em hospedagens como Netlify. Em Vercel, mantenha o preset Vite e configure as variaveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` no painel do projeto.
 

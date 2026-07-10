@@ -36,7 +36,6 @@ const MESES_PT_BR = [
   'Dezembro'
 ]
 
-const LIMITE_CONTAS_POR_GRUPO = 10
 
 const ACCOUNT_ACTIONS_STYLE = {
   marginTop: 10,
@@ -252,7 +251,6 @@ export default function ContasPage({
   const [contaDestacadaId, setContaDestacadaId] = useState('')
   const [mostrarExportacoes, setMostrarExportacoes] = useState(false)
   const [gruposPeriodoAbertos, setGruposPeriodoAbertos] = useState({})
-  const [limitesPorGrupoPeriodo, setLimitesPorGrupoPeriodo] = useState({})
   const contaDestacadaRef = useRef(null)
   const contaAlvoAgendaId = agendaFocusTarget?.tipo === 'conta' ? agendaFocusTarget.id : ''
   const contaAlvoAgenda = useMemo(() => {
@@ -329,26 +327,6 @@ export default function ContasPage({
       ...atuais,
       [grupo.chave]: !abertoAgora
     }))
-    if (!abertoAgora && !limitesPorGrupoPeriodo[grupo.chave]) {
-      setLimitesPorGrupoPeriodo((atuais) => ({
-        ...atuais,
-        [grupo.chave]: LIMITE_CONTAS_POR_GRUPO
-      }))
-    }
-  }
-
-  function obterLimiteGrupoPeriodo(grupo) {
-    return limitesPorGrupoPeriodo[grupo.chave] || LIMITE_CONTAS_POR_GRUPO
-  }
-
-  function mostrarMaisContasDoGrupo(grupo) {
-    setLimitesPorGrupoPeriodo((atuais) => ({
-      ...atuais,
-      [grupo.chave]: Math.min(
-        (atuais[grupo.chave] || LIMITE_CONTAS_POR_GRUPO) + LIMITE_CONTAS_POR_GRUPO,
-        grupo.contas.length
-      )
-    }))
   }
 
   useEffect(() => {
@@ -374,7 +352,6 @@ export default function ContasPage({
 
   useEffect(() => {
     setGruposPeriodoAbertos({})
-    setLimitesPorGrupoPeriodo({})
   }, [assinaturaGruposPeriodo])
 
   function renderContaCard(conta) {
@@ -712,10 +689,7 @@ export default function ContasPage({
         {!loading && mostrarContas && gruposPorPeriodo.map((grupo) => {
           const aberto = grupoPeriodoAberto(grupo)
           const textoAlternar = aberto ? 'Recolher grupo' : 'Expandir grupo'
-          const limiteVisivel = obterLimiteGrupoPeriodo(grupo)
-          const contasVisiveis = grupo.contas.slice(0, limiteVisivel)
-          const contasRestantes = Math.max(grupo.contas.length - contasVisiveis.length, 0)
-          const proximoLote = Math.min(contasRestantes, LIMITE_CONTAS_POR_GRUPO)
+          const contasVisiveis = grupo.contas
 
           return (
             <section className="accounts-period-group" key={grupo.chave}>
@@ -738,15 +712,6 @@ export default function ContasPage({
               {aberto && (
                 <div className="accounts-period-list">
                   {contasVisiveis.map((conta) => renderContaCard(conta))}
-                  {contasRestantes > 0 && (
-                    <button
-                      type="button"
-                      className="accounts-period-more"
-                      onClick={() => mostrarMaisContasDoGrupo(grupo)}
-                    >
-                      Ver mais {proximoLote} conta(s)
-                    </button>
-                  )}
                 </div>
               )}
             </section>

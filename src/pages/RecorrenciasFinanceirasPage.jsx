@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
-const LIMITE_SERIES_RECORRENTES = 20
 
 function normalizarTextoSerie(valor) {
   return String(valor || '').trim().toLowerCase()
@@ -75,7 +74,6 @@ export default function RecorrenciasFinanceirasPage({
 }) {
   const [filtroSeriesRecorrentes, setFiltroSeriesRecorrentes] = useState('ativas')
   const [buscaSeriesRecorrentes, setBuscaSeriesRecorrentes] = useState('')
-  const [limiteSeriesRecorrentes, setLimiteSeriesRecorrentes] = useState(LIMITE_SERIES_RECORRENTES)
 
   const contasPorRecorrencia = useMemo(() => {
     return (contas || []).reduce((mapa, conta) => {
@@ -133,11 +131,7 @@ export default function RecorrenciasFinanceirasPage({
       })
   }, [buscaSeriesRecorrentes, centros, duplicidadesSeries, filiais, filtroSeriesRecorrentes, seriesRecorrentes])
 
-  const seriesRecorrentesVisiveis = seriesRecorrentesFiltradas.slice(0, limiteSeriesRecorrentes)
-
-  useEffect(() => {
-    setLimiteSeriesRecorrentes(LIMITE_SERIES_RECORRENTES)
-  }, [buscaSeriesRecorrentes, filtroSeriesRecorrentes])
+  const seriesRecorrentesVisiveis = seriesRecorrentesFiltradas
 
   function confirmarDesativacaoSerie(serie) {
     if (!serie?.id) return
@@ -309,15 +303,6 @@ export default function RecorrenciasFinanceirasPage({
           </div>
         )}
 
-        {seriesRecorrentesFiltradas.length > seriesRecorrentesVisiveis.length && (
-          <button
-            type="button"
-            className="accounts-period-more accounts-recurring-more"
-            onClick={() => setLimiteSeriesRecorrentes((limite) => Math.min(limite + LIMITE_SERIES_RECORRENTES, seriesRecorrentesFiltradas.length))}
-          >
-            Ver mais {Math.min(LIMITE_SERIES_RECORRENTES, seriesRecorrentesFiltradas.length - seriesRecorrentesVisiveis.length)} série(s)
-          </button>
-        )}
       </section>
     </main>
   )

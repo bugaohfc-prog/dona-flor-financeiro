@@ -7,13 +7,13 @@ export default function AppShellStyles() {
                 .print-footer {
                   display: none;
                 }
-      
+
                 .desktop-sidebar { display: none; }
                 .desktop-quick-actions { display: none; }
-      
+
                 @media (min-width: 980px) {
                   body { background: #eef7f5 !important; }
-      
+
                   .app-page {
                     max-width: none !important;
                     width: 100% !important;
@@ -23,7 +23,7 @@ export default function AppShellStyles() {
                     box-sizing: border-box !important;
                     background: linear-gradient(180deg, #f8fafc 0%, #eef7f5 100%) !important;
                   }
-      
+
                   .desktop-sidebar {
                     display: flex !important;
                     position: fixed;
@@ -41,7 +41,7 @@ export default function AppShellStyles() {
                     gap: 14px;
                     box-sizing: border-box;
                   }
-      
+
                   .desktop-sidebar-brand {
                     display: flex;
                     align-items: center;
@@ -49,17 +49,17 @@ export default function AppShellStyles() {
                     padding-bottom: 14px;
                     border-bottom: 1px solid rgba(255,255,255,.18);
                   }
-      
+
                   .desktop-sidebar-brand img {
                     width: 48px;
                     height: 48px;
                     border-radius: 16px;
                     background: white;
                   }
-      
+
                   .desktop-sidebar-brand strong { display: block; font-size: 17px; }
                   .desktop-sidebar-brand small { color: rgba(255,255,255,.78); }
-      
+
                   .desktop-sidebar-section-label {
                     margin: 12px 4px 4px;
                     font-size: 10px;
@@ -94,22 +94,22 @@ export default function AppShellStyles() {
                   }
                   .desktop-sidebar-user strong { display:block; }
                   .desktop-sidebar-user small { color: rgba(255,255,255,.8); }
-      
+
                   .top-shell {
                     max-width: 1280px;
                     margin: 0 auto 22px auto !important;
                     padding: 16px 18px !important;
                     border-radius: 24px !important;
                   }
-      
+
                   .mobile-menu-trigger { display: none !important; }
-      
+
                   .desktop-quick-actions {
                     display: flex !important;
                     gap: 10px;
                     align-items: center;
                   }
-      
+
                   .desktop-quick-actions button {
                     border: none;
                     border-radius: 13px;
@@ -119,10 +119,10 @@ export default function AppShellStyles() {
                     cursor: pointer;
                     box-shadow: 0 10px 22px rgba(20,184,166,.22);
                   }
-      
+
                   .desktop-quick-actions .primary { background: linear-gradient(135deg, #14b8a6, #0f766e); }
                   .desktop-quick-actions .secondary { background: #111827; }
-      
+
                   .dashboard-title-row {
                     max-width: 1280px;
                     margin: 0 auto !important;
@@ -131,9 +131,9 @@ export default function AppShellStyles() {
                     justify-content: space-between;
                     gap: 20px;
                   }
-      
+
                   .main-title { font-size: 34px !important; margin: 0 0 16px 0 !important; }
-      
+
                   .summary-grid {
                     max-width: 1280px;
                     margin: 0 auto 18px auto !important;
@@ -147,7 +147,7 @@ export default function AppShellStyles() {
                   }
                   .summary-grid span { font-size: 13px; color: #475569; }
                   .summary-grid strong { font-size: 25px; margin-top: 6px; }
-      
+
                   .agenda-card-polished {
                     max-width: 1280px;
                     margin: 0 auto 18px auto !important;
@@ -164,7 +164,7 @@ export default function AppShellStyles() {
                   .agenda-pill { min-width: 112px; padding: 9px 12px; border-radius: 14px; background: rgba(255,255,255,.86); border:1px solid #ccfbf1; }
                   .agenda-pill small { display:block; font-size:11px; color:#64748b; font-weight:800; }
                   .agenda-pill strong { display:block; margin-top:2px; color:#0f172a; }
-      
+
                   .filters-desktop {
                     max-width: 1280px;
                     margin: 0 auto 16px auto !important;
@@ -182,17 +182,17 @@ export default function AppShellStyles() {
                   .filter-toggle-button { height:42px; border:none; border-radius:12px; padding:0 14px; font-weight:900; background:#ecfeff; color:#0f766e; border:1px solid #99f6e4; cursor:pointer; }
                   .export-dropdown { position: relative; }
                   .export-dropdown > button { height:42px; border:none; border-radius:12px; padding:0 14px; font-weight:900; background:#111827; color:white; cursor:pointer; }
-      
+
                   .result-summary, .content-block {
                     max-width: 1280px;
                     margin-left: auto !important;
                     margin-right: auto !important;
                   }
-      
+
                   .content-block {
                     margin-top: 18px !important;
                   }
-      
+
                   .account-card-desktop {
                     display: grid !important;
                     grid-template-columns: minmax(240px, 1.5fr) 180px 1fr auto;
@@ -203,20 +203,20 @@ export default function AppShellStyles() {
                   }
                   .account-card-desktop > div { margin: 0 !important; }
                   .account-card-desktop .account-actions { justify-content: flex-end; margin-top: 0 !important; }
-      
+
                   .notes-block { max-width: 1280px; margin-left: auto !important; margin-right: auto !important; }
                   .notes-panel { position: fixed; right: 32px; top: 180px; width: 320px; max-height: calc(100vh - 220px); overflow: auto; z-index: 20; }
                   .filters-desktop, .agenda-card-polished, .dashboard-title-row, .summary-grid, .result-summary, .content-block { max-width: calc(1280px - 360px) !important; margin-left: auto !important; margin-right: 360px !important; }
-      
-      
-      
+
+
+
                   /* ===== CORRECAO FINAL DESKTOP DASHBOARD ===== */
                   .dashboard-title-row {
                     max-width: none !important;
                     margin: 0 360px 20px 0 !important;
                     display: block !important;
                   }
-      
+
                   .dashboard-title-row .main-title {
                     display: block !important;
                     width: 100% !important;
@@ -225,7 +225,7 @@ export default function AppShellStyles() {
                     margin: 0 0 18px 0 !important;
                     white-space: normal !important;
                   }
-      
+
                   .dashboard-title-row .summary-grid,
                   .summary-grid {
                     display: grid !important;
@@ -235,7 +235,7 @@ export default function AppShellStyles() {
                     max-width: none !important;
                     margin: 0 !important;
                   }
-      
+
                   .summary-grid > div {
                     min-width: 0 !important;
                     min-height: 92px !important;
@@ -248,7 +248,7 @@ export default function AppShellStyles() {
                     align-items: flex-start !important;
                     overflow: hidden !important;
                   }
-      
+
                   .summary-grid span {
                     display: block !important;
                     width: 100% !important;
@@ -257,7 +257,7 @@ export default function AppShellStyles() {
                     margin: 0 0 4px 0 !important;
                     white-space: nowrap !important;
                   }
-      
+
                   .summary-grid strong {
                     display: block !important;
                     width: 100% !important;
@@ -266,7 +266,7 @@ export default function AppShellStyles() {
                     margin: 0 !important;
                     white-space: nowrap !important;
                   }
-      
+
                   .agenda-card-polished,
                   .filters-desktop,
                   .result-summary,
@@ -276,7 +276,7 @@ export default function AppShellStyles() {
                     margin-right: 360px !important;
                     width: auto !important;
                   }
-      
+
                   .notes-panel {
                     position: fixed !important;
                     right: 32px !important;
@@ -291,12 +291,12 @@ export default function AppShellStyles() {
                     box-shadow: 0 18px 44px rgba(15,23,42,.08) !important;
                     border: 1px solid rgba(15,118,110,.10) !important;
                   }
-      
+
                   .top-shell {
                     max-width: none !important;
                     margin: 0 0 28px 0 !important;
                   }
-      
+
                   @media (min-width: 980px) and (max-width: 1220px) {
                     .dashboard-title-row,
                     .agenda-card-polished,
@@ -305,7 +305,7 @@ export default function AppShellStyles() {
                     .content-block {
                       margin-right: 0 !important;
                     }
-      
+
                     .notes-panel {
                       position: static !important;
                       width: auto !important;
@@ -313,12 +313,12 @@ export default function AppShellStyles() {
                       margin: 18px 0 !important;
                     }
                   }
-      
+
                   .mobile-fab, .mobile-fab-menu { display: none !important; }
                 }
-      
-      
-      
+
+
+
                 /* ===== DF GESTAO — LAYOUT LIMPO E BLINDADO ===== */
                 @media (min-width: 980px) {
                   .app-page, .app-frame {
@@ -402,7 +402,7 @@ export default function AppShellStyles() {
                   .account-card-desktop .account-actions button { min-width:74px !important; margin:0 !important; }
                   .note-event-date { display:inline-flex; margin:6px 0; padding:4px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-weight:800; font-size:12px; }
                 }
-      
+
                 @media (max-width: 979px) {
                   .mobile-menu-panel { padding-bottom: 24px !important; }
                   .mobile-menu-group { margin-top: 12px !important; }
@@ -411,9 +411,9 @@ export default function AppShellStyles() {
                   .notes-panel { position: static !important; width:auto !important; max-height:none !important; overflow:visible !important; }
                   .quick-actions-card { display:none !important; }
                 }
-      
-      
-      
+
+
+
                 /* ===== AJUSTE LIMPO: NOTAS NO FLUXO DO DASHBOARD ===== */
                 @media (min-width: 980px) {
                   .dashboard-title-row,
@@ -428,7 +428,7 @@ export default function AppShellStyles() {
                     margin-right: auto !important;
                     box-sizing: border-box !important;
                   }
-      
+
                   body:has(.desktop-sidebar.compacta) .dashboard-title-row,
                   body:has(.desktop-sidebar.compacta) .summary-grid,
                   body:has(.desktop-sidebar.compacta) .agenda-card-polished,
@@ -437,7 +437,7 @@ export default function AppShellStyles() {
                   body:has(.desktop-sidebar.compacta) .content-block {
                     margin-right: auto !important;
                   }
-      
+
                   .dashboard-notes-card {
                     position: static !important;
                     display: grid !important;
@@ -454,12 +454,12 @@ export default function AppShellStyles() {
                     white-space: normal !important;
                     z-index: auto !important;
                   }
-      
+
                   .dashboard-notes-card .quick-actions-card {
                     margin: 0 !important;
                     align-self: start !important;
                   }
-      
+
                   .dashboard-notes-card .notes-header-clean,
                   .dashboard-notes-card .notes-list-dashboard,
                   .dashboard-notes-card .notes-see-all,
@@ -467,7 +467,7 @@ export default function AppShellStyles() {
                     grid-column: 2 !important;
                     min-width: 0 !important;
                   }
-      
+
                   .dashboard-notes-card .notes-header-clean {
                     display: flex !important;
                     align-items: flex-start !important;
@@ -476,32 +476,32 @@ export default function AppShellStyles() {
                     gap: 12px !important;
                     margin-bottom: 10px !important;
                   }
-      
+
                   .dashboard-notes-card .notes-stats-row {
                     display: flex !important;
                     flex-wrap: wrap !important;
                     gap: 8px !important;
                     margin-top: 8px !important;
                   }
-      
+
                   .dashboard-notes-card .notes-list-dashboard {
                     display: grid !important;
                     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
                     gap: 12px !important;
                   }
-      
+
                   .dashboard-notes-card .notes-list-dashboard > div {
                     margin: 0 !important;
                     min-width: 0 !important;
                     overflow: hidden !important;
                   }
-      
+
                   .dashboard-notes-card .notes-see-all {
                     justify-self: start !important;
                     margin-top: 4px !important;
                   }
                 }
-      
+
                 @media (max-width: 979px) {
                   .dashboard-notes-card {
                     position: static !important;
@@ -517,7 +517,7 @@ export default function AppShellStyles() {
                     white-space: normal !important;
                   }
                 }
-      
+
                 @media print {
                   html,
                   body {
@@ -527,18 +527,18 @@ export default function AppShellStyles() {
                     height: auto !important;
                     overflow: visible !important;
                   }
-      
+
                   .app-page {
                     min-height: auto !important;
                     padding-bottom: 0 !important;
                     background: #ffffff !important;
                   }
-      
+
                   button,
                   .no-print {
                     display: none !important;
                   }
-      
+
                   .print-header {
                     display: block !important;
                     text-align: center;
@@ -546,18 +546,18 @@ export default function AppShellStyles() {
                     border-bottom: 1px solid #ddd;
                     padding-bottom: 8px;
                   }
-      
+
                   .print-header h1 {
                     font-size: 20px;
                     margin: 0 0 4px 0;
                   }
-      
+
                   .print-header p {
                     font-size: 11px;
                     margin: 0;
                     color: #555;
                   }
-      
+
                   .print-footer {
                     display: block !important;
                     position: fixed;
@@ -571,14 +571,14 @@ export default function AppShellStyles() {
                     padding-top: 6px;
                     background: #fff;
                   }
-      
+
                   .print-card {
                     page-break-inside: avoid;
                     break-inside: avoid;
                     box-shadow: none !important;
                     border: 1px solid #ddd;
                   }
-      
+
                   @page {
                     size: A4;
                     margin: 12mm 12mm 18mm 12mm;
@@ -593,14 +593,14 @@ export default function AppShellStyles() {
                   max-width: 100%;
                   overflow-x: hidden !important;
                 }
-      
+
                 .app-page,
                 .app-frame {
                   width: 100% !important;
                   max-width: 100% !important;
                   overflow-x: hidden !important;
                 }
-      
+
                 .app-frame-content {
                   width: 100% !important;
                   max-width: 1280px !important;
@@ -608,7 +608,7 @@ export default function AppShellStyles() {
                   margin-right: auto !important;
                   overflow-x: hidden !important;
                 }
-      
+
                 .dashboard-title-row,
                 .agenda-card-polished,
                 .filters-desktop,
@@ -621,7 +621,7 @@ export default function AppShellStyles() {
                   margin-right: auto !important;
                   box-sizing: border-box !important;
                 }
-      
+
                 body:has(.desktop-sidebar.compacta) .dashboard-title-row,
                 body:has(.desktop-sidebar.compacta) .summary-grid,
                 body:has(.desktop-sidebar.compacta) .agenda-card-polished,
@@ -632,19 +632,19 @@ export default function AppShellStyles() {
                   margin-left: auto !important;
                   margin-right: auto !important;
                 }
-      
+
                 .dashboard-title-row {
                   display: block !important;
                   margin-top: 0 !important;
                   margin-bottom: 18px !important;
                 }
-      
+
                 .dashboard-title-row .main-title {
                   width: 100% !important;
                   margin: 0 0 16px 0 !important;
                   white-space: normal !important;
                 }
-      
+
                 .dashboard-title-row .summary-grid,
                 .summary-grid {
                   display: grid !important;
@@ -654,12 +654,12 @@ export default function AppShellStyles() {
                   max-width: 100% !important;
                   margin: 0 !important;
                 }
-      
+
                 .summary-grid > div {
                   min-width: 0 !important;
                   overflow: hidden !important;
                 }
-      
+
                 .dashboard-notes-card,
                 .notes-panel {
                   position: static !important;
@@ -674,7 +674,7 @@ export default function AppShellStyles() {
                   overflow: hidden !important;
                   z-index: auto !important;
                 }
-      
+
                 .dashboard-notes-card {
                   display: grid !important;
                   grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) !important;
@@ -689,14 +689,14 @@ export default function AppShellStyles() {
                   box-shadow: 0 18px 44px rgba(15,23,42,.08) !important;
                   box-sizing: border-box !important;
                 }
-      
+
                 .dashboard-notes-card .quick-actions-card {
                   grid-column: 1 !important;
                   grid-row: 1 / span 4 !important;
                   margin: 0 !important;
                   min-width: 0 !important;
                 }
-      
+
                 .dashboard-notes-card .notes-header-clean,
                 .dashboard-notes-card .notes-list-dashboard,
                 .dashboard-notes-card .notes-see-all,
@@ -704,14 +704,14 @@ export default function AppShellStyles() {
                   grid-column: 2 !important;
                   min-width: 0 !important;
                 }
-      
+
                 .dashboard-notes-card .notes-list-dashboard {
                   display: grid !important;
                   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
                   gap: 12px !important;
                   overflow: hidden !important;
                 }
-      
+
                 .dashboard-notes-card .notes-list-dashboard > div,
                 .dashboard-notes-card .notes-header-clean,
                 .dashboard-notes-card .notes-title-wrap {
@@ -719,22 +719,22 @@ export default function AppShellStyles() {
                   max-width: 100% !important;
                   overflow-wrap: anywhere !important;
                 }
-      
+
                 .dashboard-notes-card .notes-see-all {
                   justify-self: start !important;
                 }
               }
-      
+
               @media (min-width: 980px) and (max-width: 1180px) {
                 .dashboard-title-row .summary-grid,
                 .summary-grid {
                   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                 }
-      
+
                 .dashboard-notes-card {
                   grid-template-columns: 1fr !important;
                 }
-      
+
                 .dashboard-notes-card .quick-actions-card,
                 .dashboard-notes-card .notes-header-clean,
                 .dashboard-notes-card .notes-list-dashboard,
@@ -744,7 +744,7 @@ export default function AppShellStyles() {
                   grid-row: auto !important;
                 }
               }
-      
+
               @media (max-width: 979px) {
                 .dashboard-notes-card,
                 .notes-panel {
@@ -755,8 +755,8 @@ export default function AppShellStyles() {
                   overflow: visible !important;
                 }
               }
-      
-      
+
+
               /* ===== REFINAMENTO PRODUTO: BOTOES, MENU E NOTAS ===== */
               @media (min-width: 980px) {
                 .dashboard-heading-actions {
@@ -850,7 +850,7 @@ export default function AppShellStyles() {
                   max-width: 100% !important;
                   overflow-x: hidden !important;
                 }
-      
+
                 .app-page,
                 .app-frame {
                   width: 100% !important;
@@ -859,14 +859,14 @@ export default function AppShellStyles() {
                   overflow-x: hidden !important;
                   box-sizing: border-box !important;
                 }
-      
+
                 .top-shell {
                   margin: 0 0 14px 0 !important;
                   padding: 12px !important;
                   border-radius: 18px !important;
                   box-shadow: 0 10px 24px rgba(15,23,42,.06) !important;
                 }
-      
+
                 .mobile-menu-trigger {
                   width: 40px !important;
                   height: 40px !important;
@@ -876,7 +876,7 @@ export default function AppShellStyles() {
                   border: 1px solid #e5e7eb !important;
                   box-shadow: 0 6px 16px rgba(15,23,42,.08) !important;
                 }
-      
+
                 .mobile-menu-panel {
                   width: min(92vw, 360px) !important;
                   max-height: calc(100vh - 28px) !important;
@@ -885,11 +885,11 @@ export default function AppShellStyles() {
                   padding: 16px !important;
                   box-sizing: border-box !important;
                 }
-      
+
                 .mobile-menu-group {
                   margin-top: 12px !important;
                 }
-      
+
                 .mobile-menu-group summary {
                   list-style: none !important;
                   display: flex !important;
@@ -902,9 +902,9 @@ export default function AppShellStyles() {
                   letter-spacing: .05em !important;
                   text-transform: uppercase !important;
                 }
-      
+
                 .mobile-menu-group summary::-webkit-details-marker { display: none !important; }
-      
+
                 .mobile-menu-group button,
                 .mobile-menu-panel button {
                   border-radius: 16px !important;
@@ -913,7 +913,7 @@ export default function AppShellStyles() {
                   color: #0f172a !important;
                   box-shadow: none !important;
                 }
-      
+
                 .mobile-menu-group button span:first-child {
                   width: 34px !important;
                   height: 34px !important;
@@ -923,7 +923,7 @@ export default function AppShellStyles() {
                   border-radius: 12px !important;
                   background: #f0fdfa !important;
                 }
-      
+
                 .dashboard-title-row,
                 .summary-grid,
                 .agenda-card-polished,
@@ -937,13 +937,13 @@ export default function AppShellStyles() {
                   margin-right: 0 !important;
                   box-sizing: border-box !important;
                 }
-      
+
                 .summary-grid {
                   display: grid !important;
                   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                   gap: 10px !important;
                 }
-      
+
                 .summary-grid > div,
                 .agenda-card-polished,
                 .result-summary,
@@ -951,14 +951,14 @@ export default function AppShellStyles() {
                 .dashboard-notes-card {
                   border-radius: 18px !important;
                 }
-      
+
                 .agenda-card-polished,
                 .filters-desktop {
                   display: grid !important;
                   grid-template-columns: 1fr !important;
                   gap: 12px !important;
                 }
-      
+
                 .agenda-compact-items,
                 .export-actions,
                 .account-actions,
@@ -967,29 +967,29 @@ export default function AppShellStyles() {
                   gap: 8px !important;
                   flex-wrap: wrap !important;
                 }
-      
+
                 .advanced-filters {
                   display: grid !important;
                   grid-template-columns: 1fr !important;
                   gap: 10px !important;
                 }
-      
+
                 .dashboard-notes-card {
                   padding: 14px !important;
                   overflow: visible !important;
                 }
-      
+
                 .notes-header-clean {
                   align-items: flex-start !important;
                   gap: 12px !important;
                 }
-      
+
                 .notes-list-dashboard {
                   display: grid !important;
                   grid-template-columns: 1fr !important;
                   gap: 10px !important;
                 }
-      
+
                 .global-fab {
                   right: 18px !important;
                   bottom: max(20px, env(safe-area-inset-bottom)) !important;
@@ -1003,27 +1003,27 @@ export default function AppShellStyles() {
                   box-shadow: 0 12px 30px rgba(15,23,42,.16) !important;
                   z-index: 5000 !important;
                 }
-      
+
                 .global-fab-menu {
                   right: 18px !important;
                   bottom: calc(76px + env(safe-area-inset-bottom)) !important;
                   z-index: 5001 !important;
                 }
-      
+
                 .global-fab-menu button {
                   background: #ffffff !important;
                   color: #0f172a !important;
                   border: 1px solid #e5e7eb !important;
                   box-shadow: 0 10px 26px rgba(15,23,42,.14) !important;
                 }
-      
+
                 .content-block {
                   padding-bottom: 84px !important;
                 }
               }
-      
-      
-      
+
+
+
               /* HOTFIX VALIDACAO: contas em aberto, PDF, FAB global e menu mobile */
               .dashboard-section-header-accounts {
                 display:flex !important;
@@ -1100,8 +1100,8 @@ export default function AppShellStyles() {
                   border-radius:999px !important;
                 }
               }
-      
-      
+
+
               /* PADRONIZACAO FINAL: links de ver paginas, busca ampla e status visual */
               .dashboard-notes-card .dashboard-section-actions,
               .notes-header-actions {
@@ -1184,7 +1184,7 @@ export default function AppShellStyles() {
                   min-width:auto !important;
                 }
               }
-      
+
               /* Identidade visual única para botões do produto */
               .filter-toggle-button,
               .export-actions button,
@@ -1206,7 +1206,7 @@ export default function AppShellStyles() {
                 color: #374151 !important;
                 box-shadow: none !important;
               }
-      
+
               .account-actions button:hover,
               .notes-list-dashboard button:hover,
               .export-actions button:hover,
@@ -1217,7 +1217,7 @@ export default function AppShellStyles() {
                 border-color: #94a3b8 !important;
                 color: #0f172a !important;
               }
-      
+
               .account-actions button:first-child,
               .notes-list-dashboard button:first-child,
               .agenda-card-polished button {
@@ -1225,7 +1225,7 @@ export default function AppShellStyles() {
                 background: #f0fdfa !important;
                 color: #0f766e !important;
               }
-      
+
               .account-actions button:last-child,
               .notes-list-dashboard button:last-child,
               .users-page-section button[title*="Remover"] {
@@ -1233,7 +1233,7 @@ export default function AppShellStyles() {
                 background: #fff1f2 !important;
                 color: #be123c !important;
               }
-      
+
               /* FECHAMENTO MOBILE: alinhamentos, header, chips e menu */
               .top-shell-clean {
                 background: #ffffff !important;

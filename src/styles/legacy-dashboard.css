@@ -1826,9 +1826,7 @@ button.danger,
 }
 
 .modal,
-.loginCard,
 .card,
-.alertCard,
 .print-card,
 .content-block,
 .dashboard-notes-card,
@@ -1839,9 +1837,7 @@ button.danger,
 
 .relatorios-page [style*="grid-template-columns: 1fr 1fr 1fr"],
 .relatorios-page [style*="grid-template-columns: repeat(3"],
-.reportMetrics,
 .grid3,
-.miniGrid,
 .summary-grid,
 .metrics,
 .metrics-grid {
@@ -1867,9 +1863,7 @@ button.danger,
 
   .relatorios-page [style*="grid-template-columns"],
   .summary-grid,
-  .metrics,
-  .miniGrid,
-  .reportMetrics {
+  .metrics {
     grid-template-columns: 1fr !important;
   }
 }
@@ -2251,19 +2245,16 @@ button.danger {
 }
 
 /* notas desktop mais suaves */
-.notes-panel .noteCard,
 .notes-page-grid > div{
   box-shadow:0 10px 26px rgba(15,23,42,.05) !important;
 }
 
-.notes-panel .critico,
-.noteCard .critico{
+.notes-panel .critico{
   background:#fff1f2 !important;
   color:#9f1239 !important;
 }
 
-.notes-panel .urgente,
-.noteCard .urgente{
+.notes-panel .urgente{
   background:#fffbeb !important;
   color:#92400e !important;
 }

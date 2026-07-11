@@ -334,16 +334,16 @@ export default function RelatoriosPessoasPage({
   return (
     <div className="pessoas-report-page">
       <style>{`
-        .pessoas-report-page { display: grid; gap: 18px; }
+        .pessoas-report-page { display: grid; gap: 18px; --pessoas-report-brand: #0f766e; --pessoas-report-brand-dark: #115e59; --pessoas-report-brand-surface: #f0fdfa; --pessoas-report-brand-surface-soft: #ecfdf5; --pessoas-report-brand-border: rgba(13, 148, 136, .18); --pessoas-report-brand-border-strong: rgba(15, 118, 110, .24); --pessoas-report-surface: #ffffff; --pessoas-report-surface-soft: #f8fafc; --pessoas-report-text: #0f172a; --pessoas-report-muted: #64748b; --pessoas-report-border: rgba(15, 23, 42, .08); --pessoas-report-border-soft: rgba(15, 23, 42, .06); --pessoas-report-border-strong: rgba(15, 23, 42, .14); --pessoas-report-pill-radius: 999px; }
         .pessoas-report-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
           gap: 10px;
         }
         .pessoas-report-card {
-          border: 1px solid rgba(15, 23, 42, .08);
+          border: 1px solid var(--pessoas-report-border);
           border-radius: 12px;
-          background: #ffffff;
+          background: var(--pessoas-report-surface);
           padding: 10px 12px;
           box-shadow: 0 6px 18px rgba(15, 23, 42, .04);
           display: grid;
@@ -352,22 +352,22 @@ export default function RelatoriosPessoasPage({
           align-content: center;
         }
         .pessoas-report-card span {
-          color: #64748b;
+          color: var(--pessoas-report-muted);
           font-size: 12px;
           font-weight: 800;
           line-height: 1.2;
         }
-        .pessoas-report-card strong { color: #0f172a; font-size: 22px; line-height: 1; }
-        .pessoas-report-card small { color: #64748b; font-size: 12px; line-height: 1.25; }
+        .pessoas-report-card strong { color: var(--pessoas-report-text); font-size: 22px; line-height: 1; }
+        .pessoas-report-card small { color: var(--pessoas-report-muted); font-size: 12px; line-height: 1.25; }
         .pessoas-report-columns {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 14px;
         }
         .pessoas-report-section {
-          border: 1px solid rgba(15, 23, 42, .08);
+          border: 1px solid var(--pessoas-report-border);
           border-radius: 20px;
-          background: #ffffff;
+          background: var(--pessoas-report-surface);
           padding: 16px;
           box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
           min-width: 0;
@@ -385,19 +385,19 @@ export default function RelatoriosPessoasPage({
         }
         .pessoas-report-section h2 {
           margin: 0 0 5px;
-          color: #0f172a;
+          color: var(--pessoas-report-text);
           font-size: 17px;
         }
         .pessoas-report-section p {
           margin: 0;
-          color: #64748b;
+          color: var(--pessoas-report-muted);
           font-size: 13px;
           line-height: 1.45;
         }
         .pessoas-report-filters {
-          border: 1px solid rgba(15, 23, 42, .08);
+          border: 1px solid var(--pessoas-report-border);
           border-radius: 18px;
-          background: #ffffff;
+          background: var(--pessoas-report-surface);
           padding: 12px;
           box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
           display: flex;
@@ -411,26 +411,26 @@ export default function RelatoriosPessoasPage({
           min-width: 180px;
         }
         .pessoas-report-filter span {
-          color: #64748b;
+          color: var(--pessoas-report-muted);
           font-size: 12px;
           font-weight: 900;
           text-transform: uppercase;
           letter-spacing: .04em;
         }
         .pessoas-report-filter select {
-          border: 1px solid rgba(15, 23, 42, .14);
+          border: 1px solid var(--pessoas-report-border-strong);
           border-radius: 12px;
           min-height: 40px;
           padding: 8px 10px;
-          color: #0f172a;
-          background: #ffffff;
+          color: var(--pessoas-report-text);
+          background: var(--pessoas-report-surface);
         }
         .pessoas-report-toggle,
         .pessoas-report-more {
-          border: 1px solid rgba(15, 23, 42, .12);
-          border-radius: 999px;
-          background: #ffffff;
-          color: #0f172a;
+          border: 1px solid var(--pessoas-report-border-strong);
+          border-radius: var(--pessoas-report-pill-radius);
+          background: var(--pessoas-report-surface);
+          color: var(--pessoas-report-text);
           font-weight: 800;
           min-height: 30px;
           padding: 6px 10px;
@@ -444,16 +444,16 @@ export default function RelatoriosPessoasPage({
           justify-self: end;
           display: inline-grid;
           place-items: center;
-          color: #0f766e;
-          background: #ecfdf5;
-          border-color: rgba(15, 118, 110, .24);
+          color: var(--pessoas-report-brand);
+          background: var(--pessoas-report-brand-surface-soft);
+          border-color: var(--pessoas-report-brand-border-strong);
           font-size: 18px;
           line-height: 1;
         }
         .pessoas-report-more {
           margin-top: 10px;
           width: 100%;
-          background: #f8fafc;
+          background: var(--pessoas-report-surface-soft);
           border-radius: 12px;
           min-height: 34px;
         }
@@ -463,19 +463,19 @@ export default function RelatoriosPessoasPage({
           grid-template-columns: minmax(0, 1fr) auto;
           gap: 12px;
           align-items: center;
-          border: 1px solid rgba(15, 23, 42, .06);
+          border: 1px solid var(--pessoas-report-border-soft);
           border-radius: 14px;
-          background: #f8fafc;
+          background: var(--pessoas-report-surface-soft);
           padding: 12px;
         }
         .pessoas-report-row h3 {
           margin: 0 0 4px;
-          color: #0f172a;
+          color: var(--pessoas-report-text);
           font-size: 14px;
         }
         .pessoas-report-row small,
         .pessoas-report-row-meta small {
-          color: #64748b;
+          color: var(--pessoas-report-muted);
           line-height: 1.35;
         }
         .pessoas-report-row-meta {
@@ -486,26 +486,26 @@ export default function RelatoriosPessoasPage({
           min-width: 132px;
         }
         .pessoas-report-row-meta strong {
-          color: #0f766e;
+          color: var(--pessoas-report-brand);
           font-size: 13px;
         }
         .pessoas-report-empty {
-          border: 1px dashed rgba(15, 23, 42, .16);
+          border: 1px dashed var(--pessoas-report-border-strong);
           border-radius: 14px;
-          background: #f8fafc;
+          background: var(--pessoas-report-surface-soft);
           padding: 14px;
-          color: #64748b;
+          color: var(--pessoas-report-muted);
         }
         .pessoas-report-empty strong {
           display: block;
-          color: #0f172a;
+          color: var(--pessoas-report-text);
           margin-bottom: 4px;
         }
         .pessoas-report-note {
-          border: 1px solid rgba(13, 148, 136, .18);
+          border: 1px solid var(--pessoas-report-brand-border);
           border-radius: 16px;
-          background: #f0fdfa;
-          color: #115e59;
+          background: var(--pessoas-report-brand-surface);
+          color: var(--pessoas-report-brand-dark);
           padding: 12px 14px;
           font-size: 13px;
           line-height: 1.45;

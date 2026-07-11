@@ -9,6 +9,10 @@ export default function UserSecurityCards({
   salvarMinhaSenha,
   styles
 }) {
+  const senhaTemTamanhoMinimo = novaSenhaUsuario.length >= 12
+  const senhasConferem = Boolean(novaSenhaUsuario) && novaSenhaUsuario === confirmarNovaSenhaUsuario
+  const podeAtualizarSenha = senhaTemTamanhoMinimo && senhasConferem
+
   return (
     <div className="users-account-grid users-security-grid">
       <div className="users-form-card users-security-card">
@@ -29,7 +33,7 @@ export default function UserSecurityCards({
       <div className="users-form-card users-security-card">
         <div className="users-security-card-header">
           <strong>Alterar senha</strong>
-          <small style={styles.textoAjuda}>Mínimo de 6 caracteres.</small>
+          <small style={styles.textoAjuda}>Mínimo de 12 caracteres.</small>
         </div>
         <div className="users-security-password-grid">
           <input
@@ -37,6 +41,8 @@ export default function UserSecurityCards({
             type="password"
             placeholder="Nova senha"
             value={novaSenhaUsuario}
+            minLength={12}
+            autoComplete="new-password"
             onChange={(e) => setNovaSenhaUsuario(e.target.value)}
           />
           <input
@@ -44,10 +50,22 @@ export default function UserSecurityCards({
             type="password"
             placeholder="Confirmar nova senha"
             value={confirmarNovaSenhaUsuario}
+            minLength={12}
+            autoComplete="new-password"
             onChange={(e) => setConfirmarNovaSenhaUsuario(e.target.value)}
           />
         </div>
-        <button style={styles.btnSalvar} onClick={salvarMinhaSenha}>Atualizar senha</button>
+        {confirmarNovaSenhaUsuario && !senhasConferem && (
+          <small style={{ ...styles.textoAjuda, color: '#991b1b' }}>As senhas não conferem.</small>
+        )}
+        <button
+          style={styles.btnSalvar}
+          onClick={salvarMinhaSenha}
+          disabled={!podeAtualizarSenha}
+          title={!senhaTemTamanhoMinimo ? 'Informe pelo menos 12 caracteres.' : !senhasConferem ? 'As senhas devem ser iguais.' : ''}
+        >
+          Atualizar senha
+        </button>
       </div>
     </div>
   )

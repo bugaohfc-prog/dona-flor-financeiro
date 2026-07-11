@@ -1,9 +1,31 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://dona-flor-financeiro.vercel.app',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173'
+]
+
+function allowedOrigins() {
+  const configured = String(Deno.env.get('APP_ALLOWED_ORIGINS') || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  return new Set([...DEFAULT_ALLOWED_ORIGINS, ...configured])
+}
+
+function corsHeaders(requestOrigin: string | null) {
+  const origin = requestOrigin && allowedOrigins().has(requestOrigin)
+    ? requestOrigin
+    : DEFAULT_ALLOWED_ORIGINS[0]
+
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Vary': 'Origin'
+  }
 }
 
 function normalizarPerfil(perfil: string) {
@@ -18,6 +40,16 @@ function normalizarPerfil(perfil: string) {
 
 function perfilPodeAdministrarEmpresa(perfil: string) {
   return normalizarPerfil(perfil) === 'admin'
+}
+
+function resposta(requestOrigin: string | null, body: Record<string, unknown>, status: number) {
+  return new Response(
+    JSON.stringify(body),
+    {
+      headers: { ...corsHeaders(requestOrigin), 'Content-Type': 'application/json' },
+      status
+    }
+  )
 }
 
 async function buscarVinculoAdminEmpresa(supabaseAdmin: any, user: any, empresaId: string) {
@@ -51,16 +83,22 @@ async function buscarVinculoAdminEmpresa(supabaseAdmin: any, user: any, empresaI
 }
 
 serve(async (req) => {
+  const requestOrigin = req.headers.get('Origin')
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders(requestOrigin) })
   }
+
+  let supabaseAdmin: any = null
+  let userIdCriado: string | null = null
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
     if (!supabaseUrl || !serviceRoleKey) {
-      throw new Error('Variáveis SUPABASE_URL e SERVICE_ROLE_KEY são obrigatórias. Configure SERVICE_ROLE_KEY em Supabase Secrets.')
+      console.error('[criar-usuario-manual] Configuração interna ausente.')
+      return resposta(requestOrigin, { ok: false, message: 'Serviço temporariamente indisponível.' }, 503)
     }
 
     const authHeader = req.headers.get('Authorization')
@@ -70,7 +108,7 @@ serve(async (req) => {
 
     const { data: callerData, error: callerError } = await supabaseUser.auth.getUser()
     if (callerError || !callerData.user) {
-      throw new Error('Usuário não autenticado.')
+      return resposta(requestOrigin, { ok: false, message: 'Usuário não autenticado.' }, 401)
     }
 
     const body = await req.json()
@@ -78,17 +116,19 @@ serve(async (req) => {
     const email = String(body?.email || '').trim().toLowerCase()
     const nome = String(body?.nome || '').trim() || email.split('@')[0]
     const perfil = normalizarPerfil(body?.perfil)
-    const senhaProvisoria = String(body?.senhaProvisoria || '').trim()
+    const senhaProvisoria = String(body?.senhaProvisoria || '')
 
-    if (!empresaId) throw new Error('Empresa não identificada.')
-    if (!email || !email.includes('@')) throw new Error('E-mail inválido.')
-    if (senhaProvisoria.length < 6) throw new Error('A senha provisória precisa ter pelo menos 6 caracteres.')
+    if (!empresaId) return resposta(requestOrigin, { ok: false, message: 'Empresa não identificada.' }, 400)
+    if (!email || !email.includes('@')) return resposta(requestOrigin, { ok: false, message: 'E-mail inválido.' }, 400)
+    if (senhaProvisoria.length < 12) {
+      return resposta(requestOrigin, { ok: false, message: 'A senha provisória precisa ter pelo menos 12 caracteres.' }, 400)
+    }
 
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
+    supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
     const vinculoAdmin = await buscarVinculoAdminEmpresa(supabaseAdmin, callerData.user, empresaId)
 
     if (!vinculoAdmin) {
-      throw new Error('Apenas administradores desta empresa podem criar acessos manuais.')
+      return resposta(requestOrigin, { ok: false, message: 'Apenas administradores desta empresa podem criar acessos manuais.' }, 403)
     }
 
     const { data: existenteVinculo, error: consultaVinculoError } = await supabaseAdmin
@@ -99,12 +139,18 @@ serve(async (req) => {
       .maybeSingle()
 
     if (consultaVinculoError) throw consultaVinculoError
-    if (existenteVinculo) throw new Error('Este e-mail já está cadastrado nesta empresa.')
+    if (existenteVinculo) {
+      return resposta(requestOrigin, { ok: false, message: 'Este e-mail já está cadastrado nesta empresa.' }, 409)
+    }
 
     const { data: usuarioCriado, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password: senhaProvisoria,
       email_confirm: true,
+      app_metadata: {
+        created_by_admin: true,
+        must_change_password: true
+      },
       user_metadata: {
         name: nome,
         full_name: nome,
@@ -115,17 +161,18 @@ serve(async (req) => {
 
     if (authError) throw authError
 
-    const userId = usuarioCriado?.user?.id || null
+    userIdCriado = usuarioCriado?.user?.id || null
+    if (!userIdCriado) throw new Error('Supabase Auth não retornou o identificador do usuário criado.')
 
-    if (userId) {
-      await supabaseAdmin
-        .from('profiles')
-        .upsert({ id: userId, name: nome }, { onConflict: 'id' })
-    }
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .upsert({ id: userIdCriado, name: nome }, { onConflict: 'id' })
+
+    if (profileError) throw profileError
 
     const payload = {
       empresa_id: empresaId,
-      user_id: userId,
+      user_id: userIdCriado,
       email,
       nome,
       perfil
@@ -139,20 +186,33 @@ serve(async (req) => {
 
     if (vinculoError) throw vinculoError
 
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        message: 'Usuário criado manualmente com e-mail e senha provisória.',
-        userId,
-        usuario: vinculo,
-        vinculo
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-    )
+    return resposta(requestOrigin, {
+      ok: true,
+      message: 'Usuário criado com senha provisória. A troca será exigida no primeiro acesso.',
+      userId: userIdCriado,
+      usuario: vinculo,
+      vinculo
+    }, 200)
   } catch (error) {
-    return new Response(
-      JSON.stringify({ ok: false, message: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-    )
+    console.error('[criar-usuario-manual] Falha ao provisionar usuário.', {
+      message: error?.message,
+      code: error?.code,
+      userIdCriado
+    })
+
+    if (supabaseAdmin && userIdCriado) {
+      const { error: cleanupError } = await supabaseAdmin.auth.admin.deleteUser(userIdCriado)
+      if (cleanupError) {
+        console.error('[criar-usuario-manual] Falha na compensação do usuário Auth.', {
+          userIdCriado,
+          message: cleanupError.message
+        })
+      }
+    }
+
+    return resposta(requestOrigin, {
+      ok: false,
+      message: 'Não foi possível criar o usuário. Nenhum acesso funcional foi mantido.'
+    }, 400)
   }
 })

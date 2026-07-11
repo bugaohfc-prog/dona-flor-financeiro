@@ -8,6 +8,8 @@ import {
   salvarSessaoSegura
 } from '../services/sessionSecurityService.js'
 
+const INTERVALO_GRAVACAO_ATIVIDADE_MS = 15 * 1000
+
 export function useAuthSession({
   onClearAuthData,
   onSessionWarning,
@@ -16,6 +18,7 @@ export function useAuthSession({
 } = {}) {
   const avisoSessaoMostradoRef = useRef(false)
   const encerrandoSessaoRef = useRef(false)
+  const ultimaGravacaoAtividadeRef = useRef(0)
   const [usuarioLogado, setUsuarioLogado] = useState(null)
   const [carregandoAuth, setCarregandoAuth] = useState(true)
 
@@ -33,21 +36,41 @@ export function useAuthSession({
       expiraEm: session?.expires_at || null
     })
 
+    ultimaGravacaoAtividadeRef.current = agora
     avisoSessaoMostradoRef.current = false
   }, [])
 
-  const registrarAtividadeSessao = useCallback(() => {
+  const salvarAtividadeSessao = useCallback((forcar = false) => {
+    const agora = Date.now()
+
+    if (
+      !forcar
+      && ultimaGravacaoAtividadeRef.current
+      && agora - ultimaGravacaoAtividadeRef.current < INTERVALO_GRAVACAO_ATIVIDADE_MS
+    ) {
+      return
+    }
+
     const sessao = lerSessaoSegura()
 
     salvarSessaoSegura({
       usuarioId: sessao.usuarioId || null,
-      inicio: sessao.inicio || Date.now(),
-      ultimaAtividade: Date.now(),
+      inicio: sessao.inicio || agora,
+      ultimaAtividade: agora,
       expiraEm: sessao.expiraEm || null
     })
 
+    ultimaGravacaoAtividadeRef.current = agora
     avisoSessaoMostradoRef.current = false
   }, [])
+
+  const registrarAtividadeSessao = useCallback(() => {
+    salvarAtividadeSessao(false)
+  }, [salvarAtividadeSessao])
+
+  const continuarSessao = useCallback(() => {
+    salvarAtividadeSessao(true)
+  }, [salvarAtividadeSessao])
 
   const encerrarSessao = useCallback(async (mensagem, tipo = 'erro') => {
     if (encerrandoSessaoRef.current) return
@@ -84,9 +107,7 @@ export function useAuthSession({
         if (!ativo) return
 
         if (error) {
-          console.warn('Falha ao validar sessão:', error?.message || error)
-          onClearAuthData?.()
-          setUsuarioLogado(null)
+          console.warn('Falha transitória ao validar sessão:', error?.message || error)
           return
         }
 
@@ -108,9 +129,7 @@ export function useAuthSession({
         setUsuarioLogado(data.session.user)
       } catch (error) {
         if (!ativo) return
-        console.warn('Falha ao validar sessão:', error?.message || error)
-        onClearAuthData?.()
-        setUsuarioLogado(null)
+        console.warn('Falha transitória ao validar sessão:', error?.message || error)
       } finally {
         if (timeoutAviso) window.clearTimeout(timeoutAviso)
         if (ativo) setCarregandoAuth(false)
@@ -137,7 +156,8 @@ export function useAuthSession({
           return {
             ...usuarioAtual,
             email: proximoUsuario.email || usuarioAtual.email,
-            user_metadata: proximoUsuario.user_metadata || usuarioAtual.user_metadata
+            user_metadata: proximoUsuario.user_metadata || usuarioAtual.user_metadata,
+            app_metadata: proximoUsuario.app_metadata || usuarioAtual.app_metadata
           }
         }
 
@@ -167,6 +187,7 @@ export function useAuthSession({
       ultimaAtividade: agora,
       expiraEm: sessaoAtual.expiraEm || null
     })
+    ultimaGravacaoAtividadeRef.current = agora
 
     function verificarExpiracao() {
       const sessao = lerSessaoSegura()
@@ -188,7 +209,7 @@ export function useAuthSession({
 
       if (tempoInativo >= VINTE_CINCO_MINUTOS_MS && !avisoSessaoMostradoRef.current) {
         avisoSessaoMostradoRef.current = true
-        onSessionWarning?.(registrarAtividadeSessao)
+        onSessionWarning?.(continuarSessao)
       }
     }
 
@@ -201,7 +222,7 @@ export function useAuthSession({
       eventos.forEach((evento) => window.removeEventListener(evento, registrarAtividadeSessao))
       window.clearInterval(intervalo)
     }
-  }, [encerrarSessao, onSessionWarning, registrarAtividadeSessao, usuarioLogado?.id])
+  }, [continuarSessao, encerrarSessao, onSessionWarning, registrarAtividadeSessao, usuarioLogado?.id])
 
   return {
     usuarioLogado,

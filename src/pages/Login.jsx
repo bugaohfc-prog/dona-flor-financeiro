@@ -36,11 +36,6 @@ export default function Login({ onLogin }) {
       return
     }
 
-    const { error: erroVinculo } = await supabase.rpc('vincular_usuario_logado')
-    if (erroVinculo) {
-      console.warn('Não foi possível executar vínculo automático:', erroVinculo.message)
-    }
-
     onLogin(data.user)
   }
 
@@ -55,6 +50,7 @@ export default function Login({ onLogin }) {
           type="email"
           placeholder="E-mail"
           value={email}
+          autoComplete="email"
           onChange={(e) => setEmail(e.target.value)}
         />
 
@@ -63,6 +59,7 @@ export default function Login({ onLogin }) {
           type="password"
           placeholder="Senha"
           value={senha}
+          autoComplete="current-password"
           onChange={(e) => setSenha(e.target.value)}
         />
 

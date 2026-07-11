@@ -188,7 +188,14 @@ export default function UsuariosPage({
                 </label>
                 <label>
                   <span>Senha provisória</span>
-                  <input style={styles.input} type="text" value={senhaConviteUsuario} onChange={(event) => setSenhaConviteUsuario(event.target.value)} />
+                  <input
+                    style={styles.input}
+                    type="password"
+                    minLength={12}
+                    autoComplete="new-password"
+                    value={senhaConviteUsuario}
+                    onChange={(event) => setSenhaConviteUsuario(event.target.value)}
+                  />
                 </label>
                 <label>
                   <span>Perfil</span>
@@ -199,7 +206,7 @@ export default function UsuariosPage({
                   </select>
                 </label>
                 <button className="admin-btn admin-btn-primary" onClick={adicionarUsuarioEmpresa} disabled={criandoUsuarioManual}>{criandoUsuarioManual ? 'Criando...' : 'Criar acesso'}</button>
-                <small style={styles.textoNota}>Entregue o e-mail e a senha provisória ao usuário com segurança.</small>
+                <small style={styles.textoNota}>Use ao menos 12 caracteres e entregue a senha provisória ao usuário com segurança.</small>
               </div>
             </div>
           )}

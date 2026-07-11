@@ -1,17 +1,40 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+const GENERIC_MESSAGE = 'Envio solicitado. Se o usuário estiver apto, receberá o link por e-mail.'
+const DEFAULT_APP_ORIGIN = 'https://dona-flor-financeiro.vercel.app'
+const DEFAULT_ALLOWED_ORIGINS = [
+  DEFAULT_APP_ORIGIN,
+  'http://localhost:5173',
+  'http://127.0.0.1:5173'
+]
+
+function allowedOrigins() {
+  const configured = String(Deno.env.get('APP_ALLOWED_ORIGINS') || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  return new Set([...DEFAULT_ALLOWED_ORIGINS, ...configured])
 }
 
-const GENERIC_MESSAGE = 'Envio solicitado. Se o usuário estiver apto, receberá o link por e-mail.'
+function resolverOrigem(requestOrigin: string | null) {
+  if (requestOrigin && allowedOrigins().has(requestOrigin)) return requestOrigin
+  return DEFAULT_APP_ORIGIN
+}
 
-function respostaGenerica(status = 200, ok = true) {
+function corsHeaders(requestOrigin: string | null) {
+  return {
+    'Access-Control-Allow-Origin': resolverOrigem(requestOrigin),
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Vary': 'Origin'
+  }
+}
+
+function respostaGenerica(requestOrigin: string | null, status = 200, ok = true) {
   return new Response(
     JSON.stringify({ ok, message: GENERIC_MESSAGE }),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status }
+    { headers: { ...corsHeaders(requestOrigin), 'Content-Type': 'application/json' }, status }
   )
 }
 
@@ -61,8 +84,10 @@ async function verificarAdminEmpresa(supabaseUser: any, empresaId: string) {
 }
 
 serve(async (req) => {
+  const requestOrigin = req.headers.get('Origin')
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders(requestOrigin) })
   }
 
   try {
@@ -70,7 +95,8 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
     if (!supabaseUrl || !serviceRoleKey) {
-      throw new Error('Variáveis SUPABASE_URL e SERVICE_ROLE_KEY são obrigatórias. Configure SERVICE_ROLE_KEY em Supabase Secrets.')
+      console.error('[convidar-usuario] Configuração interna ausente.')
+      return respostaGenerica(requestOrigin, 503, false)
     }
 
     const authHeader = req.headers.get('Authorization')
@@ -81,10 +107,10 @@ serve(async (req) => {
     const { data: callerData, error: callerError } = await supabaseUser.auth.getUser()
     if (callerError || !callerData.user) {
       console.warn('[convidar-usuario] Chamada sem sessão autenticada.', resumirErro(callerError))
-      return respostaGenerica(401, false)
+      return respostaGenerica(requestOrigin, 401, false)
     }
 
-    const { email, nome, redirectTo, empresaId } = await req.json()
+    const { email, nome, empresaId } = await req.json()
     const emailNormalizado = String(email || '').trim().toLowerCase()
     const empresaIdNormalizada = String(empresaId || '').trim()
 
@@ -94,7 +120,7 @@ serve(async (req) => {
         hasEmail: Boolean(emailNormalizado),
         hasEmpresaId: Boolean(empresaIdNormalizada)
       })
-      return respostaGenerica()
+      return respostaGenerica(requestOrigin)
     }
 
     const [isMaster, isAdminEmpresa] = await Promise.all([
@@ -107,7 +133,7 @@ serve(async (req) => {
         callerId: callerData.user.id,
         empresaId: empresaIdNormalizada
       })
-      return respostaGenerica()
+      return respostaGenerica(requestOrigin)
     }
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
@@ -119,22 +145,16 @@ serve(async (req) => {
       .eq('email', emailNormalizado)
       .maybeSingle()
 
-    if (vinculoError) {
-      console.warn('[convidar-usuario] Falha ao validar vínculo do e-mail alvo.', {
+    if (vinculoError || !vinculoAlvo) {
+      console.warn('[convidar-usuario] E-mail alvo sem vínculo válido na empresa.', {
         callerId: callerData.user.id,
         empresaId: empresaIdNormalizada,
         error: resumirErro(vinculoError)
       })
-      return respostaGenerica()
+      return respostaGenerica(requestOrigin)
     }
 
-    if (!vinculoAlvo) {
-      console.warn('[convidar-usuario] E-mail alvo sem vínculo na empresa informada.', {
-        callerId: callerData.user.id,
-        empresaId: empresaIdNormalizada
-      })
-      return respostaGenerica()
-    }
+    const redirectTo = `${resolverOrigem(requestOrigin)}/reset-password`
 
     const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(emailNormalizado, {
       redirectTo,
@@ -163,9 +183,9 @@ serve(async (req) => {
       }
     }
 
-    return respostaGenerica()
+    return respostaGenerica(requestOrigin)
   } catch (error) {
     console.error('[convidar-usuario] Erro inesperado.', resumirErro(error))
-    return respostaGenerica(500, false)
+    return respostaGenerica(requestOrigin, 500, false)
   }
 })

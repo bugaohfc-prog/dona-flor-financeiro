@@ -84,7 +84,6 @@ export async function listarUsuariosEmpresa(empresaId) {
   return listarUsuariosEmpresaViaFunction(empresaId)
 }
 
-
 export async function adicionarUsuarioEmpresa({ empresaId, email, nome, perfil, senhaProvisoria, criarAuthManual = false }) {
   const emailNormalizado = String(email || '').trim().toLowerCase()
   const nomeNormalizado = String(nome || '').trim() || emailNormalizado.split('@')[0]
@@ -94,8 +93,8 @@ export async function adicionarUsuarioEmpresa({ empresaId, email, nome, perfil, 
   if (!empresaId) throw new Error('Empresa não identificada.')
   if (!emailNormalizado || !emailNormalizado.includes('@')) throw new Error('Informe um e-mail válido.')
 
-  if (criarAuthManual && senhaLimpa.length < 6) {
-    throw new Error('Informe uma senha provisória com pelo menos 6 caracteres.')
+  if (criarAuthManual && senhaLimpa.length < 12) {
+    throw new Error('Informe uma senha provisória com pelo menos 12 caracteres.')
   }
 
   if (criarAuthManual) {
@@ -193,7 +192,6 @@ export async function removerUsuarioEmpresa({ empresaId, usuario }) {
   if (error) throw error
 }
 
-
 const MENSAGEM_ENVIO_ACESSO = 'Envio solicitado. Se o usuário estiver apto, receberá o link por e-mail.'
 
 export async function enviarAcessoUsuarioEmpresa({ empresaId, usuario }) {
@@ -208,14 +206,11 @@ export async function enviarAcessoUsuarioEmpresa({ empresaId, usuario }) {
     throw new Error('Este usuário não possui e-mail válido para envio de acesso.')
   }
 
-  const redirectTo = `${window.location.origin}/reset-password`
-
   const { data: conviteData, error: conviteError } = await supabase.functions.invoke('convidar-usuario', {
     body: {
       empresaId: empresa,
       email,
-      nome: usuario.nome || '',
-      redirectTo
+      nome: usuario.nome || ''
     }
   })
 
@@ -271,8 +266,6 @@ export async function atualizarNomeUsuarioLogado({ userId, email, nome }) {
 
   return { nome: nomeLimpo }
 }
-
-
 
 export async function listarFiliaisUsuariosEmpresa(empresaId) {
   if (!empresaId) return []

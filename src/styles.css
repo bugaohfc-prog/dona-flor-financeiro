@@ -7269,6 +7269,29 @@
 }
 /* Administracao / Configuracoes */
 .admin-page {
+  --admin-brand: #0f766e;
+  --admin-brand-accent: #14b8a6;
+  --admin-brand-surface: #f0fdfa;
+  --admin-brand-surface-soft: #f8fffd;
+  --admin-brand-border: #d8eee9;
+  --admin-brand-border-muted: #cfe8e2;
+  --admin-surface: #ffffff;
+  --admin-surface-soft: #f8fafc;
+  --admin-text: #0f172a;
+  --admin-text-soft: #334155;
+  --admin-muted: #64748b;
+  --admin-secondary: #475569;
+  --admin-border: #e2e8f0;
+  --admin-border-muted: #edf2f0;
+  --admin-border-control: #dbe3ea;
+  --admin-border-card: #dbe7e2;
+  --admin-border-button: #cbd5e1;
+  --admin-info-border: #dbeafe;
+  --admin-info-accent: #2563eb;
+  --admin-lime-accent: #84cc16;
+  --admin-success-surface: #ecfdf5;
+  --admin-muted-surface: #f1f5f9;
+  --admin-pill-radius: 999px;
   display: grid;
   gap: 14px;
   padding-bottom: 112px;
@@ -7288,27 +7311,27 @@
   gap: 14px;
   align-items: start;
   padding: 16px;
-  border: 1px solid #d8eee9;
+  border: 1px solid var(--admin-brand-border);
   border-radius: 18px;
-  background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%);
+  background: linear-gradient(135deg, var(--admin-surface) 0%, var(--admin-brand-surface) 100%);
   box-shadow: 0 14px 34px rgba(15, 118, 110, .08);
 }
 
 .admin-page-hero h1 {
   margin-bottom: 4px !important;
-  color: #0f172a;
+  color: var(--admin-text);
   line-height: 1.08;
 }
 
 .admin-page-hero p {
   margin: 0;
-  color: #475569;
+  color: var(--admin-secondary);
 }
 
 .admin-kicker {
   display: inline-block;
   margin-bottom: 6px;
-  color: #0f766e;
+  color: var(--admin-brand);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: .08em;
@@ -7319,7 +7342,7 @@
   display: grid !important;
   gap: 0 !important;
   overflow: hidden;
-  border-color: #dbe7e2 !important;
+  border-color: var(--admin-border-card) !important;
   border-radius: 18px !important;
   padding: 0 !important;
   box-shadow: 0 12px 30px rgba(15, 23, 42, .055) !important;
@@ -7363,21 +7386,21 @@
   content: "";
   display: block;
   height: 4px;
-  background: linear-gradient(90deg, #0f766e, #14b8a6);
+  background: linear-gradient(90deg, var(--admin-brand), var(--admin-brand-accent));
 }
 
 .settings-admin-page .settings-alert-recipients-card::before {
-  background: linear-gradient(90deg, #0f766e, #2563eb);
+  background: linear-gradient(90deg, var(--admin-brand), var(--admin-info-accent));
 }
 
 .settings-admin-page .settings-recurrence-card::before,
 .settings-admin-page .settings-usage-card::before {
-  background: linear-gradient(90deg, #334155, #0f766e);
+  background: linear-gradient(90deg, var(--admin-text-soft), var(--admin-brand));
 }
 
 .settings-admin-page .settings-costcenter-card::before,
 .settings-admin-page .settings-branches-card::before {
-  background: linear-gradient(90deg, #0f766e, #84cc16);
+  background: linear-gradient(90deg, var(--admin-brand), var(--admin-lime-accent));
 }
 
 .settings-admin-page .admin-card-list {
@@ -7385,7 +7408,7 @@
 }
 
 .settings-admin-page .admin-recipient-form {
-  background: linear-gradient(135deg, #f8fffd 0%, #f8fafc 100%);
+  background: linear-gradient(135deg, var(--admin-brand-surface-soft) 0%, var(--admin-surface-soft) 100%);
 }
 
 .settings-admin-page .admin-summary-strip {
@@ -7403,9 +7426,9 @@
   margin: 0 !important;
   padding: 14px 16px !important;
   border: 0 !important;
-  border-bottom: 1px solid #edf2f0 !important;
+  border-bottom: 1px solid var(--admin-border-muted) !important;
   border-radius: 0 !important;
-  background: #ffffff !important;
+  background: var(--admin-surface) !important;
   box-shadow: none !important;
   display: flex !important;
   align-items: center !important;
@@ -7420,7 +7443,7 @@
   align-items: center !important;
   gap: 10px !important;
   min-width: 0 !important;
-  color: #0f172a !important;
+  color: var(--admin-text) !important;
   font-weight: 900 !important;
   line-height: 1.15 !important;
 }
@@ -7432,7 +7455,7 @@
 }
 
 .admin-page .admin-section-title small {
-  color: #64748b;
+  color: var(--admin-muted);
   font-size: 12px;
   font-weight: 700;
 }
@@ -7444,8 +7467,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #ecfdf5;
-  color: #0f766e;
+  background: var(--admin-success-surface);
+  color: var(--admin-brand);
   font-size: 18px !important;
   flex: 0 0 auto;
 }
@@ -7461,7 +7484,7 @@
 .admin-page .admin-section-actions em {
   max-width: 150px;
   overflow: hidden;
-  color: #0f766e;
+  color: var(--admin-brand);
   font-size: 12px;
   font-style: normal;
   font-weight: 900;
@@ -7472,10 +7495,10 @@
 .admin-page .admin-section-actions strong {
   width: 32px;
   height: 32px;
-  border: 1px solid #cfe8e2;
-  border-radius: 999px;
-  background: #f8fffd;
-  color: #0f766e !important;
+  border: 1px solid var(--admin-brand-border-muted);
+  border-radius: var(--admin-pill-radius);
+  background: var(--admin-brand-surface-soft);
+  color: var(--admin-brand) !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -7510,7 +7533,7 @@
 .admin-field-full > span,
 .admin-user-create-grid label > span,
 .admin-branch-create-form label > span {
-  color: #475569;
+  color: var(--admin-secondary);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: .04em;
@@ -7520,7 +7543,7 @@
 .admin-page input,
 .admin-page select {
   margin-bottom: 0 !important;
-  border-color: #dbe3ea !important;
+  border-color: var(--admin-border-control) !important;
   border-radius: 12px !important;
   min-height: 42px;
 }
@@ -7531,9 +7554,9 @@
   justify-content: space-between;
   gap: 12px;
   padding: 11px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--admin-border);
   border-radius: 14px;
-  background: #f8fafc;
+  background: var(--admin-surface-soft);
 }
 
 .admin-switch-row > div {
@@ -7542,7 +7565,7 @@
 }
 
 .admin-switch-row small {
-  color: #64748b;
+  color: var(--admin-muted);
   font-size: 12px;
   font-weight: 700;
 }
@@ -7557,16 +7580,16 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 10px;
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--admin-info-border);
   border-radius: 14px;
-  background: #f8fafc;
+  background: var(--admin-surface-soft);
 }
 
 .admin-summary-strip span {
-  border: 1px solid #e2e8f0;
-  border-radius: 999px;
-  background: #ffffff;
-  color: #475569;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-pill-radius);
+  background: var(--admin-surface);
+  color: var(--admin-secondary);
   padding: 6px 9px;
   font-size: 12px;
   font-weight: 800;
@@ -7576,9 +7599,9 @@
   display: grid;
   gap: 12px;
   padding: 12px;
-  border: 1px solid #d8eee9;
+  border: 1px solid var(--admin-brand-border);
   border-radius: 16px;
-  background: #f8fffd;
+  background: var(--admin-brand-surface-soft);
 }
 
 .admin-chip-grid {
@@ -7593,9 +7616,9 @@
   justify-content: space-between;
   gap: 8px;
   padding: 9px 10px;
-  border: 1px solid #dbe3ea;
+  border: 1px solid var(--admin-border-control);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--admin-surface);
   font-weight: 800;
 }
 
@@ -7609,14 +7632,14 @@
   display: grid !important;
   gap: 11px !important;
   padding: 13px !important;
-  border: 1px solid #e2e8f0 !important;
+  border: 1px solid var(--admin-border) !important;
   border-radius: 16px !important;
-  background: #ffffff !important;
+  background: var(--admin-surface) !important;
   box-shadow: 0 8px 20px rgba(15, 23, 42, .045) !important;
 }
 
 .admin-item-card.inactive {
-  background: #f8fafc !important;
+  background: var(--admin-surface-soft) !important;
 }
 
 .admin-item-head {
@@ -7635,13 +7658,13 @@
 .admin-item-head strong,
 .admin-item-card h3 {
   margin: 0;
-  color: #0f172a;
+  color: var(--admin-text);
   font-size: 16px;
 }
 
 .admin-item-head small,
 .admin-item-card small {
-  color: #64748b;
+  color: var(--admin-muted);
   font-size: 12px;
   font-weight: 700;
 }
@@ -7653,17 +7676,17 @@
 }
 
 .admin-item-tags span {
-  border: 1px solid #dbe3ea;
-  border-radius: 999px;
-  background: #f8fafc;
-  color: #475569;
+  border: 1px solid var(--admin-border-control);
+  border-radius: var(--admin-pill-radius);
+  background: var(--admin-surface-soft);
+  color: var(--admin-secondary);
   padding: 4px 8px;
   font-size: 12px;
   font-weight: 800;
 }
 
 .admin-status-badge {
-  border-radius: 999px;
+  border-radius: var(--admin-pill-radius);
   padding: 5px 9px;
   font-size: 12px;
   font-weight: 900;
@@ -7672,14 +7695,14 @@
 
 .admin-status-badge.success {
   border: 1px solid #a7f3d0;
-  background: #ecfdf5;
+  background: var(--admin-success-surface);
   color: #047857;
 }
 
 .admin-status-badge.muted {
-  border: 1px solid #cbd5e1;
-  background: #f1f5f9;
-  color: #64748b;
+  border: 1px solid var(--admin-border-button);
+  background: var(--admin-muted-surface);
+  color: var(--admin-muted);
 }
 
 .admin-actions-row {
@@ -7695,7 +7718,7 @@
 
 .admin-btn {
   min-height: 36px;
-  border-radius: 999px;
+  border-radius: var(--admin-pill-radius);
   padding: 8px 13px;
   font-size: 13px;
   font-weight: 900;
@@ -7712,15 +7735,15 @@
 }
 
 .admin-btn-primary {
-  border: 1px solid #0f766e;
-  background: #0f766e;
-  color: #ffffff;
+  border: 1px solid var(--admin-brand);
+  background: var(--admin-brand);
+  color: var(--admin-surface);
 }
 
 .admin-btn-secondary {
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #334155;
+  border: 1px solid var(--admin-border-button);
+  background: var(--admin-surface);
+  color: var(--admin-text-soft);
 }
 
 .admin-btn-danger {
@@ -7755,9 +7778,9 @@
   grid-template-columns: minmax(150px, .9fr) minmax(220px, 1.1fr) minmax(150px, .8fr) minmax(130px, .7fr) auto !important;
   gap: 10px !important;
   padding: 12px !important;
-  border: 1px solid #d8eee9 !important;
+  border: 1px solid var(--admin-brand-border) !important;
   border-radius: 16px !important;
-  background: #f8fffd !important;
+  background: var(--admin-brand-surface-soft) !important;
   align-items: end !important;
 }
 
@@ -7768,7 +7791,7 @@
 .users-security-card button {
   width: auto !important;
   min-height: 36px !important;
-  border-radius: 999px !important;
+  border-radius: var(--admin-pill-radius) !important;
   padding: 8px 13px !important;
   font-weight: 900 !important;
 }

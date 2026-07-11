@@ -9,6 +9,11 @@ export default function AppShellStyles() {
                   --df-shell-brand: #0f766e;
                   --df-shell-accent: #14b8a6;
                   --df-shell-on-brand: #ffffff;
+                  --df-shell-surface: #ffffff;
+                  --df-shell-text: #0f172a;
+                  --df-shell-border: #e5e7eb;
+                  --df-shell-mobile-border: #d8eee9;
+                  --df-shell-control-shadow: 0 6px 16px rgba(15,23,42,.08);
                   --df-shell-panel-radius: 24px;
                   --df-shell-control-radius: 14px;
                   --df-shell-sidebar-shadow: 0 24px 60px rgba(15, 118, 110, 0.28);
@@ -881,18 +886,18 @@ export default function AppShellStyles() {
                 .mobile-menu-trigger {
                   width: 40px !important;
                   height: 40px !important;
-                  border-radius: 14px !important;
-                  background: #ffffff !important;
-                  color: #0f172a !important;
-                  border: 1px solid #e5e7eb !important;
-                  box-shadow: 0 6px 16px rgba(15,23,42,.08) !important;
+                  border-radius: var(--df-shell-control-radius) !important;
+                  background: var(--df-shell-surface) !important;
+                  color: var(--df-shell-text) !important;
+                  border: 1px solid var(--df-shell-border) !important;
+                  box-shadow: var(--df-shell-control-shadow) !important;
                 }
 
                 .mobile-menu-panel {
                   width: min(92vw, 360px) !important;
                   max-height: calc(100vh - 28px) !important;
                   overflow-y: auto !important;
-                  border-radius: 24px !important;
+                  border-radius: var(--df-shell-panel-radius) !important;
                   padding: 16px !important;
                   box-sizing: border-box !important;
                 }
@@ -907,7 +912,7 @@ export default function AppShellStyles() {
                   align-items: center !important;
                   justify-content: space-between !important;
                   padding: 8px 2px !important;
-                  color: #0f766e !important;
+                  color: var(--df-shell-brand) !important;
                   font-size: 12px !important;
                   font-weight: 900 !important;
                   letter-spacing: .05em !important;
@@ -919,9 +924,9 @@ export default function AppShellStyles() {
                 .mobile-menu-group button,
                 .mobile-menu-panel button {
                   border-radius: 16px !important;
-                  background: #ffffff !important;
-                  border: 1px solid #e5e7eb !important;
-                  color: #0f172a !important;
+                  background: var(--df-shell-surface) !important;
+                  border: 1px solid var(--df-shell-border) !important;
+                  color: var(--df-shell-text) !important;
                   box-shadow: none !important;
                 }
 
@@ -1538,10 +1543,10 @@ export default function AppShellStyles() {
                 white-space: nowrap !important;
               }
               .mobile-menu-trigger {
-                background: #ffffff !important;
-                color: #0f766e !important;
-                border: 1px solid #d8eee9 !important;
-                box-shadow: 0 6px 16px rgba(15,23,42,.08) !important;
+                background: var(--df-shell-surface) !important;
+                color: var(--df-shell-brand) !important;
+                border: 1px solid var(--df-shell-mobile-border) !important;
+                box-shadow: var(--df-shell-control-shadow) !important;
                 display: inline-flex !important;
                 align-items: center !important;
                 justify-content: center !important;

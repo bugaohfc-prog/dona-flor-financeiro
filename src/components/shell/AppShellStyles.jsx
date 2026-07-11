@@ -3,6 +3,17 @@ export default function AppShellStyles() {
     <>
       <style>
               {`
+                :root {
+                  --df-shell-page-bg: #eef7f5;
+                  --df-shell-sidebar-start: #064e3b;
+                  --df-shell-brand: #0f766e;
+                  --df-shell-accent: #14b8a6;
+                  --df-shell-on-brand: #ffffff;
+                  --df-shell-panel-radius: 24px;
+                  --df-shell-control-radius: 14px;
+                  --df-shell-sidebar-shadow: 0 24px 60px rgba(15, 118, 110, 0.28);
+                }
+
                 .print-header,
                 .print-footer {
                   display: none;
@@ -12,7 +23,7 @@ export default function AppShellStyles() {
                 .desktop-quick-actions { display: none; }
 
                 @media (min-width: 980px) {
-                  body { background: #eef7f5 !important; }
+                  body { background: var(--df-shell-page-bg) !important; }
 
                   .app-page {
                     max-width: none !important;
@@ -21,7 +32,7 @@ export default function AppShellStyles() {
                     margin: 0 !important;
                     padding: 24px 32px 80px 300px !important;
                     box-sizing: border-box !important;
-                    background: linear-gradient(180deg, #f8fafc 0%, #eef7f5 100%) !important;
+                    background: linear-gradient(180deg, #f8fafc 0%, var(--df-shell-page-bg) 100%) !important;
                   }
 
                   .desktop-sidebar {
@@ -32,10 +43,10 @@ export default function AppShellStyles() {
                     bottom: 24px;
                     width: 244px;
                     padding: 18px;
-                    border-radius: 24px;
-                    background: linear-gradient(180deg, #064e3b 0%, #0f766e 48%, #14b8a6 100%);
-                    color: white;
-                    box-shadow: 0 24px 60px rgba(15, 118, 110, 0.28);
+                    border-radius: var(--df-shell-panel-radius);
+                    background: linear-gradient(180deg, var(--df-shell-sidebar-start) 0%, var(--df-shell-brand) 48%, var(--df-shell-accent) 100%);
+                    color: var(--df-shell-on-brand);
+                    box-shadow: var(--df-shell-sidebar-shadow);
                     z-index: 60;
                     flex-direction: column;
                     gap: 14px;
@@ -77,7 +88,7 @@ export default function AppShellStyles() {
                     border: 1px solid transparent;
                     background: transparent;
                     color: rgba(255,255,255,.92);
-                    border-radius: 14px;
+                    border-radius: var(--df-shell-control-radius);
                     padding: 11px 12px;
                     text-align: left;
                     font-weight: 800;

@@ -7530,6 +7530,18 @@
   --admin-success-surface: #ecfdf5;
   --admin-muted-surface: #f1f5f9;
   --admin-pill-radius: 999px;
+  --admin-success-border: #a7f3d0;
+  --admin-success-text: #047857;
+  --admin-danger-border: #fecdd3;
+  --admin-danger-surface: #fff1f2;
+  --admin-danger-text: #be123c;
+  --admin-danger-text-strong: #b91c1c;
+  --admin-overlay-border: rgba(15, 118, 110, .16);
+  --admin-overlay-surface: rgba(255, 255, 255, .92);
+  --admin-shadow-hero: 0 14px 34px rgba(15, 118, 110, .08);
+  --admin-shadow-card: 0 12px 30px rgba(15, 23, 42, .055);
+  --admin-shadow-soft: 0 8px 20px rgba(15, 23, 42, .045);
+  --admin-shadow-overlay: 0 14px 34px rgba(15, 23, 42, .12);
   display: grid;
   gap: 14px;
   padding-bottom: 112px;
@@ -7552,7 +7564,7 @@
   border: 1px solid var(--admin-brand-border);
   border-radius: 18px;
   background: linear-gradient(135deg, var(--admin-surface) 0%, var(--admin-brand-surface) 100%);
-  box-shadow: 0 14px 34px rgba(15, 118, 110, .08);
+  box-shadow: var(--admin-shadow-hero);
 }
 
 .admin-page-hero h1 {
@@ -7583,7 +7595,7 @@
   border-color: var(--admin-border-card) !important;
   border-radius: 18px !important;
   padding: 0 !important;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, .055) !important;
+  box-shadow: var(--admin-shadow-card) !important;
 }
 
 .settings-admin-page {
@@ -7873,7 +7885,7 @@
   border: 1px solid var(--admin-border) !important;
   border-radius: 16px !important;
   background: var(--admin-surface) !important;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, .045) !important;
+  box-shadow: var(--admin-shadow-soft) !important;
 }
 
 .admin-item-card.inactive {
@@ -7932,9 +7944,9 @@
 }
 
 .admin-status-badge.success {
-  border: 1px solid #a7f3d0;
+  border: 1px solid var(--admin-success-border);
   background: var(--admin-success-surface);
-  color: #047857;
+  color: var(--admin-success-text);
 }
 
 .admin-status-badge.muted {
@@ -7985,9 +7997,9 @@
 }
 
 .admin-btn-danger {
-  border: 1px solid #fecdd3;
-  background: #fff1f2;
-  color: #be123c;
+  border: 1px solid var(--admin-danger-border);
+  background: var(--admin-danger-surface);
+  color: var(--admin-danger-text);
 }
 
 .admin-sticky-actions {
@@ -7997,16 +8009,16 @@
   display: flex;
   justify-content: flex-end;
   padding: 12px;
-  border: 1px solid rgba(15, 118, 110, .16);
+  border: 1px solid var(--admin-overlay-border);
   border-radius: 18px;
-  background: rgba(255, 255, 255, .92);
-  box-shadow: 0 14px 34px rgba(15, 23, 42, .12);
+  background: var(--admin-overlay-surface);
+  box-shadow: var(--admin-shadow-overlay);
   backdrop-filter: blur(10px);
 }
 
 .admin-error-text {
   margin: 0;
-  color: #b91c1c;
+  color: var(--admin-danger-text-strong);
   font-size: 13px;
   font-weight: 800;
 }

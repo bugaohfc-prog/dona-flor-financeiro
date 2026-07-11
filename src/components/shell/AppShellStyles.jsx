@@ -23,6 +23,11 @@ export default function AppShellStyles() {
                   --df-shell-control-hover: #f8fafc;
                   --df-shell-control-hover-border: #94a3b8;
                   --df-shell-pill-radius: 999px;
+                  --df-shell-primary-border: #99f6e4;
+                  --df-shell-primary-surface: #f0fdfa;
+                  --df-shell-danger-border: #fecaca;
+                  --df-shell-danger-surface: #fff1f2;
+                  --df-shell-danger-text: #be123c;
                   --df-shell-panel-radius: 24px;
                   --df-shell-control-radius: 14px;
                   --df-shell-sidebar-shadow: 0 24px 60px rgba(15, 118, 110, 0.28);
@@ -1246,17 +1251,17 @@ export default function AppShellStyles() {
               .account-actions button:first-child,
               .notes-list-dashboard button:first-child,
               .agenda-card-polished button {
-                border-color: #99f6e4 !important;
-                background: #f0fdfa !important;
-                color: #0f766e !important;
+                border-color: var(--df-shell-primary-border) !important;
+                background: var(--df-shell-primary-surface) !important;
+                color: var(--df-shell-brand) !important;
               }
 
               .account-actions button:last-child,
               .notes-list-dashboard button:last-child,
               .users-page-section button[title*="Remover"] {
-                border-color: #fecaca !important;
-                background: #fff1f2 !important;
-                color: #be123c !important;
+                border-color: var(--df-shell-danger-border) !important;
+                background: var(--df-shell-danger-surface) !important;
+                color: var(--df-shell-danger-text) !important;
               }
 
               /* FECHAMENTO MOBILE: alinhamentos, header, chips e menu */

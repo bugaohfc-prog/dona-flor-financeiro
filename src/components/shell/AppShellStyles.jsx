@@ -1419,7 +1419,7 @@ export default function AppShellStyles() {
                 align-items: center !important;
                 background: #eef6ff !important;
                 border: 1px solid #bfdbfe !important;
-                border-radius: 999px !important;
+                border-radius: var(--df-shell-pill-radius) !important;
                 color: #1d4ed8 !important;
                 display: inline-flex !important;
                 flex: 0 0 auto !important;
@@ -1443,7 +1443,7 @@ export default function AppShellStyles() {
                 min-width: 220px !important;
               }
               .accounts-sort-control span {
-                color: #64748b !important;
+                color: var(--df-shell-muted) !important;
                 flex: 0 0 auto !important;
                 font-size: 12px !important;
                 font-weight: 900 !important;
@@ -1454,7 +1454,7 @@ export default function AppShellStyles() {
               }
               .account-payment-real-panel {
                 align-content: start !important;
-                color: #0f172a !important;
+                color: var(--df-shell-text) !important;
                 display: grid !important;
                 gap: 3px !important;
                 grid-column: 1 / -1 !important;
@@ -1472,7 +1472,7 @@ export default function AppShellStyles() {
               }
               .account-payment-expected-value,
               .account-payment-adjustment {
-                color: #64748b !important;
+                color: var(--df-shell-muted) !important;
                 display: block !important;
                 font-size: 13px !important;
                 font-weight: 800 !important;

@@ -10518,6 +10518,54 @@
 }
 
 .relatorios-contas-page {
+  --rc-page-text: #17212b;
+  --rc-white: #ffffff;
+  --rc-hero-soft: #f3fbf8;
+  --rc-brand-badge: #dff7ef;
+  --rc-brand: #0f766e;
+  --rc-title: #102a2a;
+  --rc-description: #52616b;
+  --rc-button-text: #24423f;
+  --rc-control-border: #d7e8e3;
+  --rc-flow-border: #dfe9e6;
+  --rc-muted: #64748b;
+  --rc-active-soft: #e4f8f2;
+  --rc-active-border: #a9ded2;
+  --rc-card-border: #dce8e4;
+  --rc-heading: #173332;
+  --rc-toggle-border: #cce2dc;
+  --rc-toggle-soft: #f6fbf9;
+  --rc-label: #475569;
+  --rc-divider-soft: #eef3f1;
+  --rc-surface-soft: #f8fafc;
+  --rc-neutral-border: #cbd5e1;
+  --rc-neutral-text: #334155;
+  --rc-warning-border: #fde68a;
+  --rc-warning-soft: #fffbeb;
+  --rc-warning-text: #92400e;
+  --rc-overdue-soft: #fff1f2;
+  --rc-overdue-border: #fecdd3;
+  --rc-paid-soft: #ecfdf5;
+  --rc-paid-border: #bbf7d0;
+  --rc-meta-soft: #f1f5f9;
+  --rc-group-border: #e0e9e6;
+  --rc-group-header: #f7fbfa;
+  --rc-table-head: #fbfdfc;
+  --rc-row-border: #edf2f0;
+  --rc-status-overdue-soft: #ffe4e6;
+  --rc-status-overdue-text: #be123c;
+  --rc-status-open-soft: #fef3c7;
+  --rc-status-paid-soft: #dcfce7;
+  --rc-status-paid-text: #166534;
+  --rc-empty-border: #cfe1dc;
+  --rc-empty-soft: #f8fbfa;
+  --rc-hero-border: rgba(15, 118, 110, 0.14);
+  --rc-hero-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --rc-button-shadow: 0 12px 22px rgba(15, 118, 110, 0.18);
+  --rc-card-shadow: 0 16px 36px rgba(15, 23, 42, 0.07);
+  --rc-focus-ring: 0 0 0 3px rgba(15, 118, 110, 0.12);
+  --rc-dropdown-shadow: 0 18px 35px rgba(15, 23, 42, 0.14);
+  --rc-summary-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -10525,7 +10573,7 @@
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 0 132px;
-  color: #17212b;
+  color: var(--rc-page-text);
 }
 
 .relatorios-contas-hero {
@@ -10534,10 +10582,10 @@
   gap: 18px;
   align-items: center;
   padding: 22px;
-  border: 1px solid rgba(15, 118, 110, 0.14);
+  border: 1px solid var(--rc-hero-border);
   border-radius: 24px;
-  background: linear-gradient(135deg, #ffffff 0%, #f3fbf8 100%);
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  background: linear-gradient(135deg, var(--rc-white) 0%, var(--rc-hero-soft) 100%);
+  box-shadow: var(--rc-hero-shadow);
 }
 
 .relatorios-contas-hero-copy {
@@ -10551,15 +10599,15 @@
   min-height: 28px;
   padding: 0 10px;
   border-radius: 999px;
-  background: #dff7ef;
-  color: #0f766e;
+  background: var(--rc-brand-badge);
+  color: var(--rc-brand);
   font-size: 12px;
   font-weight: 800;
 }
 
 .relatorios-contas-hero-copy h1 {
   margin: 10px 0 6px;
-  color: #102a2a;
+  color: var(--rc-title);
   font-size: clamp(28px, 4vw, 42px);
   line-height: 1.05;
   letter-spacing: 0;
@@ -10568,7 +10616,7 @@
 .relatorios-contas-hero-copy p {
   max-width: 720px;
   margin: 0;
-  color: #52616b;
+  color: var(--rc-description);
   font-size: 15px;
   line-height: 1.55;
 }
@@ -10606,15 +10654,15 @@
 }
 
 .relatorios-contas-btn-primary {
-  background: #0f766e;
-  color: #ffffff;
-  box-shadow: 0 12px 22px rgba(15, 118, 110, 0.18);
+  background: var(--rc-brand);
+  color: var(--rc-white);
+  box-shadow: var(--rc-button-shadow);
 }
 
 .relatorios-contas-btn-secondary {
-  background: #ffffff;
-  color: #24423f;
-  border-color: #d7e8e3;
+  background: var(--rc-white);
+  color: var(--rc-button-text);
+  border-color: var(--rc-control-border);
 }
 
 .relatorios-contas-flow {
@@ -10629,27 +10677,27 @@
   justify-content: center;
   min-height: 38px;
   padding: 0 12px;
-  border: 1px solid #dfe9e6;
+  border: 1px solid var(--rc-flow-border);
   border-radius: 999px;
-  background: #ffffff;
-  color: #64748b;
+  background: var(--rc-white);
+  color: var(--rc-muted);
   font-size: 12px;
   font-weight: 800;
   text-align: center;
 }
 
 .relatorios-contas-flow span.is-active {
-  background: #e4f8f2;
-  color: #0f766e;
-  border-color: #a9ded2;
+  background: var(--rc-active-soft);
+  color: var(--rc-brand);
+  border-color: var(--rc-active-border);
 }
 
 .relatorios-contas-card {
   padding: 18px;
-  border: 1px solid #dce8e4;
+  border: 1px solid var(--rc-card-border);
   border-radius: 22px;
-  background: #ffffff;
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.07);
+  background: var(--rc-white);
+  box-shadow: var(--rc-card-shadow);
 }
 
 .relatorios-contas-section-header {
@@ -10662,7 +10710,7 @@
 
 .relatorios-contas-section-header h2 {
   margin: 0;
-  color: #173332;
+  color: var(--rc-heading);
   font-size: 20px;
   line-height: 1.2;
   letter-spacing: 0;
@@ -10670,7 +10718,7 @@
 
 .relatorios-contas-section-header p {
   margin: 4px 0 0;
-  color: #64748b;
+  color: var(--rc-muted);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -10680,9 +10728,9 @@
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  border: 1px solid #cce2dc;
-  background: #f6fbf9;
-  color: #0f766e;
+  border: 1px solid var(--rc-toggle-border);
+  background: var(--rc-toggle-soft);
+  color: var(--rc-brand);
   font-size: 18px;
   font-weight: 900;
   cursor: pointer;
@@ -10708,14 +10756,14 @@
   width: 100%;
   margin: 0 0 7px;
   padding: 0;
-  color: #475569;
+  color: var(--rc-label);
   font-size: 12px;
   font-weight: 900;
 }
 
 .relatorios-contas-kind-field > p {
   margin: 8px 0 0;
-  color: #64748b;
+  color: var(--rc-muted);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -10735,19 +10783,19 @@
   width: 100%;
   min-height: 42px;
   padding: 0 12px;
-  border: 1px solid #d7e8e3;
+  border: 1px solid var(--rc-control-border);
   border-radius: 12px;
-  background: #ffffff;
-  color: #173332;
+  background: var(--rc-white);
+  color: var(--rc-heading);
   font-size: 14px;
   cursor: pointer;
 }
 
 .relatorios-contas-kind-trigger.is-open,
 .relatorios-contas-kind-trigger:focus-visible {
-  border-color: #0f766e;
+  border-color: var(--rc-brand);
   outline: 0;
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+  box-shadow: var(--rc-focus-ring);
 }
 
 .relatorios-contas-kind-trigger span {
@@ -10759,7 +10807,7 @@
 }
 
 .relatorios-contas-kind-trigger strong {
-  color: #0f766e;
+  color: var(--rc-brand);
   font-size: 11px;
   line-height: 1;
 }
@@ -10772,26 +10820,26 @@
   z-index: 20;
   max-height: 320px;
   overflow: auto;
-  border: 1px solid #d7e8e3;
+  border: 1px solid var(--rc-control-border);
   border-radius: 12px;
-  background: #ffffff;
-  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.14);
+  background: var(--rc-white);
+  box-shadow: var(--rc-dropdown-shadow);
 }
 
 .relatorios-contas-kind-actions {
   display: flex;
   gap: 6px;
   padding: 8px;
-  border-bottom: 1px solid #eef3f1;
-  background: #f8fafc;
+  border-bottom: 1px solid var(--rc-divider-soft);
+  background: var(--rc-surface-soft);
 }
 
 .relatorios-contas-kind-actions button {
   flex: 1 1 0;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--rc-neutral-border);
   border-radius: 999px;
-  background: #ffffff;
-  color: #334155;
+  background: var(--rc-white);
+  color: var(--rc-neutral-text);
   font-size: 11px;
   font-weight: 800;
   line-height: 1.15;
@@ -10800,8 +10848,8 @@
 }
 
 .relatorios-contas-kind-actions button:hover {
-  border-color: #0f766e;
-  color: #0f766e;
+  border-color: var(--rc-brand);
+  color: var(--rc-brand);
 }
 
 .relatorios-contas-kind-option {
@@ -10812,8 +10860,8 @@
   min-width: 0;
   min-height: 42px;
   padding: 8px 12px;
-  border-bottom: 1px solid #eef3f1;
-  background: #ffffff;
+  border-bottom: 1px solid var(--rc-divider-soft);
+  background: var(--rc-white);
   cursor: pointer;
 }
 
@@ -10822,13 +10870,13 @@
 }
 
 .relatorios-contas-kind-option:hover {
-  background: #f6fbf9;
+  background: var(--rc-toggle-soft);
 }
 
 .relatorios-contas-kind-option input {
   width: 16px;
   height: 16px;
-  accent-color: #0f766e;
+  accent-color: var(--rc-brand);
 }
 
 .relatorios-contas-kind-option span {
@@ -10842,14 +10890,14 @@
 }
 
 .relatorios-contas-kind-option strong {
-  color: #173332;
+  color: var(--rc-heading);
   font-size: 13px;
   line-height: 1.2;
 }
 
 .relatorios-contas-kind-option small {
   margin-top: 2px;
-  color: #64748b;
+  color: var(--rc-muted);
   font-size: 11px;
   line-height: 1.25;
 }
@@ -10857,10 +10905,10 @@
 .relatorios-contas-kind-warning {
   margin-top: 8px;
   padding: 8px 10px;
-  border: 1px solid #fde68a;
+  border: 1px solid var(--rc-warning-border);
   border-radius: 12px;
-  background: #fffbeb;
-  color: #92400e;
+  background: var(--rc-warning-soft);
+  color: var(--rc-warning-text);
   font-size: 12px;
   font-weight: 800;
 }
@@ -10873,7 +10921,7 @@
 }
 
 .relatorios-contas-filters label > span {
-  color: #475569;
+  color: var(--rc-label);
   font-size: 12px;
   font-weight: 800;
 }
@@ -10883,10 +10931,10 @@
   width: 100%;
   min-width: 0;
   min-height: 42px;
-  border: 1px solid #d7e8e3;
+  border: 1px solid var(--rc-control-border);
   border-radius: 12px;
-  background: #ffffff;
-  color: #173332;
+  background: var(--rc-white);
+  color: var(--rc-heading);
   padding: 0 12px;
   font-size: 14px;
 }
@@ -10900,8 +10948,8 @@
   min-width: 0;
   min-height: 52px;
   padding: 8px 12px;
-  border-bottom: 1px solid #eef3f1;
-  background: #ffffff;
+  border-bottom: 1px solid var(--rc-divider-soft);
+  background: var(--rc-white);
   box-sizing: border-box;
   cursor: pointer;
   text-align: left;
@@ -10915,7 +10963,7 @@
   margin: 0;
   padding: 0;
   flex: 0 0 18px;
-  accent-color: #0f766e;
+  accent-color: var(--rc-brand);
 }
 
 .relatorios-contas-filters .relatorios-contas-kind-option:last-child {
@@ -10931,7 +10979,7 @@
 
 .relatorios-contas-filters .relatorios-contas-kind-option strong {
   display: block;
-  color: #173332;
+  color: var(--rc-heading);
   font-size: 13px;
   font-weight: 800;
   line-height: 1.2;
@@ -10940,7 +10988,7 @@
 .relatorios-contas-filters .relatorios-contas-kind-option small {
   display: block;
   margin-top: 2px;
-  color: #64748b;
+  color: var(--rc-muted);
   font-size: 11px;
   font-weight: 600;
   line-height: 1.25;
@@ -10959,16 +11007,16 @@
 .relatorios-contas-summary article {
   min-width: 0;
   padding: 16px;
-  border: 1px solid #dce8e4;
+  border: 1px solid var(--rc-card-border);
   border-radius: 20px;
-  background: #ffffff;
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+  background: var(--rc-white);
+  box-shadow: var(--rc-summary-shadow);
 }
 
 .relatorios-contas-summary span,
 .relatorios-contas-summary small {
   display: block;
-  color: #64748b;
+  color: var(--rc-muted);
   font-size: 12px;
   font-weight: 800;
 }
@@ -10976,25 +11024,25 @@
 .relatorios-contas-summary strong {
   display: block;
   margin: 8px 0 6px;
-  color: #173332;
+  color: var(--rc-heading);
   font-size: 22px;
   line-height: 1.1;
   overflow-wrap: anywhere;
 }
 
 .relatorios-contas-summary .is-overdue {
-  background: #fff1f2;
-  border-color: #fecdd3;
+  background: var(--rc-overdue-soft);
+  border-color: var(--rc-overdue-border);
 }
 
 .relatorios-contas-summary .is-open {
-  background: #fffbeb;
-  border-color: #fde68a;
+  background: var(--rc-warning-soft);
+  border-color: var(--rc-warning-border);
 }
 
 .relatorios-contas-summary .is-paid {
-  background: #ecfdf5;
-  border-color: #bbf7d0;
+  background: var(--rc-paid-soft);
+  border-color: var(--rc-paid-border);
 }
 
 .relatorios-contas-preview-meta {
@@ -11010,14 +11058,14 @@
   min-height: 30px;
   padding: 0 10px;
   border-radius: 999px;
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--rc-meta-soft);
+  color: var(--rc-label);
   font-size: 12px;
 }
 
 .relatorios-contas-preview-meta strong {
   margin-left: 4px;
-  color: #173332;
+  color: var(--rc-heading);
 }
 
 .relatorios-contas-groups {
@@ -11027,10 +11075,10 @@
 }
 
 .relatorios-contas-group {
-  border: 1px solid #e0e9e6;
+  border: 1px solid var(--rc-group-border);
   border-radius: 18px;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--rc-white);
 }
 
 .relatorios-contas-group > header {
@@ -11039,18 +11087,18 @@
   gap: 12px;
   align-items: center;
   padding: 12px 14px;
-  background: #f7fbfa;
-  border-bottom: 1px solid #e0e9e6;
+  background: var(--rc-group-header);
+  border-bottom: 1px solid var(--rc-group-border);
 }
 
 .relatorios-contas-group h3 {
   margin: 0;
-  color: #173332;
+  color: var(--rc-heading);
   font-size: 16px;
 }
 
 .relatorios-contas-group > header span {
-  color: #64748b;
+  color: var(--rc-muted);
   font-size: 12px;
   font-weight: 800;
 }
@@ -11070,16 +11118,16 @@
 }
 
 .relatorios-contas-table-head {
-  background: #fbfdfc;
-  color: #64748b;
+  background: var(--rc-table-head);
+  color: var(--rc-muted);
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .relatorios-contas-row {
-  border-top: 1px solid #edf2f0;
-  color: #334155;
+  border-top: 1px solid var(--rc-row-border);
+  color: var(--rc-neutral-text);
   font-size: 13px;
 }
 
@@ -11090,14 +11138,14 @@
 
 .relatorios-contas-row strong {
   display: block;
-  color: #173332;
+  color: var(--rc-heading);
   overflow-wrap: anywhere;
 }
 
 .relatorios-contas-row small {
   display: block;
   margin-top: 3px;
-  color: #64748b;
+  color: var(--rc-muted);
   overflow-wrap: anywhere;
 }
 
@@ -11114,31 +11162,31 @@
 }
 
 .relatorios-contas-status.is-overdue {
-  background: #ffe4e6;
-  color: #be123c;
+  background: var(--rc-status-overdue-soft);
+  color: var(--rc-status-overdue-text);
 }
 
 .relatorios-contas-status.is-open {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--rc-status-open-soft);
+  color: var(--rc-warning-text);
 }
 
 .relatorios-contas-status.is-paid {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--rc-status-paid-soft);
+  color: var(--rc-status-paid-text);
 }
 
 .relatorios-contas-empty {
   padding: 18px;
-  border: 1px dashed #cfe1dc;
+  border: 1px dashed var(--rc-empty-border);
   border-radius: 18px;
-  background: #f8fbfa;
-  color: #475569;
+  background: var(--rc-empty-soft);
+  color: var(--rc-label);
 }
 
 .relatorios-contas-empty strong {
   display: block;
-  color: #173332;
+  color: var(--rc-heading);
   margin-bottom: 4px;
 }
 
@@ -11155,14 +11203,14 @@
 
 .relatorios-contas-export-card h2 {
   margin: 0;
-  color: #173332;
+  color: var(--rc-heading);
   font-size: 20px;
   line-height: 1.2;
 }
 
 .relatorios-contas-export-card p {
   margin: 4px 0 0;
-  color: #64748b;
+  color: var(--rc-muted);
   font-size: 13px;
 }
 

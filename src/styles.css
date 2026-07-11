@@ -8602,6 +8602,19 @@
 
 /* Férias */
 .ferias-page {
+  --ferias-brand: #0f766e;
+  --ferias-brand-accent: #14b8a6;
+  --ferias-brand-surface: #f0fdfa;
+  --ferias-brand-border: rgba(13, 148, 136, .24);
+  --ferias-brand-border-strong: rgba(13, 148, 136, .42);
+  --ferias-surface: #ffffff;
+  --ferias-surface-soft: #f8fafc;
+  --ferias-text: #0f172a;
+  --ferias-text-soft: #334155;
+  --ferias-muted: #64748b;
+  --ferias-secondary: #475569;
+  --ferias-border: #cbd5e1;
+  --ferias-pill-radius: 999px;
   padding-bottom: 140px;
   max-width: 100%;
   min-width: 0;
@@ -8615,7 +8628,7 @@
   padding: 18px;
   border: 1px solid rgba(15, 23, 42, .08);
   border-radius: 22px;
-  background: #ffffff;
+  background: var(--ferias-surface);
   box-shadow: 0 14px 38px rgba(15, 23, 42, .06);
 }
 
@@ -8626,7 +8639,7 @@
 }
 
 .ferias-kicker {
-  color: #0f766e;
+  color: var(--ferias-brand);
   font-size: 11px;
   font-weight: 950;
   letter-spacing: .06em;
@@ -8637,7 +8650,7 @@
 .ferias-page h2,
 .ferias-page h3 {
   margin: 0;
-  color: #0f172a;
+  color: var(--ferias-text);
   letter-spacing: 0;
 }
 
@@ -8649,13 +8662,13 @@
 .ferias-hero-copy p,
 .ferias-hero-copy small {
   margin: 0;
-  color: #64748b;
+  color: var(--ferias-muted);
   line-height: 1.45;
 }
 
 .ferias-page .ferias-card {
   border-radius: 20px;
-  background: #ffffff;
+  background: var(--ferias-surface);
   box-shadow: 0 14px 34px rgba(15, 23, 42, .06);
 }
 
@@ -8679,14 +8692,14 @@
 }
 
 .ferias-section-title strong {
-  color: #0f172a;
+  color: var(--ferias-text);
   font-size: 16px;
   line-height: 1.2;
 }
 
 .ferias-section-title small,
 .ferias-section-title em {
-  color: #64748b;
+  color: var(--ferias-muted);
   font-size: 12px;
   font-style: normal;
   font-weight: 700;
@@ -8705,13 +8718,13 @@
   width: 30px;
   height: 30px;
   min-width: 30px;
-  border: 1px solid #cbd5e1;
-  border-radius: 999px;
+  border: 1px solid var(--ferias-border);
+  border-radius: var(--ferias-pill-radius);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
-  color: #0f766e;
+  background: var(--ferias-surface);
+  color: var(--ferias-brand);
   font-size: 18px;
   font-weight: 950;
   line-height: 1;
@@ -8727,10 +8740,10 @@
   gap: 8px;
   min-height: 34px;
   border: 1px solid rgba(15, 23, 42, .12);
-  border-radius: 999px;
+  border-radius: var(--ferias-pill-radius);
   padding: 5px 10px 5px 6px;
-  background: #ffffff;
-  color: #475569;
+  background: var(--ferias-surface);
+  color: var(--ferias-secondary);
   font-size: 12px;
   font-weight: 800;
   line-height: 1;
@@ -8751,8 +8764,8 @@
   width: 30px;
   height: 18px;
   flex: 0 0 30px;
-  border-radius: 999px;
-  background: #cbd5e1;
+  border-radius: var(--ferias-pill-radius);
+  background: var(--ferias-border);
   transition: background .18s ease;
 }
 
@@ -8763,20 +8776,20 @@
   left: 3px;
   width: 12px;
   height: 12px;
-  border-radius: 999px;
-  background: #ffffff;
+  border-radius: var(--ferias-pill-radius);
+  background: var(--ferias-surface);
   box-shadow: 0 1px 2px rgba(15, 23, 42, .2);
   transition: transform .18s ease;
 }
 
 .ferias-switch:has(input:checked) {
   border-color: rgba(13, 148, 136, .35);
-  background: #f0fdfa;
-  color: #0f766e;
+  background: var(--ferias-brand-surface);
+  color: var(--ferias-brand);
 }
 
 .ferias-switch:has(input:checked) .ferias-switch-indicator {
-  background: #0f766e;
+  background: var(--ferias-brand);
 }
 
 .ferias-switch:has(input:checked) .ferias-switch-indicator::after {
@@ -8798,14 +8811,14 @@
 
 .ferias-btn {
   min-height: 36px;
-  border-radius: 999px;
+  border-radius: var(--ferias-pill-radius);
   padding: 8px 13px;
   border: 1px solid transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: #334155;
+  color: var(--ferias-text-soft);
   font-size: 13px;
   font-weight: 900;
   white-space: nowrap;
@@ -8818,15 +8831,15 @@
 }
 
 .ferias-btn-primary {
-  border-color: #0f766e;
-  background: #0f766e;
-  color: #ffffff;
+  border-color: var(--ferias-brand);
+  background: var(--ferias-brand);
+  color: var(--ferias-surface);
 }
 
 .ferias-btn-secondary {
-  border-color: #cbd5e1;
-  background: #ffffff;
-  color: #334155;
+  border-color: var(--ferias-border);
+  background: var(--ferias-surface);
+  color: var(--ferias-text-soft);
 }
 
 .ferias-btn-danger {
@@ -8840,7 +8853,7 @@
   position: relative;
   overflow: hidden;
   border-radius: 18px;
-  background: #ffffff;
+  background: var(--ferias-surface);
   box-shadow: 0 8px 20px rgba(15, 23, 42, .04);
 }
 
@@ -8850,11 +8863,11 @@
   position: absolute;
   inset: 0 auto 0 0;
   width: 5px;
-  background: #14b8a6;
+  background: var(--ferias-brand-accent);
 }
 
 .ferias-page .ferias-cycle-card.selected::before {
-  background: #0f766e;
+  background: var(--ferias-brand);
 }
 
 .ferias-page .ferias-cycle-card.archived::before,
@@ -8879,14 +8892,14 @@
   padding: 9px 11px;
   border: 1px solid rgba(15, 23, 42, .08);
   border-radius: 14px;
-  background: #f8fafc;
-  color: #64748b;
+  background: var(--ferias-surface-soft);
+  color: var(--ferias-muted);
   font-size: 12px;
   font-weight: 800;
 }
 
 .ferias-cycle-results strong {
-  color: #0f766e;
+  color: var(--ferias-brand);
   font-size: 12px;
   white-space: nowrap;
 }
@@ -8922,7 +8935,7 @@
 }
 
 .ferias-cycle-metrics small {
-  color: #64748b;
+  color: var(--ferias-muted);
   font-size: 10px;
   font-weight: 900;
   line-height: 1.15;
@@ -8931,7 +8944,7 @@
 }
 
 .ferias-cycle-metrics strong {
-  color: #0f172a;
+  color: var(--ferias-text);
   font-size: 13px;
   line-height: 1.2;
 }
@@ -8966,7 +8979,7 @@
 
 .ferias-page .ferias-summary-box,
 .ferias-page .ferias-calculated-field {
-  background: #ffffff;
+  background: var(--ferias-surface);
   box-shadow: 0 8px 20px rgba(15, 23, 42, .04);
 }
 
@@ -8990,7 +9003,7 @@
 .ferias-employee-search {
   display: grid;
   gap: 6px;
-  color: #475569;
+  color: var(--ferias-secondary);
   font-size: 12px;
   font-weight: 900;
 }
@@ -9011,16 +9024,16 @@
   padding: 10px 11px;
   border: 1px solid rgba(15, 23, 42, .1);
   border-radius: 14px;
-  background: #ffffff;
-  color: #334155;
+  background: var(--ferias-surface);
+  color: var(--ferias-text-soft);
   text-align: left;
   cursor: pointer;
   box-shadow: 0 6px 16px rgba(15, 23, 42, .035);
 }
 
 .ferias-employee-option.selected {
-  border-color: rgba(13, 148, 136, .42);
-  background: #f0fdfa;
+  border-color: var(--ferias-brand-border-strong);
+  background: var(--ferias-brand-surface);
 }
 
 .ferias-employee-option span {
@@ -9031,14 +9044,14 @@
 
 .ferias-employee-option strong {
   overflow-wrap: anywhere;
-  color: #0f172a;
+  color: var(--ferias-text);
   font-size: 13px;
   line-height: 1.2;
 }
 
 .ferias-employee-option small,
 .ferias-employee-option em {
-  color: #64748b;
+  color: var(--ferias-muted);
   font-size: 11px;
   font-style: normal;
   font-weight: 800;
@@ -9047,7 +9060,7 @@
 
 .ferias-employee-option em {
   padding: 5px 7px;
-  border-radius: 999px;
+  border-radius: var(--ferias-pill-radius);
   background: #f1f5f9;
   white-space: nowrap;
 }
@@ -9055,14 +9068,14 @@
 .ferias-inline-action {
   width: fit-content;
   min-height: 34px;
-  border: 1px solid rgba(13, 148, 136, .24);
-  border-radius: 999px;
+  border: 1px solid var(--ferias-brand-border);
+  border-radius: var(--ferias-pill-radius);
   padding: 7px 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #f0fdfa;
-  color: #0f766e;
+  background: var(--ferias-brand-surface);
+  color: var(--ferias-brand);
   font-size: 12px;
   font-weight: 900;
   cursor: pointer;

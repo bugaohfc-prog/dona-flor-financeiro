@@ -4079,6 +4079,16 @@
 .accounts-recurring-section {
   display: grid;
   gap: 14px;
+  --accounts-recurring-brand: #0f766e;
+  --accounts-recurring-surface: #ffffff;
+  --accounts-recurring-surface-soft: #f8fafc;
+  --accounts-recurring-text: #0f172a;
+  --accounts-recurring-muted: #64748b;
+  --accounts-recurring-meta: #475569;
+  --accounts-recurring-border: #e2e8f0;
+  --accounts-recurring-card-radius: 14px;
+  --accounts-recurring-pill-radius: 999px;
+  --accounts-recurring-card-shadow: 0 12px 26px rgba(15, 23, 42, .06);
 }
 
 .accounts-recurring-summary {
@@ -4092,9 +4102,9 @@
   gap: 6px;
   padding: 12px 14px;
   border: 1px solid rgba(20, 184, 166, .18);
-  border-radius: 14px;
+  border-radius: var(--accounts-recurring-card-radius);
   background: #f0fdfa;
-  color: #0f766e;
+  color: var(--accounts-recurring-brand);
   font-size: 12px;
   font-weight: 800;
   line-height: 1.35;
@@ -4119,14 +4129,14 @@
   padding: 10px 12px;
   border: 1px solid rgba(15, 118, 110, .12);
   border-radius: 12px;
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--accounts-recurring-surface-soft);
+  color: var(--accounts-recurring-text);
   font-size: 16px;
   font-weight: 900;
 }
 
 .accounts-recurring-summary b {
-  color: #64748b;
+  color: var(--accounts-recurring-muted);
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
@@ -4172,14 +4182,14 @@
   padding: 14px;
   border: 1px solid rgba(15, 118, 110, .14);
   border-left: 4px solid #14b8a6;
-  border-radius: 14px;
-  background: #ffffff;
-  box-shadow: 0 12px 26px rgba(15, 23, 42, .06);
+  border-radius: var(--accounts-recurring-card-radius);
+  background: var(--accounts-recurring-surface);
+  box-shadow: var(--accounts-recurring-card-shadow);
 }
 
 .accounts-recurring-card.is-inactive {
   border-left-color: #94a3b8;
-  background: #f8fafc;
+  background: var(--accounts-recurring-surface-soft);
 }
 
 .accounts-recurring-card.is-duplicate {
@@ -4201,7 +4211,7 @@
 
 .accounts-recurring-card-head strong {
   min-width: 0;
-  color: #0f172a;
+  color: var(--accounts-recurring-text);
   font-size: 14px;
   font-weight: 900;
   line-height: 1.25;
@@ -4209,7 +4219,7 @@
 }
 
 .accounts-recurring-value {
-  color: #0f766e;
+  color: var(--accounts-recurring-brand);
   font-size: 18px;
   font-weight: 950;
 }
@@ -4224,10 +4234,10 @@
 .accounts-recurring-meta span {
   min-width: 0;
   padding: 5px 8px;
-  border: 1px solid #e2e8f0;
-  border-radius: 999px;
-  background: #f8fafc;
-  color: #475569;
+  border: 1px solid var(--accounts-recurring-border);
+  border-radius: var(--accounts-recurring-pill-radius);
+  background: var(--accounts-recurring-surface-soft);
+  color: var(--accounts-recurring-meta);
   font-size: 11px;
   font-weight: 800;
   overflow-wrap: anywhere;
@@ -4265,7 +4275,7 @@
 .accounts-recurring-enable {
   min-height: 34px;
   padding: 0 12px;
-  border-radius: 999px;
+  border-radius: var(--accounts-recurring-pill-radius);
   font-size: 12px;
   font-weight: 850;
   cursor: pointer;
@@ -4280,7 +4290,7 @@
 .accounts-recurring-enable {
   border: 1px solid #99f6e4;
   background: #ecfdf5;
-  color: #0f766e;
+  color: var(--accounts-recurring-brand);
 }
 
 .accounts-recurring-disable:hover,

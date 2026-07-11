@@ -14,6 +14,10 @@ export default function AppShellStyles() {
                   --df-shell-border: #e5e7eb;
                   --df-shell-mobile-border: #d8eee9;
                   --df-shell-control-shadow: 0 6px 16px rgba(15,23,42,.08);
+                  --df-shell-muted: #64748b;
+                  --df-shell-card-radius: 18px;
+                  --df-shell-soft-shadow: 0 10px 24px rgba(15,23,42,.06);
+                  --df-shell-header-shadow: 0 6px 18px rgba(15,23,42,.06);
                   --df-shell-panel-radius: 24px;
                   --df-shell-control-radius: 14px;
                   --df-shell-sidebar-shadow: 0 24px 60px rgba(15, 118, 110, 0.28);
@@ -115,7 +119,7 @@ export default function AppShellStyles() {
                     max-width: 1280px;
                     margin: 0 auto 22px auto !important;
                     padding: 16px 18px !important;
-                    border-radius: 24px !important;
+                    border-radius: var(--df-shell-panel-radius) !important;
                   }
 
                   .mobile-menu-trigger { display: none !important; }
@@ -392,7 +396,7 @@ export default function AppShellStyles() {
                   .desktop-sidebar.compacta .menu-icon { width:auto; flex:auto; }
                   .desktop-sidebar.compacta .desktop-sidebar-user { width:44px !important; height:44px !important; border-radius:16px !important; padding:0 !important; display:flex; align-items:center; justify-content:center; }
                   .desktop-sidebar.compacta .sidebar-exit { width:100%; }
-                  .top-shell { background:#ffffff !important; }
+                  .top-shell { background:var(--df-shell-surface) !important; }
                   .top-shell strong, .desktop-sidebar-brand strong { letter-spacing:.1px; }
                   .dashboard-title-row { margin-right: 360px !important; }
                   body:has(.desktop-sidebar.compacta) .dashboard-title-row,
@@ -879,8 +883,8 @@ export default function AppShellStyles() {
                 .top-shell {
                   margin: 0 0 14px 0 !important;
                   padding: 12px !important;
-                  border-radius: 18px !important;
-                  box-shadow: 0 10px 24px rgba(15,23,42,.06) !important;
+                  border-radius: var(--df-shell-card-radius) !important;
+                  box-shadow: var(--df-shell-soft-shadow) !important;
                 }
 
                 .mobile-menu-trigger {
@@ -1252,9 +1256,9 @@ export default function AppShellStyles() {
 
               /* FECHAMENTO MOBILE: alinhamentos, header, chips e menu */
               .top-shell-clean {
-                background: #ffffff !important;
-                border: 1px solid #e5e7eb !important;
-                box-shadow: 0 6px 18px rgba(15,23,42,.06) !important;
+                background: var(--df-shell-surface) !important;
+                border: 1px solid var(--df-shell-border) !important;
+                box-shadow: var(--df-shell-header-shadow) !important;
               }
               .top-shell-logo span {
                 display: grid !important;
@@ -1269,7 +1273,7 @@ export default function AppShellStyles() {
               .top-shell-logo small {
                 display: block !important;
                 font-size: 12px !important;
-                color: #64748b !important;
+                color: var(--df-shell-muted) !important;
                 font-weight: 700 !important;
               }
               .dashboard-open-accounts.content-block,

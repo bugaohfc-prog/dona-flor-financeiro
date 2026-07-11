@@ -637,6 +637,9 @@
 
 /* Topo do app */
 .top-shell.top-shell-clean {
+  --top-shell-brand-deep: #064e3b;
+  --top-shell-text: #0f172a;
+  --top-shell-muted: #64748b;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -658,7 +661,7 @@
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-  color: #064e3b !important;
+  color: var(--top-shell-brand-deep) !important;
   line-height: 1 !important;
   text-align: left !important;
 }
@@ -689,15 +692,16 @@
 }
 
 .top-shell-clean .top-shell-logo > span strong {
-  color: #0f172a !important;
+  color: var(--top-shell-text) !important;
 }
 
 .top-shell-clean .top-shell-logo > span small {
-  color: #64748b !important;
+  color: var(--top-shell-muted) !important;
 }
 
 /* Configuracoes */
 .settings-card > button[style*="justify-content: space-between"] {
+  --settings-text: #0f172a;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -712,7 +716,7 @@
   justify-content: flex-start !important;
   gap: 10px !important;
   min-width: 0 !important;
-  color: #0f172a !important;
+  color: var(--settings-text) !important;
   line-height: 1.1 !important;
   text-align: left !important;
 }
@@ -726,7 +730,7 @@
 
 .settings-card > button[style*="justify-content: space-between"] > strong {
   flex: 0 0 auto !important;
-  color: #0f172a !important;
+  color: var(--settings-text) !important;
 }
 
 /* Plano comercial */

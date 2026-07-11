@@ -18,6 +18,11 @@ export default function AppShellStyles() {
                   --df-shell-card-radius: 18px;
                   --df-shell-soft-shadow: 0 10px 24px rgba(15,23,42,.06);
                   --df-shell-header-shadow: 0 6px 18px rgba(15,23,42,.06);
+                  --df-shell-control-border: #d1d5db;
+                  --df-shell-control-text: #374151;
+                  --df-shell-control-hover: #f8fafc;
+                  --df-shell-control-hover-border: #94a3b8;
+                  --df-shell-pill-radius: 999px;
                   --df-shell-panel-radius: 24px;
                   --df-shell-control-radius: 14px;
                   --df-shell-sidebar-shadow: 0 24px 60px rgba(15, 118, 110, 0.28);
@@ -1216,14 +1221,14 @@ export default function AppShellStyles() {
               .agenda-card-polished button,
               .notes-see-all,
               .note-toggle-small {
-                border-radius: 999px !important;
+                border-radius: var(--df-shell-pill-radius) !important;
                 padding: 8px 12px !important;
                 min-height: 36px !important;
                 font-size: 13px !important;
                 font-weight: 800 !important;
-                border: 1px solid #d1d5db !important;
-                background: #ffffff !important;
-                color: #374151 !important;
+                border: 1px solid var(--df-shell-control-border) !important;
+                background: var(--df-shell-surface) !important;
+                color: var(--df-shell-control-text) !important;
                 box-shadow: none !important;
               }
 
@@ -1233,9 +1238,9 @@ export default function AppShellStyles() {
               .filter-toggle-button:hover,
               .notes-see-all:hover,
               .note-toggle-small:hover {
-                background: #f8fafc !important;
-                border-color: #94a3b8 !important;
-                color: #0f172a !important;
+                background: var(--df-shell-control-hover) !important;
+                border-color: var(--df-shell-control-hover-border) !important;
+                color: var(--df-shell-text) !important;
               }
 
               .account-actions button:first-child,

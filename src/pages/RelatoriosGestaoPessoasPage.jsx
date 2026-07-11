@@ -735,7 +735,7 @@ export default function RelatoriosGestaoPessoasPage({
   return (
     <div className="people-report-center-page">
       <style>{`
-        .people-report-center-page { display: grid; gap: 18px; }
+        .people-report-center-page { display: grid; gap: 18px; --people-report-brand: #0f766e; --people-report-brand-dark: #115e59; --people-report-brand-surface: #f0fdfa; --people-report-surface: #ffffff; --people-report-surface-soft: #f8fafc; --people-report-text: #0f172a; --people-report-text-soft: #334155; --people-report-muted: #64748b; --people-report-secondary: #475569; --people-report-border: rgba(15, 23, 42, .08); --people-report-border-solid: #e5e7eb; --people-report-border-control: #d1d5db; --people-report-border-active: #d7dde7; --people-report-tag-border: #dbe4ef; --people-report-brand-border: rgba(13, 148, 136, .18); --people-report-pill-radius: 999px; }
         .people-report-hero {
           align-items: center;
           gap: 16px;
@@ -749,15 +749,15 @@ export default function RelatoriosGestaoPessoasPage({
           gap: 8px;
           flex-wrap: wrap;
           padding: 6px;
-          border: 1px solid rgba(15, 23, 42, .08);
-          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+          border: 1px solid var(--people-report-border);
+          background: linear-gradient(135deg, var(--people-report-surface) 0%, var(--people-report-surface-soft) 100%);
           border-radius: 16px;
           box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
         }
         .people-report-tab {
           border: 1px solid transparent;
           background: transparent;
-          color: #475569;
+          color: var(--people-report-secondary);
           border-radius: 12px;
           padding: 10px 14px;
           font-weight: 800;
@@ -765,9 +765,9 @@ export default function RelatoriosGestaoPessoasPage({
           min-height: 40px;
         }
         .people-report-tab.ativo {
-          background: #ffffff;
-          border-color: #d7dde7;
-          color: #0f172a;
+          background: var(--people-report-surface);
+          border-color: var(--people-report-border-active);
+          color: var(--people-report-text);
           box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
         }
         .people-report-overview-grid {
@@ -776,8 +776,8 @@ export default function RelatoriosGestaoPessoasPage({
           gap: 12px;
         }
         .people-report-overview-card {
-          border: 1px solid rgba(15, 23, 42, .08);
-          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+          border: 1px solid var(--people-report-border);
+          background: linear-gradient(180deg, var(--people-report-surface) 0%, var(--people-report-surface-soft) 100%);
           border-radius: 16px;
           padding: 16px;
           display: grid;
@@ -789,7 +789,7 @@ export default function RelatoriosGestaoPessoasPage({
         }
         .people-report-overview-card span,
         .people-report-overview-card small {
-          color: #64748b;
+          color: var(--people-report-muted);
         }
         .people-report-overview-card span {
           font-size: 12px;
@@ -801,14 +801,14 @@ export default function RelatoriosGestaoPessoasPage({
           line-height: 1.25;
         }
         .people-report-overview-card strong {
-          color: #0f172a;
+          color: var(--people-report-text);
           font-size: 28px;
           line-height: 1;
         }
         .people-report-overview-note {
-          border: 1px solid rgba(13, 148, 136, .18);
-          background: #f0fdfa;
-          color: #115e59;
+          border: 1px solid var(--people-report-brand-border);
+          background: var(--people-report-brand-surface);
+          color: var(--people-report-brand-dark);
           border-radius: 16px;
           padding: 14px 16px;
           display: grid;
@@ -821,8 +821,8 @@ export default function RelatoriosGestaoPessoasPage({
           gap: 14px;
         }
         .people-report-payroll-filter {
-          border: 1px solid #e5e7eb;
-          background: #ffffff;
+          border: 1px solid var(--people-report-border-solid);
+          background: var(--people-report-surface);
           border-radius: 8px;
           padding: 14px;
           display: grid;
@@ -831,24 +831,24 @@ export default function RelatoriosGestaoPessoasPage({
         .people-report-payroll-filter label {
           display: grid;
           gap: 6px;
-          color: #475569;
+          color: var(--people-report-secondary);
           font-weight: 700;
         }
         .people-report-payroll-filter select {
           min-height: 40px;
-          border: 1px solid #d1d5db;
+          border: 1px solid var(--people-report-border-control);
           border-radius: 8px;
           padding: 8px 10px;
-          color: #0f172a;
-          background: #ffffff;
+          color: var(--people-report-text);
+          background: var(--people-report-surface);
         }
         .people-report-payroll-filter p {
           margin: 0;
-          color: #64748b;
+          color: var(--people-report-muted);
         }
         .people-report-payroll-section {
-          border: 1px solid rgba(15, 23, 42, .08);
-          background: #ffffff;
+          border: 1px solid var(--people-report-border);
+          background: var(--people-report-surface);
           border-radius: 16px;
           padding: 16px;
           display: grid;
@@ -857,19 +857,19 @@ export default function RelatoriosGestaoPessoasPage({
         }
         .people-report-payroll-section-header h2 {
           margin: 0;
-          color: #0f172a;
+          color: var(--people-report-text);
           font-size: 18px;
         }
         .people-report-payroll-section-header p {
           margin: 4px 0 0;
-          color: #64748b;
+          color: var(--people-report-muted);
         }
         .people-report-payroll-list {
           display: grid;
           gap: 10px;
         }
         .people-report-payroll-row {
-          border: 1px solid #e5e7eb;
+          border: 1px solid var(--people-report-border-solid);
           border-radius: 8px;
           padding: 12px;
           display: grid;
@@ -879,11 +879,11 @@ export default function RelatoriosGestaoPessoasPage({
         }
         .people-report-payroll-row h3 {
           margin: 0;
-          color: #0f172a;
+          color: var(--people-report-text);
           font-size: 16px;
         }
         .people-report-payroll-row small {
-          color: #64748b;
+          color: var(--people-report-muted);
         }
         .people-report-payroll-row-meta {
           display: grid;
@@ -891,11 +891,11 @@ export default function RelatoriosGestaoPessoasPage({
           text-align: right;
         }
         .people-report-payroll-row-meta strong {
-          color: #0f172a;
+          color: var(--people-report-text);
         }
         .people-report-payroll-filter-grid {
-          border: 1px solid #e5e7eb;
-          background: #f8fafc;
+          border: 1px solid var(--people-report-border-solid);
+          background: var(--people-report-surface-soft);
           border-radius: 8px;
           padding: 12px;
           display: grid;
@@ -906,24 +906,24 @@ export default function RelatoriosGestaoPessoasPage({
           display: grid;
           gap: 6px;
           min-width: 0;
-          color: #475569;
+          color: var(--people-report-secondary);
           font-weight: 700;
         }
         .people-report-payroll-filter-grid select {
           min-height: 40px;
           width: 100%;
-          border: 1px solid #d1d5db;
+          border: 1px solid var(--people-report-border-control);
           border-radius: 8px;
           padding: 8px 10px;
-          color: #0f172a;
-          background: #ffffff;
+          color: var(--people-report-text);
+          background: var(--people-report-surface);
         }
         .people-report-payroll-item-list {
           display: grid;
           gap: 10px;
         }
         .people-report-payroll-item-card {
-          border: 1px solid #e5e7eb;
+          border: 1px solid var(--people-report-border-solid);
           border-radius: 8px;
           padding: 12px;
           display: grid;
@@ -935,12 +935,12 @@ export default function RelatoriosGestaoPessoasPage({
           margin: 0;
         }
         .people-report-payroll-item-card h3 {
-          color: #0f172a;
+          color: var(--people-report-text);
           font-size: 16px;
         }
         .people-report-payroll-item-card small,
         .people-report-payroll-item-card p {
-          color: #64748b;
+          color: var(--people-report-muted);
         }
         .people-report-payroll-item-heading {
           display: grid;
@@ -949,7 +949,7 @@ export default function RelatoriosGestaoPessoasPage({
           align-items: start;
         }
         .people-report-payroll-item-heading strong {
-          color: #0f172a;
+          color: var(--people-report-text);
           white-space: nowrap;
         }
         .people-report-payroll-item-tags,
@@ -959,10 +959,10 @@ export default function RelatoriosGestaoPessoasPage({
           gap: 8px;
         }
         .people-report-payroll-item-tags span {
-          border: 1px solid #dbe4ef;
-          background: #f8fafc;
-          color: #334155;
-          border-radius: 999px;
+          border: 1px solid var(--people-report-tag-border);
+          background: var(--people-report-surface-soft);
+          color: var(--people-report-text-soft);
+          border-radius: var(--people-report-pill-radius);
           padding: 4px 8px;
           font-size: 12px;
           font-weight: 700;

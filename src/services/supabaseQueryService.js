@@ -15,11 +15,18 @@ export function inserirComEmpresa(supabase, tabela, payload, options = {}) {
   return query
 }
 
-export function inserirLoteComEmpresa(supabase, tabela, payloads, options = {}) {
+export async function inserirLoteComEmpresa(supabase, tabela, payloads, options = {}) {
   assertPayloadsEmpresaId(payloads)
-  let query = supabase.from(tabela).insert(payloads)
-  if (options.select) query = query.select(options.select === true ? '*' : options.select)
-  return query
+  const registros = []
+  for (let indice = 0; indice < payloads.length; indice += 100) {
+    const lote = payloads.slice(indice, indice + 100)
+    let query = supabase.from(tabela).insert(lote)
+    if (options.select) query = query.select(options.select === true ? '*' : options.select)
+    const resposta = await query
+    if (resposta.error) return { data: registros, error: resposta.error }
+    registros.push(...(resposta.data || []))
+  }
+  return { data: registros, error: null }
 }
 
 export function atualizarPorEmpresa(supabase, tabela, id, empresaId, payload) {

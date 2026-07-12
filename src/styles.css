@@ -2,12 +2,21 @@
 @import './styles/legacy-dashboard.css';
 
 .app-recovery-screen {
+  --app-recovery-surface-soft: #f8fafc;
+  --app-recovery-text: #0f172a;
+  --app-recovery-border: #dbe3ea;
+  --app-recovery-white: #ffffff;
+  --app-recovery-shadow: 0 18px 42px rgba(15, 23, 42, .12);
+  --app-recovery-brand: #0f766e;
+  --app-recovery-secondary: #475569;
+  --app-recovery-control-border: #cbd5e1;
+  --app-recovery-control-text: #334155;
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: 24px;
-  background: #f8fafc;
-  color: #0f172a;
+  background: var(--app-recovery-surface-soft);
+  color: var(--app-recovery-text);
   box-sizing: border-box;
 }
 
@@ -16,14 +25,14 @@
   display: grid;
   gap: 14px;
   padding: 28px;
-  border: 1px solid #dbe3ea;
+  border: 1px solid var(--app-recovery-border);
   border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 18px 42px rgba(15, 23, 42, .12);
+  background: var(--app-recovery-white);
+  box-shadow: var(--app-recovery-shadow);
 }
 
 .app-recovery-kicker {
-  color: #0f766e;
+  color: var(--app-recovery-brand);
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
@@ -37,7 +46,7 @@
 
 .app-recovery-card p {
   margin: 0;
-  color: #475569;
+  color: var(--app-recovery-secondary);
   line-height: 1.55;
 }
 
@@ -58,22 +67,23 @@
 }
 
 .app-recovery-primary {
-  border: 1px solid #0f766e;
-  background: #0f766e;
-  color: #ffffff;
+  border: 1px solid var(--app-recovery-brand);
+  background: var(--app-recovery-brand);
+  color: var(--app-recovery-white);
 }
 
 .app-recovery-secondary {
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #334155;
+  border: 1px solid var(--app-recovery-control-border);
+  background: var(--app-recovery-white);
+  color: var(--app-recovery-control-text);
 }
 
 .app-route-loading {
+  --app-loading-brand: #0f766e;
   min-height: 220px;
   display: grid;
   place-items: center;
-  color: #0f766e;
+  color: var(--app-loading-brand);
   font-weight: 900;
 }
 

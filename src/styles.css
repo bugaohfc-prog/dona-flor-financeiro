@@ -1431,6 +1431,11 @@
 
 /* Ajustes visuais da gestão de usuários */
 .users-admin-summary {
+  --users-summary-border: #dbe7e3;
+  --users-summary-surface: #ffffff;
+  --users-summary-shadow: 0 10px 24px rgba(15, 23, 42, .045);
+  --users-summary-muted: #64748b;
+  --users-summary-text: #0f172a;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
@@ -1441,14 +1446,14 @@
   gap: 4px;
   min-width: 0;
   padding: 13px 14px;
-  border: 1px solid #dbe7e3;
+  border: 1px solid var(--users-summary-border);
   border-radius: 16px;
-  background: #ffffff;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, .045);
+  background: var(--users-summary-surface);
+  box-shadow: var(--users-summary-shadow);
 }
 
 .users-admin-summary span {
-  color: #64748b;
+  color: var(--users-summary-muted);
   font-size: 11px;
   font-weight: 900;
   line-height: 1.1;
@@ -1457,7 +1462,7 @@
 
 .users-admin-summary strong {
   min-width: 0;
-  color: #0f172a;
+  color: var(--users-summary-text);
   font-size: 15px;
   line-height: 1.2;
   overflow: hidden;
@@ -1500,15 +1505,18 @@
 
 .users-user-card.userCard,
 .users-user-card.user-card {
+  --users-card-surface: #ffffff;
+  --users-card-border: #e2e8f0;
+  --users-card-shadow: 0 12px 26px rgba(15, 23, 42, .052);
   display: flex !important;
   flex-direction: column !important;
   gap: 12px !important;
   align-items: stretch !important;
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
+  background: var(--users-card-surface) !important;
+  border: 1px solid var(--users-card-border) !important;
   border-radius: 18px !important;
   padding: 15px !important;
-  box-shadow: 0 12px 26px rgba(15, 23, 42, .052) !important;
+  box-shadow: var(--users-card-shadow) !important;
 }
 
 .users-user-card-header {
@@ -1568,12 +1576,16 @@
 }
 
 .users-branch-scope-compact.user-branch-scope {
+  --users-branch-surface: #f8fffd;
+  --users-branch-border: rgba(20, 184, 166, .22);
+  --users-branch-muted: #64748b;
+  --users-branch-white: #ffffff;
   display: grid !important;
   gap: 10px !important;
   padding: 11px 12px !important;
   border-radius: 14px !important;
-  background: #f8fffd !important;
-  border-color: rgba(20, 184, 166, .22) !important;
+  background: var(--users-branch-surface) !important;
+  border-color: var(--users-branch-border) !important;
 }
 
 .users-branch-header-compact {
@@ -1590,7 +1602,7 @@
 }
 
 .users-branch-header-compact small {
-  color: #64748b !important;
+  color: var(--users-branch-muted) !important;
   font-weight: 700 !important;
 }
 
@@ -1610,7 +1622,7 @@
   padding: 6px 10px !important;
   gap: 7px !important;
   border-radius: 999px !important;
-  background: #ffffff !important;
+  background: var(--users-branch-white) !important;
   cursor: pointer !important;
 }
 

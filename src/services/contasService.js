@@ -168,16 +168,24 @@ export async function listarPagamentosParciaisPorContas(supabase, empresaId, con
   const idsNormalizados = Array.from(new Set((contaIds || []).filter(Boolean)))
   if (!idsNormalizados.length) return { data: [], error: null }
 
-  return selecionarPorEmpresa(
-    supabase,
-    'df_contas_pagamentos',
-    empresaId,
-    'id, empresa_id, conta_id, valor_pago, data_pagamento, observacao, arquivado, arquivado_em, criado_em, atualizado_em'
-  )
-    .in('conta_id', idsNormalizados)
-    .eq('arquivado', false)
-    .order('data_pagamento', { ascending: true })
-    .order('criado_em', { ascending: true })
+  const lotes = []
+  for (let indice = 0; indice < idsNormalizados.length; indice += 100) lotes.push(idsNormalizados.slice(indice, indice + 100))
+  const registros = []
+  for (const lote of lotes) {
+    const resposta = await selecionarPorEmpresa(
+      supabase,
+      'df_contas_pagamentos',
+      empresaId,
+      'id, empresa_id, conta_id, valor_pago, data_pagamento, observacao, arquivado, arquivado_em, criado_em, atualizado_em'
+    )
+      .in('conta_id', lote)
+      .eq('arquivado', false)
+      .order('data_pagamento', { ascending: true })
+      .order('criado_em', { ascending: true })
+    if (resposta.error) return { data: registros, error: resposta.error }
+    registros.push(...(resposta.data || []))
+  }
+  return { data: registros, error: null }
 }
 
 function primeiroRegistro(resposta) {

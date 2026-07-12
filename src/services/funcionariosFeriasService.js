@@ -338,6 +338,22 @@ export async function listarCiclosFerias({
   return query
 }
 
+export async function listarTodosCiclosFerias({ supabase, empresaId, incluirArquivados = false }) {
+  const empresa = validarEmpresaId(empresaId)
+  let query = selecionarPorEmpresa(supabase, TABELA_FERIAS_CICLOS, empresa, CICLO_FERIAS_SELECT)
+    .order('periodo_aquisitivo_inicio', { ascending: false })
+  if (!incluirArquivados) query = query.eq('arquivado', false)
+  return query
+}
+
+export async function listarTodosPeriodosFerias({ supabase, empresaId, incluirArquivados = false }) {
+  const empresa = validarEmpresaId(empresaId)
+  let query = selecionarPorEmpresa(supabase, TABELA_FERIAS_PERIODOS, empresa, PERIODO_FERIAS_SELECT)
+    .order('data_inicio', { ascending: false })
+  if (!incluirArquivados) query = query.eq('arquivado', false)
+  return query
+}
+
 export async function obterCicloFeriasPorId({ supabase, empresaId, cicloId }) {
   const empresa = validarEmpresaId(empresaId)
   const id = validarCicloId(cicloId)

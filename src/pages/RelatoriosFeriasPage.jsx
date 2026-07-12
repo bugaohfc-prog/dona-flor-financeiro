@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import {
   calcularSaldoDiasFerias,
   calcularStatusCicloFerias,
-  listarCiclosFerias,
+  listarTodosCiclosFerias,
   listarPeriodosFerias
 } from '../services/funcionariosFeriasService'
 import { mensagemSeguraErro } from '../utils/session'
@@ -257,37 +257,33 @@ export default function RelatoriosFeriasPage({
       setLoadingFerias(true)
 
       try {
-        const resultadosFuncionarios = await Promise.all(
-          funcionariosAtivos
-            .filter((funcionario) => funcionario?.id)
-            .map(async (funcionario) => {
-              const { data: ciclos, error: erroCiclos } = await listarCiclosFerias({
-                supabase,
-                empresaId,
-                funcionarioId: funcionario.id,
-                incluirArquivados: false
-              })
+        const [respostaCiclos, respostaPeriodos] = await Promise.all([
+          listarTodosCiclosFerias({ supabase, empresaId, incluirArquivados: false }),
+          listarTodosPeriodosFerias({ supabase, empresaId, incluirArquivados: false })
+        ])
 
-              if (erroCiclos) throw erroCiclos
+        if (respostaCiclos.error) throw respostaCiclos.error
+        if (respostaPeriodos.error) throw respostaPeriodos.error
 
-              const ciclosComPeriodos = await Promise.all(
-                (ciclos || []).map(async (ciclo) => {
-                  const { data: periodos, error: erroPeriodos } = await listarPeriodosFerias({
-                    supabase,
-                    empresaId,
-                    cicloId: ciclo.id,
-                    funcionarioId: funcionario.id,
-                    incluirArquivados: false
-                  })
-
-                  if (erroPeriodos) throw erroPeriodos
-                  return { ciclo, periodos: periodos || [] }
-                })
-              )
-
-              return { funcionario, ciclos: ciclosComPeriodos }
-            })
-        )
+        const ciclosPorFuncionario = new Map()
+        ;(respostaCiclos.data || []).forEach((ciclo) => {
+          const lista = ciclosPorFuncionario.get(ciclo.funcionario_id) || []
+          lista.push(ciclo)
+          ciclosPorFuncionario.set(ciclo.funcionario_id, lista)
+        })
+        const periodosPorCiclo = new Map()
+        ;(respostaPeriodos.data || []).forEach((periodo) => {
+          const lista = periodosPorCiclo.get(periodo.ciclo_ferias_id) || []
+          lista.push(periodo)
+          periodosPorCiclo.set(periodo.ciclo_ferias_id, lista)
+        })
+        const resultadosFuncionarios = funcionariosAtivos.filter((funcionario) => funcionario?.id).map((funcionario) => ({
+          funcionario,
+          ciclos: (ciclosPorFuncionario.get(funcionario.id) || []).map((ciclo) => ({
+            ciclo,
+            periodos: periodosPorCiclo.get(ciclo.id) || []
+          }))
+        }))
 
         if (!cancelado) setDadosFerias(resultadosFuncionarios)
       } catch (error) {

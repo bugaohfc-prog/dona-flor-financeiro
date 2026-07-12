@@ -52,6 +52,13 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
     return Number(conta?.desconto || 0)
   }
 
+  function contaEntraNoStatus(conta) {
+    if (filtroStatus === 'pendentes') return conta.status !== 'pago'
+    if (filtroStatus === 'pagas') return conta.status === 'pago'
+    if (filtroStatus === 'vencidas') return estaVencida(conta.data_vencimento, conta.status)
+    return true
+  }
+
   function pegarMes(data) {
     if (!data) return ''
     return String(data).slice(0, 7)
@@ -195,6 +202,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
     const mesBase = filtroMes ? mesAnterior(filtroMes) : mesAnterior(mesAtualPadrao())
     return contas
       .filter((conta) => pegarMes(conta.data_vencimento) === mesBase)
+      .filter(contaEntraNoStatus)
       .filter((conta) => {
         if (!filtroCentro) return true
         return conta.centro_custo_id === filtroCentro
@@ -203,7 +211,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
         if (!filtroFilial) return true
         return conta.filial_id === filtroFilial
       })
-  }, [contas, filtroMes, filtroCentro, filtroFilial])
+  }, [contas, filtroMes, filtroStatus, filtroCentro, filtroFilial])
 
   const totalGeral = contasFiltradas.reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
   const totalPago = contasFiltradas.reduce((acc, conta) => acc + valorRealizadoConta(conta), 0)
@@ -347,7 +355,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
 
   const contasPorMes = useMemo(() => {
     const mapa = {}
-    contas.forEach((conta) => {
+    contas.filter(contaEntraNoStatus).forEach((conta) => {
       if (filtroCentro && conta.centro_custo_id !== filtroCentro) return
       if (filtroFilial && conta.filial_id !== filtroFilial) return
       const mes = pegarMes(conta.data_vencimento)
@@ -360,7 +368,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       if (estaVencida(conta.data_vencimento, conta.status)) mapa[mes].vencido += valor
     })
     return Object.values(mapa).sort((a, b) => a.mes.localeCompare(b.mes)).slice(-6)
-  }, [contas, filtroCentro, filtroFilial])
+  }, [contas, filtroStatus, filtroCentro, filtroFilial])
 
   const rankingFiliais = useMemo(() => {
     const mapa = {}

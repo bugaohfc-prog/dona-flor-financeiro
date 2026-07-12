@@ -187,8 +187,9 @@ function calcularResumoPorColaborador(lancamentos = [], itensLancamentos = [], f
     }
 
     const valor = Number(lancamento.valor || 0)
-    if (lancamento.natureza === 'credito') atual.totalCreditos += valor
-    if (lancamento.natureza === 'desconto') atual.totalDescontos += valor
+    const natureza = obterNaturezaItemFolha(null, lancamento)
+    if (natureza === 'credito') atual.totalCreditos += valor
+    if (natureza === 'desconto') atual.totalDescontos += valor
     atual.quantidadeLancamentos += 1
     atual.quantidadeItens += itensAtivosPorLancamento.get(lancamento.id) || 0
 

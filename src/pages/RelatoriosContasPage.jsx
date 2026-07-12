@@ -279,6 +279,7 @@ export default function RelatoriosContasPage({
         conta,
         descricao: textoSeguro(conta?.descricao, 'Conta sem descrição'),
         valor: valorNumerico,
+        valorPago: Number(conta?.valor_pago ?? conta?.valor ?? 0),
         valorFormatado: formatarValor ? formatarValor(valorNumerico) : valorNumerico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
         vencimento: conta?.data_vencimento || '',
         vencimentoFormatado: conta?.data_vencimento && formatarData ? formatarData(conta.data_vencimento) : textoSeguro(conta?.data_vencimento, '-'),
@@ -335,7 +336,7 @@ export default function RelatoriosContasPage({
     const pagas = contasFiltradas.filter((linha) => linha.statusOperacional === 'Paga')
     const valorVencido = vencidas.reduce((acc, linha) => acc + linha.valor, 0)
     const valorAVencer = aVencer.reduce((acc, linha) => acc + linha.valor, 0)
-    const valorPago = pagas.reduce((acc, linha) => acc + linha.valor, 0)
+    const valorPago = pagas.reduce((acc, linha) => acc + linha.valorPago, 0)
 
     return {
       totalContas,

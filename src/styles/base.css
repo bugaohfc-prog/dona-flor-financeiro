@@ -22,10 +22,10 @@
 *{box-sizing:border-box}
 body{margin:0;background:#f8fafc;color:#0f172a;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
 button,input,select,textarea{font:inherit}
-button{border:0;border-radius:12px;background:#0f766e;color:white;font-weight:900;padding:12px 14px;cursor:pointer}
-button.outline{background:white;color:#0f172a;border:1px solid #cbd5e1}
-button.danger{background:#b91c1c}
-input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:12px;margin:6px 0;background:white}
+button{border:0;border-radius:var(--df-radius-control);background:var(--df-color-brand);color:white;font-weight:900;padding:12px 14px;cursor:pointer;min-height:40px}
+button.outline{background:var(--df-color-surface);color:var(--df-color-text);border:1px solid #cbd5e1}
+button.danger{background:var(--df-color-danger)}
+input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:var(--df-radius-control);padding:12px;margin:6px 0;background:var(--df-color-surface)}
 textarea{min-height:92px}
 .loginPage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(180deg,#ecfeff,#f8fafc)}
 .loginCard{width:100%;max-width:420px;background:white;border-radius:28px;padding:28px;box-shadow:0 20px 60px rgba(15,23,42,.12);text-align:center}
@@ -53,7 +53,7 @@ textarea{min-height:92px}
 .noteTop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .noteTop p,.accountCard p{color:#475569;margin:6px 0}
 .noteTop small,.accountCard small{color:#64748b}
-.badge,.status{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;font-weight:900;font-size:13px}
+.badge,.status{display:inline-flex;align-items:center;border-radius:var(--df-radius-pill);padding:6px 10px;font-weight:900;font-size:13px}
 .normal{background:#e0f2fe;color:#075985}
 .urgente{background:#fee2e2;color:#b91c1c}
 .critico{background:#7f1d1d;color:white}

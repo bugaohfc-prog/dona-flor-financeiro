@@ -57,8 +57,8 @@ const RUBRICA_CENTRO_SUGERIDO = new Map([
   [RUBRICA_IMPOSTOS_PARCELADOS, 'Impostos e Taxas'],
   [RUBRICA_OUTRAS_OPERACIONAIS, 'Administrativo'],
   [RUBRICA_OUTRAS_NAO_OPERACIONAIS, 'Pessoais'],
-  [RUBRICA_JUROS, 'Impostos e Taxas'],
-  [RUBRICA_BANCOS_PRINCIPAL, 'Administrativo']
+  [RUBRICA_JUROS, 'Bancos e Financiamentos'],
+  [RUBRICA_BANCOS_PRINCIPAL, 'Bancos e Financiamentos']
 ])
 
 const termos = {
@@ -68,7 +68,7 @@ const termos = {
   compras: ['fornecedor', 'compra', 'compras', 'mercadoria', 'materia-prima', 'matéria-prima', 'materia prima', 'matéria prima', 'insumo', 'embalagem', 'produto', 'produtos', 'estoque', 'hortifruti', 'acougue', 'açougue', 'mercado', 'supermercado', 'distribuidora'],
   folha: ['salario', 'salário', 'folha', 'pagamento funcionario', 'pagamento funcionário', 'colaborador', 'funcionaria', 'funcionária', 'funcionario', 'funcionário', 'comissao', 'comissão', 'premiacao', 'premiação', 'ajuda de custo', 'diaria', 'diária'],
   impostosFolha: ['fgts', 'inss', 'inss folha', 'darf folha', 'imposto folha', 'guia folha', 'esocial', 'dctfweb', 'encargos folha', 'encargos sobre folha'],
-  impostosVendas: ['simples nacional', 'das', 'imposto venda', 'imposto vendas', 'icms', 'iss', 'pis', 'cofins', 'receita federal', 'sefaz'],
+  impostosVendas: ['simples nacional', 'imposto venda', 'imposto vendas', 'icms', 'iss', 'pis', 'cofins', 'receita federal', 'sefaz'],
   aluguel: ['aluguel', 'locacao', 'locação', 'imovel', 'imóvel', 'sala comercial', 'ponto comercial'],
   parcelados: ['parcelamento', 'imposto parcelado', 'parcela receita', 'negociacao fiscal', 'negociação fiscal', 'divida ativa', 'dívida ativa', 'parcelado receita'],
   bancos: ['banco', 'emprestimo', 'empréstimo', 'financiamento', 'parcela banco', 'principal', 'capital de giro', 'bradesco', 'santander', 'itau', 'itaú', 'caixa', 'sicredi', 'sicoob'],
@@ -109,12 +109,19 @@ function obterTextoBusca(movimento = {}) {
   ].filter(Boolean).join(' ')
 }
 
+function possuiDasFiscal(texto) {
+  const normalizado = normalizarTexto(texto)
+  const partes = normalizado.split(' ')
+  return normalizado.includes('das simples nacional') || normalizado.includes('guia das') || partes.some((parte, indice) => parte === 'das' && /^[0-9]{1,2}$/.test(partes[indice + 1] || '') && /^20[0-9]{2}$/.test(partes[indice + 2] || ''))
+}
+
 function classificarPorTermos(texto, criterio = 'descricao') {
   if (possuiTermo(texto, termos.proLabore)) return { rubrica: RUBRICA_PRO_LABORE, confianca: 'alta', criterio }
   if (possuiTermo(texto, termos.utilidades)) return { rubrica: RUBRICA_UTILIDADES, confianca: 'alta', criterio }
   if (possuiTermo(texto, termos.parcelados)) return { rubrica: RUBRICA_IMPOSTOS_PARCELADOS, confianca: 'alta', criterio }
   if (possuiTermo(texto, termos.impostosFolha)) return { rubrica: RUBRICA_IMPOSTOS_FOLHA, confianca: 'alta', criterio }
-  if (possuiTermo(texto, termos.impostosVendas)) return { rubrica: RUBRICA_IMPOSTOS_VENDAS, confianca: 'alta', criterio }
+  if (possuiTermo(texto, termos.juros)) return { rubrica: RUBRICA_JUROS, confianca: 'alta', criterio }
+  if (possuiDasFiscal(texto) || possuiTermo(texto, termos.impostosVendas)) return { rubrica: RUBRICA_IMPOSTOS_VENDAS, confianca: 'alta', criterio }
   if (possuiTermo(texto, termos.aluguel)) return { rubrica: RUBRICA_ALUGUEL, confianca: 'alta', criterio }
   if (possuiTermo(texto, termos.folha)) return { rubrica: RUBRICA_FOLHA_PAGAMENTO, confianca: 'media', criterio }
   if (possuiTermo(texto, termos.compras)) return { rubrica: RUBRICA_FORNECEDORES_COMPRAS, confianca: 'media', criterio }
@@ -135,6 +142,10 @@ export function classificarRubricaFluxoCaixa(movimento = {}) {
   const textoBusca = obterTextoBusca(movimento)
   const centro = normalizarTexto(movimento.centro_custo_nome || movimento.centro)
   const filial = normalizarTexto(movimento.filial_nome)
+
+  if (possuiTermo(textoBusca, termos.parcelados)) {
+    return completarClassificacao({ rubrica: RUBRICA_IMPOSTOS_PARCELADOS, confianca: 'alta', criterio: 'descricao' })
+  }
 
   if (possuiTermo(textoBusca, termos.impostosFolha)) {
     return completarClassificacao({ rubrica: RUBRICA_IMPOSTOS_FOLHA, confianca: 'alta', criterio: 'descricao' })

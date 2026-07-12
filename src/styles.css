@@ -9739,7 +9739,7 @@
   align-items: center;
   padding: 18px;
   border: 1px solid var(--folha-hero-border);
-  border-radius: 14px;
+  border-radius: var(--df-radius-section);
   background: linear-gradient(135deg, var(--folha-brand-soft) 0%, var(--folha-gradient-mid) 58%, var(--folha-surface) 100%);
   box-shadow: var(--folha-hero-shadow);
 }
@@ -9819,7 +9819,7 @@
 
 .folha-page .folha-card {
   border: 1px solid var(--folha-card-border) !important;
-  border-radius: 14px !important;
+  border-radius: var(--df-radius-card) !important;
   background: var(--folha-surface) !important;
   box-shadow: var(--folha-card-shadow) !important;
 }

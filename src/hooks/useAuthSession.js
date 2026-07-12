@@ -9,6 +9,16 @@ import {
 } from '../services/sessionSecurityService.js'
 
 const INTERVALO_GRAVACAO_ATIVIDADE_MS = 15 * 1000
+const SESSION_BOOTSTRAP_TIMEOUT_MS = 10000
+
+function comTimeoutSessao(promise) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      window.setTimeout(() => reject(new Error('SESSION_BOOTSTRAP_TIMEOUT')), SESSION_BOOTSTRAP_TIMEOUT_MS)
+    })
+  ])
+}
 
 export function useAuthSession({
   onClearAuthData,
@@ -102,7 +112,7 @@ export function useAuthSession({
           console.warn('Validação de sessão demorando mais que o esperado. Aguardando recuperação do Supabase.')
         }, 8000)
 
-        const { data, error } = await sessaoPromise
+        const { data, error } = await comTimeoutSessao(sessaoPromise)
 
         if (!ativo) return
 

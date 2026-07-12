@@ -4,6 +4,7 @@ import ResetPasswordPage from '../../pages/ResetPasswordPage.jsx'
 
 const RESET_PASSWORD_PATH = '/reset-password'
 const AUTH_URL_GRACE_MS = 8000
+const SESSION_BOOTSTRAP_TIMEOUT_MS = 10000
 
 function caminhoAtualEhRecuperacao() {
   return window.location.pathname.replace(/\/+$/, '') === RESET_PASSWORD_PATH
@@ -47,6 +48,15 @@ function limparUrlAuth() {
   window.history.replaceState({}, document.title, '/')
 }
 
+function comTimeoutSessao(promise) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      window.setTimeout(() => reject(new Error('SESSION_BOOTSTRAP_TIMEOUT')), SESSION_BOOTSTRAP_TIMEOUT_MS)
+    })
+  ])
+}
+
 export default function AuthSecurityGate({ children }) {
   const [sessao, setSessao] = useState(null)
   const [carregando, setCarregando] = useState(true)
@@ -63,7 +73,7 @@ export default function AuthSecurityGate({ children }) {
 
     async function carregarSessaoInicial() {
       try {
-        const { data, error } = await supabase.auth.getSession()
+        const { data, error } = await comTimeoutSessao(supabase.auth.getSession())
 
         if (!ativo) return
 
@@ -73,6 +83,19 @@ export default function AuthSecurityGate({ children }) {
         } else {
           setSessao(data?.session || null)
           if (data?.session) setAguardandoUrlAuth(false)
+        }
+      } catch (error) {
+        if (!ativo) return
+        console.warn('Sessao persistida nao respondeu no prazo; retornando ao login:', error?.message || error)
+        setSessao(null)
+        setAguardandoUrlAuth(false)
+        try {
+          await Promise.race([
+            supabase.auth.signOut({ scope: 'local' }),
+            new Promise((resolve) => window.setTimeout(resolve, 1500))
+          ])
+        } catch (signOutError) {
+          console.warn('Nao foi possivel limpar a sessao persistida:', signOutError?.message || signOutError)
         }
       } finally {
         if (ativo) setCarregando(false)

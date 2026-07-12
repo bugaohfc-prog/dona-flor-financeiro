@@ -35,6 +35,9 @@ export default function ResetPasswordPage({
 
   async function salvarSenha(event) {
     event.preventDefault()
+
+    if (salvando) return
+
     setMensagem('')
 
     if (!possuiSessao) {
@@ -65,20 +68,26 @@ export default function ResetPasswordPage({
       if (error) throw error
       if (data?.ok === false) throw new Error(data?.message || 'Falha ao atualizar a senha.')
 
-      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
-      if (refreshError) {
-        console.warn('Senha atualizada, mas a sessão não foi renovada imediatamente:', refreshError.message)
-      }
-
-      const { data: userData, error: userError } = await supabase.auth.getUser()
-      if (userError) {
-        console.warn('Senha atualizada, mas os metadados do usuário não foram recarregados imediatamente:', userError.message)
-      }
-
       setTipoMensagem('sucesso')
-      setMensagem('Senha atualizada com sucesso.')
+      setMensagem('Senha atualizada com sucesso. Voltando ao login...')
 
-      await onComplete?.(userData?.user || refreshData?.session?.user || sessao.user)
+      await new Promise((resolve) => window.setTimeout(resolve, 450))
+
+      if (onExit) {
+        try {
+          await onExit()
+        } finally {
+          window.location.replace('/')
+        }
+        return
+      }
+
+      try {
+        await supabase.auth.signOut()
+      } finally {
+        window.history.replaceState({}, document.title, '/')
+        window.location.replace('/')
+      }
     } catch (error) {
       console.warn('Falha ao concluir troca de senha:', error)
       setTipoMensagem('erro')

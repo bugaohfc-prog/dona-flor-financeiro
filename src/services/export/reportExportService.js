@@ -240,7 +240,7 @@ export function createXlsxBlob(sheets) {
   <fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEFF6FF"/><bgColor indexed="64"/></patternFill></fill></fills>
   <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
   <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-  <cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="164" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1"/></cellXfs>
+  <cellXfs count="6"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="164" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1"/><xf numFmtId="1" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="1" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1"/></cellXfs>
 </styleSheet>`)
 
   const files = [
@@ -263,7 +263,7 @@ function createWorksheetXml(rows) {
   }).join('')
 
   const xmlRows = rows.map((row, rowIndex) => {
-    const cells = (row || []).map((value, colIndex) => createCellXml(value, colIndex, rowIndex)).join('')
+    const cells = (row || []).map((value, colIndex) => createCellXml(value, colIndex, rowIndex, rows[0]?.[colIndex])).join('')
     return `<row r="${rowIndex + 1}">${cells}</row>`
   }).join('')
 
@@ -274,11 +274,12 @@ function createWorksheetXml(rows) {
 </worksheet>`)
 }
 
-function createCellXml(value, colIndex, rowIndex) {
+function createCellXml(value, colIndex, rowIndex, headerValue) {
   const ref = `${colName(colIndex)}${rowIndex + 1}`
   const isHeader = rowIndex === 0
   const isNumber = typeof value === 'number' && Number.isFinite(value)
-  const style = isHeader ? (isNumber ? 3 : 1) : (isNumber ? 2 : 0)
+  const moeda = /r\$|valor|previsto|realizado|pago|pendente|vencido|encargo|desconto|saldo|falta|receita|despesa|custo/i.test(String(headerValue || ''))
+  const style = isHeader ? (isNumber ? (moeda ? 3 : 5) : 1) : (isNumber ? (moeda ? 2 : 4) : 0)
 
   if (isNumber) {
     return `<c r="${ref}" s="${style}"><v>${value}</v></c>`

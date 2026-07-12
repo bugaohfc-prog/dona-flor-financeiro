@@ -355,11 +355,12 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
 
   const contasPorMes = useMemo(() => {
     const mapa = {}
+    const mesReferencia = filtroMes || mesAtualPadrao()
     contas.filter(contaEntraNoStatus).forEach((conta) => {
       if (filtroCentro && conta.centro_custo_id !== filtroCentro) return
       if (filtroFilial && conta.filial_id !== filtroFilial) return
       const mes = pegarMes(conta.data_vencimento)
-      if (!mes) return
+      if (!mes || mes > mesReferencia) return
       if (!mapa[mes]) mapa[mes] = { mes, total: 0, pago: 0, pendente: 0, vencido: 0 }
       const valor = valorPrevistoConta(conta)
       mapa[mes].total += valor
@@ -368,7 +369,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       if (estaVencida(conta.data_vencimento, conta.status)) mapa[mes].vencido += valor
     })
     return Object.values(mapa).sort((a, b) => a.mes.localeCompare(b.mes)).slice(-6)
-  }, [contas, filtroStatus, filtroCentro, filtroFilial])
+  }, [contas, filtroMes, filtroStatus, filtroCentro, filtroFilial])
 
   const rankingFiliais = useMemo(() => {
     const mapa = {}

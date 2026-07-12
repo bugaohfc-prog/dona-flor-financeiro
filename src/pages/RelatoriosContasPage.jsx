@@ -305,9 +305,6 @@ export default function RelatoriosContasPage({
     return contasNormalizadas
       .filter((linha) => {
         if (!possuiTipoSelecionado) return false
-        if (periodoContasAVencer === 'todas-abertas' && possuiContasAVencerSelecionadas) {
-          return linha.statusOperacional === 'Vencida' || linha.statusOperacional === 'A vencer'
-        }
         if (linha.statusOperacional === 'Vencida') return tiposSelecionados.includes('vencidas')
         if (linha.statusOperacional === 'A vencer') return tiposSelecionados.includes('a-vencer')
         if (linha.statusOperacional === 'Paga') return tiposSelecionados.includes('pagas')
@@ -322,8 +319,8 @@ export default function RelatoriosContasPage({
       })
       .filter((linha) => !filtroFilial || linha.conta.filial_id === filtroFilial)
       .filter((linha) => !centrosSelecionados.length || centrosSelecionados.includes(linha.conta.centro_custo_id || ''))
-      .filter((linha) => !dataInicial || !linha.vencimento || linha.vencimento >= dataInicial)
-      .filter((linha) => !dataFinal || !linha.vencimento || linha.vencimento <= dataFinal)
+      .filter((linha) => !dataInicial && !dataFinal ? true : Boolean(linha.vencimento) && (!dataInicial || linha.vencimento >= dataInicial))
+      .filter((linha) => !dataInicial && !dataFinal ? true : Boolean(linha.vencimento) && (!dataFinal || linha.vencimento <= dataFinal))
       .filter((linha) => !termo || linha.busca.includes(termo))
       .sort((a, b) => String(a.vencimento || '9999-12-31').localeCompare(String(b.vencimento || '9999-12-31')))
   }, [busca, centrosSelecionados, contasNormalizadas, dataFinal, dataInicial, filtroFilial, hojeBanco, limiteContasAVencer, periodoContasAVencer, possuiContasAVencerSelecionadas, possuiTipoSelecionado, tiposSelecionados])

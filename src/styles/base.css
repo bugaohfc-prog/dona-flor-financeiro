@@ -148,3 +148,10 @@ td{border-bottom:1px solid #e2e8f0;padding:8px}
     display: none;
   }
 }
+
+.df-page-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.df-page-hero-copy{min-width:0}
+.df-page-hero-kicker{display:block;color:var(--df-color-brand);font-size:12px;font-weight:900;text-transform:uppercase}
+.df-page-hero h1{margin:4px 0;color:var(--df-color-text)}
+.df-page-hero p{margin:0;color:var(--df-color-muted)}
+.df-page-hero-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}

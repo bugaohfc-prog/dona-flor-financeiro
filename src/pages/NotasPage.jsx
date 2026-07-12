@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import PageHero from '../components/shared/PageHero.jsx'
 
 const OPCOES_ORDENACAO_NOTAS = [
   { valor: 'prioridade', label: 'Prioridade' },
@@ -121,19 +122,19 @@ export default function NotasPage({
 
   return (
     <>
-      <div className="page-title-actions notes-page-title notes-redesign-header">
-        <div>
-          <span className="notes-page-kicker">Operação</span>
-          <h1 style={styles.titulo}>Notas</h1>
-          <p style={styles.textoNota}>Acompanhamento de pendências, lembretes e observações operacionais.</p>
-        </div>
-        <div className="page-actions-row">
-          <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>Voltar ao Painel</button>
-          {podeEditarFinanceiro && (
-            <button className="note-create-button" style={styles.btnSalvar} onClick={abrirNovaNota}>Nova nota</button>
-          )}
-        </div>
-      </div>
+      <PageHero
+        kicker="Opera&#231;&#227;o"
+        title="Notas"
+        description="Acompanhamento de pend&#234;ncias, lembretes e observa&#231;&#245;es operacionais."
+        className="page-title-actions notes-page-title notes-redesign-header"
+        actionsClassName="page-actions-row"
+        actions={(
+          <>
+            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>Voltar ao Painel</button>
+            {podeEditarFinanceiro && <button className="note-create-button" style={styles.btnSalvar} onClick={abrirNovaNota}>Nova nota</button>}
+          </>
+        )}
+      />
 
       <section style={styles.cardConfiguracao} className="notes-page-section notes-redesign-section">
         <div className="notes-page-header">

@@ -175,8 +175,8 @@ export default function AppShellStyles() {
                     border: 1px solid rgba(15, 118, 110, 0.08);
                     box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07) !important;
                   }
-                  .summary-grid span { font-size: 13px; color: #475569; }
-                  .summary-grid strong { font-size: 25px; margin-top: 6px; }
+                  .summary-grid span { font-size: 13px; color: var(--df-color-muted); }
+                  .summary-grid strong { font-size: var(--df-kpi-value); margin-top: 6px; }
 
                   .agenda-card-polished {
                     max-width: 1280px;

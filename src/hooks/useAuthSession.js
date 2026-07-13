@@ -10,8 +10,6 @@ import {
 
 const INTERVALO_GRAVACAO_ATIVIDADE_MS = 15 * 1000
 const SESSION_BOOTSTRAP_TIMEOUT_MS = 10000
-// Pausa temporária autorizada para a validação da V1; remover ao retomar a política de inatividade.
-const EXPIRACAO_AUTOMATICA_PAUSADA = true
 
 function comTimeoutSessao(promise) {
   return Promise.race([
@@ -208,8 +206,6 @@ export function useAuthSession({
       const agoraVerificacao = Date.now()
       const tempoTotal = agoraVerificacao - inicio
       const tempoInativo = agoraVerificacao - ultimaAtividade
-
-      if (EXPIRACAO_AUTOMATICA_PAUSADA) return
 
       if (tempoTotal >= OITO_HORAS_MS) {
         encerrarSessao('Sua sessão expirou por segurança. Faça login novamente.')

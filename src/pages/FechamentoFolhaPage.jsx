@@ -154,7 +154,7 @@ const estilosLocais = {
   },
   resumoCard: {
     border: '1px solid #e5e7eb',
-    borderRadius: 8,
+    borderRadius: 14,
     padding: 12,
     background: '#fff',
     boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
@@ -166,7 +166,7 @@ const estilosLocais = {
   },
   item: {
     border: '1px solid #e5e7eb',
-    borderRadius: 8,
+    borderRadius: 14,
     padding: 12,
     background: '#fff'
   },
@@ -187,7 +187,7 @@ const estilosLocais = {
   },
   formPanel: {
     border: '1px solid #e5e7eb',
-    borderRadius: 8,
+    borderRadius: 16,
     padding: 12,
     background: '#f9fafb',
     display: 'grid',
@@ -195,7 +195,7 @@ const estilosLocais = {
   },
   formPanelSoft: {
     border: '1px solid #e5e7eb',
-    borderRadius: 8,
+    borderRadius: 14,
     padding: 12,
     background: '#fff',
     display: 'grid',
@@ -224,7 +224,7 @@ const estilosLocais = {
   input: {
     width: '100%',
     border: '1px solid #d1d5db',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: '10px 12px',
     minHeight: 42,
     boxSizing: 'border-box',
@@ -234,7 +234,7 @@ const estilosLocais = {
   inputReadOnly: {
     width: '100%',
     border: '1px solid #d1d5db',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: '10px 12px',
     minHeight: 42,
     boxSizing: 'border-box',
@@ -246,7 +246,7 @@ const estilosLocais = {
     width: '100%',
     minHeight: 88,
     border: '1px solid #d1d5db',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: '10px 12px',
     boxSizing: 'border-box',
     font: 'inherit',
@@ -267,7 +267,7 @@ const estilosLocais = {
     border: '1px solid #facc15',
     background: '#fefce8',
     color: '#854d0e',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     margin: '12px 0'
   },
@@ -275,7 +275,7 @@ const estilosLocais = {
     border: '1px solid #fecaca',
     background: '#fef2f2',
     color: '#991b1b',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     margin: '12px 0'
   },
@@ -289,7 +289,7 @@ const estilosLocais = {
     overflowX: 'auto',
     marginTop: 12,
     border: '1px solid #e5e7eb',
-    borderRadius: 8,
+    borderRadius: 14,
     background: '#fff'
   },
   table: {
@@ -339,7 +339,7 @@ const estilosLocais = {
   },
   mobileCard: {
     border: '1px solid #e5e7eb',
-    borderRadius: 8,
+    borderRadius: 14,
     padding: 12,
     background: '#fff',
     display: 'grid',
@@ -364,7 +364,7 @@ const estilosLocais = {
   },
   mobileMetaItem: {
     border: '1px solid #eef2f7',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 8,
     background: '#f8fafc',
     display: 'grid',
@@ -395,7 +395,7 @@ const estilosLocais = {
   },
   grupoResumoItem: {
     border: '1px solid #e5e7eb',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 8,
     background: '#f8fafc',
     display: 'grid',
@@ -460,7 +460,7 @@ const estilosLocais = {
   },
   contextoResumoCard: {
     border: '1px solid rgba(37, 99, 235, 0.16)',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 10,
     background: '#fff',
     display: 'grid',
@@ -479,7 +479,7 @@ const estilosLocais = {
   },
   itensPanel: {
     border: '1px solid #e5e7eb',
-    borderRadius: 8,
+    borderRadius: 14,
     padding: 10,
     background: '#f8fafc',
     display: 'grid',
@@ -503,7 +503,7 @@ const estilosLocais = {
   },
   itemDetalhado: {
     border: '1px solid #e5e7eb',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 10,
     background: '#fff',
     display: 'grid',
@@ -518,7 +518,7 @@ const estilosLocais = {
   },
   itemFormularioCompacto: {
     border: '1px solid #cbd5e1',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 10,
     background: '#fff',
     display: 'grid',
@@ -533,7 +533,7 @@ const estilosLocais = {
   },
   itemVazio: {
     border: '1px dashed #cbd5e1',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 10,
     background: '#fff',
     color: '#64748b',

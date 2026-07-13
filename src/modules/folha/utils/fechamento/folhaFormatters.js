@@ -43,7 +43,11 @@ export function normalizarBusca(valor) {
 
 export function parseNumeroFormulario(valor) {
   if (valor === null || valor === undefined || valor === '') return null
-  const numero = Number(String(valor).replace(',', '.'))
+  const texto = String(valor).trim()
+  const partesHora = texto.match(/^(\d+)\s*:\s*([0-5]\d)$/)
+  const numero = partesHora
+    ? Number(partesHora[1]) + (Number(partesHora[2]) / 60)
+    : Number(texto.replace(',', '.'))
   return Number.isFinite(numero) ? numero : null
 }
 

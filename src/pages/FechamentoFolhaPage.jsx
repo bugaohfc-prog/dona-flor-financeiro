@@ -687,8 +687,8 @@ function calcularResumoOperacionalGrupo(grupo, itensPorLancamento) {
     else resumo.pendentes += 1
 
     if (lancamento?.categoria === 'compras_vales') resumo.totalComprasVales += valor
-    if (lancamento?.categoria === 'falta_injustificada') resumo.faltas += Number(lancamento?.quantidade) || 0
-    if (CATEGORIAS_HORAS_EXTRAS.has(lancamento?.categoria)) resumo.horasExtras += Number(lancamento?.quantidade) || 0
+    if (lancamento?.categoria === 'falta_injustificada') resumo.faltas += parseNumeroFormulario(lancamento?.quantidade) || 0
+    if (CATEGORIAS_HORAS_EXTRAS.has(lancamento?.categoria)) resumo.horasExtras += parseNumeroFormulario(lancamento?.quantidade) || 0
     if (CATEGORIAS_ITENS_DETALHADOS.has(lancamento?.categoria)) {
       resumo.itensDetalhados += itens.length
       if (itens.length === 0) resumo.lancamentosSemItens += 1

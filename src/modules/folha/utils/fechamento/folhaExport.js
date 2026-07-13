@@ -8,6 +8,7 @@ function numero(valor) {
 }
 
 function horasParaTexto(valor) {
+  if (numero(valor) <= 0) return ''
   const totalMinutos = Math.round(numero(valor) * 60)
   const horas = Math.floor(totalMinutos / 60)
   const minutos = totalMinutos % 60

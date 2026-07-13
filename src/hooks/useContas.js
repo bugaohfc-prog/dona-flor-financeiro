@@ -926,6 +926,21 @@ export function useContas() {
     }
 
     fecharConta()
+    if (editandoContaId) {
+      registrarAuditoriaEventoFinanceiro(supabase, {
+        empresa_id: empresaId,
+        acao: 'financeiro.conta.atualizada',
+        entidade_tipo: 'df_contas',
+        entidade_id: editandoContaId,
+        modulo: 'financeiro',
+        origem: 'app',
+        severidade: 'media',
+        status: 'sucesso',
+        dados_antes: { entidade: 'df_contas' },
+        dados_depois: { entidade: 'df_contas', campos: ['descricao', 'valor', 'vencimento', 'centro_custo', 'filial', 'imposto_tipo'] },
+        metadados: { conta_id: editandoContaId }
+      }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria da atualização da conta.', { message: auditoriaError?.message }))
+    }
     await buscarContas()
     mostrarAviso(editandoContaId ? 'Conta atualizada com sucesso.' : 'Conta criada com sucesso.', 'sucesso')
   }

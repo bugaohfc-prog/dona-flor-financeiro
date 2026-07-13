@@ -3356,6 +3356,20 @@ export default function App() {
       return
     }
 
+    supabase.functions.invoke('registrar-auditoria-evento', { body: {
+      empresa_id: empresaId,
+      acao: 'financeiro.importacao.contas_concluida',
+      entidade_tipo: 'df_contas',
+      entidade_id: empresaId,
+      modulo: 'financeiro',
+      origem: 'app',
+      severidade: 'alta',
+      status: 'sucesso',
+      dados_antes: null,
+      dados_depois: { aceitas: payload.length, duplicadas: totalDuplicadas },
+      metadados: { empresa_id: empresaId, arquivo: 'sanitizado' }
+    } }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria da importacao.', { message: auditoriaError?.message }))
+
     const mensagemSucesso = totalDuplicadas > 0
       ? `Importação concluída: ${payload.length} conta(s) importada(s), ${totalDuplicadas} duplicada(s) ignorada(s).`
       : `${payload.length} conta(s) importada(s) com sucesso.`

@@ -1507,6 +1507,8 @@
 .audit-event-card { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; }
 .audit-event-card span, .audit-event-card small { color: #64748b; font-size: 13px; }
 .audit-event-card time { color: #64748b; font-size: 12px; }
+.audit-event-toggle { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; border: 0; padding: 0; text-align: left; background: transparent; color: inherit; }
+.audit-event-details { grid-column: 1 / -1; margin: 8px 0 0; padding: 12px; border-radius: 12px; background: #f8fafc; overflow: auto; font-size: 12px; }
 .audit-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 18px 0 120px; }
 .audit-pagination button { min-height: 40px; padding: 0 18px; border: 0; border-radius: 999px; background: #0f766e; color: #fff; font-weight: 800; }
 .audit-pagination button:disabled { opacity: .45; cursor: not-allowed; }

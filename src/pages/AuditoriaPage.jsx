@@ -10,6 +10,7 @@ export default function AuditoriaPage({ styles, empresaId, permissoesUsuario, na
   const [filtros, setFiltros] = useState({ modulo: '', acao: '', severidade: '', status: '' })
   const [estado, setEstado] = useState('carregando')
   const [erro, setErro] = useState('')
+  const [eventoAberto, setEventoAberto] = useState(null)
 
   const autorizado = Boolean(permissoesUsuario?.isMaster || ['admin'].includes(permissoesUsuario?.perfilEmpresa))
 
@@ -31,15 +32,24 @@ export default function AuditoriaPage({ styles, empresaId, permissoesUsuario, na
 
   if (!autorizado) return <section className="page-section"><div className="empty-state-card"><strong>Acesso restrito</strong><p>Somente Admin ou Master podem consultar a auditoria.</p><button className="admin-btn admin-btn-secondary" onClick={() => navegarPara('dashboard')}>Voltar</button></div></section>
 
+  const exportarCsv = () => {
+    const linhas = [['data', 'acao', 'modulo', 'entidade', 'severidade', 'status', 'origem'], ...eventos.map((evento) => [evento.criado_em, evento.acao, evento.modulo, evento.entidade_tipo, evento.severidade, evento.status, evento.origem])]
+    const csv = linhas.map((linha) => linha.map((valor) => `"${String(valor ?? '').replaceAll('"', '""')}"`).join(';')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a'); link.href = url; link.download = 'auditoria-eventos.csv'; link.click(); URL.revokeObjectURL(url)
+  }
+
   return <section className="page-section audit-page">
     <header className="page-hero page-hero-standard"><span className="page-hero-kicker">Administração</span><h1>Auditoria e logs</h1><p>Eventos sanitizados da empresa, em modo somente leitura.</p></header>
     <div className="audit-toolbar">
       {['modulo', 'acao', 'severidade', 'status'].map((campo) => <label key={campo}><span>{campo}</span><input value={filtros[campo]} onChange={(e) => { setPagina(0); setFiltros((atual) => ({ ...atual, [campo]: e.target.value })) }} /></label>)}
     </div>
+    <div className="audit-actions"><button className="admin-btn admin-btn-secondary" onClick={exportarCsv} disabled={!eventos.length}>Exportar CSV</button></div>
     {estado === 'erro' && <div className="empty-state-card"><strong>Não foi possível carregar</strong><p>{erro}</p></div>}
     {estado === 'carregando' && <div className="empty-state-card"><strong>Carregando auditoria…</strong></div>}
     {estado === 'pronto' && !eventos.length && <div className="empty-state-card"><strong>Nenhum evento encontrado</strong><p>Ajuste os filtros ou aguarde novos eventos.</p></div>}
-    {estado === 'pronto' && eventos.length > 0 && <div className="audit-list">{eventos.map((evento) => <article className="audit-event-card" key={evento.id}><div><strong>{evento.acao}</strong><span>{evento.modulo} · {evento.entidade_tipo}</span></div><time>{new Date(evento.criado_em).toLocaleString('pt-BR')}</time><small>{evento.severidade} · {evento.status} · {evento.origem}</small></article>)}</div>}
+    {estado === 'pronto' && eventos.length > 0 && <div className="audit-list">{eventos.map((evento) => <article className="audit-event-card" key={evento.id}><button className="audit-event-toggle" onClick={() => setEventoAberto((atual) => atual === evento.id ? null : evento.id)}><div><strong>{evento.acao}</strong><span>{evento.modulo} · {evento.entidade_tipo}</span></div><time>{new Date(evento.criado_em).toLocaleString('pt-BR')}</time><small>{evento.severidade} · {evento.status} · {evento.origem}</small></button>{eventoAberto === evento.id && <pre className="audit-event-details">{JSON.stringify({ dados_antes: evento.dados_antes, dados_depois: evento.dados_depois, metadados: evento.metadados }, null, 2)}</pre>}</article>)}</div>}
     <div className="audit-pagination"><button disabled={pagina === 0} onClick={() => setPagina((v) => v - 1)}>Anterior</button><span>{total ? `${pagina * PAGE_SIZE + 1}–${Math.min((pagina + 1) * PAGE_SIZE, total)} de ${total}` : '0 eventos'}</span><button disabled={(pagina + 1) * PAGE_SIZE >= total} onClick={() => setPagina((v) => v + 1)}>Próxima</button></div>
   </section>
 }

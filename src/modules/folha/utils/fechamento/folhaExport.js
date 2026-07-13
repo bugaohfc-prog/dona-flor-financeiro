@@ -1,6 +1,8 @@
 import { createXlsxBlob, downloadBlob, exportCsv } from '../../../../services/export/reportExportService'
 
 function numero(valor) {
+  const partesHora = String(valor ?? '').trim().match(/^(\d+)\s*:\s*([0-5]\d)$/)
+  if (partesHora) return Number(partesHora[1]) + (Number(partesHora[2]) / 60)
   const resultado = Number(valor)
   return Number.isFinite(resultado) ? resultado : 0
 }

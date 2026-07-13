@@ -1963,13 +1963,14 @@ export default function FechamentoFolhaPage({
                     {categoriaHorasExtras ? 'Quantidade de horas' : categoriaFalta ? 'Quantidade/dias' : 'Quantidade'}
                   </span>
                   <input
-                    type="number"
+                    type={categoriaHorasExtras ? 'text' : 'number'}
                     min="0"
-                    step="0.01"
+                    step={categoriaHorasExtras ? undefined : '0.01'}
                     value={formLancamento.quantidade}
                     onChange={(event) => setFormLancamento((atual) => ({ ...atual, quantidade: event.target.value }))}
                     style={estilosLocais.input}
                     disabled={!empresaId || !podeEditar || salvando}
+                    placeholder={categoriaHorasExtras ? 'Ex.: 4:20' : undefined}
                   />
                 </label>
 

@@ -391,7 +391,11 @@ function normalizarCategoriaItem(valor) {
 
 function normalizarNumero(valor, nomeCampo) {
   if (valor === null || valor === undefined || valor === '') return null
-  const numero = Number(valor)
+  const texto = String(valor).trim()
+  const partesHora = texto.match(/^(\d+)\s*:\s*([0-5]\d)$/)
+  const numero = partesHora
+    ? Number(partesHora[1]) + (Number(partesHora[2]) / 60)
+    : Number(texto)
   if (!Number.isFinite(numero) || numero < 0) {
     throw new Error(`${nomeCampo} deve ser maior ou igual a zero.`)
   }

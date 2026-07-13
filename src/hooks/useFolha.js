@@ -31,6 +31,23 @@ function criarErroCompetenciaAusente() {
   return new Error('Competencia de folha nao identificada.')
 }
 
+function registrarAuditoriaFolha(supabase, payload) {
+  if (!payload?.empresa_id || !payload?.entidade_id) return
+  supabase.functions.invoke('registrar-auditoria-evento', { body: {
+    empresa_id: payload.empresa_id,
+    acao: payload.acao,
+    entidade_tipo: payload.entidade_tipo,
+    entidade_id: payload.entidade_id,
+    modulo: 'folha',
+    origem: 'app',
+    severidade: 'alta',
+    status: 'sucesso',
+    dados_antes: payload.dados_antes || null,
+    dados_depois: payload.dados_depois || null,
+    metadados: payload.metadados || {}
+  } }).catch((error) => console.warn('Falha ao registrar auditoria da folha.', { message: error?.message }))
+}
+
 function respostaErro(error) {
   return { data: null, error }
 }
@@ -344,7 +361,7 @@ export function useFolha(opcoes = {}) {
       supabase,
       empresaId: empresa,
       dados
-    }))
+    }).then((resultado) => { const id = Array.isArray(resultado?.data) ? resultado.data[0]?.id : resultado?.data?.id; registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.competencia.criada', entidade_tipo: 'df_folha_competencias', entidade_id: id, dados_depois: { competencia: dados?.competencia || null } }); return resultado }))
   }, [executarComEmpresaAtiva, supabase])
 
   const atualizarCompetencia = useCallback(async (id, dados) => {
@@ -392,7 +409,7 @@ export function useFolha(opcoes = {}) {
       supabase,
       empresaId: empresa,
       dados: payload
-    }), {
+    }).then((resultado) => { const id = Array.isArray(resultado?.data) ? resultado.data[0]?.id : resultado?.data?.id; registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.lancamento.criado', entidade_tipo: 'df_folha_lancamentos', entidade_id: id, dados_depois: { categoria: payload.categoria || null, natureza: payload.natureza || null, competencia_id: competencia } }); return resultado }), {
       recarregarLancamentos: true,
       competenciaId: competencia,
       funcionarioId: funcionario || undefined

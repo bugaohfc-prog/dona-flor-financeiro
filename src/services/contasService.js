@@ -310,6 +310,13 @@ export async function registrarAuditoriaPagamentoParcialCriado(supabase, payload
   })
 }
 
+export async function registrarAuditoriaEventoFinanceiro(supabase, payloadAuditoria) {
+  if (!payloadAuditoria?.empresa_id || !payloadAuditoria?.acao || !payloadAuditoria?.entidade_id) {
+    return { data: null, error: new Error('Payload de auditoria incompleto.') }
+  }
+  return supabase.functions.invoke('registrar-auditoria-evento', { body: payloadAuditoria })
+}
+
 export async function estornarPagamentoParcial(supabase, pagamentoId, contaId, empresaId) {
   assertEmpresaId(empresaId)
 

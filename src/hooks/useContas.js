@@ -20,6 +20,7 @@ import {
   listarContasDoMesParaRecorrencia,
   listarPagamentosParciaisPorContas,
   registrarAuditoriaPagamentoParcialCriado,
+  registrarAuditoriaEventoFinanceiro,
   registrarPagamentoParcial as registrarPagamentoParcialService,
   estornarPagamentoParcial as estornarPagamentoParcialService,
   baixarContaQuitadaPorParciais as baixarContaQuitadaPorParciaisService,
@@ -1023,6 +1024,20 @@ export function useContas() {
       )
       return false
     }
+
+    registrarAuditoriaEventoFinanceiro(supabase, {
+      empresa_id: empresaId,
+      acao: 'financeiro.pagamento_parcial.estornado',
+      entidade_tipo: 'df_contas_pagamentos',
+      entidade_id: pagamentoId,
+      modulo: 'financeiro',
+      origem: 'app',
+      severidade: 'alta',
+      status: 'sucesso',
+      dados_antes: { arquivado: false, conta_id: contaId },
+      dados_depois: { arquivado: true, conta_id: contaId },
+      metadados: { conta_id: contaId }
+    }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria do estorno parcial.', { message: auditoriaError?.message }))
 
     await buscarContas()
     mostrarAviso?.('Pagamento parcial estornado com sucesso.', 'sucesso')

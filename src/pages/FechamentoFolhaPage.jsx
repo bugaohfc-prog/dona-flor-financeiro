@@ -1430,27 +1430,6 @@ export default function FechamentoFolhaPage({
   return (
     <>
       <style>{`
-        .folha-page-shell {
-          display: grid;
-          gap: 14px;
-        }
-        .folha-section {
-          scroll-margin-top: 18px;
-        }
-        .folha-section.compact {
-          padding-top: 14px !important;
-          padding-bottom: 14px !important;
-        }
-        .folha-resumo-card h3 {
-          margin: 4px 0 0;
-          color: #334155;
-          font-size: 18px;
-          line-height: 1.15;
-        }
-        .folha-resumo-card.is-money h3 {
-          color: #475569;
-          font-size: 16px;
-        }
         .folha-table tbody tr:hover {
           background: #f8fafc;
         }
@@ -1462,17 +1441,8 @@ export default function FechamentoFolhaPage({
           font-weight: 700;
           white-space: nowrap;
         }
-        .folha-card-description {
-          margin: 0;
-          color: #475569;
-          font-size: 13px;
-          line-height: 1.4;
-        }
         .folha-competencia-actions {
           justify-content: space-between;
-        }
-        .folha-mobile-note {
-          display: none;
         }
         @media (max-width: 860px) {
           .folha-page-shell {

@@ -11526,3 +11526,10 @@
 .folha-switch.desabilitado{opacity:.55;cursor:not-allowed}
 .folha-switch.desabilitado input{cursor:not-allowed}
 .folha-switch:has(input:focus-visible){box-shadow:0 0 0 3px rgba(13,148,136,.16)}
+.folha-page-shell{display:grid;gap:14px}
+.folha-section{scroll-margin-top:18px}
+.folha-section.compact{padding-top:14px!important;padding-bottom:14px!important}
+.folha-resumo-card h3{margin:4px 0 0;color:#334155;font-size:18px;line-height:1.15}
+.folha-resumo-card.is-money h3{color:#475569;font-size:16px}
+.folha-card-description{margin:0;color:#475569;font-size:13px;line-height:1.4}
+.folha-mobile-note{display:none}

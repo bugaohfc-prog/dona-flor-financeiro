@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useFolha } from '../hooks/useFolha'
 import { useFuncionarios } from '../hooks/useFuncionarios'
 import FolhaContextoColaboradorAtivo from '../modules/folha/components/fechamento/FolhaContextoColaboradorAtivo'
+import FolhaExportacoes from '../modules/folha/components/fechamento/FolhaExportacoes'
 import FolhaItensDetalhados from '../modules/folha/components/fechamento/FolhaItensDetalhados'
 import FolhaLancamentoAcoes from '../modules/folha/components/fechamento/FolhaLancamentoAcoes'
 import FolhaLancamentosLista from '../modules/folha/components/fechamento/FolhaLancamentosLista'
@@ -2087,24 +2088,12 @@ export default function FechamentoFolhaPage({
             <h2 style={styles.subtitulo}>Lançamentos da competência</h2>
             <p style={styles.textoNota}>Lista interna sem CPF, exportação, documentos ou integração financeira.</p>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <button
-              type="button"
-              style={styles.btnCinza}
-              disabled={!competenciaSelecionada || loadingLancamentos}
-              onClick={() => exportarControleCompras(parametrosExportacao)}
-            >
-              Exportar compras
-            </button>
-            <button
-              type="button"
-              style={styles.btnPrimario}
-              disabled={!competenciaSelecionada || loadingLancamentos}
-              onClick={() => exportarConsolidadoContabil(parametrosExportacao)}
-            >
-              Exportar contabilidade
-            </button>
-          </div>
+          <FolhaExportacoes
+            styles={styles}
+            desabilitado={!competenciaSelecionada || loadingLancamentos}
+            onExportarCompras={() => exportarControleCompras(parametrosExportacao)}
+            onExportarContabilidade={() => exportarConsolidadoContabil(parametrosExportacao)}
+          />
           <label style={{ ...estilosLocais.formField, minWidth: 220, maxWidth: 360 }}>
             <span style={estilosLocais.label}>Buscar colaborador</span>
             <input

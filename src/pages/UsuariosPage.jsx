@@ -307,7 +307,7 @@ export default function UsuariosPage({
                           type="button"
                           className="user-branch-clear"
                           disabled={!podeEditarUsuarios || masterBloqueadoParaAdmin || salvandoFilialUsuario === usuario.id}
-                          onClick={() => liberarTodasFiliaisUsuario(usuario)}
+                          onClick={() => { liberarTodasFiliaisUsuario(usuario); registrarEvento('administracao.usuario.filiais_liberadas', usuario.id) }}
                           title={masterBloqueadoParaAdmin ? 'Usuário master não pode ser alterado por admin comum.' : 'Deixar o usuário com acesso a todas as filiais da empresa'}
                         >
                           Todas
@@ -321,7 +321,7 @@ export default function UsuariosPage({
                           const selecionada = filiaisSelecionadas.includes(filial.id)
                           return (
                             <label key={filial.id} className={`user-branch-chip users-branch-chip ${selecionada ? 'selected' : ''}`}>
-                              <input type="checkbox" checked={selecionada} disabled={!podeEditarUsuarios || masterBloqueadoParaAdmin || salvandoFilialUsuario === usuario.id} onChange={() => alternarFilialUsuario(usuario, filial.id)} />
+                              <input type="checkbox" checked={selecionada} disabled={!podeEditarUsuarios || masterBloqueadoParaAdmin || salvandoFilialUsuario === usuario.id} onChange={() => { alternarFilialUsuario(usuario, filial.id); registrarEvento('administracao.usuario.filial_alterada', usuario.id, { filial_id: filial.id, permitida: !selecionada }) }} />
                               <span>{filial.nome || filial.nome_filial || filial.descricao || 'Filial'}</span>
                             </label>
                           )
@@ -331,7 +331,7 @@ export default function UsuariosPage({
 
                     {podeEditarUsuarios && (
                       <div className="user-actions users-user-actions">
-                        <button className="admin-btn admin-btn-secondary" disabled={masterBloqueadoParaAdmin} onClick={() => enviarAcessoUsuarioEmpresa(usuario)} title={masterBloqueadoParaAdmin ? 'Usuário master não pode ser alterado por admin comum.' : 'Enviar link de acesso por e-mail.'}>Enviar link</button>
+                        <button className="admin-btn admin-btn-secondary" disabled={masterBloqueadoParaAdmin} onClick={() => { enviarAcessoUsuarioEmpresa(usuario); registrarEvento('administracao.usuario.acesso_enviado', usuario.id) }} title={masterBloqueadoParaAdmin ? 'Usuário master não pode ser alterado por admin comum.' : 'Enviar link de acesso por e-mail.'}>Enviar link</button>
                         <button className="admin-btn admin-btn-danger" disabled={atual || masterBloqueadoParaAdmin} onClick={() => { removerUsuarioEmpresa(usuario); registrarEvento('administracao.usuario.removido', usuario.id) }} title={masterBloqueadoParaAdmin ? 'Usuário master não pode ser alterado por admin comum.' : atual ? 'Você não pode remover o próprio acesso.' : 'Remover usuário'}>Remover</button>
                       </div>
                     )}

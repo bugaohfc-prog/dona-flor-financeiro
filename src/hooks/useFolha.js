@@ -463,7 +463,7 @@ export function useFolha(opcoes = {}) {
       supabase,
       empresaId: empresa,
       dados: payload
-    }), {
+    }).then((resultado) => { const id = Array.isArray(resultado?.data) ? resultado.data[0]?.id : resultado?.data?.id; registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.item.criado', entidade_tipo: 'df_folha_itens', entidade_id: id, dados_depois: { categoria: payload.categoria || null } }); return resultado }), {
       recarregarLancamentos: true,
       competenciaId: competencia
     })
@@ -480,7 +480,7 @@ export function useFolha(opcoes = {}) {
         ...dados,
         categoria: item?.categoria || dados.categoria
       }
-    }), {
+    }).then((resultado) => { registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.item.atualizado', entidade_tipo: 'df_folha_itens', entidade_id: item?.id, dados_depois: { campos: Object.keys(dados || {}) } }); return resultado }), {
       recarregarLancamentos: true,
       competenciaId: competencia
     })
@@ -493,7 +493,7 @@ export function useFolha(opcoes = {}) {
       supabase,
       empresaId: empresa,
       id: item?.id
-    }), {
+    }).then((resultado) => { registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.item.arquivado', entidade_tipo: 'df_folha_itens', entidade_id: item?.id, dados_depois: { arquivado: true } }); return resultado }), {
       recarregarLancamentos: true,
       competenciaId: competencia
     })

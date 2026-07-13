@@ -370,7 +370,7 @@ export function useFolha(opcoes = {}) {
       empresaId: empresa,
       id,
       dados
-    }))
+    }).then((resultado) => { registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.competencia.atualizada', entidade_tipo: 'df_folha_competencias', entidade_id: id, dados_depois: { campos: Object.keys(dados || {}) } }); return resultado }))
   }, [executarComEmpresaAtiva, supabase])
 
   const arquivarCompetencia = useCallback(async (id) => {
@@ -378,7 +378,7 @@ export function useFolha(opcoes = {}) {
       supabase,
       empresaId: empresa,
       id
-    }), { recarregarLancamentos: id === competenciaAtual, competenciaId: id })
+    }).then((resultado) => { registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.competencia.arquivada', entidade_tipo: 'df_folha_competencias', entidade_id: id, dados_depois: { arquivada: true } }); return resultado }), { recarregarLancamentos: id === competenciaAtual, competenciaId: id })
   }, [competenciaAtual, executarComEmpresaAtiva, supabase])
 
   const reativarCompetencia = useCallback(async (id) => {
@@ -386,7 +386,7 @@ export function useFolha(opcoes = {}) {
       supabase,
       empresaId: empresa,
       id
-    }), { recarregarLancamentos: id === competenciaAtual, competenciaId: id })
+    }).then((resultado) => { registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.competencia.reativada', entidade_tipo: 'df_folha_competencias', entidade_id: id, dados_depois: { arquivada: false } }); return resultado }), { recarregarLancamentos: id === competenciaAtual, competenciaId: id })
   }, [competenciaAtual, executarComEmpresaAtiva, supabase])
 
   const criarLancamento = useCallback(async (dados = {}) => {
@@ -422,7 +422,7 @@ export function useFolha(opcoes = {}) {
       empresaId: empresa,
       id,
       dados
-    }), { recarregarLancamentos: true })
+    }).then((resultado) => { registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.lancamento.atualizado', entidade_tipo: 'df_folha_lancamentos', entidade_id: id, dados_depois: { campos: Object.keys(dados || {}) } }); return resultado }), { recarregarLancamentos: true })
   }, [executarComEmpresaAtiva, supabase])
 
   const arquivarLancamento = useCallback(async (id) => {

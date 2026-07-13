@@ -547,6 +547,12 @@ function obterNaturezaPorCategoria(categoria) {
   return 'informativo'
 }
 
+function resolverNaturezaLancamento(lancamento) {
+  const natureza = normalizarTexto(lancamento?.natureza)
+  if (['credito', 'desconto', 'informativo'].includes(natureza)) return natureza
+  return obterNaturezaPorCategoria(lancamento?.categoria)
+}
+
 function criarFormularioCompetenciaInicial() {
   return { ...FORM_COMPETENCIA_INICIAL }
 }
@@ -644,13 +650,14 @@ function obterNomeFilial(filiaisPorId, filialId) {
 function calcularResumoLancamentos(lista = []) {
   return (lista || []).reduce((resumo, lancamento) => {
     const valor = Number(lancamento?.valor) || 0
+    const natureza = resolverNaturezaLancamento(lancamento)
 
     resumo.quantidadeLancamentos += 1
     if (lancamento?.arquivado) resumo.quantidadeArquivados += 1
 
-    if (!lancamento?.arquivado && lancamento?.natureza === 'credito') {
+    if (!lancamento?.arquivado && natureza === 'credito') {
       resumo.totalCreditos += valor
-    } else if (!lancamento?.arquivado && lancamento?.natureza === 'desconto') {
+    } else if (!lancamento?.arquivado && natureza === 'desconto') {
       resumo.totalDescontos += valor
     }
 
@@ -673,6 +680,7 @@ function calcularResumoOperacionalGrupo(grupo, itensPorLancamento) {
     }
 
     const valor = Number(lancamento?.valor) || 0
+    const natureza = resolverNaturezaLancamento(lancamento)
     const itens = itensPorLancamento.get(lancamento.id) || []
 
     if (lancamento?.conferido) resumo.conferidos += 1
@@ -686,8 +694,8 @@ function calcularResumoOperacionalGrupo(grupo, itensPorLancamento) {
       if (itens.length === 0) resumo.lancamentosSemItens += 1
     }
 
-    if (lancamento?.natureza === 'credito') resumo.creditos += valor
-    if (lancamento?.natureza === 'desconto') resumo.descontos += valor
+    if (natureza === 'credito') resumo.creditos += valor
+    if (natureza === 'desconto') resumo.descontos += valor
 
     resumo.totalAtual = resumo.creditos - resumo.descontos
     return resumo

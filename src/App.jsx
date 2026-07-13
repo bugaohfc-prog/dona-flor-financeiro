@@ -1335,6 +1335,19 @@ export default function App() {
       })
 
       await buscarUsuariosEmpresa(empresaId, { silencioso: true })
+      supabase.functions.invoke('registrar-auditoria-evento', { body: {
+        empresa_id: empresaId,
+        acao: 'administracao.usuario.convite_criado',
+        entidade_tipo: 'empresa',
+        entidade_id: empresaId,
+        modulo: 'administracao',
+        origem: 'app',
+        severidade: 'alta',
+        status: 'sucesso',
+        dados_antes: null,
+        dados_depois: { perfil, origem: 'criacao_manual' },
+        metadados: { email_hash: 'sanitizado' }
+      } }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria do convite.', { message: auditoriaError?.message }))
     } catch (error) {
       avisarErro(error)
       return

@@ -10,6 +10,11 @@ import {
 } from '../services/funcionariosService'
 import { mensagemSeguraErro } from '../utils/session'
 
+function auditarFuncionario(supabase, empresaId, acao, funcionarioId, dados = {}) {
+  if (!empresaId || !funcionarioId) return
+  supabase.functions.invoke('registrar-auditoria-evento', { body: { empresa_id: empresaId, acao, entidade_tipo: 'df_funcionarios', entidade_id: funcionarioId, modulo: 'rh', origem: 'app', severidade: 'alta', status: 'sucesso', dados_antes: null, dados_depois: dados, metadados: { funcionario_id: funcionarioId } } }).catch((error) => console.warn('Falha ao registrar auditoria de funcionario.', { message: error?.message }))
+}
+
 function normalizarId(valor) {
   return String(valor || '').trim()
 }
@@ -147,7 +152,7 @@ export function useFuncionarios(opcoes = {}) {
       supabase,
       empresaId: empresa,
       dados
-    }))
+    }).then((resultado) => { const id = Array.isArray(resultado?.data) ? resultado.data[0]?.id : resultado?.data?.id; auditarFuncionario(supabase, empresa, 'rh.funcionario.criado', id, { campos: Object.keys(dados || {}) }); return resultado }))
   }, [executarComEmpresaAtiva, supabase])
 
   const atualizarFuncionario = useCallback(async (funcionarioId, dados) => {
@@ -156,7 +161,7 @@ export function useFuncionarios(opcoes = {}) {
       empresaId: empresa,
       funcionarioId,
       dados
-    }))
+    }).then((resultado) => { auditarFuncionario(supabase, empresa, 'rh.funcionario.atualizado', funcionarioId, { campos: Object.keys(dados || {}) }); return resultado }))
   }, [executarComEmpresaAtiva, supabase])
 
   const arquivarFuncionario = useCallback(async (funcionarioId) => {
@@ -164,7 +169,7 @@ export function useFuncionarios(opcoes = {}) {
       supabase,
       empresaId: empresa,
       funcionarioId
-    }))
+    }).then((resultado) => { auditarFuncionario(supabase, empresa, 'rh.funcionario.arquivado', funcionarioId, { arquivado: true }); return resultado }))
   }, [executarComEmpresaAtiva, supabase])
 
   const reativarFuncionario = useCallback(async (funcionarioId) => {
@@ -172,7 +177,7 @@ export function useFuncionarios(opcoes = {}) {
       supabase,
       empresaId: empresa,
       funcionarioId
-    }))
+    }).then((resultado) => { auditarFuncionario(supabase, empresa, 'rh.funcionario.reativado', funcionarioId, { arquivado: false }); return resultado }))
   }, [executarComEmpresaAtiva, supabase])
 
   return {

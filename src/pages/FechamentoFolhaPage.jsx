@@ -28,6 +28,7 @@ import {
   CATEGORIAS_ITENS_DETALHADOS_FOLHA,
   STATUS_COMPETENCIA_FOLHA
 } from '../services/folhaService'
+import { exportarControleCompras, exportarConsolidadoContabil } from '../modules/folha/utils/fechamento/folhaExport'
 
 const FORM_COMPETENCIA_INICIAL = {
   competencia: '',
@@ -854,6 +855,15 @@ export default function FechamentoFolhaPage({
     obterNomeFuncionario(funcionariosPorId, colaboradorEmEdicaoId)
 
   const exibindoEdicaoColaborador = modoTelaFolha === MODO_FOLHA_EDICAO_COLABORADOR && Boolean(colaboradorEmEdicaoId)
+
+  const parametrosExportacao = {
+    empresaNome,
+    competencia: competenciaSelecionada?.competencia,
+    lancamentos,
+    itensLancamentos,
+    funcionarios: funcionarios || [],
+    filiais: filiais || []
+  }
 
   const itensPorLancamento = useMemo(() => {
     const mapa = new Map()
@@ -2067,6 +2077,24 @@ export default function FechamentoFolhaPage({
           <div>
             <h2 style={styles.subtitulo}>Lançamentos da competência</h2>
             <p style={styles.textoNota}>Lista interna sem CPF, exportação, documentos ou integração financeira.</p>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <button
+              type="button"
+              style={styles.btnCinza}
+              disabled={!competenciaSelecionada || loadingLancamentos}
+              onClick={() => exportarControleCompras(parametrosExportacao)}
+            >
+              Exportar compras
+            </button>
+            <button
+              type="button"
+              style={styles.btnPrimario}
+              disabled={!competenciaSelecionada || loadingLancamentos}
+              onClick={() => exportarConsolidadoContabil(parametrosExportacao)}
+            >
+              Exportar contabilidade
+            </button>
           </div>
           <label style={{ ...estilosLocais.formField, minWidth: 220, maxWidth: 360 }}>
             <span style={estilosLocais.label}>Buscar colaborador</span>

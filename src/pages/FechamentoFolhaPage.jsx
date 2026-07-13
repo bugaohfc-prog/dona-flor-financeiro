@@ -1485,7 +1485,7 @@ export default function FechamentoFolhaPage({
                 type="month"
                 value={formCompetencia.competencia}
                 onChange={(event) => setFormCompetencia((atual) => ({ ...atual, competencia: event.target.value }))}
-                style={estilosLocais.input}
+                className="folha-input"
                 disabled={!empresaId || !podeEditar || salvando}
                 placeholder="2026-05"
                 required
@@ -1505,7 +1505,7 @@ export default function FechamentoFolhaPage({
               <select
                 value={formCompetencia.status}
                 onChange={(event) => setFormCompetencia((atual) => ({ ...atual, status: event.target.value }))}
-                style={estilosLocais.input}
+                className="folha-input"
                 disabled={!empresaId || !podeEditar || salvando}
               >
                 {STATUS_COMPETENCIA_FOLHA.map((status) => (
@@ -1526,7 +1526,7 @@ export default function FechamentoFolhaPage({
                 ...atual,
                 observacao_administrativa: event.target.value
               }))}
-              style={estilosLocais.textarea}
+              className="folha-textarea"
               disabled={!empresaId || !podeEditar || salvando}
               placeholder="Somente contexto administrativo. Não inclua documentos, saúde, CID ou dados clínicos."
             />
@@ -1690,7 +1690,7 @@ export default function FechamentoFolhaPage({
                   <select
                     value={formLancamento.funcionario_id}
                     onChange={(event) => selecionarFuncionarioLancamento(event.target.value)}
-                    style={estilosLocais.input}
+                    className="folha-input"
                     disabled={!empresaId || !podeEditar || salvando || Boolean(lancamentoEditandoId)}
                     required={!lancamentoEditandoId}
                   >
@@ -1713,7 +1713,7 @@ export default function FechamentoFolhaPage({
                           ? 'Colaborador sem filial cadastrada'
                           : 'Selecione um colaborador'
                     }
-                    style={estilosLocais.inputReadOnly}
+                    className="folha-input-readonly"
                     disabled
                     readOnly
                   />
@@ -1727,7 +1727,7 @@ export default function FechamentoFolhaPage({
                   <select
                     value={formLancamento.categoria}
                     onChange={(event) => definirCategoria(event.target.value)}
-                    style={estilosLocais.input}
+                    className="folha-input"
                     disabled={!empresaId || !podeEditar || salvando}
                   >
                     {CATEGORIAS_OPCOES.map((grupo) => (
@@ -1746,7 +1746,7 @@ export default function FechamentoFolhaPage({
                   <span style={estilosLocais.label}>Natureza</span>
                   <input
                     value={LABELS_NATUREZA[formLancamento.natureza] || formLancamento.natureza}
-                    style={estilosLocais.inputReadOnly}
+                    className="folha-input-readonly"
                     disabled
                     readOnly
                   />
@@ -1769,7 +1769,7 @@ export default function FechamentoFolhaPage({
                     type="date"
                     value={formLancamento.data_referencia}
                     onChange={(event) => setFormLancamento((atual) => ({ ...atual, data_referencia: event.target.value }))}
-                    style={estilosLocais.input}
+                    className="folha-input"
                     disabled={!empresaId || !podeEditar || salvando}
                   />
                 </label>
@@ -1783,7 +1783,7 @@ export default function FechamentoFolhaPage({
                       step="0.01"
                       value={formLancamento.valor_venda}
                       onChange={(event) => setFormLancamento((atual) => ({ ...atual, valor_venda: event.target.value }))}
-                      style={estilosLocais.input}
+                      className="folha-input"
                       disabled={!empresaId || !podeEditar || salvando}
                       placeholder="Base para cálculo local"
                     />
@@ -1803,7 +1803,7 @@ export default function FechamentoFolhaPage({
                     step={categoriaHorasExtras ? undefined : '0.01'}
                     value={formLancamento.quantidade}
                     onChange={(event) => setFormLancamento((atual) => ({ ...atual, quantidade: event.target.value }))}
-                    style={estilosLocais.input}
+                    className="folha-input"
                     disabled={!empresaId || !podeEditar || salvando}
                     placeholder={categoriaHorasExtras ? 'Ex.: 4:20' : undefined}
                   />
@@ -1817,7 +1817,7 @@ export default function FechamentoFolhaPage({
                     step="0.01"
                     value={formLancamento.percentual}
                     onChange={(event) => setFormLancamento((atual) => ({ ...atual, percentual: event.target.value }))}
-                    style={estilosLocais.input}
+                    className="folha-input"
                     disabled={!empresaId || !podeEditar || salvando}
                   />
                 </label>
@@ -1830,7 +1830,7 @@ export default function FechamentoFolhaPage({
                     step="0.01"
                     value={formLancamento.valor}
                     onChange={(event) => setFormLancamento((atual) => ({ ...atual, valor: event.target.value }))}
-                    style={estilosLocais.input}
+                    className="folha-input"
                     disabled={!empresaId || !podeEditar || salvando}
                   />
                 </label>
@@ -1866,7 +1866,7 @@ export default function FechamentoFolhaPage({
                 <input
                   value={formLancamento.descricao}
                   onChange={(event) => setFormLancamento((atual) => ({ ...atual, descricao: event.target.value }))}
-                  style={estilosLocais.input}
+                  className="folha-input"
                   disabled={!empresaId || !podeEditar || salvando}
                   placeholder="Descrição administrativa obrigatória para outro crédito/outro desconto."
                 />
@@ -1880,7 +1880,7 @@ export default function FechamentoFolhaPage({
                     ...atual,
                     observacao_administrativa: event.target.value
                   }))}
-                  style={estilosLocais.textarea}
+                  className="folha-textarea"
                   disabled={!empresaId || !podeEditar || salvando}
                   placeholder="Somente contexto administrativo. Não inclua documentos, saúde, CID ou dados clínicos."
                 />
@@ -1933,7 +1933,7 @@ export default function FechamentoFolhaPage({
             <input
               value={buscaColaborador}
               onChange={(event) => setBuscaColaborador(event.target.value)}
-              style={estilosLocais.input}
+              className="folha-input"
               placeholder="Buscar colaborador..."
               disabled={!competenciaSelecionada || loadingLancamentos || exibindoEdicaoColaborador}
             />

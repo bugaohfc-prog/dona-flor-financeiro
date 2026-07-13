@@ -85,6 +85,7 @@ import {
   LazyRelatoriosFeriasPage,
   LazyRelatoriosPessoasPage,
   LazyUsuariosPage,
+  LazyAuditoriaPage,
   getLazyRouteName,
   preloadRoute,
 } from './routes/lazyRoutes.js'
@@ -4263,6 +4264,10 @@ export default function App() {
         removerUsuarioEmpresa={removerUsuarioEmpresa}
       />
     )
+  }
+
+  if (telaAtual === 'auditoria') {
+    return renderAppFrame(<LazyAuditoriaPage styles={styles} empresaId={empresaId} permissoesUsuario={permissoesUsuario} navegarPara={navegarPara} />)
   }
 
   if (telaAtual === 'configuracoes') {

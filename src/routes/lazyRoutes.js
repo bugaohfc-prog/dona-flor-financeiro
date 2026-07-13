@@ -26,6 +26,7 @@ export const lazyRouteImports = {
   relatoriosPessoas: () => import('../pages/RelatoriosPessoasPage.jsx'),
   relatoriosFerias: () => import('../pages/RelatoriosFeriasPage.jsx'),
   usuarios: () => import('../pages/UsuariosPage.jsx'),
+  auditoria: () => import('../pages/AuditoriaPage.jsx'),
   copilotDrawer: () => import('../components/copilot/layout/CopilotDrawer.jsx')
 }
 
@@ -55,7 +56,8 @@ export const routeImportByScreen = {
   'relatorios-gestao-pessoas': 'relatoriosGestaoPessoas',
   'relatorios-pessoas': 'relatoriosPessoas',
   'relatorios-ferias': 'relatoriosFerias',
-  usuarios: 'usuarios'
+  usuarios: 'usuarios',
+  auditoria: 'auditoria'
 }
 
 export function getLazyRouteName(screenName) {
@@ -96,6 +98,7 @@ export const LazyRelatoriosGestaoPessoasPage = lazyWithRecovery('relatoriosGesta
 export const LazyRelatoriosPessoasPage = lazyWithRecovery('relatoriosPessoas')
 export const LazyRelatoriosFeriasPage = lazyWithRecovery('relatoriosFerias')
 export const LazyUsuariosPage = lazyWithRecovery('usuarios')
+export const LazyAuditoriaPage = lazyWithRecovery('auditoria')
 export const LazyCopilotDrawer = lazyWithRecovery('copilotDrawer')
 
 

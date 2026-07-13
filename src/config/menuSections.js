@@ -42,6 +42,7 @@ const menuSections = [
       { tela: 'billing', icon: 'PL', label: 'Planos', desc: 'Plano atual e limites' },
       { tela: 'onboarding', icon: 'AI', label: 'Assistente inicial', desc: 'Configuração da empresa' },
       { tela: 'lixeira', icon: 'LX', label: 'Lixeira', desc: 'Restaurar ou excluir definitivo' }
+      ,{ tela: 'auditoria', icon: 'LG', label: 'Auditoria e logs', desc: 'Eventos administrativos e operacionais' }
     ]
   }
 ]

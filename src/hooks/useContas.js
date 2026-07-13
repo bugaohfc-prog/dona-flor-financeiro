@@ -683,6 +683,8 @@ export function useContas() {
       empresa_id: empresaId
     }
 
+    let contaCriadaParaAuditoria = null
+
     const payloadRecorrencia = contaRecorrente ? {
       empresa_id: empresaId,
       descricao: primeiraLetraMaiuscula(descricao.trim()),
@@ -844,6 +846,7 @@ export function useContas() {
 
       const resposta = await criarConta(supabase, { ...payload, status: 'pendente', excluido: false })
       error = resposta.error
+      contaCriadaParaAuditoria = Array.isArray(resposta.data) ? resposta.data[0] : resposta.data
 
       if (!error && contaRecorrente) {
         const { data: recorrenciaSemelhante, error: erroRecorrenciaSemelhante } = await buscarRecorrenciaSemelhante(supabase, payloadRecorrencia)
@@ -926,6 +929,21 @@ export function useContas() {
     }
 
     fecharConta()
+    if (contaCriadaParaAuditoria?.id) {
+      registrarAuditoriaEventoFinanceiro(supabase, {
+        empresa_id: empresaId,
+        acao: 'financeiro.conta.criada',
+        entidade_tipo: 'df_contas',
+        entidade_id: contaCriadaParaAuditoria.id,
+        modulo: 'financeiro',
+        origem: 'app',
+        severidade: 'media',
+        status: 'sucesso',
+        dados_antes: null,
+        dados_depois: { campos: ['descricao', 'valor', 'vencimento', 'centro_custo', 'filial', 'imposto_tipo'] },
+        metadados: { conta_id: contaCriadaParaAuditoria.id }
+      }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria da criação da conta.', { message: auditoriaError?.message }))
+    }
     if (editandoContaId) {
       registrarAuditoriaEventoFinanceiro(supabase, {
         empresa_id: empresaId,

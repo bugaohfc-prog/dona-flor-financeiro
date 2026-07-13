@@ -431,6 +431,12 @@ function validarValorCategoria(categoria, valor) {
   }
 }
 
+function validarDataCategoria(categoria, dataReferencia) {
+  if (categoria === 'falta_injustificada' && !dataReferencia) {
+    throw new Error('Informe a data da falta.')
+  }
+}
+
 function percentualEsperadoHoraExtra(categoria) {
   if (categoria === 'hora_extra_50') return 50
   if (categoria === 'hora_extra_60') return 60
@@ -592,11 +598,13 @@ function montarPayloadLancamentoCriacao(dados = {}) {
   const natureza = normalizarNatureza(entrada.natureza)
   const categoria = normalizarCategoria(entrada.categoria)
   const descricao = normalizarTexto(entrada.descricao)
+  const dataReferencia = normalizarData(obterCampo(entrada, 'data_referencia', 'dataReferencia'))
   const valor = normalizarNumero(entrada.valor, 'Valor')
 
   validarNaturezaCategoria(natureza, categoria)
   validarDescricaoOutros(categoria, descricao)
   validarValorCategoria(categoria, valor)
+  validarDataCategoria(categoria, dataReferencia)
 
   return {
     competencia_id: competenciaId,
@@ -605,7 +613,7 @@ function montarPayloadLancamentoCriacao(dados = {}) {
     natureza,
     categoria,
     descricao,
-    data_referencia: normalizarData(obterCampo(entrada, 'data_referencia', 'dataReferencia')),
+    data_referencia: dataReferencia,
     quantidade: normalizarNumero(entrada.quantidade, 'Quantidade'),
     percentual: normalizarNumero(entrada.percentual, 'Percentual'),
     valor,
@@ -699,6 +707,12 @@ function montarPayloadLancamentoAtualizacao(dados = {}) {
     if (Object.prototype.hasOwnProperty.call(payload, 'valor')) {
       validarValorCategoria(payload.categoria, payload.valor)
     }
+    validarDataCategoria(
+      payload.categoria,
+      Object.prototype.hasOwnProperty.call(payload, 'data_referencia')
+        ? payload.data_referencia
+        : entrada.data_referencia
+    )
   }
 
   if (Object.keys(payload).length === 0) {

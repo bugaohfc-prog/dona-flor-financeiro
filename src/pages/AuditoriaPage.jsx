@@ -34,7 +34,7 @@ export default function AuditoriaPage({ styles, empresaId, permissoesUsuario, na
   return <section className="page-section audit-page">
     <header className="page-hero page-hero-standard"><span className="page-hero-kicker">Administração</span><h1>Auditoria e logs</h1><p>Eventos sanitizados da empresa, em modo somente leitura.</p></header>
     <div className="audit-toolbar">
-      {['modulo', 'acao', 'severidade', 'status'].map((campo) => <input key={campo} value={filtros[campo]} placeholder={campo} onChange={(e) => { setPagina(0); setFiltros((atual) => ({ ...atual, [campo]: e.target.value })) }} />)}
+      {['modulo', 'acao', 'severidade', 'status'].map((campo) => <label key={campo}><span>{campo}</span><input value={filtros[campo]} onChange={(e) => { setPagina(0); setFiltros((atual) => ({ ...atual, [campo]: e.target.value })) }} /></label>)}
     </div>
     {estado === 'erro' && <div className="empty-state-card"><strong>Não foi possível carregar</strong><p>{erro}</p></div>}
     {estado === 'carregando' && <div className="empty-state-card"><strong>Carregando auditoria…</strong></div>}

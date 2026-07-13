@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { createXlsxBlob, downloadBlob } from '../services/export/reportExportService'
 
 const PAGE_SIZE = 50
 
@@ -40,12 +41,17 @@ export default function AuditoriaPage({ styles, empresaId, permissoesUsuario, na
     const link = document.createElement('a'); link.href = url; link.download = 'auditoria-eventos.csv'; link.click(); URL.revokeObjectURL(url)
   }
 
+  const exportarXlsx = () => {
+    const linhas = [['data', 'acao', 'modulo', 'entidade', 'severidade', 'status', 'origem'], ...eventos.map((evento) => [evento.criado_em, evento.acao, evento.modulo, evento.entidade_tipo, evento.severidade, evento.status, evento.origem])]
+    downloadBlob('auditoria-eventos.xlsx', createXlsxBlob([{ name: 'Auditoria', rows: linhas }]))
+  }
+
   return <section className="page-section audit-page">
     <header className="page-hero page-hero-standard"><span className="page-hero-kicker">Administração</span><h1>Auditoria e logs</h1><p>Eventos sanitizados da empresa, em modo somente leitura.</p></header>
     <div className="audit-toolbar">
       {['modulo', 'acao', 'severidade', 'status'].map((campo) => <label key={campo}><span>{campo}</span><input value={filtros[campo]} onChange={(e) => { setPagina(0); setFiltros((atual) => ({ ...atual, [campo]: e.target.value })) }} /></label>)}
     </div>
-    <div className="audit-actions"><button className="admin-btn admin-btn-secondary" onClick={exportarCsv} disabled={!eventos.length}>Exportar CSV</button></div>
+    <div className="audit-actions"><button className="admin-btn admin-btn-secondary" onClick={exportarCsv} disabled={!eventos.length}>Exportar CSV</button><button className="admin-btn admin-btn-secondary" onClick={exportarXlsx} disabled={!eventos.length}>Exportar XLSX</button></div>
     {estado === 'erro' && <div className="empty-state-card"><strong>Não foi possível carregar</strong><p>{erro}</p></div>}
     {estado === 'carregando' && <div className="empty-state-card"><strong>Carregando auditoria…</strong></div>}
     {estado === 'pronto' && !eventos.length && <div className="empty-state-card"><strong>Nenhum evento encontrado</strong><p>Ajuste os filtros ou aguarde novos eventos.</p></div>}

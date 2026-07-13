@@ -2,6 +2,7 @@ import { useState } from 'react'
 import UserSecurityCards from '../components/UserSecurityCards.jsx'
 import HeaderExpansivel from '../components/ui/HeaderExpansivel.jsx'
 import { usuarioEhMasterProtegido } from '../services/usuariosService'
+import { supabase } from '../lib/supabase'
 
 const PROFILE_OPTIONS = [
   { value: 'admin', label: 'Admin' },
@@ -59,6 +60,22 @@ export default function UsuariosPage({
   enviarAcessoUsuarioEmpresa,
   removerUsuarioEmpresa
 }) {
+  const registrarEvento = (acao, entidadeId, dadosDepois = {}) => {
+    if (!empresaId || !entidadeId) return
+    supabase.functions.invoke('registrar-auditoria-evento', { body: {
+      empresa_id: empresaId,
+      acao,
+      entidade_tipo: 'usuario_empresa',
+      entidade_id: entidadeId,
+      modulo: 'administracao',
+      origem: 'app',
+      severidade: 'alta',
+      status: 'sucesso',
+      dados_antes: null,
+      dados_depois: dadosDepois,
+      metadados: { usuario_id: entidadeId }
+    } }).catch((error) => console.warn('Falha ao registrar auditoria administrativa.', { message: error?.message }))
+  }
   const [mostrarMinhaConta, setMostrarMinhaConta] = useState(true)
   const [mostrarCriarUsuario, setMostrarCriarUsuario] = useState(true)
   const [mostrarUsuarios, setMostrarUsuarios] = useState(true)
@@ -271,7 +288,7 @@ export default function UsuariosPage({
                           style={styles.input}
                           value={perfilNormalizado}
                           disabled={!podeEditarUsuarios || masterBloqueadoParaAdmin}
-                          onChange={(event) => atualizarPerfilUsuarioEmpresa(usuario, event.target.value)}
+                          onChange={(event) => { const perfil = event.target.value; atualizarPerfilUsuarioEmpresa(usuario, perfil); registrarEvento('administracao.usuario.perfil_alterado', usuario.id, { perfil }) }}
                         >
                           {PROFILE_OPTIONS.map((perfil) => (
                             <option key={perfil.value} value={perfil.value}>{perfil.label}</option>
@@ -315,7 +332,7 @@ export default function UsuariosPage({
                     {podeEditarUsuarios && (
                       <div className="user-actions users-user-actions">
                         <button className="admin-btn admin-btn-secondary" disabled={masterBloqueadoParaAdmin} onClick={() => enviarAcessoUsuarioEmpresa(usuario)} title={masterBloqueadoParaAdmin ? 'Usuário master não pode ser alterado por admin comum.' : 'Enviar link de acesso por e-mail.'}>Enviar link</button>
-                        <button className="admin-btn admin-btn-danger" disabled={atual || masterBloqueadoParaAdmin} onClick={() => removerUsuarioEmpresa(usuario)} title={masterBloqueadoParaAdmin ? 'Usuário master não pode ser alterado por admin comum.' : atual ? 'Você não pode remover o próprio acesso.' : 'Remover usuário'}>Remover</button>
+                        <button className="admin-btn admin-btn-danger" disabled={atual || masterBloqueadoParaAdmin} onClick={() => { removerUsuarioEmpresa(usuario); registrarEvento('administracao.usuario.removido', usuario.id) }} title={masterBloqueadoParaAdmin ? 'Usuário master não pode ser alterado por admin comum.' : atual ? 'Você não pode remover o próprio acesso.' : 'Remover usuário'}>Remover</button>
                       </div>
                     )}
                   </article>

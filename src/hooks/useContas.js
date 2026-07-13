@@ -1057,6 +1057,20 @@ export function useContas() {
       return false
     }
 
+    registrarAuditoriaEventoFinanceiro(supabase, {
+      empresa_id: empresaId,
+      acao: 'financeiro.conta.baixada',
+      entidade_tipo: 'df_contas',
+      entidade_id: contaId,
+      modulo: 'financeiro',
+      origem: 'app',
+      severidade: 'alta',
+      status: 'sucesso',
+      dados_antes: { status: 'pendente', origem: 'pagamentos_parciais' },
+      dados_depois: { status: 'pago', origem: 'pagamentos_parciais' },
+      metadados: { conta_id: contaId }
+    }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria da baixa por parciais.', { message: auditoriaError?.message }))
+
     await buscarContas()
     mostrarAviso?.('Conta baixada após a quitação pelos pagamentos parciais.', 'sucesso')
     return true
@@ -1071,6 +1085,20 @@ export function useContas() {
       mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível estornar a baixa da conta.'), 'erro')
       return
     }
+
+    registrarAuditoriaEventoFinanceiro(supabase, {
+      empresa_id: empresaId,
+      acao: 'financeiro.conta.baixa_estornada',
+      entidade_tipo: 'df_contas',
+      entidade_id: id,
+      modulo: 'financeiro',
+      origem: 'app',
+      severidade: 'alta',
+      status: 'sucesso',
+      dados_antes: { status: 'pago' },
+      dados_depois: { status: 'pendente' },
+      metadados: { conta_id: id }
+    }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria da reabertura da conta.', { message: auditoriaError?.message }))
 
     await buscarContas()
     mostrarAviso?.('Baixa estornada. A conta voltou para aberta.', 'sucesso')

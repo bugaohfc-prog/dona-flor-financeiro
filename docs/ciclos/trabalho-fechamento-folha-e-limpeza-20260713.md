@@ -1,7 +1,7 @@
 # Trabalho realizado — Fechamento de Folha e limpeza do diretório
 
-Data: 13/07/2026  
-Branch: `main`  
+Data: 13/07/2026
+Branch: `main`
 Produção: https://dona-flor-financeiro.vercel.app
 
 ## Objetivo do ciclo

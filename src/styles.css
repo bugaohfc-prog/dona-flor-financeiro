@@ -11533,3 +11533,9 @@
 .folha-resumo-card.is-money h3{color:#475569;font-size:16px}
 .folha-card-description{margin:0;color:#475569;font-size:13px;line-height:1.4}
 .folha-mobile-note{display:none}
+.folha-table tbody tr:hover{background:#f8fafc}
+.folha-table tbody tr:last-child td{border-bottom:0}
+.folha-money{color:#475569;font-weight:700;white-space:nowrap}
+.folha-competencia-actions{justify-content:space-between}
+@media (max-width:860px){.folha-page-shell{gap:12px}.folha-desktop-list{display:none!important}.folha-mobile-list{display:grid!important;gap:10px;margin-top:12px}.folha-mobile-note{display:block}.folha-competencia-grid{grid-template-columns:1fr!important}.folha-competencia-actions{display:grid!important;grid-template-columns:1fr;align-items:stretch!important}.folha-competencia-actions button,.folha-switch{width:100%;box-sizing:border-box}.folha-switch{justify-content:center}.folha-observacao-competencia textarea{min-height:104px!important}.folha-mobile-meta-grid{grid-template-columns:1fr 1fr}.folha-grupo-resumo{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media (max-width:560px){.folha-mobile-meta-grid{grid-template-columns:1fr}.folha-grupo-resumo{grid-template-columns:1fr!important}.folha-card-actions{width:100%}.folha-card-actions button{flex:1 1 130px}}

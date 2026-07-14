@@ -237,7 +237,7 @@ serve(async (req) => {
         callerId: callerData.user.id,
         hasBody: isPlainObject(body)
       })
-      return jsonResponse({ ok: false, message: 'Payload invalido.' }, 400)
+      return jsonResponse({ ok: false, code: 'PAYLOAD_INVALIDO', message: 'Payload invalido.' }, 400)
     }
 
     const acao = String(body.acao || '').trim()
@@ -246,9 +246,8 @@ serve(async (req) => {
     const contaId = String(body.conta_id || '').trim()
     const pagamentoId = String(body.pagamento_id || '').trim()
 
-    if (!acaoPermitida(acao) || !isUuid(empresaId)) {
-      return jsonResponse({ ok: false, message: 'Evento invalido.' }, 400)
-    }
+    if (!acaoPermitida(acao)) return jsonResponse({ ok: false, code: 'ACAO_NAO_PERMITIDA', message: 'Evento invalido.' }, 400)
+    if (!isUuid(empresaId)) return jsonResponse({ ok: false, code: 'EMPRESA_INVALIDA', message: 'Evento invalido.' }, 400)
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
 
@@ -262,7 +261,7 @@ serve(async (req) => {
     }
 
     if (acao !== ACAO_PERMITIDA) {
-      if (!isUuid(entidadeId)) return jsonResponse({ ok: false, message: 'Entidade invalida.' }, 400)
+      if (!isUuid(entidadeId)) return jsonResponse({ ok: false, code: 'ENTIDADE_INVALIDA', message: 'Entidade invalida.' }, 400)
       const correlationId = textoCurto(body.correlation_id, 180) || `${acao}:${entidadeId}`
       const { data: eventoExistente, error: eventoExistenteError } = await supabaseAdmin
         .from('df_auditoria_eventos')
@@ -295,7 +294,7 @@ serve(async (req) => {
       return jsonResponse({ ok: true, idempotente: false })
     }
 
-    if (!isUuid(contaId) || !isUuid(pagamentoId)) return jsonResponse({ ok: false, message: 'Pagamento invalido.' }, 400)
+    if (!isUuid(contaId) || !isUuid(pagamentoId)) return jsonResponse({ ok: false, code: 'PAGAMENTO_INVALIDO', message: 'Pagamento invalido.' }, 400)
 
     const { data: conta, error: contaError } = await supabaseAdmin
       .from('df_contas')

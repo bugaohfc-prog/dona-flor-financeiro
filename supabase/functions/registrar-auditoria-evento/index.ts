@@ -87,6 +87,27 @@ function dadosSeguros(valor: unknown) {
   return valor
 }
 
+function severidadeSegura(valor: unknown) {
+  const nivel = String(valor || '').toLowerCase()
+  if (['alta', 'critical', 'critica', 'crítica'].includes(nivel)) return 'critical'
+  if (['media', 'média', 'warning', 'atencao', 'atenção'].includes(nivel)) return 'warning'
+  return 'info'
+}
+
+function statusSeguro(valor: unknown) {
+  const status = String(valor || '').toLowerCase()
+  if (['erro', 'falha', 'failed'].includes(status)) return 'falha'
+  if (['bloqueado', 'blocked'].includes(status)) return 'bloqueado'
+  return 'sucesso'
+}
+
+function moduloSeguro(valor: unknown) {
+  const modulo = String(valor || '').toLowerCase()
+  if (['financeiro', 'usuarios', 'empresas', 'rh', 'seguranca', 'automacao', 'sistema'].includes(modulo)) return modulo
+  if (modulo === 'auditoria') return 'sistema'
+  return 'sistema'
+}
+
 function possuiCampoProibido(valor: unknown): boolean {
   if (Array.isArray(valor)) return valor.some((item) => possuiCampoProibido(item))
   if (!isPlainObject(valor)) return false
@@ -258,13 +279,13 @@ serve(async (req) => {
           empresa_id: empresaId,
           user_id: callerData.user.id,
           ator_tipo: 'usuario',
-          modulo: textoCurto(body.modulo, 80) || 'sistema',
+          modulo: moduloSeguro(body.modulo),
           entidade_tipo: textoCurto(body.entidade_tipo, 80) || 'sistema',
           entidade_id: entidadeId,
           acao,
-          severidade: textoCurto(body.severidade, 20) || 'info',
+          severidade: severidadeSegura(body.severidade),
           origem: textoCurto(body.origem, 40) || 'app',
-          status: textoCurto(body.status, 30) || 'sucesso',
+          status: statusSeguro(body.status),
           dados_antes: dadosSeguros(body.dados_antes),
           dados_depois: dadosSeguros(body.dados_depois),
           metadados: dadosSeguros(body.metadados),

@@ -3,6 +3,12 @@ import { supabase } from '../lib/supabase'
 import { createXlsxBlob, downloadBlob } from '../services/export/reportExportService'
 
 const PAGE_SIZE = 50
+const FILTROS = [
+  ['modulo', 'Módulo', 'Todos os módulos'],
+  ['acao', 'Ação', 'Todas as ações'],
+  ['severidade', 'Severidade', 'Todas as severidades'],
+  ['status', 'Status', 'Todos os status']
+]
 
 export default function AuditoriaPage({ styles, empresaId, permissoesUsuario, navegarPara }) {
   const [eventos, setEventos] = useState([])
@@ -49,7 +55,7 @@ export default function AuditoriaPage({ styles, empresaId, permissoesUsuario, na
   return <section className="page-section audit-page">
     <header className="page-hero page-hero-standard"><span className="page-hero-kicker">Administração</span><h1>Auditoria e logs</h1><p>Eventos sanitizados da empresa, em modo somente leitura.</p></header>
     <div className="audit-toolbar">
-      {['modulo', 'acao', 'severidade', 'status'].map((campo) => <label key={campo}><span>{campo}</span><input value={filtros[campo]} onChange={(e) => { setPagina(0); setFiltros((atual) => ({ ...atual, [campo]: e.target.value })) }} /></label>)}
+      {FILTROS.map(([campo, rotulo, placeholder]) => <label key={campo}><span>{rotulo}</span><input placeholder={placeholder} value={filtros[campo]} onChange={(e) => { setPagina(0); setFiltros((atual) => ({ ...atual, [campo]: e.target.value })) }} /></label>)}
     </div>
     <div className="audit-actions"><button className="admin-btn admin-btn-secondary" onClick={exportarCsv} disabled={!eventos.length}>Exportar CSV</button><button className="admin-btn admin-btn-secondary" onClick={exportarXlsx} disabled={!eventos.length}>Exportar XLSX</button></div>
     {estado === 'erro' && <div className="empty-state-card"><strong>Não foi possível carregar</strong><p>{erro}</p></div>}

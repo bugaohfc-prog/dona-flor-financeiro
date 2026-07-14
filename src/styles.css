@@ -1503,6 +1503,9 @@
 .audit-toolbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
 .audit-toolbar label { display: grid; gap: 6px; color: #64748b; font-size: 12px; font-weight: 800; text-transform: capitalize; }
 .audit-toolbar input { min-height: 40px; border: 1px solid #cbd5e1; border-radius: 12px; padding: 0 12px; background: #fff; color: #0f172a; }
+.audit-toolbar input::placeholder { color: #94a3b8; opacity: 1; }
+.audit-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+.audit-actions .admin-btn { min-height: 40px; padding: 0 16px; border-radius: 999px; font-weight: 800; }
 .audit-list { display: grid; gap: 10px; }
 .audit-event-card { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; }
 .audit-event-card span, .audit-event-card small { color: #64748b; font-size: 13px; }

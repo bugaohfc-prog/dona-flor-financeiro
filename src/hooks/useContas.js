@@ -34,6 +34,10 @@ import {
   validarFilialDaEmpresa,
   vincularRecorrenciaNaConta
 } from '../services/contasService'
+import {
+  criarCorrelationIdAtualizacaoConta,
+  registrarAuditoriaAtualizacaoConta
+} from '../services/auditoriaContaAtualizacaoService'
 import { deveGerarRecorrenciaNoMes, montarDataRecorrente } from '../utils/recorrencia'
 import { mensagemSeguraErro } from '../utils/session'
 
@@ -572,18 +576,22 @@ export function useContas() {
   async function salvarConta(contexto) {
     if (salvandoContaRef.current) return false
 
+    const correlationIdAtualizacao = editandoContaId
+      ? criarCorrelationIdAtualizacaoConta(editandoContaId, gerarUuidLocal())
+      : null
+
     salvandoContaRef.current = true
     setSalvandoConta(true)
 
     try {
-      return await salvarContaInterno(contexto)
+      return await salvarContaInterno(contexto, correlationIdAtualizacao)
     } finally {
       salvandoContaRef.current = false
       setSalvandoConta(false)
     }
   }
 
-  async function salvarContaInterno(contexto) {
+  async function salvarContaInterno(contexto, correlationIdAtualizacao) {
     const {
       supabase,
       empresaId,
@@ -945,19 +953,12 @@ export function useContas() {
       }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria da criação da conta.', { message: auditoriaError?.message }))
     }
     if (editandoContaId) {
-      registrarAuditoriaEventoFinanceiro(supabase, {
-        empresa_id: empresaId,
-        acao: 'financeiro.conta.atualizada',
-        entidade_tipo: 'df_contas',
-        entidade_id: editandoContaId,
-        modulo: 'financeiro',
-        origem: 'app',
-        severidade: 'media',
-        status: 'sucesso',
-        dados_antes: { entidade: 'df_contas' },
-        dados_depois: { entidade: 'df_contas', campos: ['descricao', 'valor', 'vencimento', 'centro_custo', 'filial', 'imposto_tipo'] },
-        metadados: { conta_id: editandoContaId }
-      }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria da atualização da conta.', { message: auditoriaError?.message }))
+      await registrarAuditoriaAtualizacaoConta({
+        supabase,
+        empresaId,
+        contaId: editandoContaId,
+        correlationId: correlationIdAtualizacao
+      })
     }
     await buscarContas()
     mostrarAviso(editandoContaId ? 'Conta atualizada com sucesso.' : 'Conta criada com sucesso.', 'sucesso')

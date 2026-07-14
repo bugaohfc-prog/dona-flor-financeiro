@@ -8,6 +8,16 @@ const corsHeaders = {
 
 const ACAO_PERMITIDA = 'financeiro.pagamento_parcial.criado'
 const ENTIDADE_TIPO = 'df_contas_pagamentos'
+const PREFIXOS_PERMITIDOS = [
+  'financeiro.conta.',
+  'financeiro.pagamento_parcial.',
+  'financeiro.importacao.',
+  'administracao.usuario.',
+  'rh.funcionario.',
+  'folha.',
+  'auditoria.exportacao.',
+  'sistema.auditoria_'
+]
 
 const CAMPOS_PROIBIDOS = new Set([
   'observacao',
@@ -64,6 +74,17 @@ function textoCurto(valor: unknown, max = 120) {
   const texto = String(valor || '').trim()
   if (!texto) return null
   return texto.slice(0, max)
+}
+
+function acaoPermitida(acao: string) {
+  return acao === ACAO_PERMITIDA || PREFIXOS_PERMITIDOS.some((prefixo) => acao.startsWith(prefixo))
+}
+
+function dadosSeguros(valor: unknown) {
+  if (valor === null || valor === undefined) return {}
+  const texto = JSON.stringify(valor)
+  if (texto.length > 8000) return { resumo: 'dados_truncados' }
+  return valor
 }
 
 function possuiCampoProibido(valor: unknown): boolean {
@@ -200,10 +221,11 @@ serve(async (req) => {
 
     const acao = String(body.acao || '').trim()
     const empresaId = String(body.empresa_id || '').trim()
+    const entidadeId = String(body.entidade_id || '').trim()
     const contaId = String(body.conta_id || '').trim()
     const pagamentoId = String(body.pagamento_id || '').trim()
 
-    if (acao !== ACAO_PERMITIDA || !isUuid(empresaId) || !isUuid(contaId) || !isUuid(pagamentoId)) {
+    if (!acaoPermitida(acao) || !isUuid(empresaId) || !isUuid(entidadeId)) {
       return jsonResponse({ ok: false, message: 'Evento invalido.' }, 400)
     }
 
@@ -217,6 +239,41 @@ serve(async (req) => {
       })
       return jsonResponse({ ok: false, message: 'Evento nao autorizado.' }, 403)
     }
+
+    if (acao !== ACAO_PERMITIDA) {
+      const correlationId = textoCurto(body.correlation_id, 180) || `${acao}:${entidadeId}`
+      const { data: eventoExistente, error: eventoExistenteError } = await supabaseAdmin
+        .from('df_auditoria_eventos')
+        .select('id')
+        .eq('empresa_id', empresaId)
+        .eq('correlation_id', correlationId)
+        .limit(1)
+      if (eventoExistenteError) throw eventoExistenteError
+      if (Array.isArray(eventoExistente) && eventoExistente.length > 0) return jsonResponse({ ok: true, idempotente: true })
+
+      const { error: insertError } = await supabaseAdmin
+        .from('df_auditoria_eventos')
+        .insert([{
+          empresa_id: empresaId,
+          user_id: callerData.user.id,
+          ator_tipo: 'usuario',
+          modulo: textoCurto(body.modulo, 80) || 'sistema',
+          entidade_tipo: textoCurto(body.entidade_tipo, 80) || 'sistema',
+          entidade_id: entidadeId,
+          acao,
+          severidade: textoCurto(body.severidade, 20) || 'info',
+          origem: textoCurto(body.origem, 40) || 'app',
+          status: textoCurto(body.status, 30) || 'sucesso',
+          dados_antes: dadosSeguros(body.dados_antes),
+          dados_depois: dadosSeguros(body.dados_depois),
+          metadados: dadosSeguros(body.metadados),
+          correlation_id: correlationId
+        }])
+      if (insertError) throw insertError
+      return jsonResponse({ ok: true, idempotente: false })
+    }
+
+    if (!isUuid(contaId) || !isUuid(pagamentoId)) return jsonResponse({ ok: false, message: 'Pagamento invalido.' }, 400)
 
     const { data: conta, error: contaError } = await supabaseAdmin
       .from('df_contas')

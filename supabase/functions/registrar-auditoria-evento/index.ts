@@ -225,7 +225,7 @@ serve(async (req) => {
     const contaId = String(body.conta_id || '').trim()
     const pagamentoId = String(body.pagamento_id || '').trim()
 
-    if (!acaoPermitida(acao) || !isUuid(empresaId) || !isUuid(entidadeId)) {
+    if (!acaoPermitida(acao) || !isUuid(empresaId)) {
       return jsonResponse({ ok: false, message: 'Evento invalido.' }, 400)
     }
 
@@ -241,6 +241,7 @@ serve(async (req) => {
     }
 
     if (acao !== ACAO_PERMITIDA) {
+      if (!isUuid(entidadeId)) return jsonResponse({ ok: false, message: 'Entidade invalida.' }, 400)
       const correlationId = textoCurto(body.correlation_id, 180) || `${acao}:${entidadeId}`
       const { data: eventoExistente, error: eventoExistenteError } = await supabaseAdmin
         .from('df_auditoria_eventos')

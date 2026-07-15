@@ -49,6 +49,7 @@ import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsua
 import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario } from './services/permissoesService'
 import { listarFiliaisPorEmpresa } from './services/filiaisService'
 import { verificarUsoCentroCusto } from './services/contasService'
+import { registrarEventoAuditoriaSeguro } from './services/auditoriaService'
 import { listarPeriodosFeriasAgenda } from './services/funcionariosFeriasService'
 import { listarExamesPeriodicosAgenda } from './services/funcionariosExamesPeriodicosService'
 import { listarCompetenciasFolhaAgenda } from './services/folhaService'
@@ -1327,7 +1328,7 @@ export default function App() {
 
     try {
       setCriandoUsuarioManual(true)
-      await adicionarUsuarioEmpresaService({
+      const usuarioCriado = await adicionarUsuarioEmpresaService({
         empresaId,
         email,
         nome: nomeConviteUsuario,
@@ -1337,19 +1338,21 @@ export default function App() {
       })
 
       await buscarUsuariosEmpresa(empresaId, { silencioso: true })
-      supabase.functions.invoke('registrar-auditoria-evento', { body: {
-        empresa_id: empresaId,
-        acao: 'administracao.usuario.convite_criado',
-        entidade_tipo: 'empresa',
-        entidade_id: empresaId,
-        modulo: 'administracao',
-        origem: 'app',
-        severidade: 'alta',
-        status: 'sucesso',
-        dados_antes: null,
-        dados_depois: { perfil, origem: 'criacao_manual' },
-        metadados: { email_hash: 'sanitizado' }
-      } }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria do convite.', { message: auditoriaError?.message }))
+      if (usuarioCriado?.id) {
+        await registrarEventoAuditoriaSeguro(supabase, {
+          empresa_id: empresaId,
+          acao: 'administracao.usuario.convite_criado',
+          entidade_tipo: 'df_usuarios_empresas',
+          entidade_id: usuarioCriado.id,
+          modulo: 'administracao',
+          origem: 'app',
+          severidade: 'alta',
+          status: 'sucesso',
+          dados_antes: null,
+          dados_depois: { perfil, origem: 'criacao_manual' },
+          metadados: { criacao_manual: true }
+        }, 'criação de usuário')
+      }
     } catch (error) {
       avisarErro(error)
       return
@@ -1395,6 +1398,16 @@ export default function App() {
 
         try {
           const resultado = await enviarAcessoUsuarioEmpresaService({ empresaId, usuario })
+          if (usuario.id) await registrarEventoAuditoriaSeguro(supabase, {
+            empresa_id: empresaId,
+            acao: 'administracao.usuario.acesso_enviado',
+            entidade_tipo: 'df_usuarios_empresas',
+            entidade_id: usuario.id,
+            modulo: 'administracao',
+            severidade: 'alta',
+            status: 'sucesso',
+            dados_depois: { tipo_envio: resultado?.tipo || 'acesso' }
+          }, 'envio de acesso')
           mostrarAviso(resultado.mensagem, 'info')
         } catch (error) {
           avisarErro(error)
@@ -1443,6 +1456,17 @@ export default function App() {
 
         try {
           await atualizarPerfilUsuarioEmpresaService({ empresaId, usuario, perfil })
+          if (usuario.id) await registrarEventoAuditoriaSeguro(supabase, {
+            empresa_id: empresaId,
+            acao: 'administracao.usuario.perfil_alterado',
+            entidade_tipo: 'df_usuarios_empresas',
+            entidade_id: usuario.id,
+            modulo: 'administracao',
+            severidade: 'alta',
+            status: 'sucesso',
+            dados_antes: { perfil: normalizarPerfil(usuario.perfil) },
+            dados_depois: { perfil }
+          }, 'alteração de perfil')
         } catch (error) {
           avisarErro(error)
           return
@@ -1479,6 +1503,7 @@ export default function App() {
         return
       }
 
+      const filiaisAnteriores = filiaisUsuariosEmpresa[usuario.id] || []
       await atualizarFiliaisUsuarioEmpresa({
         empresaId,
         usuario,
@@ -1488,6 +1513,17 @@ export default function App() {
         ...atual,
         [usuario.id]: proximasFiliais
       }))
+      await registrarEventoAuditoriaSeguro(supabase, {
+        empresa_id: empresaId,
+        acao: 'administracao.usuario.filiais_alteradas',
+        entidade_tipo: 'df_usuarios_empresas',
+        entidade_id: usuario.id,
+        modulo: 'administracao',
+        severidade: 'alta',
+        status: 'sucesso',
+        dados_antes: { quantidade_filiais: filiaisAnteriores.length },
+        dados_depois: { quantidade_filiais: proximasFiliais.length }
+      }, 'alteração de filiais')
       mostrarAviso('Filiais do usuário atualizadas.', 'sucesso')
     } catch (error) {
       avisarErro(error, 'Não foi possível atualizar as filiais do usuário.')
@@ -3358,10 +3394,10 @@ export default function App() {
       return
     }
 
-    supabase.functions.invoke('registrar-auditoria-evento', { body: {
+    await registrarEventoAuditoriaSeguro(supabase, {
       empresa_id: empresaId,
       acao: 'financeiro.importacao.contas_concluida',
-      entidade_tipo: 'df_contas',
+      entidade_tipo: 'df_empresas',
       entidade_id: empresaId,
       modulo: 'financeiro',
       origem: 'app',
@@ -3369,8 +3405,8 @@ export default function App() {
       status: 'sucesso',
       dados_antes: null,
       dados_depois: { aceitas: payload.length, duplicadas: totalDuplicadas },
-      metadados: { empresa_id: empresaId, arquivo: 'sanitizado' }
-    } }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria da importacao.', { message: auditoriaError?.message }))
+      metadados: { empresa_id: empresaId }
+    }, 'importação de contas')
 
     const mensagemSucesso = totalDuplicadas > 0
       ? `Importação concluída: ${payload.length} conta(s) importada(s), ${totalDuplicadas} duplicada(s) ignorada(s).`

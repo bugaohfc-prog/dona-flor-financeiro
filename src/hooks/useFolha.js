@@ -18,6 +18,7 @@ import {
   reativarLancamentoFolha as reativarLancamentoFolhaService
 } from '../services/folhaService'
 import { mensagemSeguraErro } from '../utils/session'
+import { registrarEventoAuditoriaSeguro } from '../services/auditoriaService'
 
 function normalizarId(valor) {
   return String(valor || '').trim()
@@ -31,21 +32,16 @@ function criarErroCompetenciaAusente() {
   return new Error('Competencia de folha nao identificada.')
 }
 
-function registrarAuditoriaFolha(supabase, payload) {
-  if (!payload?.empresa_id || !payload?.entidade_id) return
-  supabase.functions.invoke('registrar-auditoria-evento', { body: {
-    empresa_id: payload.empresa_id,
-    acao: payload.acao,
-    entidade_tipo: payload.entidade_tipo,
-    entidade_id: payload.entidade_id,
+async function auditarResultadoFolha(supabase, resultado, payload) {
+  if (resultado?.error || !payload?.empresa_id || !payload?.entidade_id) return resultado
+  await registrarEventoAuditoriaSeguro(supabase, {
+    ...payload,
     modulo: 'folha',
     origem: 'app',
     severidade: 'alta',
-    status: 'sucesso',
-    dados_antes: payload.dados_antes || null,
-    dados_depois: payload.dados_depois || null,
-    metadados: payload.metadados || {}
-  } }).catch((error) => console.warn('Falha ao registrar auditoria da folha.', { message: error?.message }))
+    status: 'sucesso'
+  }, 'operação da folha')
+  return resultado
 }
 
 function respostaErro(error) {
@@ -361,7 +357,7 @@ export function useFolha(opcoes = {}) {
       supabase,
       empresaId: empresa,
       dados
-    }).then((resultado) => { const id = Array.isArray(resultado?.data) ? resultado.data[0]?.id : resultado?.data?.id; registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.competencia.criada', entidade_tipo: 'df_folha_competencias', entidade_id: id, dados_depois: { competencia: dados?.competencia || null } }); return resultado }))
+    }).then((resultado) => { const id = Array.isArray(resultado?.data) ? resultado.data[0]?.id : resultado?.data?.id; return auditarResultadoFolha(supabase, resultado, { empresa_id: empresa, acao: 'folha.competencia.criada', entidade_tipo: 'df_folha_competencias', entidade_id: id, dados_depois: { competencia: dados?.competencia || null } }) }))
   }, [executarComEmpresaAtiva, supabase])
 
   const atualizarCompetencia = useCallback(async (id, dados) => {
@@ -370,7 +366,7 @@ export function useFolha(opcoes = {}) {
       empresaId: empresa,
       id,
       dados
-    }).then((resultado) => { registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.competencia.atualizada', entidade_tipo: 'df_folha_competencias', entidade_id: id, dados_depois: { campos: Object.keys(dados || {}) } }); return resultado }))
+    }).then((resultado) => auditarResultadoFolha(supabase, resultado, { empresa_id: empresa, acao: 'folha.competencia.atualizada', entidade_tipo: 'df_folha_competencias', entidade_id: id, dados_depois: { campos: Object.keys(dados || {}) } })))
   }, [executarComEmpresaAtiva, supabase])
 
   const arquivarCompetencia = useCallback(async (id) => {
@@ -378,7 +374,7 @@ export function useFolha(opcoes = {}) {
       supabase,
       empresaId: empresa,
       id
-    }).then((resultado) => { registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.competencia.arquivada', entidade_tipo: 'df_folha_competencias', entidade_id: id, dados_depois: { arquivada: true } }); return resultado }), { recarregarLancamentos: id === competenciaAtual, competenciaId: id })
+    }).then((resultado) => auditarResultadoFolha(supabase, resultado, { empresa_id: empresa, acao: 'folha.competencia.arquivada', entidade_tipo: 'df_folha_competencias', entidade_id: id, dados_depois: { arquivada: true } })), { recarregarLancamentos: id === competenciaAtual, competenciaId: id })
   }, [competenciaAtual, executarComEmpresaAtiva, supabase])
 
   const reativarCompetencia = useCallback(async (id) => {
@@ -386,7 +382,7 @@ export function useFolha(opcoes = {}) {
       supabase,
       empresaId: empresa,
       id
-    }).then((resultado) => { registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.competencia.reativada', entidade_tipo: 'df_folha_competencias', entidade_id: id, dados_depois: { arquivada: false } }); return resultado }), { recarregarLancamentos: id === competenciaAtual, competenciaId: id })
+    }).then((resultado) => auditarResultadoFolha(supabase, resultado, { empresa_id: empresa, acao: 'folha.competencia.reativada', entidade_tipo: 'df_folha_competencias', entidade_id: id, dados_depois: { arquivada: false } })), { recarregarLancamentos: id === competenciaAtual, competenciaId: id })
   }, [competenciaAtual, executarComEmpresaAtiva, supabase])
 
   const criarLancamento = useCallback(async (dados = {}) => {
@@ -409,7 +405,7 @@ export function useFolha(opcoes = {}) {
       supabase,
       empresaId: empresa,
       dados: payload
-    }).then((resultado) => { const id = Array.isArray(resultado?.data) ? resultado.data[0]?.id : resultado?.data?.id; registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.lancamento.criado', entidade_tipo: 'df_folha_lancamentos', entidade_id: id, dados_depois: { categoria: payload.categoria || null, natureza: payload.natureza || null, competencia_id: competencia } }); return resultado }), {
+    }).then((resultado) => { const id = Array.isArray(resultado?.data) ? resultado.data[0]?.id : resultado?.data?.id; return auditarResultadoFolha(supabase, resultado, { empresa_id: empresa, acao: 'folha.lancamento.criado', entidade_tipo: 'df_folha_lancamentos', entidade_id: id, dados_depois: { categoria: payload.categoria || null, natureza: payload.natureza || null, competencia_id: competencia } }) }), {
       recarregarLancamentos: true,
       competenciaId: competencia,
       funcionarioId: funcionario || undefined
@@ -422,7 +418,7 @@ export function useFolha(opcoes = {}) {
       empresaId: empresa,
       id,
       dados
-    }).then((resultado) => { registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.lancamento.atualizado', entidade_tipo: 'df_folha_lancamentos', entidade_id: id, dados_depois: { campos: Object.keys(dados || {}) } }); return resultado }), { recarregarLancamentos: true })
+    }).then((resultado) => auditarResultadoFolha(supabase, resultado, { empresa_id: empresa, acao: 'folha.lancamento.atualizado', entidade_tipo: 'df_folha_lancamentos', entidade_id: id, dados_depois: { campos: Object.keys(dados || {}) } })), { recarregarLancamentos: true })
   }, [executarComEmpresaAtiva, supabase])
 
   const arquivarLancamento = useCallback(async (id) => {
@@ -430,7 +426,7 @@ export function useFolha(opcoes = {}) {
       supabase,
       empresaId: empresa,
       id
-    }), { recarregarLancamentos: true })
+    }).then((resultado) => auditarResultadoFolha(supabase, resultado, { empresa_id: empresa, acao: 'folha.lancamento.arquivado', entidade_tipo: 'df_folha_lancamentos', entidade_id: id, dados_depois: { arquivado: true } })), { recarregarLancamentos: true })
   }, [executarComEmpresaAtiva, supabase])
 
   const reativarLancamento = useCallback(async (id) => {
@@ -438,7 +434,7 @@ export function useFolha(opcoes = {}) {
       supabase,
       empresaId: empresa,
       id
-    }), { recarregarLancamentos: true })
+    }).then((resultado) => auditarResultadoFolha(supabase, resultado, { empresa_id: empresa, acao: 'folha.lancamento.reativado', entidade_tipo: 'df_folha_lancamentos', entidade_id: id, dados_depois: { arquivado: false } })), { recarregarLancamentos: true })
   }, [executarComEmpresaAtiva, supabase])
 
   const criarItemLancamento = useCallback(async (lancamento, dados = {}) => {
@@ -463,7 +459,7 @@ export function useFolha(opcoes = {}) {
       supabase,
       empresaId: empresa,
       dados: payload
-    }).then((resultado) => { const id = Array.isArray(resultado?.data) ? resultado.data[0]?.id : resultado?.data?.id; registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.item.criado', entidade_tipo: 'df_folha_itens', entidade_id: id, dados_depois: { categoria: payload.categoria || null } }); return resultado }), {
+    }).then((resultado) => { const id = Array.isArray(resultado?.data) ? resultado.data[0]?.id : resultado?.data?.id; return auditarResultadoFolha(supabase, resultado, { empresa_id: empresa, acao: 'folha.item.criado', entidade_tipo: 'df_folha_lancamento_itens', entidade_id: id, dados_depois: { categoria: payload.categoria || null } }) }), {
       recarregarLancamentos: true,
       competenciaId: competencia
     })
@@ -480,7 +476,7 @@ export function useFolha(opcoes = {}) {
         ...dados,
         categoria: item?.categoria || dados.categoria
       }
-    }).then((resultado) => { registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.item.atualizado', entidade_tipo: 'df_folha_itens', entidade_id: item?.id, dados_depois: { campos: Object.keys(dados || {}) } }); return resultado }), {
+    }).then((resultado) => auditarResultadoFolha(supabase, resultado, { empresa_id: empresa, acao: 'folha.item.atualizado', entidade_tipo: 'df_folha_lancamento_itens', entidade_id: item?.id, dados_depois: { campos: Object.keys(dados || {}) } })), {
       recarregarLancamentos: true,
       competenciaId: competencia
     })
@@ -493,7 +489,7 @@ export function useFolha(opcoes = {}) {
       supabase,
       empresaId: empresa,
       id: item?.id
-    }).then((resultado) => { registrarAuditoriaFolha(supabase, { empresa_id: empresa, acao: 'folha.item.arquivado', entidade_tipo: 'df_folha_itens', entidade_id: item?.id, dados_depois: { arquivado: true } }); return resultado }), {
+    }).then((resultado) => auditarResultadoFolha(supabase, resultado, { empresa_id: empresa, acao: 'folha.item.arquivado', entidade_tipo: 'df_folha_lancamento_itens', entidade_id: item?.id, dados_depois: { arquivado: true } })), {
       recarregarLancamentos: true,
       competenciaId: competencia
     })

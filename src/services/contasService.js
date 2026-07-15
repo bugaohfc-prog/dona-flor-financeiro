@@ -305,9 +305,15 @@ export async function registrarAuditoriaPagamentoParcialCriado(supabase, payload
     return { data: null, error: new Error('Payload de auditoria incompleto.') }
   }
 
-  return supabase.functions.invoke('registrar-auditoria-evento', {
+  const resposta = await supabase.functions.invoke('registrar-auditoria-evento', {
     body: payloadAuditoria
   })
+  if (!resposta?.error && resposta?.data?.ok === false) {
+    const error = new Error(`Auditoria rejeitada (${resposta.data.code || 'AUDITORIA_REJEITADA'}).`)
+    error.code = resposta.data.code || 'AUDITORIA_REJEITADA'
+    return { data: resposta.data, error }
+  }
+  return resposta
 }
 
 export async function registrarAuditoriaEventoFinanceiro(supabase, payloadAuditoria) {

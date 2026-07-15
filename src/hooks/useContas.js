@@ -20,7 +20,6 @@ import {
   listarContasDoMesParaRecorrencia,
   listarPagamentosParciaisPorContas,
   registrarAuditoriaPagamentoParcialCriado,
-  registrarAuditoriaEventoFinanceiro,
   registrarPagamentoParcial as registrarPagamentoParcialService,
   estornarPagamentoParcial as estornarPagamentoParcialService,
   baixarContaQuitadaPorParciais as baixarContaQuitadaPorParciaisService,
@@ -34,6 +33,7 @@ import {
   validarFilialDaEmpresa,
   vincularRecorrenciaNaConta
 } from '../services/contasService'
+import { registrarEventoAuditoriaSeguro } from '../services/auditoriaService'
 import {
   criarCorrelationIdAtualizacaoConta,
   registrarAuditoriaAtualizacaoConta
@@ -938,7 +938,7 @@ export function useContas() {
 
     fecharConta()
     if (contaCriadaParaAuditoria?.id) {
-      registrarAuditoriaEventoFinanceiro(supabase, {
+      await registrarEventoAuditoriaSeguro(supabase, {
         empresa_id: empresaId,
         acao: 'financeiro.conta.criada',
         entidade_tipo: 'df_contas',
@@ -950,7 +950,7 @@ export function useContas() {
         dados_antes: null,
         dados_depois: { campos: ['descricao', 'valor', 'vencimento', 'centro_custo', 'filial', 'imposto_tipo'] },
         metadados: { conta_id: contaCriadaParaAuditoria.id }
-      }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria da criação da conta.', { message: auditoriaError?.message }))
+      }, 'criação da conta')
     }
     if (editandoContaId) {
       await registrarAuditoriaAtualizacaoConta({

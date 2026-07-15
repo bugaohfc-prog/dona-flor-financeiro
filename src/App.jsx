@@ -4355,7 +4355,7 @@ export default function App() {
           notasCentral: notas,
           onAtualizarContasCentral: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
           onAtualizarNotasCentral: () => buscarNotas(empresaId),
-          podeAcessarAuditoriaCentral: podeAdministrarUsuarios()
+          navegarParaOrigemAgenda
         }}
         />
       </AppSuspenseBoundary>

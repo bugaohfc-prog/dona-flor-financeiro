@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase.js'
 import { mensagemSeguraErro } from '../../../utils/session.js'
-import { montarCentralDoDia } from '../domain/centralDoDiaSelectors.js'
+import { montarBaseOperacional } from '../domain/centralDoDiaRules.js'
+import { deveCarregarAtividadeCentral, selecionarCentralLegada, selecionarResumoDashboard } from '../domain/centralDoDiaSelectors.js'
 import { listarAtividadeRecenteCentral } from '../services/centralDoDiaService.js'
 
 export function useCentralDoDia({
@@ -13,6 +14,7 @@ export function useCentralDoDia({
   erroPessoas,
   podeAcessarPessoas,
   podeAcessarAuditoria,
+  modoCompacto = false,
   onAtualizarContas,
   onAtualizarNotas
 } = {}) {
@@ -21,12 +23,14 @@ export function useCentralDoDia({
   const [erroAtividade, setErroAtividade] = useState(null)
   const [atualizando, setAtualizando] = useState(false)
   const requisicaoAtividadeRef = useRef(0)
+  const atualizandoRef = useRef(false)
+  const montadoRef = useRef(true)
 
   const carregarAtividade = useCallback(async ({ silencioso = false } = {}) => {
     requisicaoAtividadeRef.current += 1
     const requisicaoId = requisicaoAtividadeRef.current
 
-    if (!empresaId || !podeAcessarAuditoria) {
+    if (!deveCarregarAtividadeCentral({ empresaId, podeAcessarAuditoria, modoCompacto })) {
       setAtividade([])
       setErroAtividade(null)
       setCarregandoAtividade(false)
@@ -53,42 +57,66 @@ export function useCentralDoDia({
 
     setCarregandoAtividade(false)
     return resposta
-  }, [empresaId, podeAcessarAuditoria])
+  }, [empresaId, podeAcessarAuditoria, modoCompacto])
 
   useEffect(() => {
+    if (!deveCarregarAtividadeCentral({ empresaId, podeAcessarAuditoria, modoCompacto })) {
+      requisicaoAtividadeRef.current += 1
+      setAtividade([])
+      setErroAtividade(null)
+      setCarregandoAtividade(false)
+      return undefined
+    }
+
     carregarAtividade()
     return () => {
       requisicaoAtividadeRef.current += 1
     }
-  }, [carregarAtividade])
+  }, [carregarAtividade, empresaId, podeAcessarAuditoria, modoCompacto])
+
+  useEffect(() => {
+    montadoRef.current = true
+    return () => {
+      montadoRef.current = false
+      atualizandoRef.current = false
+    }
+  }, [])
 
   const atualizar = useCallback(async () => {
-    if (atualizando || !empresaId) return
+    if (atualizandoRef.current || !empresaId) return
+    atualizandoRef.current = true
     setAtualizando(true)
 
     try {
       const tarefas = []
       if (typeof onAtualizarContas === 'function') tarefas.push(Promise.resolve().then(onAtualizarContas))
       if (typeof onAtualizarNotas === 'function') tarefas.push(Promise.resolve().then(onAtualizarNotas))
-      if (podeAcessarAuditoria) tarefas.push(carregarAtividade({ silencioso: true }))
+      if (deveCarregarAtividadeCentral({ empresaId, podeAcessarAuditoria, modoCompacto })) {
+        tarefas.push(carregarAtividade({ silencioso: true }))
+      }
       await Promise.allSettled(tarefas)
     } finally {
-      setAtualizando(false)
+      atualizandoRef.current = false
+      if (montadoRef.current) setAtualizando(false)
     }
-  }, [atualizando, empresaId, onAtualizarContas, onAtualizarNotas, podeAcessarAuditoria, carregarAtividade])
+  }, [empresaId, onAtualizarContas, onAtualizarNotas, podeAcessarAuditoria, modoCompacto, carregarAtividade])
 
-  const central = useMemo(() => montarCentralDoDia({
+  const base = useMemo(() => montarBaseOperacional({
     contas,
     notas,
     alertasPessoas,
-    atividade,
+    atividade: modoCompacto ? [] : atividade,
     filialId,
     podeAcessarPessoas,
-    podeAcessarAuditoria
-  }), [contas, notas, alertasPessoas, atividade, filialId, podeAcessarPessoas, podeAcessarAuditoria])
+    podeAcessarAuditoria: podeAcessarAuditoria && !modoCompacto
+  }), [contas, notas, alertasPessoas, atividade, filialId, podeAcessarPessoas, podeAcessarAuditoria, modoCompacto])
+
+  const central = useMemo(() => selecionarCentralLegada(base), [base])
+  const resumoDashboard = useMemo(() => selecionarResumoDashboard(base), [base])
 
   return {
     ...central,
+    resumoDashboard,
     carregandoAtividade,
     erroAtividade,
     erroPessoas: erroPessoas || null,

@@ -1,0 +1,136 @@
+.resumo-operacional-dashboard {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--df-color-border);
+  border-radius: var(--df-radius-section);
+  background: var(--df-color-surface);
+  box-shadow: var(--df-shadow-soft);
+  box-sizing: border-box;
+}
+
+.resumo-operacional-dashboard-cabecalho,
+.resumo-operacional-dashboard-acoes,
+.resumo-operacional-dashboard-item-topo,
+.resumo-operacional-dashboard-item-rodape,
+.resumo-operacional-dashboard-subtitulo {
+  display: flex;
+  align-items: center;
+}
+
+.resumo-operacional-dashboard-cabecalho { justify-content: space-between; gap: 16px; }
+.resumo-operacional-dashboard-cabecalho h2,
+.resumo-operacional-dashboard-subtitulo h3,
+.resumo-operacional-dashboard-item h4,
+.resumo-operacional-dashboard-cabecalho p,
+.resumo-operacional-dashboard-vazio,
+.resumo-operacional-dashboard-estado,
+.resumo-operacional-dashboard-alerta { margin: 0; }
+
+.resumo-operacional-dashboard-cabecalho p,
+.resumo-operacional-dashboard-subtitulo span,
+.resumo-operacional-dashboard-proxima-acao { color: var(--df-color-muted); }
+
+.resumo-operacional-dashboard-kicker,
+.resumo-operacional-dashboard-contador span,
+.resumo-operacional-dashboard-origem {
+  color: var(--df-color-brand);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.resumo-operacional-dashboard-acoes { gap: 8px; flex: 0 0 auto; }
+.resumo-operacional-dashboard-contadores {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.resumo-operacional-dashboard-contador {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--df-color-border);
+  border-radius: var(--df-radius-card);
+  background: var(--df-color-page);
+  box-sizing: border-box;
+}
+
+.resumo-operacional-dashboard-contador strong { color: var(--df-color-text); font-size: 1.45rem; }
+.resumo-operacional-dashboard-atencao { display: grid; gap: 10px; min-width: 0; }
+.resumo-operacional-dashboard-subtitulo { justify-content: space-between; gap: 12px; }
+.resumo-operacional-dashboard-lista {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.resumo-operacional-dashboard-item {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--df-color-border);
+  border-radius: var(--df-radius-card);
+  background: var(--df-color-surface);
+  box-shadow: var(--df-shadow-card);
+  box-sizing: border-box;
+}
+
+.resumo-operacional-dashboard-item-topo { justify-content: space-between; flex-wrap: wrap; gap: 6px; }
+.resumo-operacional-dashboard-situacao {
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--df-color-text);
+  background: var(--df-color-brand-soft);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.resumo-operacional-dashboard-item h4,
+.resumo-operacional-dashboard-proxima-acao { min-width: 0; overflow-wrap: anywhere; }
+.resumo-operacional-dashboard-item-rodape { align-items: flex-end; gap: 8px; margin-top: auto; }
+.resumo-operacional-dashboard-proxima-acao { flex: 1 1 auto; font-size: 0.82rem; }
+.resumo-operacional-dashboard-item-rodape strong { white-space: nowrap; }
+
+.resumo-operacional-dashboard-estado,
+.resumo-operacional-dashboard-alerta,
+.resumo-operacional-dashboard-vazio {
+  padding: 12px;
+  border-radius: var(--df-radius-control);
+  background: var(--df-color-page);
+  color: var(--df-color-muted);
+}
+
+.resumo-operacional-dashboard-alerta {
+  color: var(--df-color-text);
+  background: color-mix(in srgb, var(--df-color-warning) 14%, var(--df-color-surface));
+}
+
+.resumo-operacional-dashboard :is(button, a, select):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--df-color-brand) 34%, transparent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .resumo-operacional-dashboard { padding: 16px; }
+  .resumo-operacional-dashboard-cabecalho,
+  .resumo-operacional-dashboard-subtitulo { align-items: stretch; flex-direction: column; }
+  .resumo-operacional-dashboard-acoes { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .resumo-operacional-dashboard-contadores { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .resumo-operacional-dashboard-contador:last-child { grid-column: 1 / -1; }
+  .resumo-operacional-dashboard-lista { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 420px) {
+  .resumo-operacional-dashboard-acoes { align-items: stretch; grid-template-columns: 1fr; }
+  .resumo-operacional-dashboard-item-rodape { display: grid; align-items: stretch; grid-template-columns: 1fr; }
+  .resumo-operacional-dashboard-item-rodape .dashboard-home-action { width: 100%; }
+}

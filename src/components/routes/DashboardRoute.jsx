@@ -38,7 +38,7 @@ export default function DashboardRoute({
   notasCentral,
   onAtualizarContasCentral,
   onAtualizarNotasCentral,
-  podeAcessarAuditoriaCentral
+  navegarParaOrigemAgenda
 }) {
   return (
     <>
@@ -84,7 +84,7 @@ export default function DashboardRoute({
         notasCentral={notasCentral}
         onAtualizarContasCentral={onAtualizarContasCentral}
         onAtualizarNotasCentral={onAtualizarNotasCentral}
-        podeAcessarAuditoriaCentral={podeAcessarAuditoriaCentral}
+        navegarParaOrigemAgenda={navegarParaOrigemAgenda}
       />
     </>
   )

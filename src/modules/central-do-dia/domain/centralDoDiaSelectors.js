@@ -23,6 +23,10 @@ function possuiAcaoObjetiva(item) {
   return Boolean(item?.destino && String(item?.proximaAcao || '').trim())
 }
 
+export function deveCarregarAtividadeCentral({ empresaId, podeAcessarAuditoria, modoCompacto = false } = {}) {
+  return Boolean(empresaId && podeAcessarAuditoria && !modoCompacto)
+}
+
 export function selecionarAgendaOperacional(base = {}) {
   const itens = ordenar(base.itensOperacionais)
   const secoes = {

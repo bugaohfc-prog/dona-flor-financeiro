@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { agruparProximosVencimentos, criarItemCentral, deduplicarItensOperacionais, montarBaseOperacional } from './centralDoDiaRules.js'
-import { montarCentralDoDia, selecionarAgendaOperacional, selecionarCentralLegada, selecionarResumoDashboard } from './centralDoDiaSelectors.js'
+import { deveCarregarAtividadeCentral, montarCentralDoDia, selecionarAgendaOperacional, selecionarCentralLegada, selecionarResumoDashboard } from './centralDoDiaSelectors.js'
 
 const hoje = '2026-07-14'
 
@@ -117,6 +117,38 @@ test('atividade fica fora da Agenda e do Dashboard futuro', () => {
   const base = { itensOperacionais: [], atividadeRecente: [item({ id: 'evento', dias: -1, origem: 'auditoria', tipoOrigem: 'evento_auditoria' })] }
   assert.equal(selecionarAgendaOperacional(base).totalItens, 0)
   assert.equal(selecionarResumoDashboard(base).possuiDados, false)
+})
+
+test('modo compacto nunca solicita atividade de Auditoria', () => {
+  assert.equal(deveCarregarAtividadeCentral({ empresaId: 'empresa', podeAcessarAuditoria: true, modoCompacto: true }), false)
+  assert.equal(deveCarregarAtividadeCentral({ empresaId: 'empresa', podeAcessarAuditoria: true, modoCompacto: false }), true)
+  assert.equal(deveCarregarAtividadeCentral({ empresaId: '', podeAcessarAuditoria: true, modoCompacto: false }), false)
+})
+
+test('Dashboard mantem ordem deterministica e limita tres prioridades', () => {
+  const resumo = selecionarResumoDashboard({ itensOperacionais: [
+    item({ id: 'hoje-b', dias: 0 }), item({ id: 'vencido-menor', dias: -2 }),
+    item({ id: 'hoje-a', dias: 0 }), item({ id: 'vencido-maior', dias: -8 })
+  ] })
+  assert.deepEqual(resumo.prioridades.map((registro) => registro.id), ['vencido-maior', 'vencido-menor', 'hoje-a'])
+})
+
+test('Dashboard preserva item prioritario sem destino para apresentar acao desabilitada', () => {
+  const semDestino = criarItemCentral({
+    id: 'sem-destino', tipo: 'aviso', modulo: 'Pessoas', titulo: 'Conferir alerta',
+    dias: -1, origemOperacional: 'pessoas', referenciaOrigem: { tipo: 'alerta', id: 'sem-destino' }
+  })
+  const resumo = selecionarResumoDashboard({ itensOperacionais: [semDestino] })
+  assert.equal(resumo.prioridades[0], semDestino)
+  assert.equal(resumo.prioridades[0].destino, null)
+})
+
+test('Dashboard trata itens somente apos trinta dias como dados sem prioridade imediata', () => {
+  const futuro = item({ id: 'futuro', dias: 31 })
+  const resumo = selecionarResumoDashboard({ itensOperacionais: [futuro] })
+  assert.deepEqual(resumo.contadores, { vencidos: 0, hoje: 0, proximosSeteDias: 0, excecoes: 0, pessoas: 0 })
+  assert.equal(resumo.prioridades.length, 0)
+  assert.equal(resumo.possuiDados, true)
 })
 
 test('legado preserva seis acoes e seis excecoes', () => {

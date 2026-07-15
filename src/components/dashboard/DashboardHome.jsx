@@ -2,7 +2,7 @@ import { SummarySkeleton, NotesSkeleton } from '../feedback/Skeletons.jsx'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext.jsx'
 import { useResumoGestaoPessoasPainel } from '../../hooks/useResumoGestaoPessoasPainel.js'
-import { CentralDoDia } from '../../modules/central-do-dia/components/CentralDoDia.jsx'
+import { ResumoOperacionalDashboard } from '../../modules/central-do-dia/components/dashboard/ResumoOperacionalDashboard.jsx'
 import { useCentralDoDia } from '../../modules/central-do-dia/hooks/useCentralDoDia.js'
 
 function DashboardAction({ children, variant = 'primary', className = '', ...props }) {
@@ -76,7 +76,7 @@ export default function DashboardHome({
   notasCentral = [],
   onAtualizarContasCentral,
   onAtualizarNotasCentral,
-  podeAcessarAuditoriaCentral = false,
+  navegarParaOrigemAgenda,
 }) {
   const { empresaId, perfilEmpresaAtiva } = useApp()
   const [mostrarResumoFinanceiro, setMostrarResumoFinanceiro] = useState(true)
@@ -106,10 +106,24 @@ export default function DashboardHome({
     alertasPessoas,
     erroPessoas: erroResumoPessoas,
     podeAcessarPessoas: podeVisualizarResumoPessoas,
-    podeAcessarAuditoria: podeAcessarAuditoriaCentral,
+    podeAcessarAuditoria: false,
+    modoCompacto: true,
     onAtualizarContas: onAtualizarContasCentral,
     onAtualizarNotas: onAtualizarNotasCentral
   })
+
+  function abrirOrigemResumo(item) {
+    const referencia = item?.referenciaOrigem
+    if (referencia?.tipo === 'conta' && referencia.id && typeof navegarParaOrigemAgenda === 'function') {
+      navegarParaOrigemAgenda('conta', referencia.id)
+      return
+    }
+    if (referencia?.tipo === 'nota' && referencia.id && typeof navegarParaOrigemAgenda === 'function') {
+      navegarParaOrigemAgenda('nota', referencia.id)
+      return
+    }
+    if (item?.destino) navegarPara(item.destino)
+  }
 
   useEffect(() => {
     setMostrarNotas(true)
@@ -278,13 +292,15 @@ export default function DashboardHome({
         </select>
       </section>
 
-      <CentralDoDia
+      <ResumoOperacionalDashboard
         empresaId={empresaId}
-        carregandoBase={loading}
+        carregando={loading}
+        erroParcial={dadosCentral.erroPessoas}
         formatarValor={formatarValor}
-        navegarPara={navegarPara}
         dados={dadosCentral}
-        podeAcessarAuditoria={podeAcessarAuditoriaCentral}
+        onAtualizar={dadosCentral.atualizar}
+        onAbrirAgenda={() => navegarPara('agenda')}
+        onAbrirOrigem={abrirOrigemResumo}
       />
 
       <section className="dashboard-home-finance" aria-label="Resumo financeiro rápido">

@@ -8,6 +8,7 @@ import {
   isUuid,
   resolverCorrelationIdConta,
   sanitizarDadosConta,
+  sanitizarDadosPorCampos,
   validarEntidadeConta
 } from './validation.ts'
 
@@ -20,11 +21,16 @@ test('aceita UUID completo e rejeita formato invalido', () => {
   assert.equal(isUuid('nao-e-uuid'), false)
 })
 
-test('ativa somente as tres acoes do lote', () => {
+test('ativa somente as acoes explicitamente aprovadas', () => {
   assert.equal(acaoEstaAtivada(ACAO_CONTA_CRIADA), true)
   assert.equal(acaoEstaAtivada(ACAO_CONTA_ATUALIZADA), true)
   assert.equal(acaoEstaAtivada(ACAO_PAGAMENTO_PARCIAL_CRIADO), true)
-  assert.equal(acaoEstaAtivada('financeiro.conta.baixada'), false)
+  assert.equal(acaoEstaAtivada('financeiro.conta.baixada'), true)
+  assert.equal(acaoEstaAtivada('administracao.usuario.perfil_alterado'), true)
+  assert.equal(acaoEstaAtivada('rh.funcionario.atualizado'), true)
+  assert.equal(acaoEstaAtivada('folha.item.criado'), true)
+  assert.equal(acaoEstaAtivada('administracao.usuario.removido'), false)
+  assert.equal(acaoEstaAtivada('sistema.auditoria_erro.tecnico'), false)
 })
 
 test('valida conta pertencente a empresa', () => {
@@ -46,6 +52,16 @@ test('rejeita dados sensiveis e campos arbitrarios', () => {
   assert.equal(sanitizarDadosConta({ cpf_funcionario: '000' }).ok, false)
   assert.equal(sanitizarDadosConta({ descricao: 'conteudo completo' }).ok, false)
   assert.equal(sanitizarDadosConta({ payload: { status: 'pago' } }).ok, false)
+})
+
+test('sanitiza dominios adicionais por whitelist sem aceitar dados pessoais', () => {
+  const campos = new Set(['perfil', 'quantidade_filiais', 'campos'])
+  assert.deepEqual(
+    sanitizarDadosPorCampos({ perfil: 'admin', quantidade_filiais: 2 }, campos),
+    { ok: true, data: { perfil: 'admin', quantidade_filiais: 2 } }
+  )
+  assert.equal(sanitizarDadosPorCampos({ email: 'nao-persistir' }, campos).ok, false)
+  assert.equal(sanitizarDadosPorCampos({ nome: 'nao-persistir' }, campos).ok, false)
 })
 
 test('criacao usa chave fixa e atualizacao exige chave unica', () => {

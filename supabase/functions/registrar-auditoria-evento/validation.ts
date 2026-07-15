@@ -4,10 +4,46 @@ export const ACAO_PAGAMENTO_PARCIAL_CRIADO = 'financeiro.pagamento_parcial.criad
 export const ENTIDADE_CONTA = 'df_contas'
 export const ENTIDADE_PAGAMENTO = 'df_contas_pagamentos'
 
+export const ACOES_FINANCEIRAS_ADICIONAIS = [
+  'financeiro.conta.baixada',
+  'financeiro.conta.pagamento_corrigido',
+  'financeiro.conta.baixa_estornada',
+  'financeiro.pagamento_parcial.estornado',
+  'financeiro.importacao.contas_concluida'
+] as const
+
+export const ACOES_USUARIOS = [
+  'administracao.usuario.convite_criado',
+  'administracao.usuario.acesso_enviado',
+  'administracao.usuario.perfil_alterado',
+  'administracao.usuario.filiais_alteradas'
+] as const
+
+export const ACOES_RH = [
+  'rh.funcionario.criado',
+  'rh.funcionario.atualizado',
+  'rh.funcionario.arquivado',
+  'rh.funcionario.reativado',
+  'folha.competencia.criada',
+  'folha.competencia.atualizada',
+  'folha.competencia.arquivada',
+  'folha.competencia.reativada',
+  'folha.lancamento.criado',
+  'folha.lancamento.atualizado',
+  'folha.lancamento.arquivado',
+  'folha.lancamento.reativado',
+  'folha.item.criado',
+  'folha.item.atualizado',
+  'folha.item.arquivado'
+] as const
+
 const ACOES_ATIVADAS = new Set([
   ACAO_CONTA_CRIADA,
   ACAO_CONTA_ATUALIZADA,
-  ACAO_PAGAMENTO_PARCIAL_CRIADO
+  ACAO_PAGAMENTO_PARCIAL_CRIADO,
+  ...ACOES_FINANCEIRAS_ADICIONAIS,
+  ...ACOES_USUARIOS,
+  ...ACOES_RH
 ])
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -70,7 +106,7 @@ function isPlainObject(valor: unknown): valor is Record<string, unknown> {
   return Boolean(valor) && typeof valor === 'object' && !Array.isArray(valor)
 }
 
-function sanitizarValor(valor: unknown, profundidade: number): ResultadoValidacao<unknown> {
+function sanitizarValor(valor: unknown, profundidade: number, camposPermitidos: ReadonlySet<string>): ResultadoValidacao<unknown> {
   if (profundidade > MAX_PROFUNDIDADE) {
     return { ok: false, code: 'DADOS_PROFUNDIDADE_EXCEDIDA', message: 'Dados de auditoria invalidos.' }
   }
@@ -87,7 +123,7 @@ function sanitizarValor(valor: unknown, profundidade: number): ResultadoValidaca
     }
     const itens: unknown[] = []
     for (const item of valor) {
-      const resultado = sanitizarValor(item, profundidade + 1)
+      const resultado = sanitizarValor(item, profundidade + 1, camposPermitidos)
       if (!resultado.ok) return resultado
       itens.push(resultado.data)
     }
@@ -100,10 +136,10 @@ function sanitizarValor(valor: unknown, profundidade: number): ResultadoValidaca
   const objeto: Record<string, unknown> = {}
   for (const [chave, conteudo] of Object.entries(valor)) {
     const normalizada = chave.trim().toLowerCase()
-    if (CHAVE_SENSIVEL.test(normalizada) || !CAMPOS_CONTA_PERMITIDOS.has(normalizada)) {
+    if (CHAVE_SENSIVEL.test(normalizada) || !camposPermitidos.has(normalizada)) {
       return { ok: false, code: 'CAMPO_NAO_PERMITIDO', message: 'Dados de auditoria contem campo nao permitido.' }
     }
-    const resultado = sanitizarValor(conteudo, profundidade + 1)
+    const resultado = sanitizarValor(conteudo, profundidade + 1, camposPermitidos)
     if (!resultado.ok) return resultado
     objeto[normalizada] = resultado.data
   }
@@ -111,11 +147,18 @@ function sanitizarValor(valor: unknown, profundidade: number): ResultadoValidaca
 }
 
 export function sanitizarDadosConta(valor: unknown): ResultadoValidacao<Record<string, unknown>> {
+  return sanitizarDadosPorCampos(valor, CAMPOS_CONTA_PERMITIDOS)
+}
+
+export function sanitizarDadosPorCampos(
+  valor: unknown,
+  camposPermitidos: ReadonlySet<string>
+): ResultadoValidacao<Record<string, unknown>> {
   if (valor === null || valor === undefined) return { ok: true, data: {} }
   if (!isPlainObject(valor)) {
     return { ok: false, code: 'DADOS_INVALIDOS', message: 'Dados de auditoria invalidos.' }
   }
-  const resultado = sanitizarValor(valor, 0)
+  const resultado = sanitizarValor(valor, 0, camposPermitidos)
   if (!resultado.ok) return resultado
   const data = resultado.data as Record<string, unknown>
   if (JSON.stringify(data).length > MAX_JSON) {

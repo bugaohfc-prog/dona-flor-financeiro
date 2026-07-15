@@ -10,6 +10,7 @@ import {
   isUuid,
   resolverCorrelationIdConta,
   sanitizarDadosConta,
+  sanitizarDadosPorCampos,
   validarEntidadeConta
 } from './validation.ts'
 
@@ -38,6 +39,60 @@ const CAMPOS_PROIBIDOS = new Set([
   'conta',
   'pagamento'
 ])
+
+const CAMPOS_FINANCEIROS = new Set([
+  'status', 'valor', 'vencimento', 'data_pagamento', 'origem', 'arquivado',
+  'centro_custo_alterado', 'filial_alterada', 'imposto_tipo_alterado',
+  'campos', 'conta_id', 'correlation_id'
+])
+
+const CAMPOS_USUARIOS = new Set([
+  'perfil', 'ativo', 'quantidade_filiais', 'tipo_envio', 'origem',
+  'criacao_manual', 'campos', 'correlation_id'
+])
+
+const CAMPOS_RH = new Set([
+  'status', 'arquivado', 'arquivada', 'campos', 'funcionario_id',
+  'competencia', 'competencia_id', 'categoria', 'natureza', 'correlation_id'
+])
+
+const CAMPOS_IMPORTACAO = new Set([
+  'aceitas', 'duplicadas', 'total', 'empresa_id', 'correlation_id'
+])
+
+type DefinicaoAcao = {
+  entidadeTipo: string
+  tabela: string
+  modulo: 'financeiro' | 'usuarios' | 'rh'
+  campos: ReadonlySet<string>
+  exigeAdmin?: boolean
+}
+
+const DEFINICOES_ACAO = new Map<string, DefinicaoAcao>([
+  ['financeiro.conta.baixada', { entidadeTipo: ENTIDADE_CONTA, tabela: 'df_contas', modulo: 'financeiro', campos: CAMPOS_FINANCEIROS }],
+  ['financeiro.conta.pagamento_corrigido', { entidadeTipo: ENTIDADE_CONTA, tabela: 'df_contas', modulo: 'financeiro', campos: CAMPOS_FINANCEIROS }],
+  ['financeiro.conta.baixa_estornada', { entidadeTipo: ENTIDADE_CONTA, tabela: 'df_contas', modulo: 'financeiro', campos: CAMPOS_FINANCEIROS }],
+  ['financeiro.pagamento_parcial.estornado', { entidadeTipo: ENTIDADE_PAGAMENTO, tabela: 'df_contas_pagamentos', modulo: 'financeiro', campos: CAMPOS_FINANCEIROS }],
+  ['financeiro.importacao.contas_concluida', { entidadeTipo: 'df_empresas', tabela: 'df_empresas', modulo: 'financeiro', campos: CAMPOS_IMPORTACAO, exigeAdmin: true }],
+  ['administracao.usuario.convite_criado', { entidadeTipo: 'df_usuarios_empresas', tabela: 'df_usuarios_empresas', modulo: 'usuarios', campos: CAMPOS_USUARIOS, exigeAdmin: true }],
+  ['administracao.usuario.acesso_enviado', { entidadeTipo: 'df_usuarios_empresas', tabela: 'df_usuarios_empresas', modulo: 'usuarios', campos: CAMPOS_USUARIOS, exigeAdmin: true }],
+  ['administracao.usuario.perfil_alterado', { entidadeTipo: 'df_usuarios_empresas', tabela: 'df_usuarios_empresas', modulo: 'usuarios', campos: CAMPOS_USUARIOS, exigeAdmin: true }],
+  ['administracao.usuario.filiais_alteradas', { entidadeTipo: 'df_usuarios_empresas', tabela: 'df_usuarios_empresas', modulo: 'usuarios', campos: CAMPOS_USUARIOS, exigeAdmin: true }],
+  ['rh.funcionario.criado', { entidadeTipo: 'df_funcionarios', tabela: 'df_funcionarios', modulo: 'rh', campos: CAMPOS_RH, exigeAdmin: true }],
+  ['rh.funcionario.atualizado', { entidadeTipo: 'df_funcionarios', tabela: 'df_funcionarios', modulo: 'rh', campos: CAMPOS_RH, exigeAdmin: true }],
+  ['rh.funcionario.arquivado', { entidadeTipo: 'df_funcionarios', tabela: 'df_funcionarios', modulo: 'rh', campos: CAMPOS_RH, exigeAdmin: true }],
+  ['rh.funcionario.reativado', { entidadeTipo: 'df_funcionarios', tabela: 'df_funcionarios', modulo: 'rh', campos: CAMPOS_RH, exigeAdmin: true }]
+])
+
+for (const acao of ['criada', 'atualizada', 'arquivada', 'reativada']) {
+  DEFINICOES_ACAO.set(`folha.competencia.${acao}`, { entidadeTipo: 'df_folha_competencias', tabela: 'df_folha_competencias', modulo: 'rh', campos: CAMPOS_RH, exigeAdmin: true })
+}
+for (const acao of ['criado', 'atualizado', 'arquivado', 'reativado']) {
+  DEFINICOES_ACAO.set(`folha.lancamento.${acao}`, { entidadeTipo: 'df_folha_lancamentos', tabela: 'df_folha_lancamentos', modulo: 'rh', campos: CAMPOS_RH, exigeAdmin: true })
+}
+for (const acao of ['criado', 'atualizado', 'arquivado']) {
+  DEFINICOES_ACAO.set(`folha.item.${acao}`, { entidadeTipo: 'df_folha_lancamento_itens', tabela: 'df_folha_lancamento_itens', modulo: 'rh', campos: CAMPOS_RH, exigeAdmin: true })
+}
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(
@@ -176,6 +231,32 @@ async function usuarioPertenceEmpresa(supabaseAdmin: any, user: any, empresaId: 
   return Array.isArray(data) && data.length > 0
 }
 
+async function usuarioPodeAdministrarEmpresa(supabaseAdmin: any, user: any, empresaId: string) {
+  const email = String(user?.email || '').trim().toLowerCase()
+  const perfisPermitidos = ['admin', 'adm', 'administrador', 'master', 'owner']
+
+  if (user?.id) {
+    const { data, error } = await supabaseAdmin
+      .from('df_usuarios_empresas')
+      .select('perfil')
+      .eq('empresa_id', empresaId)
+      .eq('user_id', user.id)
+      .limit(10)
+    if (error) throw error
+    if ((data || []).some((vinculo: any) => perfisPermitidos.includes(String(vinculo?.perfil || '').trim().toLowerCase()))) return true
+  }
+
+  if (!email) return false
+  const { data, error } = await supabaseAdmin
+    .from('df_usuarios_empresas')
+    .select('perfil')
+    .eq('empresa_id', empresaId)
+    .eq('email', email)
+    .limit(10)
+  if (error) throw error
+  return (data || []).some((vinculo: any) => perfisPermitidos.includes(String(vinculo?.perfil || '').trim().toLowerCase()))
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -289,6 +370,77 @@ serve(async (req) => {
           ator_tipo: 'usuario',
           modulo: 'financeiro',
           entidade_tipo: ENTIDADE_CONTA,
+          entidade_id: entidadeId,
+          acao,
+          severidade: severidadeSegura(body.severidade),
+          origem: textoCurto(body.origem, 40) || 'app',
+          status: statusSeguro(body.status),
+          dados_antes: dadosAntes.data,
+          dados_depois: dadosDepois.data,
+          metadados: metadados.data,
+          correlation_id: correlationId
+        }])
+      if (insertError) throw insertError
+      return jsonResponse({ ok: true, idempotente: false })
+    }
+
+    const definicao = DEFINICOES_ACAO.get(acao)
+    if (definicao) {
+      const entidadeTipo = String(body.entidade_tipo || '').trim()
+      if (entidadeTipo !== definicao.entidadeTipo) {
+        return jsonResponse({ ok: false, code: 'ENTIDADE_TIPO_INVALIDA', message: 'Tipo de entidade invalido.' }, 400)
+      }
+      if (!isUuid(entidadeId)) {
+        return jsonResponse({ ok: false, code: 'ENTIDADE_INVALIDA', message: 'Entidade invalida.' }, 400)
+      }
+
+      if (definicao.exigeAdmin) {
+        const podeAdministrar = await usuarioPodeAdministrarEmpresa(supabaseAdmin, callerData.user, empresaId)
+        if (!podeAdministrar) {
+          return jsonResponse({ ok: false, code: 'PERFIL_NAO_AUTORIZADO', message: 'Evento nao autorizado.' }, 403)
+        }
+      }
+
+      let queryEntidade = supabaseAdmin.from(definicao.tabela).select(
+        definicao.tabela === 'df_empresas' ? 'id' : 'id, empresa_id'
+      ).eq('id', entidadeId)
+      if (definicao.tabela !== 'df_empresas') queryEntidade = queryEntidade.eq('empresa_id', empresaId)
+
+      const { data: entidade, error: entidadeError } = await queryEntidade.maybeSingle()
+      if (entidadeError) throw entidadeError
+      if (!entidade?.id || (definicao.tabela === 'df_empresas' && entidade.id !== empresaId)) {
+        return jsonResponse({ ok: false, code: 'ENTIDADE_NAO_AUTORIZADA', message: 'Entidade nao pertence a empresa.' }, 400)
+      }
+
+      const dadosAntes = sanitizarDadosPorCampos(body.dados_antes, definicao.campos)
+      if (!dadosAntes.ok) return jsonResponse({ ok: false, code: dadosAntes.code, message: dadosAntes.message }, 400)
+      const dadosDepois = sanitizarDadosPorCampos(body.dados_depois, definicao.campos)
+      if (!dadosDepois.ok) return jsonResponse({ ok: false, code: dadosDepois.code, message: dadosDepois.message }, 400)
+      const metadados = sanitizarDadosPorCampos(body.metadados, definicao.campos)
+      if (!metadados.ok) return jsonResponse({ ok: false, code: metadados.code, message: metadados.message }, 400)
+
+      const correlationId = textoCurto(body.correlation_id, 180)
+      if (!correlationId) {
+        return jsonResponse({ ok: false, code: 'CORRELATION_ID_OBRIGATORIO', message: 'Referencia da operacao obrigatoria.' }, 400)
+      }
+
+      const { data: eventoExistente, error: eventoExistenteError } = await supabaseAdmin
+        .from('df_auditoria_eventos')
+        .select('id')
+        .eq('empresa_id', empresaId)
+        .eq('correlation_id', correlationId)
+        .limit(1)
+      if (eventoExistenteError) throw eventoExistenteError
+      if (Array.isArray(eventoExistente) && eventoExistente.length > 0) return jsonResponse({ ok: true, idempotente: true })
+
+      const { error: insertError } = await supabaseAdmin
+        .from('df_auditoria_eventos')
+        .insert([{
+          empresa_id: empresaId,
+          user_id: callerData.user.id,
+          ator_tipo: 'usuario',
+          modulo: definicao.modulo,
+          entidade_tipo: definicao.entidadeTipo,
           entidade_id: entidadeId,
           acao,
           severidade: severidadeSegura(body.severidade),

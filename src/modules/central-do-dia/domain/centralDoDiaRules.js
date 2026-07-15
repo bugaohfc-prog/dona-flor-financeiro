@@ -341,6 +341,7 @@ export function montarBaseOperacional({
   contas = [],
   notas = [],
   alertasPessoas = [],
+  itensPessoasDetalhados = [],
   atividade = [],
   dataBaseISO = hojeLocalISO(),
   filialId = '',
@@ -350,7 +351,12 @@ export function montarBaseOperacional({
   const itensOperacionais = deduplicarItensOperacionais([
     ...normalizarContasCentral(contas, { dataBaseISO, filialId }),
     ...normalizarNotasCentral(notas, { dataBaseISO, filialId }),
-    ...normalizarAlertasPessoasCentral(alertasPessoas, podeAcessarPessoas)
+    ...normalizarAlertasPessoasCentral(alertasPessoas, podeAcessarPessoas),
+    ...(podeAcessarPessoas ? (itensPessoasDetalhados || []).filter((item) => (
+      item?.origemOperacional === 'pessoas' &&
+      item?.referenciaOrigem?.tipo &&
+      item?.referenciaOrigem?.id
+    )) : [])
   ])
 
   return {

@@ -55,6 +55,7 @@ export function useFuncionarios(opcoes = {}) {
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState(null)
   const cargaAtualRef = useRef(0)
+  const montadoRef = useRef(true)
 
   const definirErro = useCallback((error) => {
     setErro(error ? mensagemSeguraErro(error) : null)
@@ -82,7 +83,7 @@ export function useFuncionarios(opcoes = {}) {
         incluirArquivados
       })
 
-      if (cargaAtualRef.current !== cargaId) {
+      if (!montadoRef.current || cargaAtualRef.current !== cargaId) {
         return { data: null, error: null, ignorado: true }
       }
 
@@ -95,17 +96,25 @@ export function useFuncionarios(opcoes = {}) {
       setFuncionarios(data || [])
       return { data: data || [], error: null }
     } catch (error) {
-      if (cargaAtualRef.current === cargaId) {
+      if (montadoRef.current && cargaAtualRef.current === cargaId) {
         setFuncionarios([])
         definirErro(error)
       }
       return respostaErro(error)
     } finally {
-      if (cargaAtualRef.current === cargaId && !opcoesCarga.silencioso) {
+      if (montadoRef.current && cargaAtualRef.current === cargaId && !opcoesCarga.silencioso) {
         setLoading(false)
       }
     }
   }, [definirErro, empresaAtual, incluirArquivados, supabase])
+
+  useEffect(() => {
+    montadoRef.current = true
+    return () => {
+      montadoRef.current = false
+      cargaAtualRef.current += 1
+    }
+  }, [])
 
   useEffect(() => {
     cargaAtualRef.current += 1

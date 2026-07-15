@@ -33,14 +33,13 @@ import { useCopilot } from './components/copilot/core/CopilotProvider.jsx'
 import { useApp } from './context/AppContext.jsx'
 import { useContas } from './hooks/useContas'
 import { useNotas } from './hooks/useNotas'
-import { useFuncionarios } from './hooks/useFuncionarios'
 import { useAuthSession } from './hooks/useAuthSession'
 import { useUiState } from './hooks/useUiState'
 import { useAppNavigation } from './hooks/useAppNavigation'
 import { useEmpresaContext } from './hooks/useEmpresaContext'
 import { useDestinatariosAlertas } from './hooks/useDestinatariosAlertas'
 import { converterValor, formatarData, formatarDataParaBanco, formatarValor, limitarDataInput, primeiraLetraMaiuscula } from './utils/format'
-import { dataLocal, diferencaDias, mesmoMesAtual } from './utils/dates'
+import { diferencaDias } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
 import { estaVencida, pegarMes } from './utils/contasStatus'
 import { atualizarListaLixeiraEstavel, diasNaLixeira, podeExcluirDefinitivo } from './utils/lixeira'
@@ -50,9 +49,6 @@ import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiv
 import { listarFiliaisPorEmpresa } from './services/filiaisService'
 import { verificarUsoCentroCusto } from './services/contasService'
 import { registrarEventoAuditoriaSeguro } from './services/auditoriaService'
-import { listarPeriodosFeriasAgenda } from './services/funcionariosFeriasService'
-import { listarExamesPeriodicosAgenda } from './services/funcionariosExamesPeriodicosService'
-import { listarCompetenciasFolhaAgenda } from './services/folhaService'
 import { clearChunkReloadAttempt } from './utils/chunkRecovery.js'
 import './styles.css'
 import styles from './styles/appStyles.js'
@@ -930,166 +926,6 @@ export default function App() {
     telaAtual,
     usuarioLogado?.id
   ])
-  const {
-    funcionarios: funcionariosAgenda,
-    loading: loadingFuncionariosAgenda
-  } = useFuncionarios({
-    empresaId,
-    autoCarregar: Boolean(usuarioLogado?.id && empresaId && telaAtual === 'agenda' && podeAcessarGestaoPessoas())
-  })
-
-  const [feriasAgenda, setFeriasAgenda] = useState([])
-  const [loadingFeriasAgenda, setLoadingFeriasAgenda] = useState(false)
-  const [examesAgenda, setExamesAgenda] = useState([])
-  const [loadingExamesAgenda, setLoadingExamesAgenda] = useState(false)
-  const [folhaAgenda, setFolhaAgenda] = useState([])
-  const [loadingFolhaAgenda, setLoadingFolhaAgenda] = useState(false)
-
-  useEffect(() => {
-    let cancelado = false
-
-    setFeriasAgenda([])
-
-    if (!usuarioLogado?.id || !empresaId || telaAtual !== 'agenda' || !podeAcessarGestaoPessoas()) {
-      setLoadingFeriasAgenda(false)
-      return () => {
-        cancelado = true
-      }
-    }
-
-    async function carregarFeriasAgenda() {
-      setLoadingFeriasAgenda(true)
-
-      const hoje = new Date()
-      hoje.setHours(0, 0, 0, 0)
-      const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
-      const dataInicioMinima = [
-        hoje.getFullYear(),
-        String(hoje.getMonth() + 1).padStart(2, '0'),
-        String(hoje.getDate()).padStart(2, '0')
-      ].join('-')
-      const dataInicioMaxima = [
-        fimMes.getFullYear(),
-        String(fimMes.getMonth() + 1).padStart(2, '0'),
-        String(fimMes.getDate()).padStart(2, '0')
-      ].join('-')
-
-      try {
-        const { data, error } = await listarPeriodosFeriasAgenda({
-          supabase,
-          empresaId,
-          dataInicioMinima,
-          dataInicioMaxima
-        })
-
-        if (cancelado) return
-
-        if (error) {
-          setFeriasAgenda([])
-          return
-        }
-
-        setFeriasAgenda(data || [])
-      } catch {
-        if (!cancelado) setFeriasAgenda([])
-      } finally {
-        if (!cancelado) setLoadingFeriasAgenda(false)
-      }
-    }
-
-    carregarFeriasAgenda()
-
-    return () => {
-      cancelado = true
-    }
-  }, [empresaId, telaAtual, usuarioLogado?.id, podeAcessarGestaoPessoas])
-
-  useEffect(() => {
-    let cancelado = false
-
-    setExamesAgenda([])
-
-    if (!usuarioLogado?.id || !empresaId || telaAtual !== 'agenda' || !podeAcessarGestaoPessoas()) {
-      setLoadingExamesAgenda(false)
-      return () => {
-        cancelado = true
-      }
-    }
-
-    async function carregarExamesAgenda() {
-      setLoadingExamesAgenda(true)
-
-      try {
-        const { data, error } = await listarExamesPeriodicosAgenda({
-          supabase,
-          empresaId
-        })
-
-        if (cancelado) return
-
-        if (error) {
-          setExamesAgenda([])
-          return
-        }
-
-        setExamesAgenda(data || [])
-      } catch {
-        if (!cancelado) setExamesAgenda([])
-      } finally {
-        if (!cancelado) setLoadingExamesAgenda(false)
-      }
-    }
-
-    carregarExamesAgenda()
-
-    return () => {
-      cancelado = true
-    }
-  }, [empresaId, telaAtual, usuarioLogado?.id, podeAcessarGestaoPessoas])
-
-  useEffect(() => {
-    let cancelado = false
-
-    setFolhaAgenda([])
-
-    if (!usuarioLogado?.id || !empresaId || telaAtual !== 'agenda' || !podeAcessarGestaoPessoas()) {
-      setLoadingFolhaAgenda(false)
-      return () => {
-        cancelado = true
-      }
-    }
-
-    async function carregarFolhaAgenda() {
-      setLoadingFolhaAgenda(true)
-
-      try {
-        const { data, error } = await listarCompetenciasFolhaAgenda({
-          supabase,
-          empresaId
-        })
-
-        if (cancelado) return
-
-        if (error) {
-          setFolhaAgenda([])
-          return
-        }
-
-        setFolhaAgenda(data || [])
-      } catch {
-        if (!cancelado) setFolhaAgenda([])
-      } finally {
-        if (!cancelado) setLoadingFolhaAgenda(false)
-      }
-    }
-
-    carregarFolhaAgenda()
-
-    return () => {
-      cancelado = true
-    }
-  }, [empresaId, telaAtual, usuarioLogado?.id, podeAcessarGestaoPessoas])
-
   const bloquearAcaoSemPermissao = useCallback(() => {
     mostrarAviso('Você não tem permissão para realizar esta ação.', 'erro')
   }, [mostrarAviso])
@@ -4399,25 +4235,21 @@ export default function App() {
     return renderAppFrame(
       <AppSuspenseBoundary>
         <LazyAgendaPage
-          styles={styles}
+          empresaId={empresaId}
+          filiais={filiais}
           contas={contas}
           notas={notas}
-          funcionarios={funcionariosAgenda}
-          loadingFuncionarios={loadingFuncionariosAgenda}
-          feriasAgendadas={feriasAgenda}
-          loadingFerias={loadingFeriasAgenda}
-          examesPeriodicos={examesAgenda}
-          loadingExames={loadingExamesAgenda}
-          competenciasFolha={folhaAgenda}
-          loadingFolha={loadingFolhaAgenda}
+          carregandoFinanceiro={loading}
+          podeAcessarPessoas={podeAcessarGestaoPessoas()}
+          atualizarContas={() => buscarContas(empresaId, {
+            silencioso: true,
+            permitirGerarRecorrencias: false
+          })}
+          atualizarNotas={() => buscarNotas(empresaId)}
           formatarValor={formatarValor}
           formatarData={formatarData}
-          dataLocal={dataLocal}
-          diferencaDias={diferencaDias}
-          mesmoMesAtual={mesmoMesAtual}
           navegarPara={navegarPara}
           navegarParaOrigemAgenda={navegarParaOrigemAgenda}
-          podeEditarFinanceiro={podeEditarFinanceiro()}
         />
       </AppSuspenseBoundary>
     )

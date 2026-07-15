@@ -66,6 +66,37 @@ export function selecionarAgendaOperacional(base = {}) {
   }
 }
 
+const ORIGENS_AGENDA = new Set(['financeiro', 'impostos', 'notas', 'pessoas'])
+
+export function selecionarAgendaPorOrigem(base = {}, origem = 'todos') {
+  const origemNormalizada = String(origem || 'todos').trim().toLowerCase()
+  if (origemNormalizada === 'todos') return selecionarAgendaOperacional(base)
+  if (!ORIGENS_AGENDA.has(origemNormalizada)) return selecionarAgendaOperacional({ itensOperacionais: [] })
+
+  return selecionarAgendaOperacional({
+    ...base,
+    itensOperacionais: (base.itensOperacionais || []).filter((item) => (
+      item?.origemOperacional === origemNormalizada
+    ))
+  })
+}
+
+export function resumirAgendaOperacional(agenda = {}, { limiteAtencao = 3 } = {}) {
+  const secoes = agenda.secoes || {}
+  const limite = Math.max(0, Number(limiteAtencao) || 0)
+  return {
+    contadores: {
+      atrasados: (secoes.atrasados || []).length,
+      hoje: (secoes.hoje || []).length,
+      proximosSeteDias: (secoes.proximosSeteDias || []).length,
+      oitoATrintaDias: (secoes.proximosQuinzeDias || []).length + (secoes.proximosTrintaDias || []).length,
+      excecoes: (secoes.excecoes || []).length
+    },
+    atencaoPrimeiro: (agenda.atencaoPrimeiro || []).slice(0, limite),
+    totalItens: Number(agenda.totalItens) || 0
+  }
+}
+
 export function selecionarResumoDashboard(base = {}, { limitePrioridades = 3 } = {}) {
   const agenda = selecionarAgendaOperacional(base)
   const itens = base.itensOperacionais || []

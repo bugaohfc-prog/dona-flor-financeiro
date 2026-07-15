@@ -41,8 +41,8 @@ const menuSections = [
       { tela: 'configuracoes', icon: 'CF', label: 'Configurações', desc: 'Preferências da empresa' },
       { tela: 'billing', icon: 'PL', label: 'Planos', desc: 'Plano atual e limites' },
       { tela: 'onboarding', icon: 'AI', label: 'Assistente inicial', desc: 'Configuração da empresa' },
-      { tela: 'lixeira', icon: 'LX', label: 'Lixeira', desc: 'Restaurar ou excluir definitivo' }
-      ,{ tela: 'auditoria', icon: 'LG', label: 'Auditoria e logs', desc: 'Eventos administrativos e operacionais' }
+      { tela: 'lixeira', icon: 'LX', label: 'Lixeira', desc: 'Restaurar ou excluir definitivo' },
+      { tela: 'auditoria', icon: 'LG', label: 'Auditoria e logs', desc: 'Eventos administrativos e operacionais' }
     ]
   }
 ]
@@ -76,6 +76,7 @@ const CONTEXTO_MODULO_POR_TELA = {
   onboarding: MODULOS_TOPBAR.administracao,
   filiais: MODULOS_TOPBAR.administracao,
   lixeira: MODULOS_TOPBAR.administracao,
+  auditoria: MODULOS_TOPBAR.administracao,
 
   perfil: MODULOS_TOPBAR.conta,
   'meu-perfil': MODULOS_TOPBAR.conta,

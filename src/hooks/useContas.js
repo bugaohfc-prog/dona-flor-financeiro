@@ -1187,20 +1187,6 @@ export function useContas() {
       return false
     }
 
-    registrarAuditoriaEventoFinanceiro(supabase, {
-      empresa_id: empresaId,
-      acao: 'financeiro.conta.baixada',
-      entidade_tipo: 'df_contas',
-      entidade_id: id,
-      modulo: 'financeiro',
-      origem: 'app',
-      severidade: 'alta',
-      status: 'sucesso',
-      dados_antes: { status: 'aberto' },
-      dados_depois: { status: 'pago', pagamento_parcial: Boolean(pagamento) },
-      metadados: { conta_id: id, pagamento_parcial: Boolean(pagamento) }
-    }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria da baixa da conta.', { message: auditoriaError?.message }))
-
     await buscarContas()
     fecharConta?.()
     mostrarAviso?.('Parcelamento cancelado. As parcelas foram ocultadas.', 'sucesso')
@@ -1215,20 +1201,6 @@ export function useContas() {
       avisarErro(error)
       return false
     }
-
-    registrarAuditoriaEventoFinanceiro(supabase, {
-      empresa_id: empresaId,
-      acao: 'financeiro.conta.pagamento_corrigido',
-      entidade_tipo: 'df_contas',
-      entidade_id: id,
-      modulo: 'financeiro',
-      origem: 'app',
-      severidade: 'alta',
-      status: 'sucesso',
-      dados_antes: { pagamento: 'anterior' },
-      dados_depois: { pagamento: 'corrigido', data_pagamento: pagamento?.data_pagamento || null },
-      metadados: { conta_id: id }
-    }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria da correção de pagamento.', { message: auditoriaError?.message }))
 
     await buscarContas()
     mostrarAviso?.('Série recorrente desativada.', 'sucesso')

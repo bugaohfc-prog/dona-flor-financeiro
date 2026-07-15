@@ -125,6 +125,7 @@ const TELAS_RETORNO_SESSAO = new Set([
   'configuracoes',
   'importar',
   'lixeira',
+  'auditoria',
   'usuarios',
   'filiais',
   'billing',
@@ -702,7 +703,7 @@ export default function App() {
 
 
   useEffect(() => {
-    if (telaAtual === 'usuarios' && empresaId) {
+    if (['usuarios', 'auditoria'].includes(telaAtual) && empresaId) {
       buscarUsuariosEmpresa(empresaId)
     }
   }, [telaAtual, empresaId])
@@ -1179,6 +1180,7 @@ export default function App() {
         if (item.tela === 'importar') return podeImportarContas()
         if (item.tela === 'lixeira') return podeGerenciarLixeira()
         if (item.tela === 'usuarios') return podeAdministrarUsuarios()
+        if (item.tela === 'auditoria') return podeAdministrarUsuarios()
         if (['billing', 'onboarding'].includes(item.tela)) return temPermissao(['admin'])
         if (item.peopleOnly) return podeAcessarGestaoPessoas()
         if (item.tela === 'filiais') return podeEditarConfiguracoes()
@@ -4294,7 +4296,7 @@ export default function App() {
   }
 
   if (telaAtual === 'auditoria') {
-    return renderAppFrame(<LazyAuditoriaPage styles={styles} empresaId={empresaId} permissoesUsuario={permissoesUsuario} navegarPara={navegarPara} />)
+    return renderAppFrame(<LazyAuditoriaPage empresaId={empresaId} permissoesUsuario={permissoesUsuario} usuariosEmpresa={usuariosEmpresa} navegarPara={navegarPara} />)
   }
 
   if (telaAtual === 'configuracoes') {

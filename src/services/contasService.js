@@ -316,46 +316,6 @@ export async function registrarAuditoriaPagamentoParcialCriado(supabase, payload
   return resposta
 }
 
-export async function registrarAuditoriaEventoFinanceiro(supabase, payloadAuditoria) {
-    if (!payloadAuditoria?.empresa_id || !payloadAuditoria?.acao || !payloadAuditoria?.entidade_id) {
-      return { data: null, error: new Error('Payload de auditoria incompleto.') }
-    }
-    const inicio = typeof performance !== 'undefined' ? performance.now() : Date.now()
-    const resposta = await supabase.functions.invoke('registrar-auditoria-evento', { body: payloadAuditoria })
-    const fim = typeof performance !== 'undefined' ? performance.now() : Date.now()
-    if (!resposta?.error && (fim - inicio) > 1500) {
-      await supabase.functions.invoke('registrar-auditoria-evento', { body: {
-        empresa_id: payloadAuditoria.empresa_id,
-        acao: 'sistema.auditoria_lenta',
-        entidade_tipo: 'sistema',
-        entidade_id: payloadAuditoria.entidade_id,
-        modulo: 'sistema',
-        origem: 'app',
-        severidade: 'media',
-        status: 'sucesso',
-        dados_antes: null,
-        dados_depois: null,
-        metadados: { duracao_ms: Math.round(fim - inicio), evento: payloadAuditoria.acao }
-      } }).catch(() => null)
-    }
-    if (resposta?.error) {
-      await supabase.functions.invoke('registrar-auditoria-evento', { body: {
-        empresa_id: payloadAuditoria.empresa_id,
-        acao: 'sistema.auditoria_falhou',
-        entidade_tipo: 'sistema',
-        entidade_id: payloadAuditoria.entidade_id,
-        modulo: 'sistema',
-        origem: 'app',
-        severidade: 'alta',
-        status: 'erro',
-        dados_antes: null,
-        dados_depois: null,
-        metadados: { evento: payloadAuditoria.acao, erro: String(resposta.error?.message || 'falha de registro').slice(0, 240) }
-      } }).catch(() => null)
-    }
-    return resposta
-  }
-
 export async function estornarPagamentoParcial(supabase, pagamentoId, contaId, empresaId) {
   assertEmpresaId(empresaId)
 

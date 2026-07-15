@@ -9,10 +9,24 @@ import {
   reativarFuncionario as reativarFuncionarioService
 } from '../services/funcionariosService'
 import { mensagemSeguraErro } from '../utils/session'
+import { registrarEventoAuditoriaSeguro } from '../services/auditoriaService'
 
-function auditarFuncionario(supabase, empresaId, acao, funcionarioId, dados = {}) {
-  if (!empresaId || !funcionarioId) return
-  supabase.functions.invoke('registrar-auditoria-evento', { body: { empresa_id: empresaId, acao, entidade_tipo: 'df_funcionarios', entidade_id: funcionarioId, modulo: 'rh', origem: 'app', severidade: 'alta', status: 'sucesso', dados_antes: null, dados_depois: dados, metadados: { funcionario_id: funcionarioId } } }).catch((error) => console.warn('Falha ao registrar auditoria de funcionario.', { message: error?.message }))
+async function auditarResultadoFuncionario(supabase, resultado, empresaId, acao, funcionarioId, dados = {}) {
+  if (resultado?.error || !empresaId || !funcionarioId) return resultado
+  await registrarEventoAuditoriaSeguro(supabase, {
+    empresa_id: empresaId,
+    acao,
+    entidade_tipo: 'df_funcionarios',
+    entidade_id: funcionarioId,
+    modulo: 'rh',
+    origem: 'app',
+    severidade: 'alta',
+    status: 'sucesso',
+    dados_antes: null,
+    dados_depois: dados,
+    metadados: { funcionario_id: funcionarioId }
+  }, 'operação de funcionário')
+  return resultado
 }
 
 function normalizarId(valor) {
@@ -152,7 +166,7 @@ export function useFuncionarios(opcoes = {}) {
       supabase,
       empresaId: empresa,
       dados
-    }).then((resultado) => { const id = Array.isArray(resultado?.data) ? resultado.data[0]?.id : resultado?.data?.id; auditarFuncionario(supabase, empresa, 'rh.funcionario.criado', id, { campos: Object.keys(dados || {}) }); return resultado }))
+    }).then((resultado) => { const id = Array.isArray(resultado?.data) ? resultado.data[0]?.id : resultado?.data?.id; return auditarResultadoFuncionario(supabase, resultado, empresa, 'rh.funcionario.criado', id, { campos: Object.keys(dados || {}) }) }))
   }, [executarComEmpresaAtiva, supabase])
 
   const atualizarFuncionario = useCallback(async (funcionarioId, dados) => {
@@ -161,7 +175,7 @@ export function useFuncionarios(opcoes = {}) {
       empresaId: empresa,
       funcionarioId,
       dados
-    }).then((resultado) => { auditarFuncionario(supabase, empresa, 'rh.funcionario.atualizado', funcionarioId, { campos: Object.keys(dados || {}) }); return resultado }))
+    }).then((resultado) => auditarResultadoFuncionario(supabase, resultado, empresa, 'rh.funcionario.atualizado', funcionarioId, { campos: Object.keys(dados || {}) })))
   }, [executarComEmpresaAtiva, supabase])
 
   const arquivarFuncionario = useCallback(async (funcionarioId) => {
@@ -169,7 +183,7 @@ export function useFuncionarios(opcoes = {}) {
       supabase,
       empresaId: empresa,
       funcionarioId
-    }).then((resultado) => { auditarFuncionario(supabase, empresa, 'rh.funcionario.arquivado', funcionarioId, { arquivado: true }); return resultado }))
+    }).then((resultado) => auditarResultadoFuncionario(supabase, resultado, empresa, 'rh.funcionario.arquivado', funcionarioId, { arquivado: true })))
   }, [executarComEmpresaAtiva, supabase])
 
   const reativarFuncionario = useCallback(async (funcionarioId) => {
@@ -177,7 +191,7 @@ export function useFuncionarios(opcoes = {}) {
       supabase,
       empresaId: empresa,
       funcionarioId
-    }).then((resultado) => { auditarFuncionario(supabase, empresa, 'rh.funcionario.reativado', funcionarioId, { arquivado: false }); return resultado }))
+    }).then((resultado) => auditarResultadoFuncionario(supabase, resultado, empresa, 'rh.funcionario.reativado', funcionarioId, { arquivado: false })))
   }, [executarComEmpresaAtiva, supabase])
 
   return {

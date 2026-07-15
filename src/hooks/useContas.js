@@ -977,6 +977,20 @@ export function useContas() {
       return false
     }
 
+    await registrarEventoAuditoriaSeguro(supabase, {
+      empresa_id: empresaId,
+      acao: 'financeiro.conta.baixada',
+      entidade_tipo: 'df_contas',
+      entidade_id: id,
+      modulo: 'financeiro',
+      origem: 'app',
+      severidade: 'alta',
+      status: 'sucesso',
+      dados_antes: { status: 'pendente' },
+      dados_depois: { status: 'pago', data_pagamento: pagamento?.data_pagamento || null },
+      metadados: { conta_id: id }
+    }, 'baixa integral da conta')
+
     await buscarContas()
     mostrarAviso?.('Conta marcada como paga.', 'sucesso')
     return true
@@ -991,6 +1005,20 @@ export function useContas() {
       mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível corrigir o pagamento da conta.'), 'erro')
       return false
     }
+
+    await registrarEventoAuditoriaSeguro(supabase, {
+      empresa_id: empresaId,
+      acao: 'financeiro.conta.pagamento_corrigido',
+      entidade_tipo: 'df_contas',
+      entidade_id: id,
+      modulo: 'financeiro',
+      origem: 'app',
+      severidade: 'alta',
+      status: 'sucesso',
+      dados_antes: { status: 'pago' },
+      dados_depois: { status: 'pago', data_pagamento: pagamento?.data_pagamento || null },
+      metadados: { conta_id: id }
+    }, 'correção do pagamento')
 
     await buscarContas()
     mostrarAviso?.('Pagamento corrigido com sucesso.', 'sucesso')
@@ -1059,7 +1087,7 @@ export function useContas() {
       return false
     }
 
-    registrarAuditoriaEventoFinanceiro(supabase, {
+    await registrarEventoAuditoriaSeguro(supabase, {
       empresa_id: empresaId,
       acao: 'financeiro.pagamento_parcial.estornado',
       entidade_tipo: 'df_contas_pagamentos',
@@ -1071,7 +1099,7 @@ export function useContas() {
       dados_antes: { arquivado: false, conta_id: contaId },
       dados_depois: { arquivado: true, conta_id: contaId },
       metadados: { conta_id: contaId }
-    }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria do estorno parcial.', { message: auditoriaError?.message }))
+    }, 'estorno parcial')
 
     await buscarContas()
     mostrarAviso?.('Pagamento parcial estornado com sucesso.', 'sucesso')
@@ -1091,7 +1119,7 @@ export function useContas() {
       return false
     }
 
-    registrarAuditoriaEventoFinanceiro(supabase, {
+    await registrarEventoAuditoriaSeguro(supabase, {
       empresa_id: empresaId,
       acao: 'financeiro.conta.baixada',
       entidade_tipo: 'df_contas',
@@ -1103,7 +1131,7 @@ export function useContas() {
       dados_antes: { status: 'pendente', origem: 'pagamentos_parciais' },
       dados_depois: { status: 'pago', origem: 'pagamentos_parciais' },
       metadados: { conta_id: contaId }
-    }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria da baixa por parciais.', { message: auditoriaError?.message }))
+    }, 'baixa por pagamentos parciais')
 
     await buscarContas()
     mostrarAviso?.('Conta baixada após a quitação pelos pagamentos parciais.', 'sucesso')
@@ -1120,7 +1148,7 @@ export function useContas() {
       return
     }
 
-    registrarAuditoriaEventoFinanceiro(supabase, {
+    await registrarEventoAuditoriaSeguro(supabase, {
       empresa_id: empresaId,
       acao: 'financeiro.conta.baixa_estornada',
       entidade_tipo: 'df_contas',
@@ -1132,7 +1160,7 @@ export function useContas() {
       dados_antes: { status: 'pago' },
       dados_depois: { status: 'pendente' },
       metadados: { conta_id: id }
-    }).catch((auditoriaError) => console.warn('Falha ao registrar auditoria da reabertura da conta.', { message: auditoriaError?.message }))
+    }, 'reabertura da conta')
 
     await buscarContas()
     mostrarAviso?.('Baixa estornada. A conta voltou para aberta.', 'sucesso')

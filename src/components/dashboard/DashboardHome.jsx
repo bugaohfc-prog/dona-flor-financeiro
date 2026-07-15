@@ -2,6 +2,8 @@ import { SummarySkeleton, NotesSkeleton } from '../feedback/Skeletons.jsx'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext.jsx'
 import { useResumoGestaoPessoasPainel } from '../../hooks/useResumoGestaoPessoasPainel.js'
+import { CentralDoDia } from '../../modules/central-do-dia/components/CentralDoDia.jsx'
+import { useCentralDoDia } from '../../modules/central-do-dia/hooks/useCentralDoDia.js'
 
 function DashboardAction({ children, variant = 'primary', className = '', ...props }) {
   return (
@@ -70,6 +72,11 @@ export default function DashboardHome({
   filiais = [],
   filtroFilial = '',
   setFiltroFilial = () => {},
+  contasCentral = [],
+  notasCentral = [],
+  onAtualizarContasCentral,
+  onAtualizarNotasCentral,
+  podeAcessarAuditoriaCentral = false,
 }) {
   const { empresaId, perfilEmpresaAtiva } = useApp()
   const [mostrarResumoFinanceiro, setMostrarResumoFinanceiro] = useState(true)
@@ -84,11 +91,24 @@ export default function DashboardHome({
     loading: loadingResumoPessoas,
     erro: erroResumoPessoas,
     podeVisualizar: podeVisualizarResumoPessoas,
-    resumo: resumoPessoas
+    resumo: resumoPessoas,
+    alertas: alertasPessoas
   } = useResumoGestaoPessoasPainel({
     empresaId,
     perfilUsuario,
     podeAcessarGestaoPessoas
+  })
+  const dadosCentral = useCentralDoDia({
+    empresaId,
+    filialId: filtroFilial,
+    contas: contasCentral,
+    notas: notasCentral,
+    alertasPessoas,
+    erroPessoas: erroResumoPessoas,
+    podeAcessarPessoas: podeVisualizarResumoPessoas,
+    podeAcessarAuditoria: podeAcessarAuditoriaCentral,
+    onAtualizarContas: onAtualizarContasCentral,
+    onAtualizarNotas: onAtualizarNotasCentral
   })
 
   useEffect(() => {
@@ -257,6 +277,15 @@ export default function DashboardHome({
           ))}
         </select>
       </section>
+
+      <CentralDoDia
+        empresaId={empresaId}
+        carregandoBase={loading}
+        formatarValor={formatarValor}
+        navegarPara={navegarPara}
+        dados={dadosCentral}
+        podeAcessarAuditoria={podeAcessarAuditoriaCentral}
+      />
 
       <section className="dashboard-home-finance" aria-label="Resumo financeiro rápido">
         {loading ? (

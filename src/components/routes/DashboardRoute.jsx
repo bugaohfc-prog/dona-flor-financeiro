@@ -33,7 +33,12 @@ export default function DashboardRoute({
   filiais,
   filtroFilial,
   setFiltroFilial,
-  contasOperacionaisFiliais
+  contasOperacionaisFiliais,
+  contasCentral,
+  notasCentral,
+  onAtualizarContasCentral,
+  onAtualizarNotasCentral,
+  podeAcessarAuditoriaCentral
 }) {
   return (
     <>
@@ -75,6 +80,11 @@ export default function DashboardRoute({
         filtroFilial={filtroFilial}
         setFiltroFilial={setFiltroFilial}
         contasOperacionaisFiliais={contasOperacionaisFiliais}
+        contasCentral={contasCentral}
+        notasCentral={notasCentral}
+        onAtualizarContasCentral={onAtualizarContasCentral}
+        onAtualizarNotasCentral={onAtualizarNotasCentral}
+        podeAcessarAuditoriaCentral={podeAcessarAuditoriaCentral}
       />
     </>
   )

@@ -2567,6 +2567,340 @@
   }
 }
 
+/* Central do Dia - camada acionável somente leitura */
+.central-day {
+  width: min(100%, var(--df-dashboard-max, 1280px));
+  max-width: var(--df-dashboard-max, 1280px);
+  min-width: 0;
+  margin: 0 auto 16px;
+  padding: 20px;
+  border: 1px solid var(--df-color-border);
+  border-radius: var(--df-radius-section);
+  background: linear-gradient(135deg, var(--df-color-surface) 0%, var(--df-color-brand-soft) 100%);
+  box-shadow: var(--df-shadow-card);
+  box-sizing: border-box;
+}
+
+.central-day-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.central-day-header > div,
+.central-day-block-header > div,
+.central-day-item-heading > div {
+  min-width: 0;
+}
+
+.central-day-kicker {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--df-color-brand);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.central-day-header h2 {
+  margin: 0;
+  color: var(--df-color-text);
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1.15;
+}
+
+.central-day-header p,
+.central-day-block-header p,
+.central-day-item p {
+  margin: 4px 0 0;
+  color: var(--df-color-muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.central-day .dashboard-home-action {
+  min-height: var(--df-space-control);
+  border-radius: var(--df-radius-control);
+}
+
+.central-day-refresh {
+  min-width: 156px;
+}
+
+.central-day-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.central-day-block {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--df-color-border);
+  border-radius: var(--df-radius-card);
+  background: var(--df-color-surface);
+  box-shadow: var(--df-shadow-soft);
+  box-sizing: border-box;
+}
+
+.central-day-block-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.central-day-block-header h3 {
+  margin: 0;
+  color: var(--df-color-text);
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.central-day-block-header p {
+  font-size: 13px;
+}
+
+.central-day-count,
+.central-day-status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--df-radius-pill);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.central-day-count {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0 9px;
+  background: var(--df-color-brand-soft);
+  color: var(--df-color-brand);
+}
+
+.central-day-list,
+.central-day-groups {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.central-day-group {
+  min-width: 0;
+}
+
+.central-day-group + .central-day-group {
+  padding-top: 12px;
+  border-top: 1px solid var(--df-color-border);
+}
+
+.central-day-group > h4 {
+  margin: 0 0 8px;
+  color: var(--df-color-muted);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.central-day-item {
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--df-color-border);
+  border-left: 4px solid #94a3b8;
+  border-radius: var(--df-radius-control);
+  background: var(--df-color-surface);
+  box-sizing: border-box;
+}
+
+.central-day-item-critica { border-left-color: var(--df-color-danger); }
+.central-day-item-alta { border-left-color: #ea580c; }
+.central-day-item-media { border-left-color: #d97706; }
+.central-day-item-baixa { border-left-color: var(--df-color-brand); }
+
+.central-day-item-heading {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.central-day-item-module {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--df-color-brand);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.central-day-item h4 {
+  margin: 0;
+  color: var(--df-color-text);
+  font-size: 15px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.central-day-item p {
+  font-size: 13px;
+}
+
+.central-day-status {
+  min-height: 26px;
+  padding: 0 9px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.central-day-status-vencido,
+.central-day-status-falha,
+.central-day-status-bloqueado {
+  background: #fee2e2;
+  color: var(--df-color-danger);
+}
+
+.central-day-status-vence_hoje,
+.central-day-status-urgente,
+.central-day-status-atencao {
+  background: #fef3c7;
+  color: var(--df-color-warning);
+}
+
+.central-day-status-sucesso {
+  background: #dcfce7;
+  color: var(--df-color-success);
+}
+
+.central-day-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 9px;
+  color: var(--df-color-muted);
+  font-size: 12px;
+}
+
+.central-day-item-meta strong {
+  color: var(--df-color-text);
+}
+
+.central-day-item-action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  margin-top: 11px;
+  padding-top: 11px;
+  border-top: 1px solid var(--df-color-border);
+}
+
+.central-day-item-action > span {
+  min-width: 0;
+  color: var(--df-color-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.central-day-item-action b {
+  color: var(--df-color-text);
+}
+
+.central-day-item-action .dashboard-home-action {
+  min-width: 112px;
+  padding: 9px 12px;
+}
+
+.central-day-state,
+.central-day-partial-error {
+  padding: 14px;
+  border: 1px dashed var(--df-color-border);
+  border-radius: var(--df-radius-control);
+  color: var(--df-color-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.central-day-state-error,
+.central-day-partial-error {
+  border-color: #fecaca;
+  background: #fff7f7;
+  color: var(--df-color-danger);
+}
+
+.central-day-partial-error {
+  margin-bottom: 14px;
+}
+
+.central-day button:focus-visible {
+  outline: 3px solid rgba(15, 118, 110, .24);
+  outline-offset: 2px;
+}
+
+.central-day button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+@media (max-width: 900px) {
+  .central-day-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .central-day {
+    width: 100%;
+    max-width: 100%;
+    padding: 16px;
+  }
+
+  .central-day-header {
+    grid-template-columns: 1fr;
+  }
+
+  .central-day-refresh {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .central-day-block,
+  .central-day-item,
+  .central-day-item-heading,
+  .central-day-item-action,
+  .central-day-list,
+  .central-day-groups {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .central-day-item-heading {
+    flex-wrap: wrap;
+  }
+
+  .central-day-item-action {
+    grid-template-columns: 1fr;
+  }
+
+  .central-day-item-action .dashboard-home-action {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
 /* Agenda - harmonizacao visual */
 .agenda-page {
   --agenda-brand: #0f766e;

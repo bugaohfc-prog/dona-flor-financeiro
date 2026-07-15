@@ -4482,8 +4482,13 @@ export default function App() {
           filiais,
           filtroFilial,
           setFiltroFilial,
-          contasOperacionaisFiliais
-          }}
+          contasOperacionaisFiliais,
+          contasCentral: contas,
+          notasCentral: notas,
+          onAtualizarContasCentral: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
+          onAtualizarNotasCentral: () => buscarNotas(empresaId),
+          podeAcessarAuditoriaCentral: podeAdministrarUsuarios()
+        }}
         />
       </AppSuspenseBoundary>
 

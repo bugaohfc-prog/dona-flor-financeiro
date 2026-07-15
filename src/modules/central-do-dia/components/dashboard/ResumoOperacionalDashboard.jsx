@@ -31,10 +31,10 @@ export function ResumoOperacionalDashboard({
           <p>Uma visão rápida do que merece atenção.</p>
         </div>
         <div className="resumo-operacional-dashboard-acoes">
-          <button type="button" className="dashboard-home-action dashboard-home-action-secondary" onClick={onAtualizar} disabled={!empresaId || dados?.atualizando}>
+          <button type="button" className="dashboard-home-action dashboard-home-action-secondary resumo-operacional-dashboard-acao-atualizar" onClick={onAtualizar} disabled={!empresaId || dados?.atualizando}>
             {dados?.atualizando ? 'Atualizando…' : 'Atualizar contas e notas'}
           </button>
-          <button type="button" className="dashboard-home-action dashboard-home-action-primary" onClick={onAbrirAgenda}>
+          <button type="button" className="dashboard-home-action dashboard-home-action-primary resumo-operacional-dashboard-acao-agenda" onClick={onAbrirAgenda}>
             Abrir Agenda
           </button>
         </div>

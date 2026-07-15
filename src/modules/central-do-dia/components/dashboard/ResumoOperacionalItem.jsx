@@ -33,7 +33,7 @@ export function ResumoOperacionalItem({ item, formatarValor, onAbrirOrigem }) {
         {item.valor !== null && <strong>{formatarValor(item.valor)}</strong>}
         <button
           type="button"
-          className="dashboard-home-action dashboard-home-action-secondary"
+          className="dashboard-home-action dashboard-home-action-secondary resumo-operacional-dashboard-acao-origem"
           onClick={() => onAbrirOrigem(item)}
           disabled={!possuiDestino}
         >

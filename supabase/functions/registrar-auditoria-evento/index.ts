@@ -1,23 +1,22 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  ACAO_CONTA_ATUALIZADA,
+  ACAO_CONTA_CRIADA,
+  ACAO_PAGAMENTO_PARCIAL_CRIADO,
+  ENTIDADE_CONTA,
+  ENTIDADE_PAGAMENTO,
+  acaoEstaAtivada,
+  isUuid,
+  resolverCorrelationIdConta,
+  sanitizarDadosConta,
+  validarEntidadeConta
+} from './validation.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 }
-
-const ACAO_PERMITIDA = 'financeiro.pagamento_parcial.criado'
-const ENTIDADE_TIPO = 'df_contas_pagamentos'
-const PREFIXOS_PERMITIDOS = [
-  'financeiro.conta.',
-  'financeiro.pagamento_parcial.',
-  'financeiro.importacao.',
-  'administracao.usuario.',
-  'rh.funcionario.',
-  'folha.',
-  'auditoria.exportacao.',
-  'sistema.auditoria_'
-]
 
 const CAMPOS_PROIBIDOS = new Set([
   'observacao',
@@ -47,10 +46,6 @@ function jsonResponse(body: Record<string, unknown>, status = 200) {
   )
 }
 
-function isUuid(valor: unknown) {
-  return typeof valor === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i.test(valor)
-}
-
 function isPlainObject(valor: unknown): valor is Record<string, unknown> {
   return Boolean(valor) && typeof valor === 'object' && !Array.isArray(valor)
 }
@@ -76,17 +71,6 @@ function textoCurto(valor: unknown, max = 120) {
   return texto.slice(0, max)
 }
 
-function acaoPermitida(acao: string) {
-  return acao === ACAO_PERMITIDA || PREFIXOS_PERMITIDOS.some((prefixo) => acao.startsWith(prefixo))
-}
-
-function dadosSeguros(valor: unknown) {
-  if (valor === null || valor === undefined) return {}
-  const texto = JSON.stringify(valor)
-  if (texto.length > 8000) return { resumo: 'dados_truncados' }
-  return valor
-}
-
 function severidadeSegura(valor: unknown) {
   const nivel = String(valor || '').toLowerCase()
   if (['alta', 'critical', 'critica', 'crítica'].includes(nivel)) return 'critical'
@@ -99,13 +83,6 @@ function statusSeguro(valor: unknown) {
   if (['erro', 'falha', 'failed'].includes(status)) return 'falha'
   if (['bloqueado', 'blocked'].includes(status)) return 'bloqueado'
   return 'sucesso'
-}
-
-function moduloSeguro(valor: unknown) {
-  const modulo = String(valor || '').toLowerCase()
-  if (['financeiro', 'usuarios', 'empresas', 'rh', 'seguranca', 'automacao', 'sistema'].includes(modulo)) return modulo
-  if (modulo === 'auditoria') return 'sistema'
-  return 'sistema'
 }
 
 function possuiCampoProibido(valor: unknown): boolean {
@@ -246,8 +223,12 @@ serve(async (req) => {
     const contaId = String(body.conta_id || '').trim()
     const pagamentoId = String(body.pagamento_id || '').trim()
 
-    if (!acaoPermitida(acao)) return jsonResponse({ ok: false, code: 'ACAO_NAO_PERMITIDA', message: 'Evento invalido.' }, 400)
-    if (!isUuid(empresaId)) return jsonResponse({ ok: false, code: 'EMPRESA_INVALIDA', message: 'Evento invalido.' }, 400)
+    if (!acaoEstaAtivada(acao)) {
+      return jsonResponse({ ok: false, code: 'ACAO_NAO_ATIVADA', message: 'Acao de auditoria ainda nao ativada.' }, 400)
+    }
+    if (!isUuid(empresaId)) {
+      return jsonResponse({ ok: false, code: 'EMPRESA_INVALIDA', message: 'Empresa invalida.' }, 400)
+    }
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
 
@@ -257,12 +238,40 @@ serve(async (req) => {
         callerId: callerData.user.id,
         empresaId
       })
-      return jsonResponse({ ok: false, message: 'Evento nao autorizado.' }, 403)
+      return jsonResponse({ ok: false, code: 'USUARIO_NAO_AUTORIZADO', message: 'Evento nao autorizado.' }, 403)
     }
 
-    if (acao !== ACAO_PERMITIDA) {
-      if (!isUuid(entidadeId)) return jsonResponse({ ok: false, code: 'ENTIDADE_INVALIDA', message: 'Entidade invalida.' }, 400)
-      const correlationId = textoCurto(body.correlation_id, 180) || `${acao}:${entidadeId}`
+    if (acao === ACAO_CONTA_CRIADA || acao === ACAO_CONTA_ATUALIZADA) {
+      const entidadeTipo = String(body.entidade_tipo || '').trim()
+      if (entidadeTipo !== ENTIDADE_CONTA) {
+        return jsonResponse({ ok: false, code: 'ENTIDADE_TIPO_INVALIDA', message: 'Tipo de entidade invalido.' }, 400)
+      }
+      if (!isUuid(entidadeId)) {
+        return jsonResponse({ ok: false, code: 'ENTIDADE_INVALIDA', message: 'Entidade invalida.' }, 400)
+      }
+
+      const { data: contaEvento, error: contaEventoError } = await supabaseAdmin
+        .from('df_contas')
+        .select('id, empresa_id')
+        .eq('id', entidadeId)
+        .maybeSingle()
+
+      if (contaEventoError) throw contaEventoError
+      const entidadeValidada = validarEntidadeConta({ entidadeTipo, entidadeId, empresaId, conta: contaEvento })
+      if (!entidadeValidada.ok) {
+        return jsonResponse({ ok: false, code: entidadeValidada.code, message: entidadeValidada.message }, 400)
+      }
+
+      const dadosAntes = sanitizarDadosConta(body.dados_antes)
+      if (!dadosAntes.ok) return jsonResponse({ ok: false, code: dadosAntes.code, message: dadosAntes.message }, 400)
+      const dadosDepois = sanitizarDadosConta(body.dados_depois)
+      if (!dadosDepois.ok) return jsonResponse({ ok: false, code: dadosDepois.code, message: dadosDepois.message }, 400)
+      const metadados = sanitizarDadosConta(body.metadados)
+      if (!metadados.ok) return jsonResponse({ ok: false, code: metadados.code, message: metadados.message }, 400)
+
+      const correlation = resolverCorrelationIdConta(acao, entidadeId, body.correlation_id)
+      if (!correlation.ok) return jsonResponse({ ok: false, code: correlation.code, message: correlation.message }, 400)
+      const correlationId = correlation.data
       const { data: eventoExistente, error: eventoExistenteError } = await supabaseAdmin
         .from('df_auditoria_eventos')
         .select('id')
@@ -278,23 +287,25 @@ serve(async (req) => {
           empresa_id: empresaId,
           user_id: callerData.user.id,
           ator_tipo: 'usuario',
-          modulo: moduloSeguro(body.modulo),
-          entidade_tipo: textoCurto(body.entidade_tipo, 80) || 'sistema',
+          modulo: 'financeiro',
+          entidade_tipo: ENTIDADE_CONTA,
           entidade_id: entidadeId,
           acao,
           severidade: severidadeSegura(body.severidade),
           origem: textoCurto(body.origem, 40) || 'app',
           status: statusSeguro(body.status),
-          dados_antes: dadosSeguros(body.dados_antes),
-          dados_depois: dadosSeguros(body.dados_depois),
-          metadados: dadosSeguros(body.metadados),
+          dados_antes: dadosAntes.data,
+          dados_depois: dadosDepois.data,
+          metadados: metadados.data,
           correlation_id: correlationId
         }])
       if (insertError) throw insertError
       return jsonResponse({ ok: true, idempotente: false })
     }
 
-    if (!isUuid(contaId) || !isUuid(pagamentoId)) return jsonResponse({ ok: false, code: 'PAGAMENTO_INVALIDO', message: 'Pagamento invalido.' }, 400)
+    if (!isUuid(contaId) || !isUuid(pagamentoId)) {
+      return jsonResponse({ ok: false, code: 'PAGAMENTO_INVALIDO', message: 'Pagamento invalido.' }, 400)
+    }
 
     const { data: conta, error: contaError } = await supabaseAdmin
       .from('df_contas')
@@ -304,7 +315,7 @@ serve(async (req) => {
       .maybeSingle()
 
     if (contaError) throw contaError
-    if (!conta?.id) return jsonResponse({ ok: false, message: 'Conta invalida.' }, 400)
+    if (!conta?.id) return jsonResponse({ ok: false, code: 'CONTA_NAO_AUTORIZADA', message: 'Conta invalida.' }, 400)
 
     const { data: pagamento, error: pagamentoError } = await supabaseAdmin
       .from('df_contas_pagamentos')
@@ -315,16 +326,16 @@ serve(async (req) => {
       .maybeSingle()
 
     if (pagamentoError) throw pagamentoError
-    if (!pagamento?.id) return jsonResponse({ ok: false, message: 'Pagamento invalido.' }, 400)
+    if (!pagamento?.id) return jsonResponse({ ok: false, code: 'PAGAMENTO_NAO_AUTORIZADO', message: 'Pagamento invalido.' }, 400)
 
-    const correlationId = textoCurto(body.correlation_id, 180) || `${ACAO_PERMITIDA}:${pagamentoId}`
+    const correlationId = textoCurto(body.correlation_id, 180) || `${ACAO_PAGAMENTO_PARCIAL_CRIADO}:${pagamentoId}`
 
     const { data: eventoExistente, error: eventoExistenteError } = await supabaseAdmin
       .from('df_auditoria_eventos')
       .select('id')
       .eq('empresa_id', empresaId)
-      .eq('acao', ACAO_PERMITIDA)
-      .eq('entidade_tipo', ENTIDADE_TIPO)
+      .eq('acao', ACAO_PAGAMENTO_PARCIAL_CRIADO)
+      .eq('entidade_tipo', ENTIDADE_PAGAMENTO)
       .eq('entidade_id', pagamentoId)
       .limit(1)
 
@@ -340,9 +351,9 @@ serve(async (req) => {
         user_id: callerData.user.id,
         ator_tipo: 'usuario',
         modulo: 'financeiro',
-        entidade_tipo: ENTIDADE_TIPO,
+        entidade_tipo: ENTIDADE_PAGAMENTO,
         entidade_id: pagamentoId,
-        acao: ACAO_PERMITIDA,
+        acao: ACAO_PAGAMENTO_PARCIAL_CRIADO,
         severidade: 'info',
         origem: 'edge_function',
         status: 'sucesso',

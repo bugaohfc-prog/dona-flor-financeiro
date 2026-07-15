@@ -15,8 +15,6 @@ export function useUiState() {
   const [salvandoPerfilUsuario, setSalvandoPerfilUsuario] = useState(false)
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
   const [mostrarContas, setMostrarContas] = useState(true)
-  const [mostrarContasDashboard, setMostrarContasDashboard] = useState(true)
-  const [mostrarNotas, setMostrarNotas] = useState(() => (typeof window === 'undefined' ? true : window.innerWidth >= 980))
   const [mostrarConfigNegocio, setMostrarConfigNegocio] = useState(true)
   const [mostrarConfigNotificacoes, setMostrarConfigNotificacoes] = useState(true)
   const [mostrarConfigCentros, setMostrarConfigCentros] = useState(true)
@@ -37,10 +35,6 @@ export function useUiState() {
     setMostrarFiltros,
     mostrarContas,
     setMostrarContas,
-    mostrarContasDashboard,
-    setMostrarContasDashboard,
-    mostrarNotas,
-    setMostrarNotas,
     mostrarConfigNegocio,
     setMostrarConfigNegocio,
     mostrarConfigNotificacoes,

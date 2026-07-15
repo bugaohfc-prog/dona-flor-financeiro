@@ -401,10 +401,6 @@ export default function App() {
     setMostrarFiltros,
     mostrarContas,
     setMostrarContas,
-    mostrarContasDashboard,
-    setMostrarContasDashboard,
-    mostrarNotas,
-    setMostrarNotas,
     mostrarConfigNegocio,
     setMostrarConfigNegocio,
     mostrarConfigNotificacoes,
@@ -1813,10 +1809,6 @@ export default function App() {
   }, [contasFiltradas])
 
   const { total, pago, vencido, pendente, encargos, descontos } = resumoFinanceiro
-
-  const contasAbertasDashboard = useMemo(() => contasFiltradas
-    .filter((conta) => conta.status !== 'pago')
-    .sort((a, b) => String(b.created_at || b.data_vencimento || '').localeCompare(String(a.created_at || a.data_vencimento || ''))), [contasFiltradas])
 
   const resumoPorCentro = useMemo(() => centros
     .map((centro) => {
@@ -4318,39 +4310,17 @@ export default function App() {
       <AppSuspenseBoundary>
         <LazyDashboardRouteComposition
           routeProps={{
-          styles,
           nomeUsuario: nomeUsuario(),
           formatarValor,
           total,
           pago,
           pendente,
           vencido,
-          contas: contasFiltradas,
-          diferencaDias,
           navegarPara,
-          contasAbertasDashboard,
-          mostrarContasDashboard,
-          setMostrarContasDashboard,
-          busca,
-          setBusca,
-          estaVencida,
-          formatarData,
-          abrirConfirmacao,
-          marcarComoPago,
-          podeEditarFinanceiro: podeEditarFinanceiro(),
-          notasPendentes,
-          notasCriticas,
-          notasUrgentes,
-          mostrarNotas,
-          setMostrarNotas,
-          alternarNotaConcluida,
-          abrirEdicaoNota,
-          excluirNota,
           loading,
           filiais,
           filtroFilial,
           setFiltroFilial,
-          contasOperacionaisFiliais,
           contasCentral: contas,
           notasCentral: notas,
           onAtualizarContasCentral: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),

@@ -162,7 +162,8 @@ export function criarItemCentral(dados = {}) {
     proximaAcao: dados.proximaAcao || 'Abrir o módulo de origem',
     destino: dados.destino || null,
     referenciaOrigem: dados.referenciaOrigem || null,
-    ator: dados.ator || null
+    ator: dados.ator || null,
+    origemOperacional: dados.origemOperacional || null
   }
 
   const indice = calcularIndicePrioridade(itemBase)
@@ -195,7 +196,8 @@ export function normalizarContasCentral(contas = [], { dataBaseISO, filialId } =
         inconsistencia: vencida,
         proximaAcao: vencida ? 'Revisar ou registrar o pagamento' : 'Conferir o vencimento',
         destino: ehImposto ? 'controle-impostos' : 'contas',
-        referenciaOrigem: { tipo: 'conta', id: conta.id }
+        referenciaOrigem: { tipo: 'conta', id: conta.id },
+        origemOperacional: ehImposto ? 'impostos' : 'financeiro'
       })
     })
     .filter(Boolean)
@@ -224,7 +226,8 @@ export function normalizarNotasCentral(notas = [], { dataBaseISO, filialId } = {
         inconsistencia: atrasada || urgente,
         proximaAcao: 'Revisar a nota pendente',
         destino: 'notas',
-        referenciaOrigem: { tipo: 'nota', id: nota.id }
+        referenciaOrigem: { tipo: 'nota', id: nota.id },
+        origemOperacional: 'notas'
       })
     })
     .filter(Boolean)
@@ -246,7 +249,8 @@ export function normalizarAlertasPessoasCentral(alertas = [], permitido = true) 
       inconsistencia: alerta.prioridade === 'alta',
       proximaAcao: 'Abrir o acompanhamento de pessoas',
       destino: alerta.rotaDestino || null,
-      referenciaOrigem: { tipo: alerta.tipo, id: alerta.id }
+      referenciaOrigem: { tipo: alerta.tipo, id: alerta.id },
+      origemOperacional: 'pessoas'
     }))
     .filter(Boolean)
 }
@@ -284,7 +288,8 @@ export function normalizarAtividadeCentral(eventos = [], permitido = true) {
       proximaAcao: 'Consultar o histórico do evento',
       destino: 'auditoria',
       referenciaOrigem: { tipo: 'evento_auditoria', id: evento.id },
-      ator: atorLegivel(evento)
+      ator: atorLegivel(evento),
+      origemOperacional: 'auditoria'
     })
   }).filter(Boolean)
 }
@@ -305,19 +310,34 @@ export function agruparProximosVencimentos(itens = []) {
 
   return grupos.map((grupo) => ({
     ...grupo,
-    itens: [...grupo.itens].sort(compararPrioridade).slice(0, 4)
+    itens: [...grupo.itens].sort(compararPrioridade)
   }))
 }
 
-export function resolverEstadoBloco({ empresaId, permitido = true, carregando = false, erro = null, itens = [] } = {}) {
-  if (!empresaId) return 'empresa_ausente'
-  if (!permitido) return 'sem_permissao'
-  if (carregando) return 'carregando'
-  if (erro) return 'erro'
-  return itens.length ? 'preenchido' : 'vazio'
+function chaveOrigemItem(item) {
+  const tipoOrigem = String(item?.referenciaOrigem?.tipo || '').trim()
+  const idOrigem = String(item?.referenciaOrigem?.id || '').trim()
+  if (tipoOrigem && idOrigem) return `${tipoOrigem}:${idOrigem}`
+  return String(item?.id || '').trim()
 }
 
-export function montarCentralDoDia({
+export function deduplicarItensOperacionais(itens = []) {
+  const itensPorOrigem = new Map()
+
+  for (const item of itens || []) {
+    const chave = chaveOrigemItem(item)
+    if (!item || !chave) continue
+
+    const atual = itensPorOrigem.get(chave)
+    if (!atual || compararPrioridade(item, atual) < 0) {
+      itensPorOrigem.set(chave, item)
+    }
+  }
+
+  return [...itensPorOrigem.values()].sort(compararPrioridade)
+}
+
+export function montarBaseOperacional({
   contas = [],
   notas = [],
   alertasPessoas = [],
@@ -327,39 +347,22 @@ export function montarCentralDoDia({
   podeAcessarPessoas = false,
   podeAcessarAuditoria = false
 } = {}) {
-  const contasNormalizadas = normalizarContasCentral(contas, { dataBaseISO, filialId })
-  const notasNormalizadas = normalizarNotasCentral(notas, { dataBaseISO, filialId })
-  const pessoasNormalizadas = normalizarAlertasPessoasCentral(alertasPessoas, podeAcessarPessoas)
-  const atividadeNormalizada = normalizarAtividadeCentral(atividade, podeAcessarAuditoria)
-
-  const acoesImediatas = [
-    ...contasNormalizadas.filter((item) => item.dias !== null && item.dias <= 0),
-    ...notasNormalizadas.filter((item) => item.inconsistencia || item.dias === 0),
-    ...pessoasNormalizadas,
-    ...atividadeNormalizada.filter((item) => item.inconsistencia)
-  ].sort(compararPrioridade).slice(0, 6)
-
-  const proximosVencimentos = agruparProximosVencimentos([
-    ...contasNormalizadas,
-    ...notasNormalizadas.filter((item) => item.dataReferencia)
+  const itensOperacionais = deduplicarItensOperacionais([
+    ...normalizarContasCentral(contas, { dataBaseISO, filialId }),
+    ...normalizarNotasCentral(notas, { dataBaseISO, filialId }),
+    ...normalizarAlertasPessoasCentral(alertasPessoas, podeAcessarPessoas)
   ])
 
-  const excecoes = [
-    ...contasNormalizadas.filter((item) => item.status === 'vencido'),
-    ...notasNormalizadas.filter((item) => item.inconsistencia),
-    ...pessoasNormalizadas.filter((item) => item.inconsistencia),
-    ...atividadeNormalizada.filter((item) => item.inconsistencia)
-  ].sort(compararPrioridade).slice(0, 6)
-
-  const atividadeRecente = [...atividadeNormalizada]
-    .sort((a, b) => String(b.dataHora || '').localeCompare(String(a.dataHora || '')) || String(a.id).localeCompare(String(b.id)))
-    .slice(0, 6)
-
   return {
-    acoesImediatas,
-    proximosVencimentos,
-    excecoes,
-    atividadeRecente,
-    totalProximos: proximosVencimentos.reduce((total, grupo) => total + grupo.itens.length, 0)
+    itensOperacionais,
+    atividadeRecente: normalizarAtividadeCentral(atividade, podeAcessarAuditoria)
   }
+}
+
+export function resolverEstadoBloco({ empresaId, permitido = true, carregando = false, erro = null, itens = [] } = {}) {
+  if (!empresaId) return 'empresa_ausente'
+  if (!permitido) return 'sem_permissao'
+  if (carregando) return 'carregando'
+  if (erro) return 'erro'
+  return itens.length ? 'preenchido' : 'vazio'
 }

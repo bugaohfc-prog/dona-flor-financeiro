@@ -5,13 +5,13 @@ import {
   calcularIndicePrioridade,
   compararPrioridade,
   criarItemCentral,
-  montarCentralDoDia,
   normalizarAtividadeCentral,
   normalizarContasCentral,
   normalizarDataISO,
   normalizarNotasCentral,
   resolverEstadoBloco
 } from './centralDoDiaRules.js'
+import { montarCentralDoDia } from './centralDoDiaSelectors.js'
 
 const hoje = '2026-07-14'
 

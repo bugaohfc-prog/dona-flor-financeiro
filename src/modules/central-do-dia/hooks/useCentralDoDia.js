@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../../lib/supabase.js'
 import { mensagemSeguraErro } from '../../../utils/session.js'
-import { montarCentralDoDia } from '../domain/centralDoDiaRules.js'
+import { montarCentralDoDia } from '../domain/centralDoDiaSelectors.js'
 import { listarAtividadeRecenteCentral } from '../services/centralDoDiaService.js'
 
 export function useCentralDoDia({

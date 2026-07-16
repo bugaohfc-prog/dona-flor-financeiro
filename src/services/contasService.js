@@ -148,6 +148,29 @@ export async function listarContasDoMesParaRecorrencia(supabase, empresaId, data
     .lte('data_vencimento', dataFinal)
     .or('excluido.is.null,excluido.eq.false')
 }
+export async function listarContasHorizonteRecorrencias(supabase, empresaId, dataInicial, dataFinal) {
+  assertEmpresaId(empresaId)
+  return selecionarPorEmpresa(supabase, 'df_contas', empresaId, 'id, recorrencia_id, data_vencimento, imposto_tipo, competencia, excluido, deletado')
+    .gte('data_vencimento', dataInicial)
+    .lte('data_vencimento', dataFinal)
+    .not('recorrencia_id', 'is', null)
+    .or('excluido.is.null,excluido.eq.false')
+    .or('deletado.is.null,deletado.eq.false')
+}
+
+export async function listarCentrosCustoValidosPorIds(supabase, empresaId, ids = []) {
+  assertEmpresaId(empresaId)
+  const unicos = Array.from(new Set(ids.filter(Boolean)))
+  if (!unicos.length) return { data: [], error: null }
+  return selecionarPorEmpresa(supabase, 'df_centros_custo', empresaId, 'id').in('id', unicos)
+}
+
+export async function listarFiliaisValidasPorIds(supabase, empresaId, ids = []) {
+  assertEmpresaId(empresaId)
+  const unicos = Array.from(new Set(ids.filter(Boolean)))
+  if (!unicos.length) return { data: [], error: null }
+  return selecionarPorEmpresa(supabase, 'df_filiais', empresaId, 'id').in('id', unicos).eq('ativo', true)
+}
 
 export async function listarRecorrenciasAtivas(supabase, empresaId) {
   assertEmpresaId(empresaId)

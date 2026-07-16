@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   atualizarConta,
   atualizarRecorrencia,
@@ -17,14 +17,15 @@ import {
   desativarRecorrencia,
   enviarContaParaLixeira,
   listarContasAtivas,
-  listarContasDoMesParaRecorrencia,
+  listarContasHorizonteRecorrencias,
+  listarCentrosCustoValidosPorIds,
+  listarFiliaisValidasPorIds,
   listarPagamentosParciaisPorContas,
   registrarAuditoriaPagamentoParcialCriado,
   registrarPagamentoParcial as registrarPagamentoParcialService,
   estornarPagamentoParcial as estornarPagamentoParcialService,
   baixarContaQuitadaPorParciais as baixarContaQuitadaPorParciaisService,
   listarParcelasParcelamento,
-  listarRecorrenciasAtivas,
   listarRecorrenciasPorDia,
   ocultarConta as ocultarContaService,
   reativarRecorrencia,
@@ -38,18 +39,15 @@ import {
   criarCorrelationIdAtualizacaoConta,
   registrarAuditoriaAtualizacaoConta
 } from '../services/auditoriaContaAtualizacaoService'
-import { deveGerarRecorrenciaNoMes, montarDataRecorrente } from '../utils/recorrencia'
+import {
+  calcularHorizonteRecorrencias,
+  criarControleOperacao,
+  executarPlanejamentoRecorrencias,
+  planejarContasRecorrentes
+} from '../utils/recorrenciaPlanejamento.js'
 import { mensagemSeguraErro } from '../utils/session'
 
 const CENTRO_CUSTO_INVALIDO_MENSAGEM = 'Centro de custo indisponível. Atualize a página ou selecione outro centro de custo.'
-
-function normalizarTextoRecorrencia(valor) {
-  return String(valor || '').trim().toLowerCase()
-}
-
-function normalizarValorRecorrencia(valor) {
-  return Number(valor || 0).toFixed(2)
-}
 
 function arredondarCentavos(valor) {
   return Math.round((Number(valor || 0) + Number.EPSILON) * 100)
@@ -119,21 +117,6 @@ function montarParcelasConta({ payloadBase, valorTotal, parcelasTotal, primeiroV
   })
 }
 
-function recorrenciaTemContaGerada(contasReferencia, recorrencia, dataGerada) {
-  return (contasReferencia || []).some((conta) => {
-    if (conta.data_vencimento !== dataGerada) return false
-    if (recorrencia.id && conta.recorrencia_id === recorrencia.id) return true
-    if (recorrencia.id) return false
-
-    return (
-      normalizarTextoRecorrencia(conta.descricao) === normalizarTextoRecorrencia(recorrencia.descricao) &&
-      normalizarValorRecorrencia(conta.valor) === normalizarValorRecorrencia(recorrencia.valor) &&
-      String(conta.centro_custo_id || '') === String(recorrencia.centro_custo_id || '') &&
-      String(conta.filial_id || '') === String(recorrencia.filial_id || '')
-    )
-  })
-}
-
 export function useContas() {
   const [contas, setContas] = useState([])
   const [contasLixeira, setContasLixeira] = useState([])
@@ -148,6 +131,19 @@ export function useContas() {
   const [loading, setLoading] = useState(true)
   const [salvandoConta, setSalvandoConta] = useState(false)
   const salvandoContaRef = useRef(false)
+  const planejamentoRecorrenciasEmAndamentoRef = useRef(null)
+
+  const controleBuscaRef = useRef(null)
+  const controlePlanejamentoRef = useRef(null)
+  const empresaAtivaRef = useRef(null)
+  if (!controleBuscaRef.current) controleBuscaRef.current = criarControleOperacao()
+  if (!controlePlanejamentoRef.current) controlePlanejamentoRef.current = criarControleOperacao()
+
+  useEffect(() => () => {
+    controleBuscaRef.current?.desmontar()
+    controlePlanejamentoRef.current?.desmontar()
+    planejamentoRecorrenciasEmAndamentoRef.current = null
+  }, [])
 
   const [modalConta, setModalConta] = useState(false)
   const [editandoContaId, setEditandoContaId] = useState(null)
@@ -297,81 +293,101 @@ export function useContas() {
     return validarFilialDaEmpresa(supabase, filialId, empresaId)
   }
 
-  async function garantirContasRecorrentesDoMes({
-    supabase,
-    empresaAtual,
-    contasAtuais,
-    configWhatsapp,
-    configEmail,
-    configPush,
-    diasAlertaContas,
-    diasAvisoPadrao
-  }) {
-    const hoje = new Date()
-    const ano = hoje.getFullYear()
-    const mes = hoje.getMonth() + 1
+  async function atualizarPlanejamentoRecorrencias(contexto) {
+    const {
+      supabase, empresaAtual, motivo, buscarContas, mostrarAviso,
+      configWhatsapp, configEmail, configPush, diasAlertaContas, diasAvisoPadrao
+    } = contexto
+    if (!empresaAtual || empresaAtivaRef.current !== empresaAtual) return { ignorado: true }
+    const existente = planejamentoRecorrenciasEmAndamentoRef.current
+    if (existente?.empresaId === empresaAtual) return existente.promise
+    const operacao = controlePlanejamentoRef.current.iniciar(empresaAtual)
 
-    const { data: recorrentes, error } = await listarRecorrenciasAtivas(supabase, empresaAtual)
-
-    if (error) {
-      console.warn('Não foi possível carregar contas recorrentes:', error.message)
-      return contasAtuais
-    }
-
-    const inicioMes = `${ano}-${String(mes).padStart(2, '0')}-01`
-    const fimMes = `${ano}-${String(mes).padStart(2, '0')}-${String(new Date(ano, mes, 0).getDate()).padStart(2, '0')}`
-    const { data: contasDoMes, error: erroContasDoMes } = await listarContasDoMesParaRecorrencia(supabase, empresaAtual, inicioMes, fimMes)
-
-    if (erroContasDoMes) {
-      console.warn('Não foi possível validar contas recorrentes existentes:', erroContasDoMes.message)
-    }
-
-    const contasReferencia = Array.isArray(contasDoMes) ? contasDoMes : contasAtuais
-    const novasContas = []
-
-    for (const recorrencia of (recorrentes || [])) {
-      if (!deveGerarRecorrenciaNoMes(recorrencia, ano, mes)) continue
-
-      const dataGerada = montarDataRecorrente(ano, mes, recorrencia.dia_vencimento)
-
-      const jaExiste = recorrenciaTemContaGerada(contasReferencia, recorrencia, dataGerada)
-
-      if (jaExiste) continue
-
-      const centroCustoSeguro = await resolverCentroCustoSeguro(supabase, empresaAtual, recorrencia.centro_custo_id)
-      const filialSegura = await resolverFilialSegura(supabase, empresaAtual, recorrencia.filial_id)
-
-      novasContas.push({
-        empresa_id: empresaAtual,
-        descricao: recorrencia.descricao,
-        valor: Number(recorrencia.valor || 0),
-        data_vencimento: dataGerada,
-        vencimento: dataGerada,
-        centro_custo_id: centroCustoSeguro,
-        filial_id: filialSegura,
-        observacao: recorrencia.observacao || null,
-        recorrencia_id: recorrencia.id,
-        status: 'pendente',
-        excluido: false,
-        enviar_whatsapp: configWhatsapp,
-        enviar_email: configEmail,
-        enviar_push: configPush,
-        dias_aviso: Number(diasAlertaContas || diasAvisoPadrao || 1)
+    const executar = async () => {
+      const horizonte = calcularHorizonteRecorrencias(new Date(), 90)
+      const inicio = horizonte.inicio.toISOString().slice(0, 10)
+      const fim = horizonte.fim.toISOString().slice(0, 10)
+      let inconsistencias = []
+      const carregarBase = async () => {
+        const [respostaSeries, respostaContas] = await Promise.all([
+          listarRecorrencias(supabase, empresaAtual),
+          listarContasHorizonteRecorrencias(supabase, empresaAtual, inicio, fim)
+        ])
+        if (respostaSeries.error) throw respostaSeries.error
+        if (respostaContas.error) throw respostaContas.error
+        return { series: respostaSeries.data || [], contas: respostaContas.data || [] }
+      }
+      const montarPayloads = async (base) => {
+        const plano = planejarContasRecorrentes({
+          dataBase: new Date(), diasMinimos: 90,
+          seriesRecorrentes: base.series, contasExistentes: base.contas
+        })
+        inconsistencias = plano.inconsistencias
+        const centrosIds = Array.from(new Set(plano.ocorrencias.map(({ recorrencia }) => recorrencia.centro_custo_id).filter(Boolean)))
+        const filiaisIds = Array.from(new Set(plano.ocorrencias.map(({ recorrencia }) => recorrencia.filial_id).filter(Boolean)))
+        const [centros, filiais] = await Promise.all([
+          listarCentrosCustoValidosPorIds(supabase, empresaAtual, centrosIds),
+          listarFiliaisValidasPorIds(supabase, empresaAtual, filiaisIds)
+        ])
+        if (centros.error) throw centros.error
+        if (filiais.error) throw filiais.error
+        const centrosValidos = new Set((centros.data || []).map(({ id }) => id))
+        const filiaisValidas = new Set((filiais.data || []).map(({ id }) => id))
+        return plano.ocorrencias.map(({ identidade, recorrencia, dataVencimento, impostoTipo, competencia }) => ({
+          identidade,
+          empresa_id: empresaAtual,
+          descricao: recorrencia.descricao,
+          valor: Number(recorrencia.valor || 0),
+          data_vencimento: dataVencimento,
+          vencimento: dataVencimento,
+          centro_custo_id: centrosValidos.has(recorrencia.centro_custo_id) ? recorrencia.centro_custo_id : null,
+          filial_id: filiaisValidas.has(recorrencia.filial_id) ? recorrencia.filial_id : null,
+          observacao: recorrencia.observacao || null,
+          recorrencia_id: recorrencia.id,
+          imposto_tipo: impostoTipo,
+          competencia,
+          status: 'pendente',
+          excluido: false,
+          enviar_whatsapp: configWhatsapp,
+          enviar_email: configEmail,
+          enviar_push: configPush,
+          dias_aviso: Number(diasAlertaContas || diasAvisoPadrao || 1)
+        }))
+      }
+      let base = await carregarBase()
+      const resultado = await executarPlanejamentoRecorrencias({
+        motivo,
+        planejar: () => montarPayloads(base),
+        inserir: (itens) => criarContasEmLote(supabase, itens.map(({ identidade, ...conta }) => conta)),
+        reconciliar: async () => { base = await carregarBase(); return montarPayloads(base) }
       })
+      resultado.inconsistencias = inconsistencias
+      if (controlePlanejamentoRef.current.estaAtual(operacao) && empresaAtivaRef.current === empresaAtual) {
+        if (resultado.erro) {
+          console.warn('Planejamento de recorrencias indisponivel:', resultado.erro?.message || resultado.erro)
+          mostrarAviso?.('As contas foram carregadas, mas o planejamento recorrente nao foi atualizado.', 'aviso')
+        } else if (resultado.parcial) {
+          mostrarAviso?.('Planejamento recorrente reconciliado parcialmente. As contas existentes foram preservadas.', 'aviso')
+        }
+        await buscarContas(empresaAtual, { silencioso: true, permitirGerarRecorrencias: false })
+      }
+      return resultado
     }
-
-    if (novasContas.length === 0) return contasAtuais
-
-    const { data: contasCriadas, error: erroInsert } = await criarContasEmLote(supabase, novasContas)
-
-    if (erroInsert) {
-      console.warn('Não foi possível gerar contas recorrentes:', erroInsert.message)
-      return contasAtuais
+    const promise = executar().catch(async (erro) => {
+      const resultado = { erro, parcial: true, criadas: [], jaExistentes: [], ignoradas: [], inconsistencias: [] }
+      if (controlePlanejamentoRef.current.estaAtual(operacao) && empresaAtivaRef.current === empresaAtual) {
+        console.warn('Planejamento de recorrencias indisponivel:', erro?.message || erro)
+        mostrarAviso?.('As contas foram carregadas, mas o planejamento recorrente nao foi atualizado.', 'aviso')
+        await buscarContas(empresaAtual, { silencioso: true, permitirGerarRecorrencias: false })
+      }
+      return resultado
+    })
+    planejamentoRecorrenciasEmAndamentoRef.current = { empresaId: empresaAtual, promise }
+    try {
+      return await promise
+    } finally {
+      if (planejamentoRecorrenciasEmAndamentoRef.current?.promise === promise) planejamentoRecorrenciasEmAndamentoRef.current = null
     }
-
-    return [...contasAtuais, ...(contasCriadas || [])].sort((a, b) =>
-      String(a.data_vencimento || '').localeCompare(String(b.data_vencimento || ''))
-    )
   }
 
   async function enriquecerContasComPagamentosParciais(supabase, empresaId, contasReferencia) {
@@ -406,61 +422,32 @@ export function useContas() {
   }
 
   async function buscarContas(contexto) {
-    const {
-      supabase,
-      empresaAtual,
-      avisarErro,
-      configWhatsapp,
-      configEmail,
-      configPush,
-      diasAlertaContas,
-      diasAvisoPadrao,
-      silencioso = false,
-      permitirGerarRecorrencias = false
-    } = contexto
-
+    const { supabase, empresaAtual, avisarErro, silencioso = false } = contexto
     if (!empresaAtual) return
+
+    empresaAtivaRef.current = empresaAtual
+    const operacao = controleBuscaRef.current.iniciar(empresaAtual)
+    const estaAtual = () => controleBuscaRef.current.estaAtual(operacao) && empresaAtivaRef.current === empresaAtual
+    if (!silencioso && estaAtual()) setLoading(true)
 
     try {
       const [{ data, error }, respostaRecorrencias] = await Promise.all([
         listarContasAtivas(supabase, empresaAtual),
         listarRecorrencias(supabase, empresaAtual)
       ])
-
       if (error) {
-        avisarErro(error)
-        return
+        if (estaAtual()) avisarErro(error)
+        return { error }
       }
-
-      if (respostaRecorrencias.error) {
-        console.warn('Não foi possível carregar séries recorrentes:', respostaRecorrencias.error.message)
-        setSeriesRecorrentes([])
-      } else {
-        setSeriesRecorrentes(respostaRecorrencias.data || [])
-      }
-
-      const contasAtuais = data || []
-
-      if (!permitirGerarRecorrencias) {
-        const contasEnriquecidas = await enriquecerContasComPagamentosParciais(supabase, empresaAtual, contasAtuais)
-        setContas(contasEnriquecidas)
-        return
-      }
-
-      const contasComRecorrencias = await garantirContasRecorrentesDoMes({
-        supabase,
-        empresaAtual,
-        contasAtuais,
-        configWhatsapp,
-        configEmail,
-        configPush,
-        diasAlertaContas,
-        diasAvisoPadrao
-      })
-      const contasEnriquecidas = await enriquecerContasComPagamentosParciais(supabase, empresaAtual, contasComRecorrencias)
+      const seriesAtuais = respostaRecorrencias.error ? [] : (respostaRecorrencias.data || [])
+      if (respostaRecorrencias.error) console.warn('Não foi possível carregar séries recorrentes:', respostaRecorrencias.error.message)
+      const contasEnriquecidas = await enriquecerContasComPagamentosParciais(supabase, empresaAtual, data || [])
+      if (!estaAtual()) return { obsoleto: true }
+      setSeriesRecorrentes(seriesAtuais)
       setContas(contasEnriquecidas)
+      return { contas: contasEnriquecidas, seriesRecorrentes: seriesAtuais }
     } finally {
-      if (!silencioso) setLoading(false)
+      if (!silencioso && estaAtual()) setLoading(false)
     }
   }
 
@@ -706,6 +693,7 @@ export function useContas() {
     } : null
 
     let error
+    let motivoPlanejamento = null
 
     if (editandoContaId) {
       if (editandoSerieRecorrente) {
@@ -722,6 +710,7 @@ export function useContas() {
           return
         }
 
+        void atualizarPlanejamentoRecorrencias({ ...contexto, empresaAtual: empresaId, motivo: 'atualizacao' })
         fecharConta()
         await buscarContas()
         mostrarAviso('Serie recorrente atualizada com sucesso.', 'sucesso')
@@ -751,6 +740,7 @@ export function useContas() {
               mostrarAviso(mensagemSeguraErro(erroRecorrencia, 'A conta foi atualizada, mas a recorrencia nao foi salva.'), 'erro')
               return
             }
+            motivoPlanejamento = 'atualizacao'
           } else {
             const { data: recorrenciaSemelhante, error: erroRecorrenciaSemelhante } = await buscarRecorrenciaSemelhante(supabase, payloadRecorrencia)
 
@@ -768,6 +758,7 @@ export function useContas() {
               mostrarAviso(mensagemSeguraErro(erroRecorrencia, 'A conta foi atualizada, mas a recorrencia nao foi salva.'), 'erro')
               return
             }
+            motivoPlanejamento = recorrenciaSemelhante?.id ? 'atualizacao' : 'criacao'
 
             const recorrenciaCriada = Array.isArray(dataRecorrencia) ? dataRecorrencia[0] : dataRecorrencia
             let recorrenciaIdCriada = recorrenciaCriada?.id
@@ -873,6 +864,7 @@ export function useContas() {
           mostrarAviso(mensagemSeguraErro(erroRecorrencia, 'A conta foi criada, mas a recorrência não foi salva.'), 'erro')
           return
         } else {
+          motivoPlanejamento = recorrenciaSemelhante?.id ? 'atualizacao' : 'criacao'
           const recorrenciaCriada = Array.isArray(dataRecorrencia) ? dataRecorrencia[0] : dataRecorrencia
           const contaCriada = Array.isArray(resposta.data) ? resposta.data[0] : resposta.data
           let recorrenciaIdCriada = recorrenciaCriada?.id
@@ -959,6 +951,9 @@ export function useContas() {
         contaId: editandoContaId,
         correlationId: correlationIdAtualizacao
       })
+    }
+    if (motivoPlanejamento) {
+      void atualizarPlanejamentoRecorrencias({ ...contexto, empresaAtual: empresaId, motivo: motivoPlanejamento })
     }
     await buscarContas()
     mostrarAviso(editandoContaId ? 'Conta atualizada com sucesso.' : 'Conta criada com sucesso.', 'sucesso')
@@ -1244,6 +1239,7 @@ export function useContas() {
       return false
     }
 
+    void atualizarPlanejamentoRecorrencias({ ...contexto, empresaAtual: empresaId, motivo: 'reativacao' })
     await buscarContas()
     mostrarAviso?.('Série recorrente reativada.', 'sucesso')
     return true

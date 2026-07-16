@@ -799,10 +799,8 @@ export default function App() {
       setPerfilUsuario(perfilSelecionado)
       setPermissoesUsuario(permissoes)
       setNomeUsuarioPerfil(nomePerfil || usuarioAtual?.user_metadata?.name || usuarioAtual?.user_metadata?.full_name || '')
-      const podeOperarFinanceiro = Boolean(permissoes?.isMaster || ['admin', 'gerente'].includes(normalizarPerfil(perfilSelecionado)))
       const podeCarregarLixeira = Boolean(permissoes?.isMaster || normalizarPerfil(perfilSelecionado) === 'admin')
       await carregarTudo(empresaSelecionada.id, {
-        permitirGerarRecorrencias: podeOperarFinanceiro,
         permitirCarregarLixeira: podeCarregarLixeira
       })
       setEmpresaSessaoInicializada(true)
@@ -829,11 +827,10 @@ export default function App() {
   async function carregarTudo(empresaAtual = empresaId, opcoes = {}) {
     if (!empresaAtual) return
 
-    const permitirGerarRecorrencias = opcoes.permitirGerarRecorrencias ?? podeEditarFinanceiro()
     const permitirCarregarLixeira = opcoes.permitirCarregarLixeira ?? podeGerenciarLixeira()
 
     const tarefas = [
-      buscarContas(empresaAtual, { permitirGerarRecorrencias }),
+      buscarContas(empresaAtual, { permitirGerarRecorrencias: false }),
       buscarNotas(empresaAtual),
       buscarCentros(empresaAtual),
       buscarFiliais(empresaAtual),
@@ -1082,10 +1079,8 @@ export default function App() {
       setPerfilUsuario(perfilSelecionado)
       setPermissoesUsuario(permissoesAtualizadas)
       setTelaAtualState('dashboard')
-      const podeOperarFinanceiro = Boolean(permissoesAtualizadas?.isMaster || ['admin', 'gerente'].includes(normalizarPerfil(perfilSelecionado)))
       const podeCarregarLixeira = Boolean(permissoesAtualizadas?.isMaster || normalizarPerfil(perfilSelecionado) === 'admin')
       await carregarTudo(empresaSelecionada.id, {
-        permitirGerarRecorrencias: podeOperarFinanceiro,
         permitirCarregarLixeira: podeCarregarLixeira
       })
       mostrarAviso(`Empresa ativa: ${empresaSelecionada.nome || 'Empresa'}`, 'sucesso')
@@ -1487,7 +1482,7 @@ export default function App() {
       diasAlertaContas,
       diasAvisoPadrao,
       silencioso: opcoes.silencioso,
-      permitirGerarRecorrencias: opcoes.permitirGerarRecorrencias ?? podeEditarFinanceiro()
+      permitirGerarRecorrencias: false
     })
   }
 

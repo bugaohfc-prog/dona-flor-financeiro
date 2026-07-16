@@ -1,5 +1,6 @@
 import { AccountListSkeleton } from '../components/feedback/Skeletons.jsx'
 import { ehContaRecorrente } from '../utils/recorrencia'
+import { adicionarGruposPadraoAoEstado, criarEstadoInicialGruposPeriodo } from '../utils/recorrenciaPlanejamento'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import AccountPaymentModal from '../components/modals/AccountPaymentModal.jsx'
 import AccountPartialPaymentModal from '../components/modals/AccountPartialPaymentModal.jsx'
@@ -233,6 +234,7 @@ function EmptyState({ icon, title, description, actionLabel, onAction }) {
   )
 }
 export default function ContasPage({
+  empresaId,
   styles, busca, setBusca, mostrarFiltros, setMostrarFiltros, limparFiltros, imprimirPDF, exportarCSV, exportarExcel,
   filtroStatus, setFiltroStatus, centros, filtroCentro, setFiltroCentro, filiais, filtroFilial, setFiltroFilial, filtroMes, setFiltroMes,
   dataInicial, setDataInicial, dataFinal, setDataFinal, limitarDataInput, contas = [], contasFiltradas, agendaFocusTarget, onAgendaFocusHandled, total, formatarValor,
@@ -252,6 +254,7 @@ export default function ContasPage({
   const [mostrarExportacoes, setMostrarExportacoes] = useState(false)
   const [gruposPeriodoAbertos, setGruposPeriodoAbertos] = useState({})
   const contaDestacadaRef = useRef(null)
+  const assinaturaGruposAplicadaRef = useRef('')
   const contaAlvoAgendaId = agendaFocusTarget?.tipo === 'conta' ? agendaFocusTarget.id : ''
   const contaAlvoAgenda = useMemo(() => {
     if (!contaAlvoAgendaId) return null
@@ -259,13 +262,21 @@ export default function ContasPage({
       || contasFiltradas.find((conta) => String(conta.id) === String(contaAlvoAgendaId))
       || null
   }, [contaAlvoAgendaId, contas, contasFiltradas])
+  const chavePeriodoContaAlvo = contaAlvoAgenda?.data_vencimento
+    ? String(contaAlvoAgenda.data_vencimento).slice(0, 7)
+    : ''
   const contasParaListagem = useMemo(() => {
     if (!contaAlvoAgenda) return contasFiltradas
     if (contaAlvoAgenda.oculto === true && filtroStatus !== 'ocultas') return contasFiltradas
     const jaEstaFiltrada = contasFiltradas.some((conta) => String(conta.id) === String(contaAlvoAgenda.id))
+    const periodoDefinidoPeloUsuario = Boolean(filtroMes || dataInicial || dataFinal)
+    if (periodoDefinidoPeloUsuario && !jaEstaFiltrada) return contasFiltradas
     return jaEstaFiltrada ? contasFiltradas : [contaAlvoAgenda, ...contasFiltradas]
-  }, [contaAlvoAgenda, contasFiltradas, filtroStatus])
-  const contasOrdenadas = ordenarContasParaListagem(contasParaListagem, ordenacaoContas, filtroStatus, estaVencida)
+  }, [contaAlvoAgenda, contasFiltradas, dataFinal, dataInicial, filtroMes, filtroStatus])
+  const contasOrdenadas = useMemo(
+    () => ordenarContasParaListagem(contasParaListagem, ordenacaoContas, filtroStatus, estaVencida),
+    [contasParaListagem, estaVencida, filtroStatus, ordenacaoContas]
+  )
   const gruposPorPeriodo = useMemo(
     () => agruparContasPorPeriodo(contasOrdenadas),
     [contasOrdenadas]
@@ -279,9 +290,9 @@ export default function ContasPage({
       filtroMes,
       dataInicial,
       dataFinal,
-      gruposPorPeriodo.map((grupo) => grupo.chave).join(',')
+      empresaId
     ].join('|'),
-    [busca, dataFinal, dataInicial, filtroCentro, filtroFilial, filtroMes, filtroStatus, gruposPorPeriodo]
+    [busca, dataFinal, dataInicial, empresaId, filtroCentro, filtroFilial, filtroMes, filtroStatus]
   )
   const statusAtualLabel = ABAS_STATUS_CONTAS.find((aba) => aba.valor === filtroStatus)?.label || filtroStatus
   const resumoResultadoFiltrado = useMemo(
@@ -330,10 +341,23 @@ export default function ContasPage({
   }
 
   useEffect(() => {
+    setGruposPeriodoAbertos((atuais) => {
+      if (assinaturaGruposAplicadaRef.current !== assinaturaGruposPeriodo) {
+        assinaturaGruposAplicadaRef.current = assinaturaGruposPeriodo
+        return criarEstadoInicialGruposPeriodo({ grupos: gruposPorPeriodo, chaveDestacada: chavePeriodoContaAlvo })
+      }
+      return adicionarGruposPadraoAoEstado(atuais, { grupos: gruposPorPeriodo, chaveDestacada: chavePeriodoContaAlvo })
+    })
+  }, [assinaturaGruposPeriodo, gruposPorPeriodo, chavePeriodoContaAlvo])
+
+  useEffect(() => {
     if (!contaAlvoAgendaId) return undefined
 
     setMostrarContas(true)
     setContaDestacadaId(String(contaAlvoAgendaId))
+    if (chavePeriodoContaAlvo) {
+      setGruposPeriodoAbertos((atuais) => ({ ...atuais, [chavePeriodoContaAlvo]: true }))
+    }
 
     const scrollTimer = window.setTimeout(() => {
       contaDestacadaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -348,11 +372,7 @@ export default function ContasPage({
       window.clearTimeout(scrollTimer)
       window.clearTimeout(clearTimer)
     }
-  }, [contaAlvoAgendaId, setMostrarContas, onAgendaFocusHandled])
-
-  useEffect(() => {
-    setGruposPeriodoAbertos({})
-  }, [assinaturaGruposPeriodo])
+  }, [chavePeriodoContaAlvo, contaAlvoAgendaId, setMostrarContas, onAgendaFocusHandled])
 
   function renderContaCard(conta) {
     const destacadaPelaAgenda = String(conta.id) === String(contaDestacadaId)

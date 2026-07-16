@@ -19,4 +19,4 @@ drop policy if exists df_push_tokens_update on public.df_push_tokens;
 revoke all privileges on table public.df_push_tokens from anon;
 revoke all privileges on table public.df_push_tokens from authenticated;
 
-commit;
+commit;;

@@ -33,4 +33,4 @@ set
   updated_at = now()
 where p.id in (select id from _password_upgrade_targets);
 
-commit;
+commit;;

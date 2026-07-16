@@ -20,4 +20,4 @@ begin
 end $$;
 
 comment on column public.df_contas.imposto_tipo is 'Classificacao opcional da conta como obrigacao fiscal: simples_nacional, fgts, inss ou outro.';
-comment on column public.df_contas.competencia is 'Competencia fiscal opcional da conta. Usar preferencialmente o primeiro dia do mes de competencia.';
+comment on column public.df_contas.competencia is 'Competencia fiscal opcional da conta. Usar preferencialmente o primeiro dia do mes de competencia.';;

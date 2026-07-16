@@ -8,4 +8,4 @@ begin;
 alter table public.df_notas enable row level security;
 alter table public.df_notas force row level security;
 
-commit;
+commit;;

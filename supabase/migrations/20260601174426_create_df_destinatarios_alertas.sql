@@ -251,4 +251,4 @@ end $$;
 -- 9. Nao criar frontend antes da RLS ser validada.
 -- 10. Nao alterar GitHub Actions antes de validar leitura segura por empresa.
 
-commit;
+commit;;

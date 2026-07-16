@@ -15,4 +15,4 @@ drop policy if exists "Permitir tudo" on public.contas;
 revoke all privileges on table public.contas from anon;
 revoke all privileges on table public.contas from authenticated;
 
-commit;
+commit;;

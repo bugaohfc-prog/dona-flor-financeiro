@@ -125,8 +125,8 @@ alter table public.df_receitas force row level security;
 
 revoke all on public.df_receitas from public;
 revoke all on public.df_receitas from anon;
-revoke all on public.df_receitas from authenticated;
 grant select, insert, update on public.df_receitas to authenticated;
+revoke delete on public.df_receitas from authenticated;
 
 drop policy if exists "df_receitas_select_empresa" on public.df_receitas;
 drop policy if exists "df_receitas_insert_financeiro" on public.df_receitas;
@@ -255,4 +255,4 @@ join filiais f on f.chave = d.chave_filial
 cross join base b
 on conflict (empresa_id, filial_id, ano, mes, lower(origem)) do nothing;
 
-commit;
+commit;;

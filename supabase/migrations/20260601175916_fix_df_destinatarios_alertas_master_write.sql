@@ -160,4 +160,4 @@ end $$;
 -- - master: INSERT/UPDATE por public.is_master() ou vinculo master/owner/superadmin na empresa;
 -- - DELETE: sem policy, sem grant e bloqueado por trigger.
 
-commit;
+commit;;

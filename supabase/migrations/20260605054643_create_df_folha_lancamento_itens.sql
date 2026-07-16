@@ -366,19 +366,11 @@ on public.df_folha_lancamento_itens
 for each row
 execute function public.df_folha_lancamento_itens_recalcular_lancamento_trigger();
 
-revoke all on function public.df_folha_lancamento_itens_set_timestamps() from public, anon, authenticated;
-revoke all on function public.df_folha_lancamento_itens_bloquear_delete() from public, anon, authenticated;
-revoke all on function public.df_folha_lancamento_itens_bloquear_alteracao_empresa() from public, anon, authenticated;
-revoke all on function public.df_folha_lancamento_itens_validar_vinculos() from public, anon, authenticated;
-revoke all on function public.df_folha_lancamento_itens_recalcular_lancamento(uuid) from public, anon, authenticated;
-revoke all on function public.df_folha_lancamento_itens_recalcular_lancamento_trigger() from public, anon, authenticated;
-
 alter table public.df_folha_lancamento_itens enable row level security;
 alter table public.df_folha_lancamento_itens force row level security;
 
 revoke all on public.df_folha_lancamento_itens from public;
 revoke all on public.df_folha_lancamento_itens from anon;
-revoke all on public.df_folha_lancamento_itens from authenticated;
 grant select, insert, update on public.df_folha_lancamento_itens to authenticated;
 revoke delete on public.df_folha_lancamento_itens from authenticated;
 
@@ -458,4 +450,4 @@ begin
   end if;
 end $$;
 
-commit;
+commit;;

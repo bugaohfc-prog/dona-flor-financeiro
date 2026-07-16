@@ -248,4 +248,4 @@ begin
   end if;
 end $$;
 
-commit;
+commit;;

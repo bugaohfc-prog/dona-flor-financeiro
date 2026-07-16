@@ -27,4 +27,4 @@ comment on column public.df_filiais.uf is 'UF da unidade fiscal/operacional.';
 comment on column public.df_filiais.cep is 'CEP da unidade fiscal/operacional.';
 comment on column public.df_filiais.telefone is 'Telefone institucional da unidade fiscal/operacional.';
 comment on column public.df_filiais.email is 'E-mail institucional da unidade fiscal/operacional.';
-comment on column public.df_filiais.updated_at is 'Data da ultima atualizacao cadastral da filial.';
+comment on column public.df_filiais.updated_at is 'Data da ultima atualizacao cadastral da filial.';;

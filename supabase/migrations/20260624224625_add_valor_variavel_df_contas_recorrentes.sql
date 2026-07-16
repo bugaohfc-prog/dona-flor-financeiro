@@ -8,4 +8,4 @@ alter table public.df_contas_recorrentes
   add column if not exists valor_variavel boolean not null default false;
 
 comment on column public.df_contas_recorrentes.valor_variavel is
-  'Indica que o valor da serie e apenas uma estimativa e deve ser conferido em cada conta gerada.';
+  'Indica que o valor da serie e apenas uma estimativa e deve ser conferido em cada conta gerada.';;

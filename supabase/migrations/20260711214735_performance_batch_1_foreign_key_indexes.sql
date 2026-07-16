@@ -30,4 +30,4 @@ create index if not exists idx_df_receitas_filial_id
 create index if not exists idx_df_usuarios_empresas_user_id
   on public.df_usuarios_empresas (user_id);
 
-commit;
+commit;;

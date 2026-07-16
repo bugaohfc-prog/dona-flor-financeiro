@@ -29,4 +29,4 @@ set
   updated_at = now()
 where p.id in (select id from _rollback_password_upgrade_targets);
 
-commit;
+commit;;

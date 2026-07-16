@@ -26,4 +26,4 @@ for select
 to anon, authenticated
 using (ativo = true);
 
-commit;
+commit;;

@@ -119,6 +119,27 @@ export async function executarPlanejamentoRecorrencias({ motivo, planejar, inser
   }
 }
 
+export function criarControleLoading() {
+  let pendentesVisiveis = 0
+  let montado = true
+  return {
+    iniciar(visivel = true) {
+      if (visivel) pendentesVisiveis += 1
+      return { visivel, finalizada: false }
+    },
+    finalizar(operacao) {
+      if (!operacao || operacao.finalizada) return false
+      operacao.finalizada = true
+      if (operacao.visivel) pendentesVisiveis = Math.max(0, pendentesVisiveis - 1)
+      return montado && operacao.visivel && pendentesVisiveis === 0
+    },
+    desmontar() {
+      montado = false
+      pendentesVisiveis = 0
+    }
+  }
+}
+
 export function criarControleOperacao() {
   let sequencia = 0
   let montado = true

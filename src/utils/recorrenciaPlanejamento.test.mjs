@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import {
   calcularHorizonteRecorrencias,
+  criarControleLoading,
   criarControleOperacao,
   executarCarregamentoContas,
   executarPlanejamentoRecorrencias,
@@ -133,4 +134,26 @@ test('referÃªncia fiscal inconsistente Ã© sinalizada sem correÃ§Ã£o', ()
   })
   assert.equal(plano.ocorrencias[0].impostoTipo, null)
   assert.equal(plano.inconsistencias.length, 1)
+})
+test('busca silenciosa que supera busca visivel nao deixa loading preso', () => {
+  const controle = criarControleLoading()
+  const visivel = controle.iniciar(true)
+  const silenciosa = controle.iniciar(false)
+  assert.equal(controle.finalizar(silenciosa), false)
+  assert.equal(controle.finalizar(visivel), true)
+})
+
+test('loading antigo nao encerra enquanto busca visivel atual permanece ativa', () => {
+  const controle = criarControleLoading()
+  const antiga = controle.iniciar(true)
+  const atual = controle.iniciar(true)
+  assert.equal(controle.finalizar(antiga), false)
+  assert.equal(controle.finalizar(atual), true)
+})
+
+test('desmontagem impede finalizacao tardia do loading', () => {
+  const controle = criarControleLoading()
+  const operacao = controle.iniciar(true)
+  controle.desmontar()
+  assert.equal(controle.finalizar(operacao), false)
 })

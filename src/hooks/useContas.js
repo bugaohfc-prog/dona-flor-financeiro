@@ -41,6 +41,7 @@ import {
 } from '../services/auditoriaContaAtualizacaoService'
 import {
   calcularHorizonteRecorrencias,
+  criarControleLoading,
   criarControleOperacao,
   executarPlanejamentoRecorrencias,
   planejarContasRecorrentes
@@ -134,13 +135,16 @@ export function useContas() {
   const planejamentoRecorrenciasEmAndamentoRef = useRef(null)
 
   const controleBuscaRef = useRef(null)
+  const controleLoadingRef = useRef(null)
   const controlePlanejamentoRef = useRef(null)
   const empresaAtivaRef = useRef(null)
   if (!controleBuscaRef.current) controleBuscaRef.current = criarControleOperacao()
+  if (!controleLoadingRef.current) controleLoadingRef.current = criarControleLoading()
   if (!controlePlanejamentoRef.current) controlePlanejamentoRef.current = criarControleOperacao()
 
   useEffect(() => () => {
     controleBuscaRef.current?.desmontar()
+    controleLoadingRef.current?.desmontar()
     controlePlanejamentoRef.current?.desmontar()
     planejamentoRecorrenciasEmAndamentoRef.current = null
   }, [])
@@ -427,6 +431,7 @@ export function useContas() {
 
     empresaAtivaRef.current = empresaAtual
     const operacao = controleBuscaRef.current.iniciar(empresaAtual)
+    const operacaoLoading = controleLoadingRef.current.iniciar(!silencioso)
     const estaAtual = () => controleBuscaRef.current.estaAtual(operacao) && empresaAtivaRef.current === empresaAtual
     if (!silencioso && estaAtual()) setLoading(true)
 
@@ -447,7 +452,7 @@ export function useContas() {
       setContas(contasEnriquecidas)
       return { contas: contasEnriquecidas, seriesRecorrentes: seriesAtuais }
     } finally {
-      if (!silencioso && estaAtual()) setLoading(false)
+      if (controleLoadingRef.current.finalizar(operacaoLoading)) setLoading(false)
     }
   }
 

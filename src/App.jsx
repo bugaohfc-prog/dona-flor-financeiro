@@ -2075,7 +2075,7 @@ export default function App() {
       id,
       empresaId,
       avisarErro,
-      buscarContas: () => buscarContas(empresaId, { permitirGerarRecorrencias: true }),
+      buscarContas: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
       mostrarAviso
     })
   }
@@ -3624,7 +3624,6 @@ export default function App() {
   if (telaAtual === 'contas') {
     return renderAppFrame(
       <LazyContasPage
-        empresaId={empresaId}
         styles={styles}
         busca={busca}
         setBusca={setBusca}

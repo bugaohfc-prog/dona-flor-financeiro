@@ -1,5 +1,5 @@
-import { dataLocal } from './dates.js'
-import { primeiraLetraMaiuscula } from './format.js'
+import { dataLocal } from './dates'
+import { primeiraLetraMaiuscula } from './format'
 
 export function montarDataRecorrente(ano, mes, dia) {
   const ultimoDiaMes = new Date(ano, mes, 0).getDate()

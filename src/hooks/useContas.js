@@ -17,12 +17,14 @@ import {
   desativarRecorrencia,
   enviarContaParaLixeira,
   listarContasAtivas,
+  listarContasDoMesParaRecorrencia,
   listarPagamentosParciaisPorContas,
   registrarAuditoriaPagamentoParcialCriado,
   registrarPagamentoParcial as registrarPagamentoParcialService,
   estornarPagamentoParcial as estornarPagamentoParcialService,
   baixarContaQuitadaPorParciais as baixarContaQuitadaPorParciaisService,
   listarParcelasParcelamento,
+  listarRecorrenciasAtivas,
   listarRecorrenciasPorDia,
   ocultarConta as ocultarContaService,
   reativarRecorrencia,
@@ -36,13 +38,18 @@ import {
   criarCorrelationIdAtualizacaoConta,
   registrarAuditoriaAtualizacaoConta
 } from '../services/auditoriaContaAtualizacaoService'
-import {
-  inserirPlanejamentoComRepeticaoUnica,
-  planejarContasRecorrentes
-} from '../utils/recorrenciaPlanejamento'
+import { deveGerarRecorrenciaNoMes, montarDataRecorrente } from '../utils/recorrencia'
 import { mensagemSeguraErro } from '../utils/session'
 
 const CENTRO_CUSTO_INVALIDO_MENSAGEM = 'Centro de custo indisponível. Atualize a página ou selecione outro centro de custo.'
+
+function normalizarTextoRecorrencia(valor) {
+  return String(valor || '').trim().toLowerCase()
+}
+
+function normalizarValorRecorrencia(valor) {
+  return Number(valor || 0).toFixed(2)
+}
 
 function arredondarCentavos(valor) {
   return Math.round((Number(valor || 0) + Number.EPSILON) * 100)
@@ -112,6 +119,21 @@ function montarParcelasConta({ payloadBase, valorTotal, parcelasTotal, primeiroV
   })
 }
 
+function recorrenciaTemContaGerada(contasReferencia, recorrencia, dataGerada) {
+  return (contasReferencia || []).some((conta) => {
+    if (conta.data_vencimento !== dataGerada) return false
+    if (recorrencia.id && conta.recorrencia_id === recorrencia.id) return true
+    if (recorrencia.id) return false
+
+    return (
+      normalizarTextoRecorrencia(conta.descricao) === normalizarTextoRecorrencia(recorrencia.descricao) &&
+      normalizarValorRecorrencia(conta.valor) === normalizarValorRecorrencia(recorrencia.valor) &&
+      String(conta.centro_custo_id || '') === String(recorrencia.centro_custo_id || '') &&
+      String(conta.filial_id || '') === String(recorrencia.filial_id || '')
+    )
+  })
+}
+
 export function useContas() {
   const [contas, setContas] = useState([])
   const [contasLixeira, setContasLixeira] = useState([])
@@ -126,7 +148,6 @@ export function useContas() {
   const [loading, setLoading] = useState(true)
   const [salvandoConta, setSalvandoConta] = useState(false)
   const salvandoContaRef = useRef(false)
-  const planejamentoRecorrenciasEmAndamentoRef = useRef(null)
 
   const [modalConta, setModalConta] = useState(false)
   const [editandoContaId, setEditandoContaId] = useState(null)
@@ -276,76 +297,79 @@ export function useContas() {
     return validarFilialDaEmpresa(supabase, filialId, empresaId)
   }
 
-  async function garantirPlanejamentoContasRecorrentes({
+  async function garantirContasRecorrentesDoMes({
     supabase,
     empresaAtual,
     contasAtuais,
-    seriesAtuais,
     configWhatsapp,
     configEmail,
     configPush,
     diasAlertaContas,
     diasAvisoPadrao
   }) {
-    const montarContasPlanejadas = async (seriesReferencia, contasReferencia) => {
-      const { ocorrencias } = planejarContasRecorrentes({
-        dataBase: new Date(),
-        diasMinimos: 90,
-        seriesRecorrentes: seriesReferencia,
-        contasExistentes: contasReferencia
-      })
-      if (ocorrencias.length === 0) return []
+    const hoje = new Date()
+    const ano = hoje.getFullYear()
+    const mes = hoje.getMonth() + 1
 
-      const centrosIds = Array.from(new Set(ocorrencias.map(({ recorrencia }) => recorrencia.centro_custo_id).filter(Boolean)))
-      const filiaisIds = Array.from(new Set(ocorrencias.map(({ recorrencia }) => recorrencia.filial_id).filter(Boolean)))
-      const [centrosValidados, filiaisValidadas] = await Promise.all([
-        Promise.all(centrosIds.map(async (id) => [id, await resolverCentroCustoSeguro(supabase, empresaAtual, id)])),
-        Promise.all(filiaisIds.map(async (id) => [id, await resolverFilialSegura(supabase, empresaAtual, id)]))
-      ])
-      const centrosPorId = new Map(centrosValidados)
-      const filiaisPorId = new Map(filiaisValidadas)
+    const { data: recorrentes, error } = await listarRecorrenciasAtivas(supabase, empresaAtual)
 
-      return ocorrencias.map(({ recorrencia, dataVencimento, impostoTipo, competencia }) => ({
+    if (error) {
+      console.warn('Não foi possível carregar contas recorrentes:', error.message)
+      return contasAtuais
+    }
+
+    const inicioMes = `${ano}-${String(mes).padStart(2, '0')}-01`
+    const fimMes = `${ano}-${String(mes).padStart(2, '0')}-${String(new Date(ano, mes, 0).getDate()).padStart(2, '0')}`
+    const { data: contasDoMes, error: erroContasDoMes } = await listarContasDoMesParaRecorrencia(supabase, empresaAtual, inicioMes, fimMes)
+
+    if (erroContasDoMes) {
+      console.warn('Não foi possível validar contas recorrentes existentes:', erroContasDoMes.message)
+    }
+
+    const contasReferencia = Array.isArray(contasDoMes) ? contasDoMes : contasAtuais
+    const novasContas = []
+
+    for (const recorrencia of (recorrentes || [])) {
+      if (!deveGerarRecorrenciaNoMes(recorrencia, ano, mes)) continue
+
+      const dataGerada = montarDataRecorrente(ano, mes, recorrencia.dia_vencimento)
+
+      const jaExiste = recorrenciaTemContaGerada(contasReferencia, recorrencia, dataGerada)
+
+      if (jaExiste) continue
+
+      const centroCustoSeguro = await resolverCentroCustoSeguro(supabase, empresaAtual, recorrencia.centro_custo_id)
+      const filialSegura = await resolverFilialSegura(supabase, empresaAtual, recorrencia.filial_id)
+
+      novasContas.push({
         empresa_id: empresaAtual,
         descricao: recorrencia.descricao,
         valor: Number(recorrencia.valor || 0),
-        data_vencimento: dataVencimento,
-        vencimento: dataVencimento,
-        centro_custo_id: recorrencia.centro_custo_id ? centrosPorId.get(recorrencia.centro_custo_id) || null : null,
-        filial_id: recorrencia.filial_id ? filiaisPorId.get(recorrencia.filial_id) || null : null,
+        data_vencimento: dataGerada,
+        vencimento: dataGerada,
+        centro_custo_id: centroCustoSeguro,
+        filial_id: filialSegura,
         observacao: recorrencia.observacao || null,
         recorrencia_id: recorrencia.id,
-        imposto_tipo: impostoTipo,
-        competencia,
         status: 'pendente',
         excluido: false,
         enviar_whatsapp: configWhatsapp,
         enviar_email: configEmail,
         enviar_push: configPush,
         dias_aviso: Number(diasAlertaContas || diasAvisoPadrao || 1)
-      }))
+      })
     }
 
-    const novasContas = await montarContasPlanejadas(seriesAtuais, contasAtuais)
     if (novasContas.length === 0) return contasAtuais
 
-    let contasRecarregadas = null
-    const { criadas: contasCriadas } = await inserirPlanejamentoComRepeticaoUnica({
-      ocorrencias: novasContas,
-      inserir: (contasPlanejadas) => criarContasEmLote(supabase, contasPlanejadas),
-      recarregarEPlanejar: async () => {
-        const [respostaContas, respostaSeries] = await Promise.all([
-          listarContasAtivas(supabase, empresaAtual),
-          listarRecorrencias(supabase, empresaAtual)
-        ])
-        if (respostaContas.error) throw respostaContas.error
-        if (respostaSeries.error) throw respostaSeries.error
-        contasRecarregadas = respostaContas.data || []
-        setSeriesRecorrentes(respostaSeries.data || [])
-        return montarContasPlanejadas(respostaSeries.data || [], contasRecarregadas)
-      }
-    })
-    return [...(contasRecarregadas || contasAtuais), ...(contasCriadas || [])].sort((a, b) =>
+    const { data: contasCriadas, error: erroInsert } = await criarContasEmLote(supabase, novasContas)
+
+    if (erroInsert) {
+      console.warn('Não foi possível gerar contas recorrentes:', erroInsert.message)
+      return contasAtuais
+    }
+
+    return [...contasAtuais, ...(contasCriadas || [])].sort((a, b) =>
       String(a.data_vencimento || '').localeCompare(String(b.data_vencimento || ''))
     )
   }
@@ -423,31 +447,16 @@ export function useContas() {
         return
       }
 
-      let contasComRecorrencias
-      const planejamentoAtual = planejamentoRecorrenciasEmAndamentoRef.current
-      if (planejamentoAtual?.empresaId === empresaAtual) {
-        contasComRecorrencias = await planejamentoAtual.promise
-      } else {
-        const promise = garantirPlanejamentoContasRecorrentes({
-          supabase,
-          empresaAtual,
-          contasAtuais,
-          seriesAtuais: respostaRecorrencias.data || [],
-          configWhatsapp,
-          configEmail,
-          configPush,
-          diasAlertaContas,
-          diasAvisoPadrao
-        })
-        planejamentoRecorrenciasEmAndamentoRef.current = { empresaId: empresaAtual, promise }
-        try {
-          contasComRecorrencias = await promise
-        } finally {
-          if (planejamentoRecorrenciasEmAndamentoRef.current?.promise === promise) {
-            planejamentoRecorrenciasEmAndamentoRef.current = null
-          }
-        }
-      }
+      const contasComRecorrencias = await garantirContasRecorrentesDoMes({
+        supabase,
+        empresaAtual,
+        contasAtuais,
+        configWhatsapp,
+        configEmail,
+        configPush,
+        diasAlertaContas,
+        diasAvisoPadrao
+      })
       const contasEnriquecidas = await enriquecerContasComPagamentosParciais(supabase, empresaAtual, contasComRecorrencias)
       setContas(contasEnriquecidas)
     } finally {

@@ -1,31 +1,32 @@
 .contas-hierarchy {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   margin-top: 16px;
 }
 
 .contas-hierarchy-year {
   min-width: 0;
+  overflow: hidden;
   border: 1px solid var(--df-color-border);
   border-radius: var(--df-radius-card);
-  background: var(--df-color-page);
+  background: var(--df-color-surface);
+  box-shadow: var(--df-shadow-soft);
 }
 
 .contas-hierarchy-year.is-current {
-  border-color: color-mix(in srgb, var(--df-color-brand) 38%, var(--df-color-border));
-  background: color-mix(in srgb, var(--df-color-brand-soft) 45%, var(--df-color-surface));
+  border-left: 3px solid var(--df-color-brand);
 }
 
 .contas-hierarchy-year-toggle,
 .contas-hierarchy-month-toggle {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-columns: 24px minmax(0, 1fr);
   width: 100%;
-  min-height: 58px;
+  min-height: 52px;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   box-sizing: border-box;
-  padding: 10px 14px;
+  padding: 9px 12px;
   border: 0;
   border-radius: inherit;
   background: transparent;
@@ -38,46 +39,50 @@
 
 .contas-hierarchy-year-toggle:hover,
 .contas-hierarchy-month-toggle:hover {
-  background: color-mix(in srgb, var(--df-color-brand-soft) 58%, transparent);
+  background: var(--df-color-brand-soft);
 }
 
 .contas-hierarchy-year-toggle:focus-visible,
 .contas-hierarchy-month-toggle:focus-visible {
   outline: 3px solid var(--df-color-brand-soft);
-  outline-offset: 2px;
+  outline-offset: -3px;
 }
 
 .contas-hierarchy-heading-copy {
-  display: grid;
-  grid-template-columns: minmax(120px, 0.8fr) minmax(190px, 1.2fr);
-  grid-template-areas:
-    "title primary"
-    "title secondary";
+  display: flex;
+  flex-wrap: wrap;
   min-width: 0;
   align-items: center;
-  column-gap: 20px;
-  row-gap: 2px;
+  gap: 4px 14px;
 }
 
 .contas-hierarchy-title-line {
-  grid-area: title;
   display: flex;
   min-width: 0;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 7px;
 }
 
 .contas-hierarchy-title-line > strong {
-  font-size: 1rem;
+  color: var(--df-color-text);
+  font-size: 1.02rem;
+  font-weight: 900;
   line-height: 1.25;
   white-space: nowrap;
 }
 
 .contas-hierarchy-current-label {
+  display: inline-flex;
+  min-height: 20px;
+  align-items: center;
+  padding: 2px 7px;
+  border: 1px solid color-mix(in srgb, var(--df-color-brand) 20%, var(--df-color-border));
+  border-radius: var(--df-radius-pill);
+  background: var(--df-color-brand-soft);
   color: var(--df-color-brand);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
   white-space: nowrap;
 }
 
@@ -85,30 +90,54 @@
 .contas-hierarchy-secondary-summary {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 2px 12px;
-  text-align: right;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px 10px;
+  text-align: left;
 }
 
 .contas-hierarchy-primary-summary {
-  grid-area: primary;
   color: var(--df-color-text);
-  font-size: 0.82rem;
-  font-weight: 650;
+  font-size: 0.8rem;
+  font-weight: 700;
   line-height: 1.3;
 }
 
+.contas-hierarchy-primary-summary::before {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--df-color-border);
+  content: '';
+}
+
 .contas-hierarchy-secondary-summary {
-  grid-area: secondary;
   color: var(--df-color-muted);
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   line-height: 1.3;
+}
+
+.contas-hierarchy-secondary-summary span {
+  display: inline-flex;
+  min-height: 20px;
+  align-items: center;
+  padding: 2px 7px;
+  border: 1px solid var(--df-color-border);
+  border-radius: var(--df-radius-pill);
+  background: var(--df-color-page);
+  white-space: nowrap;
+}
+
+.contas-hierarchy-secondary-summary span:nth-child(2) {
+  border-color: color-mix(in srgb, var(--df-color-danger) 18%, var(--df-color-border));
+  background: color-mix(in srgb, var(--df-color-danger) 5%, var(--df-color-surface));
+  color: var(--df-color-danger);
 }
 
 .contas-hierarchy-chevron-slot {
   display: flex;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   align-items: center;
   justify-content: center;
   align-self: center;
@@ -117,7 +146,7 @@
 .contas-hierarchy-chevron {
   display: block;
   color: var(--df-color-brand);
-  font-size: 1.35rem;
+  font-size: 1.2rem;
   font-weight: 600;
   line-height: 1;
   transform: rotate(0deg);
@@ -132,31 +161,30 @@
 
 .contas-hierarchy-year-content {
   display: grid;
-  gap: 7px;
-  padding: 2px 10px 10px 36px;
+  gap: 0;
+  padding: 0 12px 8px 32px;
 }
 
 .contas-hierarchy-month {
   min-width: 0;
-  border-left: 2px solid var(--df-color-border);
-  border-radius: 0 var(--df-radius-control) var(--df-radius-control) 0;
+  border-top: 1px solid var(--df-color-border);
+  border-radius: 0;
   background: var(--df-color-surface);
 }
 
 .contas-hierarchy-month.is-current {
-  border-left-color: var(--df-color-brand);
-  background: color-mix(in srgb, var(--df-color-brand-soft) 58%, var(--df-color-surface));
+  background: color-mix(in srgb, var(--df-color-brand-soft) 36%, var(--df-color-surface));
+  box-shadow: inset 3px 0 0 var(--df-color-brand);
 }
 
 .contas-hierarchy-month-toggle {
-  min-height: 50px;
-  padding-top: 8px;
-  padding-bottom: 8px;
+  min-height: 46px;
+  padding: 7px 10px;
 }
 
 .contas-hierarchy-month-toggle .contas-hierarchy-title-line > strong {
   font-size: 0.9rem;
-  font-weight: 650;
+  font-weight: 800;
 }
 
 .contas-hierarchy-month-toggle .contas-hierarchy-primary-summary {
@@ -166,7 +194,7 @@
 .contas-hierarchy-month-content {
   display: grid;
   gap: 10px;
-  padding: 4px 10px 10px 38px;
+  padding: 4px 8px 10px 32px;
 }
 
 @media (max-width: 640px) {
@@ -177,18 +205,14 @@
   .contas-hierarchy-year-toggle,
   .contas-hierarchy-month-toggle {
     grid-template-columns: 24px minmax(0, 1fr);
-    min-height: 58px;
+    min-height: 52px;
     gap: 8px;
     padding: 10px;
   }
 
   .contas-hierarchy-heading-copy {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "title"
-      "primary"
-      "secondary";
-    gap: 3px;
+    display: grid;
+    gap: 4px;
   }
 
   .contas-hierarchy-primary-summary,
@@ -199,18 +223,22 @@
 
   .contas-hierarchy-chevron-slot {
     width: 24px;
-    height: 28px;
+    height: 24px;
     align-self: start;
   }
 
   .contas-hierarchy-year-content {
-    padding-right: 6px;
-    padding-left: 16px;
+    padding-right: 8px;
+    padding-left: 14px;
   }
 
   .contas-hierarchy-month-content {
-    padding-right: 6px;
-    padding-left: 12px;
+    padding-right: 4px;
+    padding-left: 10px;
+  }
+
+  .contas-hierarchy-primary-summary::before {
+    display: none;
   }
 }
 

@@ -1,0 +1,140 @@
+.contas-hierarchy {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.contas-hierarchy-year,
+.contas-hierarchy-month {
+  min-width: 0;
+  border: 1px solid var(--df-color-border);
+  border-radius: var(--df-radius-section);
+  background: var(--df-color-surface);
+  box-shadow: var(--df-shadow-soft);
+}
+
+.contas-hierarchy-year.is-current {
+  border-color: var(--df-color-brand);
+}
+
+.contas-hierarchy-year-toggle,
+.contas-hierarchy-month-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--df-color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.contas-hierarchy-year-toggle:hover,
+.contas-hierarchy-month-toggle:hover {
+  background: var(--df-color-brand-soft);
+}
+
+.contas-hierarchy-year-toggle:focus-visible,
+.contas-hierarchy-month-toggle:focus-visible {
+  outline: 3px solid var(--df-color-brand-soft);
+  outline-offset: 2px;
+}
+
+.contas-hierarchy-heading-copy {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.contas-hierarchy-heading-copy > strong {
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.contas-hierarchy-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  color: var(--df-color-muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.contas-hierarchy-indicator {
+  display: inline-flex;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--df-color-border);
+  border-radius: var(--df-radius-control);
+  color: var(--df-color-brand);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.contas-hierarchy-year-content {
+  display: grid;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+
+.contas-hierarchy-month {
+  border-radius: var(--df-radius-card);
+  box-shadow: none;
+}
+
+.contas-hierarchy-month.is-current {
+  border-color: var(--df-color-brand);
+  background: var(--df-color-brand-soft);
+}
+
+.contas-hierarchy-month.is-current .contas-hierarchy-month-toggle:hover {
+  background: var(--df-color-surface);
+}
+
+.contas-hierarchy-month-content {
+  display: grid;
+  gap: 12px;
+  padding: 0 12px 12px;
+}
+
+@media (max-width: 640px) {
+  .contas-hierarchy {
+    gap: 10px;
+  }
+
+  .contas-hierarchy-year-toggle,
+  .contas-hierarchy-month-toggle {
+    min-height: 56px;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .contas-hierarchy-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 12px;
+  }
+
+  .contas-hierarchy-indicator {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+  }
+
+  .contas-hierarchy-year-content,
+  .contas-hierarchy-month-content {
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+}

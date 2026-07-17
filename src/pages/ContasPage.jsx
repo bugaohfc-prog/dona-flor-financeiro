@@ -3,6 +3,12 @@ import { ehContaRecorrente } from '../utils/recorrencia'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import AccountPaymentModal from '../components/modals/AccountPaymentModal.jsx'
 import AccountPartialPaymentModal from '../components/modals/AccountPartialPaymentModal.jsx'
+import {
+  agruparContasPorAnoMes,
+  criarEstadoExpansaoPadrao,
+  reconciliarEstadoExpansao
+} from '../utils/contasAgrupamento.js'
+import './ContasPage.css'
 
 const OPCOES_ORDENACAO_CONTAS = [
   { valor: 'vencimento_asc', label: 'Vencimento mais próximo' },
@@ -19,21 +25,6 @@ const ABAS_STATUS_CONTAS = [
   { valor: 'pagas', label: 'Pagas' },
   { valor: 'ocultas', label: 'Ocultas' },
   { valor: 'todas', label: 'Todas' }
-]
-
-const MESES_PT_BR = [
-  'Janeiro',
-  'Fevereiro',
-  'Mar\u00e7o',
-  'Abril',
-  'Maio',
-  'Junho',
-  'Julho',
-  'Agosto',
-  'Setembro',
-  'Outubro',
-  'Novembro',
-  'Dezembro'
 ]
 
 
@@ -96,43 +87,6 @@ function obterTimestampVencimento(conta, fallback) {
 
   const timestamp = Date.parse(valor)
   return Number.isNaN(timestamp) ? fallback : timestamp
-}
-
-function obterChavePeriodoConta(conta) {
-  const data = String(conta?.data_vencimento || '').trim()
-  const partes = data.match(/^(\d{4})-(\d{2})/)
-  if (!partes) return 'sem-data'
-  return `${partes[1]}-${partes[2]}`
-}
-
-function obterRotuloPeriodo(chave) {
-  if (chave === 'sem-data') return 'Sem data'
-  const [ano, mes] = chave.split('-')
-  const indiceMes = Number(mes) - 1
-  const nomeMes = MESES_PT_BR[indiceMes]
-  return nomeMes && ano ? `${nomeMes}/${ano}` : 'Sem data'
-}
-
-function agruparContasPorPeriodo(contas) {
-  const mapa = new Map()
-
-  contas.forEach((conta) => {
-    const chave = obterChavePeriodoConta(conta)
-    if (!mapa.has(chave)) {
-      mapa.set(chave, {
-        chave,
-        rotulo: obterRotuloPeriodo(chave),
-        contas: [],
-        totalPrevisto: 0
-      })
-    }
-
-    const grupo = mapa.get(chave)
-    grupo.contas.push(conta)
-    grupo.totalPrevisto += Number(conta.valor || 0)
-  })
-
-  return Array.from(mapa.values())
 }
 
 function ordenarContasParaListagem(contas, ordenacao, filtroStatus, estaVencida) {
@@ -250,8 +204,10 @@ export default function ContasPage({
   const [modoPagamento, setModoPagamento] = useState('baixa')
   const [contaDestacadaId, setContaDestacadaId] = useState('')
   const [mostrarExportacoes, setMostrarExportacoes] = useState(false)
-  const [gruposPeriodoAbertos, setGruposPeriodoAbertos] = useState({})
+  const [expansaoContas, setExpansaoContas] = useState({ anos: {}, meses: {} })
   const contaDestacadaRef = useRef(null)
+  const empresaVisualRef = useRef('')
+  const expansaoInicializadaRef = useRef(false)
   const contaAlvoAgendaId = agendaFocusTarget?.tipo === 'conta' ? agendaFocusTarget.id : ''
   const contaAlvoAgenda = useMemo(() => {
     if (!contaAlvoAgendaId) return null
@@ -265,24 +221,29 @@ export default function ContasPage({
     const jaEstaFiltrada = contasFiltradas.some((conta) => String(conta.id) === String(contaAlvoAgenda.id))
     return jaEstaFiltrada ? contasFiltradas : [contaAlvoAgenda, ...contasFiltradas]
   }, [contaAlvoAgenda, contasFiltradas, filtroStatus])
-  const contasOrdenadas = ordenarContasParaListagem(contasParaListagem, ordenacaoContas, filtroStatus, estaVencida)
-  const gruposPorPeriodo = useMemo(
-    () => agruparContasPorPeriodo(contasOrdenadas),
-    [contasOrdenadas]
+  const contasOrdenadas = useMemo(
+    () => ordenarContasParaListagem(contasParaListagem, ordenacaoContas, filtroStatus, estaVencida),
+    [contasParaListagem, ordenacaoContas, filtroStatus, estaVencida]
   )
-  const assinaturaGruposPeriodo = useMemo(
-    () => [
-      filtroStatus,
-      busca,
-      filtroFilial,
-      filtroCentro,
-      filtroMes,
-      dataInicial,
-      dataFinal,
-      gruposPorPeriodo.map((grupo) => grupo.chave).join(',')
-    ].join('|'),
-    [busca, dataFinal, dataInicial, filtroCentro, filtroFilial, filtroMes, filtroStatus, gruposPorPeriodo]
+  const gruposAnoMes = useMemo(
+    () => agruparContasPorAnoMes(contasOrdenadas, { dataReferencia: new Date(), estaVencida }),
+    [contasOrdenadas, estaVencida]
   )
+  const empresaVisual = useMemo(() => String(
+    contas.find((conta) => conta?.empresa_id)?.empresa_id
+      || contasFiltradas.find((conta) => conta?.empresa_id)?.empresa_id
+      || ''
+  ), [contas, contasFiltradas])
+  const localizacaoContaAlvo = useMemo(() => {
+    if (!contaAlvoAgendaId) return null
+    for (const grupoAno of gruposAnoMes) {
+      const grupoMes = grupoAno.meses.find((mes) => mes.contas.some(
+        (conta) => String(conta.id) === String(contaAlvoAgendaId)
+      ))
+      if (grupoMes) return { ano: grupoAno.chave, mes: grupoMes.chave }
+    }
+    return null
+  }, [contaAlvoAgendaId, gruposAnoMes])
   const statusAtualLabel = ABAS_STATUS_CONTAS.find((aba) => aba.valor === filtroStatus)?.label || filtroStatus
   const resumoResultadoFiltrado = useMemo(
     () => calcularResumoResultadoFiltrado(contasFiltradas),
@@ -317,15 +278,17 @@ export default function ContasPage({
     return registrarPagamentoParcial(contaEmPagamentoParcial.id, payload)
   }
 
-  function grupoPeriodoAberto(grupo) {
-    return gruposPeriodoAbertos[grupo.chave] === true
+  function alternarGrupoAno(chave) {
+    setExpansaoContas((atual) => ({
+      ...atual,
+      anos: { ...atual.anos, [chave]: atual.anos[chave] !== true }
+    }))
   }
 
-  function alternarGrupoPeriodo(grupo) {
-    const abertoAgora = grupoPeriodoAberto(grupo)
-    setGruposPeriodoAbertos((atuais) => ({
-      ...atuais,
-      [grupo.chave]: !abertoAgora
+  function alternarGrupoMes(chave) {
+    setExpansaoContas((atual) => ({
+      ...atual,
+      meses: { ...atual.meses, [chave]: atual.meses[chave] !== true }
     }))
   }
 
@@ -334,6 +297,12 @@ export default function ContasPage({
 
     setMostrarContas(true)
     setContaDestacadaId(String(contaAlvoAgendaId))
+    if (localizacaoContaAlvo) {
+      setExpansaoContas((atual) => ({
+        anos: { ...atual.anos, [localizacaoContaAlvo.ano]: true },
+        meses: { ...atual.meses, [localizacaoContaAlvo.mes]: true }
+      }))
+    }
 
     const scrollTimer = window.setTimeout(() => {
       contaDestacadaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -348,11 +317,28 @@ export default function ContasPage({
       window.clearTimeout(scrollTimer)
       window.clearTimeout(clearTimer)
     }
-  }, [contaAlvoAgendaId, setMostrarContas, onAgendaFocusHandled])
+  }, [contaAlvoAgendaId, localizacaoContaAlvo, setMostrarContas, onAgendaFocusHandled])
 
   useEffect(() => {
-    setGruposPeriodoAbertos({})
-  }, [assinaturaGruposPeriodo])
+    if (!empresaVisual) return
+
+    if (empresaVisualRef.current !== empresaVisual) {
+      empresaVisualRef.current = empresaVisual
+      expansaoInicializadaRef.current = gruposAnoMes.length > 0
+      setExpansaoContas(gruposAnoMes.length > 0
+        ? criarEstadoExpansaoPadrao(gruposAnoMes)
+        : { anos: {}, meses: {} })
+      return
+    }
+
+    if (!expansaoInicializadaRef.current && gruposAnoMes.length > 0) {
+      expansaoInicializadaRef.current = true
+      setExpansaoContas(criarEstadoExpansaoPadrao(gruposAnoMes))
+      return
+    }
+
+    setExpansaoContas((atual) => reconciliarEstadoExpansao(atual, gruposAnoMes))
+  }, [empresaVisual, gruposAnoMes])
 
   function renderContaCard(conta) {
     const destacadaPelaAgenda = String(conta.id) === String(contaDestacadaId)
@@ -686,37 +672,86 @@ export default function ContasPage({
           />
         )}
 
-        {!loading && mostrarContas && gruposPorPeriodo.map((grupo) => {
-          const aberto = grupoPeriodoAberto(grupo)
-          const textoAlternar = aberto ? 'Recolher grupo' : 'Expandir grupo'
-          const contasVisiveis = grupo.contas
+        {!loading && mostrarContas && (
+          <div className="contas-hierarchy">
+            {gruposAnoMes.map((grupoAno) => {
+              const anoAberto = expansaoContas.anos[grupoAno.chave] === true
+              const anoConteudoId = `contas-ano-${grupoAno.chave}`
 
-          return (
-            <section className="accounts-period-group" key={grupo.chave}>
-              <div className="accounts-period-header">
-                <div className="accounts-period-copy">
-                  <strong>{grupo.rotulo}</strong>
-                  <span>{grupo.contas.length} conta(s) - {formatarValor(grupo.totalPrevisto)}</span>
-                </div>
-                <button
-                  type="button"
-                  className="accounts-period-toggle"
-                  onClick={() => alternarGrupoPeriodo(grupo)}
-                  aria-expanded={aberto}
-                  aria-label={`${textoAlternar}: ${grupo.rotulo}`}
-                  title={textoAlternar}
+              return (
+                <section
+                  className={`contas-hierarchy-year${grupoAno.periodo === 'atual' ? ' is-current' : ''}`}
+                  key={grupoAno.chave}
                 >
-                  {aberto ? '\u2212' : '+'}
-                </button>
-              </div>
-              {aberto && (
-                <div className="accounts-period-list">
-                  {contasVisiveis.map((conta) => renderContaCard(conta))}
-                </div>
-              )}
-            </section>
-          )
-        })}
+                  <button
+                    type="button"
+                    className="contas-hierarchy-year-toggle"
+                    onClick={() => alternarGrupoAno(grupoAno.chave)}
+                    aria-expanded={anoAberto}
+                    aria-controls={anoConteudoId}
+                  >
+                    <span className="contas-hierarchy-heading-copy">
+                      <strong>{grupoAno.rotulo}</strong>
+                      <span className="contas-hierarchy-summary">
+                        <span>{grupoAno.totalContas} conta(s)</span>
+                        <span>{formatarValor(grupoAno.valorTotal)}</span>
+                        <span>{grupoAno.abertas} aberta(s)</span>
+                        <span>{grupoAno.vencidas} vencida(s)</span>
+                      </span>
+                    </span>
+                    <span className="contas-hierarchy-indicator" aria-hidden="true">
+                      {anoAberto ? '\u2212' : '+'}
+                    </span>
+                  </button>
+
+                  {anoAberto && (
+                    <div className="contas-hierarchy-year-content" id={anoConteudoId}>
+                      {grupoAno.meses.map((grupoMes) => {
+                        const mesAberto = expansaoContas.meses[grupoMes.chave] === true
+                        const mesConteudoId = `contas-mes-${grupoMes.chave}`
+
+                        return (
+                          <section
+                            className={`contas-hierarchy-month${grupoMes.periodo === 'atual' ? ' is-current' : ''}`}
+                            key={grupoMes.chave}
+                          >
+                            <button
+                              type="button"
+                              className="contas-hierarchy-month-toggle"
+                              onClick={() => alternarGrupoMes(grupoMes.chave)}
+                              aria-expanded={mesAberto}
+                              aria-controls={mesConteudoId}
+                            >
+                              <span className="contas-hierarchy-heading-copy">
+                                <strong>{grupoMes.rotulo}</strong>
+                                <span className="contas-hierarchy-summary">
+                                  <span>{grupoMes.totalContas} conta(s)</span>
+                                  <span>{formatarValor(grupoMes.valorTotal)}</span>
+                                  <span>{grupoMes.abertas} aberta(s)</span>
+                                  <span>{grupoMes.vencidas} vencida(s)</span>
+                                  <span>{grupoMes.pagas} paga(s)</span>
+                                </span>
+                              </span>
+                              <span className="contas-hierarchy-indicator" aria-hidden="true">
+                                {mesAberto ? '\u2212' : '+'}
+                              </span>
+                            </button>
+
+                            {mesAberto && (
+                              <div className="contas-hierarchy-month-content" id={mesConteudoId}>
+                                {grupoMes.contas.map((conta) => renderContaCard(conta))}
+                              </div>
+                            )}
+                          </section>
+                        )
+                      })}
+                    </div>
+                  )}
+                </section>
+              )
+            })}
+          </div>
+        )}
       </section>
 
       </>

@@ -690,17 +690,24 @@ export default function ContasPage({
                     aria-expanded={anoAberto}
                     aria-controls={anoConteudoId}
                   >
+                    <span className="contas-hierarchy-chevron-slot" aria-hidden="true">
+                      <span className="contas-hierarchy-chevron">›</span>
+                    </span>
                     <span className="contas-hierarchy-heading-copy">
-                      <strong>{grupoAno.rotulo}</strong>
-                      <span className="contas-hierarchy-summary">
+                      <span className="contas-hierarchy-title-line">
+                        <strong>{grupoAno.rotulo}</strong>
+                        {grupoAno.periodo === 'atual' && (
+                          <span className="contas-hierarchy-current-label">Ano atual</span>
+                        )}
+                      </span>
+                      <span className="contas-hierarchy-primary-summary">
                         <span>{grupoAno.totalContas} conta(s)</span>
                         <span>{formatarValor(grupoAno.valorTotal)}</span>
+                      </span>
+                      <span className="contas-hierarchy-secondary-summary">
                         <span>{grupoAno.abertas} aberta(s)</span>
                         <span>{grupoAno.vencidas} vencida(s)</span>
                       </span>
-                    </span>
-                    <span className="contas-hierarchy-indicator" aria-hidden="true">
-                      {anoAberto ? '\u2212' : '+'}
                     </span>
                   </button>
 
@@ -722,18 +729,25 @@ export default function ContasPage({
                               aria-expanded={mesAberto}
                               aria-controls={mesConteudoId}
                             >
+                              <span className="contas-hierarchy-chevron-slot" aria-hidden="true">
+                                <span className="contas-hierarchy-chevron">›</span>
+                              </span>
                               <span className="contas-hierarchy-heading-copy">
-                                <strong>{grupoMes.rotulo}</strong>
-                                <span className="contas-hierarchy-summary">
+                                <span className="contas-hierarchy-title-line">
+                                  <strong>{grupoMes.rotulo}</strong>
+                                  {grupoMes.periodo === 'atual' && (
+                                    <span className="contas-hierarchy-current-label">Mês atual</span>
+                                  )}
+                                </span>
+                                <span className="contas-hierarchy-primary-summary">
                                   <span>{grupoMes.totalContas} conta(s)</span>
                                   <span>{formatarValor(grupoMes.valorTotal)}</span>
+                                </span>
+                                <span className="contas-hierarchy-secondary-summary">
                                   <span>{grupoMes.abertas} aberta(s)</span>
                                   <span>{grupoMes.vencidas} vencida(s)</span>
                                   <span>{grupoMes.pagas} paga(s)</span>
                                 </span>
-                              </span>
-                              <span className="contas-hierarchy-indicator" aria-hidden="true">
-                                {mesAberto ? '\u2212' : '+'}
                               </span>
                             </button>
 

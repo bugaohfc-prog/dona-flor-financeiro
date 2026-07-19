@@ -19,14 +19,12 @@
 
 .contas-hierarchy-year-toggle,
 .contas-hierarchy-month-toggle {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  position: relative;
+  display: block;
   width: 100%;
   min-height: 52px;
-  align-items: center;
-  gap: 8px;
   box-sizing: border-box;
-  padding: 9px 12px;
+  padding: 9px 56px 9px 12px;
   border: 0;
   border-radius: inherit;
   background: transparent;
@@ -51,6 +49,7 @@
 .contas-hierarchy-heading-copy {
   display: flex;
   flex-wrap: wrap;
+  width: 100%;
   min-width: 0;
   align-items: center;
   gap: 4px 14px;
@@ -136,12 +135,14 @@
 
 .contas-hierarchy-expand-control {
   display: inline-grid;
+  position: absolute;
+  top: 50%;
+  right: 12px;
   width: 32px;
   height: 32px;
   flex: 0 0 32px;
   align-items: center;
   justify-content: center;
-  align-self: center;
   border: 1px solid color-mix(in srgb, var(--df-color-brand) 22%, var(--df-color-border));
   border-radius: var(--df-radius-pill);
   background: var(--df-color-brand-soft);
@@ -149,6 +150,7 @@
   font-size: 18px;
   font-weight: 900;
   line-height: 1;
+  transform: translateY(-50%);
 }
 
 .contas-hierarchy-year-content {
@@ -171,10 +173,11 @@
 
 .contas-hierarchy-month-toggle {
   min-height: 46px;
-  padding: 7px 10px;
+  padding: 7px 48px 7px 10px;
 }
 
 .contas-hierarchy-month-toggle .contas-hierarchy-expand-control {
+  right: 10px;
   width: 28px;
   height: 28px;
   flex-basis: 28px;
@@ -203,10 +206,8 @@
 
   .contas-hierarchy-year-toggle,
   .contas-hierarchy-month-toggle {
-    grid-template-columns: minmax(0, 1fr) auto;
     min-height: 52px;
-    gap: 8px;
-    padding: 10px;
+    padding: 10px 54px 10px 10px;
   }
 
   .contas-hierarchy-heading-copy {
@@ -220,8 +221,16 @@
     text-align: left;
   }
 
-  .contas-hierarchy-expand-control {
-    align-self: center;
+  .contas-hierarchy-month-toggle {
+    padding-right: 46px;
+  }
+
+  .contas-hierarchy-year-toggle > .contas-hierarchy-expand-control {
+    right: 10px;
+  }
+
+  .contas-hierarchy-month-toggle > .contas-hierarchy-expand-control {
+    right: 9px;
   }
 
   .contas-hierarchy-year-content {

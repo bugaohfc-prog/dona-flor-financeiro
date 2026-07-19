@@ -297,48 +297,52 @@ export function useContas() {
     return validarFilialDaEmpresa(supabase, filialId, empresaId)
   }
 
-  async function atualizarPlanejamentoRecorrencias(contexto) {
+  async function prepararPlanejamentoRecorrencias(contexto, opcoes = {}) {
     const {
-      supabase, empresaAtual, motivo, buscarContas, mostrarAviso,
-      configWhatsapp, configEmail, configPush, diasAlertaContas, diasAvisoPadrao
+      supabase, empresaAtual, configWhatsapp, configEmail, configPush, diasAlertaContas, diasAvisoPadrao
     } = contexto
-    if (!empresaAtual || empresaAtivaRef.current !== empresaAtual) return { ignorado: true }
-    const existente = planejamentoRecorrenciasEmAndamentoRef.current
-    if (existente?.empresaId === empresaAtual) return existente.promise
-    const operacao = controlePlanejamentoRef.current.iniciar(empresaAtual)
-
-    const executar = async () => {
-      const horizonte = calcularHorizonteRecorrencias(new Date(), 90)
-      const inicio = horizonte.inicio.toISOString().slice(0, 10)
-      const fim = horizonte.fim.toISOString().slice(0, 10)
-      let inconsistencias = []
-      const carregarBase = async () => {
-        const [respostaSeries, respostaContas] = await Promise.all([
-          listarRecorrencias(supabase, empresaAtual),
-          listarContasHorizonteRecorrencias(supabase, empresaAtual, inicio, fim)
-        ])
-        if (respostaSeries.error) throw respostaSeries.error
-        if (respostaContas.error) throw respostaContas.error
-        return { series: respostaSeries.data || [], contas: respostaContas.data || [] }
+    if (!empresaAtual) throw new Error('Empresa nao identificada para o planejamento.')
+    const dataBase = opcoes.dataBase || new Date()
+    const horizonte = calcularHorizonteRecorrencias(dataBase, 90)
+    const inicio = horizonte.inicio.toISOString().slice(0, 10)
+    const fim = horizonte.fim.toISOString().slice(0, 10)
+    const [respostaSeries, respostaContas] = await Promise.all([
+      listarRecorrencias(supabase, empresaAtual),
+      listarContasHorizonteRecorrencias(supabase, empresaAtual, inicio, fim)
+    ])
+    if (respostaSeries.error) throw respostaSeries.error
+    if (respostaContas.error) throw respostaContas.error
+    const plano = planejarContasRecorrentes({
+      dataBase,
+      diasMinimos: 90,
+      seriesRecorrentes: respostaSeries.data || [],
+      contasExistentes: respostaContas.data || []
+    })
+    const centrosIds = Array.from(new Set(plano.ocorrencias.map(({ recorrencia }) => recorrencia.centro_custo_id).filter(Boolean)))
+    const filiaisIds = Array.from(new Set(plano.ocorrencias.map(({ recorrencia }) => recorrencia.filial_id).filter(Boolean)))
+    const [centros, filiais] = await Promise.all([
+      listarCentrosCustoValidosPorIds(supabase, empresaAtual, centrosIds),
+      listarFiliaisValidasPorIds(supabase, empresaAtual, filiaisIds)
+    ])
+    if (centros.error) throw centros.error
+    if (filiais.error) throw filiais.error
+    const centrosValidos = new Set((centros.data || []).map(({ id }) => id))
+    const filiaisValidas = new Set((filiais.data || []).map(({ id }) => id))
+    const inconsistencias = [...plano.inconsistencias]
+    const registrarInconsistencia = (tipo, recorrenciaId) => {
+      if (!inconsistencias.some((item) => item.tipo === tipo && item.recorrenciaId === recorrenciaId)) {
+        inconsistencias.push({ tipo, recorrenciaId })
       }
-      const montarPayloads = async (base) => {
-        const plano = planejarContasRecorrentes({
-          dataBase: new Date(), diasMinimos: 90,
-          seriesRecorrentes: base.series, contasExistentes: base.contas
-        })
-        inconsistencias = plano.inconsistencias
-        const centrosIds = Array.from(new Set(plano.ocorrencias.map(({ recorrencia }) => recorrencia.centro_custo_id).filter(Boolean)))
-        const filiaisIds = Array.from(new Set(plano.ocorrencias.map(({ recorrencia }) => recorrencia.filial_id).filter(Boolean)))
-        const [centros, filiais] = await Promise.all([
-          listarCentrosCustoValidosPorIds(supabase, empresaAtual, centrosIds),
-          listarFiliaisValidasPorIds(supabase, empresaAtual, filiaisIds)
-        ])
-        if (centros.error) throw centros.error
-        if (filiais.error) throw filiais.error
-        const centrosValidos = new Set((centros.data || []).map(({ id }) => id))
-        const filiaisValidas = new Set((filiais.data || []).map(({ id }) => id))
-        return plano.ocorrencias.map(({ identidade, recorrencia, dataVencimento, impostoTipo, competencia }) => ({
-          identidade,
+    }
+    const payloads = plano.ocorrencias.map((ocorrencia) => {
+      const { identidade, recorrencia, dataVencimento, impostoTipo, competencia } = ocorrencia
+      if (recorrencia.centro_custo_id && !centrosValidos.has(recorrencia.centro_custo_id)) registrarInconsistencia('centro_custo_invalido', recorrencia.id)
+      if (recorrencia.filial_id && !filiaisValidas.has(recorrencia.filial_id)) registrarInconsistencia('filial_invalida', recorrencia.id)
+      return {
+        identidade,
+        recorrencia,
+        dataVencimento,
+        conta: {
           empresa_id: empresaAtual,
           descricao: recorrencia.descricao,
           valor: Number(recorrencia.valor || 0),
@@ -356,21 +360,87 @@ export function useContas() {
           enviar_email: configEmail,
           enviar_push: configPush,
           dias_aviso: Number(diasAlertaContas || diasAvisoPadrao || 1)
-        }))
+        }
       }
-      let base = await carregarBase()
+    })
+    return {
+      horizonte,
+      ocorrencias: plano.ocorrencias,
+      payloads,
+      inconsistencias,
+      resumo: resumirPlanejamentoRecorrencias(plano.ocorrencias, horizonte, inconsistencias)
+    }
+  }
+
+  async function simularPlanejamentoRecorrencias(contexto) {
+    const empresaAtual = contexto?.empresaAtual || contexto?.empresaId
+    if (!empresaAtual || empresaAtivaRef.current !== empresaAtual) {
+      return { erro: new Error('Empresa nao identificada para a simulacao.'), horizonte: null, ocorrencias: [], inconsistencias: [], resumo: null }
+    }
+    try {
+      const preparacao = await prepararPlanejamentoRecorrencias({ ...contexto, empresaAtual })
+      return { erro: null, ...preparacao }
+    } catch (erro) {
+      return { erro, horizonte: null, ocorrencias: [], payloads: [], inconsistencias: [], resumo: null }
+    }
+  }
+
+  async function atualizarPlanejamentoRecorrencias(contexto) {
+    const { supabase, empresaAtual, motivo, buscarContas, mostrarAviso } = contexto
+    if (!empresaAtual || empresaAtivaRef.current !== empresaAtual) return { ignorado: true }
+    const existente = planejamentoRecorrenciasEmAndamentoRef.current
+    if (existente?.empresaId === empresaAtual) {
+      if (motivo === 'planejamento_manual' && existente.motivo !== 'planejamento_manual') {
+        await existente.promise
+        if (planejamentoRecorrenciasEmAndamentoRef.current === existente) planejamentoRecorrenciasEmAndamentoRef.current = null
+        return atualizarPlanejamentoRecorrencias(contexto)
+      }
+      return existente.promise
+    }
+    const operacao = controlePlanejamentoRef.current.iniciar(empresaAtual)
+    const executar = async () => {
+      const dataBaseExecucao = new Date()
+      let preparacao = await prepararPlanejamentoRecorrencias(contexto, { dataBase: dataBaseExecucao })
+      const resumoPlanejado = preparacao.resumo
       const resultado = await executarPlanejamentoRecorrencias({
         motivo,
-        planejar: () => montarPayloads(base),
-        inserir: (itens) => criarContasEmLote(supabase, itens.map(({ identidade, ...conta }) => conta)),
-        reconciliar: async () => { base = await carregarBase(); return montarPayloads(base) }
+        planejar: () => preparacao.payloads,
+        inserir: (itens) => criarContasEmLote(supabase, itens.map((item) => item.conta)),
+        reconciliar: async () => {
+          preparacao = await prepararPlanejamentoRecorrencias(contexto, { dataBase: dataBaseExecucao })
+          return preparacao.payloads
+        }
       })
-      resultado.inconsistencias = inconsistencias
+      resultado.inconsistencias = preparacao.inconsistencias
+      resultado.horizonte = preparacao.horizonte
+      resultado.resumo = resumoPlanejado
+      if (motivo === 'planejamento_manual' && !resultado.erro) {
+        await registrarEventoAuditoriaSeguro(supabase, {
+          empresa_id: empresaAtual,
+          acao: 'financeiro.recorrencias.planejamento_90_dias',
+          entidade_tipo: 'df_empresas',
+          entidade_id: empresaAtual,
+          modulo: 'financeiro',
+          origem: 'app',
+          severidade: resultado.parcial ? 'atencao' : 'info',
+          status: 'sucesso',
+          dados_depois: {
+            data_inicial: resumoPlanejado?.periodoInicio,
+            data_final: resumoPlanejado?.periodoFim,
+            quantidade_planejada: resumoPlanejado?.total || 0,
+            quantidade_criada: resultado.criadas.length,
+            quantidade_ja_existente: resultado.jaExistentes.length,
+            quantidade_variavel: resumoPlanejado?.quantidadeVariavel || 0,
+            valor_base_total: resumoPlanejado?.valorBaseTotal || 0,
+            resultado: resultado.parcial ? 'parcial' : 'completo'
+          }
+        }, 'planejamento manual de recorrencias')
+      }
       if (controlePlanejamentoRef.current.estaAtual(operacao) && empresaAtivaRef.current === empresaAtual) {
-        if (resultado.erro) {
+        if (resultado.erro && motivo !== 'planejamento_manual') {
           console.warn('Planejamento de recorrencias indisponivel:', resultado.erro?.message || resultado.erro)
           mostrarAviso?.('As contas foram carregadas, mas o planejamento recorrente nao foi atualizado.', 'aviso')
-        } else if (resultado.parcial) {
+        } else if (resultado.parcial && motivo !== 'planejamento_manual') {
           mostrarAviso?.('Planejamento recorrente reconciliado parcialmente. As contas existentes foram preservadas.', 'aviso')
         }
         await buscarContas(empresaAtual, { silencioso: true, permitirGerarRecorrencias: false })
@@ -378,20 +448,25 @@ export function useContas() {
       return resultado
     }
     const promise = executar().catch(async (erro) => {
-      const resultado = { erro, parcial: true, criadas: [], jaExistentes: [], ignoradas: [], inconsistencias: [] }
+      const resultado = { erro, parcial: true, criadas: [], jaExistentes: [], ignoradas: [], inconsistencias: [], horizonte: null, resumo: null }
       if (controlePlanejamentoRef.current.estaAtual(operacao) && empresaAtivaRef.current === empresaAtual) {
         console.warn('Planejamento de recorrencias indisponivel:', erro?.message || erro)
-        mostrarAviso?.('As contas foram carregadas, mas o planejamento recorrente nao foi atualizado.', 'aviso')
+        if (motivo !== 'planejamento_manual') mostrarAviso?.('As contas foram carregadas, mas o planejamento recorrente nao foi atualizado.', 'aviso')
         await buscarContas(empresaAtual, { silencioso: true, permitirGerarRecorrencias: false })
       }
       return resultado
     })
-    planejamentoRecorrenciasEmAndamentoRef.current = { empresaId: empresaAtual, promise }
+    planejamentoRecorrenciasEmAndamentoRef.current = { empresaId: empresaAtual, motivo, promise }
     try {
       return await promise
     } finally {
       if (planejamentoRecorrenciasEmAndamentoRef.current?.promise === promise) planejamentoRecorrenciasEmAndamentoRef.current = null
     }
+  }
+
+  async function executarPlanejamentoRecorrenciasManual(contexto) {
+    const empresaAtual = contexto?.empresaAtual || contexto?.empresaId
+    return atualizarPlanejamentoRecorrencias({ ...contexto, empresaAtual, motivo: 'planejamento_manual' })
   }
 
   async function enriquecerContasComPagamentosParciais(supabase, empresaId, contasReferencia) {

@@ -1,7 +1,7 @@
 import { montarDataRecorrente } from './recorrencia.js'
 
 const DIAS_HORIZONTE_PADRAO = 90
-const MOTIVOS_AUTORIZADOS = new Set(['criacao', 'atualizacao', 'reativacao'])
+const MOTIVOS_AUTORIZADOS = new Set(['criacao', 'atualizacao', 'reativacao', 'planejamento_manual'])
 export const INDICE_RECORRENCIA_ATIVA = 'uq_df_contas_recorrencia_vencimento_ativas'
 
 function dataLocalSegura(valor) {
@@ -47,20 +47,17 @@ function obterMetadadosFiscais(referencia, dataVencimento, inconsistencias, reco
 }
 
 export function calcularHorizonteRecorrencias(dataBase = new Date(), diasMinimos = DIAS_HORIZONTE_PADRAO) {
-  const base = dataLocalSegura(dataBase)
-  if (!base) return { inicio: null, fim: null, meses: [], chavesMeses: [] }
+  const inicio = dataLocalSegura(dataBase)
+  if (!inicio) return { inicio: null, fim: null, meses: [], chavesMeses: [] }
   const dias = Math.max(DIAS_HORIZONTE_PADRAO, Number(diasMinimos) || DIAS_HORIZONTE_PADRAO)
-  const limite = new Date(base)
-  limite.setDate(limite.getDate() + dias)
-  const inicio = new Date(base.getFullYear(), base.getMonth(), 1)
-  const fim = new Date(limite.getFullYear(), limite.getMonth() + 1, 0)
+  const fim = new Date(inicio)
+  fim.setDate(fim.getDate() + dias)
   const meses = []
-  for (let cursor = new Date(inicio); cursor <= fim; cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1)) {
+  for (let cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1); cursor <= fim; cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1)) {
     meses.push({ ano: cursor.getFullYear(), mes: cursor.getMonth() + 1, chave: chaveMes(cursor) })
   }
   return { inicio, fim, meses, chavesMeses: meses.map((mes) => mes.chave) }
 }
-
 export function planejarContasRecorrentes({ dataBase = new Date(), diasMinimos = DIAS_HORIZONTE_PADRAO, seriesRecorrentes = [], contasExistentes = [] } = {}) {
   const horizonte = calcularHorizonteRecorrencias(dataBase, diasMinimos)
   const identidadesExistentes = new Set((contasExistentes || [])
@@ -77,7 +74,7 @@ export function planejarContasRecorrentes({ dataBase = new Date(), diasMinimos =
     for (const mes of horizonte.meses) {
       const dataVencimento = montarDataRecorrente(mes.ano, mes.mes, recorrencia.dia_vencimento)
       const vencimento = dataLocalSegura(dataVencimento)
-      if (!vencimento || (inicioSerie && vencimento < inicioSerie)) continue
+      if (!vencimento || vencimento < horizonte.inicio || vencimento > horizonte.fim || (inicioSerie && vencimento < inicioSerie)) continue
       const identidade = `${recorrencia.id}|${dataVencimento}`
       if (identidadesExistentes.has(identidade)) continue
       identidadesExistentes.add(identidade)
@@ -86,6 +83,39 @@ export function planejarContasRecorrentes({ dataBase = new Date(), diasMinimos =
     }
   }
   return { horizonte, ocorrencias, inconsistencias }
+}
+
+export function resumirPlanejamentoRecorrencias(ocorrencias = [], horizonte = {}, inconsistencias = []) {
+  let valorBaseCentavos = 0
+  let quantidadeVariavel = 0
+  const meses = new Map()
+  for (const ocorrencia of ocorrencias || []) {
+    const recorrencia = ocorrencia?.recorrencia || ocorrencia || {}
+    const centavosCalculados = Math.round((Number(recorrencia.valor || ocorrencia?.valor || 0) + Number.EPSILON) * 100)
+    const centavos = Number.isFinite(centavosCalculados) ? centavosCalculados : 0
+    const variavel = recorrencia.valor_variavel === true
+    const chave = String(ocorrencia?.dataVencimento || ocorrencia?.data_vencimento || '').slice(0, 7)
+    valorBaseCentavos += centavos
+    if (variavel) quantidadeVariavel += 1
+    if (chave) {
+      const atual = meses.get(chave) || { mes: chave, total: 0, valorBaseCentavos: 0 }
+      atual.total += 1
+      atual.valorBaseCentavos += centavos
+      meses.set(chave, atual)
+    }
+  }
+  const formatarData = (data) => data ? [data.getFullYear(), String(data.getMonth() + 1).padStart(2, '0'), String(data.getDate()).padStart(2, '0')].join('-') : null
+  return {
+    total: (ocorrencias || []).length,
+    quantidadeFixa: (ocorrencias || []).length - quantidadeVariavel,
+    quantidadeVariavel,
+    valorBaseCentavos,
+    valorBaseTotal: valorBaseCentavos / 100,
+    porMes: Array.from(meses.values()).sort((a, b) => a.mes.localeCompare(b.mes)).map((item) => ({ ...item, valorBaseTotal: item.valorBaseCentavos / 100 })),
+    periodoInicio: formatarData(horizonte?.inicio),
+    periodoFim: formatarData(horizonte?.fim),
+    inconsistencias: [...(inconsistencias || [])]
+  }
 }
 
 export function ehConflitoRecorrenciaAtiva(erro) {

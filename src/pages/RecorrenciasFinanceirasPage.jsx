@@ -70,10 +70,17 @@ export default function RecorrenciasFinanceirasPage({
   navegarPara,
   abrirConfirmacao,
   desativarSerieRecorrente,
-  reativarSerieRecorrente
+  reativarSerieRecorrente,
+  simularPlanejamentoRecorrencias,
+  executarPlanejamentoRecorrenciasManual
 }) {
   const [filtroSeriesRecorrentes, setFiltroSeriesRecorrentes] = useState('ativas')
   const [buscaSeriesRecorrentes, setBuscaSeriesRecorrentes] = useState('')
+  const [simulandoPlanejamento, setSimulandoPlanejamento] = useState(false)
+  const [gerandoPlanejamento, setGerandoPlanejamento] = useState(false)
+  const [simulacaoPlanejamento, setSimulacaoPlanejamento] = useState(null)
+  const [autorizouPlanejamento, setAutorizouPlanejamento] = useState(false)
+  const [mensagemPlanejamento, setMensagemPlanejamento] = useState('')
 
   const contasPorRecorrencia = useMemo(() => {
     return (contas || []).reduce((mapa, conta) => {
@@ -133,6 +140,58 @@ export default function RecorrenciasFinanceirasPage({
 
   const seriesRecorrentesVisiveis = seriesRecorrentesFiltradas
 
+  async function simularPlanejamento({ preservarMensagem = false, permitirDuranteGeracao = false } = {}) {
+    if (simulandoPlanejamento || (gerandoPlanejamento && !permitirDuranteGeracao)) return null
+    setSimulandoPlanejamento(true)
+    setAutorizouPlanejamento(false)
+    if (!preservarMensagem) setMensagemPlanejamento('')
+    try {
+      const resultado = await simularPlanejamentoRecorrencias?.()
+      if (resultado?.erro) {
+        setMensagemPlanejamento('Não foi possível simular o planejamento. Tente novamente.')
+        return resultado
+      }
+      setSimulacaoPlanejamento(resultado)
+      return resultado
+    } finally {
+      setSimulandoPlanejamento(false)
+    }
+  }
+
+  async function executarGeracaoConfirmada() {
+    if (gerandoPlanejamento || !autorizouPlanejamento) return
+    setGerandoPlanejamento(true)
+    setMensagemPlanejamento('')
+    try {
+      const resultado = await executarPlanejamentoRecorrenciasManual?.()
+      if (resultado?.erro) {
+        setMensagemPlanejamento('Não foi possível concluir o planejamento. A simulação foi preservada para nova tentativa.')
+        return
+      }
+      if (resultado?.parcial) {
+        setMensagemPlanejamento('Planejamento concluído parcialmente. As contas existentes foram preservadas.')
+      } else {
+        setMensagemPlanejamento('Planejamento concluído: ' + (resultado?.criadas?.length || 0) + ' conta(s) criada(s) e ' + (resultado?.jaExistentes?.length || 0) + ' já existente(s).')
+      }
+      setAutorizouPlanejamento(false)
+      await simularPlanejamento({ preservarMensagem: true, permitirDuranteGeracao: true })
+    } finally {
+      setGerandoPlanejamento(false)
+    }
+  }
+
+  function confirmarGeracaoPlanejamento() {
+    const resumo = simulacaoPlanejamento?.resumo
+    if (!resumo?.total || !autorizouPlanejamento || gerandoPlanejamento) return
+    abrirConfirmacao?.({
+      titulo: 'Confirmar geração do planejamento',
+      mensagem: 'Criar ' + resumo.total + ' conta(s) entre ' + formatarData(resumo.periodoInicio) + ' e ' + formatarData(resumo.periodoFim) + '? ' + resumo.quantidadeVariavel + ' conta(s) possuem valor variável. Valor-base estimado: ' + formatarValor(resumo.valorBaseTotal) + '.',
+      textoConfirmar: 'Confirmar geração',
+      tipo: 'aviso',
+      acao: executarGeracaoConfirmada
+    })
+  }
+
   function confirmarDesativacaoSerie(serie) {
     if (!serie?.id) return
 
@@ -171,6 +230,84 @@ export default function RecorrenciasFinanceirasPage({
           </button>
         </div>
       </div>
+
+      <section className="content-block accounts-planning-section" style={styles.bloco} aria-labelledby="planejamento-90-dias-titulo">
+        <div className="accounts-list-header">
+          <div className="accounts-list-title">
+            <span className="accounts-kicker">Planejamento seguro</span>
+            <strong id="planejamento-90-dias-titulo">Planejamento de 90 dias</strong>
+            <small>Simule as contas recorrentes faltantes antes de gerar o planejamento.</small>
+          </div>
+          <button
+            type="button"
+            className="accounts-planning-simulate"
+            disabled={simulandoPlanejamento || gerandoPlanejamento}
+            onClick={() => simularPlanejamento()}
+          >
+            {simulandoPlanejamento ? 'Simulando...' : 'Simular 90 dias'}
+          </button>
+        </div>
+
+        {simulacaoPlanejamento?.resumo && (
+          <div className="accounts-planning-result" aria-live="polite">
+            {simulacaoPlanejamento.resumo.total === 0 ? (
+              <div className="accounts-recurring-info">Planejamento atualizado. Não há contas recorrentes faltantes nos próximos 90 dias.</div>
+            ) : (
+              <>
+                <div className="accounts-planning-summary">
+                  <span><b>Período</b>{formatarData(simulacaoPlanejamento.resumo.periodoInicio)} a {formatarData(simulacaoPlanejamento.resumo.periodoFim)}</span>
+                  <span><b>Faltantes</b>{simulacaoPlanejamento.resumo.total}</span>
+                  <span><b>Valor fixo</b>{simulacaoPlanejamento.resumo.quantidadeFixa}</span>
+                  <span><b>Valor variável</b>{simulacaoPlanejamento.resumo.quantidadeVariavel}</span>
+                  <span><b>Valor-base</b>{formatarValor(simulacaoPlanejamento.resumo.valorBaseTotal)}</span>
+                </div>
+                {simulacaoPlanejamento.resumo.quantidadeVariavel > 0 && (
+                  <div className="accounts-recurring-warning">Contas de valor variável usarão o valor-base da recorrência e deverão ser revisadas antes do pagamento.</div>
+                )}
+                <div className="accounts-planning-months" aria-label="Resumo mensal do planejamento">
+                  {simulacaoPlanejamento.resumo.porMes.map((mes) => (
+                    <span key={mes.mes}><b>{mes.mes}</b>{mes.total} conta(s) · {formatarValor(mes.valorBaseTotal)}</span>
+                  ))}
+                </div>
+                {simulacaoPlanejamento.inconsistencias?.length > 0 && (
+                  <div className="accounts-recurring-warning">{simulacaoPlanejamento.inconsistencias.length} inconsistência(s) exigem revisão.</div>
+                )}
+                <div className="accounts-planning-sample">
+                  <strong>Amostra das primeiras contas</strong>
+                  <ul>
+                    {simulacaoPlanejamento.ocorrencias.slice(0, 10).map((item) => (
+                      <li key={item.identidade}>
+                        <span>{item.recorrencia.descricao || 'Sem descrição'}</span>
+                        <span>{formatarData(item.dataVencimento)}</span>
+                        <span>{formatarValor(Number(item.recorrencia.valor || 0))}</span>
+                        <span>{item.recorrencia.valor_variavel === true ? 'Variável' : 'Fixa'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <label className="accounts-planning-authorization">
+                  <input
+                    type="checkbox"
+                    checked={autorizouPlanejamento}
+                    disabled={gerandoPlanejamento}
+                    onChange={(event) => setAutorizouPlanejamento(event.target.checked)}
+                  />
+                  <span>Revisei a simulação e autorizo a criação das contas faltantes.</span>
+                </label>
+                <button
+                  type="button"
+                  className="accounts-planning-generate"
+                  disabled={!autorizouPlanejamento || gerandoPlanejamento}
+                  onClick={confirmarGeracaoPlanejamento}
+                >
+                  {gerandoPlanejamento ? 'Gerando planejamento...' : 'Gerar ' + simulacaoPlanejamento.resumo.total + ' contas'}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+        {mensagemPlanejamento && <div className="accounts-planning-message" role="status">{mensagemPlanejamento}</div>}
+      </section>
 
       <section className="content-block accounts-recurring-section recurring-page-section" style={styles.bloco}>
         <div className="accounts-list-header">

@@ -6,7 +6,8 @@ import {
   criarControleOperacao,
   executarCarregamentoContas,
   executarPlanejamentoRecorrencias,
-  planejarContasRecorrentes
+  planejarContasRecorrentes,
+  resumirPlanejamentoRecorrencias
 } from './recorrenciaPlanejamento.js'
 
 const serie = (sobrescritas = {}) => ({
@@ -78,10 +79,11 @@ test('controle ignora atualizaÃ§Ã£o apÃ³s desmontagem', () => {
   assert.equal(controle.estaAtual(operacao), false)
 })
 
-test('horizonte mÃ­nimo cobre noventa dias atÃ© o fim do mÃªs', () => {
-  const horizonte = calcularHorizonteRecorrencias('2026-07-15', 90)
+test('data-base 2026-07-19 define horizonte inclusivo ate 2026-10-17', () => {
+  const horizonte = calcularHorizonteRecorrencias('2026-07-19', 90)
   assert.deepEqual(horizonte.chavesMeses, ['2026-07', '2026-08', '2026-09', '2026-10'])
-  assert.equal(horizonte.fim.toISOString().slice(0, 10), '2026-10-31')
+  assert.equal(horizonte.inicio.toISOString().slice(0, 10), '2026-07-19')
+  assert.equal(horizonte.fim.toISOString().slice(0, 10), '2026-10-17')
 })
 
 test('contas existentes nÃ£o sÃ£o planejadas novamente', () => {
@@ -156,4 +158,60 @@ test('desmontagem impede finalizacao tardia do loading', () => {
   const operacao = controle.iniciar(true)
   controle.desmontar()
   assert.equal(controle.finalizar(operacao), false)
+})
+
+
+test('limites do horizonte excluem 18 de julho e 18 de outubro', () => {
+  const plano = planejarContasRecorrentes({ dataBase: '2026-07-19', seriesRecorrentes: [serie({ dia_vencimento: 18 })] })
+  assert.equal(plano.ocorrencias.some((item) => item.dataVencimento === '2026-07-18'), false)
+  assert.equal(plano.ocorrencias.some((item) => item.dataVencimento === '2026-10-18'), false)
+})
+
+test('limites do horizonte incluem 19 de julho e 17 de outubro', () => {
+  const dia19 = planejarContasRecorrentes({ dataBase: '2026-07-19', seriesRecorrentes: [serie({ dia_vencimento: 19 })] })
+  const dia17 = planejarContasRecorrentes({ dataBase: '2026-07-19', seriesRecorrentes: [serie({ id: 'serie-17', dia_vencimento: 17 })] })
+  assert.equal(dia19.ocorrencias.some((item) => item.dataVencimento === '2026-07-19'), true)
+  assert.equal(dia17.ocorrencias.some((item) => item.dataVencimento === '2026-10-17'), true)
+})
+
+test('serie iniciada depois do horizonte nao e planejada', () => {
+  const plano = planejarContasRecorrentes({ dataBase: '2026-07-19', seriesRecorrentes: [serie({ data_inicio: '2026-10-18' })] })
+  assert.equal(plano.ocorrencias.length, 0)
+})
+
+test('series inativas e nao mensais sao ignoradas', () => {
+  const plano = planejarContasRecorrentes({ dataBase: '2026-07-19', seriesRecorrentes: [serie({ id: 'inativa', ativo: false }), serie({ id: 'semanal', tipo_recorrencia: 'semanal' })] })
+  assert.equal(plano.ocorrencias.length, 0)
+})
+
+test('resumo conta valores fixos e variaveis com arredondamento em centavos', () => {
+  const horizonte = calcularHorizonteRecorrencias('2026-07-19', 90)
+  const ocorrencias = [
+    { dataVencimento: '2026-07-20', recorrencia: serie({ id: 'fixa', valor: 10.115, valor_variavel: false }) },
+    { dataVencimento: '2026-08-20', recorrencia: serie({ id: 'variavel', valor: 20.225, valor_variavel: true }) }
+  ]
+  const resumo = resumirPlanejamentoRecorrencias(ocorrencias, horizonte, [])
+  assert.equal(resumo.total, 2)
+  assert.equal(resumo.quantidadeFixa, 1)
+  assert.equal(resumo.quantidadeVariavel, 1)
+  assert.equal(resumo.valorBaseCentavos, 3035)
+  assert.deepEqual(resumo.porMes.map((item) => [item.mes, item.total]), [['2026-07', 1], ['2026-08', 1]])
+})
+
+test('motivo manual e aceito e motivo desconhecido e ignorado', async () => {
+  let chamadas = 0
+  await executarPlanejamentoRecorrencias({ motivo: 'planejamento_manual', planejar: async () => { chamadas += 1; return [] } })
+  const desconhecido = await executarPlanejamentoRecorrencias({ motivo: 'desconhecido', planejar: async () => { chamadas += 1; return [] } })
+  assert.equal(chamadas, 1)
+  assert.equal(desconhecido.ignorado, true)
+})
+
+test('execucao repetida permanece idempotente quando a segunda simulacao nao encontra faltantes', async () => {
+  let insercoes = 0
+  const planejada = { identidade: 'serie-1|2026-08-31' }
+  const primeira = await executarPlanejamentoRecorrencias({ motivo: 'planejamento_manual', planejar: async () => [planejada], inserir: async () => { insercoes += 1; return { data: [{ id: 'conta-1' }], error: null } }, reconciliar: async () => [] })
+  const segunda = await executarPlanejamentoRecorrencias({ motivo: 'planejamento_manual', planejar: async () => [], inserir: async () => { insercoes += 1; return { data: [], error: null } }, reconciliar: async () => [] })
+  assert.equal(primeira.criadas.length, 1)
+  assert.equal(segunda.criadas.length, 0)
+  assert.equal(insercoes, 1)
 })

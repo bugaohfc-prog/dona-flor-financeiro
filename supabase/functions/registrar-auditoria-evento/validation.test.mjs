@@ -26,6 +26,7 @@ test('ativa somente as acoes explicitamente aprovadas', () => {
   assert.equal(acaoEstaAtivada(ACAO_CONTA_ATUALIZADA), true)
   assert.equal(acaoEstaAtivada(ACAO_PAGAMENTO_PARCIAL_CRIADO), true)
   assert.equal(acaoEstaAtivada('financeiro.conta.baixada'), true)
+  assert.equal(acaoEstaAtivada('financeiro.recorrencias.planejamento_90_dias'), true)
   assert.equal(acaoEstaAtivada('administracao.usuario.perfil_alterado'), true)
   assert.equal(acaoEstaAtivada('rh.funcionario.atualizado'), true)
   assert.equal(acaoEstaAtivada('folha.item.criado'), true)

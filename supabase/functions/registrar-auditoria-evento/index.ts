@@ -60,6 +60,11 @@ const CAMPOS_IMPORTACAO = new Set([
   'aceitas', 'duplicadas', 'total', 'empresa_id', 'correlation_id'
 ])
 
+const CAMPOS_PLANEJAMENTO = new Set([
+  'data_inicial', 'data_final', 'quantidade_planejada', 'quantidade_criada',
+  'quantidade_ja_existente', 'quantidade_variavel', 'valor_base_total', 'resultado', 'correlation_id'
+])
+
 type DefinicaoAcao = {
   entidadeTipo: string
   tabela: string
@@ -74,6 +79,7 @@ const DEFINICOES_ACAO = new Map<string, DefinicaoAcao>([
   ['financeiro.conta.baixa_estornada', { entidadeTipo: ENTIDADE_CONTA, tabela: 'df_contas', modulo: 'financeiro', campos: CAMPOS_FINANCEIROS }],
   ['financeiro.pagamento_parcial.estornado', { entidadeTipo: ENTIDADE_PAGAMENTO, tabela: 'df_contas_pagamentos', modulo: 'financeiro', campos: CAMPOS_FINANCEIROS }],
   ['financeiro.importacao.contas_concluida', { entidadeTipo: 'df_empresas', tabela: 'df_empresas', modulo: 'financeiro', campos: CAMPOS_IMPORTACAO, exigeAdmin: true }],
+  ['financeiro.recorrencias.planejamento_90_dias', { entidadeTipo: 'df_empresas', tabela: 'df_empresas', modulo: 'financeiro', campos: CAMPOS_PLANEJAMENTO }],
   ['administracao.usuario.convite_criado', { entidadeTipo: 'df_usuarios_empresas', tabela: 'df_usuarios_empresas', modulo: 'usuarios', campos: CAMPOS_USUARIOS, exigeAdmin: true }],
   ['administracao.usuario.acesso_enviado', { entidadeTipo: 'df_usuarios_empresas', tabela: 'df_usuarios_empresas', modulo: 'usuarios', campos: CAMPOS_USUARIOS, exigeAdmin: true }],
   ['administracao.usuario.perfil_alterado', { entidadeTipo: 'df_usuarios_empresas', tabela: 'df_usuarios_empresas', modulo: 'usuarios', campos: CAMPOS_USUARIOS, exigeAdmin: true }],

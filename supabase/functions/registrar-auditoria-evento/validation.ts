@@ -9,7 +9,8 @@ export const ACOES_FINANCEIRAS_ADICIONAIS = [
   'financeiro.conta.pagamento_corrigido',
   'financeiro.conta.baixa_estornada',
   'financeiro.pagamento_parcial.estornado',
-  'financeiro.importacao.contas_concluida'
+  'financeiro.importacao.contas_concluida',
+  'financeiro.recorrencias.planejamento_90_dias'
 ] as const
 
 export const ACOES_USUARIOS = [

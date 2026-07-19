@@ -312,7 +312,9 @@ export default function App() {
     reexibirConta: reexibirContaHook,
     cancelarGrupoParcelamento: cancelarGrupoParcelamentoHook,
     desativarSerieRecorrente: desativarSerieRecorrenteHook,
-    reativarSerieRecorrente: reativarSerieRecorrenteHook
+    reativarSerieRecorrente: reativarSerieRecorrenteHook,
+    simularPlanejamentoRecorrencias: simularPlanejamentoRecorrenciasHook,
+    executarPlanejamentoRecorrenciasManual: executarPlanejamentoRecorrenciasManualHook
   } = useContas()
 
   // =========================
@@ -2087,6 +2089,37 @@ export default function App() {
   // =========================
   // BLOCO 8 — AÇÕES NOTAS
   // =========================
+  function contextoPlanejamentoManual() {
+    return {
+      supabase,
+      empresaId,
+      empresaAtual: empresaId,
+      buscarContas,
+      mostrarAviso,
+      configWhatsapp,
+      configEmail,
+      configPush,
+      diasAlertaContas,
+      diasAvisoPadrao
+    }
+  }
+
+  async function simularPlanejamentoRecorrencias() {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return { erro: new Error('Permissao financeira insuficiente.') }
+    }
+    return simularPlanejamentoRecorrenciasHook(contextoPlanejamentoManual())
+  }
+
+  async function executarPlanejamentoRecorrenciasManual() {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return { erro: new Error('Permissao financeira insuficiente.'), parcial: true, criadas: [], jaExistentes: [] }
+    }
+    return executarPlanejamentoRecorrenciasManualHook(contextoPlanejamentoManual())
+  }
+
   function abrirNovaNota() {
     if (!podeEditarFinanceiro()) {
       bloquearAcaoSemPermissao()
@@ -3705,6 +3738,8 @@ export default function App() {
           abrirConfirmacao={abrirConfirmacao}
           desativarSerieRecorrente={desativarSerieRecorrente}
           reativarSerieRecorrente={reativarSerieRecorrente}
+          simularPlanejamentoRecorrencias={simularPlanejamentoRecorrencias}
+          executarPlanejamentoRecorrenciasManual={executarPlanejamentoRecorrenciasManual}
         />
       </AppSuspenseBoundary>
     )

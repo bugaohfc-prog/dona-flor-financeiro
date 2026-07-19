@@ -4211,6 +4211,154 @@
   margin: 0 auto;
 }
 
+.accounts-planning-section {
+  display: grid;
+  gap: 14px;
+}
+
+.accounts-planning-section .accounts-list-header {
+  align-items: center;
+}
+
+.accounts-planning-simulate,
+.accounts-planning-generate {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #0f766e;
+  border-radius: 999px;
+  background: #0f766e;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.accounts-planning-simulate:disabled,
+.accounts-planning-generate:disabled {
+  opacity: .62;
+  cursor: not-allowed;
+}
+
+.accounts-planning-simulate:focus-visible,
+.accounts-planning-generate:focus-visible,
+.accounts-planning-authorization input:focus-visible {
+  outline: 3px solid rgba(20, 184, 166, .28);
+  outline-offset: 2px;
+}
+
+.accounts-planning-result {
+  display: grid;
+  gap: 12px;
+}
+
+.accounts-planning-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 10px;
+}
+
+.accounts-planning-summary span,
+.accounts-planning-months span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.accounts-planning-summary b,
+.accounts-planning-months b {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.accounts-planning-months {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 8px;
+}
+
+.accounts-planning-sample {
+  display: grid;
+  gap: 8px;
+}
+
+.accounts-planning-sample ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.accounts-planning-sample li {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) repeat(3, auto);
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 12px;
+}
+
+.accounts-planning-authorization {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.accounts-planning-authorization input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #0f766e;
+}
+
+.accounts-planning-generate {
+  justify-self: start;
+}
+
+.accounts-planning-message {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f0fdfa;
+  color: #0f766e;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .accounts-planning-section .accounts-list-header {
+    align-items: stretch;
+  }
+
+  .accounts-planning-simulate,
+  .accounts-planning-generate {
+    width: 100%;
+  }
+
+  .accounts-planning-sample li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .accounts-planning-sample li span:nth-child(3),
+  .accounts-planning-sample li span:nth-child(4) {
+    grid-column: span 1;
+  }
+}
+
 .tax-control-page {
   padding-bottom: 96px;
 }

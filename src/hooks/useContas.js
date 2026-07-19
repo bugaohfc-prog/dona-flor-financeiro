@@ -600,7 +600,8 @@ export function useContas() {
       limparEstadoAutenticacao,
       setUsuarioLogado,
       buscarContas,
-      fecharConta
+      fecharConta,
+      onContaSalva
     } = contexto
 
     if (!empresaId) {
@@ -718,6 +719,9 @@ export function useContas() {
         void atualizarPlanejamentoRecorrencias({ ...contexto, empresaAtual: empresaId, motivo: 'atualizacao' })
         fecharConta()
         await buscarContas()
+        if (editandoContaId) {
+          onContaSalva?.(editandoContaId)
+        }
         mostrarAviso('Serie recorrente atualizada com sucesso.', 'sucesso')
         return
       }
@@ -961,6 +965,10 @@ export function useContas() {
       void atualizarPlanejamentoRecorrencias({ ...contexto, empresaAtual: empresaId, motivo: motivoPlanejamento })
     }
     await buscarContas()
+    const contaSalvaId = editandoContaId || contaCriadaParaAuditoria?.id
+    if (contaSalvaId) {
+      onContaSalva?.(contaSalvaId)
+    }
     mostrarAviso(editandoContaId ? 'Conta atualizada com sucesso.' : 'Conta criada com sucesso.', 'sucesso')
   }
 

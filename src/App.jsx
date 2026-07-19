@@ -451,6 +451,7 @@ export default function App() {
   const [destinatarioEditandoId, setDestinatarioEditandoId] = useState('')
   const [formDestinatarioAlerta, setFormDestinatarioAlerta] = useState(DESTINATARIO_ALERTA_FORM_INICIAL)
   const [agendaFocusTarget, setAgendaFocusTarget] = useState(null)
+  const [contaFocusTarget, setContaFocusTarget] = useState(null)
   function mostrarAviso(mensagem, tipo = 'info') {
     showToast(mensagem, tipo)
   }
@@ -467,8 +468,13 @@ export default function App() {
 
   const navegarParaOrigemAgenda = useCallback((tipo, id) => {
     if (!tipo || !id) return
+    if (tipo === 'conta') {
+      setContaFocusTarget({ tipo: 'conta', id, origem: 'agenda', nonce: Date.now() })
+      navegarPara('contas')
+      return
+    }
     setAgendaFocusTarget({ tipo, id, nonce: Date.now() })
-    navegarPara(tipo === 'nota' ? 'notas' : 'contas')
+    navegarPara('notas')
   }, [navegarPara])
 
   function limparDadosTenant() {
@@ -1913,7 +1919,10 @@ export default function App() {
       limparEstadoAutenticacao,
       setUsuarioLogado,
       buscarContas,
-      fecharConta
+      fecharConta,
+      onContaSalva: (id) => {
+        if (id) setContaFocusTarget({ tipo: 'conta', id, origem: 'salvamento', nonce: Date.now() })
+      }
     })
   }
 
@@ -3647,8 +3656,12 @@ export default function App() {
         limitarDataInput={limitarDataInput}
         contas={contas}
         contasFiltradas={contasFiltradas}
-        agendaFocusTarget={agendaFocusTarget}
-        onAgendaFocusHandled={() => setAgendaFocusTarget(null)}
+        contaFocusTarget={contaFocusTarget}
+        onContaFocusHandled={() => setContaFocusTarget(null)}
+        onContaForaDoFiltro={() => mostrarAviso(
+          'Conta criada, mas não aparece no filtro atual. Consulte em Todas ou Abertas.',
+          'aviso'
+        )}
         total={total}
         formatarValor={formatarValor}
         loading={loading}

@@ -189,7 +189,7 @@ function EmptyState({ icon, title, description, actionLabel, onAction }) {
 export default function ContasPage({
   styles, busca, setBusca, mostrarFiltros, setMostrarFiltros, limparFiltros, imprimirPDF, exportarCSV, exportarExcel,
   filtroStatus, setFiltroStatus, centros, filtroCentro, setFiltroCentro, filiais, filtroFilial, setFiltroFilial, filtroMes, setFiltroMes,
-  dataInicial, setDataInicial, dataFinal, setDataFinal, limitarDataInput, contas = [], contasFiltradas, agendaFocusTarget, onAgendaFocusHandled, total, formatarValor,
+  dataInicial, setDataInicial, dataFinal, setDataFinal, limitarDataInput, contas = [], contasFiltradas, contaFocusTarget, onContaFocusHandled, onContaForaDoFiltro, total, formatarValor,
   loading, mostrarContas, setMostrarContas, estaVencida, formatarData, formatarTipoRecorrencia,
   obterTipoRecorrenciaConta, abrirConfirmacao, marcarComoPago, corrigirPagamento, voltarParaPendente, abrirEdicaoConta, excluirConta, ocultarConta, reexibirConta,
   registrarPagamentoParcial,
@@ -206,21 +206,27 @@ export default function ContasPage({
   const [mostrarExportacoes, setMostrarExportacoes] = useState(false)
   const [expansaoContas, setExpansaoContas] = useState({ anos: {}, meses: {} })
   const contaDestacadaRef = useRef(null)
+  const avisoContaForaDoFiltroRef = useRef(null)
   const empresaVisualRef = useRef('')
   const expansaoInicializadaRef = useRef(false)
-  const contaAlvoAgendaId = agendaFocusTarget?.tipo === 'conta' ? agendaFocusTarget.id : ''
-  const contaAlvoAgenda = useMemo(() => {
-    if (!contaAlvoAgendaId) return null
-    return contas.find((conta) => String(conta.id) === String(contaAlvoAgendaId))
-      || contasFiltradas.find((conta) => String(conta.id) === String(contaAlvoAgendaId))
+  const contaAlvoId = contaFocusTarget?.tipo === 'conta' ? contaFocusTarget.id : ''
+  const contaAlvo = useMemo(() => {
+    if (!contaAlvoId) return null
+    return contas.find((conta) => String(conta.id) === String(contaAlvoId))
+      || contasFiltradas.find((conta) => String(conta.id) === String(contaAlvoId))
       || null
-  }, [contaAlvoAgendaId, contas, contasFiltradas])
+  }, [contaAlvoId, contas, contasFiltradas])
+  const contaAlvoEstaFiltrada = useMemo(
+    () => Boolean(contaAlvoId) && contasFiltradas.some((conta) => String(conta.id) === String(contaAlvoId)),
+    [contaAlvoId, contasFiltradas]
+  )
   const contasParaListagem = useMemo(() => {
-    if (!contaAlvoAgenda) return contasFiltradas
-    if (contaAlvoAgenda.oculto === true && filtroStatus !== 'ocultas') return contasFiltradas
-    const jaEstaFiltrada = contasFiltradas.some((conta) => String(conta.id) === String(contaAlvoAgenda.id))
-    return jaEstaFiltrada ? contasFiltradas : [contaAlvoAgenda, ...contasFiltradas]
-  }, [contaAlvoAgenda, contasFiltradas, filtroStatus])
+    if (!contaAlvo) return contasFiltradas
+    if (contaAlvo.oculto === true && filtroStatus !== 'ocultas') return contasFiltradas
+    const jaEstaFiltrada = contasFiltradas.some((conta) => String(conta.id) === String(contaAlvo.id))
+    const podeIncluirForaDoFiltro = contaFocusTarget?.origem === 'agenda'
+    return jaEstaFiltrada || !podeIncluirForaDoFiltro ? contasFiltradas : [contaAlvo, ...contasFiltradas]
+  }, [contaAlvo, contaFocusTarget?.origem, contasFiltradas, filtroStatus])
   const contasOrdenadas = useMemo(
     () => ordenarContasParaListagem(contasParaListagem, ordenacaoContas, filtroStatus, estaVencida),
     [contasParaListagem, ordenacaoContas, filtroStatus, estaVencida]
@@ -235,15 +241,15 @@ export default function ContasPage({
       || ''
   ), [contas, contasFiltradas])
   const localizacaoContaAlvo = useMemo(() => {
-    if (!contaAlvoAgendaId) return null
+    if (!contaAlvoId) return null
     for (const grupoAno of gruposAnoMes) {
       const grupoMes = grupoAno.meses.find((mes) => mes.contas.some(
-        (conta) => String(conta.id) === String(contaAlvoAgendaId)
+        (conta) => String(conta.id) === String(contaAlvoId)
       ))
       if (grupoMes) return { ano: grupoAno.chave, mes: grupoMes.chave }
     }
     return null
-  }, [contaAlvoAgendaId, gruposAnoMes])
+  }, [contaAlvoId, gruposAnoMes])
   const statusAtualLabel = ABAS_STATUS_CONTAS.find((aba) => aba.valor === filtroStatus)?.label || filtroStatus
   const resumoResultadoFiltrado = useMemo(
     () => calcularResumoResultadoFiltrado(contasFiltradas),
@@ -293,10 +299,22 @@ export default function ContasPage({
   }
 
   useEffect(() => {
-    if (!contaAlvoAgendaId) return undefined
+    if (!contaAlvoId || !contaAlvo) return undefined
+
+    const salvamentoForaDoFiltro = contaFocusTarget?.origem === 'salvamento' && !contaAlvoEstaFiltrada
+    if (salvamentoForaDoFiltro) {
+      const chaveAviso = contaFocusTarget?.nonce ?? (String(contaFocusTarget?.origem) + ':' + String(contaAlvoId))
+      if (avisoContaForaDoFiltroRef.current !== chaveAviso) {
+        avisoContaForaDoFiltroRef.current = chaveAviso
+        onContaForaDoFiltro?.()
+      }
+      setContaDestacadaId('')
+      onContaFocusHandled?.()
+      return undefined
+    }
 
     setMostrarContas(true)
-    setContaDestacadaId(String(contaAlvoAgendaId))
+    setContaDestacadaId(String(contaAlvoId))
     if (localizacaoContaAlvo) {
       setExpansaoContas((atual) => ({
         anos: { ...atual.anos, [localizacaoContaAlvo.ano]: true },
@@ -310,14 +328,44 @@ export default function ContasPage({
 
     const clearTimer = window.setTimeout(() => {
       setContaDestacadaId('')
-      onAgendaFocusHandled?.()
+      onContaFocusHandled?.()
     }, 4500)
 
     return () => {
       window.clearTimeout(scrollTimer)
       window.clearTimeout(clearTimer)
     }
-  }, [contaAlvoAgendaId, localizacaoContaAlvo, setMostrarContas, onAgendaFocusHandled])
+  }, [
+    contaAlvoId,
+    contaAlvo,
+    contaAlvoEstaFiltrada,
+    contaFocusTarget?.nonce,
+    contaFocusTarget?.origem,
+    localizacaoContaAlvo,
+    setMostrarContas,
+    onContaFocusHandled,
+    onContaForaDoFiltro
+  ])
+
+  useEffect(() => {
+    const termoBusca = String(busca || '').trim()
+    if (!termoBusca || gruposAnoMes.length === 0) return
+
+    setMostrarContas(true)
+    setExpansaoContas((atual) => {
+      const anos = { ...atual.anos }
+      const meses = { ...atual.meses }
+
+      gruposAnoMes.forEach((grupoAno) => {
+        anos[grupoAno.chave] = true
+        grupoAno.meses.forEach((grupoMes) => {
+          meses[grupoMes.chave] = true
+        })
+      })
+
+      return { anos, meses }
+    })
+  }, [busca, gruposAnoMes, setMostrarContas])
 
   useEffect(() => {
     if (!empresaVisual) return
@@ -341,7 +389,7 @@ export default function ContasPage({
   }, [empresaVisual, gruposAnoMes])
 
   function renderContaCard(conta) {
-    const destacadaPelaAgenda = String(conta.id) === String(contaDestacadaId)
+    const destacadaPorFoco = String(conta.id) === String(contaDestacadaId)
     const vencida = estaVencida(conta.data_vencimento, conta.status)
     const recorrente = ehContaRecorrente(conta)
     const tipoRecorrencia = recorrente ? formatarTipoRecorrencia(obterTipoRecorrenciaConta(conta)) : ''
@@ -376,8 +424,8 @@ export default function ContasPage({
 
     return (
       <div
-        ref={destacadaPelaAgenda ? contaDestacadaRef : null}
-        className={`print-card account-card-desktop ${destacadaPelaAgenda ? 'account-card-agenda-focus' : ''} ${exibirBaixaReal ? 'account-card-payment-real' : ''} ${oculta ? 'account-card-hidden' : ''} ${vencida ? 'account-card-vencida' : conta.status === 'pago' ? 'account-card-paga' : 'account-card-pendente'}`}
+        ref={destacadaPorFoco ? contaDestacadaRef : null}
+        className={`print-card account-card-desktop ${destacadaPorFoco ? 'account-card-agenda-focus' : ''} ${exibirBaixaReal ? 'account-card-payment-real' : ''} ${oculta ? 'account-card-hidden' : ''} ${vencida ? 'account-card-vencida' : conta.status === 'pago' ? 'account-card-paga' : 'account-card-pendente'}`}
         key={conta.id}
         style={{
           ...styles.cardConta,

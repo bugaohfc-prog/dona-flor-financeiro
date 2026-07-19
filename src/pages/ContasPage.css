@@ -20,7 +20,7 @@
 .contas-hierarchy-year-toggle,
 .contas-hierarchy-month-toggle {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   width: 100%;
   min-height: 52px;
   align-items: center;
@@ -134,29 +134,21 @@
   color: var(--df-color-danger);
 }
 
-.contas-hierarchy-chevron-slot {
-  display: flex;
-  width: 24px;
-  height: 24px;
+.contas-hierarchy-expand-control {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
   align-items: center;
   justify-content: center;
   align-self: center;
-}
-
-.contas-hierarchy-chevron {
-  display: block;
+  border: 1px solid color-mix(in srgb, var(--df-color-brand) 22%, var(--df-color-border));
+  border-radius: var(--df-radius-pill);
+  background: var(--df-color-brand-soft);
   color: var(--df-color-brand);
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 900;
   line-height: 1;
-  transform: rotate(0deg);
-  transform-origin: center;
-  transition: transform 140ms ease;
-}
-
-.contas-hierarchy-year-toggle[aria-expanded="true"] .contas-hierarchy-chevron,
-.contas-hierarchy-month-toggle[aria-expanded="true"] .contas-hierarchy-chevron {
-  transform: rotate(90deg);
 }
 
 .contas-hierarchy-year-content {
@@ -182,6 +174,13 @@
   padding: 7px 10px;
 }
 
+.contas-hierarchy-month-toggle .contas-hierarchy-expand-control {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+  font-size: 17px;
+}
+
 .contas-hierarchy-month-toggle .contas-hierarchy-title-line > strong {
   font-size: 0.9rem;
   font-weight: 800;
@@ -204,7 +203,7 @@
 
   .contas-hierarchy-year-toggle,
   .contas-hierarchy-month-toggle {
-    grid-template-columns: 24px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
     min-height: 52px;
     gap: 8px;
     padding: 10px;
@@ -221,10 +220,8 @@
     text-align: left;
   }
 
-  .contas-hierarchy-chevron-slot {
-    width: 24px;
-    height: 24px;
-    align-self: start;
+  .contas-hierarchy-expand-control {
+    align-self: center;
   }
 
   .contas-hierarchy-year-content {
@@ -244,8 +241,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .contas-hierarchy-year-toggle,
-  .contas-hierarchy-month-toggle,
-  .contas-hierarchy-chevron {
+  .contas-hierarchy-month-toggle {
     transition: none;
   }
 }

@@ -689,10 +689,8 @@ export default function ContasPage({
                     onClick={() => alternarGrupoAno(grupoAno.chave)}
                     aria-expanded={anoAberto}
                     aria-controls={anoConteudoId}
+                    aria-label={`${anoAberto ? 'Recolher' : 'Expandir'} ${grupoAno.rotulo}`}
                   >
-                    <span className="contas-hierarchy-chevron-slot" aria-hidden="true">
-                      <span className="contas-hierarchy-chevron">›</span>
-                    </span>
                     <span className="contas-hierarchy-heading-copy">
                       <span className="contas-hierarchy-title-line">
                         <strong>{grupoAno.rotulo}</strong>
@@ -708,6 +706,9 @@ export default function ContasPage({
                         <span>{grupoAno.abertas} aberta(s)</span>
                         <span>{grupoAno.vencidas} vencida(s)</span>
                       </span>
+                    </span>
+                    <span className="contas-hierarchy-expand-control" aria-hidden="true">
+                      {anoAberto ? '−' : '+'}
                     </span>
                   </button>
 
@@ -728,10 +729,8 @@ export default function ContasPage({
                               onClick={() => alternarGrupoMes(grupoMes.chave)}
                               aria-expanded={mesAberto}
                               aria-controls={mesConteudoId}
+                              aria-label={`${mesAberto ? 'Recolher' : 'Expandir'} ${grupoMes.rotulo}`}
                             >
-                              <span className="contas-hierarchy-chevron-slot" aria-hidden="true">
-                                <span className="contas-hierarchy-chevron">›</span>
-                              </span>
                               <span className="contas-hierarchy-heading-copy">
                                 <span className="contas-hierarchy-title-line">
                                   <strong>{grupoMes.rotulo}</strong>
@@ -748,6 +747,9 @@ export default function ContasPage({
                                   <span>{grupoMes.vencidas} vencida(s)</span>
                                   <span>{grupoMes.pagas} paga(s)</span>
                                 </span>
+                              </span>
+                              <span className="contas-hierarchy-expand-control" aria-hidden="true">
+                                {mesAberto ? '−' : '+'}
                               </span>
                             </button>
 

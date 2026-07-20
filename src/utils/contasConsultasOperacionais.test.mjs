@@ -4,13 +4,19 @@ import { executarConsultaPaginada } from '../services/supabasePaginationService.
 import { criarControleOperacao } from './recorrenciaPlanejamento.js'
 import {
   calcularPeriodoPagas,
+  calcularResumoFinanceiroContas,
+  carregarFonteContextualContas,
   contaEstaAtiva,
   contasParaExportacao,
   deveConsultarSobDemanda,
   filtrarContasPorModo,
+  interpretarTermoBuscaContas,
+  invalidarConsultaContas,
   mesclarPaginaContas,
+  obterPeriodoConsultaPagas,
   restaurarModoAoLimparBusca,
-  selecionarFonteContas
+  selecionarFonteContas,
+  selecionarFonteContextualContas
 } from './contasConsultasOperacionais.js'
 
 function conta(id, status, data, extras = {}) {
@@ -99,4 +105,82 @@ test('exportacao usa somente resultado visivel', () => {
 test('carregamento inicial nao dispara consulta secundaria nem geracao recorrente', () => {
   assert.equal(deveConsultarSobDemanda({ modo: 'pendentes', termo: '' }), null)
   assert.deepEqual(mesclarPaginaContas([conta('1', 'pendente', '2026-08-01')], [conta('1', 'pendente', '2026-08-01')]), [conta('1', 'pendente', '2026-08-01')])
+})
+test('consumidores legados recebem fonte contextual, nao a operacional', () => {
+  const operacionais = [conta('aberta', 'pendente', '2026-07-20')]
+  const contextuais = [...operacionais, conta('paga', 'pago', '2026-07-10')]
+  assert.deepEqual(selecionarFonteContextualContas({ consumidor: 'agenda', operacionais, contextuais }), operacionais)
+  for (const consumidor of ['dashboard', 'relatorios-contas', 'controle-impostos', 'recorrencias', 'copilot']) {
+    assert.deepEqual(selecionarFonteContextualContas({ consumidor, operacionais, contextuais }), contextuais)
+  }
+})
+
+test('dashboard calcula Pago pela fonte contextual completa', () => {
+  const contextuais = [
+    conta('aberta', 'pendente', '2026-07-20', { valor: 100 }),
+    conta('paga', 'pago', '2026-07-10', { valor: 80, valor_pago: 75 })
+  ]
+  const resumo = calcularResumoFinanceiroContas(contextuais, '2026-07-19')
+  assert.equal(resumo.pago, 75)
+  assert.equal(resumo.pendente, 100)
+  assert.equal(resumo.total, 180)
+})
+
+test('relatorio e impostos carregam historico pago somente sob demanda', async () => {
+  let chamadas = 0
+  const carregar = async () => {
+    chamadas += 1
+    return { data: [conta('paga', 'pago', '2026-07-10')], error: null }
+  }
+  assert.deepEqual(await carregarFonteContextualContas('contas', carregar), { carregada: false, data: [] })
+  assert.equal(chamadas, 0)
+  for (const consumidor of ['relatorios-contas', 'controle-impostos']) {
+    const resposta = await carregarFonteContextualContas(consumidor, carregar)
+    assert.equal(resposta.carregada, true)
+    assert.equal(resposta.data[0].status, 'pago')
+  }
+  assert.equal(chamadas, 2)
+})
+
+test('busca normaliza valores brasileiros e decimais', () => {
+  assert.equal(interpretarTermoBuscaContas('99,90').valor, 99.9)
+  assert.equal(interpretarTermoBuscaContas('99.90').valor, 99.9)
+  assert.equal(interpretarTermoBuscaContas('1.299,90').valor, 1299.9)
+  assert.equal(interpretarTermoBuscaContas('R$ 1.299,90').valor, 1299.9)
+})
+
+test('busca normaliza datas brasileira e ISO', () => {
+  assert.equal(interpretarTermoBuscaContas('19/07/2026').data, '2026-07-19')
+  assert.equal(interpretarTermoBuscaContas('2026-07-19').data, '2026-07-19')
+  assert.equal(interpretarTermoBuscaContas('julho').data, null)
+})
+
+test('limpar busca invalida resposta que ja estava em andamento', () => {
+  const controle = criarControleOperacao()
+  const antiga = controle.iniciar('busca:energia')
+  invalidarConsultaContas(controle)
+  assert.equal(controle.estaAtual(antiga), false)
+})
+
+test('periodo de Pagas nao usa datas dos filtros gerais', () => {
+  const periodo = obterPeriodoConsultaPagas({
+    periodoPagas: 'intervalo',
+    dataInicialPagas: '2026-01-01',
+    dataFinalPagas: '2026-01-31',
+    dataInicial: '2024-01-01',
+    dataFinal: '2024-12-31',
+    dataReferencia: '2026-07-19T12:00:00'
+  })
+  assert.equal(periodo.dataInicial, '2026-01-01')
+  assert.equal(periodo.dataFinal, '2026-01-31')
+})
+
+test('orquestracao contextual nao dispara recorrencias', async () => {
+  let geracoes = 0
+  const resposta = await carregarFonteContextualContas('dashboard', async () => ({
+    data: [conta('paga', 'pago', '2026-07-10')],
+    error: null
+  }))
+  assert.equal(resposta.carregada, true)
+  assert.equal(geracoes, 0)
 })

@@ -6,6 +6,7 @@ import {
 } from './supabaseQueryService'
 import { assertEmpresaId } from './tenantService'
 import { executarConsultaPaginada } from './supabasePaginationService.js'
+import { interpretarTermoBuscaContas } from '../utils/contasConsultasOperacionais.js'
 
 export const STATUS_OPERACIONAL_PAGAMENTO_PARCIAL = Object.freeze({
   ABERTA: 'aberta',
@@ -79,6 +80,15 @@ export async function listarContasOperacionais(supabase, empresaId) {
   ), { tamanhoPagina: TAMANHO_PAGINA_CONTAS })
 }
 
+export async function listarContasContextuais(supabase, empresaId) {
+  assertEmpresaId(empresaId)
+  return executarConsultaPaginada(() => ordenarContasEstavelmente(
+    aplicarFiltrosContaAtiva(
+      selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTA_LISTAGEM)
+    )
+  ), { tamanhoPagina: TAMANHO_PAGINA_CONTAS })
+}
+
 export async function listarContasPagas(supabase, empresaId, opcoes = {}) {
   assertEmpresaId(empresaId)
   const pagina = Math.max(0, Number(opcoes.pagina) || 0)
@@ -107,28 +117,22 @@ export async function listarContasOcultas(supabase, empresaId, opcoes = {}) {
   return query.range(pagina * tamanhoPagina, ((pagina + 1) * tamanhoPagina) - 1)
 }
 
-function escaparTermoPostgrest(valor) {
-  return String(valor || '').trim().replace(/[,%()]/g, ' ')
-}
-
 export async function buscarContasHistorico(supabase, empresaId, termo, opcoes = {}) {
   assertEmpresaId(empresaId)
   const pagina = Math.max(0, Number(opcoes.pagina) || 0)
   const tamanhoPagina = Math.max(1, Number(opcoes.tamanhoPagina) || 100)
-  const termoSeguro = escaparTermoPostgrest(termo)
+  const { termoTexto: termoSeguro, valor: numero, data } = interpretarTermoBuscaContas(termo)
   if (!termoSeguro) return { data: [], error: null }
 
   let query = aplicarFiltrosContaAtiva(
     selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTA_LISTAGEM),
     { incluirOcultas: opcoes.incluirOcultas === true }
   )
-  if (opcoes.incluirOcultas !== true) query = query.or('oculto.is.null,oculto.eq.false')
   if (opcoes.status === 'pagas') query = query.eq('status', 'pago')
   if (opcoes.status === 'abertas') query = query.neq('status', 'pago')
   if (opcoes.status === 'vencidas') query = query.neq('status', 'pago').lt('data_vencimento', opcoes.hoje)
   if (opcoes.status === 'futuras') query = query.neq('status', 'pago').gt('data_vencimento', opcoes.hoje)
 
-  const numero = Number(String(termoSeguro).replace(/\./g, '').replace(',', '.'))
   const [respostaCentros, respostaFiliais] = await Promise.all([
     selecionarPorEmpresa(supabase, 'df_centros_custo', empresaId, 'id').ilike('nome', `%${termoSeguro}%`).limit(20),
     selecionarPorEmpresa(supabase, 'df_filiais', empresaId, 'id').ilike('nome', `%${termoSeguro}%`).limit(20)
@@ -141,7 +145,8 @@ export async function buscarContasHistorico(supabase, empresaId, termo, opcoes =
   const filiaisIds = (respostaFiliais.data || []).map((item) => item.id).filter(Boolean)
   if (centrosIds.length) filtros.push(`centro_custo_id.in.(${centrosIds.join(',')})`)
   if (filiaisIds.length) filtros.push(`filial_id.in.(${filiaisIds.join(',')})`)
-  if (Number.isFinite(numero)) filtros.push(`valor.eq.${numero}`)
+  if (numero !== null) filtros.push(`valor.eq.${numero}`)
+  if (data) filtros.push(`data_vencimento.eq.${data}`)
   query = query.or(filtros.join(','))
   query = ordenarContasEstavelmente(query, false)
   return query.range(pagina * tamanhoPagina, ((pagina + 1) * tamanhoPagina) - 1)

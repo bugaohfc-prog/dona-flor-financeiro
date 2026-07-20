@@ -16,7 +16,8 @@ import {
   cancelarGrupoParcelamento as cancelarGrupoParcelamentoService,
   desativarRecorrencia,
   enviarContaParaLixeira,
-  listarContasAtivas,
+  listarContasOperacionais,
+  listarContasContextuais,
   listarContasPagas,
   listarContasOcultas,
   buscarContasHistorico,
@@ -50,6 +51,7 @@ import {
   planejarContasRecorrentes
 } from '../utils/recorrenciaPlanejamento.js'
 import { mensagemSeguraErro } from '../utils/session'
+import { invalidarConsultaContas } from '../utils/contasConsultasOperacionais.js'
 
 const CENTRO_CUSTO_INVALIDO_MENSAGEM = 'Centro de custo indisponível. Atualize a página ou selecione outro centro de custo.'
 
@@ -122,7 +124,11 @@ function montarParcelasConta({ payloadBase, valorTotal, parcelasTotal, primeiroV
 }
 
 export function useContas() {
-  const [contas, setContas] = useState([])
+  const [contasOperacionais, setContasOperacionais] = useState([])
+  const [contasContextuais, setContasContextuais] = useState([])
+  const [loadingContasContextuais, setLoadingContasContextuais] = useState(false)
+  const [contasContextuaisCarregadas, setContasContextuaisCarregadas] = useState(false)
+  const [erroContasContextuais, setErroContasContextuais] = useState(null)
   const [contasPagas, setContasPagas] = useState([])
   const [contasOcultas, setContasOcultas] = useState([])
   const [resultadosBuscaContas, setResultadosBuscaContas] = useState([])
@@ -134,6 +140,8 @@ export function useContas() {
   const [filtroStatus, setFiltroStatus] = useState('pendentes')
   const [periodoPagas, setPeriodoPagas] = useState('mes_atual')
   const [anoPagas, setAnoPagas] = useState(String(new Date().getFullYear()))
+  const [dataInicialPagas, setDataInicialPagas] = useState('')
+  const [dataFinalPagas, setDataFinalPagas] = useState('')
   const [filtroCentro, setFiltroCentro] = useState('')
   const [filtroFilial, setFiltroFilial] = useState('')
   const [filtroMes, setFiltroMes] = useState('')
@@ -148,17 +156,20 @@ export function useContas() {
   const controleLoadingRef = useRef(null)
   const controlePlanejamentoRef = useRef(null)
   const controleConsultaSecundariaRef = useRef(null)
+  const controleContasContextuaisRef = useRef(null)
   const empresaAtivaRef = useRef(null)
   if (!controleBuscaRef.current) controleBuscaRef.current = criarControleOperacao()
   if (!controleLoadingRef.current) controleLoadingRef.current = criarControleLoading()
   if (!controlePlanejamentoRef.current) controlePlanejamentoRef.current = criarControleOperacao()
   if (!controleConsultaSecundariaRef.current) controleConsultaSecundariaRef.current = criarControleOperacao()
+  if (!controleContasContextuaisRef.current) controleContasContextuaisRef.current = criarControleOperacao()
 
   useEffect(() => () => {
     controleBuscaRef.current?.desmontar()
     controleLoadingRef.current?.desmontar()
     controlePlanejamentoRef.current?.desmontar()
     controleConsultaSecundariaRef.current?.desmontar()
+    controleContasContextuaisRef.current?.desmontar()
     planejamentoRecorrenciasEmAndamentoRef.current = null
   }, [])
 
@@ -442,7 +453,10 @@ export function useContas() {
     const { supabase, empresaAtual, avisarErro, silencioso = false } = contexto
     if (!empresaAtual) return
 
-    if (empresaAtivaRef.current && empresaAtivaRef.current !== empresaAtual) limparConsultasSecundarias()
+    if (empresaAtivaRef.current && empresaAtivaRef.current !== empresaAtual) {
+      limparConsultasSecundarias()
+      limparContasContextuais()
+    }
     empresaAtivaRef.current = empresaAtual
     const operacao = controleBuscaRef.current.iniciar(empresaAtual)
     const operacaoLoading = controleLoadingRef.current.iniciar(!silencioso)
@@ -451,7 +465,7 @@ export function useContas() {
 
     try {
       const [{ data, error }, respostaRecorrencias] = await Promise.all([
-        listarContasAtivas(supabase, empresaAtual),
+        listarContasOperacionais(supabase, empresaAtual),
         listarRecorrencias(supabase, empresaAtual)
       ])
       if (error) {
@@ -463,11 +477,45 @@ export function useContas() {
       const contasEnriquecidas = await enriquecerContasComPagamentosParciais(supabase, empresaAtual, data || [])
       if (!estaAtual()) return { obsoleto: true }
       setSeriesRecorrentes(seriesAtuais)
-      setContas(contasEnriquecidas)
+      setContasOperacionais(contasEnriquecidas)
       return { contas: contasEnriquecidas, seriesRecorrentes: seriesAtuais }
     } finally {
       if (controleLoadingRef.current.finalizar(operacaoLoading)) setLoading(false)
     }
+  }
+
+  async function carregarContasContextuais({ supabase, empresaAtual, avisarErro }) {
+    if (!empresaAtual) return { data: [], error: null }
+    const operacao = controleContasContextuaisRef.current.iniciar(empresaAtual)
+    const estaAtual = () => controleContasContextuaisRef.current.estaAtual(operacao) && empresaAtivaRef.current === empresaAtual
+    if (estaAtual()) setLoadingContasContextuais(true)
+    if (estaAtual()) setErroContasContextuais(null)
+    try {
+      const resposta = await listarContasContextuais(supabase, empresaAtual)
+      if (!estaAtual()) return { obsoleto: true }
+      if (resposta.error) {
+        setContasContextuaisCarregadas(false)
+        setErroContasContextuais(resposta.error)
+        avisarErro?.(resposta.error)
+        return resposta
+      }
+      const enriquecidas = await enriquecerContasComPagamentosParciais(supabase, empresaAtual, resposta.data || [])
+      if (!estaAtual()) return { obsoleto: true }
+      setContasContextuais(enriquecidas)
+      setContasContextuaisCarregadas(true)
+      setErroContasContextuais(null)
+      return { data: enriquecidas, error: null }
+    } finally {
+      if (estaAtual()) setLoadingContasContextuais(false)
+    }
+  }
+
+  function limparContasContextuais() {
+    controleContasContextuaisRef.current.iniciar('__contexto_contas_invalidado__')
+    setContasContextuais([])
+    setContasContextuaisCarregadas(false)
+    setErroContasContextuais(null)
+    setLoadingContasContextuais(false)
   }
 
   async function executarConsultaSecundaria({ supabase, empresaAtual, tipo, pagina = 0, termo = '', status = 'todas', periodo = {}, avisarErro }) {
@@ -500,6 +548,8 @@ export function useContas() {
   }
 
   function limparConsultasSecundarias() {
+    invalidarConsultaContas(controleConsultaSecundariaRef.current)
+    setLoadingConsultaContas(false)
     setContasPagas([])
     setContasOcultas([])
     setResultadosBuscaContas([])
@@ -865,7 +915,7 @@ export function useContas() {
             }
 
             setRecorrenciaContaId(recorrenciaIdCriada)
-            setContas((listaAtual) => listaAtual.map((conta) =>
+            setContasOperacionais((listaAtual) => listaAtual.map((conta) =>
               conta.id === editandoContaId ? { ...conta, recorrencia_id: recorrenciaIdCriada } : conta
             ))
           }
@@ -1308,8 +1358,12 @@ export function useContas() {
   }
 
   return {
-    contas,
-    setContas,
+    contasOperacionais,
+    setContasOperacionais,
+    contasContextuais,
+    loadingContasContextuais,
+    contasContextuaisCarregadas,
+    erroContasContextuais,
     contasPagas,
     contasOcultas,
     resultadosBuscaContas,
@@ -1327,6 +1381,10 @@ export function useContas() {
     setPeriodoPagas,
     anoPagas,
     setAnoPagas,
+    dataInicialPagas,
+    setDataInicialPagas,
+    dataFinalPagas,
+    setDataFinalPagas,
     filtroCentro,
     setFiltroCentro,
     filtroFilial,
@@ -1395,6 +1453,8 @@ export function useContas() {
     alterarEscopoEdicaoRecorrencia,
     buscarContas,
     executarConsultaSecundaria,
+    carregarContasContextuais,
+    limparContasContextuais,
     limparConsultasSecundarias,
     abrirNovaConta,
     abrirEdicaoConta,

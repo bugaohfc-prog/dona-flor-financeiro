@@ -56,6 +56,97 @@ export function selecionarFonteContas({ operacionais = [], pagas = [], busca = [
   return operacionais
 }
 
+const CONSUMIDORES_HISTORICO_COMPLETO = new Set([
+  'dashboard',
+  'relatorios-contas',
+  'controle-impostos',
+  'recorrencias',
+  'copilot'
+])
+
+export function consumidorRequerHistoricoCompleto(consumidor) {
+  return CONSUMIDORES_HISTORICO_COMPLETO.has(String(consumidor || ''))
+}
+
+export async function carregarFonteContextualContas(consumidor, carregar) {
+  if (!consumidorRequerHistoricoCompleto(consumidor)) return { carregada: false, data: [] }
+  const resposta = await carregar()
+  return { carregada: true, ...resposta }
+}
+
+export function selecionarFonteContextualContas({ consumidor, operacionais = [], contextuais = [] } = {}) {
+  return consumidorRequerHistoricoCompleto(consumidor) ? contextuais : operacionais
+}
+
+export function calcularResumoFinanceiroContas(contas = [], hoje = formatarDataBancoLocal(new Date())) {
+  return contas.reduce((resumo, conta) => {
+    if (!contaEstaAtiva(conta) || conta?.oculto === true) return resumo
+    const valor = Number(conta?.valor || 0)
+    const pago = conta?.status === 'pago' ? Number(conta?.valor_pago ?? conta?.valor ?? 0) : 0
+    resumo.total += valor
+    resumo.pago += pago
+    if (conta?.status !== 'pago') resumo.pendente += valor
+    if (contaEstaVencida(conta, hoje)) resumo.vencido += valor
+    resumo.encargos += Number(conta?.juros_multa || 0)
+    resumo.descontos += Number(conta?.desconto || 0)
+    return resumo
+  }, { total: 0, pago: 0, pendente: 0, vencido: 0, encargos: 0, descontos: 0 })
+}
+
+export function normalizarValorBuscaContas(valor) {
+  const texto = String(valor || '')
+    .toLowerCase()
+    .replace(/r\$/g, '')
+    .replace(/\s/g, '')
+    .replace(/[^\d,.-]/g, '')
+  if (!/\d/.test(texto)) return null
+
+  const ultimaVirgula = texto.lastIndexOf(',')
+  const ultimoPonto = texto.lastIndexOf('.')
+  let normalizado = texto
+  if (ultimaVirgula >= 0 && ultimoPonto >= 0) {
+    normalizado = ultimaVirgula > ultimoPonto
+      ? texto.replace(/\./g, '').replace(',', '.')
+      : texto.replace(/,/g, '')
+  } else if (ultimaVirgula >= 0) {
+    normalizado = texto.replace(/\./g, '').replace(',', '.')
+  } else if (ultimoPonto >= 0) {
+    const casasDecimais = texto.length - ultimoPonto - 1
+    normalizado = casasDecimais === 2 ? texto : texto.replace(/\./g, '')
+  }
+
+  const numero = Number(normalizado)
+  return Number.isFinite(numero) && numero >= 0 ? numero : null
+}
+
+export function normalizarDataBuscaContas(valor) {
+  const texto = String(valor || '').trim()
+  const brasileira = texto.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  if (brasileira) return `${brasileira[3]}-${brasileira[2]}-${brasileira[1]}`
+  return /^\d{4}-\d{2}-\d{2}$/.test(texto) ? texto : null
+}
+
+export function interpretarTermoBuscaContas(valor) {
+  return {
+    termoTexto: String(valor || '').trim().replace(/[,%()]/g, ' '),
+    valor: normalizarValorBuscaContas(valor),
+    data: normalizarDataBuscaContas(valor)
+  }
+}
+
+export function obterPeriodoConsultaPagas({ periodoPagas, anoPagas, dataInicialPagas, dataFinalPagas, dataReferencia } = {}) {
+  return calcularPeriodoPagas(periodoPagas, {
+    ano: anoPagas,
+    dataInicial: dataInicialPagas,
+    dataFinal: dataFinalPagas,
+    dataReferencia
+  })
+}
+
+export function invalidarConsultaContas(controle) {
+  return controle?.iniciar('__consulta_contas_invalidada__')
+}
+
 export function mesclarPaginaContas(atuais = [], pagina = [], substituir = false) {
   if (substituir) return [...pagina]
   const ids = new Set(atuais.map((conta) => conta.id))

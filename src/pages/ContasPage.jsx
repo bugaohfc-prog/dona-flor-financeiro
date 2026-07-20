@@ -204,7 +204,7 @@ export default function ContasPage({
   estornarPagamentoParcial,
   baixarContaQuitadaPorParciais,
   navegarPara, podeEditarFinanceiro = true, podeExportarDados = true,
-  periodoPagas, setPeriodoPagas, anoPagas, setAnoPagas, loadingConsultaContas = false, haMaisContasConsulta = false, carregarMaisContas, modoBuscaGlobal = false
+  periodoPagas, setPeriodoPagas, anoPagas, setAnoPagas, dataInicialPagas, setDataInicialPagas, dataFinalPagas, setDataFinalPagas, loadingConsultaContas = false, haMaisContasConsulta = false, carregarMaisContas, modoBuscaGlobal = false
 }) {
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
   const [contaEmBaixa, setContaEmBaixa] = useState(null)
@@ -670,8 +670,8 @@ export default function ContasPage({
             )}
             {periodoPagas === 'intervalo' && (
               <>
-                <label><span>De</span><input type="date" value={dataInicial} onChange={(event) => setDataInicial(limitarDataInput(event.target.value))} /></label>
-                <label><span>Até</span><input type="date" value={dataFinal} onChange={(event) => setDataFinal(limitarDataInput(event.target.value))} /></label>
+                <label><span>De</span><input type="date" value={dataInicialPagas} onChange={(event) => setDataInicialPagas(limitarDataInput(event.target.value))} /></label>
+                <label><span>Até</span><input type="date" value={dataFinalPagas} onChange={(event) => setDataFinalPagas(limitarDataInput(event.target.value))} /></label>
               </>
             )}
           </div>

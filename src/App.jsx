@@ -42,7 +42,7 @@ import { converterValor, formatarData, formatarDataParaBanco, formatarValor, lim
 import { diferencaDias } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
 import { estaVencida, pegarMes } from './utils/contasStatus'
-import { calcularPeriodoPagas, formatarDataBancoLocal, selecionarFonteContas } from './utils/contasConsultasOperacionais.js'
+import { calcularResumoFinanceiroContas, carregarFonteContextualContas, formatarDataBancoLocal, obterPeriodoConsultaPagas, selecionarFonteContas } from './utils/contasConsultasOperacionais.js'
 import { atualizarListaLixeiraEstavel, diasNaLixeira, podeExcluirDefinitivo } from './utils/lixeira'
 import { erroEhSessaoExpirada, mensagemSeguraErro } from './utils/session'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
@@ -221,8 +221,12 @@ export default function App() {
   // BLOCO 1 — STATES CONTAS
   // =========================
   const {
-    contas,
-    setContas,
+    contasOperacionais,
+    setContasOperacionais,
+    contasContextuais,
+    loadingContasContextuais,
+    contasContextuaisCarregadas,
+    erroContasContextuais,
     contasPagas,
     contasOcultas,
     resultadosBuscaContas,
@@ -239,6 +243,10 @@ export default function App() {
     setPeriodoPagas,
     anoPagas,
     setAnoPagas,
+    dataInicialPagas,
+    setDataInicialPagas,
+    dataFinalPagas,
+    setDataFinalPagas,
     filtroCentro,
     setFiltroCentro,
     filtroFilial,
@@ -307,6 +315,8 @@ export default function App() {
     alterarEscopoEdicaoRecorrencia,
     buscarContas: buscarContasHook,
     executarConsultaSecundaria: executarConsultaSecundariaHook,
+    carregarContasContextuais: carregarContasContextuaisHook,
+    limparContasContextuais,
     limparConsultasSecundarias,
     abrirNovaConta: abrirNovaContaHook,
     abrirEdicaoConta: abrirEdicaoContaHook,
@@ -490,7 +500,8 @@ export default function App() {
   }, [navegarPara])
 
   function limparDadosTenant() {
-    setContas([])
+    setContasOperacionais([])
+    limparContasContextuais()
     limparConsultasSecundarias()
     setNotas([])
     setCentros([])
@@ -915,10 +926,10 @@ export default function App() {
 
   const configuracaoInicialCompleta = useMemo(() => {
     const filiaisAtivas = filiais.filter((filial) => filial?.ativo !== false)
-    const contasAtivas = contas.filter((conta) => conta?.excluido !== true)
+    const contasAtivas = contasOperacionais.filter((conta) => conta?.excluido !== true)
 
     return Boolean(empresaId && filiaisAtivas.length > 0 && centros.length > 0 && contasAtivas.length > 0)
-  }, [centros, contas, empresaId, filiais])
+  }, [centros, contasOperacionais, empresaId, filiais])
 
   useEffect(() => {
     if (!empresaSessaoInicializada || !usuarioLogado?.id || !podeAcessarConfiguracoes()) return
@@ -1510,8 +1521,21 @@ export default function App() {
     return resultado
   }
 
-  function obterPeriodoConsultaPagas() {
-    return calcularPeriodoPagas(periodoPagas, { ano: anoPagas, dataInicial, dataFinal })
+  async function carregarContasContextuais(empresaAtual = empresaId) {
+    return carregarContasContextuaisHook({
+      supabase,
+      empresaAtual,
+      avisarErro
+    })
+  }
+
+  function obterPeriodoPagasAtual() {
+    return obterPeriodoConsultaPagas({
+      periodoPagas,
+      anoPagas,
+      dataInicialPagas,
+      dataFinalPagas
+    })
   }
 
   async function consultarContasSecundarias(tipo, pagina = 0, termo = busca.trim(), status = filtroStatus) {
@@ -1522,7 +1546,7 @@ export default function App() {
       pagina,
       termo,
       status: status === 'pendentes' ? 'abertas' : status,
-      periodo: obterPeriodoConsultaPagas(),
+      periodo: obterPeriodoPagasAtual(),
       avisarErro
     })
   }
@@ -1733,7 +1757,12 @@ export default function App() {
     if (filtroStatus === 'pagas') void consultarContasSecundarias('pagas', 0)
     if (filtroStatus === 'ocultas') void consultarContasSecundarias('ocultas', 0)
     return undefined
-  }, [anoPagas, busca, dataFinal, dataInicial, empresaId, filtroStatus, periodoPagas, telaAtual])
+  }, [anoPagas, busca, dataFinalPagas, dataInicialPagas, empresaId, filtroStatus, periodoPagas, telaAtual])
+
+  useEffect(() => {
+    if (!empresaId) return
+    void carregarFonteContextualContas(telaAtual, () => carregarContasContextuais(empresaId))
+  }, [empresaId, telaAtual])
 
   function alterarBuscaContas(valor) {
     const tinhaBusca = Boolean(busca.trim())
@@ -1746,7 +1775,7 @@ export default function App() {
     }
   }
 
-  const fonteContasExibidas = selecionarFonteContas({ operacionais: contas, pagas: contasPagas, busca: resultadosBuscaContas, ocultas: contasOcultas, termo: termoBuscaContas, modo: filtroStatus })
+  const fonteContasExibidas = selecionarFonteContas({ operacionais: contasOperacionais, pagas: contasPagas, busca: resultadosBuscaContas, ocultas: contasOcultas, termo: termoBuscaContas, modo: filtroStatus })
 
   const valorBuscaContasCentavos = useMemo(() => normalizarValorBuscaContas(busca), [busca])
   const digitosBuscaValorContas = useMemo(() => normalizarDigitosValorBuscaContas(busca), [busca])
@@ -1798,7 +1827,7 @@ export default function App() {
         .some((campo) => String(campo).toLowerCase().includes(termoBuscaContas))
     }), [fonteContasExibidas, resultadosBuscaContas, dataFinal, dataInicial, filtroCentro, filtroFilial, filtroMes, filtroStatus, termoBuscaContas, valorBuscaContasCentavos, digitosBuscaValorContas])
 
-  const contasOperacionaisFiliais = useMemo(() => contas
+  const contasOperacionaisFiliais = useMemo(() => contasOperacionais
     .filter((conta) => {
       if (conta.oculto === true) return false
       if (filtroStatus === 'pendentes') return conta.status !== 'pago'
@@ -1841,7 +1870,7 @@ export default function App() {
       return camposBusca
         .filter(Boolean)
         .some((campo) => String(campo).toLowerCase().includes(termoBuscaContas))
-    }), [contas, dataFinal, dataInicial, filtroCentro, filtroMes, filtroStatus, termoBuscaContas, valorBuscaContasCentavos, digitosBuscaValorContas])
+    }), [contasOperacionais, dataFinal, dataInicial, filtroCentro, filtroMes, filtroStatus, termoBuscaContas, valorBuscaContasCentavos, digitosBuscaValorContas])
 
   const resumoFinanceiro = useMemo(() => {
     const obterValorRealizadoConta = (conta) => conta.status === 'pago'
@@ -1871,6 +1900,13 @@ export default function App() {
   }, [contasFiltradas])
 
   const { total, pago, vencido, pendente, encargos, descontos } = resumoFinanceiro
+
+  const contasContextuaisDashboard = useMemo(() => contasContextuais
+    .filter((conta) => !filtroFilial || conta.filial_id === filtroFilial), [contasContextuais, filtroFilial])
+  const resumoFinanceiroDashboard = useMemo(
+    () => calcularResumoFinanceiroContas(contasContextuaisDashboard),
+    [contasContextuaisDashboard]
+  )
 
   const resumoPorCentro = useMemo(() => centros
     .map((centro) => {
@@ -3561,12 +3597,17 @@ export default function App() {
     )
   }
 
+  function prepararCopilotFinanceiro() {
+    preloadRoute('copilotDrawer')
+    void carregarContasContextuais(empresaId)
+  }
+
   function renderCopilotFinanceiro() {
     if (!exibirAcoesRapidasFinanceiras) return null
 
     return (
       <>
-        <CopilotFloatingButton onPreload={() => preloadRoute('copilotDrawer')} />
+        <CopilotFloatingButton onPreload={prepararCopilotFinanceiro} />
         <CopilotDrawerBoundary />
       </>
     )
@@ -3574,7 +3615,7 @@ export default function App() {
 
   function renderAppFrame(children) {
     return (
-      <AppProviders contas={contas} contasFiltradas={contasFiltradas} navegarPara={navegarPara}>
+      <AppProviders contas={contasContextuais} contasFiltradas={contasContextuais} navegarPara={navegarPara}>
       <div className="app-page app-frame" style={styles.page}>
         <AppFrameStyles />
       <DesktopRefinementStyles />
@@ -3707,6 +3748,10 @@ export default function App() {
         setPeriodoPagas={setPeriodoPagas}
         anoPagas={anoPagas}
         setAnoPagas={setAnoPagas}
+        dataInicialPagas={dataInicialPagas}
+        setDataInicialPagas={setDataInicialPagas}
+        dataFinalPagas={dataFinalPagas}
+        setDataFinalPagas={setDataFinalPagas}
         loadingConsultaContas={loadingConsultaContas}
         haMaisContasConsulta={haMaisContasConsulta}
         carregarMaisContas={() => consultarContasSecundarias(busca.trim() ? 'busca' : filtroStatus, Math.floor(fonteContasExibidas.length / 100))}
@@ -3724,7 +3769,7 @@ export default function App() {
         dataFinal={dataFinal}
         setDataFinal={setDataFinal}
         limitarDataInput={limitarDataInput}
-        contas={contas}
+        contas={contasOperacionais}
         contasFiltradas={contasFiltradas}
         contaFocusTarget={contaFocusTarget}
         onContaFocusHandled={() => setContaFocusTarget(null)}
@@ -3764,7 +3809,7 @@ export default function App() {
       <AppSuspenseBoundary>
         <LazyRecorrenciasFinanceirasPage
           styles={styles}
-          contas={contas}
+          contas={contasContextuais}
           seriesRecorrentes={seriesRecorrentes}
           centros={centros}
           filiais={filiais}
@@ -3784,7 +3829,7 @@ export default function App() {
     return renderAppFrame(
       <AppSuspenseBoundary>
         <LazyControleImpostosPage
-          contas={contas}
+          contas={contasContextuais}
           centros={centros}
           filiais={filiais}
           formatarValor={formatarValor}
@@ -3799,7 +3844,7 @@ export default function App() {
     return renderAppFrame(
       <AppSuspenseBoundary>
         <LazyRelatoriosContasPage
-          contas={contas}
+          contas={contasContextuais}
           centros={centros}
           filiais={filiais}
           estaVencida={estaVencida}
@@ -4108,7 +4153,7 @@ export default function App() {
         empresaNome={nomeEmpresa}
         filiais={filiais}
         centros={centros}
-        contas={contas}
+        contas={contasOperacionais}
         mostrarAviso={mostrarAviso}
         onRefresh={() => carregarTudo(empresaId)}
         voltarPainel={() => navegarPara('configuracoes')}
@@ -4307,7 +4352,7 @@ export default function App() {
         <LazyAgendaPage
           empresaId={empresaId}
           filiais={filiais}
-          contas={contas}
+          contas={contasOperacionais}
           notas={notas}
           carregandoFinanceiro={loading}
           podeAcessarPessoas={podeAcessarGestaoPessoas()}
@@ -4354,8 +4399,8 @@ export default function App() {
   // =========================
   return (
     <AppShell
-      contas={contas}
-      contasFiltradas={contasFiltradas}
+      contas={contasContextuais}
+      contasFiltradas={contasContextuais}
       navegarPara={navegarPara}
       menuAberto={menuAberto}
       setMenuAberto={setMenuAberto}
@@ -4390,16 +4435,16 @@ export default function App() {
           routeProps={{
           nomeUsuario: nomeUsuario(),
           formatarValor,
-          total,
-          pago,
-          pendente,
-          vencido,
+          total: resumoFinanceiroDashboard.total,
+          pago: resumoFinanceiroDashboard.pago,
+          pendente: resumoFinanceiroDashboard.pendente,
+          vencido: resumoFinanceiroDashboard.vencido,
           navegarPara,
-          loading,
+          loading: loading || loadingContasContextuais || !contasContextuaisCarregadas || Boolean(erroContasContextuais),
           filiais,
           filtroFilial,
           setFiltroFilial,
-          contasCentral: contas,
+          contasCentral: contasOperacionais,
           notasCentral: notas,
           onAtualizarContasCentral: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
           onAtualizarNotasCentral: () => buscarNotas(empresaId),

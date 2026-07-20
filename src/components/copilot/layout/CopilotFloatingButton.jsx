@@ -5,11 +5,13 @@ function CopilotFloatingButton({ onPreload }) {
   const { open, toggle, intelligence } = useCopilot()
   const hasRisk = intelligence.totals.vencido > 0
 
-  const abrirAssistenteFinanceiro = useCallback((event) => {
+  const abrirAssistenteFinanceiro = useCallback(async (event) => {
     event.preventDefault()
     event.stopPropagation()
+    const resposta = await onPreload?.()
+    if (resposta?.error) return
     toggle()
-  }, [toggle])
+  }, [onPreload, toggle])
 
   if (open) return null
 

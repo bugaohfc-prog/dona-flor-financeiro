@@ -4,17 +4,21 @@ import { executarConsultaPaginada } from '../services/supabasePaginationService.
 import { criarControleOperacao } from './recorrenciaPlanejamento.js'
 import {
   calcularPeriodoPagas,
+  atualizarAposMutacaoContas,
+  atualizarFontesDashboard,
   calcularResumoFinanceiroContas,
   carregarFonteContextualContas,
   contaEstaAtiva,
   contasParaExportacao,
   deveConsultarSobDemanda,
   filtrarContasPorModo,
+  fonteContextualDisponivel,
   interpretarTermoBuscaContas,
   invalidarConsultaContas,
   mesclarPaginaContas,
   obterPeriodoConsultaPagas,
   restaurarModoAoLimparBusca,
+  resolverEstadoFonteContextual,
   selecionarFonteContas,
   selecionarFonteContextualContas
 } from './contasConsultasOperacionais.js'
@@ -183,4 +187,54 @@ test('orquestracao contextual nao dispara recorrencias', async () => {
   }))
   assert.equal(resposta.carregada, true)
   assert.equal(geracoes, 0)
+})
+
+test('erro contextual encerra loading e permanece como falha explícita', () => {
+  const erro = new Error('indisponível')
+  assert.equal(resolverEstadoFonteContextual({ carregando: false, carregada: false, erro }), 'erro')
+  assert.equal(fonteContextualDisponivel({ carregando: false, carregada: false, erro }), false)
+  assert.equal(resolverEstadoFonteContextual({ carregando: false, carregada: false, erro: null }), 'indisponivel')
+})
+
+test('consumidor não trata falha contextual como lista financeira vazia válida', async () => {
+  const erro = new Error('falha simulada')
+  const resposta = await carregarFonteContextualContas('relatorios-contas', async () => ({ data: [], error: erro }))
+  assert.equal(resposta.carregada, false)
+  assert.equal(resposta.error, erro)
+  assert.equal(resolverEstadoFonteContextual({ carregada: resposta.carregada, erro: resposta.error }), 'erro')
+})
+
+test('exportação fica bloqueada sem histórico contextual válido', () => {
+  assert.equal(fonteContextualDisponivel({ carregando: true, carregada: false }), false)
+  assert.equal(fonteContextualDisponivel({ carregando: false, carregada: false, erro: new Error('falha') }), false)
+  assert.equal(fonteContextualDisponivel({ carregando: false, carregada: true, erro: null }), true)
+})
+
+test('Atualizar do Dashboard recarrega fontes operacional e contextual', async () => {
+  const chamadas = []
+  await atualizarFontesDashboard({
+    carregarOperacionais: async () => chamadas.push('operacional'),
+    carregarContextuais: async () => chamadas.push('contextual')
+  })
+  assert.deepEqual(chamadas.sort(), ['contextual', 'operacional'])
+})
+
+test('mutação financeira invalida histórico antes de recarregar contas operacionais', async () => {
+  const chamadas = []
+  await atualizarAposMutacaoContas({
+    invalidarContextual: () => chamadas.push('invalidar'),
+    carregarOperacionais: async () => chamadas.push('operacional'),
+    carregarContextual: async () => chamadas.push('contextual')
+  })
+  assert.deepEqual(chamadas, ['invalidar', 'operacional', 'contextual'])
+})
+
+test('tela Contas continua sem carregar histórico pago na inicialização', async () => {
+  let chamadas = 0
+  const resposta = await carregarFonteContextualContas('contas', async () => {
+    chamadas += 1
+    return { data: [conta('paga', 'pago', '2026-07-10')], error: null }
+  })
+  assert.equal(chamadas, 0)
+  assert.deepEqual(resposta, { carregada: false, data: [] })
 })

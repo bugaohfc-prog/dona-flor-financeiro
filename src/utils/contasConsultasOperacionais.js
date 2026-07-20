@@ -71,7 +71,31 @@ export function consumidorRequerHistoricoCompleto(consumidor) {
 export async function carregarFonteContextualContas(consumidor, carregar) {
   if (!consumidorRequerHistoricoCompleto(consumidor)) return { carregada: false, data: [] }
   const resposta = await carregar()
-  return { carregada: true, ...resposta }
+  return { carregada: !resposta?.error, ...resposta }
+}
+export function resolverEstadoFonteContextual({ carregando = false, carregada = false, erro = null } = {}) {
+  if (carregando) return 'carregando'
+  if (erro) return 'erro'
+  if (carregada) return 'pronto'
+  return 'indisponivel'
+}
+
+export function fonteContextualDisponivel(estado = {}) {
+  return resolverEstadoFonteContextual(estado) === 'pronto'
+}
+
+export async function atualizarFontesDashboard({ carregarOperacionais, carregarContextuais } = {}) {
+  return Promise.all([
+    carregarOperacionais(),
+    carregarContextuais()
+  ])
+}
+
+export async function atualizarAposMutacaoContas({ invalidarContextual, carregarOperacionais, carregarContextual } = {}) {
+  invalidarContextual()
+  const resultadoOperacional = await carregarOperacionais()
+  if (typeof carregarContextual === 'function') await carregarContextual()
+  return resultadoOperacional
 }
 
 export function selecionarFonteContextualContas({ consumidor, operacionais = [], contextuais = [] } = {}) {

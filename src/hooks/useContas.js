@@ -157,6 +157,7 @@ export function useContas() {
   const controlePlanejamentoRef = useRef(null)
   const controleConsultaSecundariaRef = useRef(null)
   const controleContasContextuaisRef = useRef(null)
+  const contasContextuaisEmAndamentoRef = useRef(null)
   const empresaAtivaRef = useRef(null)
   if (!controleBuscaRef.current) controleBuscaRef.current = criarControleOperacao()
   if (!controleLoadingRef.current) controleLoadingRef.current = criarControleLoading()
@@ -170,6 +171,7 @@ export function useContas() {
     controlePlanejamentoRef.current?.desmontar()
     controleConsultaSecundariaRef.current?.desmontar()
     controleContasContextuaisRef.current?.desmontar()
+    contasContextuaisEmAndamentoRef.current = null
     planejamentoRecorrenciasEmAndamentoRef.current = null
   }, [])
 
@@ -486,32 +488,57 @@ export function useContas() {
 
   async function carregarContasContextuais({ supabase, empresaAtual, avisarErro }) {
     if (!empresaAtual) return { data: [], error: null }
+
+    const emAndamento = contasContextuaisEmAndamentoRef.current
+    if (emAndamento?.empresaId === empresaAtual) return emAndamento.promessa
+
     const operacao = controleContasContextuaisRef.current.iniciar(empresaAtual)
     const estaAtual = () => controleContasContextuaisRef.current.estaAtual(operacao) && empresaAtivaRef.current === empresaAtual
-    if (estaAtual()) setLoadingContasContextuais(true)
-    if (estaAtual()) setErroContasContextuais(null)
-    try {
-      const resposta = await listarContasContextuais(supabase, empresaAtual)
-      if (!estaAtual()) return { obsoleto: true }
-      if (resposta.error) {
-        setContasContextuaisCarregadas(false)
-        setErroContasContextuais(resposta.error)
-        avisarErro?.(resposta.error)
-        return resposta
-      }
-      const enriquecidas = await enriquecerContasComPagamentosParciais(supabase, empresaAtual, resposta.data || [])
-      if (!estaAtual()) return { obsoleto: true }
-      setContasContextuais(enriquecidas)
-      setContasContextuaisCarregadas(true)
+    if (estaAtual()) {
+      setLoadingContasContextuais(true)
       setErroContasContextuais(null)
-      return { data: enriquecidas, error: null }
-    } finally {
-      if (estaAtual()) setLoadingContasContextuais(false)
     }
+
+    const registroEmAndamento = { empresaId: empresaAtual, promessa: null }
+    const promessa = (async () => {
+      try {
+        const resposta = await listarContasContextuais(supabase, empresaAtual)
+        if (!estaAtual()) return { obsoleto: true }
+        if (resposta.error) {
+          setContasContextuaisCarregadas(false)
+          setErroContasContextuais(resposta.error)
+          avisarErro?.(resposta.error)
+          return resposta
+        }
+        const enriquecidas = await enriquecerContasComPagamentosParciais(supabase, empresaAtual, resposta.data || [])
+        if (!estaAtual()) return { obsoleto: true }
+        setContasContextuais(enriquecidas)
+        setContasContextuaisCarregadas(true)
+        setErroContasContextuais(null)
+        return { data: enriquecidas, error: null }
+      } catch (error) {
+        if (!estaAtual()) return { obsoleto: true }
+        const erroNormalizado = error instanceof Error ? error : new Error('Falha ao carregar o histórico financeiro.')
+        setContasContextuaisCarregadas(false)
+        setErroContasContextuais(erroNormalizado)
+        avisarErro?.(erroNormalizado)
+        return { data: [], error: erroNormalizado }
+      } finally {
+        if (estaAtual()) setLoadingContasContextuais(false)
+        if (contasContextuaisEmAndamentoRef.current === registroEmAndamento) {
+          contasContextuaisEmAndamentoRef.current = null
+        }
+      }
+    })()
+
+    registroEmAndamento.promessa = promessa
+    contasContextuaisEmAndamentoRef.current = registroEmAndamento
+    return promessa
   }
 
   function limparContasContextuais() {
     controleContasContextuaisRef.current.iniciar('__contexto_contas_invalidado__')
+    contasContextuaisEmAndamentoRef.current = null
     setContasContextuais([])
     setContasContextuaisCarregadas(false)
     setErroContasContextuais(null)

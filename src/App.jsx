@@ -19,6 +19,7 @@ import GlobalFab from './components/layout/GlobalFab.jsx'
 import HeaderExpansivel from './components/ui/HeaderExpansivel.jsx'
 import AppRouteGuards from './components/routes/AppRouteGuards.jsx'
 import AppSuspenseBoundary from './components/routes/AppSuspenseBoundary.jsx'
+import ContasContextualGuard from './components/feedback/ContasContextualGuard.jsx'
 import AppModalsLayer from './components/render/AppModalsLayer.jsx'
 import AppOverlaysLayer from './components/render/AppOverlaysLayer.jsx'
 import AppShell from './components/shell/AppShell.jsx'
@@ -42,7 +43,7 @@ import { converterValor, formatarData, formatarDataParaBanco, formatarValor, lim
 import { diferencaDias } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
 import { estaVencida, pegarMes } from './utils/contasStatus'
-import { calcularResumoFinanceiroContas, carregarFonteContextualContas, formatarDataBancoLocal, obterPeriodoConsultaPagas, selecionarFonteContas } from './utils/contasConsultasOperacionais.js'
+import { atualizarAposMutacaoContas, atualizarFontesDashboard, calcularResumoFinanceiroContas, carregarFonteContextualContas, consumidorRequerHistoricoCompleto, formatarDataBancoLocal, obterPeriodoConsultaPagas, selecionarFonteContas } from './utils/contasConsultasOperacionais.js'
 import { atualizarListaLixeiraEstavel, diasNaLixeira, podeExcluirDefinitivo } from './utils/lixeira'
 import { erroEhSessaoExpirada, mensagemSeguraErro } from './utils/session'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
@@ -1529,6 +1530,23 @@ export default function App() {
     })
   }
 
+  async function buscarContasAposMutacao() {
+    return atualizarAposMutacaoContas({
+      invalidarContextual: limparContasContextuais,
+      carregarOperacionais: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
+      carregarContextual: consumidorRequerHistoricoCompleto(telaAtual)
+        ? () => carregarContasContextuais(empresaId)
+        : null
+    })
+  }
+
+  async function atualizarFontesContasDashboard() {
+    return atualizarFontesDashboard({
+      carregarOperacionais: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
+      carregarContextuais: () => carregarContasContextuais(empresaId)
+    })
+  }
+
   function obterPeriodoPagasAtual() {
     return obterPeriodoConsultaPagas({
       periodoPagas,
@@ -2015,7 +2033,7 @@ export default function App() {
       erroEhSessaoExpirada,
       limparEstadoAutenticacao,
       setUsuarioLogado,
-      buscarContas,
+      buscarContas: buscarContasAposMutacao,
       fecharConta,
       onContaSalva: (id) => {
         if (id) setContaFocusTarget({ tipo: 'conta', id, origem: 'salvamento', nonce: Date.now() })
@@ -2029,7 +2047,7 @@ export default function App() {
       return false
     }
 
-    return marcarComoPagoHook({ supabase, id, empresaId, buscarContas, mostrarAviso, pagamento })
+    return marcarComoPagoHook({ supabase, id, empresaId, buscarContas: buscarContasAposMutacao, mostrarAviso, pagamento })
   }
 
   async function corrigirPagamento(id, pagamento) {
@@ -2038,7 +2056,7 @@ export default function App() {
       return false
     }
 
-    return corrigirPagamentoHook({ supabase, id, empresaId, buscarContas, mostrarAviso, pagamento })
+    return corrigirPagamentoHook({ supabase, id, empresaId, buscarContas: buscarContasAposMutacao, mostrarAviso, pagamento })
   }
 
   async function registrarPagamentoParcial(id, pagamento) {
@@ -2051,7 +2069,7 @@ export default function App() {
       supabase,
       id,
       empresaId,
-      buscarContas: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
+      buscarContas: buscarContasAposMutacao,
       mostrarAviso,
       pagamento
     })
@@ -2077,7 +2095,7 @@ export default function App() {
       pagamentoId,
       contaId,
       empresaId,
-      buscarContas: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
+      buscarContas: buscarContasAposMutacao,
       mostrarAviso
     })
   }
@@ -2092,7 +2110,7 @@ export default function App() {
       supabase,
       contaId,
       empresaId,
-      buscarContas: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
+      buscarContas: buscarContasAposMutacao,
       mostrarAviso
     })
   }
@@ -2103,7 +2121,7 @@ export default function App() {
       return
     }
 
-    return voltarParaPendenteHook({ supabase, id, empresaId, buscarContas, mostrarAviso })
+    return voltarParaPendenteHook({ supabase, id, empresaId, buscarContas: buscarContasAposMutacao, mostrarAviso })
   }
 
   async function excluirConta(id) {
@@ -2112,7 +2130,7 @@ export default function App() {
       return
     }
 
-    return excluirContaHook({ supabase, id, empresaId, avisarErro, buscarContas, buscarLixeira, mostrarAviso })
+    return excluirContaHook({ supabase, id, empresaId, avisarErro, buscarContas: buscarContasAposMutacao, buscarLixeira, mostrarAviso })
   }
 
   async function ocultarConta(id) {
@@ -2121,7 +2139,7 @@ export default function App() {
       return
     }
 
-    return ocultarContaHook({ supabase, id, empresaId, avisarErro, buscarContas, mostrarAviso })
+    return ocultarContaHook({ supabase, id, empresaId, avisarErro, buscarContas: buscarContasAposMutacao, mostrarAviso })
   }
 
   async function reexibirConta(id) {
@@ -2130,7 +2148,7 @@ export default function App() {
       return
     }
 
-    return reexibirContaHook({ supabase, id, empresaId, avisarErro, buscarContas, mostrarAviso })
+    return reexibirContaHook({ supabase, id, empresaId, avisarErro, buscarContas: buscarContasAposMutacao, mostrarAviso })
   }
 
   async function cancelarGrupoParcelamento(grupoParcelamentoId) {
@@ -2143,7 +2161,7 @@ export default function App() {
       supabase,
       empresaId,
       grupoParcelamentoId,
-      buscarContas,
+      buscarContas: buscarContasAposMutacao,
       mostrarAviso,
       fecharConta
     })
@@ -2160,7 +2178,7 @@ export default function App() {
       id,
       empresaId,
       avisarErro,
-      buscarContas: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
+      buscarContas: buscarContasAposMutacao,
       mostrarAviso
     })
   }
@@ -2176,7 +2194,7 @@ export default function App() {
       id,
       empresaId,
       avisarErro,
-      buscarContas: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
+      buscarContas: buscarContasAposMutacao,
       mostrarAviso
     })
   }
@@ -2362,7 +2380,7 @@ export default function App() {
       return
     }
 
-    buscarContas()
+    void buscarContasAposMutacao()
     buscarLixeira()
     mostrarAviso('Conta restaurada com sucesso.', 'sucesso')
   }
@@ -3599,7 +3617,7 @@ export default function App() {
 
   function prepararCopilotFinanceiro() {
     preloadRoute('copilotDrawer')
-    void carregarContasContextuais(empresaId)
+    return carregarContasContextuais(empresaId)
   }
 
   function renderCopilotFinanceiro() {
@@ -3806,7 +3824,13 @@ export default function App() {
 
   if (telaAtual === 'recorrencias') {
     return renderAppFrame(
-      <AppSuspenseBoundary>
+      <ContasContextualGuard
+        carregando={loadingContasContextuais}
+        carregada={contasContextuaisCarregadas}
+        erro={erroContasContextuais}
+        onRetry={() => carregarContasContextuais(empresaId)}
+      >
+        <AppSuspenseBoundary>
         <LazyRecorrenciasFinanceirasPage
           styles={styles}
           contas={contasContextuais}
@@ -3821,13 +3845,20 @@ export default function App() {
           desativarSerieRecorrente={desativarSerieRecorrente}
           reativarSerieRecorrente={reativarSerieRecorrente}
         />
-      </AppSuspenseBoundary>
+        </AppSuspenseBoundary>
+      </ContasContextualGuard>
     )
   }
 
   if (telaAtual === 'controle-impostos') {
     return renderAppFrame(
-      <AppSuspenseBoundary>
+      <ContasContextualGuard
+        carregando={loadingContasContextuais}
+        carregada={contasContextuaisCarregadas}
+        erro={erroContasContextuais}
+        onRetry={() => carregarContasContextuais(empresaId)}
+      >
+        <AppSuspenseBoundary>
         <LazyControleImpostosPage
           contas={contasContextuais}
           centros={centros}
@@ -3836,13 +3867,20 @@ export default function App() {
           formatarData={formatarData}
           navegarPara={navegarPara}
         />
-      </AppSuspenseBoundary>
+        </AppSuspenseBoundary>
+      </ContasContextualGuard>
     )
   }
 
   if (telaAtual === 'relatorios-contas') {
     return renderAppFrame(
-      <AppSuspenseBoundary>
+      <ContasContextualGuard
+        carregando={loadingContasContextuais}
+        carregada={contasContextuaisCarregadas}
+        erro={erroContasContextuais}
+        onRetry={() => carregarContasContextuais(empresaId)}
+      >
+        <AppSuspenseBoundary>
         <LazyRelatoriosContasPage
           contas={contasContextuais}
           centros={centros}
@@ -3854,7 +3892,8 @@ export default function App() {
           podeExportarDados={podeExportarDados()}
           mostrarAviso={mostrarAviso}
         />
-      </AppSuspenseBoundary>
+        </AppSuspenseBoundary>
+      </ContasContextualGuard>
     )
   }
 
@@ -4440,13 +4479,17 @@ export default function App() {
           pendente: resumoFinanceiroDashboard.pendente,
           vencido: resumoFinanceiroDashboard.vencido,
           navegarPara,
-          loading: loading || loadingContasContextuais || !contasContextuaisCarregadas || Boolean(erroContasContextuais),
+          loading,
+          loadingHistoricoFinanceiro: loadingContasContextuais,
+          historicoFinanceiroCarregado: contasContextuaisCarregadas,
+          erroHistoricoFinanceiro: erroContasContextuais,
+          onRetryHistoricoFinanceiro: () => carregarContasContextuais(empresaId),
           filiais,
           filtroFilial,
           setFiltroFilial,
           contasCentral: contasOperacionais,
           notasCentral: notas,
-          onAtualizarContasCentral: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
+          onAtualizarContasCentral: atualizarFontesContasDashboard,
           onAtualizarNotasCentral: () => buscarNotas(empresaId),
           navegarParaOrigemAgenda
         }}

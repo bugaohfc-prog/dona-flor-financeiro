@@ -1,4 +1,4 @@
-import { SummarySkeleton } from '../feedback/Skeletons.jsx'
+import ContasContextualGuard from '../feedback/ContasContextualGuard.jsx'
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext.jsx'
 import { useResumoGestaoPessoasPainel } from '../../hooks/useResumoGestaoPessoasPainel.js'
@@ -55,6 +55,10 @@ export default function DashboardHome({
   vencido,
   navegarPara,
   loading = false,
+  loadingHistoricoFinanceiro = false,
+  historicoFinanceiroCarregado = false,
+  erroHistoricoFinanceiro = null,
+  onRetryHistoricoFinanceiro,
   filiais = [],
   filtroFilial = '',
   setFiltroFilial = () => {},
@@ -146,9 +150,12 @@ export default function DashboardHome({
       />
 
       <section className="dashboard-home-finance" aria-label="Resumo financeiro rápido">
-        {loading ? (
-          <SummarySkeleton items={4} />
-        ) : (
+        <ContasContextualGuard
+          carregando={loadingHistoricoFinanceiro}
+          carregada={historicoFinanceiroCarregado}
+          erro={erroHistoricoFinanceiro}
+          onRetry={onRetryHistoricoFinanceiro}
+        >
           <div className="dashboard-home-card dashboard-home-finance-card">
             <DashboardWidgetHeader
               kicker="Resumo financeiro rápido"
@@ -175,7 +182,7 @@ export default function DashboardHome({
               </div>
             )}
           </div>
-        )}
+        </ContasContextualGuard>
       </section>
     </>
   )

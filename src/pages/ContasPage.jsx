@@ -20,13 +20,20 @@ const OPCOES_ORDENACAO_CONTAS = [
 ]
 
 const ABAS_STATUS_CONTAS = [
-  { valor: 'pendentes', label: 'Abertas' },
+  { valor: 'pendentes', label: 'Em aberto' },
   { valor: 'vencidas', label: 'Vencidas' },
+  { valor: 'futuras', label: 'Futuras' },
   { valor: 'pagas', label: 'Pagas' },
-  { valor: 'ocultas', label: 'Ocultas' },
-  { valor: 'todas', label: 'Todas' }
+  { valor: 'ocultas', label: 'Ocultas' }
 ]
 
+const ABAS_STATUS_BUSCA = [
+  { valor: 'todas', label: 'Todos' },
+  { valor: 'pagas', label: 'Pagas' },
+  { valor: 'vencidas', label: 'Vencidas' },
+  { valor: 'pendentes', label: 'Abertas' },
+  { valor: 'futuras', label: 'Futuras' }
+]
 
 const ACCOUNT_ACTIONS_STYLE = {
   marginTop: 10,
@@ -196,7 +203,8 @@ export default function ContasPage({
   listarPagamentosParciaisConta,
   estornarPagamentoParcial,
   baixarContaQuitadaPorParciais,
-  navegarPara, podeEditarFinanceiro = true, podeExportarDados = true
+  navegarPara, podeEditarFinanceiro = true, podeExportarDados = true,
+  periodoPagas, setPeriodoPagas, anoPagas, setAnoPagas, loadingConsultaContas = false, haMaisContasConsulta = false, carregarMaisContas, modoBuscaGlobal = false
 }) {
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
   const [contaEmBaixa, setContaEmBaixa] = useState(null)
@@ -250,7 +258,8 @@ export default function ContasPage({
     }
     return null
   }, [contaAlvoId, gruposAnoMes])
-  const statusAtualLabel = ABAS_STATUS_CONTAS.find((aba) => aba.valor === filtroStatus)?.label || filtroStatus
+  const abasStatusAtuais = modoBuscaGlobal ? ABAS_STATUS_BUSCA : ABAS_STATUS_CONTAS
+  const statusAtualLabel = abasStatusAtuais.find((aba) => aba.valor === filtroStatus)?.label || filtroStatus
   const resumoResultadoFiltrado = useMemo(
     () => calcularResumoResultadoFiltrado(contasFiltradas),
     [contasFiltradas]
@@ -628,7 +637,7 @@ export default function ContasPage({
         </div>
 
         <div className="accounts-status-tabs" role="tablist" aria-label="Filtro principal de status das contas">
-          {ABAS_STATUS_CONTAS.map((aba) => (
+          {abasStatusAtuais.map((aba) => (
             <button
               key={aba.valor}
               type="button"
@@ -642,6 +651,31 @@ export default function ContasPage({
           ))}
         </div>
 
+        {modoBuscaGlobal && <div className="accounts-history-search-indicator">Resultados em todo o histórico</div>}
+
+        {!modoBuscaGlobal && filtroStatus === 'pagas' && (
+          <div className="accounts-paid-period-controls">
+            <label>
+              <span>Período das contas pagas</span>
+              <select value={periodoPagas} onChange={(event) => setPeriodoPagas(event.target.value)}>
+                <option value="mes_atual">Mês atual</option>
+                <option value="mes_anterior">Mês anterior</option>
+                <option value="ano_atual">Ano atual</option>
+                <option value="ano">Selecionar ano</option>
+                <option value="intervalo">Intervalo personalizado</option>
+              </select>
+            </label>
+            {periodoPagas === 'ano' && (
+              <label><span>Ano</span><input type="number" min="2000" max="2100" value={anoPagas} onChange={(event) => setAnoPagas(event.target.value)} /></label>
+            )}
+            {periodoPagas === 'intervalo' && (
+              <>
+                <label><span>De</span><input type="date" value={dataInicial} onChange={(event) => setDataInicial(limitarDataInput(event.target.value))} /></label>
+                <label><span>Até</span><input type="date" value={dataFinal} onChange={(event) => setDataFinal(limitarDataInput(event.target.value))} /></label>
+              </>
+            )}
+          </div>
+        )}
         <label className="accounts-sort-control accounts-sort-control-main">
           <span>Ordenar por</span>
           <select style={styles.input} value={ordenacaoContas} onChange={(e) => setOrdenacaoContas(e.target.value)}>
@@ -815,6 +849,10 @@ export default function ContasPage({
               )
             })}
           </div>
+        )}
+        {loadingConsultaContas && <div className="accounts-query-loading">Carregando resultados...</div>}
+        {!loadingConsultaContas && haMaisContasConsulta && (filtroStatus === 'pagas' || filtroStatus === 'ocultas' || modoBuscaGlobal) && (
+          <button type="button" className="accounts-load-more" onClick={carregarMaisContas}>Carregar mais</button>
         )}
       </section>
 

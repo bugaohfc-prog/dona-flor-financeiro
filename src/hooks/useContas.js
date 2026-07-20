@@ -17,6 +17,9 @@ import {
   desativarRecorrencia,
   enviarContaParaLixeira,
   listarContasAtivas,
+  listarContasPagas,
+  listarContasOcultas,
+  buscarContasHistorico,
   listarContasHorizonteRecorrencias,
   listarCentrosCustoValidosPorIds,
   listarFiliaisValidasPorIds,
@@ -120,10 +123,17 @@ function montarParcelasConta({ payloadBase, valorTotal, parcelasTotal, primeiroV
 
 export function useContas() {
   const [contas, setContas] = useState([])
+  const [contasPagas, setContasPagas] = useState([])
+  const [contasOcultas, setContasOcultas] = useState([])
+  const [resultadosBuscaContas, setResultadosBuscaContas] = useState([])
+  const [loadingConsultaContas, setLoadingConsultaContas] = useState(false)
+  const [haMaisContasConsulta, setHaMaisContasConsulta] = useState(false)
   const [contasLixeira, setContasLixeira] = useState([])
   const [seriesRecorrentes, setSeriesRecorrentes] = useState([])
   const [busca, setBusca] = useState('')
-  const [filtroStatus, setFiltroStatus] = useState('todas')
+  const [filtroStatus, setFiltroStatus] = useState('pendentes')
+  const [periodoPagas, setPeriodoPagas] = useState('mes_atual')
+  const [anoPagas, setAnoPagas] = useState(String(new Date().getFullYear()))
   const [filtroCentro, setFiltroCentro] = useState('')
   const [filtroFilial, setFiltroFilial] = useState('')
   const [filtroMes, setFiltroMes] = useState('')
@@ -137,15 +147,18 @@ export function useContas() {
   const controleBuscaRef = useRef(null)
   const controleLoadingRef = useRef(null)
   const controlePlanejamentoRef = useRef(null)
+  const controleConsultaSecundariaRef = useRef(null)
   const empresaAtivaRef = useRef(null)
   if (!controleBuscaRef.current) controleBuscaRef.current = criarControleOperacao()
   if (!controleLoadingRef.current) controleLoadingRef.current = criarControleLoading()
   if (!controlePlanejamentoRef.current) controlePlanejamentoRef.current = criarControleOperacao()
+  if (!controleConsultaSecundariaRef.current) controleConsultaSecundariaRef.current = criarControleOperacao()
 
   useEffect(() => () => {
     controleBuscaRef.current?.desmontar()
     controleLoadingRef.current?.desmontar()
     controlePlanejamentoRef.current?.desmontar()
+    controleConsultaSecundariaRef.current?.desmontar()
     planejamentoRecorrenciasEmAndamentoRef.current = null
   }, [])
 
@@ -429,6 +442,7 @@ export function useContas() {
     const { supabase, empresaAtual, avisarErro, silencioso = false } = contexto
     if (!empresaAtual) return
 
+    if (empresaAtivaRef.current && empresaAtivaRef.current !== empresaAtual) limparConsultasSecundarias()
     empresaAtivaRef.current = empresaAtual
     const operacao = controleBuscaRef.current.iniciar(empresaAtual)
     const operacaoLoading = controleLoadingRef.current.iniciar(!silencioso)
@@ -456,6 +470,41 @@ export function useContas() {
     }
   }
 
+  async function executarConsultaSecundaria({ supabase, empresaAtual, tipo, pagina = 0, termo = '', status = 'todas', periodo = {}, avisarErro }) {
+    if (!empresaAtual) return { data: [], error: null }
+    empresaAtivaRef.current = empresaAtual
+    const operacao = controleConsultaSecundariaRef.current.iniciar(`${empresaAtual}:${tipo}:${termo}:${status}`)
+    const estaAtual = () => controleConsultaSecundariaRef.current.estaAtual(operacao) && empresaAtivaRef.current === empresaAtual
+    if (estaAtual()) setLoadingConsultaContas(true)
+    try {
+      let resposta
+      if (tipo === 'pagas') resposta = await listarContasPagas(supabase, empresaAtual, { ...periodo, pagina })
+      else if (tipo === 'ocultas') resposta = await listarContasOcultas(supabase, empresaAtual, { pagina })
+      else resposta = await buscarContasHistorico(supabase, empresaAtual, termo, { pagina, status, hoje: periodo.hoje, incluirOcultas: false })
+      if (!estaAtual()) return { obsoleto: true }
+      if (resposta.error) {
+        avisarErro?.(resposta.error)
+        return resposta
+      }
+      const enriquecidas = await enriquecerContasComPagamentosParciais(supabase, empresaAtual, resposta.data || [])
+      if (!estaAtual()) return { obsoleto: true }
+      const atualizar = (setter) => setter((atuais) => pagina === 0 ? enriquecidas : [...atuais, ...enriquecidas.filter((item) => !atuais.some((atual) => atual.id === item.id))])
+      if (tipo === 'pagas') atualizar(setContasPagas)
+      else if (tipo === 'ocultas') atualizar(setContasOcultas)
+      else atualizar(setResultadosBuscaContas)
+      setHaMaisContasConsulta(enriquecidas.length === 100)
+      return { data: enriquecidas, error: null }
+    } finally {
+      if (estaAtual()) setLoadingConsultaContas(false)
+    }
+  }
+
+  function limparConsultasSecundarias() {
+    setContasPagas([])
+    setContasOcultas([])
+    setResultadosBuscaContas([])
+    setHaMaisContasConsulta(false)
+  }
   function abrirNovaConta(contexto) {
     const { setMenuAberto, setMenuNavegacaoAberto, configWhatsapp, configEmail, configPush, diasAvisoPadrao } = contexto
     setMenuAberto(false)
@@ -1261,6 +1310,11 @@ export function useContas() {
   return {
     contas,
     setContas,
+    contasPagas,
+    contasOcultas,
+    resultadosBuscaContas,
+    loadingConsultaContas,
+    haMaisContasConsulta,
     contasLixeira,
     setContasLixeira,
     seriesRecorrentes,
@@ -1269,6 +1323,10 @@ export function useContas() {
     setBusca,
     filtroStatus,
     setFiltroStatus,
+    periodoPagas,
+    setPeriodoPagas,
+    anoPagas,
+    setAnoPagas,
     filtroCentro,
     setFiltroCentro,
     filtroFilial,
@@ -1336,6 +1394,8 @@ export function useContas() {
     erroParcelamentoGrupo,
     alterarEscopoEdicaoRecorrencia,
     buscarContas,
+    executarConsultaSecundaria,
+    limparConsultasSecundarias,
     abrirNovaConta,
     abrirEdicaoConta,
     fecharConta,

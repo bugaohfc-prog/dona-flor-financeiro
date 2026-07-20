@@ -42,6 +42,7 @@ import { converterValor, formatarData, formatarDataParaBanco, formatarValor, lim
 import { diferencaDias } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
 import { estaVencida, pegarMes } from './utils/contasStatus'
+import { calcularPeriodoPagas, formatarDataBancoLocal, selecionarFonteContas } from './utils/contasConsultasOperacionais.js'
 import { atualizarListaLixeiraEstavel, diasNaLixeira, podeExcluirDefinitivo } from './utils/lixeira'
 import { erroEhSessaoExpirada, mensagemSeguraErro } from './utils/session'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
@@ -222,6 +223,11 @@ export default function App() {
   const {
     contas,
     setContas,
+    contasPagas,
+    contasOcultas,
+    resultadosBuscaContas,
+    loadingConsultaContas,
+    haMaisContasConsulta,
     contasLixeira,
     setContasLixeira,
     seriesRecorrentes,
@@ -229,6 +235,10 @@ export default function App() {
     setBusca,
     filtroStatus,
     setFiltroStatus,
+    periodoPagas,
+    setPeriodoPagas,
+    anoPagas,
+    setAnoPagas,
     filtroCentro,
     setFiltroCentro,
     filtroFilial,
@@ -296,6 +306,8 @@ export default function App() {
     erroParcelamentoGrupo,
     alterarEscopoEdicaoRecorrencia,
     buscarContas: buscarContasHook,
+    executarConsultaSecundaria: executarConsultaSecundariaHook,
+    limparConsultasSecundarias,
     abrirNovaConta: abrirNovaContaHook,
     abrirEdicaoConta: abrirEdicaoContaHook,
     fecharConta: fecharContaHook,
@@ -479,6 +491,7 @@ export default function App() {
 
   function limparDadosTenant() {
     setContas([])
+    limparConsultasSecundarias()
     setNotas([])
     setCentros([])
     setFiliais([])
@@ -495,7 +508,7 @@ export default function App() {
     setMenuNavegacaoAberto(false)
     setBusca('')
     setBuscaNota('')
-    setFiltroStatus('todas')
+    setFiltroStatus('pendentes')
     setFiltroCentro('')
     setFiltroFilial('')
     setFiltroMes('')
@@ -1478,7 +1491,7 @@ export default function App() {
   // BLOCO 5 — BUSCAS SUPABASE
   // =========================
   async function buscarContas(empresaAtual = empresaId, opcoes = {}) {
-    return buscarContasHook({
+    const resultado = await buscarContasHook({
       supabase,
       empresaAtual,
       avisarErro,
@@ -1490,8 +1503,29 @@ export default function App() {
       silencioso: opcoes.silencioso,
       permitirGerarRecorrencias: false
     })
+    if (empresaAtual === empresaId && telaAtual === 'contas') {
+      const tipoSecundario = busca.trim() ? 'busca' : (filtroStatus === 'pagas' || filtroStatus === 'ocultas' ? filtroStatus : null)
+      if (tipoSecundario) await consultarContasSecundarias(tipoSecundario, 0)
+    }
+    return resultado
   }
 
+  function obterPeriodoConsultaPagas() {
+    return calcularPeriodoPagas(periodoPagas, { ano: anoPagas, dataInicial, dataFinal })
+  }
+
+  async function consultarContasSecundarias(tipo, pagina = 0, termo = busca.trim(), status = filtroStatus) {
+    return executarConsultaSecundariaHook({
+      supabase,
+      empresaAtual: empresaId,
+      tipo,
+      pagina,
+      termo,
+      status: status === 'pendentes' ? 'abertas' : status,
+      periodo: obterPeriodoConsultaPagas(),
+      avisarErro
+    })
+  }
   async function buscarNotas(empresaAtual = empresaId) {
     return buscarNotasHook({
       supabase,
@@ -1689,14 +1723,40 @@ export default function App() {
   // BLOCO 6 — FILTROS / RESUMOS
   // =========================
   const termoBuscaContas = useMemo(() => busca.trim().toLowerCase(), [busca])
+  useEffect(() => {
+    if (telaAtual !== 'contas' || !empresaId) return undefined
+    const termo = busca.trim()
+    if (termo) {
+      const timer = setTimeout(() => { void consultarContasSecundarias('busca', 0, termo, filtroStatus) }, 350)
+      return () => clearTimeout(timer)
+    }
+    if (filtroStatus === 'pagas') void consultarContasSecundarias('pagas', 0)
+    if (filtroStatus === 'ocultas') void consultarContasSecundarias('ocultas', 0)
+    return undefined
+  }, [anoPagas, busca, dataFinal, dataInicial, empresaId, filtroStatus, periodoPagas, telaAtual])
+
+  function alterarBuscaContas(valor) {
+    const tinhaBusca = Boolean(busca.trim())
+    const temBusca = Boolean(String(valor || '').trim())
+    setBusca(valor)
+    if (!tinhaBusca && temBusca) setFiltroStatus('todas')
+    if (tinhaBusca && !temBusca) {
+      limparConsultasSecundarias()
+      setFiltroStatus('pendentes')
+    }
+  }
+
+  const fonteContasExibidas = selecionarFonteContas({ operacionais: contas, pagas: contasPagas, busca: resultadosBuscaContas, ocultas: contasOcultas, termo: termoBuscaContas, modo: filtroStatus })
+
   const valorBuscaContasCentavos = useMemo(() => normalizarValorBuscaContas(busca), [busca])
   const digitosBuscaValorContas = useMemo(() => normalizarDigitosValorBuscaContas(busca), [busca])
 
-  const contasFiltradas = useMemo(() => contas
+  const contasFiltradas = useMemo(() => fonteContasExibidas
     .filter((conta) => {
       if (filtroStatus === 'ocultas') return conta.oculto === true
       if (conta.oculto === true) return false
       if (filtroStatus === 'pendentes') return conta.status !== 'pago'
+      if (filtroStatus === 'futuras') return conta.status !== 'pago' && conta.data_vencimento > formatarDataBancoLocal(new Date())
       if (filtroStatus === 'pagas') return conta.status === 'pago'
       if (filtroStatus === 'vencidas') return estaVencida(conta.data_vencimento, conta.status)
       return true
@@ -1710,7 +1770,7 @@ export default function App() {
       return true
     })
     .filter((conta) => {
-      if (!termoBuscaContas) return true
+      if (!termoBuscaContas || fonteContasExibidas === resultadosBuscaContas) return true
       if (valorContaCorrespondeBusca(conta, valorBuscaContasCentavos, digitosBuscaValorContas)) return true
 
       const centroNome = conta.df_centros_custo?.nome || ''
@@ -1736,12 +1796,13 @@ export default function App() {
       return camposBusca
         .filter(Boolean)
         .some((campo) => String(campo).toLowerCase().includes(termoBuscaContas))
-    }), [contas, dataFinal, dataInicial, filtroCentro, filtroFilial, filtroMes, filtroStatus, termoBuscaContas, valorBuscaContasCentavos, digitosBuscaValorContas])
+    }), [fonteContasExibidas, resultadosBuscaContas, dataFinal, dataInicial, filtroCentro, filtroFilial, filtroMes, filtroStatus, termoBuscaContas, valorBuscaContasCentavos, digitosBuscaValorContas])
 
   const contasOperacionaisFiliais = useMemo(() => contas
     .filter((conta) => {
       if (conta.oculto === true) return false
       if (filtroStatus === 'pendentes') return conta.status !== 'pago'
+      if (filtroStatus === 'futuras') return conta.status !== 'pago' && conta.data_vencimento > formatarDataBancoLocal(new Date())
       if (filtroStatus === 'pagas') return conta.status === 'pago'
       if (filtroStatus === 'vencidas') return estaVencida(conta.data_vencimento, conta.status)
       return true
@@ -1754,7 +1815,7 @@ export default function App() {
       return true
     })
     .filter((conta) => {
-      if (!termoBuscaContas) return true
+      if (!termoBuscaContas || fonteContasExibidas === resultadosBuscaContas) return true
       if (valorContaCorrespondeBusca(conta, valorBuscaContasCentavos, digitosBuscaValorContas)) return true
 
       const centroNome = conta.df_centros_custo?.nome || ''
@@ -2727,13 +2788,14 @@ export default function App() {
 
   const limparFiltros = useCallback(() => {
     setBusca('')
-    setFiltroStatus('todas')
+    setFiltroStatus('pendentes')
     setFiltroCentro('')
     setFiltroFilial('')
     setFiltroMes('')
     setDataInicial('')
     setDataFinal('')
-  }, [])
+    limparConsultasSecundarias()
+  }, [limparConsultasSecundarias])
 
 
 
@@ -3630,7 +3692,7 @@ export default function App() {
       <LazyContasPage
         styles={styles}
         busca={busca}
-        setBusca={setBusca}
+        setBusca={alterarBuscaContas}
         mostrarFiltros={mostrarFiltros}
         setMostrarFiltros={setMostrarFiltros}
         limparFiltros={limparFiltros}
@@ -3641,6 +3703,14 @@ export default function App() {
         podeExportarDados={podeExportarDados()}
         filtroStatus={filtroStatus}
         setFiltroStatus={setFiltroStatus}
+        periodoPagas={periodoPagas}
+        setPeriodoPagas={setPeriodoPagas}
+        anoPagas={anoPagas}
+        setAnoPagas={setAnoPagas}
+        loadingConsultaContas={loadingConsultaContas}
+        haMaisContasConsulta={haMaisContasConsulta}
+        carregarMaisContas={() => consultarContasSecundarias(busca.trim() ? 'busca' : filtroStatus, Math.floor(fonteContasExibidas.length / 100))}
+        modoBuscaGlobal={Boolean(busca.trim())}
         centros={centros}
         filtroCentro={filtroCentro}
         setFiltroCentro={setFiltroCentro}

@@ -5,6 +5,7 @@ import {
   selecionarPorEmpresa
 } from './supabaseQueryService'
 import { assertEmpresaId } from './tenantService'
+import { executarConsultaPaginada } from './supabasePaginationService.js'
 
 export const STATUS_OPERACIONAL_PAGAMENTO_PARCIAL = Object.freeze({
   ABERTA: 'aberta',
@@ -47,11 +48,103 @@ function acrescentarObservacaoPagamento(observacaoAtual, texto) {
   return atual ? `${atual} | ${texto}` : texto
 }
 
-export async function listarContasAtivas(supabase, empresaId) {
-  assertEmpresaId(empresaId)
-  return selecionarPorEmpresa(supabase, 'df_contas', empresaId, '*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia, valor_variavel)')
+const COLUNAS_CONTA_LISTAGEM = '*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia, valor_variavel)'
+const TAMANHO_PAGINA_CONTAS = 500
+
+function aplicarFiltrosContaAtiva(query, { incluirOcultas = false } = {}) {
+  let filtrada = query
     .or('excluido.is.null,excluido.eq.false')
-    .order('data_vencimento', { ascending: true })
+    .or('deletado.is.null,deletado.eq.false')
+  if (!incluirOcultas) filtrada = filtrada.or('oculto.is.null,oculto.eq.false')
+  return filtrada
+}
+
+function ordenarContasEstavelmente(query, ascending = true) {
+  return query
+    .order('data_vencimento', { ascending })
+    .order('id', { ascending: true })
+}
+
+export async function listarContasAtivas(supabase, empresaId) {
+  return listarContasOperacionais(supabase, empresaId)
+}
+
+export async function listarContasOperacionais(supabase, empresaId) {
+  assertEmpresaId(empresaId)
+  return executarConsultaPaginada(() => ordenarContasEstavelmente(
+    aplicarFiltrosContaAtiva(
+      selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTA_LISTAGEM)
+        .neq('status', 'pago')
+    )
+  ), { tamanhoPagina: TAMANHO_PAGINA_CONTAS })
+}
+
+export async function listarContasPagas(supabase, empresaId, opcoes = {}) {
+  assertEmpresaId(empresaId)
+  const pagina = Math.max(0, Number(opcoes.pagina) || 0)
+  const tamanhoPagina = Math.max(1, Number(opcoes.tamanhoPagina) || 100)
+  let query = aplicarFiltrosContaAtiva(
+    selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTA_LISTAGEM)
+      .eq('status', 'pago')
+  )
+  if (opcoes.dataInicial) query = query.gte('data_vencimento', opcoes.dataInicial)
+  if (opcoes.dataFinal) query = query.lte('data_vencimento', opcoes.dataFinal)
+  query = ordenarContasEstavelmente(query, false)
+  return query.range(pagina * tamanhoPagina, ((pagina + 1) * tamanhoPagina) - 1)
+}
+
+export async function listarContasOcultas(supabase, empresaId, opcoes = {}) {
+  assertEmpresaId(empresaId)
+  const pagina = Math.max(0, Number(opcoes.pagina) || 0)
+  const tamanhoPagina = Math.max(1, Number(opcoes.tamanhoPagina) || 100)
+  const query = ordenarContasEstavelmente(
+    aplicarFiltrosContaAtiva(
+      selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTA_LISTAGEM)
+        .eq('oculto', true),
+      { incluirOcultas: true }
+    ), false
+  )
+  return query.range(pagina * tamanhoPagina, ((pagina + 1) * tamanhoPagina) - 1)
+}
+
+function escaparTermoPostgrest(valor) {
+  return String(valor || '').trim().replace(/[,%()]/g, ' ')
+}
+
+export async function buscarContasHistorico(supabase, empresaId, termo, opcoes = {}) {
+  assertEmpresaId(empresaId)
+  const pagina = Math.max(0, Number(opcoes.pagina) || 0)
+  const tamanhoPagina = Math.max(1, Number(opcoes.tamanhoPagina) || 100)
+  const termoSeguro = escaparTermoPostgrest(termo)
+  if (!termoSeguro) return { data: [], error: null }
+
+  let query = aplicarFiltrosContaAtiva(
+    selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTA_LISTAGEM),
+    { incluirOcultas: opcoes.incluirOcultas === true }
+  )
+  if (opcoes.incluirOcultas !== true) query = query.or('oculto.is.null,oculto.eq.false')
+  if (opcoes.status === 'pagas') query = query.eq('status', 'pago')
+  if (opcoes.status === 'abertas') query = query.neq('status', 'pago')
+  if (opcoes.status === 'vencidas') query = query.neq('status', 'pago').lt('data_vencimento', opcoes.hoje)
+  if (opcoes.status === 'futuras') query = query.neq('status', 'pago').gt('data_vencimento', opcoes.hoje)
+
+  const numero = Number(String(termoSeguro).replace(/\./g, '').replace(',', '.'))
+  const [respostaCentros, respostaFiliais] = await Promise.all([
+    selecionarPorEmpresa(supabase, 'df_centros_custo', empresaId, 'id').ilike('nome', `%${termoSeguro}%`).limit(20),
+    selecionarPorEmpresa(supabase, 'df_filiais', empresaId, 'id').ilike('nome', `%${termoSeguro}%`).limit(20)
+  ])
+  const filtros = [
+    `descricao.ilike.%${termoSeguro}%`,
+    `observacao.ilike.%${termoSeguro}%`
+  ]
+  const centrosIds = (respostaCentros.data || []).map((item) => item.id).filter(Boolean)
+  const filiaisIds = (respostaFiliais.data || []).map((item) => item.id).filter(Boolean)
+  if (centrosIds.length) filtros.push(`centro_custo_id.in.(${centrosIds.join(',')})`)
+  if (filiaisIds.length) filtros.push(`filial_id.in.(${filiaisIds.join(',')})`)
+  if (Number.isFinite(numero)) filtros.push(`valor.eq.${numero}`)
+  query = query.or(filtros.join(','))
+  query = ordenarContasEstavelmente(query, false)
+  return query.range(pagina * tamanhoPagina, ((pagina + 1) * tamanhoPagina) - 1)
 }
 
 export async function listarParcelasParcelamento(supabase, empresaId, grupoParcelamentoId) {

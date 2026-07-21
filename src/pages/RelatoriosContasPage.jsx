@@ -103,12 +103,17 @@ function contaEstaExcluida(conta) {
 }
 
 function statusOperacional(conta, estaVencida) {
-  if (conta?.status === 'pago') return 'Paga'
+  const statusFinanceiro = conta?.status_financeiro_relatorio || conta?.status_relatorio
+  if (statusFinanceiro === 'quitada_por_parciais') return 'Quitada por parciais — baixa pendente'
+  if (statusFinanceiro === 'paga' || conta?.status === 'pago') return 'Paga'
+  if (statusFinanceiro === 'parcial') return 'Parcial'
+  if (statusFinanceiro === 'vencida') return 'Vencida'
+  if (statusFinanceiro === 'futura' || statusFinanceiro === 'aberta') return 'A vencer'
   return estaVencida(conta?.data_vencimento, conta?.status) ? 'Vencida' : 'A vencer'
 }
 
 function classeStatus(status) {
-  if (status === 'Paga') return 'is-paid'
+  if (status === 'Paga' || status.startsWith('Quitada por parciais')) return 'is-paid'
   if (status === 'Vencida') return 'is-overdue'
   return 'is-open'
 }
@@ -336,11 +341,17 @@ export default function RelatoriosContasPage({
         centroNome,
         filialNome,
         observacao: textoSeguro(conta?.observacao, ''),
-        tipoPagamento: ({
+        tipoPagamento: (({
           parcial: 'Pagamento parcial',
           residual: 'Quitação residual',
           integral: 'Pagamento integral'
-        })[conta?.tipo_pagamento_relatorio] || '',
+        })[conta?.tipo_pagamento_relatorio]
+          ? `${({
+            parcial: 'Pagamento parcial',
+            residual: 'Quitação residual',
+            integral: 'Pagamento integral'
+          })[conta?.tipo_pagamento_relatorio]}${conta?.valor_movimento_inferido_relatorio ? ' (valor previsto inferido)' : ''}`
+          : (conta?.valor_pago_inferido_relatorio ? 'Valor pago inferido do previsto' : '')),
         busca: normalizarBusca([
           conta?.descricao,
           conta?.observacao,
@@ -360,8 +371,8 @@ export default function RelatoriosContasPage({
       .filter((linha) => {
         if (!possuiTipoSelecionado) return false
         if (linha.statusOperacional === 'Vencida') return tiposSelecionados.includes('vencidas')
-        if (linha.statusOperacional === 'A vencer') return tiposSelecionados.includes('a-vencer')
-        if (linha.statusOperacional === 'Paga') return tiposSelecionados.includes('pagas')
+        if (linha.statusOperacional === 'A vencer' || linha.statusOperacional === 'Parcial') return tiposSelecionados.includes('a-vencer')
+        if (linha.statusOperacional === 'Paga' || linha.statusOperacional.startsWith('Quitada por parciais')) return tiposSelecionados.includes('pagas')
         return false
       })
       .filter((linha) => {
@@ -383,8 +394,8 @@ export default function RelatoriosContasPage({
     const totalContas = contasFiltradas.length
     const valorTotal = contasFiltradas.reduce((acc, linha) => acc + linha.valor, 0)
     const vencidas = contasFiltradas.filter((linha) => linha.statusOperacional === 'Vencida')
-    const aVencer = contasFiltradas.filter((linha) => linha.statusOperacional === 'A vencer')
-    const pagas = contasFiltradas.filter((linha) => linha.statusOperacional === 'Paga')
+    const aVencer = contasFiltradas.filter((linha) => ['A vencer', 'Parcial'].includes(linha.statusOperacional))
+    const pagas = contasFiltradas.filter((linha) => linha.statusOperacional === 'Paga' || linha.statusOperacional.startsWith('Quitada por parciais'))
     const obrigacoesVisiveis = baseRelatorio === 'pagamento'
       ? Array.from(new Map(contasFiltradas.map((linha) => [
         linha.conta.conta_id_relatorio || linha.conta.id,

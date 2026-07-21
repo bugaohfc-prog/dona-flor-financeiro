@@ -36,10 +36,6 @@ function aplicarFiltrosConta(query, criterios, campoData) {
   if (criterios.centroCustoId) resultado = resultado.eq('centro_custo_id', criterios.centroCustoId)
   if (criterios.origem === 'manual') resultado = resultado.is('recorrencia_id', null)
   if (criterios.origem === 'recorrente') resultado = resultado.not('recorrencia_id', 'is', null)
-  if (criterios.status === 'pagas') resultado = resultado.eq('status', 'pago')
-  if (criterios.status === 'abertas') resultado = resultado.neq('status', 'pago')
-  if (criterios.status === 'vencidas') resultado = resultado.neq('status', 'pago').lt('data_vencimento', criterios.hoje)
-  if (criterios.status === 'futuras') resultado = resultado.neq('status', 'pago').gt('data_vencimento', criterios.hoje)
   return resultado.order(campoData, { ascending: true }).order('id', { ascending: true })
 }
 

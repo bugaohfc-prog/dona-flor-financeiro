@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
 import { useRef } from 'react'
 import { consultarRelatorioFinanceiro } from '../services/relatoriosFinanceirosService.js'
-import { periodoMes } from '../utils/relatoriosFinanceiros.js'
+import { periodoMes, statusRelatorioConta } from '../utils/relatoriosFinanceiros.js'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from 'recharts'
 import { supabase } from '../lib/supabase'
 import { money as formatarValor, dateBR as formatarData } from '../utils/format'
@@ -30,12 +30,20 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
   }
 
   function estaVencida(data, status) {
-    if (!data || status === 'pago') return false
+    if (!data || ['pago', 'paga', 'quitada_por_parciais'].includes(status)) return false
     const hoje = new Date()
     hoje.setHours(0, 0, 0, 0)
     const vencimento = new Date(data + 'T00:00:00')
     vencimento.setHours(0, 0, 0, 0)
     return vencimento < hoje
+  }
+
+  function statusFinanceiroConta(conta) {
+    return conta?.status_financeiro_relatorio || conta?.status_relatorio || statusRelatorioConta(conta)
+  }
+
+  function contaFinanceiramenteQuitada(conta) {
+    return ['paga', 'quitada_por_parciais'].includes(statusFinanceiroConta(conta))
   }
 
   function valorPrevistoConta(conta) {
@@ -63,9 +71,10 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
   }
 
   function contaEntraNoStatus(conta) {
-    if (filtroStatus === 'pendentes') return conta.status !== 'pago'
-    if (filtroStatus === 'pagas') return conta.status === 'pago'
-    if (filtroStatus === 'vencidas') return estaVencida(conta.data_vencimento, conta.status)
+    const status = statusFinanceiroConta(conta)
+    if (filtroStatus === 'pendentes') return !contaFinanceiramenteQuitada(conta)
+    if (filtroStatus === 'pagas') return contaFinanceiramenteQuitada(conta)
+    if (filtroStatus === 'vencidas') return status === 'vencida'
     return true
   }
 
@@ -210,9 +219,10 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
   const contasFiltradas = useMemo(() => {
     return contas
       .filter((conta) => {
-        if (filtroStatus === 'pendentes') return conta.status !== 'pago'
-        if (filtroStatus === 'pagas') return conta.status === 'pago'
-        if (filtroStatus === 'vencidas') return estaVencida(conta.data_vencimento, conta.status)
+        const status = statusFinanceiroConta(conta)
+        if (filtroStatus === 'pendentes') return !contaFinanceiramenteQuitada(conta)
+        if (filtroStatus === 'pagas') return contaFinanceiramenteQuitada(conta)
+        if (filtroStatus === 'vencidas') return status === 'vencida'
         return true
       })
       .filter((conta) => {
@@ -237,7 +247,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
   const totalPago = contasFiltradas.reduce((acc, conta) => acc + valorRealizadoConta(conta), 0)
   const totalEncargos = contasFiltradas.reduce((acc, conta) => acc + encargosConta(conta), 0)
   const totalDescontos = contasFiltradas.reduce((acc, conta) => acc + descontoConta(conta), 0)
-  const totalVencido = contasFiltradas.filter((conta) => estaVencida(conta.data_vencimento, conta.status)).reduce((acc, conta) => acc + saldoRestanteConta(conta), 0)
+  const totalVencido = contasFiltradas.filter((conta) => statusFinanceiroConta(conta) === 'vencida').reduce((acc, conta) => acc + saldoRestanteConta(conta), 0)
   const totalPendente = contasFiltradas.reduce((acc, conta) => acc + saldoRestanteConta(conta), 0)
   const totalMesAnterior = contasMesAnterior.reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
   const diferencaMes = totalGeral - totalMesAnterior
@@ -263,7 +273,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       const total = lista.reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
       const pago = lista.reduce((acc, conta) => acc + valorRealizadoConta(conta), 0)
       const pendenteCentro = lista.reduce((acc, conta) => acc + saldoRestanteConta(conta), 0)
-      const vencido = lista.filter((conta) => estaVencida(conta.data_vencimento, conta.status)).reduce((acc, conta) => acc + saldoRestanteConta(conta), 0)
+      const vencido = lista.filter((conta) => statusFinanceiroConta(conta) === 'vencida').reduce((acc, conta) => acc + saldoRestanteConta(conta), 0)
       const encargos = lista.reduce((acc, conta) => acc + encargosConta(conta), 0)
       const descontos = lista.reduce((acc, conta) => acc + descontoConta(conta), 0)
       return {
@@ -358,7 +368,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
     else insights.push({ tipo: 'meta', texto: `Meta sob controle: consumo atual em ${formatarPercentual(percentualMeta)} da meta mensal.` })
   }
   if (totalVencido > 0) {
-    const qtd = contasFiltradas.filter((conta) => estaVencida(conta.data_vencimento, conta.status)).length
+    const qtd = contasFiltradas.filter((conta) => statusFinanceiroConta(conta) === 'vencida').length
     insights.push({ tipo: 'risco', texto: `Contas vencidas detectadas: ${qtd} conta(s), somando ${formatarValor(totalVencido)}. Priorize pagamento para evitar juros.` })
   }
   if (!filtroCentro && principalCentro?.percentual >= 60 && principalCentro.id !== 'sem-centro') {
@@ -384,9 +394,9 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       if (!mapa[mes]) mapa[mes] = { mes, total: 0, pago: 0, pendente: 0, vencido: 0 }
       const valor = valorPrevistoConta(conta)
       mapa[mes].total += valor
-      if (conta.status === 'pago') mapa[mes].pago += valorRealizadoConta(conta)
+      if (contaFinanceiramenteQuitada(conta)) mapa[mes].pago += valorRealizadoConta(conta)
       else mapa[mes].pendente += saldoRestanteConta(conta)
-      if (estaVencida(conta.data_vencimento, conta.status)) mapa[mes].vencido += saldoRestanteConta(conta)
+      if (statusFinanceiroConta(conta) === 'vencida') mapa[mes].vencido += saldoRestanteConta(conta)
     })
     return Object.values(mapa).sort((a, b) => a.mes.localeCompare(b.mes)).slice(-6)
   }, [contas, filtroMes, filtroStatus, filtroCentro, filtroFilial])
@@ -401,9 +411,9 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       const realizado = valorRealizadoConta(conta)
       mapa[chave].total += valor
       mapa[chave].qtd += 1
-      if (conta.status === 'pago') mapa[chave].pago += realizado
+      if (contaFinanceiramenteQuitada(conta)) mapa[chave].pago += realizado
       else mapa[chave].pendente += saldoRestanteConta(conta)
-      if (estaVencida(conta.data_vencimento, conta.status)) mapa[chave].vencido += saldoRestanteConta(conta)
+      if (statusFinanceiroConta(conta) === 'vencida') mapa[chave].vencido += saldoRestanteConta(conta)
     })
     return Object.values(mapa).map((item) => ({ ...item, percentual: totalGeral ? (item.total / totalGeral) * 100 : 0 })).sort((a, b) => b.total - a.total)
   }, [contasFiltradas, totalGeral])
@@ -436,8 +446,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
 
   const inteligenciaFinanceira = useMemo(() => {
     const ticketMedio = contasFiltradas.length ? totalGeral / contasFiltradas.length : 0
-    const pendentesAbertas = contasFiltradas.filter((conta) => conta.status !== 'pago')
-    const vencidas = contasFiltradas.filter((conta) => estaVencida(conta.data_vencimento, conta.status))
+    const pendentesAbertas = contasFiltradas.filter((conta) => !contaFinanceiramenteQuitada(conta))
+    const vencidas = contasFiltradas.filter((conta) => statusFinanceiroConta(conta) === 'vencida')
     const maiorDespesa = topDespesas[0] || null
     const maiorDespesaPercentual = maiorDespesa && totalGeral ? (Number(maiorDespesa.valor || 0) / totalGeral) * 100 : 0
     const paretoTop3 = topDespesas.slice(0, 3).reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
@@ -559,13 +569,13 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
     return contasFiltradas.map((conta) => [
       conta.descricao || 'Sem descrição',
       valorPrevistoConta(conta),
-      conta.status === 'pago' ? Number(conta.valor_pago ?? conta.valor ?? 0) : '',
+      contaFinanceiramenteQuitada(conta) ? valorRealizadoConta(conta) : '',
       encargosConta(conta),
       descontoConta(conta),
       conta.data_pagamento ? formatarData(conta.data_pagamento) : '',
       conta.observacao_pagamento || '',
       formatarData(conta.data_vencimento),
-      estaVencida(conta.data_vencimento, conta.status) ? 'vencido' : conta.status,
+      `${conta.rotulo_status_relatorio || statusFinanceiroConta(conta)}${conta.valor_pago_inferido_relatorio ? ' (valor previsto inferido)' : ''}`,
       conta.df_centros_custo?.nome || 'Sem centro',
       conta.df_filiais?.nome || 'Sem filial',
       conta.df_contas_recorrentes?.tipo_recorrencia || 'Não recorrente'
@@ -1536,8 +1546,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
                   <div className="print-card" key={conta.id} style={styles.cardConta}>
                     <div style={styles.cardLinha}><strong>{conta.descricao}</strong><span>{formatarValor(valorPrevistoConta(conta))}</span></div>
                     <small>
-                      {conta.status === 'pago' ? `Realizado: ${formatarValor(realizado)} • ` : ''}
-                      {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'} • {estaVencida(conta.data_vencimento, conta.status) ? 'VENCIDO' : conta.status}{ajuste}
+                      {contaFinanceiramenteQuitada(conta) ? `Realizado: ${formatarValor(realizado)} • ` : ''}
+                      {formatarData(conta.data_vencimento)} • {conta.df_centros_custo?.nome || 'Sem centro'} • {conta.rotulo_status_relatorio || statusFinanceiroConta(conta)}{conta.valor_pago_inferido_relatorio ? ' (valor previsto inferido)' : ''}{ajuste}
                     </small>
                   </div>
                 )

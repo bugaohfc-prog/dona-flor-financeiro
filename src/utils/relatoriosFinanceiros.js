@@ -34,8 +34,9 @@ export function reconciliarSituacaoConta(conta = {}, pagamentos = []) {
   const pagoPorParciais = parciais.reduce((total, pagamento) => total + valorCentavos(pagamento.valor_pago), 0)
   const pagoInformado = valorCentavos(conta.valor_pago)
   const paga = contaPaga(conta)
+  const valorPagoInferido = paga && pagoInformado <= 0
   const valorPagoAtual = paga
-    ? Math.max(pagoPorParciais, pagoInformado || valorPrevisto)
+    ? (valorPagoInferido ? Math.max(valorPrevisto, pagoPorParciais) : pagoInformado)
     : Math.max(pagoPorParciais, pagoInformado)
   const saldoRestante = paga ? 0 : Math.max(valorPrevisto - valorPagoAtual, 0)
 
@@ -45,8 +46,25 @@ export function reconciliarSituacaoConta(conta = {}, pagamentos = []) {
     valorPagoAtualCentavos: valorPagoAtual,
     saldoRestanteCentavos: saldoRestante,
     pagoPorParciaisCentavos: pagoPorParciais,
-    contaPaga: paga
+    contaPaga: paga,
+    valorPagoInferido,
+    origemValorPago: valorPagoInferido
+      ? 'valor_previsto_inferido'
+      : (pagoInformado > 0 ? 'valor_pago' : 'pagamentos_parciais'),
+    diferencaRealizadoPrevistoCentavos: paga ? valorPagoAtual - valorPrevisto : 0,
+    inconsistenciaValorPago: paga && pagoInformado > 0 && pagoPorParciais > pagoInformado
   }
+}
+
+export function derivarStatusFinanceiroConta(conta = {}, situacao = null, hoje = new Date().toISOString().slice(0, 10)) {
+  const reconciliada = situacao || reconciliarSituacaoConta(conta, conta.pagamentos_parciais || [])
+  if (reconciliada.contaPaga) return 'paga'
+  if (reconciliada.pagoPorParciaisCentavos > 0 && reconciliada.saldoRestanteCentavos === 0) return 'quitada_por_parciais'
+  const vencimento = String(conta?.data_vencimento || '')
+  if (vencimento && vencimento < hoje) return 'vencida'
+  if (reconciliada.pagoPorParciaisCentavos > 0) return 'parcial'
+  if (vencimento && vencimento > hoje) return 'futura'
+  return 'aberta'
 }
 
 export function criarMovimentosPagamentoConta(conta = {}, pagamentos = []) {
@@ -74,6 +92,8 @@ export function criarMovimentosPagamentoConta(conta = {}, pagamentos = []) {
         tipo: situacao.pagamentosAtivos.length ? 'residual' : 'integral',
         data: dataBaixa,
         valorCentavos: residual,
+        valorInferido: situacao.valorPagoInferido,
+        origemValor: situacao.origemValorPago,
         pagamento: null
       })
     }
@@ -83,11 +103,9 @@ export function criarMovimentosPagamentoConta(conta = {}, pagamentos = []) {
 }
 
 export function statusRelatorioConta(conta, hoje = new Date().toISOString().slice(0, 10)) {
-  if (contaPaga(conta)) return 'paga'
-  const vencimento = String(conta?.data_vencimento || '')
-  if (vencimento && vencimento < hoje) return 'vencida'
-  if (vencimento && vencimento > hoje) return 'futura'
-  return 'aberta'
+  return conta?.status_financeiro_relatorio
+    || conta?.status_relatorio
+    || derivarStatusFinanceiroConta(conta, null, hoje)
 }
 
 export function periodoMes(mes) {
@@ -138,6 +156,7 @@ export function consolidarContasComPagamentos(contas = [], pagamentos = [], crit
     .map((conta) => {
       const pagamentosConta = pagamentosPorConta.get(conta.id) || []
       const situacao = reconciliarSituacaoConta(conta, pagamentosConta)
+      const statusFinanceiro = derivarStatusFinanceiroConta(conta, situacao, normalizados.hoje)
       const dataPagamentoConta = String(conta.data_pagamento || '').slice(0, 10)
 
       return {
@@ -149,7 +168,16 @@ export function consolidarContasComPagamentos(contas = [], pagamentos = [], crit
         saldo_restante_relatorio: deCentavos(situacao.saldoRestanteCentavos),
         parcialmente_pago: situacao.valorPagoAtualCentavos > 0 && situacao.saldoRestanteCentavos > 0,
         data_pagamento_nao_informada: situacao.contaPaga && !dataIsoValida(dataPagamentoConta),
-        status_relatorio: statusRelatorioConta(conta, normalizados.hoje),
+        status_financeiro_relatorio: statusFinanceiro,
+        status_relatorio: statusFinanceiro,
+        rotulo_status_relatorio: statusFinanceiro === 'quitada_por_parciais'
+          ? 'Quitada por parciais — baixa pendente'
+          : '',
+        baixa_pendente_relatorio: statusFinanceiro === 'quitada_por_parciais',
+        valor_pago_inferido_relatorio: situacao.valorPagoInferido,
+        origem_valor_pago_relatorio: situacao.origemValorPago,
+        diferenca_realizado_previsto_relatorio: deCentavos(situacao.diferencaRealizadoPrevistoCentavos),
+        inconsistencia_valor_pago_relatorio: situacao.inconsistenciaValorPago,
         valor_relatorio: deCentavos(situacao.valorPrevistoCentavos),
         data_referencia_relatorio: conta.data_vencimento
       }
@@ -168,6 +196,8 @@ export function consolidarContasComPagamentos(contas = [], pagamentos = [], crit
       pagamento_id_relatorio: movimento.pagamento_id,
       data_movimento_relatorio: movimento.data,
       valor_movimento_relatorio: deCentavos(movimento.valorCentavos),
+      valor_movimento_inferido_relatorio: movimento.valorInferido === true,
+      origem_valor_movimento_relatorio: movimento.origemValor || 'pagamento_registrado',
       valor_pago_periodo_relatorio: deCentavos(movimento.valorCentavos),
       valor_relatorio: deCentavos(movimento.valorCentavos),
       data_referencia_relatorio: movimento.data
@@ -179,10 +209,17 @@ export function filtrarDatasetRelatorio(contas = [], criterios = {}) {
   const busca = normalizados.busca.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   return contas.filter((conta) => {
     const status = conta.status_relatorio || statusRelatorioConta(conta, normalizados.hoje)
-    if (normalizados.status !== 'todas') {
     if (normalizados.empresaId && String(conta.empresa_id || '') !== normalizados.empresaId) return false
-      if (normalizados.status === 'abertas' && !['aberta', 'vencida', 'futura'].includes(status)) return false
-      if (normalizados.status !== 'abertas' && status !== normalizados.status.replace(/s$/, '')) return false
+    if (normalizados.status !== 'todas') {
+      const statusAceitos = {
+        abertas: ['aberta', 'vencida', 'futura', 'parcial'],
+        pagas: ['paga', 'quitada_por_parciais'],
+        quitadas: ['paga', 'quitada_por_parciais'],
+        vencidas: ['vencida'],
+        futuras: ['futura'],
+        parciais: ['parcial']
+      }[normalizados.status] || [normalizados.status.replace(/s$/, '')]
+      if (!statusAceitos.includes(status)) return false
     }
     if (normalizados.filialId && conta.filial_id !== normalizados.filialId) return false
     if (normalizados.centroCustoId && conta.centro_custo_id !== normalizados.centroCustoId) return false

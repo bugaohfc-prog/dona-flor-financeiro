@@ -292,7 +292,10 @@ export function montarMovimentosFluxoCaixa({
         movimentos.push(enriquecerMovimentoComRubrica({
           ...movimentoBase,
           valor: componentesValor.valorPrincipal,
-          origem_valor: componentesValor.origemValorPrincipal,
+          origem_valor: situacao.valorPagoInferido
+            ? 'valor_previsto_inferido'
+            : componentesValor.origemValorPrincipal,
+          valor_inferido: situacao.valorPagoInferido,
           juros_multa: 0
         }))
       }

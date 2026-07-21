@@ -7,6 +7,7 @@ import {
   consolidarContasComPagamentos,
   criarControleConsultaRelatorio,
   criarMovimentosPagamentoConta,
+  derivarStatusFinanceiroConta,
   filtrarDatasetRelatorio,
   normalizarCriteriosRelatorio,
   podeExportarRelatorio
@@ -148,6 +149,120 @@ test('parciais que totalizam a conta nao geram residual duplicado', () => {
   )
   assert.deepEqual(movimentos.map((item) => item.tipo), ['parcial', 'parcial'])
   assert.equal(movimentos.reduce((total, item) => total + item.valorCentavos, 0), 20000)
+})
+
+test('pagamento com desconto preserva valor realizado abaixo do previsto', () => {
+  const pagaComDesconto = conta('desconto', {
+    valor: 100,
+    valor_pago: 90,
+    desconto: 10,
+    status: 'pago',
+    data_pagamento: '2026-07-10'
+  })
+  const [obrigacao] = consolidarContasComPagamentos([pagaComDesconto], [], criterios)
+  const movimentos = criarMovimentosPagamentoConta(pagaComDesconto, [])
+
+  assert.equal(obrigacao.valor_pago_atual_relatorio, 90)
+  assert.equal(obrigacao.saldo_restante_relatorio, 0)
+  assert.equal(obrigacao.desconto, 10)
+  assert.equal(obrigacao.valor_pago_inferido_relatorio, false)
+  assert.deepEqual(movimentos.map((item) => item.valorCentavos), [9000])
+})
+
+test('pagamento com acrescimo preserva valor realizado acima do previsto', () => {
+  const pagaComAcrescimo = conta('acrescimo', {
+    valor: 100,
+    valor_pago: 110,
+    juros_multa: 10,
+    status: 'pago',
+    data_pagamento: '2026-07-10'
+  })
+  const [obrigacao] = consolidarContasComPagamentos([pagaComAcrescimo], [], criterios)
+  assert.equal(obrigacao.valor_pago_atual_relatorio, 110)
+  assert.equal(obrigacao.saldo_restante_relatorio, 0)
+  assert.equal(obrigacao.juros_multa, 10)
+})
+
+test('valor previsto e usado como fallback identificado somente sem valor pago', () => {
+  const antiga = conta('antiga', { valor: 200, valor_pago: null, status: 'pago', data_pagamento: '2026-07-10' })
+  const [obrigacao] = consolidarContasComPagamentos([antiga], [], criterios)
+  const [movimento] = criarMovimentosPagamentoConta(antiga, [])
+
+  assert.equal(obrigacao.valor_pago_atual_relatorio, 200)
+  assert.equal(obrigacao.valor_pago_inferido_relatorio, true)
+  assert.equal(obrigacao.origem_valor_pago_relatorio, 'valor_previsto_inferido')
+  assert.equal(movimento.valorInferido, true)
+  assert.equal(movimento.origemValor, 'valor_previsto_inferido')
+})
+
+test('conta aberta quitada por parciais recebe status derivado e baixa pendente', () => {
+  const pagamentos = [
+    { id: 'p1', conta_id: '1', valor_pago: 40, data_pagamento: '2026-07-05', arquivado: false },
+    { id: 'p2', conta_id: '1', valor_pago: 60, data_pagamento: '2026-07-10', arquivado: false }
+  ]
+  const [obrigacao] = consolidarContasComPagamentos(
+    [conta('1', { valor: 100, data_vencimento: '2026-07-01', status: 'pendente' })],
+    pagamentos,
+    criterios
+  )
+
+  assert.equal(derivarStatusFinanceiroConta(obrigacao, null, criterios.hoje), 'quitada_por_parciais')
+  assert.equal(obrigacao.status_financeiro_relatorio, 'quitada_por_parciais')
+  assert.equal(obrigacao.saldo_restante_relatorio, 0)
+  assert.equal(obrigacao.baixa_pendente_relatorio, true)
+  assert.equal(obrigacao.rotulo_status_relatorio, 'Quitada por parciais — baixa pendente')
+  assert.deepEqual(filtrarDatasetRelatorio([obrigacao], { ...criterios, status: 'vencidas' }), [])
+  assert.deepEqual(filtrarDatasetRelatorio([obrigacao], { ...criterios, status: 'pagas' }).map((item) => item.id), ['1'])
+})
+
+test('quitacao por parciais nao executa atualizacao automatica', async () => {
+  const fontes = await Promise.all([
+    readFile(new URL('./relatoriosFinanceiros.js', import.meta.url), 'utf8'),
+    readFile(new URL('../services/relatoriosFinanceirosService.js', import.meta.url), 'utf8')
+  ])
+  assert.equal(fontes.some((fonte) => /\.update\s*\(|\.insert\s*\(|\.upsert\s*\(/.test(fonte)), false)
+})
+
+test('filtros financeiros dependentes de parciais sao aplicados apos reconciliacao', async () => {
+  const service = await readFile(new URL('../services/relatoriosFinanceirosService.js', import.meta.url), 'utf8')
+  assert.equal(/\.eq\(['"]status['"],\s*['"]pago['"]\)/.test(service), false)
+  assert.equal(/\.neq\(['"]status['"],\s*['"]pago['"]\)/.test(service), false)
+})
+
+test('fluxo e base por pagamento preservam valor real com desconto', () => {
+  const pagaComDesconto = conta('1', {
+    valor: 100,
+    valor_pago: 90,
+    desconto: 10,
+    status: 'pago',
+    data_pagamento: '2026-07-20'
+  })
+  const basePagamento = consolidarContasComPagamentos(
+    [pagaComDesconto],
+    [],
+    { ...criterios, base: 'pagamento' }
+  )
+  const fluxo = montarMovimentosFluxoCaixa({ ano: '2026', contasPagas: [pagaComDesconto] })
+    .filter((item) => item.tipo === 'saida')
+  assert.equal(basePagamento.reduce((total, item) => total + item.valor_relatorio, 0), 90)
+  assert.equal(fluxo.reduce((total, item) => total + item.valor, 0), 90)
+})
+
+test('exportacao recebe status derivado e identificacao de fallback', () => {
+  const [quitada] = consolidarContasComPagamentos(
+    [conta('quitada', { valor: 100 })],
+    [{ id: 'p1', conta_id: 'quitada', valor_pago: 100, data_pagamento: '2026-07-10', arquivado: false }],
+    criterios
+  )
+  const [inferida] = consolidarContasComPagamentos(
+    [conta('inferida', { valor: 200, status: 'pago', valor_pago: null, data_pagamento: '2026-07-10' })],
+    [],
+    criterios
+  )
+  assert.equal(quitada.status_relatorio, 'quitada_por_parciais')
+  assert.equal(quitada.rotulo_status_relatorio, 'Quitada por parciais — baixa pendente')
+  assert.equal(inferida.valor_pago_inferido_relatorio, true)
+  assert.equal(inferida.origem_valor_pago_relatorio, 'valor_previsto_inferido')
 })
 
 test('varios pagamentos permanecem em linhas e datas separadas para exportacao', () => {

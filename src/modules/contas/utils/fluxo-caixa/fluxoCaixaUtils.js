@@ -7,7 +7,7 @@ import {
   RUBRICAS_SAIDA_FLUXO_CAIXA,
   classificarRubricaFluxoCaixa,
   deveSepararJurosFluxoCaixa
-} from './classificarRubricaFluxoCaixa'
+} from './classificarRubricaFluxoCaixa.js'
 
 export const MESES_FLUXO_CAIXA = [
   { numero: 1, chave: 'jan', nome: 'Janeiro' },

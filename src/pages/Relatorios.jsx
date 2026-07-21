@@ -1,4 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
+import { useRef } from 'react'
+import { consultarRelatorioFinanceiro } from '../services/relatoriosFinanceirosService.js'
+import { periodoMes } from '../utils/relatoriosFinanceiros.js'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from 'recharts'
 import { supabase } from '../lib/supabase'
 import { money as formatarValor, dateBR as formatarData } from '../utils/format'
@@ -103,9 +106,12 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
   }
 
   const [contas, setContas] = useState([])
+  const [contasComparacao, setContasComparacao] = useState([])
   const [centros, setCentros] = useState([])
   const [filiais, setFiliais] = useState([])
   const [loading, setLoading] = useState(true)
+  const [erro, setErro] = useState(null)
+  const consultaRef = useRef(0)
   const [filtroMes, setFiltroMes] = useState(mesAtualPadrao())
   const [filtroStatus, setFiltroStatus] = useState('todas')
   const [filtroCentro, setFiltroCentro] = useState('')
@@ -135,44 +141,62 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
 
   useEffect(() => {
     buscarDados()
-  }, [empresaId])
+    return () => { consultaRef.current += 1 }
+  }, [empresaId, filtroMes, filtroCentro, filtroFilial])
 
   async function buscarDados() {
+    const token = ++consultaRef.current
     if (!empresaId) {
       setContas([])
+      setContasComparacao([])
       setCentros([])
       setFiliais([])
+      setErro(null)
       setLoading(false)
       return
     }
 
     setLoading(true)
+    setErro(null)
+    const periodo = periodoMes(filtroMes || mesAtualPadrao())
+    const periodoComparacao = periodoMes(mesAnterior(filtroMes || mesAtualPadrao()))
+    const filtrosRelatorio = {
+      empresaId,
+      base: 'vencimento',
+      status: 'todas',
+      filialId: filtroFilial,
+      centroCustoId: filtroCentro
+    }
+    const [respostaRelatorio, respostaComparacao, respostaCentros, respostaFiliais] = await Promise.all([
+      consultarRelatorioFinanceiro(supabase, {
+        ...filtrosRelatorio,
+        dataInicial: periodo.dataInicial,
+        dataFinal: periodo.dataFinal
+      }),
+      consultarRelatorioFinanceiro(supabase, {
+        ...filtrosRelatorio,
+        dataInicial: periodoComparacao.dataInicial,
+        dataFinal: periodoComparacao.dataFinal
+      }),
+      supabase.from('df_centros_custo').select('*').eq('empresa_id', empresaId).order('nome', { ascending: true }),
+      supabase.from('df_filiais').select('*').eq('empresa_id', empresaId).order('nome', { ascending: true })
+    ])
+    if (token !== consultaRef.current) return
 
-    const { data: contasData, error: contasError } = await supabase
-      .from('df_contas')
-      .select('*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia)')
-      .eq('empresa_id', empresaId)
-      .order('data_vencimento', { ascending: true })
+    const falha = respostaRelatorio.error || respostaComparacao.error || respostaCentros.error || respostaFiliais.error
+    if (falha) {
+      setContas([])
+      setContasComparacao([])
+      setErro(falha)
+      setLoading(false)
+      mostrarAviso?.('Nao foi possivel carregar o relatorio financeiro.', 'erro')
+      return
+    }
 
-    const { data: centrosData, error: centrosError } = await supabase
-      .from('df_centros_custo')
-      .select('*')
-      .eq('empresa_id', empresaId)
-      .order('nome', { ascending: true })
-
-    const { data: filiaisData, error: filiaisError } = await supabase
-      .from('df_filiais')
-      .select('*')
-      .eq('empresa_id', empresaId)
-      .order('nome', { ascending: true })
-
-    if (contasError) mostrarAviso?.(contasError.message, 'erro')
-    if (centrosError) mostrarAviso?.(centrosError.message, 'erro')
-    if (filiaisError) mostrarAviso?.(filiaisError.message, 'erro')
-
-    setContas((contasData || []).filter((conta) => !conta.excluido_em && !conta.deleted_at))
-    setCentros(centrosData || [])
-    setFiliais(filiaisData || [])
+    setContas(respostaRelatorio.data?.registros || [])
+    setContasComparacao(respostaComparacao.data?.registros || [])
+    setCentros(respostaCentros.data || [])
+    setFiliais(respostaFiliais.data || [])
     setLoading(false)
   }
 
@@ -199,19 +223,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
   }, [contas, filtroMes, filtroStatus, filtroCentro, filtroFilial])
 
   const contasMesAnterior = useMemo(() => {
-    const mesBase = filtroMes ? mesAnterior(filtroMes) : mesAnterior(mesAtualPadrao())
-    return contas
-      .filter((conta) => pegarMes(conta.data_vencimento) === mesBase)
-      .filter(contaEntraNoStatus)
-      .filter((conta) => {
-        if (!filtroCentro) return true
-        return conta.centro_custo_id === filtroCentro
-      })
-      .filter((conta) => {
-        if (!filtroFilial) return true
-        return conta.filial_id === filtroFilial
-      })
-  }, [contas, filtroMes, filtroStatus, filtroCentro, filtroFilial])
+    return contasComparacao.filter(contaEntraNoStatus)
+  }, [contasComparacao, filtroStatus])
 
   const totalGeral = contasFiltradas.reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
   const totalPago = contasFiltradas.reduce((acc, conta) => acc + valorRealizadoConta(conta), 0)
@@ -554,6 +567,10 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
 
 
   function imprimirPDF() {
+    if (loading || erro) {
+      mostrarAviso?.('Aguarde o relatorio ficar disponivel para exportar.', 'aviso')
+      return
+    }
     if (!podeExportarDados) {
       mostrarAviso?.('Você não tem permissão para realizar esta ação.', 'erro')
       return
@@ -643,7 +660,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
           <div class="cover">
             <div class="brand">DNA Gestão</div>
             <h1>Relatório financeiro</h1>
-            <div class="subtitle">Relatório gerencial para conferência de indicadores, DRE, prioridades e contas filtradas.</div>
+            <div class="subtitle">Relatório gerencial para conferência de indicadores, resumo de despesas, prioridades e contas filtradas.</div>
             <div class="meta">
               Empresa: ${escapeHtml(nomeEmpresaRelatorio)}<br />
               Emitido em ${escapeHtml(dataEmissaoFormatada)} • ${escapeHtml(nomeMes(filtroMes || mesAtualPadrao()))}<br />
@@ -670,7 +687,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
           <table><thead><tr><th>Nível</th><th>Prioridade</th><th>Leitura</th><th>Impacto</th><th>Ação</th></tr></thead><tbody>${linhasPrioridadesCopilot || '<tr><td colspan="5">Nenhuma prioridade crítica encontrada.</td></tr>'}</tbody></table>
           <h2>Recomendações</h2>
           ${linhasRecomendacoesCopilot}
-          <h2>DRE Gerencial</h2>
+          <h2>Resumo de despesas</h2>
           <table><thead><tr><th>Linha</th><th>Valor</th><th>Descrição</th></tr></thead><tbody>${linhasDre}</tbody></table>
           <h2>Análises financeiras</h2>
           ${insights.map((insight) => `<div class="insight">${escapeHtml(insight.texto)}</div>`).join('')}
@@ -686,6 +703,10 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
   }
 
   function exportarCSV() {
+    if (loading || erro) {
+      mostrarAviso?.('Aguarde o relatorio ficar disponivel para exportar.', 'aviso')
+      return
+    }
     if (!podeExportarDados) {
       mostrarAviso?.('Você não tem permissão para realizar esta ação.', 'erro')
       return
@@ -711,6 +732,10 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
   }
 
   function exportarExcel() {
+    if (loading || erro) {
+      mostrarAviso?.('Aguarde o relatorio ficar disponivel para exportar.', 'aviso')
+      return
+    }
     if (!podeExportarDados) {
       mostrarAviso?.('Você não tem permissão para realizar esta ação.', 'erro')
       return
@@ -741,7 +766,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
         ]
       },
       {
-        name: 'DRE',
+        name: 'Resumo despesas',
         rows: [
           ['Linha', 'Valor', 'Descrição'],
           ...dreGerencial.map((linha) => [linha.linha, linha.valor, linha.descricao])
@@ -879,6 +904,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
               <button
                 type="button"
                 className="finance-report-export-toggle"
+                disabled={loading || Boolean(erro)}
                 onClick={() => setExportMenuAberto((aberto) => !aberto)}
               >
                 Exportar
@@ -936,7 +962,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
               <label>
                 <span>Visão</span>
                 <select style={styles.input} value={visaoExecutiva} onChange={(e) => setVisaoExecutiva(e.target.value)}>
-                  <option value="dre">Visão DRE</option>
+                  <option value="dre">Resumo de despesas</option>
                   <option value="graficos">Visão Gráficos</option>
                   <option value="filiais">Visão Filiais</option>
                   <option value="inteligencia">Análise financeira</option>
@@ -962,7 +988,15 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
           </>
         )}
       </section>
-      {loading ? <RelatorioSkeleton /> : (
+      {erro ? (
+        <section style={styles.cardAlerta} role="alert">
+          <div>
+            <strong>Relatorio indisponivel</strong>
+            <p style={styles.muted}>Nao foi possivel consultar os dados do periodo. Nenhum total foi calculado.</p>
+          </div>
+          <button type="button" style={styles.btnAcao} onClick={buscarDados}>Tentar novamente</button>
+        </section>
+      ) : loading ? <RelatorioSkeleton /> : (
         <>
       <section className="finance-report-list-section finance-report-kpi-section">
         <div className="finance-report-section-head">
@@ -998,7 +1032,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
 
         {blocoAberto('analise') && visaoExecutiva === 'dre' && (
           <div style={styles.advancedGrid}>
-            <Widget titulo="DRE gerencial" emoji="🧮">
+            <Widget titulo="Resumo de despesas" emoji="🧮">
               {dreGerencial.map((linha) => (
                 <div key={linha.linha} style={styles.dreLinha}>
                   <div style={styles.dreTexto}>
@@ -1009,7 +1043,7 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
                 </div>
               ))}
             </Widget>
-            <Widget titulo="Tendência 6 meses" emoji="📉">
+            <Widget titulo="Tendência do período" emoji="📉">
               <div style={styles.chartBox}>
                 <ResponsiveContainer width="100%" height={220}>
                   <LineChart data={contasPorMes}>

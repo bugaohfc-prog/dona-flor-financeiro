@@ -43,11 +43,28 @@ export function nomeArquivoRelatorioContas({ tipoRelatorio, filialNome, extensao
   return `${partes.filter(Boolean).join('-')}.${extensao}`
 }
 
+export function metadadosExportacaoRelatorio(contexto = {}) {
+  const resumo = contexto.resumoFinanceiro || {}
+  return [
+    ['Empresa', contexto.empresaNome || 'Empresa ativa'],
+    ['Periodo', contexto.periodo || '-'],
+    ['Base', contexto.base || 'Por vencimento'],
+    ['Filial', contexto.filialNome || 'Todas'],
+    ['Centro de custo', contexto.centroNome || 'Todos'],
+    ['Status', contexto.status || 'Todos'],
+    ['Gerado em', contexto.dataGeracao || new Date().toLocaleString('pt-BR')],
+    ['Quantidade de registros', contexto.totalRegistros ?? 0],
+    ['Total previsto', resumo.totalPrevisto ?? 0],
+    ['Total pago', resumo.totalPagoPeriodo ?? resumo.totalPago ?? 0],
+    ['Saldo em aberto', resumo.saldoEmAberto ?? 0]
+  ]
+}
+
 export function exportarRelatorioContasCsv(linhas, contexto) {
   const cabecalho = [
     'Descricao',
     'Valor',
-    'Vencimento',
+    'Data de referencia',
     'Status operacional',
     'Centro de custo',
     'Filial/Unidade',
@@ -55,11 +72,13 @@ export function exportarRelatorioContasCsv(linhas, contexto) {
   ]
 
   const conteudo = [
+    ...metadadosExportacaoRelatorio(contexto).map((linha) => linha.map(escaparCsv).join(';')),
+    '',
     cabecalho.map(escaparCsv).join(';'),
     ...linhas.map((linha) => [
       linha.descricao,
       linha.valorFormatado,
-      linha.vencimentoFormatado,
+      linha.dataReferenciaFormatada || linha.vencimentoFormatado,
       linha.statusOperacional,
       linha.centroNome,
       linha.filialNome,
@@ -79,7 +98,7 @@ export function exportarRelatorioContasExcel(linhas, contexto) {
     <tr>
       <td>${escaparHtml(linha.descricao)}</td>
       <td>${escaparHtml(linha.valorFormatado)}</td>
-      <td>${escaparHtml(linha.vencimentoFormatado)}</td>
+      <td>${escaparHtml(linha.dataReferenciaFormatada || linha.vencimentoFormatado)}</td>
       <td>${escaparHtml(linha.statusOperacional)}</td>
       <td>${escaparHtml(linha.centroNome)}</td>
       <td>${escaparHtml(linha.filialNome)}</td>
@@ -94,11 +113,22 @@ export function exportarRelatorioContasExcel(linhas, contexto) {
       </head>
       <body>
         <table>
+          <tbody>
+            ${metadadosExportacaoRelatorio(contexto).map(([rotulo, valor]) => `
+              <tr>
+                <th>${escaparHtml(rotulo)}</th>
+                <td>${escaparHtml(valor)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <br />
+        <table>
           <thead>
             <tr>
               <th>Descricao</th>
               <th>Valor</th>
-              <th>Vencimento</th>
+              <th>Data de referencia</th>
               <th>Status operacional</th>
               <th>Centro de custo</th>
               <th>Filial/Unidade</th>
@@ -132,7 +162,7 @@ export function imprimirRelatorioContas({ linhas, grupos, contexto, resumo, modo
         ${linha.observacao ? `<small>Obs.: ${escaparHtml(linha.observacao)}</small>` : ''}
       </td>
       <td>${escaparHtml(linha.valorFormatado)}</td>
-      <td>${escaparHtml(linha.vencimentoFormatado)}</td>
+      <td>${escaparHtml(linha.dataReferenciaFormatada || linha.vencimentoFormatado)}</td>
       <td>${escaparHtml(linha.statusOperacional)}</td>
       <td>${escaparHtml(linha.centroNome)}</td>
       <td>${escaparHtml(linha.filialNome)}</td>
@@ -156,7 +186,7 @@ export function imprimirRelatorioContas({ linhas, grupos, contexto, resumo, modo
           <tr>
             <th>Descrição</th>
             <th>Valor</th>
-            <th>Vencimento</th>
+            <th>Data de referencia</th>
             <th>Status operacional</th>
             <th>Centro de custo</th>
             <th>Filial/Unidade</th>
@@ -168,7 +198,7 @@ export function imprimirRelatorioContas({ linhas, grupos, contexto, resumo, modo
             <tr>
               <td>${escaparHtml(linha.descricao)}</td>
               <td>${escaparHtml(linha.valorFormatado)}</td>
-              <td>${escaparHtml(linha.vencimentoFormatado)}</td>
+              <td>${escaparHtml(linha.dataReferenciaFormatada || linha.vencimentoFormatado)}</td>
               <td>${escaparHtml(linha.statusOperacional)}</td>
               <td>${escaparHtml(linha.centroNome)}</td>
               <td>${escaparHtml(linha.filialNome)}</td>
@@ -259,7 +289,7 @@ export function imprimirRelatorioContas({ linhas, grupos, contexto, resumo, modo
                 <tr>
                   <th>Descrição / observação</th>
                   <th>Valor</th>
-                  <th>Vencimento</th>
+                  <th>Data de referencia</th>
                   <th>Status</th>
                   <th>Centro</th>
                   <th>Filial/Unidade</th>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useRelatorioFinanceiro } from '../hooks/useRelatorioFinanceiro.js'
 import {
   exportarRelatorioContasCsv,
   exportarRelatorioContasExcel,
@@ -62,6 +63,23 @@ function somarDiasBanco(dias) {
   data.setHours(0, 0, 0, 0)
   data.setDate(data.getDate() + Number(dias || 0))
   return formatarDataBanco(data)
+}
+
+function periodoMesAtual() {
+  const hoje = new Date()
+  return {
+    inicio: formatarDataBanco(new Date(hoje.getFullYear(), hoje.getMonth(), 1)),
+    fim: formatarDataBanco(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0))
+  }
+}
+
+function statusConsultaPorTipos(tipos) {
+  const selecionados = new Set(tipos)
+  if (tipos.length === 1 && selecionados.has('pagas')) return 'pagas'
+  if (tipos.length === 1 && selecionados.has('vencidas')) return 'vencidas'
+  if (tipos.length === 1 && selecionados.has('a-vencer')) return 'abertas'
+  if (!selecionados.has('pagas')) return 'abertas'
+  return 'todas'
 }
 
 function obterNomeCentro(conta, centros) {
@@ -201,7 +219,8 @@ function BlocoRelatorioContas({ titulo, descricao, aberto, onToggle, children })
 }
 
 export default function RelatoriosContasPage({
-  contas = [],
+  empresaId,
+  empresaNome,
   centros = [],
   filiais = [],
   estaVencida,
@@ -211,11 +230,15 @@ export default function RelatoriosContasPage({
   podeExportarDados = true,
   mostrarAviso
 }) {
+  const periodoInicial = useMemo(periodoMesAtual, [])
   const [tiposSelecionados, setTiposSelecionados] = useState(['vencidas', 'a-vencer'])
+  const [baseRelatorio, setBaseRelatorio] = useState('vencimento')
+  const [origem, setOrigem] = useState('todas')
+  const [incluirOcultas, setIncluirOcultas] = useState(false)
   const [filtroFilial, setFiltroFilial] = useState('')
   const [centrosSelecionados, setCentrosSelecionados] = useState([])
-  const [dataInicial, setDataInicial] = useState('')
-  const [dataFinal, setDataFinal] = useState('')
+  const [dataInicial, setDataInicial] = useState(periodoInicial.inicio)
+  const [dataFinal, setDataFinal] = useState(periodoInicial.fim)
   const [periodoContasAVencer, setPeriodoContasAVencer] = useState('todas-abertas')
   const [busca, setBusca] = useState('')
   const [agrupamento, setAgrupamento] = useState('status')
@@ -223,6 +246,25 @@ export default function RelatoriosContasPage({
   const [previaAberta, setPreviaAberta] = useState(true)
   const [tipoDropdownAberto, setTipoDropdownAberto] = useState(false)
   const [centroDropdownAberto, setCentroDropdownAberto] = useState(false)
+  const criteriosConsulta = useMemo(() => ({
+    base: baseRelatorio,
+    dataInicial,
+    dataFinal,
+    status: statusConsultaPorTipos(tiposSelecionados),
+    filialId: filtroFilial,
+    centroCustoId: centrosSelecionados.length === 1 ? centrosSelecionados[0] : '',
+    origem,
+    incluirOcultas,
+    busca
+  }), [baseRelatorio, busca, centrosSelecionados, dataFinal, dataInicial, filtroFilial, incluirOcultas, origem, tiposSelecionados])
+  const {
+    registros: contas,
+    resumo: resumoConsulta,
+    carregando,
+    erro,
+    carregado,
+    consultar: tentarNovamente
+  } = useRelatorioFinanceiro({ empresaId, criterios: criteriosConsulta })
   const contextoTipos = useMemo(() => contextoPorTipos(tiposSelecionados), [tiposSelecionados])
   const resumoTiposSelecionados = useMemo(() => resumoSelecaoTipos(tiposSelecionados), [tiposSelecionados])
   const possuiTipoSelecionado = tiposSelecionados.length > 0
@@ -279,9 +321,12 @@ export default function RelatoriosContasPage({
         conta,
         descricao: textoSeguro(conta?.descricao, 'Conta sem descrição'),
         valor: valorNumerico,
-        valorPago: Number(conta?.valor_pago ?? conta?.valor ?? 0),
+        valorPago: Number(conta?.valor_pago_atual_relatorio ?? conta?.valor_pago ?? conta?.valor ?? 0),
+        saldoRestante: Number(conta?.saldo_restante_relatorio ?? Math.max(valorNumerico - Number(conta?.valor_pago || 0), 0)),
         valorFormatado: formatarValor ? formatarValor(valorNumerico) : valorNumerico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
         vencimento: conta?.data_vencimento || '',
+        dataReferencia: conta?.data_referencia_relatorio || conta?.data_vencimento || '',
+        dataReferenciaFormatada: (conta?.data_referencia_relatorio || conta?.data_vencimento) && formatarData ? formatarData(conta?.data_referencia_relatorio || conta?.data_vencimento) : textoSeguro(conta?.data_referencia_relatorio || conta?.data_vencimento, '-'),
         vencimentoFormatado: conta?.data_vencimento && formatarData ? formatarData(conta.data_vencimento) : textoSeguro(conta?.data_vencimento, '-'),
         statusOperacional: status,
         centroNome,
@@ -319,8 +364,8 @@ export default function RelatoriosContasPage({
       })
       .filter((linha) => !filtroFilial || linha.conta.filial_id === filtroFilial)
       .filter((linha) => !centrosSelecionados.length || centrosSelecionados.includes(linha.conta.centro_custo_id || ''))
-      .filter((linha) => !dataInicial && !dataFinal ? true : Boolean(linha.vencimento) && (!dataInicial || linha.vencimento >= dataInicial))
-      .filter((linha) => !dataInicial && !dataFinal ? true : Boolean(linha.vencimento) && (!dataFinal || linha.vencimento <= dataFinal))
+      .filter((linha) => !dataInicial && !dataFinal ? true : Boolean(linha.dataReferencia) && (!dataInicial || linha.dataReferencia >= dataInicial))
+      .filter((linha) => !dataInicial && !dataFinal ? true : Boolean(linha.dataReferencia) && (!dataFinal || linha.dataReferencia <= dataFinal))
       .filter((linha) => !termo || linha.busca.includes(termo))
       .sort((a, b) => String(a.vencimento || '9999-12-31').localeCompare(String(b.vencimento || '9999-12-31')))
   }, [busca, centrosSelecionados, contasNormalizadas, dataFinal, dataInicial, filtroFilial, hojeBanco, limiteContasAVencer, periodoContasAVencer, possuiContasAVencerSelecionadas, possuiTipoSelecionado, tiposSelecionados])
@@ -332,10 +377,13 @@ export default function RelatoriosContasPage({
     const aVencer = contasFiltradas.filter((linha) => linha.statusOperacional === 'A vencer')
     const pagas = contasFiltradas.filter((linha) => linha.statusOperacional === 'Paga')
     const valorVencido = vencidas.reduce((acc, linha) => acc + linha.valor, 0)
+    const saldoEmAberto = contasFiltradas.reduce((acc, linha) => acc + linha.saldoRestante, 0)
     const valorAVencer = aVencer.reduce((acc, linha) => acc + linha.valor, 0)
     const valorPago = pagas.reduce((acc, linha) => acc + linha.valorPago, 0)
 
     return {
+      valorPago,
+      saldoEmAberto,
       totalContas,
       valorTotal,
       valorTotalFormatado: formatarValor ? formatarValor(valorTotal) : valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
@@ -354,7 +402,7 @@ export default function RelatoriosContasPage({
     contasFiltradas.forEach((linha) => {
       let chave = 'Relatório'
       if (agrupamento === 'status') chave = linha.statusOperacional
-      if (agrupamento === 'vencimento') chave = nomeMesAno(linha.vencimento)
+      if (agrupamento === 'vencimento') chave = nomeMesAno(linha.dataReferencia)
       if (agrupamento === 'centro') chave = linha.centroNome
       if (agrupamento === 'filial') chave = linha.filialNome
 
@@ -381,12 +429,27 @@ export default function RelatoriosContasPage({
 
   const contextoExportacao = {
     tipoRelatorio: contextoTipos.titulo,
+    empresaNome: empresaNome || 'Empresa ativa',
     filialNome: filialSelecionada?.nome || 'Todas',
     centroNome: centroNomeExportacao,
-    periodo: periodoTexto
+    periodo: periodoTexto,
+    base: baseRelatorio === 'pagamento' ? 'Por pagamento' : 'Por vencimento',
+    status: resumoTiposSelecionados,
+    dataGeracao: new Date().toLocaleString('pt-BR'),
+    totalRegistros: contasFiltradas.length,
+    resumoFinanceiro: {
+      totalPrevisto: resumo.valorTotal,
+      totalPago: resumo.valorPago,
+      totalPagoPeriodo: baseRelatorio === 'pagamento' ? resumo.valorPago : 0,
+      saldoEmAberto: resumo.saldoEmAberto
+    }
   }
 
   function garantirPermissaoExportacao() {
+    if (carregando || erro || !carregado) {
+      mostrarAviso?.('Aguarde a consulta completa antes de exportar.', 'erro')
+      return false
+    }
     if (!possuiTipoSelecionado) {
       mostrarAviso?.('Selecione pelo menos um tipo de conta para exportar.', 'erro')
       return false
@@ -505,6 +568,14 @@ export default function RelatoriosContasPage({
           )}
 
           <label>
+            <span>Base do periodo</span>
+            <select value={baseRelatorio} onChange={(event) => setBaseRelatorio(event.target.value)}>
+              <option value="vencimento">Por vencimento</option>
+              <option value="pagamento">Por pagamento</option>
+            </select>
+          </label>
+
+          <label>
             <span>Filial/Unidade</span>
             <select value={filtroFilial} onChange={(event) => setFiltroFilial(event.target.value)}>
               <option value="">Todas</option>
@@ -577,6 +648,20 @@ export default function RelatoriosContasPage({
           </label>
 
           <label>
+            <span>Origem</span>
+            <select value={origem} onChange={(event) => setOrigem(event.target.value)}>
+              <option value="todas">Manual e recorrente</option>
+              <option value="manual">Somente manual</option>
+              <option value="recorrente">Somente recorrente</option>
+            </select>
+          </label>
+
+          <label className="relatorios-contas-checkbox-filter">
+            <input type="checkbox" checked={incluirOcultas} onChange={(event) => setIncluirOcultas(event.target.checked)} />
+            <span>Incluir contas ocultas</span>
+          </label>
+
+          <label>
             <span>Agrupamento</span>
             <select value={agrupamento} onChange={(event) => setAgrupamento(event.target.value)}>
               {AGRUPAMENTOS.map((item) => (
@@ -587,33 +672,63 @@ export default function RelatoriosContasPage({
         </div>
       </BlocoRelatorioContas>
 
-      <section className="relatorios-contas-summary" aria-label="Resumo do relatório">
-        <article>
-          <span>Total de contas</span>
-          <strong>{resumo.totalContas}</strong>
-          <small>{contextoTipos.titulo}</small>
-        </article>
-        <article>
-          <span>Valor total</span>
-          <strong>{resumo.valorTotalFormatado}</strong>
-          <small>{contextoExportacao.filialNome}</small>
-        </article>
-        <article className="is-overdue">
-          <span>Vencidas</span>
-          <strong>{resumo.valorVencidoFormatado}</strong>
-          <small>{resumo.quantidadeVencidas} conta(s)</small>
-        </article>
-        <article className="is-open">
-          <span>A vencer</span>
-          <strong>{resumo.valorAVencerFormatado}</strong>
-          <small>{resumo.quantidadeAVencer} conta(s)</small>
-        </article>
-        <article className="is-paid">
-          <span>Pagas</span>
-          <strong>{resumo.valorPagoFormatado}</strong>
-          <small>{resumo.quantidadePagas} conta(s)</small>
-        </article>
-      </section>
+      {carregando && (
+        <section className="relatorios-contas-empty" aria-busy="true">
+          <strong>Consultando o per&iacute;odo completo...</strong>
+          <p>A pagina&ccedil;&atilde;o inclui todos os registros da empresa, sem depender da tela Contas.</p>
+        </section>
+      )}
+
+      {erro && !carregando && (
+        <section className="relatorios-contas-empty" role="alert">
+          <strong>N&atilde;o foi poss&iacute;vel consultar o relat&oacute;rio.</strong>
+          <p>{erro.message || 'Tente novamente.'}</p>
+          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={tentarNovamente}>Tentar novamente</button>
+        </section>
+      )}
+
+      {!carregando && !erro && baseRelatorio === 'pagamento' && (
+        <section className="relatorios-contas-empty">
+          <strong>Base por pagamento</strong>
+          <p>Contas pagas sem data de pagamento n&atilde;o s&atilde;o atribu&iacute;das silenciosamente ao per&iacute;odo. Consulte-as pela base de vencimento.</p>
+        </section>
+      )}
+
+      {!carregando && !erro && baseRelatorio === 'vencimento' && resumoConsulta?.semDataPagamento > 0 && (
+        <section className="relatorios-contas-empty">
+          <strong>Data de pagamento n&atilde;o informada</strong>
+          <p>{resumoConsulta.semDataPagamento} conta(s) paga(s) deste per&iacute;odo n&atilde;o possuem data de pagamento confi&aacute;vel.</p>
+        </section>
+      )}
+      {carregado && !carregando && !erro && (
+        <section className="relatorios-contas-summary" aria-label="Resumo do relatório">
+          <article>
+            <span>Total de contas</span>
+            <strong>{resumo.totalContas}</strong>
+            <small>{contextoTipos.titulo}</small>
+          </article>
+          <article>
+            <span>Valor total</span>
+            <strong>{resumo.valorTotalFormatado}</strong>
+            <small>{contextoExportacao.filialNome}</small>
+          </article>
+          <article className="is-overdue">
+            <span>Vencidas</span>
+            <strong>{resumo.valorVencidoFormatado}</strong>
+            <small>{resumo.quantidadeVencidas} conta(s)</small>
+          </article>
+          <article className="is-open">
+            <span>A vencer</span>
+            <strong>{resumo.valorAVencerFormatado}</strong>
+            <small>{resumo.quantidadeAVencer} conta(s)</small>
+          </article>
+          <article className="is-paid">
+            <span>{baseRelatorio === 'pagamento' ? 'Pago no periodo' : 'Pagas'}</span>
+            <strong>{formatarValor ? formatarValor(resumo.valorPago) : resumo.valorPagoFormatado}</strong>
+            <small>{resumo.quantidadePagas} conta(s); saldo {formatarValor?.(resumo.saldoEmAberto || 0)}</small>
+          </article>
+        </section>
+      )}
 
       <section className="relatorios-contas-card relatorios-contas-export-card">
         <div>
@@ -621,16 +736,16 @@ export default function RelatoriosContasPage({
           <p>{possuiTipoSelecionado ? 'Exporte exatamente a lista filtrada deste relatório.' : 'Selecione pelo menos um tipo de conta para liberar a exportação.'}</p>
         </div>
         <div className="relatorios-contas-export-actions">
-          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={() => imprimir('compacto')} disabled={!possuiTipoSelecionado || !contasFiltradas.length}>
+          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={() => imprimir('compacto')} disabled={!possuiTipoSelecionado || !contasFiltradas.length || carregando || Boolean(erro) || !carregado}>
             PDF compacto
           </button>
-          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={() => imprimir('gerencial')} disabled={!possuiTipoSelecionado || !contasFiltradas.length}>
+          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={() => imprimir('gerencial')} disabled={!possuiTipoSelecionado || !contasFiltradas.length || carregando || Boolean(erro) || !carregado}>
             PDF gerencial
           </button>
-          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={exportarCsv} disabled={!possuiTipoSelecionado || !contasFiltradas.length}>
+          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-secondary" onClick={exportarCsv} disabled={!possuiTipoSelecionado || !contasFiltradas.length || carregando || Boolean(erro) || !carregado}>
             Exportar CSV
           </button>
-          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-primary" onClick={exportarExcel} disabled={!possuiTipoSelecionado || !contasFiltradas.length}>
+          <button type="button" className="relatorios-contas-btn relatorios-contas-btn-primary" onClick={exportarExcel} disabled={!possuiTipoSelecionado || !contasFiltradas.length || carregando || Boolean(erro) || !carregado}>
             Exportar Excel
           </button>
         </div>
@@ -642,7 +757,7 @@ export default function RelatoriosContasPage({
         aberto={previaAberta}
         onToggle={() => setPreviaAberta((valor) => !valor)}
       >
-        {contasFiltradas.length ? (
+        {!carregando && !erro && contasFiltradas.length ? (
           <>
             <div className="relatorios-contas-preview-meta">
               <span>Tipo: <strong>{contextoExportacao.tipoRelatorio}</strong></span>

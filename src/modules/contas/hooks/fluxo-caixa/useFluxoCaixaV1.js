@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useRef } from 'react'
 import { supabase } from '../../../../lib/supabase'
-import { carregarFluxoCaixaRealizadoV1 } from '../../services/fluxo-caixa/fluxoCaixaService'
+import { carregarFluxoCaixaRealizadoV1 } from '../../services/fluxo-caixa/fluxoCaixaService.js'
 import {
   agregarFluxoCaixaMensal,
   agregarSaidasPorRubrica,
   anoAtual,
   calcularDiagnosticoRubricas,
   montarMovimentosFluxoCaixa
-} from '../../utils/fluxo-caixa/fluxoCaixaUtils'
+} from '../../utils/fluxo-caixa/fluxoCaixaUtils.js'
 
 export function useFluxoCaixaV1({ empresaId }) {
   const [ano, setAno] = useState(String(anoAtual()))
@@ -15,17 +16,21 @@ export function useFluxoCaixaV1({ empresaId }) {
   const [dadosOrigem, setDadosOrigem] = useState(null)
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
+  const consultaRef = useRef(0)
+  const montadoRef = useRef(true)
 
-  async function carregar() {
+  const carregar = useCallback(async () => {
+    const token = ++consultaRef.current
     if (!empresaId) {
       setDadosOrigem(null)
       setErro('Empresa ativa n\u00e3o selecionada.')
-      return
+      return { data: null, error: new Error('Empresa ativa nao selecionada.') }
     }
 
     setLoading(true)
     setErro('')
     const resposta = await carregarFluxoCaixaRealizadoV1(supabase, empresaId, ano)
+    if (!montadoRef.current || token !== consultaRef.current) return { ...resposta, obsoleta: true }
     if (resposta.error) {
       setErro(resposta.error.message || 'N\u00e3o foi poss\u00edvel carregar o fluxo de caixa.')
       setDadosOrigem(null)
@@ -33,11 +38,21 @@ export function useFluxoCaixaV1({ empresaId }) {
       setDadosOrigem(resposta.data)
     }
     setLoading(false)
-  }
+    return resposta
+  }, [ano, empresaId])
 
   useEffect(() => {
     carregar()
-  }, [empresaId, ano])
+    return () => { consultaRef.current += 1 }
+  }, [carregar])
+
+  useEffect(() => {
+    montadoRef.current = true
+    return () => {
+      montadoRef.current = false
+      consultaRef.current += 1
+    }
+  }, [])
 
   const filiais = dadosOrigem?.filiais || []
   const filiaisPorId = useMemo(() => new Map(filiais.map((filial) => [filial.id, filial])), [filiais])

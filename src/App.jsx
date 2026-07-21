@@ -3874,15 +3874,10 @@ export default function App() {
 
   if (telaAtual === 'relatorios-contas') {
     return renderAppFrame(
-      <ContasContextualGuard
-        carregando={loadingContasContextuais}
-        carregada={contasContextuaisCarregadas}
-        erro={erroContasContextuais}
-        onRetry={() => carregarContasContextuais(empresaId)}
-      >
-        <AppSuspenseBoundary>
+      <AppSuspenseBoundary>
         <LazyRelatoriosContasPage
-          contas={contasContextuais}
+          empresaId={empresaId}
+          empresaNome={empresaAtiva?.nome}
           centros={centros}
           filiais={filiais}
           estaVencida={estaVencida}
@@ -3892,8 +3887,7 @@ export default function App() {
           podeExportarDados={podeExportarDados()}
           mostrarAviso={mostrarAviso}
         />
-        </AppSuspenseBoundary>
-      </ContasContextualGuard>
+      </AppSuspenseBoundary>
     )
   }
 

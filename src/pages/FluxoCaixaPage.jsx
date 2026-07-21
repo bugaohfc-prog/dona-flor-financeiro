@@ -130,6 +130,7 @@ export default function FluxoCaixaPage({
   const filialNome = filialSelecionada?.nome || 'Todas as filiais'
   const gruposFiliais = useMemo(() => agregarMovimentosPorFilial(movimentos, filiais), [filiais, movimentos])
   const possuiMovimentos = movimentos.length > 0
+  const dadosDisponiveis = !loading && !erro
   const identificacaoRelatorio = filialSelecionada
     ? montarIdentificacaoFiscalFilial(filialSelecionada)
     : montarIdentificacaoConsolidada({ empresaNome, totalFiliais: filiais.length })
@@ -141,6 +142,10 @@ export default function FluxoCaixaPage({
   }
 
   function exportarCsvFluxo() {
+    if (!dadosDisponiveis) {
+      mostrarAviso?.('Aguarde os dados do fluxo de caixa ficarem disponiveis.', 'aviso')
+      return
+    }
     if (!podeExportarDados) {
       mostrarAviso?.('Seu perfil atual não permite exportar relatórios.', 'erro')
       return
@@ -173,6 +178,10 @@ export default function FluxoCaixaPage({
   }
 
   function exportarExcelFluxo() {
+    if (!dadosDisponiveis) {
+      mostrarAviso?.('Aguarde os dados do fluxo de caixa ficarem disponiveis.', 'aviso')
+      return
+    }
     if (!podeExportarDados) {
       mostrarAviso?.('Seu perfil atual não permite exportar relatórios.', 'erro')
       return
@@ -221,10 +230,10 @@ export default function FluxoCaixaPage({
         </div>
         <div className="fluxo-caixa-actions">
           <button type="button" className="fluxo-btn secondary" onClick={voltar}>Voltar</button>
-          <button type="button" className="fluxo-btn secondary" onClick={exportarCsvFluxo} disabled={!possuiMovimentos}>
+          <button type="button" className="fluxo-btn secondary" onClick={exportarCsvFluxo} disabled={!dadosDisponiveis || !possuiMovimentos}>
             Exportar CSV
           </button>
-          <button type="button" className="fluxo-btn primary" onClick={exportarExcelFluxo} disabled={!possuiMovimentos}>
+          <button type="button" className="fluxo-btn primary" onClick={exportarExcelFluxo} disabled={!dadosDisponiveis || !possuiMovimentos}>
             Exportar Excel
           </button>
         </div>
@@ -272,12 +281,14 @@ export default function FluxoCaixaPage({
         </section>
       )}
 
-      <section className="fluxo-caixa-summary">
-        <FluxoResumoCard titulo="Entradas" valor={formatarMoedaFluxo(resultado.totais.entradas)} detalhe="Receitas ativas" />
-        <FluxoResumoCard titulo="Saídas" valor={formatarMoedaFluxo(resultado.totais.saidas)} detalhe="Pagamentos realizados" />
-        <FluxoResumoCard titulo="Saldo" valor={formatarMoedaFluxo(resultado.totais.saldo)} detalhe="Entradas - saídas" destaque />
-        <FluxoResumoCard titulo="Movimentos" valor={resultado.totais.movimentos} detalhe="Pagamentos considerados" />
-      </section>
+      {dadosDisponiveis && (
+        <section className="fluxo-caixa-summary">
+          <FluxoResumoCard titulo="Entradas" valor={formatarMoedaFluxo(resultado.totais.entradas)} detalhe="Receitas ativas" />
+          <FluxoResumoCard titulo="Saídas" valor={formatarMoedaFluxo(resultado.totais.saidas)} detalhe="Pagamentos realizados" />
+          <FluxoResumoCard titulo="Saldo" valor={formatarMoedaFluxo(resultado.totais.saldo)} detalhe="Entradas - saídas" destaque />
+          <FluxoResumoCard titulo="Movimentos" valor={resultado.totais.movimentos} detalhe="Pagamentos considerados" />
+        </section>
+      )}
 
       <section className="fluxo-caixa-panel">
         <div className="fluxo-caixa-section-title">

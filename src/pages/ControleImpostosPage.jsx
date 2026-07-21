@@ -1,4 +1,8 @@
 import { useMemo, useState } from 'react'
+import ContasContextualGuard from '../components/feedback/ContasContextualGuard.jsx'
+import { useRelatorioFinanceiro } from '../hooks/useRelatorioFinanceiro.js'
+import { podeExportarRelatorio, statusRelatorioConta } from '../utils/relatoriosFinanceiros.js'
+import { exportCsv } from '../services/export/reportExportService.js'
 
 const FILTROS_IMPOSTOS = [
   ['todos', 'Todos'],
@@ -95,9 +99,10 @@ function dataEstaVencida(conta) {
 }
 
 function obterStatusOperacional(conta) {
-  if (String(conta?.status || '').toLowerCase() === 'pago') return 'pago'
-  if (dataEstaVencida(conta)) return 'vencido'
-  return 'aberto'
+  const status = statusRelatorioConta(conta)
+  if (['paga', 'quitada_por_parciais'].includes(status)) return 'pago'
+  if (status === 'vencida') return 'vencido'
+  return status === 'parcial' ? 'parcial' : 'aberto'
 }
 
 function obterCompetenciaEstimada(conta) {
@@ -181,7 +186,7 @@ function EmptyState({ title, description }) {
 }
 
 export default function ControleImpostosPage({
-  contas = [],
+  empresaId,
   centros = [],
   filiais = [],
   formatarValor,
@@ -190,6 +195,19 @@ export default function ControleImpostosPage({
 }) {
   const [filtro, setFiltro] = useState('todos')
   const [busca, setBusca] = useState('')
+  const agora = new Date()
+  const [dataInicial, setDataInicial] = useState(`${agora.getFullYear()}-01-01`)
+  const [dataFinal, setDataFinal] = useState(`${agora.getFullYear()}-12-31`)
+  const [campoPeriodo, setCampoPeriodo] = useState('data_vencimento')
+  const [filialId, setFilialId] = useState('')
+  const [incluirOcultas, setIncluirOcultas] = useState(false)
+  const criterios = useMemo(() => ({
+    base: 'vencimento', dataInicial, dataFinal, campoPeriodo, status: 'todas', filialId,
+    centroCustoId: '', origem: 'todas', incluirOcultas, busca: ''
+  }), [campoPeriodo, dataFinal, dataInicial, filialId, incluirOcultas])
+  const fonteFinanceira = useRelatorioFinanceiro({ empresaId, criterios })
+  const contas = fonteFinanceira.registros
+  const exportacaoDisponivel = podeExportarRelatorio(fonteFinanceira)
 
   const impostosBase = useMemo(() => {
     return (contas || [])
@@ -279,6 +297,19 @@ export default function ControleImpostosPage({
     }
   }, [impostosEncontrados])
 
+  function exportarImpostos() {
+    if (!exportacaoDisponivel) return
+    exportCsv({
+      filename: `controle-impostos-${dataInicial}-${dataFinal}.csv`,
+      headers: ['Imposto', 'Descrição', 'Competência', 'Vencimento', 'Previsto', 'Pago', 'Saldo', 'Status', 'Filial', 'Centro'],
+      rows: impostosEncontrados.map((conta) => [
+        conta.impostoLabel, conta.descricao, conta.competenciaFiscal, obterDataVencimento(conta),
+        conta.valor_previsto_relatorio, conta.valor_pago_atual_relatorio, conta.saldo_restante_relatorio,
+        conta.status_relatorio, conta.filialNome, conta.centroNome
+      ])
+    })
+  }
+
   return (
     <main className="accounts-page tax-control-page">
       <div className="page-title-actions accounts-page-header tax-control-header">
@@ -288,6 +319,7 @@ export default function ControleImpostosPage({
           <p>Acompanhe Simples Nacional, FGTS e INSS por vencimento e status.</p>
         </div>
         <div className="page-actions-row">
+          <button type="button" onClick={exportarImpostos} disabled={!exportacaoDisponivel}>Exportar CSV</button>
           <button type="button" onClick={() => navegarPara?.('contas')}>
             Ver contas
           </button>
@@ -313,6 +345,17 @@ export default function ControleImpostosPage({
         </div>
 
         <div className="accounts-recurring-controls tax-control-controls">
+          <select value={campoPeriodo} onChange={(event) => setCampoPeriodo(event.target.value)} aria-label="Base do período dos impostos">
+            <option value="data_vencimento">Vencimento</option>
+            <option value="competencia">Competência</option>
+          </select>
+          <input type="date" value={dataInicial} onChange={(event) => setDataInicial(event.target.value)} aria-label="Data inicial dos impostos" />
+          <input type="date" value={dataFinal} onChange={(event) => setDataFinal(event.target.value)} aria-label="Data final dos impostos" />
+          <select value={filialId} onChange={(event) => setFilialId(event.target.value)} aria-label="Filial dos impostos">
+            <option value="">Todas as filiais</option>
+            {(filiais || []).map((filial) => <option key={filial.id} value={filial.id}>{filial.nome}</option>)}
+          </select>
+          <label><input type="checkbox" checked={incluirOcultas} onChange={(event) => setIncluirOcultas(event.target.checked)} /> Incluir ocultas</label>
           <div className="accounts-status-tabs accounts-recurring-tabs tax-control-tabs" role="tablist" aria-label="Filtro de impostos">
             {FILTROS_IMPOSTOS.map(([valor, label]) => (
               <button
@@ -336,6 +379,7 @@ export default function ControleImpostosPage({
           />
         </div>
 
+        <ContasContextualGuard carregando={fonteFinanceira.carregando} carregada={fonteFinanceira.carregado} erro={fonteFinanceira.erro} onRetry={fonteFinanceira.consultar}>
         {impostosEncontrados.length === 0 ? (
           <EmptyState
             title="Nenhum imposto encontrado"
@@ -378,6 +422,8 @@ export default function ControleImpostosPage({
             ))}
           </div>
         )}
+        </ContasContextualGuard>
+        {!exportacaoDisponivel && <small>Exportação disponível somente após a consulta completa do período.</small>}
       </section>
     </main>
   )

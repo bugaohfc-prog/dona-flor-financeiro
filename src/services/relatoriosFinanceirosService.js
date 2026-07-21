@@ -9,7 +9,7 @@ import {
 
 export const COLUNAS_CONTAS_RELATORIO = [
   'id', 'empresa_id', 'descricao', 'observacao', 'valor', 'valor_pago', 'juros_multa', 'desconto',
-  'data_vencimento', 'data_pagamento', 'status', 'filial_id', 'centro_custo_id', 'recorrencia_id',
+  'data_vencimento', 'data_pagamento', 'competencia', 'imposto_tipo', 'status', 'filial_id', 'centro_custo_id', 'recorrencia_id',
   'oculto', 'excluido', 'deletado', 'excluido_em',
   'df_centros_custo(nome)', 'df_filiais(nome)', 'df_contas_recorrentes(tipo_recorrencia)'
 ].join(', ')
@@ -28,9 +28,11 @@ function aplicarFiltrosAtivos(query, incluirOcultas) {
 }
 
 function aplicarFiltrosConta(query, criterios, campoData) {
+  const dataInicial = campoData === 'competencia' ? criterios.dataInicial.slice(0, 7) : criterios.dataInicial
+  const dataFinal = campoData === 'competencia' ? criterios.dataFinal.slice(0, 7) : criterios.dataFinal
   let resultado = aplicarFiltrosAtivos(query, criterios.incluirOcultas)
-    .gte(campoData, criterios.dataInicial)
-    .lte(campoData, criterios.dataFinal)
+    .gte(campoData, dataInicial)
+    .lte(campoData, dataFinal)
 
   if (criterios.filialId) resultado = resultado.eq('filial_id', criterios.filialId)
   if (criterios.centroCustoId) resultado = resultado.eq('centro_custo_id', criterios.centroCustoId)
@@ -135,7 +137,7 @@ export async function consultarRelatorioFinanceiro(supabase, criteriosEntrada) {
     if (respostaTodosPagamentos.error) return { data: null, error: respostaTodosPagamentos.error }
     pagamentos = respostaTodosPagamentos.data || []
   } else {
-    const respostaContas = await consultarContasPorPeriodo(supabase, criterios, 'data_vencimento')
+    const respostaContas = await consultarContasPorPeriodo(supabase, criterios, criterios.campoPeriodo)
     if (respostaContas.error) return { data: null, error: respostaContas.error }
     contas = respostaContas.data || []
     const respostaPagamentos = await consultarPagamentosPorContas(supabase, criterios.empresaId, contas.map((conta) => conta.id))

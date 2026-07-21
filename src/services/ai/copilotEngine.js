@@ -1,11 +1,15 @@
 import { gerarNarrativaExecutiva } from './narrativeEngine.js'
+import { statusRelatorioConta } from '../../utils/relatoriosFinanceiros.js'
 function valorConta(conta) {
-  return Number(conta?.valor || 0)
+  return Number(conta?.valor_previsto_relatorio ?? conta?.valor ?? 0)
 }
 
 function valorRealizadoConta(conta) {
-  if (conta?.status !== 'pago') return 0
-  return Number(conta.valor_pago ?? conta.valor ?? 0)
+  return Number(conta?.valor_pago_atual_relatorio ?? conta?.valor_pago ?? 0)
+}
+
+function saldoConta(conta) {
+  return Number(conta?.saldo_restante_relatorio ?? conta?.valor ?? 0)
 }
 
 function encargosConta(conta) {
@@ -17,7 +21,7 @@ function descontoConta(conta) {
 }
 
 function dataVencida(data, status) {
-  if (!data || status === 'pago') return false
+  if (!data || ['paga', 'quitada_por_parciais'].includes(status)) return false
   const hoje = new Date()
   hoje.setHours(0, 0, 0, 0)
   const vencimento = new Date(`${data}T00:00:00`)
@@ -61,11 +65,12 @@ function calcularRankingPorCentro(contas = []) {
     const valor = valorConta(conta)
     atual.total += valor
     atual.quantidade += 1
-    if (conta.status === 'pago') atual.pago += valorRealizadoConta(conta)
-    else atual.pendente += valor
+    const status = statusRelatorioConta(conta)
+    if (['paga', 'quitada_por_parciais'].includes(status)) atual.pago += valorRealizadoConta(conta)
+    else atual.pendente += saldoConta(conta)
     atual.encargos += encargosConta(conta)
     atual.descontos += descontoConta(conta)
-    if (dataVencida(conta.data_vencimento, conta.status)) atual.vencido += valor
+    if (dataVencida(conta.data_vencimento, status)) atual.vencido += saldoConta(conta)
     mapa.set(chave, atual)
   })
 
@@ -85,11 +90,12 @@ function calcularTendenciaMensal(contas = []) {
     const atual = mapa.get(mes) || { mes, total: 0, pago: 0, pendente: 0, vencido: 0, encargos: 0, descontos: 0 }
     const valor = valorConta(conta)
     atual.total += valor
-    if (conta.status === 'pago') atual.pago += valorRealizadoConta(conta)
-    else atual.pendente += valor
+    const status = statusRelatorioConta(conta)
+    if (['paga', 'quitada_por_parciais'].includes(status)) atual.pago += valorRealizadoConta(conta)
+    else atual.pendente += saldoConta(conta)
     atual.encargos += encargosConta(conta)
     atual.descontos += descontoConta(conta)
-    if (dataVencida(conta.data_vencimento, conta.status)) atual.vencido += valor
+    if (dataVencida(conta.data_vencimento, status)) atual.vencido += saldoConta(conta)
     mapa.set(mes, atual)
   })
 
@@ -136,15 +142,19 @@ function gerarParecerExecutivo({ total, pago, pendente, vencido, taxaPago, taxaV
   return `${abertura} ${risco} ${eficiencia} ${foco} ${curtoPrazo} O índice financeiro está em ${score}/100, classificado como ${status.label.toLowerCase()}.`
 }
 
-export function gerarCopilotFinanceiro({ contas = [], contasFiltradas = [] } = {}) {
-  const base = contasFiltradas.length ? contasFiltradas : contas
+export function gerarCopilotFinanceiro({ contas = [], contasFiltradas = [], empresaId = '', periodo = null, carregando = false, erro = null } = {}) {
+  const baseOriginal = contasFiltradas.length ? contasFiltradas : contas
+  const base = baseOriginal.filter((conta) => (
+    (!empresaId || String(conta?.empresa_id || '') === String(empresaId)) &&
+    conta?.oculto !== true && conta?.excluido !== true && conta?.deletado !== true
+  ))
   const total = base.reduce((acc, conta) => acc + valorConta(conta), 0)
-  const contasPagas = base.filter((conta) => conta.status === 'pago')
-  const contasPendentes = base.filter((conta) => conta.status !== 'pago')
-  const contasVencidas = base.filter((conta) => dataVencida(conta.data_vencimento, conta.status))
+  const contasPagas = base.filter((conta) => ['paga', 'quitada_por_parciais'].includes(statusRelatorioConta(conta)))
+  const contasPendentes = base.filter((conta) => !['paga', 'quitada_por_parciais'].includes(statusRelatorioConta(conta)))
+  const contasVencidas = base.filter((conta) => dataVencida(conta.data_vencimento, statusRelatorioConta(conta)))
   const pago = contasPagas.reduce((acc, conta) => acc + valorRealizadoConta(conta), 0)
-  const pendente = contasPendentes.reduce((acc, conta) => acc + valorConta(conta), 0)
-  const vencido = contasVencidas.reduce((acc, conta) => acc + valorConta(conta), 0)
+  const pendente = contasPendentes.reduce((acc, conta) => acc + saldoConta(conta), 0)
+  const vencido = contasVencidas.reduce((acc, conta) => acc + saldoConta(conta), 0)
   const encargos = base.reduce((acc, conta) => acc + encargosConta(conta), 0)
   const descontos = base.reduce((acc, conta) => acc + descontoConta(conta), 0)
   const taxaPago = total ? (pago / total) * 100 : 0
@@ -235,6 +245,10 @@ export function gerarCopilotFinanceiro({ contas = [], contasFiltradas = [] } = {
   ]
 
   return {
+    periodo,
+    carregando,
+    erro,
+    dadosInsuficientes: Boolean(erro) || base.length === 0 || tendenciaMensal.length < 2,
     score,
     status,
     executiveSummary,

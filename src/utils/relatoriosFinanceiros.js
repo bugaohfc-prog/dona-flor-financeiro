@@ -130,6 +130,7 @@ export function normalizarCriteriosRelatorio(criterios = {}) {
   return {
     empresaId: String(criterios.empresaId || ''),
     base,
+    campoPeriodo: criterios.campoPeriodo === 'competencia' ? 'competencia' : 'data_vencimento',
     dataInicial,
     dataFinal,
     status: String(criterios.status || 'todas'),

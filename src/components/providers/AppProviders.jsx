@@ -1,8 +1,8 @@
 import { CopilotProvider } from '../copilot/core/CopilotProvider.jsx'
 
-export default function AppProviders({ children, contas, contasFiltradas, navegarPara }) {
+export default function AppProviders({ children, empresaId, navegarPara }) {
   return (
-    <CopilotProvider contas={contas} contasFiltradas={contasFiltradas} navegarPara={navegarPara}>
+    <CopilotProvider empresaId={empresaId} navegarPara={navegarPara}>
       {children}
     </CopilotProvider>
   )

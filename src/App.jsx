@@ -43,7 +43,7 @@ import { converterValor, formatarData, formatarDataParaBanco, formatarValor, lim
 import { diferencaDias } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
 import { estaVencida, pegarMes } from './utils/contasStatus'
-import { atualizarAposMutacaoContas, atualizarFontesDashboard, calcularResumoFinanceiroContas, carregarFonteContextualContas, consumidorRequerHistoricoCompleto, formatarDataBancoLocal, obterPeriodoConsultaPagas, selecionarFonteContas } from './utils/contasConsultasOperacionais.js'
+import { atualizarAposMutacaoContas, carregarFonteContextualContas, consumidorRequerHistoricoCompleto, formatarDataBancoLocal, obterPeriodoConsultaPagas, selecionarFonteContas } from './utils/contasConsultasOperacionais.js'
 import { atualizarListaLixeiraEstavel, diasNaLixeira, podeExcluirDefinitivo } from './utils/lixeira'
 import { erroEhSessaoExpirada, mensagemSeguraErro } from './utils/session'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
@@ -1541,10 +1541,7 @@ export default function App() {
   }
 
   async function atualizarFontesContasDashboard() {
-    return atualizarFontesDashboard({
-      carregarOperacionais: () => buscarContas(empresaId, { permitirGerarRecorrencias: false }),
-      carregarContextuais: () => carregarContasContextuais(empresaId)
-    })
+    return buscarContas(empresaId, { permitirGerarRecorrencias: false })
   }
 
   function obterPeriodoPagasAtual() {
@@ -1779,6 +1776,7 @@ export default function App() {
 
   useEffect(() => {
     if (!empresaId) return
+    if (['dashboard', 'controle-impostos', 'copilot'].includes(telaAtual)) return
     void carregarFonteContextualContas(telaAtual, () => carregarContasContextuais(empresaId))
   }, [empresaId, telaAtual])
 
@@ -1918,13 +1916,6 @@ export default function App() {
   }, [contasFiltradas])
 
   const { total, pago, vencido, pendente, encargos, descontos } = resumoFinanceiro
-
-  const contasContextuaisDashboard = useMemo(() => contasContextuais
-    .filter((conta) => !filtroFilial || conta.filial_id === filtroFilial), [contasContextuais, filtroFilial])
-  const resumoFinanceiroDashboard = useMemo(
-    () => calcularResumoFinanceiroContas(contasContextuaisDashboard),
-    [contasContextuaisDashboard]
-  )
 
   const resumoPorCentro = useMemo(() => centros
     .map((centro) => {
@@ -3617,7 +3608,6 @@ export default function App() {
 
   function prepararCopilotFinanceiro() {
     preloadRoute('copilotDrawer')
-    return carregarContasContextuais(empresaId)
   }
 
   function renderCopilotFinanceiro() {
@@ -3633,7 +3623,7 @@ export default function App() {
 
   function renderAppFrame(children) {
     return (
-      <AppProviders contas={contasContextuais} contasFiltradas={contasContextuais} navegarPara={navegarPara}>
+      <AppProviders empresaId={empresaId} navegarPara={navegarPara}>
       <div className="app-page app-frame" style={styles.page}>
         <AppFrameStyles />
       <DesktopRefinementStyles />
@@ -3852,15 +3842,9 @@ export default function App() {
 
   if (telaAtual === 'controle-impostos') {
     return renderAppFrame(
-      <ContasContextualGuard
-        carregando={loadingContasContextuais}
-        carregada={contasContextuaisCarregadas}
-        erro={erroContasContextuais}
-        onRetry={() => carregarContasContextuais(empresaId)}
-      >
         <AppSuspenseBoundary>
         <LazyControleImpostosPage
-          contas={contasContextuais}
+          empresaId={empresaId}
           centros={centros}
           filiais={filiais}
           formatarValor={formatarValor}
@@ -3868,7 +3852,6 @@ export default function App() {
           navegarPara={navegarPara}
         />
         </AppSuspenseBoundary>
-      </ContasContextualGuard>
     )
   }
 
@@ -4432,8 +4415,7 @@ export default function App() {
   // =========================
   return (
     <AppShell
-      contas={contasContextuais}
-      contasFiltradas={contasContextuais}
+      empresaId={empresaId}
       navegarPara={navegarPara}
       menuAberto={menuAberto}
       setMenuAberto={setMenuAberto}
@@ -4468,16 +4450,8 @@ export default function App() {
           routeProps={{
           nomeUsuario: nomeUsuario(),
           formatarValor,
-          total: resumoFinanceiroDashboard.total,
-          pago: resumoFinanceiroDashboard.pago,
-          pendente: resumoFinanceiroDashboard.pendente,
-          vencido: resumoFinanceiroDashboard.vencido,
           navegarPara,
           loading,
-          loadingHistoricoFinanceiro: loadingContasContextuais,
-          historicoFinanceiroCarregado: contasContextuaisCarregadas,
-          erroHistoricoFinanceiro: erroContasContextuais,
-          onRetryHistoricoFinanceiro: () => carregarContasContextuais(empresaId),
           filiais,
           filtroFilial,
           setFiltroFilial,

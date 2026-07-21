@@ -1,6 +1,8 @@
 import ContasContextualGuard from '../feedback/ContasContextualGuard.jsx'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext.jsx'
+import { useRelatorioFinanceiro } from '../../hooks/useRelatorioFinanceiro.js'
+import { resumirConsumidoresFinanceiros } from '../../utils/consumidoresFinanceiros.js'
 import { useResumoGestaoPessoasPainel } from '../../hooks/useResumoGestaoPessoasPainel.js'
 import { ResumoOperacionalDashboard } from '../../modules/central-do-dia/components/dashboard/ResumoOperacionalDashboard.jsx'
 import { useCentralDoDia } from '../../modules/central-do-dia/hooks/useCentralDoDia.js'
@@ -73,6 +75,28 @@ export default function DashboardHome({
   const filialSelecionada = (filiais || []).find((filial) => filial.id === filtroFilial)
   const perfilUsuario = String(perfilEmpresaAtiva || '').trim().toLowerCase()
   const podeAcessarGestaoPessoas = ['admin', 'master'].includes(perfilUsuario)
+  const hoje = useMemo(() => {
+    const data = new Date()
+    return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`
+  }, [])
+  const criteriosFinanceiros = useMemo(() => ({
+    base: 'vencimento',
+    dataInicial: `${hoje.slice(0, 4)}-01-01`,
+    dataFinal: `${hoje.slice(0, 4)}-12-31`,
+    status: 'todas',
+    filialId: filtroFilial,
+    centroCustoId: '',
+    origem: 'todas',
+    incluirOcultas: false,
+    busca: '',
+    hoje
+  }), [filtroFilial, hoje])
+  const fonteFinanceira = useRelatorioFinanceiro({ empresaId, criterios: criteriosFinanceiros })
+  const resumoDashboard = useMemo(() => resumirConsumidoresFinanceiros(fonteFinanceira.registros, {
+    dataBase: hoje,
+    empresaId,
+    filialId: filtroFilial
+  }), [empresaId, filtroFilial, fonteFinanceira.registros, hoje])
   const {
     erro: erroResumoPessoas,
     podeVisualizar: podeVisualizarResumoPessoas,
@@ -110,11 +134,18 @@ export default function DashboardHome({
   }
 
   const resumoFinanceiro = [
-    { label: 'Total', valor: formatarValor(total), detalhe: 'Previsto no período', tone: 'default' },
-    { label: 'Pago', valor: formatarValor(pago), detalhe: 'Realizado', tone: 'success' },
-    { label: 'Pendente', valor: formatarValor(pendente), detalhe: 'Ainda em aberto', tone: 'warning' },
-    { label: 'Vencido', valor: formatarValor(vencido), detalhe: 'Atenção operacional', tone: 'danger' }
+    { label: 'Previsto', valor: formatarValor(resumoDashboard.previsto), detalhe: `Ano de ${hoje.slice(0, 4)}`, tone: 'default' },
+    { label: 'Realizado', valor: formatarValor(resumoDashboard.realizado), detalhe: 'Pagamentos efetivos', tone: 'success' },
+    { label: 'Saldo', valor: formatarValor(resumoDashboard.saldo), detalhe: 'Ainda em aberto', tone: 'warning' },
+    { label: 'Vencido', valor: formatarValor(resumoDashboard.vencido), detalhe: 'Saldo vencido', tone: 'danger' },
+    { label: 'Próximos 7 dias', valor: formatarValor(resumoDashboard.faixas.proximos7.valor), detalhe: 'De amanhã até o 7º dia', tone: 'default' },
+    { label: 'Próximos 30 dias', valor: formatarValor(resumoDashboard.faixas.proximos30.valor), detalhe: 'Do 8º ao 30º dia', tone: 'default' },
+    { label: 'Próximos 90 dias', valor: formatarValor(resumoDashboard.faixas.proximos90.valor), detalhe: 'Do 31º ao 90º dia', tone: 'default' }
   ]
+
+  async function atualizarDashboard() {
+    await Promise.all([dadosCentral.atualizar(), fonteFinanceira.consultar()])
+  }
 
   return (
     <>
@@ -144,17 +175,17 @@ export default function DashboardHome({
         erroParcial={dadosCentral.erroPessoas}
         formatarValor={formatarValor}
         dados={dadosCentral}
-        onAtualizar={dadosCentral.atualizar}
+        onAtualizar={atualizarDashboard}
         onAbrirAgenda={() => navegarPara('agenda')}
         onAbrirOrigem={abrirOrigemResumo}
       />
 
       <section className="dashboard-home-finance" aria-label="Resumo financeiro rápido">
         <ContasContextualGuard
-          carregando={loadingHistoricoFinanceiro}
-          carregada={historicoFinanceiroCarregado}
-          erro={erroHistoricoFinanceiro}
-          onRetry={onRetryHistoricoFinanceiro}
+          carregando={fonteFinanceira.carregando}
+          carregada={fonteFinanceira.carregado}
+          erro={fonteFinanceira.erro}
+          onRetry={fonteFinanceira.consultar}
         >
           <div className="dashboard-home-card dashboard-home-finance-card">
             <DashboardWidgetHeader

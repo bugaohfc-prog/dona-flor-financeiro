@@ -82,6 +82,7 @@ function contaInativa(conta) {
   return Boolean(
     !conta ||
     normalizarTexto(conta.status) === 'pago' ||
+    normalizarTexto(conta.statusOperacionalDerivado) === 'paga' ||
     conta.oculto ||
     conta.arquivado ||
     conta.excluido ||
@@ -190,7 +191,7 @@ export function normalizarContasCentral(contas = [], { dataBaseISO, filialId } =
         descricao: vencida ? `Vencida há ${Math.abs(dias)} dia(s)` : dias === 0 ? 'Vence hoje' : `Vence em ${dias} dia(s)`,
         dataReferencia,
         dias,
-        valor: conta.valor,
+        valor: conta.saldoPendenteParcial ?? conta.valor,
         severidade: vencida ? 'critical' : dias <= 7 ? 'warning' : 'info',
         status: vencida ? 'vencido' : dias === 0 ? 'vence_hoje' : 'pendente',
         inconsistencia: vencida,

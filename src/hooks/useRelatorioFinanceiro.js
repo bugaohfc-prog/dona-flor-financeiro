@@ -5,6 +5,7 @@ import { criarControleConsultaRelatorio } from '../utils/relatoriosFinanceiros.j
 
 export function useRelatorioFinanceiro({ empresaId, criterios, atrasoBusca = 300, automatico = true }) {
   const controleRef = useRef(criarControleConsultaRelatorio())
+  const consultaEmAndamentoRef = useRef(null)
   const montadoRef = useRef(true)
   const [estado, setEstado] = useState({ dados: null, carregando: false, erro: null, carregado: false })
   const chaveCriterios = useMemo(() => JSON.stringify({ ...criterios, empresaId }), [criterios, empresaId])
@@ -18,6 +19,9 @@ export function useRelatorioFinanceiro({ empresaId, criterios, atrasoBusca = 300
   }, [])
 
   const consultar = useCallback(async () => {
+    if (consultaEmAndamentoRef.current?.chave === chaveCriterios) {
+      return consultaEmAndamentoRef.current.promessa
+    }
     const token = controleRef.current.iniciar()
     if (!empresaId) {
       if (montadoRef.current && controleRef.current.estaAtual(token)) {
@@ -27,7 +31,10 @@ export function useRelatorioFinanceiro({ empresaId, criterios, atrasoBusca = 300
     }
 
     setEstado((atual) => ({ ...atual, carregando: true, erro: null }))
-    const resposta = await consultarRelatorioFinanceiro(supabase, { ...criterios, empresaId })
+    const promessa = consultarRelatorioFinanceiro(supabase, { ...criterios, empresaId })
+    consultaEmAndamentoRef.current = { chave: chaveCriterios, promessa }
+    const resposta = await promessa
+    if (consultaEmAndamentoRef.current?.promessa === promessa) consultaEmAndamentoRef.current = null
     if (!montadoRef.current || !controleRef.current.estaAtual(token)) return { ...resposta, obsoleta: true }
     if (resposta.error) {
       setEstado({ dados: null, carregando: false, erro: resposta.error, carregado: false })

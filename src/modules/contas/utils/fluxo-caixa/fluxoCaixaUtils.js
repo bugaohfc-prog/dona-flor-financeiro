@@ -1,3 +1,4 @@
+import { reconciliarSituacaoConta } from '../../../../utils/relatoriosFinanceiros.js'
 import {
   RUBRICA_FATURAMENTO_BRUTO,
   RUBRICA_JUROS,
@@ -209,7 +210,6 @@ export function montarMovimentosFluxoCaixa({
     pagamento.arquivado !== true &&
     normalizarValor(pagamento.valor_pago) > 0
   ))
-  const contasComParciaisAtivos = new Set(pagamentosAtivos.map((pagamento) => pagamento.conta_id).filter(Boolean))
 
   const movimentosParciais = pagamentosAtivos
     .map((pagamento) => {
@@ -251,9 +251,14 @@ export function montarMovimentosFluxoCaixa({
 
   const movimentosContasPagas = (contasPagas || [])
     .filter((conta) => statusContaPaga(conta?.status))
-    .filter((conta) => !contasComParciaisAtivos.has(conta.id))
     .filter((conta) => !filialId || (conta.filial_id || '') === filialId)
     .flatMap((conta) => {
+      const pagamentosConta = pagamentosAtivos.filter((pagamento) => pagamento.conta_id === conta.id)
+      const situacao = reconciliarSituacaoConta(conta, pagamentosConta)
+      const valorResidual = normalizarValor((situacao.valorPagoAtualCentavos - situacao.pagoPorParciaisCentavos) / 100)
+      if (valorResidual <= 0) return []
+      const contaResidual = { ...conta, valor_pago: valorResidual }
+
       const dataResolvida = resolverDataConta(conta)
       const movimentos = []
       const movimentoBase = {
@@ -281,7 +286,7 @@ export function montarMovimentosFluxoCaixa({
         ...movimentoBase,
         juros_multa: conta.juros_multa || 0
       })
-      const componentesValor = resolverComponentesValorConta(conta, separarJuros)
+      const componentesValor = resolverComponentesValorConta(contaResidual, separarJuros)
 
       if (componentesValor.valorPrincipal > 0) {
         movimentos.push(enriquecerMovimentoComRubrica({

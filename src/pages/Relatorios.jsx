@@ -39,12 +39,19 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
   }
 
   function valorPrevistoConta(conta) {
-    return Number(conta?.valor || 0)
+    return Number(conta?.valor_previsto_relatorio ?? conta?.valor ?? 0)
   }
 
   function valorRealizadoConta(conta) {
-    if (conta?.status !== 'pago') return 0
+    if (conta?.valor_pago_atual_relatorio != null) return Number(conta.valor_pago_atual_relatorio || 0)
+    if (conta?.status !== 'pago') return Number(conta?.valor_pago || 0)
     return Number(conta.valor_pago ?? conta.valor ?? 0)
+  }
+
+  function saldoRestanteConta(conta) {
+    if (conta?.saldo_restante_relatorio != null) return Number(conta.saldo_restante_relatorio || 0)
+    if (conta?.status === 'pago') return 0
+    return Math.max(valorPrevistoConta(conta) - valorRealizadoConta(conta), 0)
   }
 
   function encargosConta(conta) {
@@ -230,8 +237,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
   const totalPago = contasFiltradas.reduce((acc, conta) => acc + valorRealizadoConta(conta), 0)
   const totalEncargos = contasFiltradas.reduce((acc, conta) => acc + encargosConta(conta), 0)
   const totalDescontos = contasFiltradas.reduce((acc, conta) => acc + descontoConta(conta), 0)
-  const totalVencido = contasFiltradas.filter((conta) => estaVencida(conta.data_vencimento, conta.status)).reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
-  const totalPendente = contasFiltradas.filter((conta) => conta.status !== 'pago').reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
+  const totalVencido = contasFiltradas.filter((conta) => estaVencida(conta.data_vencimento, conta.status)).reduce((acc, conta) => acc + saldoRestanteConta(conta), 0)
+  const totalPendente = contasFiltradas.reduce((acc, conta) => acc + saldoRestanteConta(conta), 0)
   const totalMesAnterior = contasMesAnterior.reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
   const diferencaMes = totalGeral - totalMesAnterior
   const percentualMes = totalMesAnterior ? (diferencaMes / totalMesAnterior) * 100 : 0
@@ -255,8 +262,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       const centro = centros.find((c) => c.id === centroId)
       const total = lista.reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
       const pago = lista.reduce((acc, conta) => acc + valorRealizadoConta(conta), 0)
-      const pendenteCentro = lista.filter((conta) => conta.status !== 'pago').reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
-      const vencido = lista.filter((conta) => estaVencida(conta.data_vencimento, conta.status)).reduce((acc, conta) => acc + valorPrevistoConta(conta), 0)
+      const pendenteCentro = lista.reduce((acc, conta) => acc + saldoRestanteConta(conta), 0)
+      const vencido = lista.filter((conta) => estaVencida(conta.data_vencimento, conta.status)).reduce((acc, conta) => acc + saldoRestanteConta(conta), 0)
       const encargos = lista.reduce((acc, conta) => acc + encargosConta(conta), 0)
       const descontos = lista.reduce((acc, conta) => acc + descontoConta(conta), 0)
       return {
@@ -378,8 +385,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       const valor = valorPrevistoConta(conta)
       mapa[mes].total += valor
       if (conta.status === 'pago') mapa[mes].pago += valorRealizadoConta(conta)
-      else mapa[mes].pendente += valor
-      if (estaVencida(conta.data_vencimento, conta.status)) mapa[mes].vencido += valor
+      else mapa[mes].pendente += saldoRestanteConta(conta)
+      if (estaVencida(conta.data_vencimento, conta.status)) mapa[mes].vencido += saldoRestanteConta(conta)
     })
     return Object.values(mapa).sort((a, b) => a.mes.localeCompare(b.mes)).slice(-6)
   }, [contas, filtroMes, filtroStatus, filtroCentro, filtroFilial])
@@ -395,8 +402,8 @@ export default function Relatorios({ voltar, empresaId, empresaNome, mostrarAvis
       mapa[chave].total += valor
       mapa[chave].qtd += 1
       if (conta.status === 'pago') mapa[chave].pago += realizado
-      else mapa[chave].pendente += valor
-      if (estaVencida(conta.data_vencimento, conta.status)) mapa[chave].vencido += valor
+      else mapa[chave].pendente += saldoRestanteConta(conta)
+      if (estaVencida(conta.data_vencimento, conta.status)) mapa[chave].vencido += saldoRestanteConta(conta)
     })
     return Object.values(mapa).map((item) => ({ ...item, percentual: totalGeral ? (item.total / totalGeral) * 100 : 0 })).sort((a, b) => b.total - a.total)
   }, [contasFiltradas, totalGeral])

@@ -6,6 +6,7 @@ import {
   calcularResumoRelatorioFinanceiro,
   consolidarContasComPagamentos,
   criarControleConsultaRelatorio,
+  criarMovimentosPagamentoConta,
   filtrarDatasetRelatorio,
   normalizarCriteriosRelatorio,
   podeExportarRelatorio
@@ -101,8 +102,112 @@ test('pagamento parcial nao duplica o valor integral da conta pai', () => {
     [{ id: 'p1', conta_id: '1', valor_pago: 50, data_pagamento: '2026-07-14', arquivado: false }],
     criterios
   )
-  assert.equal(resultado.valor_pago_atual_relatorio, 50)
-  assert.equal(resultado.saldo_restante_relatorio, 150)
+  assert.equal(resultado.valor_pago_atual_relatorio, 200)
+  assert.equal(resultado.saldo_restante_relatorio, 0)
+})
+
+test('parciais em meses distintos afetam o saldo atual mas somente o realizado do periodo', () => {
+  const pagamentos = [
+    { id: 'jan', conta_id: '1', valor_pago: 50, data_pagamento: '2026-01-10', arquivado: false },
+    { id: 'jun', conta_id: '1', valor_pago: 30, data_pagamento: '2026-06-10', arquivado: false }
+  ]
+  const [obrigacao] = consolidarContasComPagamentos(
+    [conta('1', { valor: 200, data_vencimento: '2026-06-01' })],
+    pagamentos,
+    { ...criterios, dataInicial: '2026-06-01', dataFinal: '2026-06-30' }
+  )
+  const movimentosJunho = consolidarContasComPagamentos(
+    [conta('1', { valor: 200, data_vencimento: '2026-06-01' })],
+    pagamentos,
+    { ...criterios, base: 'pagamento', dataInicial: '2026-06-01', dataFinal: '2026-06-30' }
+  )
+
+  assert.equal(obrigacao.valor_pago_atual_relatorio, 80)
+  assert.equal(obrigacao.saldo_restante_relatorio, 120)
+  assert.deepEqual(movimentosJunho.map((item) => [item.data_referencia_relatorio, item.valor_relatorio]), [['2026-06-10', 30]])
+})
+
+test('parcial e quitacao final geram movimentos separados sem saldo', () => {
+  const contaPaga = conta('1', { valor: 200, status: 'pago', valor_pago: 200, data_pagamento: '2026-06-20' })
+  const pagamentos = [{ id: 'p1', conta_id: '1', valor_pago: 50, data_pagamento: '2026-01-10', arquivado: false }]
+  const movimentos = criarMovimentosPagamentoConta(contaPaga, pagamentos)
+  const [obrigacao] = consolidarContasComPagamentos([contaPaga], pagamentos, criterios)
+
+  assert.deepEqual(movimentos.map((item) => [item.tipo, item.valorCentavos / 100]), [['parcial', 50], ['residual', 150]])
+  assert.equal(obrigacao.valor_pago_atual_relatorio, 200)
+  assert.equal(obrigacao.saldo_restante_relatorio, 0)
+})
+
+test('parciais que totalizam a conta nao geram residual duplicado', () => {
+  const movimentos = criarMovimentosPagamentoConta(
+    conta('1', { valor: 200, status: 'pago', valor_pago: 200, data_pagamento: '2026-06-20' }),
+    [
+      { id: 'p1', conta_id: '1', valor_pago: 50, data_pagamento: '2026-01-10', arquivado: false },
+      { id: 'p2', conta_id: '1', valor_pago: 150, data_pagamento: '2026-06-10', arquivado: false }
+    ]
+  )
+  assert.deepEqual(movimentos.map((item) => item.tipo), ['parcial', 'parcial'])
+  assert.equal(movimentos.reduce((total, item) => total + item.valorCentavos, 0), 20000)
+})
+
+test('varios pagamentos permanecem em linhas e datas separadas para exportacao', () => {
+  const movimentos = consolidarContasComPagamentos(
+    [conta('1', { valor: 200 })],
+    [
+      { id: 'p1', conta_id: '1', valor_pago: 25, data_pagamento: '2026-07-03', arquivado: false },
+      { id: 'p2', conta_id: '1', valor_pago: 35, data_pagamento: '2026-07-21', arquivado: false }
+    ],
+    { ...criterios, base: 'pagamento' }
+  )
+
+  assert.deepEqual(movimentos.map((item) => ({
+    data: item.data_referencia_relatorio,
+    valor: item.valor_relatorio,
+    tipo: item.tipo_pagamento_relatorio
+  })), [
+    { data: '2026-07-03', valor: 25, tipo: 'parcial' },
+    { data: '2026-07-21', valor: 35, tipo: 'parcial' }
+  ])
+})
+
+test('resumo financeiro usa saldo para pendente e vencido', () => {
+  const [obrigacao] = consolidarContasComPagamentos(
+    [conta('1', { valor: 200, data_vencimento: '2026-07-01' })],
+    [{ id: 'p1', conta_id: '1', valor_pago: 50, data_pagamento: '2026-07-10', arquivado: false }],
+    criterios
+  )
+  const resumo = calcularResumoRelatorioFinanceiro([obrigacao], criterios.hoje)
+  assert.equal(resumo.totalPrevisto, 200)
+  assert.equal(resumo.totalPago, 50)
+  assert.equal(resumo.saldoEmAberto, 150)
+  assert.equal(resumo.totalVencido, 150)
+})
+
+test('fluxo de caixa reconcilia o mesmo total da base por pagamento', () => {
+  const contaQuitada = conta('1', {
+    valor: 200,
+    status: 'pago',
+    valor_pago: 200,
+    data_pagamento: '2026-06-20',
+    data_vencimento: '2026-06-01'
+  })
+  const pagamentos = [{ id: 'p1', conta_id: '1', valor_pago: 50, data_pagamento: '2026-01-10', arquivado: false }]
+  const basePagamento = consolidarContasComPagamentos(
+    [contaQuitada],
+    pagamentos,
+    { ...criterios, base: 'pagamento', dataInicial: '2026-01-01', dataFinal: '2026-12-31' }
+  )
+  const movimentosFluxo = montarMovimentosFluxoCaixa({
+    ano: '2026',
+    contasPagas: [contaQuitada],
+    pagamentosParciais: pagamentos,
+    contasPorId: new Map([['1', contaQuitada]])
+  }).filter((item) => item.tipo === 'saida')
+
+  const totalRelatorio = basePagamento.reduce((total, item) => total + item.valor_relatorio, 0)
+  const totalFluxo = movimentosFluxo.reduce((total, item) => total + item.valor, 0)
+  assert.equal(totalRelatorio, 200)
+  assert.equal(totalFluxo, totalRelatorio)
 })
 
 test('filtros por filial centro status e origem atuam sobre o dataset', () => {
@@ -146,6 +251,20 @@ test('loading erro e ausencia de consulta bloqueiam exportacao', () => {
   assert.equal(podeExportarRelatorio({ carregando: true, carregado: false, registros: [] }), false)
   assert.equal(podeExportarRelatorio({ erro: new Error('falha'), carregado: false, registros: [] }), false)
   assert.equal(podeExportarRelatorio({ carregado: true, registros: [conta('1')] }), true)
+})
+
+test('fluxo de caixa preserva fallback historico somente ate maio de 2026', () => {
+  const movimentos = montarMovimentosFluxoCaixa({
+    ano: '2026',
+    contasPagas: [
+      conta('historica', { status: 'pago', valor_pago: 100, data_pagamento: null, data_vencimento: '2026-05-20' }),
+      conta('recente', { status: 'pago', valor_pago: 100, data_pagamento: null, data_vencimento: '2026-06-20' })
+    ]
+  })
+
+  assert.deepEqual(movimentos.map((item) => [item.conta_id, item.origem_data, item.valor]), [
+    ['historica', 'vencimento_historico', 100]
+  ])
 })
 
 test('fluxo de caixa considera somente movimentos do ano solicitado', () => {

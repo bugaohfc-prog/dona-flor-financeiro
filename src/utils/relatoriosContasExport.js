@@ -66,6 +66,7 @@ export function exportarRelatorioContasCsv(linhas, contexto) {
     'Valor',
     'Data de referencia',
     'Status operacional',
+    'Tipo de pagamento',
     'Centro de custo',
     'Filial/Unidade',
     'Observacao'
@@ -80,6 +81,7 @@ export function exportarRelatorioContasCsv(linhas, contexto) {
       linha.valorFormatado,
       linha.dataReferenciaFormatada || linha.vencimentoFormatado,
       linha.statusOperacional,
+      linha.tipoPagamento || '',
       linha.centroNome,
       linha.filialNome,
       linha.observacao
@@ -100,6 +102,7 @@ export function exportarRelatorioContasExcel(linhas, contexto) {
       <td>${escaparHtml(linha.valorFormatado)}</td>
       <td>${escaparHtml(linha.dataReferenciaFormatada || linha.vencimentoFormatado)}</td>
       <td>${escaparHtml(linha.statusOperacional)}</td>
+      <td>${escaparHtml(linha.tipoPagamento || '')}</td>
       <td>${escaparHtml(linha.centroNome)}</td>
       <td>${escaparHtml(linha.filialNome)}</td>
       <td>${escaparHtml(linha.observacao)}</td>
@@ -130,6 +133,7 @@ export function exportarRelatorioContasExcel(linhas, contexto) {
               <th>Valor</th>
               <th>Data de referencia</th>
               <th>Status operacional</th>
+              <th>Tipo de pagamento</th>
               <th>Centro de custo</th>
               <th>Filial/Unidade</th>
               <th>Observacao</th>
@@ -163,7 +167,7 @@ export function imprimirRelatorioContas({ linhas, grupos, contexto, resumo, modo
       </td>
       <td>${escaparHtml(linha.valorFormatado)}</td>
       <td>${escaparHtml(linha.dataReferenciaFormatada || linha.vencimentoFormatado)}</td>
-      <td>${escaparHtml(linha.statusOperacional)}</td>
+      <td>${escaparHtml(`${linha.statusOperacional}${linha.tipoPagamento ? ` · ${linha.tipoPagamento}` : ''}`)}</td>
       <td>${escaparHtml(linha.centroNome)}</td>
       <td>${escaparHtml(linha.filialNome)}</td>
     </tr>
@@ -199,7 +203,7 @@ export function imprimirRelatorioContas({ linhas, grupos, contexto, resumo, modo
               <td>${escaparHtml(linha.descricao)}</td>
               <td>${escaparHtml(linha.valorFormatado)}</td>
               <td>${escaparHtml(linha.dataReferenciaFormatada || linha.vencimentoFormatado)}</td>
-              <td>${escaparHtml(linha.statusOperacional)}</td>
+              <td>${escaparHtml(`${linha.statusOperacional}${linha.tipoPagamento ? ` · ${linha.tipoPagamento}` : ''}`)}</td>
               <td>${escaparHtml(linha.centroNome)}</td>
               <td>${escaparHtml(linha.filialNome)}</td>
               <td class="observacao-cell">${escaparHtml(linha.observacao)}</td>

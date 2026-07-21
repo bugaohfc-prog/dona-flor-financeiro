@@ -315,14 +315,18 @@ export default function RelatoriosContasPage({
       const centroNome = obterNomeCentro(conta, centros)
       const filialNome = obterNomeFilial(conta, filiais)
       const status = statusOperacional(conta, vencida)
-      const valorNumerico = Number(conta?.valor || 0)
+      const valorPrevisto = Number(conta?.valor_previsto_relatorio ?? conta?.valor ?? 0)
+      const valorMovimento = Number(conta?.valor_movimento_relatorio ?? conta?.valor_relatorio ?? 0)
+      const valorNumerico = baseRelatorio === 'pagamento' ? valorMovimento : valorPrevisto
 
       return {
         conta,
         descricao: textoSeguro(conta?.descricao, 'Conta sem descrição'),
         valor: valorNumerico,
-        valorPago: Number(conta?.valor_pago_atual_relatorio ?? conta?.valor_pago ?? conta?.valor ?? 0),
-        saldoRestante: Number(conta?.saldo_restante_relatorio ?? Math.max(valorNumerico - Number(conta?.valor_pago || 0), 0)),
+        valorPrevisto,
+        valorPago: Number(conta?.valor_pago_atual_relatorio ?? conta?.valor_pago ?? 0),
+        valorPagoPeriodo: Number(conta?.valor_pago_periodo_relatorio ?? 0),
+        saldoRestante: Number(conta?.saldo_restante_relatorio ?? Math.max(valorPrevisto - Number(conta?.valor_pago || 0), 0)),
         valorFormatado: formatarValor ? formatarValor(valorNumerico) : valorNumerico.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
         vencimento: conta?.data_vencimento || '',
         dataReferencia: conta?.data_referencia_relatorio || conta?.data_vencimento || '',
@@ -332,6 +336,11 @@ export default function RelatoriosContasPage({
         centroNome,
         filialNome,
         observacao: textoSeguro(conta?.observacao, ''),
+        tipoPagamento: ({
+          parcial: 'Pagamento parcial',
+          residual: 'Quitação residual',
+          integral: 'Pagamento integral'
+        })[conta?.tipo_pagamento_relatorio] || '',
         busca: normalizarBusca([
           conta?.descricao,
           conta?.observacao,
@@ -342,7 +351,7 @@ export default function RelatoriosContasPage({
           conta?.data_vencimento
         ].filter(Boolean).join(' '))
       }
-    }), [centros, contas, filiais, formatarData, formatarValor, vencida])
+    }), [baseRelatorio, centros, contas, filiais, formatarData, formatarValor, vencida])
 
   const contasFiltradas = useMemo(() => {
     const termo = normalizarBusca(busca)
@@ -376,10 +385,18 @@ export default function RelatoriosContasPage({
     const vencidas = contasFiltradas.filter((linha) => linha.statusOperacional === 'Vencida')
     const aVencer = contasFiltradas.filter((linha) => linha.statusOperacional === 'A vencer')
     const pagas = contasFiltradas.filter((linha) => linha.statusOperacional === 'Paga')
-    const valorVencido = vencidas.reduce((acc, linha) => acc + linha.valor, 0)
-    const saldoEmAberto = contasFiltradas.reduce((acc, linha) => acc + linha.saldoRestante, 0)
-    const valorAVencer = aVencer.reduce((acc, linha) => acc + linha.valor, 0)
-    const valorPago = pagas.reduce((acc, linha) => acc + linha.valorPago, 0)
+    const obrigacoesVisiveis = baseRelatorio === 'pagamento'
+      ? Array.from(new Map(contasFiltradas.map((linha) => [
+        linha.conta.conta_id_relatorio || linha.conta.id,
+        linha
+      ])).values())
+      : contasFiltradas
+    const valorVencido = vencidas.reduce((acc, linha) => acc + (baseRelatorio === 'pagamento' ? linha.valor : linha.saldoRestante), 0)
+    const saldoEmAberto = obrigacoesVisiveis.reduce((acc, linha) => acc + linha.saldoRestante, 0)
+    const valorAVencer = aVencer.reduce((acc, linha) => acc + (baseRelatorio === 'pagamento' ? linha.valor : linha.saldoRestante), 0)
+    const valorPago = baseRelatorio === 'pagamento'
+      ? contasFiltradas.reduce((acc, linha) => acc + linha.valorPagoPeriodo, 0)
+      : pagas.reduce((acc, linha) => acc + linha.valorPago, 0)
 
     return {
       valorPago,
@@ -394,7 +411,7 @@ export default function RelatoriosContasPage({
       valorAVencerFormatado: formatarValor ? formatarValor(valorAVencer) : valorAVencer.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
       valorPagoFormatado: formatarValor ? formatarValor(valorPago) : valorPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
     }
-  }, [contasFiltradas, formatarValor])
+  }, [baseRelatorio, contasFiltradas, formatarValor])
 
   const grupos = useMemo(() => {
     const mapa = new Map()
@@ -778,7 +795,7 @@ export default function RelatoriosContasPage({
                     <div className="relatorios-contas-table-head" role="row">
                       <span>Descrição</span>
                       <span>Valor</span>
-                      <span>Vencimento</span>
+                      <span>{baseRelatorio === 'pagamento' ? 'Pagamento' : 'Vencimento'}</span>
                       <span>Status</span>
                       <span>Centro</span>
                       <span>Filial</span>
@@ -788,9 +805,10 @@ export default function RelatoriosContasPage({
                         <div>
                           <strong>{linha.descricao}</strong>
                           {linha.observacao && <small>{linha.observacao}</small>}
+                          {linha.tipoPagamento && <small>{linha.tipoPagamento}</small>}
                         </div>
                         <span>{linha.valorFormatado}</span>
-                        <span>{linha.vencimentoFormatado}</span>
+                        <span>{linha.dataReferenciaFormatada}</span>
                         <span className={`relatorios-contas-status ${classeStatus(linha.statusOperacional)}`}>{linha.statusOperacional}</span>
                         <span>{linha.centroNome}</span>
                         <span>{linha.filialNome}</span>

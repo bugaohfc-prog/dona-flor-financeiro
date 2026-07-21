@@ -79,6 +79,26 @@ async function consultarContasPorIds(supabase, empresaId, ids) {
   }
   return { data: contas, error: null }
 }
+async function consultarPagamentosPorContas(supabase, empresaId, ids) {
+  const unicos = Array.from(new Set(ids.filter(Boolean)))
+  const pagamentos = []
+  for (let indice = 0; indice < unicos.length; indice += 100) {
+    const lote = unicos.slice(indice, indice + 100)
+    const resposta = await consultarPaginado(() => selecionarPorEmpresa(
+      supabase,
+      'df_contas_pagamentos',
+      empresaId,
+      COLUNAS_PAGAMENTOS_FLUXO
+    )
+      .in('conta_id', lote)
+      .or('arquivado.is.null,arquivado.eq.false')
+      .order('data_pagamento', { ascending: true })
+      .order('id', { ascending: true }))
+    if (resposta.error) return { data: pagamentos, error: resposta.error }
+    pagamentos.push(...(resposta.data || []))
+  }
+  return { data: pagamentos, error: null }
+}
 
 export async function carregarFluxoCaixaRealizadoV1(supabase, empresaId, ano) {
   const anoNumero = Number(ano)
@@ -121,10 +141,17 @@ export async function carregarFluxoCaixaRealizadoV1(supabase, empresaId, ano) {
 
   const contasPagas = respostaContasPagas.data || []
   const contasPorId = new Map(mesclarPorId(contasPagas, respostaContasParciais.data || []).map((conta) => [conta.id, conta]))
+  const respostaTodosPagamentos = await consultarPagamentosPorContas(
+    supabase,
+    empresaId,
+    Array.from(contasPorId.keys())
+  )
+  if (respostaTodosPagamentos.error) return { data: null, error: respostaTodosPagamentos.error }
+
   return {
     data: {
       contasPagas,
-      pagamentosParciais,
+      pagamentosParciais: respostaTodosPagamentos.data || [],
       receitas: respostaReceitas.data || [],
       contasPorId,
       filiais: respostaFiliais.data || [],

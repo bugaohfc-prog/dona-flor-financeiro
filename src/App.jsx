@@ -3814,29 +3814,17 @@ export default function App() {
 
   if (telaAtual === 'recorrencias') {
     return renderAppFrame(
-      <ContasContextualGuard
-        carregando={loadingContasContextuais}
-        carregada={contasContextuaisCarregadas}
-        erro={erroContasContextuais}
-        onRetry={() => carregarContasContextuais(empresaId)}
-      >
-        <AppSuspenseBoundary>
+      <AppSuspenseBoundary>
         <LazyRecorrenciasFinanceirasPage
-          styles={styles}
-          contas={contasContextuais}
-          seriesRecorrentes={seriesRecorrentes}
+          empresaId={empresaId}
           centros={centros}
           filiais={filiais}
           formatarValor={formatarValor}
           formatarData={formatarData}
-          formatarTipoRecorrencia={formatarTipoRecorrencia}
           navegarPara={navegarPara}
-          abrirConfirmacao={abrirConfirmacao}
-          desativarSerieRecorrente={desativarSerieRecorrente}
-          reativarSerieRecorrente={reativarSerieRecorrente}
+          navegarParaConta={(id) => navegarParaOrigemAgenda('conta', id)}
         />
-        </AppSuspenseBoundary>
-      </ContasContextualGuard>
+      </AppSuspenseBoundary>
     )
   }
 

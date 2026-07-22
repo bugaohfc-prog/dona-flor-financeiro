@@ -162,3 +162,57 @@ export async function consultarRelatorioFinanceiro(supabase, criteriosEntrada) {
     error: null
   }
 }
+
+export async function consultarVencidosFinanceiros(supabase, criteriosEntrada = {}) {
+  const hoje = String(criteriosEntrada.hoje || new Date().toISOString().slice(0, 10)).slice(0, 10)
+  let criterios
+  try {
+    criterios = normalizarCriteriosRelatorio({
+      ...criteriosEntrada,
+      base: 'vencimento',
+      dataInicial: '1900-01-01',
+      dataFinal: hoje,
+      status: 'vencidas',
+      hoje
+    })
+  } catch (error) {
+    return { data: null, error }
+  }
+  if (!criterios.empresaId) return { data: null, error: new Error('Empresa ativa nao selecionada.') }
+
+  const respostaContas = await executarConsultaPaginada(() => {
+    let query = aplicarFiltrosAtivos(
+      selecionarPorEmpresa(supabase, 'df_contas', criterios.empresaId, COLUNAS_CONTAS_RELATORIO),
+      criterios.incluirOcultas
+    )
+      .neq('status', 'pago')
+      .lt('data_vencimento', hoje)
+    if (criterios.filialId) query = query.eq('filial_id', criterios.filialId)
+    if (criterios.centroCustoId) query = query.eq('centro_custo_id', criterios.centroCustoId)
+    return query.order('data_vencimento', { ascending: true }).order('id', { ascending: true })
+  })
+  if (respostaContas.error) return { data: null, error: respostaContas.error }
+
+  const contas = respostaContas.data || []
+  const respostaPagamentos = await consultarPagamentosPorContas(
+    supabase,
+    criterios.empresaId,
+    contas.map((conta) => conta.id)
+  )
+  if (respostaPagamentos.error) return { data: null, error: respostaPagamentos.error }
+
+  const registros = filtrarDatasetRelatorio(
+    consolidarContasComPagamentos(contas, respostaPagamentos.data || [], criterios),
+    criterios
+  ).sort((a, b) => String(a.data_vencimento || '').localeCompare(String(b.data_vencimento || '')) || String(a.id).localeCompare(String(b.id)))
+
+  return {
+    data: {
+      registros,
+      resumo: calcularResumoRelatorioFinanceiro(registros, hoje),
+      criterios,
+      geradoEm: new Date().toISOString()
+    },
+    error: null
+  }
+}

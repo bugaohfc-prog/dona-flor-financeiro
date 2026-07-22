@@ -91,11 +91,23 @@ export default function DashboardHome({
     hoje
   }), [filtroFilial, hoje])
   const fonteFinanceira = useRelatorioFinanceiro({ empresaId, criterios: criteriosFinanceiros })
+  const criteriosVencidos = useMemo(() => ({
+    hoje,
+    filialId: filtroFilial,
+    centroCustoId: '',
+    incluirOcultas: false
+  }), [filtroFilial, hoje])
+  const fonteVencidos = useRelatorioFinanceiro({
+    empresaId,
+    criterios: criteriosVencidos,
+    tipoConsulta: 'vencidos_historicos'
+  })
   const resumoDashboard = useMemo(() => resumirDashboardFinanceiro(fonteFinanceira.registros, {
     dataBase: hoje,
     empresaId,
-    filialId: filtroFilial
-  }), [empresaId, filtroFilial, fonteFinanceira.registros, hoje])
+    filialId: filtroFilial,
+    vencidosHistoricos: fonteVencidos.registros
+  }), [empresaId, filtroFilial, fonteFinanceira.registros, fonteVencidos.registros, hoje])
   const {
     erro: erroResumoPessoas,
     podeVisualizar: podeVisualizarResumoPessoas,
@@ -143,7 +155,11 @@ export default function DashboardHome({
   ]
 
   async function atualizarDashboard() {
-    await Promise.all([dadosCentral.atualizar(), fonteFinanceira.consultar()])
+    await Promise.all([dadosCentral.atualizar(), fonteFinanceira.consultar(), fonteVencidos.consultar()])
+  }
+
+  async function tentarNovamenteResumoFinanceiro() {
+    await Promise.all([fonteFinanceira.consultar(), fonteVencidos.consultar()])
   }
 
   return (
@@ -181,10 +197,10 @@ export default function DashboardHome({
 
       <section className="dashboard-home-finance" aria-label="Resumo financeiro rápido">
         <ContasContextualGuard
-          carregando={fonteFinanceira.carregando}
-          carregada={fonteFinanceira.carregado}
-          erro={fonteFinanceira.erro}
-          onRetry={fonteFinanceira.consultar}
+          carregando={fonteFinanceira.carregando || fonteVencidos.carregando}
+          carregada={fonteFinanceira.carregado && fonteVencidos.carregado}
+          erro={fonteFinanceira.erro || fonteVencidos.erro}
+          onRetry={tentarNovamenteResumoFinanceiro}
         >
           <div className="dashboard-home-card dashboard-home-finance-card">
             <DashboardWidgetHeader

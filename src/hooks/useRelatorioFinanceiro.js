@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { consultarRelatorioFinanceiro } from '../services/relatoriosFinanceirosService.js'
+import { consultarRelatorioFinanceiro, consultarVencidosFinanceiros } from '../services/relatoriosFinanceirosService.js'
 import { criarControleConsultaRelatorio } from '../utils/relatoriosFinanceiros.js'
 
-export function useRelatorioFinanceiro({ empresaId, criterios, atrasoBusca = 300, automatico = true }) {
+export function useRelatorioFinanceiro({ empresaId, criterios, atrasoBusca = 300, automatico = true, tipoConsulta = 'relatorio' }) {
   const controleRef = useRef(criarControleConsultaRelatorio())
   const consultaEmAndamentoRef = useRef(null)
   const montadoRef = useRef(true)
   const [estado, setEstado] = useState({ dados: null, carregando: false, erro: null, carregado: false })
-  const chaveCriterios = useMemo(() => JSON.stringify({ ...criterios, empresaId }), [criterios, empresaId])
+  const chaveCriterios = useMemo(() => JSON.stringify({ ...criterios, empresaId, tipoConsulta }), [criterios, empresaId, tipoConsulta])
 
   useEffect(() => {
     montadoRef.current = true
@@ -31,7 +31,10 @@ export function useRelatorioFinanceiro({ empresaId, criterios, atrasoBusca = 300
     }
 
     setEstado((atual) => ({ ...atual, carregando: true, erro: null }))
-    const promessa = consultarRelatorioFinanceiro(supabase, { ...criterios, empresaId })
+    const consultarFonte = tipoConsulta === 'vencidos_historicos'
+      ? consultarVencidosFinanceiros
+      : consultarRelatorioFinanceiro
+    const promessa = consultarFonte(supabase, { ...criterios, empresaId })
     consultaEmAndamentoRef.current = { chave: chaveCriterios, promessa }
     const resposta = await promessa
     if (consultaEmAndamentoRef.current?.promessa === promessa) consultaEmAndamentoRef.current = null
@@ -42,7 +45,7 @@ export function useRelatorioFinanceiro({ empresaId, criterios, atrasoBusca = 300
       setEstado({ dados: resposta.data, carregando: false, erro: null, carregado: true })
     }
     return resposta
-  }, [chaveCriterios, empresaId])
+  }, [chaveCriterios, empresaId, tipoConsulta])
 
   useEffect(() => {
     if (!automatico) return undefined

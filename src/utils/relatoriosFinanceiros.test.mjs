@@ -225,8 +225,12 @@ test('quitacao por parciais nao executa atualizacao automatica', async () => {
 
 test('filtros financeiros dependentes de parciais sao aplicados apos reconciliacao', async () => {
   const service = await readFile(new URL('../services/relatoriosFinanceirosService.js', import.meta.url), 'utf8')
-  assert.equal(/\.eq\(['"]status['"],\s*['"]pago['"]\)/.test(service), false)
-  assert.equal(/\.neq\(['"]status['"],\s*['"]pago['"]\)/.test(service), false)
+  const consultaGeral = service.slice(
+    service.indexOf('export async function consultarRelatorioFinanceiro'),
+    service.indexOf('export async function consultarVencidosFinanceiros')
+  )
+  assert.equal(/\.eq\(['"]status['"],\s*['"]pago['"]\)/.test(consultaGeral), false)
+  assert.equal(/\.neq\(['"]status['"],\s*['"]pago['"]\)/.test(consultaGeral), false)
 })
 
 test('fluxo e base por pagamento preservam valor real com desconto', () => {

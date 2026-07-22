@@ -97,13 +97,16 @@ export function resumirDashboardFinanceiro(registros = [], opcoes = {}) {
   const registrosAno = baseCompleta.registros.filter((conta) => String(conta?.data_vencimento || '').slice(0, 4) === anoAtual)
   const anual = resumirConsumidoresFinanceiros(registrosAno, { ...opcoes, dataBase: hoje })
 
+  const vencidosHistoricos = resumirConsumidoresFinanceiros(opcoes.vencidosHistoricos || [], { ...opcoes, dataBase: hoje })
+
   return {
     ...anual,
-    vencido: baseCompleta.faixas.vencida.valor,
+    vencido: vencidosHistoricos.faixas.vencida.valor,
     hoje: baseCompleta.faixas.hoje,
     faixas: baseCompleta.faixas,
     periodoConsulta: criarPeriodoConsultaDashboard(hoje),
-    registrosHorizonte: baseCompleta.registros
+    registrosHorizonte: baseCompleta.registros,
+    registrosVencidos: vencidosHistoricos.registros
   }
 }
 

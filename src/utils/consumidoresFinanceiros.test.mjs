@@ -80,6 +80,44 @@ test('conta do próximo ano não entra no previsto anual', () => {
   assert.equal(resumo.faixas.proximos30.valor, 250)
 })
 
+test('Dashboard inclui vencidos historicos somente pelo saldo ainda aberto', () => {
+  const resumo = resumirDashboardFinanceiro([
+    base({ id: 'anual', data_vencimento: '2026-12-20', valor_previsto_relatorio: 100 })
+  ], {
+    dataBase: '2026-12-15',
+    empresaId: 'empresa-a',
+    vencidosHistoricos: [
+      base({ id: 'vencida-2025', data_vencimento: '2025-06-01', status_relatorio: 'vencida', valor_previsto_relatorio: 200, valor_pago_atual_relatorio: 80, saldo_restante_relatorio: 120, parcialmente_pago: true }),
+      base({ id: 'paga-2025', data_vencimento: '2025-05-01', status_relatorio: 'paga', valor_pago_atual_relatorio: 100, saldo_restante_relatorio: 0 }),
+      base({ id: 'quitada-2025', data_vencimento: '2025-04-01', status_relatorio: 'quitada_por_parciais', valor_pago_atual_relatorio: 100, saldo_restante_relatorio: 0 })
+    ]
+  })
+  assert.equal(resumo.vencido, 120)
+  assert.equal(resumo.previsto, 100)
+})
+
+test('fontes anual, vencida e horizonte nao duplicam valores no Dashboard', () => {
+  const contaAnual = base({ id: 'mesma-conta', data_vencimento: '2026-01-10', status_relatorio: 'vencida', saldo_restante_relatorio: 75 })
+  const resumo = resumirDashboardFinanceiro([contaAnual], {
+    dataBase: '2026-12-15',
+    empresaId: 'empresa-a',
+    vencidosHistoricos: [contaAnual]
+  })
+  assert.equal(resumo.previsto, 100)
+  assert.equal(resumo.saldo, 75)
+  assert.equal(resumo.vencido, 75)
+})
+
+test('consulta de vencidos do Dashboard nao carrega historico pago completo', async () => {
+  const fonte = await readFile(new URL('../services/relatoriosFinanceirosService.js', import.meta.url), 'utf8')
+  const inicio = fonte.indexOf('export async function consultarVencidosFinanceiros')
+  const trecho = fonte.slice(inicio)
+  assert.match(trecho, /\.neq\('status', 'pago'\)/)
+  assert.match(trecho, /\.lt\('data_vencimento', hoje\)/)
+  assert.match(trecho, /executarConsultaPaginada/)
+  assert.doesNotMatch(trecho, /status: 'pagas'/)
+})
+
 test('imposto futuro parcialmente pago aparece em A vencer pelo saldo', () => {
   const conta = base({ status_relatorio: 'parcial', parcialmente_pago: true, saldo_restante_relatorio: 60 })
   const statusOperacional = obterStatusOperacionalImposto(conta, '2026-07-21')

@@ -27,6 +27,17 @@ export function criarPeriodosFinanceiros(dataBase = new Date()) {
   }
 }
 
+export function criarPeriodoConsultaDashboard(dataBase = new Date()) {
+  const hoje = typeof dataBase === 'string' ? dataBase.slice(0, 10) : dataLocalISO(dataBase)
+  const fimAno = `${hoje.slice(0, 4)}-12-31`
+  const fimHorizonte = somarDias(hoje, 90)
+  return {
+    dataInicial: `${hoje.slice(0, 4)}-01-01`,
+    dataFinal: fimHorizonte > fimAno ? fimHorizonte : fimAno,
+    hoje
+  }
+}
+
 export function classificarFaixaFinanceira(conta, dataBase = new Date()) {
   const hoje = typeof dataBase === 'string' ? dataBase.slice(0, 10) : dataLocalISO(dataBase)
   const status = statusRelatorioConta(conta, hoje)
@@ -79,8 +90,43 @@ export function resumirConsumidoresFinanceiros(registros = [], { dataBase = new 
   }
 }
 
+export function resumirDashboardFinanceiro(registros = [], opcoes = {}) {
+  const hoje = typeof opcoes.dataBase === 'string' ? opcoes.dataBase.slice(0, 10) : dataLocalISO(opcoes.dataBase || new Date())
+  const baseCompleta = resumirConsumidoresFinanceiros(registros, { ...opcoes, dataBase: hoje })
+  const anoAtual = hoje.slice(0, 4)
+  const registrosAno = baseCompleta.registros.filter((conta) => String(conta?.data_vencimento || '').slice(0, 4) === anoAtual)
+  const anual = resumirConsumidoresFinanceiros(registrosAno, { ...opcoes, dataBase: hoje })
+
+  return {
+    ...anual,
+    vencido: baseCompleta.faixas.vencida.valor,
+    hoje: baseCompleta.faixas.hoje,
+    faixas: baseCompleta.faixas,
+    periodoConsulta: criarPeriodoConsultaDashboard(hoje),
+    registrosHorizonte: baseCompleta.registros
+  }
+}
+
 export function filtrarAgendaFinanceira(contas = [], opcoes = {}) {
   return resumirConsumidoresFinanceiros(contas, opcoes).registros.filter((conta) => (
     !['quitada', 'sem_data'].includes(classificarFaixaFinanceira(conta, opcoes.dataBase))
   ))
+}
+
+export function obterStatusOperacionalImposto(conta, hoje) {
+  const status = statusRelatorioConta(conta, hoje)
+  if (['paga', 'quitada_por_parciais'].includes(status)) return 'pago'
+  if (status === 'vencida') return 'vencido'
+  return status === 'parcial' ? 'parcial' : 'aberto'
+}
+
+export function impostoPertenceAoFiltro(conta, filtro) {
+  if (filtro === 'abertos') return ['aberto', 'parcial'].includes(conta?.statusOperacional)
+  if (filtro === 'vencidos') return conta?.statusOperacional === 'vencido'
+  if (filtro === 'pagos') return conta?.statusOperacional === 'pago'
+  return true
+}
+
+export function obterSaldoExibidoImposto(conta) {
+  return Number(conta?.saldo_restante_relatorio ?? conta?.valor ?? 0)
 }

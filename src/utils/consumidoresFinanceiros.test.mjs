@@ -1,7 +1,17 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
-import { classificarFaixaFinanceira, criarPeriodosFinanceiros, filtrarAgendaFinanceira, resumirConsumidoresFinanceiros } from './consumidoresFinanceiros.js'
+import {
+  classificarFaixaFinanceira,
+  criarPeriodoConsultaDashboard,
+  criarPeriodosFinanceiros,
+  filtrarAgendaFinanceira,
+  impostoPertenceAoFiltro,
+  obterSaldoExibidoImposto,
+  obterStatusOperacionalImposto,
+  resumirConsumidoresFinanceiros,
+  resumirDashboardFinanceiro
+} from './consumidoresFinanceiros.js'
 import { gerarCopilotFinanceiro } from '../services/ai/copilotEngine.js'
 
 const base = (sobrescrita = {}) => ({
@@ -48,6 +58,47 @@ test('intervalos atravessam virada de mês e ano no calendário local', () => {
   const periodos = criarPeriodosFinanceiros('2026-12-28')
   assert.equal(periodos.proximos7.fim, '2027-01-04')
   assert.equal(periodos.proximos90.fim, '2027-03-28')
+})
+
+test('Dashboard em dezembro consulta janeiro dentro dos próximos 90 dias', () => {
+  const periodo = criarPeriodoConsultaDashboard('2026-12-15')
+  assert.deepEqual(periodo, { dataInicial: '2026-01-01', dataFinal: '2027-03-15', hoje: '2026-12-15' })
+  const resumo = resumirDashboardFinanceiro([
+    base({ data_vencimento: '2027-01-10', valor_previsto_relatorio: 250, saldo_restante_relatorio: 250 }),
+    base({ data_vencimento: '2027-02-10', valor_previsto_relatorio: 350, saldo_restante_relatorio: 350 })
+  ], { dataBase: '2026-12-15', empresaId: 'empresa-a' })
+  assert.equal(resumo.faixas.proximos30.valor, 250)
+  assert.equal(resumo.faixas.proximos90.valor, 350)
+})
+
+test('conta do próximo ano não entra no previsto anual', () => {
+  const resumo = resumirDashboardFinanceiro([
+    base({ data_vencimento: '2026-12-20', valor_previsto_relatorio: 100 }),
+    base({ data_vencimento: '2027-01-10', valor_previsto_relatorio: 250, saldo_restante_relatorio: 250 })
+  ], { dataBase: '2026-12-15', empresaId: 'empresa-a' })
+  assert.equal(resumo.previsto, 100)
+  assert.equal(resumo.faixas.proximos30.valor, 250)
+})
+
+test('imposto futuro parcialmente pago aparece em A vencer pelo saldo', () => {
+  const conta = base({ status_relatorio: 'parcial', parcialmente_pago: true, saldo_restante_relatorio: 60 })
+  const statusOperacional = obterStatusOperacionalImposto(conta, '2026-07-21')
+  assert.equal(statusOperacional, 'parcial')
+  assert.equal(impostoPertenceAoFiltro({ ...conta, statusOperacional }, 'abertos'), true)
+  assert.equal(obterSaldoExibidoImposto(conta), 60)
+})
+
+test('imposto parcial vencido aparece em Vencidos pelo saldo', () => {
+  const conta = base({ data_vencimento: '2026-07-20', status_relatorio: 'vencida', parcialmente_pago: true, saldo_restante_relatorio: 40 })
+  const statusOperacional = obterStatusOperacionalImposto(conta, '2026-07-21')
+  assert.equal(impostoPertenceAoFiltro({ ...conta, statusOperacional }, 'vencidos'), true)
+  assert.equal(obterSaldoExibidoImposto(conta), 40)
+})
+
+test('imposto quitado por parciais aparece em Pagos', () => {
+  const conta = base({ status_relatorio: 'quitada_por_parciais', parcialmente_pago: false, saldo_restante_relatorio: 0 })
+  const statusOperacional = obterStatusOperacionalImposto(conta, '2026-07-21')
+  assert.equal(impostoPertenceAoFiltro({ ...conta, statusOperacional }, 'pagos'), true)
 })
 
 test('Agenda exclui pagas e quitadas', () => {

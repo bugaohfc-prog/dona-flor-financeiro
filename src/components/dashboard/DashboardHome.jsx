@@ -2,7 +2,7 @@ import ContasContextualGuard from '../feedback/ContasContextualGuard.jsx'
 import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext.jsx'
 import { useRelatorioFinanceiro } from '../../hooks/useRelatorioFinanceiro.js'
-import { resumirConsumidoresFinanceiros } from '../../utils/consumidoresFinanceiros.js'
+import { criarPeriodoConsultaDashboard, resumirDashboardFinanceiro } from '../../utils/consumidoresFinanceiros.js'
 import { useResumoGestaoPessoasPainel } from '../../hooks/useResumoGestaoPessoasPainel.js'
 import { ResumoOperacionalDashboard } from '../../modules/central-do-dia/components/dashboard/ResumoOperacionalDashboard.jsx'
 import { useCentralDoDia } from '../../modules/central-do-dia/hooks/useCentralDoDia.js'
@@ -80,9 +80,8 @@ export default function DashboardHome({
     return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`
   }, [])
   const criteriosFinanceiros = useMemo(() => ({
+    ...criarPeriodoConsultaDashboard(hoje),
     base: 'vencimento',
-    dataInicial: `${hoje.slice(0, 4)}-01-01`,
-    dataFinal: `${hoje.slice(0, 4)}-12-31`,
     status: 'todas',
     filialId: filtroFilial,
     centroCustoId: '',
@@ -92,7 +91,7 @@ export default function DashboardHome({
     hoje
   }), [filtroFilial, hoje])
   const fonteFinanceira = useRelatorioFinanceiro({ empresaId, criterios: criteriosFinanceiros })
-  const resumoDashboard = useMemo(() => resumirConsumidoresFinanceiros(fonteFinanceira.registros, {
+  const resumoDashboard = useMemo(() => resumirDashboardFinanceiro(fonteFinanceira.registros, {
     dataBase: hoje,
     empresaId,
     filialId: filtroFilial

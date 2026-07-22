@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import ContasContextualGuard from '../components/feedback/ContasContextualGuard.jsx'
 import { useRelatorioFinanceiro } from '../hooks/useRelatorioFinanceiro.js'
-import { podeExportarRelatorio, statusRelatorioConta } from '../utils/relatoriosFinanceiros.js'
+import { podeExportarRelatorio } from '../utils/relatoriosFinanceiros.js'
+import { impostoPertenceAoFiltro, obterSaldoExibidoImposto, obterStatusOperacionalImposto } from '../utils/consumidoresFinanceiros.js'
 import { exportCsv } from '../services/export/reportExportService.js'
 
 const FILTROS_IMPOSTOS = [
@@ -96,13 +97,6 @@ function dataEstaVencida(conta) {
   const hojeLocal = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())
   const vencimento = new Date(`${dataVencimento}T00:00:00`)
   return vencimento < hojeLocal
-}
-
-function obterStatusOperacional(conta) {
-  const status = statusRelatorioConta(conta)
-  if (['paga', 'quitada_por_parciais'].includes(status)) return 'pago'
-  if (status === 'vencida') return 'vencido'
-  return status === 'parcial' ? 'parcial' : 'aberto'
 }
 
 function obterCompetenciaEstimada(conta) {
@@ -218,7 +212,7 @@ export default function ControleImpostosPage({
 
         const centro = obterCentro(conta, centros)
         const filial = obterFilial(conta, filiais)
-        const statusOperacional = obterStatusOperacional(conta)
+        const statusOperacional = obterStatusOperacionalImposto(conta)
         const competenciaFiscal = obterCompetenciaFiscal(conta)
 
         return {
@@ -245,9 +239,7 @@ export default function ControleImpostosPage({
         if (filtro === 'simples' && conta.impostoTipo !== 'simples') return false
         if (filtro === 'fgts' && conta.impostoTipo !== 'fgts') return false
         if (filtro === 'inss' && conta.impostoTipo !== 'inss') return false
-        if (filtro === 'abertos' && conta.statusOperacional !== 'aberto') return false
-        if (filtro === 'vencidos' && conta.statusOperacional !== 'vencido') return false
-        if (filtro === 'pagos' && conta.statusOperacional !== 'pago') return false
+        if (!impostoPertenceAoFiltro(conta, filtro)) return false
         if (!termo) return true
 
         return [
@@ -273,7 +265,7 @@ export default function ControleImpostosPage({
 
   const resumo = useMemo(() => {
     const lista = impostosEncontrados
-    const aVencer = lista.filter((conta) => conta.statusOperacional === 'aberto')
+    const aVencer = lista.filter((conta) => ['aberto', 'parcial'].includes(conta.statusOperacional))
     const vencidos = lista.filter((conta) => conta.statusOperacional === 'vencido')
     const pagos = lista.filter((conta) => conta.statusOperacional === 'pago')
     const proximos = aVencer
@@ -397,7 +389,7 @@ export default function ControleImpostosPage({
                     )}
                     <h2>{conta.descricao || 'Conta sem descrição'}</h2>
                   </div>
-                  <strong>{formatarValor(Number(conta.valor || 0))}</strong>
+                  <strong>{formatarValor(obterSaldoExibidoImposto(conta))}</strong>
                 </div>
 
                 <div className="tax-control-meta">
@@ -409,7 +401,11 @@ export default function ControleImpostosPage({
                   <span>Filial: {conta.filialNome}</span>
                   <span>Centro: {conta.centroNome}</span>
                   <span className={`tax-control-status is-${conta.statusOperacional}`}>
-                    {conta.statusOperacional === 'pago' ? 'Pago' : conta.statusOperacional === 'vencido' ? 'Vencido' : 'A vencer'}
+                    {conta.statusOperacional === 'pago'
+                      ? (conta.status_relatorio === 'quitada_por_parciais' ? 'Quitada por parciais — baixa pendente' : 'Pago')
+                      : conta.statusOperacional === 'vencido'
+                        ? (conta.parcialmente_pago ? 'Vencido — parcialmente pago' : 'Vencido')
+                        : conta.statusOperacional === 'parcial' ? 'Parcialmente pago' : 'A vencer'}
                   </span>
                 </div>
 

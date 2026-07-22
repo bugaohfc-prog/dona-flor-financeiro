@@ -9,7 +9,7 @@ export async function consultarCoberturaRecorrencias(supabase, { empresaId, inic
   assertEmpresaId(empresaId)
   const [respostaSeries, respostaContas] = await Promise.all([
     executarConsultaPaginada(() => selecionarPorEmpresa(supabase, 'df_contas_recorrentes', empresaId, COLUNAS_SERIES)
-      .eq('ativo', true).order('descricao', { ascending: true }).order('id', { ascending: true })),
+      .order('descricao', { ascending: true }).order('id', { ascending: true })),
     executarConsultaPaginada(() => selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTAS)
       .or(`and(data_vencimento.gte.${inicio},data_vencimento.lte.${fim}),and(competencia.gte.${inicio},competencia.lte.${fim})`)
       .order('data_vencimento', { ascending: true }).order('id', { ascending: true }))

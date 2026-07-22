@@ -36,7 +36,7 @@ export function useRecorrenciaCobertura({ empresaId, horizonte }) {
     if (emAndamentoRef.current?.promessa === promessa) emAndamentoRef.current = null
     if (!montadoRef.current || !controleRef.current.estaAtual(token)) return { ...resposta, obsoleta: true }
     if (resposta.error) setEstado({ resultado: null, carregando: false, erro: resposta.error, carregado: false })
-    else setEstado({ resultado: calcularCoberturaRecorrencias({ ...resposta.data, horizonte }), carregando: false, erro: null, carregado: true })
+    else setEstado({ resultado: { ...calcularCoberturaRecorrencias({ ...resposta.data, horizonte }), series: resposta.data.series || [] }, carregando: false, erro: null, carregado: true })
     return resposta
   }, [chave, empresaId, horizonte])
 

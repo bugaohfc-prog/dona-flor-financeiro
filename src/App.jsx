@@ -3817,12 +3817,17 @@ export default function App() {
       <AppSuspenseBoundary>
         <LazyRecorrenciasFinanceirasPage
           empresaId={empresaId}
+          styles={styles}
           centros={centros}
           filiais={filiais}
           formatarValor={formatarValor}
           formatarData={formatarData}
+          formatarTipoRecorrencia={formatarTipoRecorrencia}
           navegarPara={navegarPara}
           navegarParaConta={(id) => navegarParaOrigemAgenda('conta', id)}
+          abrirConfirmacao={abrirConfirmacao}
+          desativarSerieRecorrente={desativarSerieRecorrente}
+          reativarSerieRecorrente={reativarSerieRecorrente}
         />
       </AppSuspenseBoundary>
     )

@@ -37,8 +37,12 @@ function normalizarTexto(valor) {
   return String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase()
 }
 
-function mesmaOrganizacao(serie, conta) {
-  return (!serie.filial_id || serie.filial_id === conta.filial_id) && (!serie.centro_custo_id || serie.centro_custo_id === conta.centro_custo_id)
+function avaliarOrganizacao(serie, conta) {
+  return {
+    incompativel: Boolean(serie.filial_id && conta.filial_id && serie.filial_id !== conta.filial_id) || Boolean(serie.centro_custo_id && conta.centro_custo_id && serie.centro_custo_id !== conta.centro_custo_id),
+    filialConfirmada: Boolean(serie.filial_id && conta.filial_id && serie.filial_id === conta.filial_id),
+    centroConfirmado: Boolean(serie.centro_custo_id && conta.centro_custo_id && serie.centro_custo_id === conta.centro_custo_id)
+  }
 }
 
 function competenciaEsperada(contas, recorrenciaId, dataVencimento) {
@@ -61,23 +65,25 @@ function avaliarSugestaoManual(serie, ocorrencia, conta) {
   const descricaoSerie = normalizarTexto(serie.descricao)
   const descricaoConta = normalizarTexto(conta.descricao)
   const mesmaDescricao = Boolean(descricaoSerie && descricaoConta && (descricaoSerie === descricaoConta || descricaoConta.includes(descricaoSerie) || descricaoSerie.includes(descricaoConta)))
-  const organizacao = mesmaOrganizacao(serie, conta)
+  const organizacao = avaliarOrganizacao(serie, conta)
   const valorCompativel = serie.valor_variavel === true || Math.abs(Number(serie.valor || 0) - Number(conta.valor || 0)) < 0.01
   if (mesmaData) criterios.push('mesmo vencimento')
   if (mesmaCompetencia) criterios.push('mesma competência')
   if (mesmaDescricao) criterios.push('descrição compatível')
-  if (organizacao) criterios.push('filial e centro compatíveis')
+  if (organizacao.filialConfirmada) criterios.push('filial compatível')
+  if (organizacao.centroConfirmado) criterios.push('centro compatível')
   if (valorCompativel) criterios.push(serie.valor_variavel === true ? 'valor variável' : 'mesmo valor')
   if (!mesmaData && !mesmaCompetencia) return null
-  if (!organizacao) return null
-  const confianca = mesmaData && mesmaDescricao && valorCompativel ? 'forte' : mesmaData && organizacao ? 'possivel' : criterios.length >= 3 ? 'possivel' : null
+  if (organizacao.incompativel) return null
+  const organizacaoConfirmada = organizacao.filialConfirmada && organizacao.centroConfirmado
+  const confianca = mesmaData && mesmaDescricao && valorCompativel && organizacaoConfirmada ? 'forte' : criterios.length >= 2 ? 'possivel' : null
   return confianca ? { conta, confianca, criterios } : null
 }
 
 export function calcularCoberturaRecorrencias({ series = [], contas = [], horizonte } = {}) {
   const inicio = dataLocal(horizonte?.inicio)
   const fim = dataLocal(horizonte?.fim)
-  if (!inicio || !fim || inicio > fim) return { recorrencias: [], ocorrencias: [], resumo: { esperadas: 0, cobertas: 0, faltantes: 0, duplicadas: 0, inconsistencias: 0 }, inconsistencias: [] }
+  if (!inicio || !fim || inicio > fim) return { recorrencias: [], ocorrencias: [], resumo: { recorrenciasAtivas: 0, esperadas: 0, cobertas: 0, faltantes: 0, faltantesPuras: 0, possiveisManuais: 0, duplicadas: 0, valorFixoProjetado: 0, variaveisSemProjecao: 0, inconsistencias: 0 }, inconsistencias: [] }
   const contasValidas = (contas || []).filter((conta) => conta?.excluido !== true && conta?.deletado !== true)
   const vinculadas = new Map()
   contasValidas.filter((conta) => conta.recorrencia_id && conta.data_vencimento).forEach((conta) => {
@@ -111,7 +117,8 @@ export function calcularCoberturaRecorrencias({ series = [], contas = [], horizo
       const competencia = competenciaEsperada(contasValidas, serie.id, dataVencimento)
       const sugestoes = contasVinculadas.length ? [] : manuais.map((conta) => avaliarSugestaoManual(serie, { dataVencimento, competencia }, conta)).filter(Boolean)
         .sort((a, b) => (a.confianca === 'forte' ? -1 : 1) - (b.confianca === 'forte' ? -1 : 1)).slice(0, 5)
-      ocorrencias.push({ identidade, recorrenciaId: serie.id, serie, dataVencimento, competencia, contasVinculadas, cobertura: contasVinculadas.length > 1 ? 'duplicada' : contasVinculadas.length === 1 ? 'coberta' : 'faltante', sugestoes })
+      const cobertura = contasVinculadas.length > 1 ? 'duplicada' : contasVinculadas.length === 1 ? 'coberta' : sugestoes.length ? 'possivel_manual' : 'faltante'
+      ocorrencias.push({ identidade, recorrenciaId: serie.id, serie, dataVencimento, competencia, contasVinculadas, cobertura, sugestoes })
     }
   })
 
@@ -121,10 +128,15 @@ export function calcularCoberturaRecorrencias({ series = [], contas = [], horizo
     porSerie.get(ocorrencia.recorrenciaId).ocorrencias.push(ocorrencia)
   })
   const resumo = {
+    recorrenciasAtivas: (series || []).filter((serie) => serie?.ativo === true).length,
     esperadas: ocorrencias.length,
     cobertas: ocorrencias.filter((item) => item.cobertura === 'coberta').length,
-    faltantes: ocorrencias.filter((item) => item.cobertura === 'faltante').length,
+    faltantes: ocorrencias.filter((item) => item.cobertura === 'faltante' || item.cobertura === 'possivel_manual').length,
+    faltantesPuras: ocorrencias.filter((item) => item.cobertura === 'faltante').length,
+    possiveisManuais: ocorrencias.filter((item) => item.cobertura === 'possivel_manual').length,
     duplicadas: ocorrencias.filter((item) => item.cobertura === 'duplicada').length,
+    valorFixoProjetado: ocorrencias.filter((item) => item.serie.valor_variavel !== true).reduce((total, item) => total + Math.round(Number(item.serie.valor || 0) * 100), 0) / 100,
+    variaveisSemProjecao: ocorrencias.filter((item) => item.serie.valor_variavel === true).length,
     inconsistencias: inconsistencias.length
   }
   return { recorrencias: Array.from(porSerie.values()), ocorrencias, resumo, inconsistencias }

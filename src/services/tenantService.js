@@ -1,5 +1,5 @@
-import { supabase } from '../lib/supabase'
-import { normalizarPerfilGlobal } from './permissoesService'
+import { supabase } from '../lib/supabase.js'
+import { normalizarPerfilGlobal } from './permissoesService.js'
 
 export const TENANT_ERRORS = {
   semEmpresa: 'Usuário sem empresa vinculada. Peça ao administrador para liberar seu acesso.'

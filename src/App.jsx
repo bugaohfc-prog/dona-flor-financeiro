@@ -50,7 +50,9 @@ import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsua
 import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario } from './services/permissoesService'
 import { listarFiliaisPorEmpresa } from './services/filiaisService'
 import { verificarUsoCentroCusto } from './services/contasService'
+import { vincularContaManualRecorrencia as vincularContaManualRecorrenciaService } from './services/recorrenciaCoberturaService.js'
 import { registrarEventoAuditoriaSeguro } from './services/auditoriaService'
+import { montarPayloadAuditoriaVinculoManual } from './utils/recorrenciaAcoesControladas.js'
 import { clearChunkReloadAttempt } from './utils/chunkRecovery.js'
 import './styles.css'
 import styles from './styles/appStyles.js'
@@ -411,6 +413,7 @@ export default function App() {
     setErroEmpresa
   } = useEmpresaContext()
   const [nomeUsuarioPerfil, setNomeUsuarioPerfil] = useState('')
+  const vinculoManualRecorrenciaEmAndamentoRef = useRef(new Set())
   const [empresaCarregando, setEmpresaCarregando] = useState(false)
   const [empresaSessaoInicializada, setEmpresaSessaoInicializada] = useState(false)
   const {
@@ -2190,6 +2193,66 @@ export default function App() {
     })
   }
 
+  async function vincularContaManualRecorrencia({ contaId, recorrenciaId, dataVencimento, competencia } = {}) {
+    if (!podeEditarFinanceiro()) {
+      bloquearAcaoSemPermissao()
+      return { data: null, error: null, bloqueado: true, codigo: 'SEM_PERMISSAO' }
+    }
+    if (!empresaId || !contaId || !recorrenciaId || !dataVencimento) {
+      mostrarAviso('Dados insuficientes para vincular a conta manual.', 'erro')
+      return { data: null, error: null, bloqueado: true, codigo: 'DADOS_INCOMPLETOS' }
+    }
+
+    const chaveOperacao = `${empresaId}:${contaId}:${recorrenciaId}:${dataVencimento}`
+    if (vinculoManualRecorrenciaEmAndamentoRef.current.has(chaveOperacao)) {
+      mostrarAviso('Vinculo em andamento para esta conta.', 'aviso')
+      return { data: null, error: null, bloqueado: true, codigo: 'OPERACAO_EM_ANDAMENTO' }
+    }
+
+    vinculoManualRecorrenciaEmAndamentoRef.current.add(chaveOperacao)
+    try {
+      const resultado = await vincularContaManualRecorrenciaService(supabase, {
+        empresaId,
+        contaId,
+        recorrenciaId,
+        dataVencimento,
+        autorizado: true
+      })
+
+      if (resultado.error) {
+        mostrarAviso(mensagemSeguraErro(resultado.error, 'Nao foi possivel vincular a conta manual.'), 'erro')
+        return resultado
+      }
+      if (resultado.bloqueado) {
+        mostrarAviso(resultado.mensagem || 'A conta manual nao pode ser vinculada.', 'aviso')
+        return resultado
+      }
+
+      if (resultado.auditoriaNecessaria) {
+        const auditoria = await registrarEventoAuditoriaSeguro(supabase, montarPayloadAuditoriaVinculoManual({
+          empresaId,
+          contaId,
+          recorrenciaId,
+          dataVencimento,
+          competencia,
+          correlationId: `financeiro.recorrencia.vinculo_manual:${contaId}:${recorrenciaId}:${Date.now()}`
+        }), 'vinculo manual de recorrencia')
+        if (auditoria.error) {
+          mostrarAviso('Conta vinculada, mas a auditoria nao foi registrada. O estado foi atualizado.', 'aviso')
+        } else {
+          mostrarAviso('Conta manual vinculada a recorrencia.', 'sucesso')
+        }
+      } else {
+        mostrarAviso('Conta ja estava vinculada a esta recorrencia.', 'info')
+      }
+
+      await buscarContasAposMutacao()
+      return resultado
+    } finally {
+      vinculoManualRecorrenciaEmAndamentoRef.current.delete(chaveOperacao)
+    }
+  }
+
   // =========================
   // BLOCO 8 — AÇÕES NOTAS
   // =========================
@@ -3817,6 +3880,7 @@ export default function App() {
       <AppSuspenseBoundary>
         <LazyRecorrenciasFinanceirasPage
           empresaId={empresaId}
+          empresaNome={empresaAtiva?.nome || empresaId}
           styles={styles}
           centros={centros}
           filiais={filiais}
@@ -3828,6 +3892,8 @@ export default function App() {
           abrirConfirmacao={abrirConfirmacao}
           desativarSerieRecorrente={desativarSerieRecorrente}
           reativarSerieRecorrente={reativarSerieRecorrente}
+          podeVincularRecorrencia={podeEditarFinanceiro()}
+          vincularContaManualRecorrencia={vincularContaManualRecorrencia}
         />
       </AppSuspenseBoundary>
     )

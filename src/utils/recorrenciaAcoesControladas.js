@@ -3,13 +3,13 @@ const texto = (valor) => String(valor || '').trim()
 const mesmaEmpresa = (empresaId, entidade) => Boolean(texto(empresaId) && texto(entidade?.empresa_id) === texto(empresaId))
 
 export const AUDITORIA_ACOES_RECORRENCIAS = Object.freeze({
-  escritaDisponivel: false,
+  escritaDisponivel: true,
   exigeConfirmacaoExplicita: true,
   exigeIdempotencia: true,
   exigeBloqueioDuploClique: true,
   indiceAutoridadeFinal: INDICE_RECORRENCIA_ATIVA,
   permissoesMinimas: ['admin', 'master'],
-  acoesAuditoriaAtivadas: false,
+  acoesAuditoriaAtivadas: true,
   auditoriaAtomicaComEscrita: false,
   limitacoes: [
     'A Edge Function rejeita ações não ativadas.',
@@ -97,4 +97,40 @@ export function montarPreviaPayloadGeracao(contexto = {}) {
     enviar_push: configuracao.enviar_push === true,
     dias_aviso: Number(configuracao.dias_aviso || 1)
   } }
+}
+
+export function validarVinculoManualConfirmado({ empresaId, serie, conta, ocorrencia, autorizado = false } = {}) {
+  const validacao = validarSugestaoParaVinculo({ empresaId, serie, conta, autorizado })
+  if (!validacao.elegivel) return validacao
+  if (serie.ativo !== true) return resultado('RECORRENCIA_INATIVA')
+  if (!ocorrencia?.dataVencimento) return resultado('DADOS_INCOMPLETOS')
+  const dataConta = texto(conta.data_vencimento).slice(0, 10)
+  const dataOcorrencia = texto(ocorrencia.dataVencimento).slice(0, 10)
+  if (!dataConta || dataConta !== dataOcorrencia) return resultado('DADOS_INCOMPLETOS')
+  const conflito = detectarConflitoOcorrencia({ ocorrencia, contas: [] })
+  if (conflito.duplicada) return resultado('OCORRENCIA_DUPLICADA')
+  if (conflito.existe) return resultado('OCORRENCIA_COBERTA')
+  return resultado()
+}
+
+export function montarPayloadAuditoriaVinculoManual({ empresaId, contaId, recorrenciaId, dataVencimento, competencia, correlationId } = {}) {
+  return {
+    empresa_id: empresaId,
+    acao: 'financeiro.recorrencia.vinculo_manual',
+    entidade_tipo: 'df_contas',
+    entidade_id: contaId,
+    modulo: 'financeiro',
+    origem: 'app',
+    severidade: 'media',
+    status: 'sucesso',
+    dados_antes: { recorrencia_id: null },
+    dados_depois: { recorrencia_id: recorrenciaId },
+    metadados: {
+      conta_id: contaId,
+      recorrencia_id: recorrenciaId,
+      data_vencimento: dataVencimento,
+      competencia: competencia || null
+    },
+    correlation_id: correlationId
+  }
 }

@@ -1,4 +1,4 @@
-import { assertEmpresaId, assertPayloadEmpresaId, assertPayloadsEmpresaId } from './tenantService'
+import { assertEmpresaId, assertPayloadEmpresaId, assertPayloadsEmpresaId } from './tenantService.js'
 
 export function selecionarPorEmpresa(supabase, tabela, empresaId, colunas = '*') {
   assertEmpresaId(empresaId)

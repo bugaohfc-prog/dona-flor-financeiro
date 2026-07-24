@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase.js'
 
 const MASTER_EMAIL_FALLBACK = 'bugaohfc@gmail.com'
 const MASTER_VALUES = new Set(['master', 'owner', 'superadmin', 'super_admin', 'super admin'])

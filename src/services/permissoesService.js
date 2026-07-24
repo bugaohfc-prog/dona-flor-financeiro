@@ -1,5 +1,5 @@
-import { supabase } from '../lib/supabase'
-import { normalizarPerfilUsuario } from './usuariosService'
+import { supabase } from '../lib/supabase.js'
+import { normalizarPerfilUsuario } from './usuariosService.js'
 
 export const PERFIS_GLOBAIS = {
   MASTER: 'master',

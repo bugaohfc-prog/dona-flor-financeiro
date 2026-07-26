@@ -14,9 +14,6 @@ begin
   if to_regprocedure('public.df_usuario_eh_admin(uuid)') is null then
     raise exception 'Missing helper public.df_usuario_eh_admin(uuid)';
   end if;
-  if to_regprocedure('public.df_usuario_tem_perfil_empresa(uuid,text[])') is null then
-    raise exception 'Missing helper public.df_usuario_tem_perfil_empresa(uuid,text[])';
-  end if;
   if to_regclass('public.uq_df_contas_recorrencia_vencimento_ativas') is null then
     raise exception 'Missing protected index public.uq_df_contas_recorrencia_vencimento_ativas';
   end if;
@@ -31,11 +28,6 @@ set search_path to 'pg_catalog', 'public'
 as $function$
 begin
   if new.recorrencia_id is null then
-    return new;
-  end if;
-
-  if current_setting('dna.recorrencia_insert_autorizado', true)
-      in ('controlado', 'automatico') then
     return new;
   end if;
 
@@ -71,7 +63,7 @@ for each row
 execute function public.proteger_df_contas_recorrencia_id_insert();
 
 comment on function public.proteger_df_contas_recorrencia_id_insert() is
-'Bloqueia INSERT direto com recorrencia_id para perfis diferentes de Admin/Master; RPCs validadas liberam somente a operacao corrente.';
+'Bloqueia todo INSERT com recorrencia_id para perfis diferentes de Admin/Master, inclusive chamadas REST e RPCs.';
 
 create or replace function public.gerar_ocorrencia_recorrente_controlada(
   p_empresa_id uuid,
@@ -194,8 +186,6 @@ begin
       'idempotente', true
     );
   end if;
-
-  perform set_config('dna.recorrencia_insert_autorizado', 'controlado', true);
 
   insert into public.df_contas (
     empresa_id,
@@ -321,14 +311,10 @@ begin
   if not (
     (select public.is_master())
     or public.df_usuario_eh_admin(p_empresa_id)
-    or public.df_usuario_tem_perfil_empresa(
-      p_empresa_id,
-      array['gerente', 'master', 'owner', 'superadmin', 'super_admin']
-    )
   ) then
     raise exception using
       errcode = '42501',
-      message = 'Perfil sem permissao para planejamento recorrente.';
+      message = 'Somente Admin ou Master pode executar planejamento recorrente automatico.';
   end if;
 
   if p_ocorrencias is null or jsonb_typeof(p_ocorrencias) <> 'array' then
@@ -347,8 +333,6 @@ begin
     date_trunc('month', current_date + 90)::date
       + interval '1 month - 1 day'
   )::date;
-
-  perform set_config('dna.recorrencia_insert_autorizado', 'automatico', true);
 
   for v_item in
     select value
@@ -505,6 +489,6 @@ grant execute on function public.gerar_ocorrencias_recorrentes_automaticas(
 comment on function public.gerar_ocorrencias_recorrentes_automaticas(
   uuid, jsonb
 ) is
-'Preserva o planejamento automatico existente em RPC estrita, limitado ao tenant, series ativas e horizonte vigente.';
+'Preserva o planejamento automatico existente somente para Admin/Master, limitado ao tenant, series ativas e horizonte vigente.';
 
 commit;

@@ -115,14 +115,19 @@ test('RPC controlada exige Admin ou Master e revalida serie antes do INSERT', as
   assert.match(sql, /uq_df_contas_recorrencia_vencimento_ativas/)
 })
 
-test('planejamento automatico existente usa RPC estrita sem liberar INSERT direto', async () => {
+test('planejamento automatico existente usa RPC estrita somente para Admin ou Master', async () => {
   const [sql, contasService, hook] = await Promise.all([
     lerMigrationGeracao(),
     readFile(new URL('../services/contasService.js', import.meta.url), 'utf8'),
     readFile(new URL('../hooks/useContas.js', import.meta.url), 'utf8')
   ])
   assert.match(sql, /function public\.gerar_ocorrencias_recorrentes_automaticas/)
-  assert.match(sql, /array\['gerente', 'master', 'owner', 'superadmin', 'super_admin'\]/)
+  const funcaoAutomatica = sql.match(
+    /create or replace function public\.gerar_ocorrencias_recorrentes_automaticas[\s\S]*?\nend;\n\$function\$;/
+  )?.[0] || ''
+  assert.match(funcaoAutomatica, /public\.is_master\(\)[\s\S]*public\.df_usuario_eh_admin\(p_empresa_id\)/)
+  assert.doesNotMatch(funcaoAutomatica, /df_usuario_tem_perfil_empresa|gerente/)
+  assert.match(funcaoAutomatica, /Somente Admin ou Master pode executar planejamento recorrente automatico/)
   assert.match(sql, /v_inicio_horizonte[\s\S]*v_fim_horizonte/)
   assert.match(sql, /order by value ->> 'recorrencia_id', value ->> 'data_vencimento'/)
   assert.match(contasService, /supabase\.rpc\('gerar_ocorrencias_recorrentes_automaticas'/)
@@ -135,4 +140,5 @@ test('migration de geracao nao altera RLS, indice protegido ou trigger de vincul
   assert.doesNotMatch(sql, /drop\s+index|alter\s+index|create\s+(unique\s+)?index/i)
   assert.doesNotMatch(sql, /proteger_df_contas_recorrencia_id_admin_master/)
   assert.doesNotMatch(sql, /security definer|user_metadata|raw_user_meta_data/i)
+  assert.doesNotMatch(sql, /current_setting|set_config|recorrencia_insert_autorizado/i)
 })

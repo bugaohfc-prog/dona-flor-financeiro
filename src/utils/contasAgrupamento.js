@@ -178,6 +178,16 @@ export function criarEstadoExpansaoPadrao(grupos = []) {
   return { anos, meses }
 }
 
+export function criarEstadoExpansaoCompleta(grupos = []) {
+  return grupos.reduce((estado, grupoAno) => {
+    estado.anos[grupoAno.chave] = true
+    grupoAno.meses.forEach((grupoMes) => {
+      estado.meses[grupoMes.chave] = true
+    })
+    return estado
+  }, { anos: {}, meses: {} })
+}
+
 export function reconciliarEstadoExpansao(estado = {}, grupos = [], opcoes = {}) {
   if (opcoes.reiniciar) return criarEstadoExpansaoPadrao(grupos)
 

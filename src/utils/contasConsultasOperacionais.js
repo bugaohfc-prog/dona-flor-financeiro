@@ -26,6 +26,60 @@ export function filtrarContasPorModo(contas = [], modo = 'pendentes', hoje = for
   })
 }
 
+export const HORIZONTES_PLANEJAMENTO_CONTAS = Object.freeze({
+  '30_dias': { dias: 30 },
+  '90_dias': { dias: 90 },
+  '6_meses': { meses: 6 },
+  '12_meses': { meses: 12 },
+  todos: null
+})
+
+function dataBancoLocal(valor) {
+  const texto = String(valor || '').slice(0, 10)
+  const partes = texto.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!partes) return null
+  const data = new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]))
+  return Number.isNaN(data.getTime()) ? null : data
+}
+
+function adicionarMesesCalendario(data, quantidade) {
+  const dia = data.getDate()
+  const destino = new Date(data.getFullYear(), data.getMonth() + quantidade, 1)
+  const ultimoDia = new Date(destino.getFullYear(), destino.getMonth() + 1, 0).getDate()
+  destino.setDate(Math.min(dia, ultimoDia))
+  return destino
+}
+
+export function calcularHorizonteVisualContas(tipo = 'todos', opcoes = {}) {
+  const referencia = dataBancoLocal(opcoes.hoje) || new Date()
+  const inicio = formatarDataBancoLocal(referencia)
+  const configuracao = HORIZONTES_PLANEJAMENTO_CONTAS[tipo]
+  if (!configuracao) return { tipo: 'todos', inicio, fim: null }
+
+  const fim = new Date(referencia.getFullYear(), referencia.getMonth(), referencia.getDate())
+  if (configuracao.dias) fim.setDate(fim.getDate() + configuracao.dias)
+  if (configuracao.meses) {
+    const fimMensal = adicionarMesesCalendario(referencia, configuracao.meses)
+    fim.setFullYear(fimMensal.getFullYear(), fimMensal.getMonth(), fimMensal.getDate())
+  }
+  return { tipo, inicio, fim: formatarDataBancoLocal(fim) }
+}
+
+export function filtrarContasPorHorizonte(contas = [], tipo = 'todos', opcoes = {}) {
+  const periodo = calcularHorizonteVisualContas(tipo, opcoes)
+  if (!periodo.fim || opcoes.modoBuscaGlobal || ['pagas', 'ocultas', 'excluidas'].includes(opcoes.modo)) {
+    return [...contas]
+  }
+
+  return contas.filter((conta) => {
+    const vencimento = String(conta?.data_vencimento || '').slice(0, 10)
+    if (!vencimento) return false
+    if (opcoes.modo === 'vencidas') return vencimento < periodo.inicio
+    if (vencimento < periodo.inicio) return true
+    return vencimento <= periodo.fim
+  })
+}
+
 export function calcularPeriodoPagas(tipo = 'mes_atual', opcoes = {}) {
   const hoje = opcoes.dataReferencia ? new Date(opcoes.dataReferencia) : new Date()
   let inicio
@@ -49,10 +103,11 @@ export function calcularPeriodoPagas(tipo = 'mes_atual', opcoes = {}) {
   return { dataInicial: formatarDataBancoLocal(inicio), dataFinal: formatarDataBancoLocal(fim), hoje: formatarDataBancoLocal(hoje) }
 }
 
-export function selecionarFonteContas({ operacionais = [], pagas = [], busca = [], ocultas = [], termo = '', modo = 'pendentes' }) {
+export function selecionarFonteContas({ operacionais = [], pagas = [], busca = [], ocultas = [], excluidas = [], termo = '', modo = 'pendentes' }) {
   if (String(termo).trim()) return busca
   if (modo === 'pagas') return pagas
   if (modo === 'ocultas') return ocultas
+  if (modo === 'excluidas') return excluidas
   return operacionais
 }
 
@@ -181,6 +236,7 @@ export function deveConsultarSobDemanda({ modo, termo = '' }) {
   if (String(termo).trim()) return 'busca'
   if (modo === 'pagas') return 'pagas'
   if (modo === 'ocultas') return 'ocultas'
+  if (modo === 'excluidas') return 'excluidas'
   return null
 }
 

@@ -117,6 +117,19 @@ export async function listarContasOcultas(supabase, empresaId, opcoes = {}) {
   return query.range(pagina * tamanhoPagina, ((pagina + 1) * tamanhoPagina) - 1)
 }
 
+export async function listarContasExcluidas(supabase, empresaId, opcoes = {}) {
+  assertEmpresaId(empresaId)
+  const pagina = Math.max(0, Number(opcoes.pagina) || 0)
+  const tamanhoPagina = Math.max(1, Number(opcoes.tamanhoPagina) || 100)
+  const query = ordenarContasEstavelmente(
+    selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTA_LISTAGEM)
+      .eq('excluido', true)
+      .or('deletado.is.null,deletado.eq.false'),
+    false
+  )
+  return query.range(pagina * tamanhoPagina, ((pagina + 1) * tamanhoPagina) - 1)
+}
+
 export async function buscarContasHistorico(supabase, empresaId, termo, opcoes = {}) {
   assertEmpresaId(empresaId)
   const pagina = Math.max(0, Number(opcoes.pagina) || 0)
@@ -124,10 +137,10 @@ export async function buscarContasHistorico(supabase, empresaId, termo, opcoes =
   const { termoTexto: termoSeguro, valor: numero, data } = interpretarTermoBuscaContas(termo)
   if (!termoSeguro) return { data: [], error: null }
 
-  let query = aplicarFiltrosContaAtiva(
-    selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTA_LISTAGEM),
-    { incluirOcultas: opcoes.incluirOcultas === true }
-  )
+  let query = selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTA_LISTAGEM)
+    .or('deletado.is.null,deletado.eq.false')
+  if (opcoes.incluirExcluidas !== true) query = query.or('excluido.is.null,excluido.eq.false')
+  if (opcoes.incluirOcultas !== true) query = query.or('oculto.is.null,oculto.eq.false')
   if (opcoes.status === 'pagas') query = query.eq('status', 'pago')
   if (opcoes.status === 'abertas') query = query.neq('status', 'pago')
   if (opcoes.status === 'vencidas') query = query.neq('status', 'pago').lt('data_vencimento', opcoes.hoje)

@@ -5,6 +5,7 @@ import AccountPaymentModal from '../components/modals/AccountPaymentModal.jsx'
 import AccountPartialPaymentModal from '../components/modals/AccountPartialPaymentModal.jsx'
 import {
   agruparContasPorAnoMes,
+  criarEstadoExpansaoCompleta,
   criarEstadoExpansaoPadrao,
   reconciliarEstadoExpansao
 } from '../utils/contasAgrupamento.js'
@@ -19,12 +20,16 @@ const OPCOES_ORDENACAO_CONTAS = [
   { valor: 'status', label: 'Status' }
 ]
 
-const ABAS_STATUS_CONTAS = [
+const ABAS_OPERACIONAIS_CONTAS = [
   { valor: 'pendentes', label: 'Em aberto' },
   { valor: 'vencidas', label: 'Vencidas' },
-  { valor: 'futuras', label: 'Futuras' },
+  { valor: 'futuras', label: 'Futuras' }
+]
+
+const ABAS_HISTORICO_CONTAS = [
   { valor: 'pagas', label: 'Pagas' },
-  { valor: 'ocultas', label: 'Ocultas' }
+  { valor: 'ocultas', label: 'Ocultas' },
+  { valor: 'excluidas', label: 'Excluídas' }
 ]
 
 const ABAS_STATUS_BUSCA = [
@@ -33,6 +38,14 @@ const ABAS_STATUS_BUSCA = [
   { valor: 'vencidas', label: 'Vencidas' },
   { valor: 'pendentes', label: 'Abertas' },
   { valor: 'futuras', label: 'Futuras' }
+]
+
+const OPCOES_HORIZONTE_CONTAS = [
+  { valor: '30_dias', label: '30 dias' },
+  { valor: '90_dias', label: '90 dias' },
+  { valor: '6_meses', label: '6 meses' },
+  { valor: '12_meses', label: '12 meses' },
+  { valor: 'todos', label: 'Todos' }
 ]
 
 const ACCOUNT_ACTIONS_STYLE = {
@@ -195,7 +208,7 @@ function EmptyState({ icon, title, description, actionLabel, onAction }) {
 }
 export default function ContasPage({
   styles, busca, setBusca, mostrarFiltros, setMostrarFiltros, limparFiltros, imprimirPDF, exportarCSV, exportarExcel,
-  filtroStatus, setFiltroStatus, centros, filtroCentro, setFiltroCentro, filiais, filtroFilial, setFiltroFilial, filtroMes, setFiltroMes,
+  filtroStatus, setFiltroStatus, filtroHorizonte, setFiltroHorizonte, centros, filtroCentro, setFiltroCentro, filiais, filtroFilial, setFiltroFilial, filtroMes, setFiltroMes,
   dataInicial, setDataInicial, dataFinal, setDataFinal, limitarDataInput, contas = [], contasFiltradas, contaFocusTarget, onContaFocusHandled, onContaForaDoFiltro, total, formatarValor,
   loading, mostrarContas, setMostrarContas, estaVencida, formatarData, formatarTipoRecorrencia,
   obterTipoRecorrenciaConta, abrirConfirmacao, marcarComoPago, corrigirPagamento, voltarParaPendente, abrirEdicaoConta, excluirConta, ocultarConta, reexibirConta,
@@ -258,7 +271,9 @@ export default function ContasPage({
     }
     return null
   }, [contaAlvoId, gruposAnoMes])
-  const abasStatusAtuais = modoBuscaGlobal ? ABAS_STATUS_BUSCA : ABAS_STATUS_CONTAS
+  const abasStatusAtuais = modoBuscaGlobal
+    ? ABAS_STATUS_BUSCA
+    : [...ABAS_OPERACIONAIS_CONTAS, ...ABAS_HISTORICO_CONTAS]
   const statusAtualLabel = abasStatusAtuais.find((aba) => aba.valor === filtroStatus)?.label || filtroStatus
   const resumoResultadoFiltrado = useMemo(
     () => calcularResumoResultadoFiltrado(contasFiltradas),
@@ -362,17 +377,11 @@ export default function ContasPage({
 
     setMostrarContas(true)
     setExpansaoContas((atual) => {
-      const anos = { ...atual.anos }
-      const meses = { ...atual.meses }
-
-      gruposAnoMes.forEach((grupoAno) => {
-        anos[grupoAno.chave] = true
-        grupoAno.meses.forEach((grupoMes) => {
-          meses[grupoMes.chave] = true
-        })
-      })
-
-      return { anos, meses }
+      const expansaoBusca = criarEstadoExpansaoCompleta(gruposAnoMes)
+      return {
+        anos: { ...atual.anos, ...expansaoBusca.anos },
+        meses: { ...atual.meses, ...expansaoBusca.meses }
+      }
     })
   }, [busca, gruposAnoMes, setMostrarContas])
 
@@ -412,6 +421,7 @@ export default function ContasPage({
     const exibirBaixaReal = conta.status === 'pago' && conta.valor_pago !== null && conta.valor_pago !== undefined
     const valorPrincipal = exibirBaixaReal ? valorPago : valorPrevisto
     const oculta = conta.oculto === true
+    const excluida = conta.excluido === true
     const pagamentosParciaisTotal = Number(conta.pagamentosParciaisTotal || 0)
     const saldoPendenteParcial = Number(conta.saldoPendenteParcial || 0)
     const quantidadePagamentosParciais = Number(conta.quantidadePagamentosParciais || 0)
@@ -507,6 +517,7 @@ export default function ContasPage({
               {vencida ? 'Vencido' : conta.status === 'pago' ? 'Pago' : 'Pendente'}
             </span>
             {oculta && <span className="status-pill status-oculto">Oculta</span>}
+            {excluida && <span className="status-pill status-oculto">Excluída</span>}
           </div>
         </div>
 
@@ -544,7 +555,7 @@ export default function ContasPage({
           </div>
         )}
 
-        {podeEditarFinanceiro && (
+        {podeEditarFinanceiro && !excluida && (
           <div className={`account-actions ${conta.status === 'pago' ? 'account-actions-paid' : ''} ${(podeRegistrarPagamentoParcial || podeGerenciarPagamentosParciais) ? 'account-actions-with-partial' : ''}`} style={{ ...styles.acoes, ...ACCOUNT_ACTIONS_STYLE }}>
           {conta.status !== 'pago' ? (
             <button className="account-action-button account-action-primary" style={{ ...styles.btnPago, ...ACCOUNT_PRIMARY_ACTION_STYLE }} onClick={() => abrirBaixaConta(conta)}>
@@ -636,22 +647,72 @@ export default function ContasPage({
           )}
         </div>
 
-        <div className="accounts-status-tabs" role="tablist" aria-label="Filtro principal de status das contas">
-          {abasStatusAtuais.map((aba) => (
-            <button
-              key={aba.valor}
-              type="button"
-              role="tab"
-              aria-selected={filtroStatus === aba.valor}
-              className={`accounts-status-tab ${filtroStatus === aba.valor ? 'is-active' : ''}`}
-              onClick={() => setFiltroStatus(aba.valor)}
-            >
-              {aba.label}
-            </button>
-          ))}
-        </div>
+        {modoBuscaGlobal ? (
+          <div className="accounts-status-tabs" role="tablist" aria-label="Filtro dos resultados em todo o histórico">
+            {ABAS_STATUS_BUSCA.map((aba) => (
+              <button
+                key={aba.valor}
+                type="button"
+                role="tab"
+                aria-selected={filtroStatus === aba.valor}
+                className={`accounts-status-tab ${filtroStatus === aba.valor ? 'is-active' : ''}`}
+                onClick={() => setFiltroStatus(aba.valor)}
+              >
+                {aba.label}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="accounts-tabs-groups">
+            <div className="accounts-tab-group">
+              <span className="accounts-tab-group-label">Planejamento</span>
+              <div className="accounts-status-tabs" role="tablist" aria-label="Contas operacionais">
+                {ABAS_OPERACIONAIS_CONTAS.map((aba) => (
+                  <button
+                    key={aba.valor}
+                    type="button"
+                    role="tab"
+                    aria-selected={filtroStatus === aba.valor}
+                    className={`accounts-status-tab ${filtroStatus === aba.valor ? 'is-active' : ''}`}
+                    onClick={() => setFiltroStatus(aba.valor)}
+                  >
+                    {aba.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="accounts-tab-group">
+              <span className="accounts-tab-group-label">Histórico</span>
+              <div className="accounts-status-tabs" role="tablist" aria-label="Histórico de contas">
+                {ABAS_HISTORICO_CONTAS.map((aba) => (
+                  <button
+                    key={aba.valor}
+                    type="button"
+                    role="tab"
+                    aria-selected={filtroStatus === aba.valor}
+                    className={`accounts-status-tab ${filtroStatus === aba.valor ? 'is-active' : ''}`}
+                    onClick={() => setFiltroStatus(aba.valor)}
+                  >
+                    {aba.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {modoBuscaGlobal && <div className="accounts-history-search-indicator">Resultados em todo o histórico</div>}
+
+        {!modoBuscaGlobal && ['pendentes', 'vencidas', 'futuras'].includes(filtroStatus) && (
+          <label className="accounts-horizon-control">
+            <span>Horizonte</span>
+            <select value={filtroHorizonte} onChange={(event) => setFiltroHorizonte(event.target.value)}>
+              {OPCOES_HORIZONTE_CONTAS.map((opcao) => (
+                <option key={opcao.valor} value={opcao.valor}>{opcao.label}</option>
+              ))}
+            </select>
+          </label>
+        )}
 
         {!modoBuscaGlobal && filtroStatus === 'pagas' && (
           <div className="accounts-paid-period-controls">
@@ -747,10 +808,16 @@ export default function ContasPage({
         {!loading && mostrarContas && contasOrdenadas.length === 0 && (
           <EmptyState
             icon="💳"
-            title={filtroStatus === 'ocultas' ? 'Nenhuma conta oculta' : 'Nenhuma conta encontrada'}
+            title={filtroStatus === 'ocultas'
+              ? 'Nenhuma conta oculta'
+              : filtroStatus === 'excluidas'
+                ? 'Nenhuma conta excluída'
+                : 'Nenhuma conta encontrada'}
             description={filtroStatus === 'ocultas'
               ? 'As contas ocultas aparecerão aqui quando forem retiradas da visão principal.'
-              : 'Ajuste os filtros ou cadastre uma nova conta para acompanhar os vencimentos da empresa.'}
+              : filtroStatus === 'excluidas'
+                ? 'As contas enviadas para a lixeira aparecerão neste histórico enquanto estiverem disponíveis.'
+                : 'Ajuste os filtros ou cadastre uma nova conta para acompanhar os vencimentos da empresa.'}
           />
         )}
 
@@ -851,7 +918,7 @@ export default function ContasPage({
           </div>
         )}
         {loadingConsultaContas && <div className="accounts-query-loading">Carregando resultados...</div>}
-        {!loadingConsultaContas && haMaisContasConsulta && (filtroStatus === 'pagas' || filtroStatus === 'ocultas' || modoBuscaGlobal) && (
+        {!loadingConsultaContas && haMaisContasConsulta && (filtroStatus === 'pagas' || filtroStatus === 'ocultas' || filtroStatus === 'excluidas' || modoBuscaGlobal) && (
           <button type="button" className="accounts-load-more" onClick={carregarMaisContas}>Carregar mais</button>
         )}
       </section>

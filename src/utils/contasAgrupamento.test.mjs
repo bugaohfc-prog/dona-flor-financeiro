@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 
 import {
   agruparContasPorAnoMes,
+  criarEstadoExpansaoCompleta,
   criarEstadoExpansaoPadrao,
   reconciliarEstadoExpansao
 } from './contasAgrupamento.js'
@@ -26,6 +27,26 @@ test('separa contas entre 2024, 2025 e 2026', () => {
 test('ordena anos do mais recente para o mais antigo', () => {
   const grupos = agrupar([conta('a', '2025-01-10'), conta('b', '2023-01-10'), conta('c', '2026-01-10')])
   assert.deepEqual(grupos.map((grupo) => grupo.ano), [2026, 2025, 2023])
+})
+
+test('busca global pode abrir automaticamente ano e mes do resultado localizado', () => {
+  const grupos = agrupar([conta('historica', '2024-03-10')])
+  assert.deepEqual(criarEstadoExpansaoCompleta(grupos), {
+    anos: { 2024: true },
+    meses: { '2024-03': true }
+  })
+})
+
+test('agrupamento preserva todos os registros em grande volume sem duplicar', () => {
+  const contas = Array.from({ length: 5000 }, (_, indice) => {
+    const ano = 2024 + (indice % 4)
+    const mes = (indice % 12) + 1
+    return conta(`conta-${indice}`, `${ano}-${String(mes).padStart(2, '0')}-15`)
+  })
+  const grupos = agrupar(contas)
+  const agrupadas = grupos.flatMap((ano) => ano.meses.flatMap((mes) => mes.contas))
+  assert.equal(agrupadas.length, 5000)
+  assert.equal(new Set(agrupadas.map((item) => item.id)).size, 5000)
 })
 
 test('abre o ano atual por padrao', () => {

@@ -43,7 +43,7 @@ import { converterValor, formatarData, formatarDataParaBanco, formatarValor, lim
 import { diferencaDias } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
 import { estaVencida, pegarMes } from './utils/contasStatus'
-import { atualizarAposMutacaoContas, carregarFonteContextualContas, consumidorRequerHistoricoCompleto, formatarDataBancoLocal, obterPeriodoConsultaPagas, selecionarFonteContas } from './utils/contasConsultasOperacionais.js'
+import { atualizarAposMutacaoContas, carregarFonteContextualContas, consumidorRequerHistoricoCompleto, filtrarContasPorHorizonte, formatarDataBancoLocal, obterPeriodoConsultaPagas, selecionarFonteContas } from './utils/contasConsultasOperacionais.js'
 import { atualizarListaLixeiraEstavel, diasNaLixeira, podeExcluirDefinitivo } from './utils/lixeira'
 import { erroEhSessaoExpirada, mensagemSeguraErro } from './utils/session'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
@@ -238,6 +238,7 @@ export default function App() {
     erroContasContextuais,
     contasPagas,
     contasOcultas,
+    contasExcluidas,
     resultadosBuscaContas,
     loadingConsultaContas,
     haMaisContasConsulta,
@@ -248,6 +249,8 @@ export default function App() {
     setBusca,
     filtroStatus,
     setFiltroStatus,
+    filtroHorizonte,
+    setFiltroHorizonte,
     periodoPagas,
     setPeriodoPagas,
     anoPagas,
@@ -1789,6 +1792,7 @@ export default function App() {
     }
     if (filtroStatus === 'pagas') void consultarContasSecundarias('pagas', 0)
     if (filtroStatus === 'ocultas') void consultarContasSecundarias('ocultas', 0)
+    if (filtroStatus === 'excluidas') void consultarContasSecundarias('excluidas', 0)
     return undefined
   }, [anoPagas, busca, dataFinalPagas, dataInicialPagas, empresaId, filtroStatus, periodoPagas, telaAtual])
 
@@ -1809,15 +1813,25 @@ export default function App() {
     }
   }
 
-  const fonteContasExibidas = selecionarFonteContas({ operacionais: contasOperacionais, pagas: contasPagas, busca: resultadosBuscaContas, ocultas: contasOcultas, termo: termoBuscaContas, modo: filtroStatus })
+  const fonteContasExibidas = selecionarFonteContas({
+    operacionais: contasOperacionais,
+    pagas: contasPagas,
+    busca: resultadosBuscaContas,
+    ocultas: contasOcultas,
+    excluidas: contasExcluidas,
+    termo: termoBuscaContas,
+    modo: filtroStatus
+  })
 
   const valorBuscaContasCentavos = useMemo(() => normalizarValorBuscaContas(busca), [busca])
   const digitosBuscaValorContas = useMemo(() => normalizarDigitosValorBuscaContas(busca), [busca])
 
-  const contasFiltradas = useMemo(() => fonteContasExibidas
+  const contasFiltradas = useMemo(() => filtrarContasPorHorizonte(fonteContasExibidas
     .filter((conta) => {
+      if (filtroStatus === 'excluidas') return conta.excluido === true && conta.deletado !== true
       if (filtroStatus === 'ocultas') return conta.oculto === true
-      if (conta.oculto === true) return false
+      if (!termoBuscaContas && conta.oculto === true) return false
+      if (!termoBuscaContas && conta.excluido === true) return false
       if (filtroStatus === 'pendentes') return conta.status !== 'pago'
       if (filtroStatus === 'futuras') return conta.status !== 'pago' && conta.data_vencimento > formatarDataBancoLocal(new Date())
       if (filtroStatus === 'pagas') return conta.status === 'pago'
@@ -1859,7 +1873,11 @@ export default function App() {
       return camposBusca
         .filter(Boolean)
         .some((campo) => String(campo).toLowerCase().includes(termoBuscaContas))
-    }), [fonteContasExibidas, resultadosBuscaContas, dataFinal, dataInicial, filtroCentro, filtroFilial, filtroMes, filtroStatus, termoBuscaContas, valorBuscaContasCentavos, digitosBuscaValorContas])
+    }), filtroHorizonte, {
+      hoje: formatarDataBancoLocal(new Date()),
+      modo: filtroStatus,
+      modoBuscaGlobal: Boolean(termoBuscaContas)
+    }), [fonteContasExibidas, resultadosBuscaContas, dataFinal, dataInicial, filtroCentro, filtroFilial, filtroHorizonte, filtroMes, filtroStatus, termoBuscaContas, valorBuscaContasCentavos, digitosBuscaValorContas])
 
   const contasOperacionaisFiliais = useMemo(() => contasOperacionais
     .filter((conta) => {
@@ -2996,13 +3014,14 @@ export default function App() {
   const limparFiltros = useCallback(() => {
     setBusca('')
     setFiltroStatus('pendentes')
+    setFiltroHorizonte('todos')
     setFiltroCentro('')
     setFiltroFilial('')
     setFiltroMes('')
     setDataInicial('')
     setDataFinal('')
     limparConsultasSecundarias()
-  }, [limparConsultasSecundarias])
+  }, [limparConsultasSecundarias, setFiltroHorizonte])
 
 
 
@@ -3914,6 +3933,8 @@ export default function App() {
         podeExportarDados={podeExportarDados()}
         filtroStatus={filtroStatus}
         setFiltroStatus={setFiltroStatus}
+        filtroHorizonte={filtroHorizonte}
+        setFiltroHorizonte={setFiltroHorizonte}
         periodoPagas={periodoPagas}
         setPeriodoPagas={setPeriodoPagas}
         anoPagas={anoPagas}

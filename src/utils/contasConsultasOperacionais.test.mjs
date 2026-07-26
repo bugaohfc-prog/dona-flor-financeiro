@@ -4,6 +4,7 @@ import { executarConsultaPaginada } from '../services/supabasePaginationService.
 import { criarControleOperacao } from './recorrenciaPlanejamento.js'
 import {
   calcularPeriodoPagas,
+  calcularHorizonteVisualContas,
   atualizarAposMutacaoContas,
   atualizarFontesDashboard,
   calcularResumoFinanceiroContas,
@@ -12,6 +13,7 @@ import {
   contasParaExportacao,
   deveConsultarSobDemanda,
   filtrarContasPorModo,
+  filtrarContasPorHorizonte,
   fonteContextualDisponivel,
   interpretarTermoBuscaContas,
   invalidarConsultaContas,
@@ -49,9 +51,66 @@ test('visao inicial exclui pagas', () => {
   assert.deepEqual(filtrarContasPorModo([conta('p', 'pago', '2026-07-18')], 'pendentes', '2026-07-19'), [])
 })
 
+test('horizontes de 30 e 90 dias preservam vencidas e limitam somente o futuro visivel', () => {
+  const dados = [
+    conta('vencida', 'pendente', '2026-07-01'),
+    conta('hoje', 'pendente', '2026-07-19'),
+    conta('d30', 'pendente', '2026-08-18'),
+    conta('d31', 'pendente', '2026-08-19'),
+    conta('d90', 'pendente', '2026-10-17'),
+    conta('d91', 'pendente', '2026-10-18')
+  ]
+  assert.deepEqual(
+    filtrarContasPorHorizonte(dados, '30_dias', { hoje: '2026-07-19', modo: 'pendentes' }).map((item) => item.id),
+    ['vencida', 'hoje', 'd30']
+  )
+  assert.deepEqual(
+    filtrarContasPorHorizonte(dados, '90_dias', { hoje: '2026-07-19', modo: 'pendentes' }).map((item) => item.id),
+    ['vencida', 'hoje', 'd30', 'd31', 'd90']
+  )
+})
+
+test('horizontes de 6 e 12 meses usam calendario local e atravessam o ano', () => {
+  assert.deepEqual(calcularHorizonteVisualContas('6_meses', { hoje: '2026-08-31' }), {
+    tipo: '6_meses',
+    inicio: '2026-08-31',
+    fim: '2027-02-28'
+  })
+  assert.deepEqual(calcularHorizonteVisualContas('12_meses', { hoje: '2026-12-15' }), {
+    tipo: '12_meses',
+    inicio: '2026-12-15',
+    fim: '2027-12-15'
+  })
+})
+
+test('horizonte Todos nao aplica limite visual de vencimento', () => {
+  const dados = [
+    conta('antiga', 'pendente', '2024-01-01'),
+    conta('distante', 'pendente', '2035-12-31')
+  ]
+  assert.deepEqual(
+    filtrarContasPorHorizonte(dados, 'todos', { hoje: '2026-07-19', modo: 'pendentes' }),
+    dados
+  )
+})
+
+test('busca global e historicos nao sao recortados pelo horizonte visual', () => {
+  const distante = conta('distante', 'pago', '2035-12-31')
+  assert.deepEqual(
+    filtrarContasPorHorizonte([distante], '30_dias', { hoje: '2026-07-19', modo: 'pagas' }),
+    [distante]
+  )
+  assert.deepEqual(
+    filtrarContasPorHorizonte([distante], '30_dias', { hoje: '2026-07-19', modo: 'todas', modoBuscaGlobal: true }),
+    [distante]
+  )
+})
+
 test('consulta de pagas nao ocorre antes da aba', () => {
   assert.equal(deveConsultarSobDemanda({ modo: 'pendentes' }), null)
   assert.equal(deveConsultarSobDemanda({ modo: 'pagas' }), 'pagas')
+  assert.equal(deveConsultarSobDemanda({ modo: 'ocultas' }), 'ocultas')
+  assert.equal(deveConsultarSobDemanda({ modo: 'excluidas' }), 'excluidas')
 })
 
 test('pagas respeita mes, ano e intervalo', () => {
@@ -79,6 +138,21 @@ test('ocultas aparecem somente no modo correto', () => {
   const oculta = conta('o', 'pendente', '2026-08-01', { oculto: true })
   assert.equal(filtrarContasPorModo([oculta], 'pendentes').length, 0)
   assert.equal(filtrarContasPorModo([oculta], 'ocultas').length, 1)
+})
+
+test('historico excluido possui fonte propria e nao contamina operacionais', () => {
+  const operacional = conta('aberta', 'pendente', '2026-08-01')
+  const excluida = conta('lixeira', 'pendente', '2025-08-01', { excluido: true })
+  assert.deepEqual(selecionarFonteContas({
+    operacionais: [operacional],
+    excluidas: [excluida],
+    modo: 'excluidas'
+  }), [excluida])
+  assert.deepEqual(selecionarFonteContas({
+    operacionais: [operacional],
+    excluidas: [excluida],
+    modo: 'pendentes'
+  }), [operacional])
 })
 
 test('troca de empresa invalida resposta antiga', () => {

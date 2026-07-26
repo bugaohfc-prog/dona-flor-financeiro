@@ -18,6 +18,7 @@ import {
   enviarContaParaLixeira,
   listarContasOperacionais,
   listarContasContextuais,
+  listarContasExcluidas,
   listarContasPagas,
   listarContasOcultas,
   buscarContasHistorico,
@@ -131,6 +132,7 @@ export function useContas() {
   const [erroContasContextuais, setErroContasContextuais] = useState(null)
   const [contasPagas, setContasPagas] = useState([])
   const [contasOcultas, setContasOcultas] = useState([])
+  const [contasExcluidas, setContasExcluidas] = useState([])
   const [resultadosBuscaContas, setResultadosBuscaContas] = useState([])
   const [loadingConsultaContas, setLoadingConsultaContas] = useState(false)
   const [haMaisContasConsulta, setHaMaisContasConsulta] = useState(false)
@@ -138,6 +140,7 @@ export function useContas() {
   const [seriesRecorrentes, setSeriesRecorrentes] = useState([])
   const [busca, setBusca] = useState('')
   const [filtroStatus, setFiltroStatus] = useState('pendentes')
+  const [filtroHorizonte, setFiltroHorizonte] = useState('todos')
   const [periodoPagas, setPeriodoPagas] = useState('mes_atual')
   const [anoPagas, setAnoPagas] = useState(String(new Date().getFullYear()))
   const [dataInicialPagas, setDataInicialPagas] = useState('')
@@ -555,7 +558,14 @@ export function useContas() {
       let resposta
       if (tipo === 'pagas') resposta = await listarContasPagas(supabase, empresaAtual, { ...periodo, pagina })
       else if (tipo === 'ocultas') resposta = await listarContasOcultas(supabase, empresaAtual, { pagina })
-      else resposta = await buscarContasHistorico(supabase, empresaAtual, termo, { pagina, status, hoje: periodo.hoje, incluirOcultas: false })
+      else if (tipo === 'excluidas') resposta = await listarContasExcluidas(supabase, empresaAtual, { pagina })
+      else resposta = await buscarContasHistorico(supabase, empresaAtual, termo, {
+        pagina,
+        status,
+        hoje: periodo.hoje,
+        incluirOcultas: true,
+        incluirExcluidas: true
+      })
       if (!estaAtual()) return { obsoleto: true }
       if (resposta.error) {
         avisarErro?.(resposta.error)
@@ -566,6 +576,7 @@ export function useContas() {
       const atualizar = (setter) => setter((atuais) => pagina === 0 ? enriquecidas : [...atuais, ...enriquecidas.filter((item) => !atuais.some((atual) => atual.id === item.id))])
       if (tipo === 'pagas') atualizar(setContasPagas)
       else if (tipo === 'ocultas') atualizar(setContasOcultas)
+      else if (tipo === 'excluidas') atualizar(setContasExcluidas)
       else atualizar(setResultadosBuscaContas)
       setHaMaisContasConsulta(enriquecidas.length === 100)
       return { data: enriquecidas, error: null }
@@ -579,6 +590,7 @@ export function useContas() {
     setLoadingConsultaContas(false)
     setContasPagas([])
     setContasOcultas([])
+    setContasExcluidas([])
     setResultadosBuscaContas([])
     setHaMaisContasConsulta(false)
   }
@@ -1393,6 +1405,7 @@ export function useContas() {
     erroContasContextuais,
     contasPagas,
     contasOcultas,
+    contasExcluidas,
     resultadosBuscaContas,
     loadingConsultaContas,
     haMaisContasConsulta,
@@ -1404,6 +1417,8 @@ export function useContas() {
     setBusca,
     filtroStatus,
     setFiltroStatus,
+    filtroHorizonte,
+    setFiltroHorizonte,
     periodoPagas,
     setPeriodoPagas,
     anoPagas,

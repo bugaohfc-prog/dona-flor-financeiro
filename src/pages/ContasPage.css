@@ -261,11 +261,65 @@
   font-weight: 700;
 }
 
+.accounts-tabs-groups {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 20px;
+}
+
+.accounts-tab-group {
+  display: grid;
+  gap: 5px;
+}
+
+.accounts-tab-group-label {
+  color: var(--df-color-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.accounts-horizon-control {
+  display: inline-grid;
+  gap: 4px;
+  margin-top: 10px;
+  color: var(--df-color-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.accounts-horizon-control select {
+  min-width: 140px;
+  min-height: 38px;
+  padding: 7px 32px 7px 10px;
+  border: 1px solid var(--df-color-border);
+  border-radius: var(--df-radius-control);
+  background: var(--df-color-surface);
+  color: var(--df-color-text);
+}
+
 .accounts-paid-period-controls {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 10px;
+}
+
+@media (max-width: 640px) {
+  .accounts-tabs-groups,
+  .accounts-tab-group {
+    width: 100%;
+  }
+
+  .accounts-horizon-control {
+    width: 100%;
+  }
+
+  .accounts-horizon-control select {
+    width: 100%;
+  }
 }
 
 .accounts-paid-period-controls label {

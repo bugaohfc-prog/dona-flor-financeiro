@@ -13,6 +13,7 @@ import {
   obterStatusOperacionalImposto,
   resumirConsumidoresFinanceiros,
   resumirDashboardFinanceiro,
+  resumirProximos90Dashboard,
   resumirProjecaoMensalDashboard
 } from './consumidoresFinanceiros.js'
 import { gerarCopilotFinanceiro } from '../services/ai/copilotEngine.js'
@@ -66,6 +67,15 @@ test('indicadores 7, 30 e 90 dias não se sobrepõem', () => {
   assert.deepEqual(contas.map((conta) => classificarFaixaFinanceira(conta, '2026-07-21')), ['proximos7', 'proximos30', 'proximos30', 'proximos90', 'proximos90', 'futuroLongo'])
 })
 
+test('resumo executivo de 90 dias agrega as faixas sem alterar seus cálculos', () => {
+  const resumo = resumirProximos90Dashboard({
+    proximos7: { quantidade: 1, valor: 10.1 },
+    proximos30: { quantidade: 2, valor: 20.2 },
+    proximos90: { quantidade: 3, valor: 30.3 }
+  })
+  assert.deepEqual(resumo, { quantidade: 6, valor: 60.6 })
+})
+
 test('intervalos atravessam virada de mês e ano no calendário local', () => {
   const periodos = criarPeriodosFinanceiros('2026-12-28')
   assert.equal(periodos.proximos7.fim, '2027-01-04')
@@ -75,7 +85,7 @@ test('intervalos atravessam virada de mês e ano no calendário local', () => {
 test('Dashboard em dezembro consulta janeiro dentro dos próximos 90 dias', () => {
   const periodo = criarPeriodoConsultaDashboard('2026-12-15')
   assert.equal(periodo.dataInicial, '2026-01-01')
-  assert.equal(periodo.dataFinal, '2027-11-30')
+  assert.equal(periodo.dataFinal, '2027-03-15')
   assert.equal(periodo.hoje, '2026-12-15')
   const resumo = resumirDashboardFinanceiro([
     base({ data_vencimento: '2027-01-10', valor_previsto_relatorio: 250, saldo_restante_relatorio: 250 }),
@@ -140,6 +150,9 @@ test('navegação do Dashboard prepara período e filtro correspondentes em Cont
   })
   assert.deepEqual(criarDestinoContasDashboard('proximos7', { hoje: '2026-12-28' }), {
     filtroStatus: 'futuras', filtroHorizonte: 'todos', dataInicial: '2026-12-29', dataFinal: '2027-01-04'
+  })
+  assert.deepEqual(criarDestinoContasDashboard('proximos90Completo', { hoje: '2026-12-28' }), {
+    filtroStatus: 'futuras', filtroHorizonte: 'todos', dataInicial: '2026-12-29', dataFinal: '2027-03-28'
   })
   assert.deepEqual(criarDestinoContasDashboard('mes', { hoje: '2026-12-28', mes: '2027-02' }), {
     filtroStatus: 'pendentes', filtroHorizonte: 'todos', dataInicial: '2027-02-01', dataFinal: '2027-02-28'
@@ -213,6 +226,16 @@ test('Dashboard usa filtros locais e não herda filtros deixados em Contas', asy
   assert.match(fonte, /filtroFilialDashboard/)
   assert.match(fonte, /filtroCentroDashboard/)
   assert.doesNotMatch(fonte, /setFiltroFilial =/)
+})
+
+test('Dashboard mantém somente resumo executivo e navega para relatórios detalhados', async () => {
+  const fonte = await readFile(new URL('../components/dashboard/DashboardHome.jsx', import.meta.url), 'utf8')
+  assert.match(fonte, /Saldo projetado/)
+  assert.match(fonte, /Próximos 90 dias/)
+  assert.match(fonte, /navegarPara\('relatorios'\)/)
+  assert.doesNotMatch(fonte, /resumirProjecaoMensalDashboard/)
+  assert.doesNotMatch(fonte, /Projeção mensal dos próximos 12 meses/)
+  assert.doesNotMatch(fonte, /dashboard-home-projection-table/)
 })
 
 test('Dashboard financeiro não possui chamada de escrita', async () => {

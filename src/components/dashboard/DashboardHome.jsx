@@ -6,7 +6,7 @@ import {
   criarDestinoContasDashboard,
   criarPeriodoConsultaDashboard,
   resumirDashboardFinanceiro,
-  resumirProjecaoMensalDashboard
+  resumirProximos90Dashboard
 } from '../../utils/consumidoresFinanceiros.js'
 import { useResumoGestaoPessoasPainel } from '../../hooks/useResumoGestaoPessoasPainel.js'
 import { ResumoOperacionalDashboard } from '../../modules/central-do-dia/components/dashboard/ResumoOperacionalDashboard.jsx'
@@ -53,13 +53,6 @@ function DashboardWidgetHeader({ kicker, title, subtitle, badge, actions, expand
       </div>
     </div>
   )
-}
-
-function formatarMesDashboard(chave) {
-  const [ano, mes] = String(chave || '').split('-').map(Number)
-  if (!ano || !mes) return chave
-  const nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-  return `${nomes[mes - 1]} ${ano}`
 }
 
 export default function DashboardHome({
@@ -133,12 +126,10 @@ export default function DashboardHome({
     centroCustoId: filtroCentroDashboard,
     vencidosHistoricos: fonteVencidos.registros
   }), [empresaId, filtroCentroDashboard, filtroFilialDashboard, fonteFinanceira.registros, fonteVencidos.registros, hoje])
-  const projecaoDashboard = useMemo(() => resumirProjecaoMensalDashboard(fonteFinanceira.registros, {
-    dataBase: hoje,
-    empresaId,
-    filialId: filtroFilialDashboard,
-    centroCustoId: filtroCentroDashboard
-  }), [empresaId, filtroCentroDashboard, filtroFilialDashboard, fonteFinanceira.registros, hoje])
+  const proximos90 = useMemo(
+    () => resumirProximos90Dashboard(resumoDashboard.faixas),
+    [resumoDashboard.faixas]
+  )
   const {
     erro: erroResumoPessoas,
     podeVisualizar: podeVisualizarResumoPessoas,
@@ -176,16 +167,12 @@ export default function DashboardHome({
   }
 
   const resumoFinanceiro = [
-    { label: 'Previsto', valor: formatarValor(resumoDashboard.previsto), detalhe: `Ano de ${hoje.slice(0, 4)}`, tone: 'default' },
-    { label: 'Realizado', valor: formatarValor(resumoDashboard.realizado), detalhe: 'Pagamentos efetivos', tone: 'success' },
-    { label: 'Saldo', valor: formatarValor(resumoDashboard.saldo), detalhe: 'Ainda em aberto', tone: 'warning' },
+    { label: 'Saldo projetado', valor: formatarValor(resumoDashboard.saldo), detalhe: `Exercício de ${hoje.slice(0, 4)}`, tone: 'warning', acao: () => navegarPara('relatorios') },
     { label: 'Vencido', valor: formatarValor(resumoDashboard.vencido), detalhe: 'Todo o saldo vencido', tone: 'danger', destino: 'vencidas' },
     { label: 'Vence hoje', valor: formatarValor(resumoDashboard.faixas.hoje.valor), detalhe: `${resumoDashboard.faixas.hoje.quantidade} compromisso(s)`, tone: 'warning', destino: 'hoje' },
     { label: 'Próximos 7 dias', valor: formatarValor(resumoDashboard.faixas.proximos7.valor), detalhe: 'De amanhã até o 7º dia', tone: 'default', destino: 'proximos7' },
-    { label: 'Próximos 30 dias', valor: formatarValor(resumoDashboard.faixas.proximos30.valor), detalhe: 'Do 8º ao 30º dia', tone: 'default', destino: 'proximos30' },
-    { label: 'Próximos 90 dias', valor: formatarValor(resumoDashboard.faixas.proximos90.valor), detalhe: 'Do 31º ao 90º dia', tone: 'default', destino: 'proximos90' }
+    { label: 'Próximos 90 dias', valor: formatarValor(proximos90.valor), detalhe: `${proximos90.quantidade} compromisso(s)`, tone: 'default', destino: 'proximos90Completo' }
   ]
-  const maiorSaldoMensal = Math.max(...projecaoDashboard.meses.map((mes) => mes.saldo), 0)
 
   function abrirContas(tipo, referencia = {}) {
     const filtros = criarDestinoContasDashboard(tipo, { hoje, ...referencia })
@@ -283,13 +270,13 @@ export default function DashboardHome({
 
             {mostrarResumoFinanceiro && (
               <div className="dashboard-home-kpi-grid">
-                {resumoFinanceiro.map((item) => item.destino ? (
+                {resumoFinanceiro.map((item) => (item.destino || item.acao) ? (
                   <button
                     type="button"
                     className={`dashboard-home-kpi dashboard-home-kpi-${item.tone} is-action`}
                     key={item.label}
-                    onClick={() => abrirContas(item.destino)}
-                    aria-label={`${item.label}: ${item.valor}. Abrir contas correspondentes.`}
+                    onClick={item.acao || (() => abrirContas(item.destino))}
+                    aria-label={`${item.label}: ${item.valor}. ${item.acao ? 'Abrir relatórios financeiros.' : 'Abrir contas correspondentes.'}`}
                   >
                     <span>{item.label}</span>
                     <strong>{item.valor}</strong>
@@ -303,78 +290,6 @@ export default function DashboardHome({
                   </div>
                 ))}
               </div>
-            )}
-
-            {mostrarResumoFinanceiro && (
-              <>
-                <div className="dashboard-home-projection-header">
-                  <div>
-                    <span className="dashboard-home-kicker">Necessidade de caixa</span>
-                    <strong>Projeção mensal dos próximos 12 meses</strong>
-                    <small>
-                      {projecaoDashboard.periodo.inicio} a {projecaoDashboard.periodo.fim}
-                      {projecaoDashboard.maiorNecessidade
-                        ? ` · Maior necessidade em ${projecaoDashboard.maiorNecessidade.chave}`
-                        : ''}
-                    </small>
-                  </div>
-                </div>
-
-                <div className="dashboard-home-breakdown" aria-label="Classificação dos compromissos projetados">
-                  {Object.entries({
-                    'Contas fixas': projecaoDashboard.classificacoes.fixa,
-                    'Contas variáveis': projecaoDashboard.classificacoes.variavel,
-                    'Contas manuais': projecaoDashboard.classificacoes.manual,
-                    'Contas recorrentes': projecaoDashboard.classificacoes.recorrente
-                  }).map(([rotulo, item]) => (
-                    <div className="dashboard-home-breakdown-item" key={rotulo}>
-                      <span>{rotulo}</span>
-                      <strong>{formatarValor(item.valor)}</strong>
-                      <small>{item.quantidade} compromisso(s)</small>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="dashboard-home-projection-table-wrap">
-                  <table className="dashboard-home-projection-table">
-                    <thead>
-                      <tr>
-                        <th>Mês</th>
-                        <th>Previsto</th>
-                        <th>Pago</th>
-                        <th>Saldo</th>
-                        <th>Contas</th>
-                        <th aria-label="Proporção da necessidade financeira">Necessidade</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {projecaoDashboard.meses.map((mes) => {
-                        const destaque = projecaoDashboard.maiorNecessidade?.chave === mes.chave
-                        const largura = maiorSaldoMensal > 0 ? Math.round((mes.saldo / maiorSaldoMensal) * 100) : 0
-                        return (
-                          <tr className={destaque ? 'is-highest' : ''} key={mes.chave}>
-                            <th scope="row">
-                              <button type="button" onClick={() => abrirContas('mes', { mes: mes.chave })}>
-                                {formatarMesDashboard(mes.chave)}
-                                {destaque && <span>Maior necessidade</span>}
-                              </button>
-                            </th>
-                            <td>{formatarValor(mes.previsto)}</td>
-                            <td>{formatarValor(mes.pago)}</td>
-                            <td><strong>{formatarValor(mes.saldo)}</strong></td>
-                            <td>{mes.quantidade}</td>
-                            <td>
-                              <span className="dashboard-home-projection-bar" aria-hidden="true">
-                                <i style={{ width: `${largura}%` }} />
-                              </span>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </>
             )}
           </div>
         </ContasContextualGuard>
@@ -392,6 +307,8 @@ export default function DashboardHome({
           filialId={filtroFilialDashboard}
           centroCustoId={filtroCentroDashboard}
           onAbrirConta={(contaId) => navegarParaOrigemAgenda?.('conta', contaId)}
+          onAbrirRelatorios={() => navegarPara('relatorios')}
+          onAbrirImpostos={() => navegarPara('controle-impostos')}
           onAbrirRecorrencias={() => navegarPara('recorrencias')}
         />
       </ContasContextualGuard>

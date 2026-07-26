@@ -167,5 +167,29 @@ test('painel possui navegacao direta para conta e nao possui escrita', async () 
   const painel = await readFile(new URL('../components/dashboard/PrioridadesFinanceirasPanel.jsx', import.meta.url), 'utf8')
   const utilitario = await readFile(new URL('./prioridadesFinanceiras.js', import.meta.url), 'utf8')
   assert.match(painel, /onAbrirConta\?\.\(item\.id\)/)
+  assert.match(painel, /central\.prioridades\.slice\(0, 3\)/)
+  assert.match(painel, /onAbrirRelatorios/)
+  assert.match(painel, /onAbrirImpostos/)
+  assert.match(painel, /onAbrirRecorrencias/)
+  assert.doesNotMatch(painel, /concentracoesMensais/)
   assert.doesNotMatch(`${painel}\n${utilitario}`, /\.(insert|update|delete|upsert|rpc)\s*\(/)
+})
+
+test('painel resume impostos e recorrencias sem alterar o ranking financeiro', () => {
+  const resultado = montarCentralPrioridadesFinanceiras({
+    contas: [
+      conta('imposto', { imposto_tipo: 'informado', saldo_restante_relatorio: 120.55 }),
+      conta('comum', { saldo_restante_relatorio: 80 })
+    ],
+    ocorrenciasCobertura: [
+      { cobertura: 'faltante', recorrenciaId: 'r1', dataVencimento: '2026-08-10', serie: {} }
+    ],
+    dataBase: '2026-07-26',
+    empresaId: 'e1'
+  })
+
+  assert.equal(resultado.prioridades.length, 2)
+  assert.equal(resultado.resumo.impostosEmAberto, 1)
+  assert.equal(resultado.resumo.saldoImpostos, 120.55)
+  assert.equal(resultado.resumo.recorrenciasSemCobertura, 1)
 })

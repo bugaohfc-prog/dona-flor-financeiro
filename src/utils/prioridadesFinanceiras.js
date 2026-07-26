@@ -195,6 +195,7 @@ export function montarCentralPrioridadesFinanceiras({
     .map((item) => ({ chave: item.chave, quantidade: item.quantidade, saldo: deCentavos(item.saldoCentavos) }))
     .sort((a, b) => b.saldo - a.saldo || a.chave.localeCompare(b.chave))
   const recorrenciasSemCobertura = filtrarCobertura(ocorrenciasCobertura, opcoes)
+  const impostosEmAberto = prioridades.filter((item) => Boolean(item.conta?.imposto_tipo))
 
   return {
     prioridades,
@@ -207,7 +208,9 @@ export function montarCentralPrioridadesFinanceiras({
       acompanhamento: grupos.acompanhamento.length,
       semFilial: prioridades.filter((item) => item.semFilial).length,
       semCentro: prioridades.filter((item) => item.semCentro).length,
-      recorrenciasSemCobertura: recorrenciasSemCobertura.length
+      recorrenciasSemCobertura: recorrenciasSemCobertura.length,
+      impostosEmAberto: impostosEmAberto.length,
+      saldoImpostos: deCentavos(impostosEmAberto.reduce((total, item) => total + paraCentavos(item.saldo), 0))
     }
   }
 }

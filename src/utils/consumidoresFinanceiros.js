@@ -69,12 +69,12 @@ export function criarPeriodoProjecaoMensal(dataBase = new Date(), quantidadeMese
 
 export function criarPeriodoConsultaDashboard(dataBase = new Date()) {
   const hoje = typeof dataBase === 'string' ? dataBase.slice(0, 10) : dataLocalISO(dataBase)
-  const projecao = criarPeriodoProjecaoMensal(hoje)
+  const fimAno = `${hoje.slice(0, 4)}-12-31`
+  const fimHorizonte = criarPeriodosFinanceiros(hoje).proximos90.fim
   return {
     dataInicial: `${hoje.slice(0, 4)}-01-01`,
-    dataFinal: projecao.fim,
-    hoje,
-    projecao
+    dataFinal: fimHorizonte > fimAno ? fimHorizonte : fimAno,
+    hoje
   }
 }
 
@@ -147,6 +147,20 @@ export function resumirDashboardFinanceiro(registros = [], opcoes = {}) {
     periodoConsulta: criarPeriodoConsultaDashboard(hoje),
     registrosHorizonte: baseCompleta.registros,
     registrosVencidos: vencidosHistoricos.registros
+  }
+}
+
+export function resumirProximos90Dashboard(faixas = {}) {
+  const chaves = ['proximos7', 'proximos30', 'proximos90']
+  const resumo = chaves.reduce((acc, chave) => {
+    acc.quantidade += Number(faixas?.[chave]?.quantidade || 0)
+    acc.valorCentavos += paraCentavos(faixas?.[chave]?.valor)
+    return acc
+  }, { quantidade: 0, valorCentavos: 0 })
+
+  return {
+    quantidade: resumo.quantidade,
+    valor: deCentavos(resumo.valorCentavos)
   }
 }
 
@@ -238,7 +252,8 @@ export function criarDestinoContasDashboard(tipo, referencia = {}) {
     hoje: { ...base, dataInicial: hoje, dataFinal: hoje },
     proximos7: { ...base, filtroStatus: 'futuras', dataInicial: periodos.proximos7.inicio, dataFinal: periodos.proximos7.fim },
     proximos30: { ...base, filtroStatus: 'futuras', dataInicial: periodos.proximos30.inicio, dataFinal: periodos.proximos30.fim },
-    proximos90: { ...base, filtroStatus: 'futuras', dataInicial: periodos.proximos90.inicio, dataFinal: periodos.proximos90.fim }
+    proximos90: { ...base, filtroStatus: 'futuras', dataInicial: periodos.proximos90.inicio, dataFinal: periodos.proximos90.fim },
+    proximos90Completo: { ...base, filtroStatus: 'futuras', dataInicial: periodos.proximos7.inicio, dataFinal: periodos.proximos90.fim }
   }
   if (tipo === 'mes' && /^\d{4}-\d{2}$/.test(String(referencia.mes || ''))) {
     const [ano, mes] = referencia.mes.split('-').map(Number)

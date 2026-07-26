@@ -1565,6 +1565,26 @@ export default function App() {
     return buscarContas(empresaId, { permitirGerarRecorrencias: false })
   }
 
+  function abrirContasComPlanejamento({
+    filtroStatus: status = 'pendentes',
+    filtroHorizonte: horizonte = 'todos',
+    dataInicial: inicio = '',
+    dataFinal: fim = '',
+    filialId = '',
+    centroCustoId = ''
+  } = {}) {
+    setBusca('')
+    setFiltroStatus(status)
+    setFiltroHorizonte(horizonte)
+    setFiltroFilial(filialId)
+    setFiltroCentro(centroCustoId)
+    setFiltroMes('')
+    setDataInicial(inicio)
+    setDataFinal(fim)
+    limparConsultasSecundarias()
+    navegarPara('contas')
+  }
+
   function obterPeriodoPagasAtual() {
     return obterPeriodoConsultaPagas({
       periodoPagas,
@@ -4634,13 +4654,13 @@ export default function App() {
           navegarPara,
           loading,
           filiais,
-          filtroFilial,
-          setFiltroFilial,
+          centros,
           contasCentral: contasOperacionais,
           notasCentral: notas,
           onAtualizarContasCentral: atualizarFontesContasDashboard,
           onAtualizarNotasCentral: () => buscarNotas(empresaId),
-          navegarParaOrigemAgenda
+          navegarParaOrigemAgenda,
+          onAbrirContasPlanejamento: abrirContasComPlanejamento
         }}
         />
       </AppSuspenseBoundary>

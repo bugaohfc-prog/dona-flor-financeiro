@@ -10,13 +10,13 @@ export default function DashboardRoute({
   navegarPara,
   loading,
   filiais,
-  filtroFilial,
-  setFiltroFilial,
+  centros,
   contasCentral,
   notasCentral,
   onAtualizarContasCentral,
   onAtualizarNotasCentral,
-  navegarParaOrigemAgenda
+  navegarParaOrigemAgenda,
+  onAbrirContasPlanejamento
 }) {
   return (
     <>
@@ -34,13 +34,13 @@ export default function DashboardRoute({
         loading={loading}
         nomeUsuario={nomeUsuario}
         filiais={filiais}
-        filtroFilial={filtroFilial}
-        setFiltroFilial={setFiltroFilial}
+        centros={centros}
         contasCentral={contasCentral}
         notasCentral={notasCentral}
         onAtualizarContasCentral={onAtualizarContasCentral}
         onAtualizarNotasCentral={onAtualizarNotasCentral}
         navegarParaOrigemAgenda={navegarParaOrigemAgenda}
+        onAbrirContasPlanejamento={onAbrirContasPlanejamento}
       />
     </>
   )

@@ -11,7 +11,7 @@ export const COLUNAS_CONTAS_RELATORIO = [
   'id', 'empresa_id', 'descricao', 'observacao', 'valor', 'valor_pago', 'juros_multa', 'desconto',
   'data_vencimento', 'data_pagamento', 'competencia', 'imposto_tipo', 'status', 'filial_id', 'centro_custo_id', 'recorrencia_id',
   'oculto', 'excluido', 'deletado', 'excluido_em',
-  'df_centros_custo(nome)', 'df_filiais(nome)', 'df_contas_recorrentes(tipo_recorrencia)'
+  'df_centros_custo(nome)', 'df_filiais(nome)', 'df_contas_recorrentes(tipo_recorrencia, valor_variavel)'
 ].join(', ')
 
 const COLUNAS_PAGAMENTOS_RELATORIO = [

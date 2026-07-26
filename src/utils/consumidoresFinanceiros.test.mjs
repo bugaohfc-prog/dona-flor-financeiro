@@ -3,14 +3,17 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import {
   classificarFaixaFinanceira,
+  criarDestinoContasDashboard,
   criarPeriodoConsultaDashboard,
+  criarPeriodoProjecaoMensal,
   criarPeriodosFinanceiros,
   filtrarAgendaFinanceira,
   impostoPertenceAoFiltro,
   obterSaldoExibidoImposto,
   obterStatusOperacionalImposto,
   resumirConsumidoresFinanceiros,
-  resumirDashboardFinanceiro
+  resumirDashboardFinanceiro,
+  resumirProjecaoMensalDashboard
 } from './consumidoresFinanceiros.js'
 import { gerarCopilotFinanceiro } from '../services/ai/copilotEngine.js'
 
@@ -34,6 +37,15 @@ test('realizado usa valor pago real', () => {
 test('vencido usa saldo restante', () => {
   const resumo = resumirConsumidoresFinanceiros([base({ data_vencimento: '2026-07-20', valor_pago_atual_relatorio: 30, saldo_restante_relatorio: 70, status_relatorio: 'vencida' })], { dataBase: '2026-07-21' })
   assert.equal(resumo.vencido, 70)
+})
+
+test('vencimentos de hoje ficam separados dos próximos períodos', () => {
+  const resumo = resumirConsumidoresFinanceiros([
+    base({ data_vencimento: '2026-07-21', saldo_restante_relatorio: 75 }),
+    base({ data_vencimento: '2026-07-22', saldo_restante_relatorio: 25 })
+  ], { dataBase: '2026-07-21' })
+  assert.deepEqual(resumo.faixas.hoje, { quantidade: 1, valor: 75 })
+  assert.deepEqual(resumo.faixas.proximos7, { quantidade: 1, valor: 25 })
 })
 
 test('quitada por parciais não entra em pendentes ou vencidas', () => {
@@ -62,13 +74,76 @@ test('intervalos atravessam virada de mês e ano no calendário local', () => {
 
 test('Dashboard em dezembro consulta janeiro dentro dos próximos 90 dias', () => {
   const periodo = criarPeriodoConsultaDashboard('2026-12-15')
-  assert.deepEqual(periodo, { dataInicial: '2026-01-01', dataFinal: '2027-03-15', hoje: '2026-12-15' })
+  assert.equal(periodo.dataInicial, '2026-01-01')
+  assert.equal(periodo.dataFinal, '2027-11-30')
+  assert.equal(periodo.hoje, '2026-12-15')
   const resumo = resumirDashboardFinanceiro([
     base({ data_vencimento: '2027-01-10', valor_previsto_relatorio: 250, saldo_restante_relatorio: 250 }),
     base({ data_vencimento: '2027-02-10', valor_previsto_relatorio: 350, saldo_restante_relatorio: 350 })
   ], { dataBase: '2026-12-15', empresaId: 'empresa-a' })
   assert.equal(resumo.faixas.proximos30.valor, 250)
   assert.equal(resumo.faixas.proximos90.valor, 350)
+})
+
+test('projeção de doze meses atravessa o ano com doze competências exatas', () => {
+  const periodo = criarPeriodoProjecaoMensal('2026-12-15')
+  assert.equal(periodo.inicio, '2026-12-01')
+  assert.equal(periodo.fim, '2027-11-30')
+  assert.equal(periodo.meses.length, 12)
+  assert.deepEqual(periodo.meses.slice(0, 2), ['2026-12', '2027-01'])
+})
+
+test('projeção mensal usa saldo parcial e exclui quitações futuras', () => {
+  const projecao = resumirProjecaoMensalDashboard([
+    base({ id: 'parcial', data_vencimento: '2026-08-10', valor_previsto_relatorio: 200, valor_pago_atual_relatorio: 80, saldo_restante_relatorio: 120, status_relatorio: 'parcial' }),
+    base({ id: 'quitada', data_vencimento: '2026-08-12', valor_previsto_relatorio: 100, valor_pago_atual_relatorio: 100, saldo_restante_relatorio: 0, status_relatorio: 'quitada_por_parciais' })
+  ], { dataBase: '2026-07-21', empresaId: 'empresa-a' })
+  const agosto = projecao.meses.find((mes) => mes.chave === '2026-08')
+  assert.deepEqual(agosto, { chave: '2026-08', previsto: 200, pago: 80, saldo: 120, quantidade: 1 })
+})
+
+test('projeção mensal respeita filtros de filial e centro', () => {
+  const projecao = resumirProjecaoMensalDashboard([
+    base({ filial_id: 'f1', centro_custo_id: 'c1', saldo_restante_relatorio: 100 }),
+    base({ filial_id: 'f2', centro_custo_id: 'c1', saldo_restante_relatorio: 200 }),
+    base({ filial_id: 'f1', centro_custo_id: 'c2', saldo_restante_relatorio: 300 })
+  ], { dataBase: '2026-07-21', empresaId: 'empresa-a', filialId: 'f1', centroCustoId: 'c1' })
+  assert.equal(projecao.meses.find((mes) => mes.chave === '2026-07').saldo, 100)
+})
+
+test('projeção separa origem manual e recorrente e valor fixo e variável', () => {
+  const projecao = resumirProjecaoMensalDashboard([
+    base({ id: 'manual', recorrencia_id: null, saldo_restante_relatorio: 100 }),
+    base({ id: 'recorrente-fixa', recorrencia_id: 'r1', saldo_restante_relatorio: 200, df_contas_recorrentes: { valor_variavel: false } }),
+    base({ id: 'recorrente-variavel', recorrencia_id: 'r2', saldo_restante_relatorio: 300, df_contas_recorrentes: { valor_variavel: true } })
+  ], { dataBase: '2026-07-21', empresaId: 'empresa-a' })
+  assert.deepEqual(projecao.classificacoes.manual, { quantidade: 1, valor: 100 })
+  assert.deepEqual(projecao.classificacoes.recorrente, { quantidade: 2, valor: 500 })
+  assert.deepEqual(projecao.classificacoes.fixa, { quantidade: 2, valor: 300 })
+  assert.deepEqual(projecao.classificacoes.variavel, { quantidade: 1, valor: 300 })
+})
+
+test('projeção identifica mês de maior necessidade em grande volume', () => {
+  const contas = Array.from({ length: 5000 }, (_, indice) => base({
+    id: `conta-${indice}`,
+    data_vencimento: indice % 2 ? '2026-08-15' : '2026-09-15',
+    saldo_restante_relatorio: indice % 2 ? 2 : 1
+  }))
+  const projecao = resumirProjecaoMensalDashboard(contas, { dataBase: '2026-07-21', empresaId: 'empresa-a' })
+  assert.equal(projecao.meses.reduce((total, mes) => total + mes.quantidade, 0), 5000)
+  assert.equal(projecao.maiorNecessidade.chave, '2026-08')
+})
+
+test('navegação do Dashboard prepara período e filtro correspondentes em Contas', () => {
+  assert.deepEqual(criarDestinoContasDashboard('vencidas', { hoje: '2026-12-28' }), {
+    filtroStatus: 'vencidas', filtroHorizonte: 'todos', dataInicial: '', dataFinal: ''
+  })
+  assert.deepEqual(criarDestinoContasDashboard('proximos7', { hoje: '2026-12-28' }), {
+    filtroStatus: 'futuras', filtroHorizonte: 'todos', dataInicial: '2026-12-29', dataFinal: '2027-01-04'
+  })
+  assert.deepEqual(criarDestinoContasDashboard('mes', { hoje: '2026-12-28', mes: '2027-02' }), {
+    filtroStatus: 'pendentes', filtroHorizonte: 'todos', dataInicial: '2027-02-01', dataFinal: '2027-02-28'
+  })
 })
 
 test('conta do próximo ano não entra no previsto anual', () => {
@@ -116,6 +191,37 @@ test('consulta de vencidos do Dashboard nao carrega historico pago completo', as
   assert.match(trecho, /\.lt\('data_vencimento', hoje\)/)
   assert.match(trecho, /executarConsultaPaginada/)
   assert.doesNotMatch(trecho, /status: 'pagas'/)
+})
+
+test('fontes do Dashboard permanecem paginadas e limitadas por período', async () => {
+  const fonte = await readFile(new URL('../services/relatoriosFinanceirosService.js', import.meta.url), 'utf8')
+  assert.match(fonte, /executarConsultaPaginada/)
+  assert.match(fonte, /\.gte\(campoData, dataInicial\)/)
+  assert.match(fonte, /\.lte\(campoData, dataFinal\)/)
+  assert.match(fonte, /df_contas_recorrentes\(tipo_recorrencia, valor_variavel\)/)
+})
+
+test('erro financeiro bloqueia indicadores do Dashboard e oferece retry', async () => {
+  const fonte = await readFile(new URL('../components/dashboard/DashboardHome.jsx', import.meta.url), 'utf8')
+  assert.match(fonte, /ContasContextualGuard/)
+  assert.match(fonte, /erro=\{fonteFinanceira\.erro \|\| fonteVencidos\.erro\}/)
+  assert.match(fonte, /onRetry=\{tentarNovamenteResumoFinanceiro\}/)
+})
+
+test('Dashboard usa filtros locais e não herda filtros deixados em Contas', async () => {
+  const fonte = await readFile(new URL('../components/dashboard/DashboardHome.jsx', import.meta.url), 'utf8')
+  assert.match(fonte, /filtroFilialDashboard/)
+  assert.match(fonte, /filtroCentroDashboard/)
+  assert.doesNotMatch(fonte, /setFiltroFilial =/)
+})
+
+test('Dashboard financeiro não possui chamada de escrita', async () => {
+  const fontes = await Promise.all([
+    '../components/dashboard/DashboardHome.jsx',
+    '../utils/consumidoresFinanceiros.js',
+    '../services/relatoriosFinanceirosService.js'
+  ].map((arquivo) => readFile(new URL(arquivo, import.meta.url), 'utf8')))
+  assert.equal(fontes.some((fonte) => /\.(insert|update|delete|upsert|rpc)\s*\(/.test(fonte)), false)
 })
 
 test('imposto futuro parcialmente pago aparece em A vencer pelo saldo', () => {

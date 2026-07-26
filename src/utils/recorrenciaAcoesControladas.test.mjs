@@ -106,9 +106,24 @@ function criarSupabaseMock({
         return { data: { user: { id: 'u1', email: 'admin@teste.local' } }, error: null }
       }
     },
-    async rpc(nome) {
-      assert.equal(nome, 'is_master')
-      return { data: isMaster, error: null }
+    async rpc(nome, argumentos) {
+      if (nome === 'is_master') return { data: isMaster, error: null }
+      assert.equal(nome, 'gerar_ocorrencia_recorrente_controlada')
+      chamadas.push({ tipo: 'rpc', nome, payload: argumentos })
+      onInsert?.(dados, argumentos)
+      if (insertError) return { data: null, error: insertError }
+      const criado = {
+        id: `nova-${dados.df_contas.length + 1}`,
+        empresa_id: argumentos.p_empresa_id,
+        recorrencia_id: argumentos.p_recorrencia_id,
+        data_vencimento: argumentos.p_data_vencimento,
+        competencia: argumentos.p_competencia
+      }
+      dados.df_contas.push(criado)
+      return {
+        data: { conta: criado, criada: true, idempotente: false },
+        error: null
+      }
     },
     from(tabela) {
       return new Query(tabela)
@@ -154,7 +169,7 @@ test('contrato libera somente vínculo manual com confirmação idempotência e 
   assert.equal(AUDITORIA_ACOES_RECORRENCIAS.auditoriaAtomicaComEscrita, false)
 })
 
-test('central mantem geração desabilitada e não chama Supabase direto', async () => {
+test('central habilita geração confirmada sem chamar Supabase direto', async () => {
   const pagina = await readFile(new URL('../pages/RecorrenciasFinanceirasPage.jsx', import.meta.url), 'utf8')
   assert.match(pagina, /Vincular após revisão/)
   assert.match(pagina, /Gerar ocorrência/)
@@ -256,7 +271,7 @@ test('auditoria do vinculo usa acao segura e sem dados financeiros completos', (
   assert.deepEqual(Object.keys(payload.metadados).sort(), ['competencia', 'conta_id', 'data_vencimento', 'recorrencia_id'].sort())
 })
 
-test('geração válida cria exatamente uma conta para a ocorrência faltante', async () => {
+test('geração válida usa uma única RPC protegida para a ocorrência faltante', async () => {
   const supabase = criarSupabaseMock({ contas: [] })
   const resultado = await gerarOcorrenciaRecorrencia(supabase, {
     empresaId: 'e1',
@@ -268,11 +283,12 @@ test('geração válida cria exatamente uma conta para a ocorrência faltante', 
   assert.equal(resultado.bloqueado, false)
   assert.equal(resultado.idempotente, false)
   assert.equal(resultado.auditoriaNecessaria, true)
-  const inserts = supabase.chamadas.filter((chamada) => chamada.tipo === 'insert')
-  assert.equal(inserts.length, 1)
-  assert.equal(inserts[0].tabela, 'df_contas')
-  assert.equal(inserts[0].payload.recorrencia_id, 'r1')
-  assert.equal(inserts[0].payload.data_vencimento, '2026-08-15')
+  const rpcs = supabase.chamadas.filter((chamada) => chamada.tipo === 'rpc')
+  assert.equal(rpcs.length, 1)
+  assert.equal(rpcs[0].nome, 'gerar_ocorrencia_recorrente_controlada')
+  assert.equal(rpcs[0].payload.p_recorrencia_id, 'r1')
+  assert.equal(rpcs[0].payload.p_data_vencimento, '2026-08-15')
+  assert.equal(supabase.chamadas.some((chamada) => chamada.tipo === 'insert'), false)
 })
 
 test('geração é idempotente quando a ocorrência já existe', async () => {
@@ -324,7 +340,8 @@ test('concorrência 23505 é reconciliada com a conta criada pela outra sessão'
   assert.equal(resultado.idempotente, true)
   assert.equal(resultado.reconciliado, true)
   assert.equal(resultado.data.id, 'concorrente')
-  assert.equal(supabase.chamadas.filter((chamada) => chamada.tipo === 'insert').length, 1)
+  assert.equal(supabase.chamadas.filter((chamada) => chamada.tipo === 'rpc').length, 1)
+  assert.equal(supabase.chamadas.some((chamada) => chamada.tipo === 'insert'), false)
 })
 
 test('23505 sem ocorrência reconciliável retorna mensagem amigável de concorrência', async () => {
@@ -342,7 +359,8 @@ test('23505 sem ocorrência reconciliável retorna mensagem amigável de concorr
   })
   assert.equal(resultado.codigo, 'CONFLITO_INDICE')
   assert.match(resultado.mensagem, /Outra conta cobriu esta ocorrencia/)
-  assert.equal(supabase.chamadas.filter((chamada) => chamada.tipo === 'insert').length, 1)
+  assert.equal(supabase.chamadas.filter((chamada) => chamada.tipo === 'rpc').length, 1)
+  assert.equal(supabase.chamadas.some((chamada) => chamada.tipo === 'insert'), false)
 })
 
 test('série inativa e usuário sem permissão são bloqueados antes do insert', async () => {
@@ -359,6 +377,13 @@ test('série inativa e usuário sem permissão são bloqueados antes do insert',
     assert.equal(resultado.codigo, cenario.codigo)
     assert.equal(supabase.chamadas.some((chamada) => chamada.tipo === 'insert'), false)
   }
+})
+
+test('planejamento automático existente usa RPC própria e preserva lote manual comum', async () => {
+  const service = await readFile(new URL('../services/contasService.js', import.meta.url), 'utf8')
+  assert.match(service, /if \(recorrentes\.length\)[\s\S]*supabase\.rpc\('gerar_ocorrencias_recorrentes_automaticas'/)
+  assert.match(service, /return inserirLoteComEmpresa\(supabase, 'df_contas', contas/)
+  assert.match(service, /p_ocorrencias: recorrentes/)
 })
 
 test('vencimento incompatível com a regra atual não pode ser gerado', async () => {

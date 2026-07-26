@@ -6,9 +6,17 @@ const migrationUrl = new URL(
   '../../supabase/migrations/20260726001346_proteger_recorrencia_id_admin_master.sql',
   import.meta.url
 )
+const migrationGeracaoUrl = new URL(
+  '../../supabase/migrations/20260726021424_proteger_geracao_controlada_recorrencias.sql',
+  import.meta.url
+)
 
 async function lerMigration() {
   return readFile(migrationUrl, 'utf8')
+}
+
+async function lerMigrationGeracao() {
+  return readFile(migrationGeracaoUrl, 'utf8')
 }
 
 test('Admin e Master sao as unicas autorizacoes do vinculo no backend', async () => {
@@ -60,7 +68,7 @@ test('indice protegido e tratamento de concorrencia 23505 permanecem intactos', 
   assert.match(service, /\.is\('recorrencia_id', null\)/)
 })
 
-test('migration permanece restrita ao vinculo e a geracao exige confirmacao explicita', async () => {
+test('migration de vinculo permanece restrita e a geracao exige confirmacao explicita', async () => {
   const [sql, pagina, service] = await Promise.all([
     lerMigration(),
     readFile(new URL('../pages/RecorrenciasFinanceirasPage.jsx', import.meta.url), 'utf8'),
@@ -71,6 +79,60 @@ test('migration permanece restrita ao vinculo e a geracao exige confirmacao expl
   assert.match(pagina, /Confirmar geração/)
   assert.match(pagina, /ocorrencia\?\.cobertura !== 'faltante'/)
   assert.match(pagina, /!podeGerarRecorrencia/)
-  assert.equal((service.match(/inserirComEmpresa\(supabase, 'df_contas', previa\.payload/g) || []).length, 1)
+  assert.match(service, /supabase\.rpc\('gerar_ocorrencia_recorrente_controlada'/)
+  assert.doesNotMatch(service, /inserirComEmpresa/)
   assert.doesNotMatch(service, /executarPlanejamento|inserirEmLotes/)
+})
+
+test('consulta de recorrencias usa somente colunas reais', async () => {
+  const service = await readFile(new URL('../services/recorrenciaCoberturaService.js', import.meta.url), 'utf8')
+  const colunas = service.match(/const COLUNAS_SERIES = '([^']+)'/)?.[1] || ''
+  assert.ok(colunas)
+  assert.doesNotMatch(colunas, /\bobservacao\b|\bdata_fim\b/)
+  assert.match(colunas, /\bdata_inicio\b/)
+  assert.match(colunas, /\bvalor_variavel\b/)
+})
+
+test('trigger bloqueia Gerente no INSERT REST recorrente e preserva conta manual comum', async () => {
+  const sql = await lerMigrationGeracao()
+  assert.match(sql, /create trigger proteger_df_contas_recorrencia_id_insert[\s\S]*before insert/i)
+  assert.match(sql, /if new\.recorrencia_id is null then[\s\S]*return new;/i)
+  assert.match(sql, /errcode = '42501'/)
+  assert.match(sql, /Somente Admin ou Master pode inserir conta com recorrencia_id diretamente/)
+  assert.match(sql, /public\.is_master\(\)/)
+  assert.match(sql, /public\.df_usuario_eh_admin\(new\.empresa_id\)/)
+})
+
+test('RPC controlada exige Admin ou Master e revalida serie antes do INSERT', async () => {
+  const sql = await lerMigrationGeracao()
+  assert.match(sql, /function public\.gerar_ocorrencia_recorrente_controlada/)
+  assert.match(sql, /public\.is_master\(\)[\s\S]*public\.df_usuario_eh_admin\(p_empresa_id\)/)
+  assert.match(sql, /from public\.df_contas_recorrentes[\s\S]*r\.empresa_id = p_empresa_id[\s\S]*for update/i)
+  assert.match(sql, /coalesce\(v_serie\.ativo, false\) is not true/)
+  assert.match(sql, /from public\.df_centros_custo cc[\s\S]*cc\.empresa_id = p_empresa_id/)
+  assert.match(sql, /from public\.df_filiais f[\s\S]*f\.empresa_id = p_empresa_id[\s\S]*coalesce\(f\.ativo, false\) = true/)
+  assert.match(sql, /on conflict \(recorrencia_id, data_vencimento\)/)
+  assert.match(sql, /uq_df_contas_recorrencia_vencimento_ativas/)
+})
+
+test('planejamento automatico existente usa RPC estrita sem liberar INSERT direto', async () => {
+  const [sql, contasService, hook] = await Promise.all([
+    lerMigrationGeracao(),
+    readFile(new URL('../services/contasService.js', import.meta.url), 'utf8'),
+    readFile(new URL('../hooks/useContas.js', import.meta.url), 'utf8')
+  ])
+  assert.match(sql, /function public\.gerar_ocorrencias_recorrentes_automaticas/)
+  assert.match(sql, /array\['gerente', 'master', 'owner', 'superadmin', 'super_admin'\]/)
+  assert.match(sql, /v_inicio_horizonte[\s\S]*v_fim_horizonte/)
+  assert.match(sql, /order by value ->> 'recorrencia_id', value ->> 'data_vencimento'/)
+  assert.match(contasService, /supabase\.rpc\('gerar_ocorrencias_recorrentes_automaticas'/)
+  assert.match(hook, /criarContasEmLote\(supabase/)
+})
+
+test('migration de geracao nao altera RLS, indice protegido ou trigger de vinculo', async () => {
+  const sql = await lerMigrationGeracao()
+  assert.doesNotMatch(sql, /alter policy|create policy|drop policy/i)
+  assert.doesNotMatch(sql, /drop\s+index|alter\s+index|create\s+(unique\s+)?index/i)
+  assert.doesNotMatch(sql, /proteger_df_contas_recorrencia_id_admin_master/)
+  assert.doesNotMatch(sql, /security definer|user_metadata|raw_user_meta_data/i)
 })

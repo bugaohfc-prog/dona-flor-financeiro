@@ -644,6 +644,31 @@ export async function validarFilialDaEmpresa(supabase, filialId, empresaId) {
 }
 
 export async function criarContasEmLote(supabase, contas) {
+  const itens = Array.isArray(contas) ? contas : []
+  if (!itens.length) return { data: [], error: null }
+
+  const recorrentes = itens.filter((conta) => Boolean(conta?.recorrencia_id))
+  if (recorrentes.length) {
+    if (recorrentes.length !== itens.length) {
+      return { data: null, error: new Error('Lote misto de contas manuais e recorrentes não é permitido.') }
+    }
+    const empresas = Array.from(new Set(recorrentes.map((conta) => conta?.empresa_id).filter(Boolean)))
+    if (empresas.length !== 1) {
+      return { data: null, error: new Error('Lote recorrente deve pertencer a uma única empresa.') }
+    }
+    const empresaId = empresas[0]
+    assertEmpresaId(empresaId)
+    const { data, error } = await supabase.rpc('gerar_ocorrencias_recorrentes_automaticas', {
+      p_empresa_id: empresaId,
+      p_ocorrencias: recorrentes
+    })
+    return {
+      data: data?.contas || [],
+      jaExistentes: data?.ja_existentes || [],
+      error
+    }
+  }
+
   return inserirLoteComEmpresa(supabase, 'df_contas', contas, {
     select: '*, df_centros_custo(nome), df_filiais(nome), df_contas_recorrentes(tipo_recorrencia, valor_variavel)'
   })

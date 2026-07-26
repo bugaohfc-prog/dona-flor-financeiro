@@ -1,4 +1,4 @@
-import { inserirComEmpresa, selecionarPorEmpresa } from './supabaseQueryService.js'
+import { selecionarPorEmpresa } from './supabaseQueryService.js'
 import { executarConsultaPaginada } from './supabasePaginationService.js'
 import { assertEmpresaId } from './tenantService.js'
 import {
@@ -9,7 +9,7 @@ import {
   validarVinculoManualConfirmado
 } from '../utils/recorrenciaAcoesControladas.js'
 
-const COLUNAS_SERIES = 'id, empresa_id, descricao, observacao, valor, valor_variavel, dia_vencimento, tipo_recorrencia, ativo, data_inicio, data_fim, filial_id, centro_custo_id'
+const COLUNAS_SERIES = 'id, empresa_id, descricao, valor, valor_variavel, dia_vencimento, tipo_recorrencia, ativo, data_inicio, filial_id, centro_custo_id'
 const COLUNAS_CONTAS = 'id, empresa_id, descricao, valor, data_vencimento, competencia, imposto_tipo, status, recorrencia_id, filial_id, centro_custo_id, oculto, excluido, deletado'
 const INDICE_RECORRENCIA_ATIVA = 'uq_df_contas_recorrencia_vencimento_ativas'
 
@@ -149,9 +149,17 @@ export async function gerarOcorrenciaRecorrencia(supabase, {
   })
   if (!previa.elegivel) return resultadoBloqueado(previa.codigo)
 
-  const respostaInsercao = await inserirComEmpresa(supabase, 'df_contas', previa.payload, {
-    select: COLUNAS_CONTAS
-  }).maybeSingle()
+  const respostaInsercao = await supabase.rpc('gerar_ocorrencia_recorrente_controlada', {
+    p_empresa_id: empresaId,
+    p_recorrencia_id: recorrenciaId,
+    p_data_vencimento: previa.payload.data_vencimento,
+    p_competencia: previa.payload.competencia,
+    p_imposto_tipo: previa.payload.imposto_tipo,
+    p_enviar_whatsapp: previa.payload.enviar_whatsapp,
+    p_enviar_email: previa.payload.enviar_email,
+    p_enviar_push: previa.payload.enviar_push,
+    p_dias_aviso: previa.payload.dias_aviso
+  })
 
   if (erroDoIndiceProtegido(respostaInsercao.error)) {
     const reconciliacao = await consultarContasOcorrencia(supabase, { empresaId, recorrenciaId, dataVencimento })
@@ -170,14 +178,15 @@ export async function gerarOcorrenciaRecorrencia(supabase, {
     return resultadoBloqueado(atuais.length > 1 ? 'OCORRENCIA_DUPLICADA' : 'CONFLITO_INDICE')
   }
   if (respostaInsercao.error) return { data: null, error: respostaInsercao.error }
-  if (!respostaInsercao.data) return resultadoBloqueado('CONFLITO_INDICE')
+  const contaGerada = respostaInsercao.data?.conta || null
+  if (!contaGerada?.id) return resultadoBloqueado('CONFLITO_INDICE')
 
   return {
-    data: respostaInsercao.data,
+    data: contaGerada,
     error: null,
     bloqueado: false,
-    idempotente: false,
-    auditoriaNecessaria: true
+    idempotente: respostaInsercao.data?.idempotente === true,
+    auditoriaNecessaria: respostaInsercao.data?.criada === true
   }
 }
 

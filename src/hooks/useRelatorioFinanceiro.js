@@ -56,6 +56,16 @@ export function useRelatorioFinanceiro({ empresaId, criterios, atrasoBusca = 300
     }
   }, [automatico, atrasoBusca, chaveCriterios, consultar])
 
+  useEffect(() => {
+    if (!automatico || typeof window === 'undefined') return undefined
+    const recarregar = (evento) => {
+      if (evento?.detail?.empresaId && evento.detail.empresaId !== empresaId) return
+      void consultar()
+    }
+    window.addEventListener('dna:fontes-financeiras-invalidar', recarregar)
+    return () => window.removeEventListener('dna:fontes-financeiras-invalidar', recarregar)
+  }, [automatico, consultar, empresaId])
+
   return {
     ...estado,
     registros: estado.dados?.registros || [],

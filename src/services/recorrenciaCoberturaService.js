@@ -17,7 +17,41 @@ function erroDoIndiceProtegido(error) {
 }
 
 function contaAtiva(conta) {
-  return conta && conta.excluido !== true && conta.deletado !== true
+  return conta && conta.excluido !== true && conta.deletado !== true && conta.oculto !== true
+}
+
+function perfilAdministrativo(perfil) {
+  return ['admin', 'master', 'owner', 'superadmin', 'super_admin'].includes(String(perfil || '').trim().toLowerCase())
+}
+
+export async function validarPermissaoVinculoRecorrencia(supabase, empresaId) {
+  const { data: autenticacao, error: erroAutenticacao } = await supabase.auth.getUser()
+  const usuario = autenticacao?.user
+  if (erroAutenticacao || !usuario?.id) return { autorizado: false, error: erroAutenticacao || null }
+
+  const { data: isMaster, error: erroMaster } = await supabase.rpc('is_master')
+  if (!erroMaster && isMaster === true) return { autorizado: true, perfil: 'master', error: null }
+
+  let consulta = supabase
+    .from('df_usuarios_empresas')
+    .select('perfil')
+    .eq('empresa_id', empresaId)
+    .eq('user_id', usuario.id)
+    .limit(1)
+
+  let { data: vinculo, error } = await consulta.maybeSingle()
+  if (!vinculo && !error && usuario.email) {
+    consulta = supabase
+      .from('df_usuarios_empresas')
+      .select('perfil')
+      .eq('empresa_id', empresaId)
+      .eq('email', String(usuario.email).trim().toLowerCase())
+      .limit(1)
+    ;({ data: vinculo, error } = await consulta.maybeSingle())
+  }
+
+  if (error) return { autorizado: false, error }
+  return { autorizado: perfilAdministrativo(vinculo?.perfil), perfil: vinculo?.perfil || null, error: null }
 }
 
 export async function consultarCoberturaRecorrencias(supabase, { empresaId, inicio, fim } = {}) {
@@ -34,9 +68,13 @@ export async function consultarCoberturaRecorrencias(supabase, { empresaId, inic
   return { data: { series: respostaSeries.data || [], contas: respostaContas.data || [] }, error: null }
 }
 
-export async function vincularContaManualRecorrencia(supabase, { empresaId, contaId, recorrenciaId, dataVencimento, autorizado = false } = {}) {
+export async function vincularContaManualRecorrencia(supabase, { empresaId, contaId, recorrenciaId, dataVencimento } = {}) {
   assertEmpresaId(empresaId)
   if (!contaId || !recorrenciaId || !dataVencimento) return resultadoBloqueado('DADOS_INCOMPLETOS')
+
+  const permissao = await validarPermissaoVinculoRecorrencia(supabase, empresaId)
+  if (permissao.error) return { data: null, error: permissao.error }
+  if (!permissao.autorizado) return resultadoBloqueado('SEM_PERMISSAO')
 
   const [{ data: serie, error: erroSerie }, { data: conta, error: erroConta }] = await Promise.all([
     selecionarPorEmpresa(supabase, 'df_contas_recorrentes', empresaId, COLUNAS_SERIES).eq('id', recorrenciaId).maybeSingle(),
@@ -64,32 +102,59 @@ export async function vincularContaManualRecorrencia(supabase, { empresaId, cont
     competencia: conta.competencia || null,
     contasVinculadas: (contasOcorrencia || []).filter((item) => item.id !== conta.id)
   }
-  const validacao = validarVinculoManualConfirmado({ empresaId, serie, conta, ocorrencia, autorizado })
+  const validacao = validarVinculoManualConfirmado({ empresaId, serie, conta, ocorrencia, autorizado: true })
   if (!validacao.elegivel) return resultadoBloqueado(validacao.codigo)
   const conflito = detectarConflitoOcorrencia({ ocorrencia, contas: [] })
   if (conflito.duplicada) return resultadoBloqueado('OCORRENCIA_DUPLICADA')
   if (conflito.existe) return resultadoBloqueado('OCORRENCIA_COBERTA')
 
-  const respostaAtualizacao = await supabase
+  let consultaAtualizacao = supabase
     .from('df_contas')
     .update({ recorrencia_id: recorrenciaId })
     .eq('id', contaId)
     .eq('empresa_id', empresaId)
+    .eq('data_vencimento', String(dataVencimento).slice(0, 10))
     .is('recorrencia_id', null)
+    .or('oculto.is.null,oculto.eq.false')
     .or('excluido.is.null,excluido.eq.false')
     .or('deletado.is.null,deletado.eq.false')
+
+  consultaAtualizacao = conta.filial_id
+    ? consultaAtualizacao.eq('filial_id', conta.filial_id)
+    : consultaAtualizacao.is('filial_id', null)
+  consultaAtualizacao = conta.centro_custo_id
+    ? consultaAtualizacao.eq('centro_custo_id', conta.centro_custo_id)
+    : consultaAtualizacao.is('centro_custo_id', null)
+
+  const respostaAtualizacao = await consultaAtualizacao
     .select(COLUNAS_CONTAS)
     .maybeSingle()
 
   if (erroDoIndiceProtegido(respostaAtualizacao.error)) return resultadoBloqueado('CONFLITO_INDICE')
   if (respostaAtualizacao.error) return { data: null, error: respostaAtualizacao.error }
   if (!respostaAtualizacao.data) {
-    const { data: contaAtual, error } = await selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTAS).eq('id', contaId).maybeSingle()
-    if (error) return { data: null, error }
+    const [{ data: serieAtual, error: erroSerieAtual }, { data: contaAtual, error: erroContaAtual }] = await Promise.all([
+      selecionarPorEmpresa(supabase, 'df_contas_recorrentes', empresaId, COLUNAS_SERIES).eq('id', recorrenciaId).maybeSingle(),
+      selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTAS).eq('id', contaId).maybeSingle()
+    ])
+    if (erroSerieAtual) return { data: null, error: erroSerieAtual }
+    if (erroContaAtual) return { data: null, error: erroContaAtual }
     if (contaAtiva(contaAtual) && contaAtual?.recorrencia_id === recorrenciaId && String(contaAtual?.data_vencimento || '').slice(0, 10) === String(dataVencimento).slice(0, 10)) {
       return { data: contaAtual, error: null, bloqueado: false, idempotente: true, auditoriaNecessaria: false }
     }
-    return resultadoBloqueado(contaAtual?.recorrencia_id ? 'CONTA_JA_VINCULADA' : 'DADOS_INCOMPLETOS')
+    const validacaoAtual = validarVinculoManualConfirmado({
+      empresaId,
+      serie: serieAtual,
+      conta: contaAtual,
+      ocorrencia: {
+        recorrenciaId,
+        serie: serieAtual,
+        dataVencimento: String(dataVencimento).slice(0, 10),
+        contasVinculadas: []
+      },
+      autorizado: true
+    })
+    return resultadoBloqueado(validacaoAtual.elegivel ? 'CONFLITO_INDICE' : validacaoAtual.codigo)
   }
 
   return { data: respostaAtualizacao.data, error: null, bloqueado: false, idempotente: false, auditoriaNecessaria: true }

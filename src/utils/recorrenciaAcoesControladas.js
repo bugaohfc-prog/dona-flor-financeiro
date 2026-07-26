@@ -33,6 +33,7 @@ export function mensagemBloqueioAcao(codigo) {
     ORGANIZACAO_INCOMPATIVEL: 'Filial ou centro de custo incompatível com a recorrência.',
     CONTA_JA_VINCULADA: 'A conta manual já está vinculada a uma recorrência.',
     CONTA_INATIVA: 'Conta excluída ou deletada não pode ser vinculada.',
+    CONTA_OCULTA: 'Conta oculta não pode ser vinculada por este fluxo.',
     OCORRENCIA_COBERTA: 'Já existe uma conta ativa para esta ocorrência.',
     OCORRENCIA_DUPLICADA: 'Há duplicidade nesta ocorrência; resolva-a antes de gerar.',
     RECORRENCIA_INATIVA: 'A recorrência precisa estar ativa.',
@@ -50,6 +51,7 @@ export function validarSugestaoParaVinculo({ empresaId, serie, conta, autorizado
   if (!serie?.id || !conta?.id) return resultado('DADOS_INCOMPLETOS')
   if (!mesmaEmpresa(empresaId, serie) || !mesmaEmpresa(empresaId, conta)) return resultado('EMPRESA_INVALIDA')
   if (conta.excluido === true || conta.deletado === true) return resultado('CONTA_INATIVA')
+  if (conta.oculto === true) return resultado('CONTA_OCULTA')
   if (conta.recorrencia_id) return resultado('CONTA_JA_VINCULADA')
   if ((serie.filial_id && serie.filial_id !== conta.filial_id) || (serie.centro_custo_id && serie.centro_custo_id !== conta.centro_custo_id)) return resultado('ORGANIZACAO_INCOMPATIVEL')
   return resultado()

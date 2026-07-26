@@ -904,6 +904,10 @@ export default function App() {
     return temPermissao(['admin', 'gerente'])
   }, [temPermissao])
 
+  const podeVincularRecorrencia = useCallback(() => {
+    return temPermissao(['admin'])
+  }, [temPermissao])
+
   const podeExportarDados = useCallback(() => {
     return temPermissao(['admin', 'gerente'])
   }, [temPermissao])
@@ -2194,7 +2198,7 @@ export default function App() {
   }
 
   async function vincularContaManualRecorrencia({ contaId, recorrenciaId, dataVencimento, competencia } = {}) {
-    if (!podeEditarFinanceiro()) {
+    if (!podeVincularRecorrencia()) {
       bloquearAcaoSemPermissao()
       return { data: null, error: null, bloqueado: true, codigo: 'SEM_PERMISSAO' }
     }
@@ -2215,8 +2219,7 @@ export default function App() {
         empresaId,
         contaId,
         recorrenciaId,
-        dataVencimento,
-        autorizado: true
+        dataVencimento
       })
 
       if (resultado.error) {
@@ -2246,7 +2249,17 @@ export default function App() {
         mostrarAviso('Conta ja estava vinculada a esta recorrencia.', 'info')
       }
 
-      await buscarContasAposMutacao()
+      window.dispatchEvent(new CustomEvent('dna:fontes-financeiras-invalidar', {
+        detail: { empresaId, origem: 'vinculo_manual_recorrencia' }
+      }))
+      try {
+        await buscarContasAposMutacao()
+      } catch (erroAtualizacao) {
+        console.warn('Vinculo concluido, mas a atualizacao local das contas falhou.', {
+          message: erroAtualizacao?.message
+        })
+        mostrarAviso('Conta vinculada. Atualize a tela para conferir o estado mais recente.', 'aviso')
+      }
       return resultado
     } finally {
       vinculoManualRecorrenciaEmAndamentoRef.current.delete(chaveOperacao)
@@ -3892,7 +3905,7 @@ export default function App() {
           abrirConfirmacao={abrirConfirmacao}
           desativarSerieRecorrente={desativarSerieRecorrente}
           reativarSerieRecorrente={reativarSerieRecorrente}
-          podeVincularRecorrencia={podeEditarFinanceiro()}
+          podeVincularRecorrencia={podeVincularRecorrencia()}
           vincularContaManualRecorrencia={vincularContaManualRecorrencia}
         />
       </AppSuspenseBoundary>

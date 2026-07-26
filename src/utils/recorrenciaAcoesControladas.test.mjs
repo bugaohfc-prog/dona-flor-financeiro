@@ -17,9 +17,20 @@ const serie = (extra = {}) => ({ id: 'r1', empresa_id: 'e1', descricao: 'Aluguel
 const conta = (extra = {}) => ({ id: 'c1', empresa_id: 'e1', data_vencimento: '2026-08-15', recorrencia_id: null, filial_id: 'f1', centro_custo_id: 'c1', excluido: false, deletado: false, ...extra })
 const ocorrencia = (extra = {}) => ({ recorrenciaId: 'r1', serie: serie(), dataVencimento: '2026-08-15', competencia: '2026-08-01', contasVinculadas: [], ...extra })
 
-function criarSupabaseMock({ series = [serie()], contas = [conta()], updateError = null } = {}) {
+function criarSupabaseMock({
+  series = [serie()],
+  contas = [conta()],
+  perfil = 'admin',
+  isMaster = false,
+  updateError = null,
+  updateSemRetorno = false
+} = {}) {
   const chamadas = []
-  const dados = { df_contas_recorrentes: [...series], df_contas: [...contas] }
+  const dados = {
+    df_contas_recorrentes: [...series],
+    df_contas: [...contas],
+    df_usuarios_empresas: perfil ? [{ empresa_id: 'e1', user_id: 'u1', email: 'admin@teste.local', perfil }] : []
+  }
 
   class Query {
     constructor(tabela) {
@@ -29,6 +40,7 @@ function criarSupabaseMock({ series = [serie()], contas = [conta()], updateError
     }
 
     select() { return this }
+    limit() { return this }
     order() { return this }
     or() { return this }
     eq(campo, valor) { this.filtros.push({ tipo: 'eq', campo, valor }); return this }
@@ -51,12 +63,14 @@ function criarSupabaseMock({ series = [serie()], contas = [conta()], updateError
     async maybeSingle() {
       if (this.payloadUpdate) {
         if (updateError) return { data: null, error: updateError }
+        if (updateSemRetorno) return { data: null, error: null }
         const item = this.aplicarFiltros()[0] || null
         if (!item) return { data: null, error: null }
         Object.assign(item, this.payloadUpdate)
-        return { data: item, error: null }
+        return { data: { ...item }, error: null }
       }
-      return { data: this.aplicarFiltros()[0] || null, error: null }
+      const item = this.aplicarFiltros()[0] || null
+      return { data: item ? { ...item } : null, error: null }
     }
 
     async range() {
@@ -66,6 +80,15 @@ function criarSupabaseMock({ series = [serie()], contas = [conta()], updateError
 
   return {
     chamadas,
+    auth: {
+      async getUser() {
+        return { data: { user: { id: 'u1', email: 'admin@teste.local' } }, error: null }
+      }
+    },
+    async rpc(nome) {
+      assert.equal(nome, 'is_master')
+      return { data: isMaster, error: null }
+    },
     from(tabela) {
       return new Query(tabela)
     }
@@ -126,32 +149,82 @@ test('validacao confirmada bloqueia recorrencia inativa e ocorrencia coberta', (
 
 test('vinculo manual valido executa somente update de recorrencia_id', async () => {
   const supabase = criarSupabaseMock()
-  const resultado = await vincularContaManualRecorrencia(supabase, { empresaId: 'e1', contaId: 'c1', recorrenciaId: 'r1', dataVencimento: '2026-08-15', autorizado: true })
+  const resultado = await vincularContaManualRecorrencia(supabase, { empresaId: 'e1', contaId: 'c1', recorrenciaId: 'r1', dataVencimento: '2026-08-15' })
   assert.equal(resultado.error, null)
   assert.equal(resultado.bloqueado, false)
   assert.equal(resultado.data.recorrencia_id, 'r1')
   assert.deepEqual(supabase.chamadas, [{ tipo: 'update', tabela: 'df_contas', payload: { recorrencia_id: 'r1' } }])
 })
 
+test('usuário sem permissão é bloqueado no service antes de qualquer update', async () => {
+  const supabase = criarSupabaseMock({ perfil: 'gerente' })
+  const resultado = await vincularContaManualRecorrencia(supabase, { empresaId: 'e1', contaId: 'c1', recorrenciaId: 'r1', dataVencimento: '2026-08-15' })
+  assert.equal(resultado.codigo, 'SEM_PERMISSAO')
+  assert.equal(supabase.chamadas.length, 0)
+})
+
+test('Master é autorizado pela fonte oficial do banco', async () => {
+  const supabase = criarSupabaseMock({ perfil: null, isMaster: true })
+  const resultado = await vincularContaManualRecorrencia(supabase, { empresaId: 'e1', contaId: 'c1', recorrenciaId: 'r1', dataVencimento: '2026-08-15' })
+  assert.equal(resultado.bloqueado, false)
+  assert.equal(supabase.chamadas.length, 1)
+})
+
 test('vinculo manual e idempotente quando a conta ja cobre a mesma ocorrencia', async () => {
   const supabase = criarSupabaseMock({ contas: [conta({ recorrencia_id: 'r1' })] })
-  const resultado = await vincularContaManualRecorrencia(supabase, { empresaId: 'e1', contaId: 'c1', recorrenciaId: 'r1', dataVencimento: '2026-08-15', autorizado: true })
+  const resultado = await vincularContaManualRecorrencia(supabase, { empresaId: 'e1', contaId: 'c1', recorrenciaId: 'r1', dataVencimento: '2026-08-15' })
   assert.equal(resultado.idempotente, true)
   assert.equal(supabase.chamadas.length, 0)
 })
 
 test('vinculo manual bloqueia conta vinculada a outra recorrencia', async () => {
   const supabase = criarSupabaseMock({ contas: [conta({ recorrencia_id: 'r2' })] })
-  const resultado = await vincularContaManualRecorrencia(supabase, { empresaId: 'e1', contaId: 'c1', recorrenciaId: 'r1', dataVencimento: '2026-08-15', autorizado: true })
+  const resultado = await vincularContaManualRecorrencia(supabase, { empresaId: 'e1', contaId: 'c1', recorrenciaId: 'r1', dataVencimento: '2026-08-15' })
   assert.equal(resultado.bloqueado, true)
   assert.equal(resultado.codigo, 'CONTA_JA_VINCULADA')
 })
 
 test('vinculo manual bloqueia conflito do indice protegido', async () => {
   const supabase = criarSupabaseMock({ updateError: { code: '23505', message: 'duplicate key value violates unique constraint "uq_df_contas_recorrencia_vencimento_ativas"' } })
-  const resultado = await vincularContaManualRecorrencia(supabase, { empresaId: 'e1', contaId: 'c1', recorrenciaId: 'r1', dataVencimento: '2026-08-15', autorizado: true })
+  const resultado = await vincularContaManualRecorrencia(supabase, { empresaId: 'e1', contaId: 'c1', recorrenciaId: 'r1', dataVencimento: '2026-08-15' })
   assert.equal(resultado.bloqueado, true)
   assert.equal(resultado.codigo, 'CONFLITO_INDICE')
+})
+
+test('update sem linha retornada é tratado como conflito e não como sucesso', async () => {
+  const supabase = criarSupabaseMock({ updateSemRetorno: true })
+  const resultado = await vincularContaManualRecorrencia(supabase, { empresaId: 'e1', contaId: 'c1', recorrenciaId: 'r1', dataVencimento: '2026-08-15' })
+  assert.equal(resultado.bloqueado, true)
+  assert.equal(resultado.codigo, 'CONFLITO_INDICE')
+})
+
+test('dois vínculos concorrentes convergem sem sobrescrever vínculo', async () => {
+  const supabase = criarSupabaseMock()
+  const argumentos = { empresaId: 'e1', contaId: 'c1', recorrenciaId: 'r1', dataVencimento: '2026-08-15' }
+  const resultados = await Promise.all([
+    vincularContaManualRecorrencia(supabase, argumentos),
+    vincularContaManualRecorrencia(supabase, argumentos)
+  ])
+  assert.equal(resultados.filter((item) => item.idempotente === false).length, 1)
+  assert.equal(resultados.filter((item) => item.idempotente === true).length, 1)
+  assert.equal(supabase.chamadas.length, 2)
+  assert.ok(supabase.chamadas.every((chamada) => Object.keys(chamada.payload).join(',') === 'recorrencia_id'))
+})
+
+test('revalidação bloqueia série, vínculo, organização e visibilidade alterados antes do update', async () => {
+  const cenarios = [
+    { series: [serie({ ativo: false })], codigo: 'RECORRENCIA_INATIVA' },
+    { contas: [conta({ recorrencia_id: 'r2' })], codigo: 'CONTA_JA_VINCULADA' },
+    { contas: [conta({ filial_id: 'f2' })], codigo: 'ORGANIZACAO_INCOMPATIVEL' },
+    { contas: [conta({ centro_custo_id: 'c2' })], codigo: 'ORGANIZACAO_INCOMPATIVEL' },
+    { contas: [conta({ oculto: true })], codigo: 'CONTA_OCULTA' }
+  ]
+  for (const cenario of cenarios) {
+    const supabase = criarSupabaseMock(cenario)
+    const resultado = await vincularContaManualRecorrencia(supabase, { empresaId: 'e1', contaId: 'c1', recorrenciaId: 'r1', dataVencimento: '2026-08-15' })
+    assert.equal(resultado.codigo, cenario.codigo)
+    assert.equal(supabase.chamadas.length, 0)
+  }
 })
 
 test('auditoria do vinculo usa acao segura e sem dados financeiros completos', () => {
@@ -165,6 +238,17 @@ test('App invalida indicadores bloqueia duplo clique e nao gera recorrencias', a
   const app = await readFile(new URL('../App.jsx', import.meta.url), 'utf8')
   assert.match(app, /vinculoManualRecorrenciaEmAndamentoRef/)
   assert.match(app, /buscarContasAposMutacao\(\)/)
+  assert.match(app, /dna:fontes-financeiras-invalidar/)
+  assert.match(app, /podeVincularRecorrencia[\s\S]*temPermissao\(\['admin'\]\)/)
   assert.match(app, /registrarEventoAuditoriaSeguro/)
+  assert.match(app, /Conta vinculada, mas a auditoria nao foi registrada/)
+  assert.match(app, /Vinculo concluido, mas a atualizacao local das contas falhou/)
   assert.doesNotMatch(app, /montarPreviaPayloadGeracao\(|inserirContasRecorrentes/)
+})
+
+test('fontes financeiras escutam invalidação após vínculo sem escrita adicional', async () => {
+  const hook = await readFile(new URL('../hooks/useRelatorioFinanceiro.js', import.meta.url), 'utf8')
+  assert.match(hook, /addEventListener\('dna:fontes-financeiras-invalidar'/)
+  assert.match(hook, /evento\.detail\.empresaId !== empresaId/)
+  assert.doesNotMatch(hook, /\.update\(|\.insert\(|\.delete\(/)
 })

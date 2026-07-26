@@ -16,7 +16,7 @@ async function lerMigration() {
 }
 
 async function lerMigrationGeracao() {
-  return readFile(migrationGeracaoUrl, 'utf8')
+  return (await readFile(migrationGeracaoUrl, 'utf8')).replace(/\r\n/g, '\n')
 }
 
 test('Admin e Master sao as unicas autorizacoes do vinculo no backend', async () => {

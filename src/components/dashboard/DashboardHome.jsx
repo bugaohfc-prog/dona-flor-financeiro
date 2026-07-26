@@ -11,6 +11,7 @@ import {
 import { useResumoGestaoPessoasPainel } from '../../hooks/useResumoGestaoPessoasPainel.js'
 import { ResumoOperacionalDashboard } from '../../modules/central-do-dia/components/dashboard/ResumoOperacionalDashboard.jsx'
 import { useCentralDoDia } from '../../modules/central-do-dia/hooks/useCentralDoDia.js'
+import PrioridadesFinanceirasPanel from './PrioridadesFinanceirasPanel.jsx'
 
 function DashboardAction({ children, variant = 'primary', className = '', ...props }) {
   return (
@@ -121,6 +122,10 @@ export default function DashboardHome({
     criterios: criteriosVencidos,
     tipoConsulta: 'vencidos_historicos'
   })
+  const contasPrioridades = useMemo(
+    () => [...fonteFinanceira.registros, ...fonteVencidos.registros],
+    [fonteFinanceira.registros, fonteVencidos.registros]
+  )
   const resumoDashboard = useMemo(() => resumirDashboardFinanceiro(fonteFinanceira.registros, {
     dataBase: hoje,
     empresaId,
@@ -374,6 +379,22 @@ export default function DashboardHome({
           </div>
         </ContasContextualGuard>
       </section>
+
+      <ContasContextualGuard
+        carregando={fonteFinanceira.carregando || fonteVencidos.carregando}
+        carregada={fonteFinanceira.carregado && fonteVencidos.carregado}
+        erro={fonteFinanceira.erro || fonteVencidos.erro}
+        onRetry={tentarNovamenteResumoFinanceiro}
+      >
+        <PrioridadesFinanceirasPanel
+          contas={contasPrioridades}
+          formatarValor={formatarValor}
+          filialId={filtroFilialDashboard}
+          centroCustoId={filtroCentroDashboard}
+          onAbrirConta={(contaId) => navegarParaOrigemAgenda?.('conta', contaId)}
+          onAbrirRecorrencias={() => navegarPara('recorrencias')}
+        />
+      </ContasContextualGuard>
     </>
   )
 }

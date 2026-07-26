@@ -1812,6 +1812,7 @@
 /* Painel - redesenho visual controlado */
 .dashboard-home-branch,
 .dashboard-home-finance,
+.dashboard-priorities,
 .dashboard-home-widgets,
 .dashboard-home-notes {
   --dashboard-shadow-lg: 0 10px 24px rgba(15, 23, 42, .045);
@@ -1860,6 +1861,247 @@
   margin-left: auto;
   margin-right: auto;
   box-sizing: border-box;
+}
+
+.dashboard-priorities {
+  padding: 18px;
+  margin-bottom: 14px;
+}
+
+.dashboard-priorities-header,
+.dashboard-priorities-subheader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dashboard-priorities-header > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.dashboard-priorities-header h2 {
+  margin: 0;
+  color: var(--dashboard-text);
+  font-size: 20px;
+}
+
+.dashboard-priorities-header p,
+.dashboard-priorities-block p,
+.dashboard-priorities-quality {
+  margin: 0;
+  color: var(--dashboard-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.dashboard-priorities-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.dashboard-priorities-summary span {
+  padding: 6px 9px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 999px;
+  background: var(--dashboard-surface-soft);
+  color: var(--dashboard-secondary);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.dashboard-priorities-summary .is-critical {
+  border-color: var(--dashboard-danger-border);
+  background: var(--dashboard-danger-soft);
+  color: var(--dashboard-danger-text);
+}
+
+.dashboard-priorities-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, .8fr);
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.dashboard-priorities-ranking,
+.dashboard-priorities-block {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 14px;
+  background: var(--dashboard-white);
+}
+
+.dashboard-priorities-subheader {
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.dashboard-priorities-subheader strong {
+  color: var(--dashboard-text);
+  font-size: 14px;
+}
+
+.dashboard-priorities-subheader small {
+  color: var(--dashboard-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.dashboard-priorities-ranking ol,
+.dashboard-priorities-block ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-priorities-ranking li {
+  overflow: hidden;
+  border: 1px solid var(--dashboard-border);
+  border-left: 4px solid var(--dashboard-placeholder);
+  border-radius: 11px;
+  background: var(--dashboard-surface-soft);
+}
+
+.dashboard-priorities-ranking li.is-critica {
+  border-left-color: var(--dashboard-danger);
+  background: var(--dashboard-danger-soft);
+}
+
+.dashboard-priorities-ranking li.is-atencao {
+  border-left-color: var(--dashboard-warning);
+  background: var(--dashboard-warning-soft);
+}
+
+.dashboard-priorities-ranking li button {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dashboard-priorities-ranking li button:hover {
+  background: rgba(255, 255, 255, .58);
+}
+
+.dashboard-priorities-ranking li button:focus-visible,
+.dashboard-priorities-block button:focus-visible {
+  outline: none;
+  box-shadow: inset var(--dashboard-focus-ring);
+}
+
+.dashboard-priorities-rank {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--dashboard-white);
+  color: var(--dashboard-secondary);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.dashboard-priorities-account,
+.dashboard-priorities-value {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dashboard-priorities-account strong,
+.dashboard-priorities-value strong {
+  color: var(--dashboard-text);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-priorities-account small,
+.dashboard-priorities-value small {
+  color: var(--dashboard-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.dashboard-priorities-value {
+  justify-items: end;
+  text-align: right;
+}
+
+.dashboard-priorities-quality {
+  margin-top: 10px;
+}
+
+.dashboard-priorities-aside {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dashboard-priorities-block li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--dashboard-subtle-border);
+  color: var(--dashboard-secondary);
+  font-size: 12px;
+}
+
+.dashboard-priorities-block li:first-child {
+  border-top: 0;
+}
+
+.dashboard-priorities-block li button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-column: 1 / -1;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dashboard-priorities-block li strong {
+  color: var(--dashboard-text);
+  font-size: 12px;
+}
+
+.dashboard-priorities-block li small {
+  grid-column: 1 / -1;
+  color: var(--dashboard-muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.dashboard-priorities-empty {
+  padding: 20px 12px;
+  color: var(--dashboard-muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .dashboard-home-branch {
@@ -2627,6 +2869,10 @@
   .dashboard-home-breakdown {
     grid-template-columns: 1fr 1fr;
   }
+
+  .dashboard-priorities-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
@@ -2652,10 +2898,29 @@
 
   .dashboard-home-branch,
   .dashboard-home-finance-card,
+  .dashboard-priorities,
   .dashboard-home-widget,
   .dashboard-home-notes {
     padding: 12px !important;
     border-radius: 14px !important;
+  }
+
+  .dashboard-priorities-header {
+    display: grid;
+  }
+
+  .dashboard-priorities-summary {
+    justify-content: flex-start;
+  }
+
+  .dashboard-priorities-ranking li button {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .dashboard-priorities-value {
+    grid-column: 2;
+    justify-items: start;
+    text-align: left;
   }
 
   .dashboard-home-widget-header,

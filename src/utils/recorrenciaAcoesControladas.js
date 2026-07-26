@@ -1,3 +1,5 @@
+import { montarDataRecorrente } from './recorrencia.js'
+
 const INDICE_RECORRENCIA_ATIVA = 'uq_df_contas_recorrencia_vencimento_ativas'
 const texto = (valor) => String(valor || '').trim()
 const mesmaEmpresa = (empresaId, entidade) => Boolean(texto(empresaId) && texto(entidade?.empresa_id) === texto(empresaId))
@@ -36,7 +38,10 @@ export function mensagemBloqueioAcao(codigo) {
     CONTA_OCULTA: 'Conta oculta não pode ser vinculada por este fluxo.',
     OCORRENCIA_COBERTA: 'Já existe uma conta ativa para esta ocorrência.',
     OCORRENCIA_DUPLICADA: 'Há duplicidade nesta ocorrência; resolva-a antes de gerar.',
+    CONFLITO_INDICE: 'Outra operação alterou esta ocorrência. O estado atual foi preservado; atualize a cobertura e tente novamente.',
     RECORRENCIA_INATIVA: 'A recorrência precisa estar ativa.',
+    RECORRENCIA_NAO_MENSAL: 'Somente recorrências mensais podem ser geradas por este fluxo.',
+    DATA_INCOMPATIVEL: 'O vencimento não corresponde à regra atual da recorrência.',
     DADOS_INCOMPLETOS: 'Dados obrigatórios da ação estão incompletos.'
   }
   return mensagens[codigo] || mensagens.ACAO_NAO_LIBERADA
@@ -75,6 +80,15 @@ export function validarOcorrenciaParaGeracao({ empresaId, ocorrencia, autorizado
   if (!serie?.id || !ocorrencia?.dataVencimento) return resultado('DADOS_INCOMPLETOS')
   if (!mesmaEmpresa(empresaId, serie)) return resultado('EMPRESA_INVALIDA')
   if (serie.ativo !== true) return resultado('RECORRENCIA_INATIVA')
+  if (String(serie.tipo_recorrencia || 'mensal').toLowerCase() !== 'mensal') return resultado('RECORRENCIA_NAO_MENSAL')
+  if (ocorrencia.cobertura && ocorrencia.cobertura !== 'faltante') return resultado('OCORRENCIA_COBERTA')
+  const dataVencimento = texto(ocorrencia.dataVencimento).slice(0, 10)
+  const partes = dataVencimento.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!partes) return resultado('DATA_INCOMPATIVEL')
+  const dataEsperada = montarDataRecorrente(Number(partes[1]), Number(partes[2]), serie.dia_vencimento)
+  if (dataEsperada !== dataVencimento) return resultado('DATA_INCOMPATIVEL')
+  if (serie.data_inicio && dataVencimento < texto(serie.data_inicio).slice(0, 10)) return resultado('DATA_INCOMPATIVEL')
+  if (serie.data_fim && dataVencimento > texto(serie.data_fim).slice(0, 10)) return resultado('DATA_INCOMPATIVEL')
   const conflito = detectarConflitoOcorrencia({ ocorrencia, contas })
   if (conflito.duplicada) return resultado('OCORRENCIA_DUPLICADA')
   if (conflito.existe) return resultado('OCORRENCIA_COBERTA')
@@ -134,5 +148,23 @@ export function montarPayloadAuditoriaVinculoManual({ empresaId, contaId, recorr
       competencia: competencia || null
     },
     correlation_id: correlationId
+  }
+}
+
+export function montarPayloadAuditoriaGeracaoControlada({ empresaId, contaId } = {}) {
+  return {
+    empresa_id: empresaId,
+    acao: 'financeiro.conta.criada',
+    entidade_tipo: 'df_contas',
+    entidade_id: contaId,
+    modulo: 'financeiro',
+    origem: 'app',
+    severidade: 'media',
+    status: 'sucesso',
+    dados_antes: null,
+    dados_depois: {
+      campos: ['descricao', 'valor', 'vencimento', 'centro_custo', 'filial', 'imposto_tipo', 'recorrencia_id']
+    },
+    metadados: { conta_id: contaId }
   }
 }

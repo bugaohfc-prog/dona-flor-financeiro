@@ -151,7 +151,9 @@ export default function RecorrenciasFinanceirasPage({
   desativarSerieRecorrente,
   reativarSerieRecorrente,
   podeVincularRecorrencia = false,
-  vincularContaManualRecorrencia
+  vincularContaManualRecorrencia,
+  podeGerarRecorrencia = false,
+  gerarOcorrenciaRecorrencia
 }) {
   const [secao, setSecao] = useState('cobertura')
   const [tipoHorizonte, setTipoHorizonte] = useState('90')
@@ -159,6 +161,7 @@ export default function RecorrenciasFinanceirasPage({
   const [filtros, setFiltros] = useState({ filialId: '', centroId: '', cobertura: 'todas', busca: '' })
   const [expandidas, setExpandidas] = useState(() => new Set())
   const [vinculoEmAndamento, setVinculoEmAndamento] = useState('')
+  const [geracaoEmAndamento, setGeracaoEmAndamento] = useState('')
   const horizonte = useMemo(() => resolverHorizonteCobertura(tipoHorizonte, new Date(), personalizado), [personalizado, tipoHorizonte])
   const fonte = useRecorrenciaCobertura({ empresaId, horizonte })
   const resultado = useMemo(() => filtrarCoberturaRecorrencias(fonte.resultado, filtros), [filtros, fonte.resultado])
@@ -216,6 +219,40 @@ export default function RecorrenciasFinanceirasPage({
     })
   }
 
+  function confirmarGeracaoControlada(ocorrencia) {
+    if (!podeGerarRecorrencia || !gerarOcorrenciaRecorrencia || ocorrencia?.cobertura !== 'faltante') return
+    const chave = ocorrencia.identidade
+    abrirConfirmacao?.({
+      titulo: 'Gerar ocorrência recorrente',
+      mensagem: [
+        `Recorrência: ${ocorrencia.serie?.descricao || 'sem descrição'}`,
+        `Competência: ${ocorrencia.competencia ? formatarData(ocorrencia.competencia) : '-'}`,
+        `Vencimento: ${formatarData(ocorrencia.dataVencimento)}`,
+        `Valor: ${formatarValor(Number(ocorrencia.serie?.valor || 0))}`,
+        `Empresa: ${empresaNome || empresaId || '-'}`,
+        `Filial: ${nomeFilial(ocorrencia.serie?.filial_id)}`,
+        `Centro: ${nomeCentro(ocorrencia.serie?.centro_custo_id)}`,
+        'A recorrência e a ausência da conta serão revalidadas imediatamente antes da criação.'
+      ].join('\n'),
+      textoConfirmar: 'Confirmar geração',
+      tipo: 'aviso',
+      acao: async () => {
+        if (geracaoEmAndamento) return
+        setGeracaoEmAndamento(chave)
+        try {
+          const resultadoGeracao = await gerarOcorrenciaRecorrencia({
+            recorrenciaId: ocorrencia.recorrenciaId,
+            dataVencimento: ocorrencia.dataVencimento,
+            competencia: ocorrencia.competencia
+          })
+          if (!resultadoGeracao?.error && !resultadoGeracao?.bloqueado) await fonte.consultar()
+        } finally {
+          setGeracaoEmAndamento('')
+        }
+      }
+    })
+  }
+
   return <main className="accounts-page recurring-coverage-page">
     <div className="page-title-actions accounts-page-header"><div className="accounts-page-header-copy"><span>Financeiro</span><h1>Recorrências financeiras</h1><p>Confira a cobertura por horizonte e gerencie séries sem gerar contas automaticamente.</p></div><button type="button" onClick={() => navegarPara?.('contas')}>Voltar para Contas</button></div>
     <div className="recurring-page-tabs" role="tablist" aria-label="Seções de recorrências">
@@ -238,7 +275,7 @@ export default function RecorrenciasFinanceirasPage({
             const chaveVinculo = `${item.identidade}:${conta.id}`
             const bloqueado = !podeVincularRecorrencia || vinculoEmAndamento === chaveVinculo
             return <div className="recurring-coverage-suggestion" key={conta.id}><b>Possível conta manual · confiança {confianca}</b><span>{criterios.join(' · ')}</span><div className="recurring-coverage-suggestion-actions"><button type="button" onClick={() => navegarParaConta?.(conta.id)}>Abrir conta</button><button type="button" disabled={bloqueado} title={podeVincularRecorrencia ? 'Revalidar e confirmar o vínculo manual.' : 'Somente usuários autorizados podem vincular após revisão.'} onClick={() => confirmarVinculoManual(item, conta)}>{vinculoEmAndamento === chaveVinculo ? 'Vinculando...' : 'Vincular após revisão'}</button></div></div>
-          })}{item.cobertura === 'faltante' && <button type="button" className="recurring-coverage-disabled-action" disabled title="A ação ainda não está liberada. A ocorrência deverá ser recalculada e confirmada antes da geração.">Gerar após revisão</button>}</div>)}</div>}</article>
+          })}{item.cobertura === 'faltante' && <button type="button" className="recurring-coverage-generate-action" disabled={!podeGerarRecorrencia || geracaoEmAndamento === item.identidade} title={podeGerarRecorrencia ? 'Revalidar e confirmar a criação de uma única conta.' : 'Somente Admin ou Master pode gerar uma ocorrência.'} onClick={() => confirmarGeracaoControlada(item)}>{geracaoEmAndamento === item.identidade ? 'Gerando...' : 'Gerar ocorrência'}</button>}</div>)}</div>}</article>
         })}</div>}
       </>}
     </section>}

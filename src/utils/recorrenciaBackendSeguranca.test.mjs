@@ -60,12 +60,17 @@ test('indice protegido e tratamento de concorrencia 23505 permanecem intactos', 
   assert.match(service, /\.is\('recorrencia_id', null\)/)
 })
 
-test('migration nao adiciona geracao nem qualquer escrita adicional da aplicacao', async () => {
-  const [sql, pagina] = await Promise.all([
+test('migration permanece restrita ao vinculo e a geracao exige confirmacao explicita', async () => {
+  const [sql, pagina, service] = await Promise.all([
     lerMigration(),
-    readFile(new URL('../pages/RecorrenciasFinanceirasPage.jsx', import.meta.url), 'utf8')
+    readFile(new URL('../pages/RecorrenciasFinanceirasPage.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../services/recorrenciaCoberturaService.js', import.meta.url), 'utf8')
   ])
   assert.doesNotMatch(sql, /\binsert\b|\bdelete\b/i)
-  assert.match(pagina, /Gerar após revisão/)
-  assert.match(pagina, /Gerar após revisão[\s\S]*disabled|disabled[\s\S]*Gerar após revisão/)
+  assert.match(pagina, /Gerar ocorrência/)
+  assert.match(pagina, /Confirmar geração/)
+  assert.match(pagina, /ocorrencia\?\.cobertura !== 'faltante'/)
+  assert.match(pagina, /!podeGerarRecorrencia/)
+  assert.equal((service.match(/inserirComEmpresa\(supabase, 'df_contas', previa\.payload/g) || []).length, 1)
+  assert.doesNotMatch(service, /executarPlanejamento|inserirEmLotes/)
 })

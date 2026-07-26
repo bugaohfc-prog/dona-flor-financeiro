@@ -115,20 +115,23 @@ test('hook protege troca de empresa e resposta obsoleta', async () => {
   assert.match(fonte, /empresaId/)
 })
 
-test('central de cobertura permite somente update seguro de vinculo manual e nao possui geracao', async () => {
+test('central permite um vinculo e uma geracao unitaria controlada, sem planejamento automatico', async () => {
   const service = await readFile(new URL('../services/recorrenciaCoberturaService.js', import.meta.url), 'utf8')
   const fontes = await Promise.all(['../hooks/useRecorrenciaCobertura.js', '../pages/RecorrenciasFinanceirasPage.jsx'].map((arquivo) => readFile(new URL(arquivo, import.meta.url), 'utf8')))
-  assert.equal(/\.insert\s*\(|\.delete\s*\(|\.upsert\s*\(/.test(service), false)
+  assert.equal((service.match(/inserirComEmpresa\(supabase, 'df_contas', previa\.payload/g) || []).length, 1)
+  assert.equal(/\.delete\s*\(|\.upsert\s*\(/.test(service), false)
   assert.equal((service.match(/\.update\s*\(\s*\{\s*recorrencia_id: recorrenciaId\s*\}\s*\)/g) || []).length, 1)
   assert.match(service, /\.is\('recorrencia_id', null\)/)
-  assert.equal([service, ...fontes].some((fonte) => /executarPlanejamento|gerarRecorrenc|montarPreviaPayloadGeracao/.test(fonte)), false)
+  assert.equal([service, ...fontes].some((fonte) => /executarPlanejamento|inserirEmLotes/.test(fonte)), false)
+  assert.equal(/gerarOcorrenciaRecorrencia/.test(fontes[0]), false)
 })
 
-test('gestao anterior permanece disponivel sem botao de gerar', async () => {
+test('gestao anterior permanece disponivel com geracao somente na cobertura faltante', async () => {
   const pagina = await readFile(new URL('../pages/RecorrenciasFinanceirasPage.jsx', import.meta.url), 'utf8')
   assert.match(pagina, /Gerenciar recorr/)
   assert.match(pagina, /Desativar/)
   assert.match(pagina, /Reativar/)
   assert.match(pagina, /Duplicidades ativas/)
-  assert.doesNotMatch(pagina, />\s*Gerar\s*</)
+  assert.match(pagina, /item\.cobertura === 'faltante'/)
+  assert.match(pagina, /Gerar ocorrência/)
 })

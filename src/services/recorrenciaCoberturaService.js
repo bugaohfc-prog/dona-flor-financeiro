@@ -1,9 +1,15 @@
-import { selecionarPorEmpresa } from './supabaseQueryService.js'
+import { inserirComEmpresa, selecionarPorEmpresa } from './supabaseQueryService.js'
 import { executarConsultaPaginada } from './supabasePaginationService.js'
 import { assertEmpresaId } from './tenantService.js'
-import { detectarConflitoOcorrencia, mensagemBloqueioAcao, validarVinculoManualConfirmado } from '../utils/recorrenciaAcoesControladas.js'
+import {
+  detectarConflitoOcorrencia,
+  mensagemBloqueioAcao,
+  montarPreviaPayloadGeracao,
+  validarOcorrenciaParaGeracao,
+  validarVinculoManualConfirmado
+} from '../utils/recorrenciaAcoesControladas.js'
 
-const COLUNAS_SERIES = 'id, empresa_id, descricao, valor, valor_variavel, dia_vencimento, tipo_recorrencia, ativo, data_inicio, filial_id, centro_custo_id'
+const COLUNAS_SERIES = 'id, empresa_id, descricao, observacao, valor, valor_variavel, dia_vencimento, tipo_recorrencia, ativo, data_inicio, data_fim, filial_id, centro_custo_id'
 const COLUNAS_CONTAS = 'id, empresa_id, descricao, valor, data_vencimento, competencia, imposto_tipo, status, recorrencia_id, filial_id, centro_custo_id, oculto, excluido, deletado'
 const INDICE_RECORRENCIA_ATIVA = 'uq_df_contas_recorrencia_vencimento_ativas'
 
@@ -18,6 +24,13 @@ function erroDoIndiceProtegido(error) {
 
 function contaAtiva(conta) {
   return conta && conta.excluido !== true && conta.deletado !== true && conta.oculto !== true
+}
+
+function contaCobreOcorrencia(conta, recorrenciaId, dataVencimento) {
+  return conta?.excluido !== true
+    && conta?.deletado !== true
+    && conta?.recorrencia_id === recorrenciaId
+    && String(conta?.data_vencimento || '').slice(0, 10) === String(dataVencimento || '').slice(0, 10)
 }
 
 function perfilAdministrativo(perfil) {
@@ -68,6 +81,106 @@ export async function consultarCoberturaRecorrencias(supabase, { empresaId, inic
   return { data: { series: respostaSeries.data || [], contas: respostaContas.data || [] }, error: null }
 }
 
+async function consultarContasOcorrencia(supabase, { empresaId, recorrenciaId, dataVencimento }) {
+  return executarConsultaPaginada(() => selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTAS)
+    .eq('recorrencia_id', recorrenciaId)
+    .eq('data_vencimento', String(dataVencimento).slice(0, 10))
+    .or('excluido.is.null,excluido.eq.false')
+    .or('deletado.is.null,deletado.eq.false')
+    .order('id', { ascending: true }))
+}
+
+export async function gerarOcorrenciaRecorrencia(supabase, {
+  empresaId,
+  recorrenciaId,
+  dataVencimento,
+  competencia,
+  configuracao = {}
+} = {}) {
+  assertEmpresaId(empresaId)
+  if (!recorrenciaId || !dataVencimento) return resultadoBloqueado('DADOS_INCOMPLETOS')
+
+  const permissao = await validarPermissaoVinculoRecorrencia(supabase, empresaId)
+  if (permissao.error) return { data: null, error: permissao.error }
+  if (!permissao.autorizado) return resultadoBloqueado('SEM_PERMISSAO')
+
+  const { data: serie, error: erroSerie } = await selecionarPorEmpresa(
+    supabase,
+    'df_contas_recorrentes',
+    empresaId,
+    COLUNAS_SERIES
+  ).eq('id', recorrenciaId).maybeSingle()
+  if (erroSerie) return { data: null, error: erroSerie }
+  if (!serie) return resultadoBloqueado('DADOS_INCOMPLETOS')
+
+  const { data: contasOcorrencia, error: erroContas } = await consultarContasOcorrencia(supabase, {
+    empresaId,
+    recorrenciaId,
+    dataVencimento
+  })
+  if (erroContas) return { data: null, error: erroContas }
+
+  const vinculadas = (contasOcorrencia || []).filter((conta) => contaCobreOcorrencia(conta, recorrenciaId, dataVencimento))
+  if (vinculadas.length > 1) return resultadoBloqueado('OCORRENCIA_DUPLICADA')
+  if (vinculadas.length === 1) {
+    return {
+      data: vinculadas[0],
+      error: null,
+      bloqueado: false,
+      idempotente: true,
+      auditoriaNecessaria: false
+    }
+  }
+
+  const ocorrencia = {
+    recorrenciaId,
+    serie,
+    dataVencimento: String(dataVencimento).slice(0, 10),
+    competencia: competencia || null,
+    cobertura: 'faltante',
+    contasVinculadas: []
+  }
+  const previa = montarPreviaPayloadGeracao({
+    empresaId,
+    ocorrencia,
+    autorizado: true,
+    contas: vinculadas,
+    configuracao
+  })
+  if (!previa.elegivel) return resultadoBloqueado(previa.codigo)
+
+  const respostaInsercao = await inserirComEmpresa(supabase, 'df_contas', previa.payload, {
+    select: COLUNAS_CONTAS
+  }).maybeSingle()
+
+  if (erroDoIndiceProtegido(respostaInsercao.error)) {
+    const reconciliacao = await consultarContasOcorrencia(supabase, { empresaId, recorrenciaId, dataVencimento })
+    if (reconciliacao.error) return { data: null, error: reconciliacao.error }
+    const atuais = (reconciliacao.data || []).filter((conta) => contaCobreOcorrencia(conta, recorrenciaId, dataVencimento))
+    if (atuais.length === 1) {
+      return {
+        data: atuais[0],
+        error: null,
+        bloqueado: false,
+        idempotente: true,
+        auditoriaNecessaria: false,
+        reconciliado: true
+      }
+    }
+    return resultadoBloqueado(atuais.length > 1 ? 'OCORRENCIA_DUPLICADA' : 'CONFLITO_INDICE')
+  }
+  if (respostaInsercao.error) return { data: null, error: respostaInsercao.error }
+  if (!respostaInsercao.data) return resultadoBloqueado('CONFLITO_INDICE')
+
+  return {
+    data: respostaInsercao.data,
+    error: null,
+    bloqueado: false,
+    idempotente: false,
+    auditoriaNecessaria: true
+  }
+}
+
 export async function vincularContaManualRecorrencia(supabase, { empresaId, contaId, recorrenciaId, dataVencimento } = {}) {
   assertEmpresaId(empresaId)
   if (!contaId || !recorrenciaId || !dataVencimento) return resultadoBloqueado('DADOS_INCOMPLETOS')
@@ -87,12 +200,11 @@ export async function vincularContaManualRecorrencia(supabase, { empresaId, cont
     return { data: conta, error: null, bloqueado: false, idempotente: true, auditoriaNecessaria: false }
   }
 
-  const { data: contasOcorrencia, error: erroConflito } = await executarConsultaPaginada(() => selecionarPorEmpresa(supabase, 'df_contas', empresaId, COLUNAS_CONTAS)
-    .eq('recorrencia_id', recorrenciaId)
-    .eq('data_vencimento', String(dataVencimento).slice(0, 10))
-    .or('excluido.is.null,excluido.eq.false')
-    .or('deletado.is.null,deletado.eq.false')
-    .order('id', { ascending: true }))
+  const { data: contasOcorrencia, error: erroConflito } = await consultarContasOcorrencia(supabase, {
+    empresaId,
+    recorrenciaId,
+    dataVencimento
+  })
   if (erroConflito) return { data: null, error: erroConflito }
 
   const ocorrencia = {

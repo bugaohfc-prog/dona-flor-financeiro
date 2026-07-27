@@ -4,15 +4,6 @@ import { useRecorrenciaCobertura } from '../../hooks/useRecorrenciaCobertura.js'
 import { resolverHorizonteCobertura } from '../../utils/recorrenciaCobertura.js'
 import { montarCentralPrioridadesFinanceiras } from '../../utils/prioridadesFinanceiras.js'
 
-function formatarData(data) {
-  const partes = String(data || '').slice(0, 10).split('-')
-  return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : 'Sem vencimento'
-}
-
-function rotuloNivel(nivel) {
-  return nivel === 'critica' ? 'Crítica' : nivel === 'atencao' ? 'Atenção' : 'Acompanhamento'
-}
-
 export default function PrioridadesFinanceirasPanel({
   contas = [],
   formatarValor,
@@ -46,7 +37,6 @@ export default function PrioridadesFinanceirasPanel({
         <div>
           <span className="dashboard-home-kicker">Central de prioridades financeiras</span>
           <h2 id="dashboard-priorities-title">Exige atenção</h2>
-          <p>As três contas mais críticas do escopo atual, com atalhos para aprofundamento.</p>
         </div>
         <button type="button" className="dashboard-home-action dashboard-home-action-secondary" onClick={onAbrirRelatorios}>
           Ver análise completa
@@ -57,7 +47,6 @@ export default function PrioridadesFinanceirasPanel({
         <div className="dashboard-priorities-ranking">
           <div className="dashboard-priorities-subheader">
             <strong>Top 3 prioridades</strong>
-            <small>{central.prioridades.length} compromisso(s) no escopo</small>
           </div>
           {ranking.length === 0 ? (
             <div className="dashboard-priorities-empty">Nenhuma conta em aberto no escopo selecionado.</div>
@@ -69,15 +58,10 @@ export default function PrioridadesFinanceirasPanel({
                     <span className="dashboard-priorities-rank">{indice + 1}</span>
                     <span className="dashboard-priorities-account">
                       <strong>{item.conta.descricao || 'Conta sem descrição'}</strong>
-                      <small>
-                        {formatarData(item.conta.data_vencimento)}
-                        {' · '}
-                        {item.motivos.slice(0, 3).join(' · ') || 'Acompanhamento preventivo'}
-                      </small>
                     </span>
                     <span className="dashboard-priorities-value">
                       <strong>{formatarValor(item.saldo)}</strong>
-                      <small>{rotuloNivel(item.nivel)} · Score {item.score}</small>
+                      <small>Score {item.score}</small>
                     </span>
                   </button>
                 </li>
@@ -90,14 +74,13 @@ export default function PrioridadesFinanceirasPanel({
           <button type="button" className="dashboard-priorities-indicator" onClick={onAbrirImpostos}>
             <span>Impostos em aberto</span>
             <strong>{central.resumo.impostosEmAberto}</strong>
-            <small>{formatarValor(central.resumo.saldoImpostos)} em saldo</small>
           </button>
 
           {(cobertura.carregando || !cobertura.carregado) && !cobertura.erro ? (
             <div className="dashboard-priorities-indicator" role="status">
               <span>Recorrências</span>
               <strong>—</strong>
-              <small>Verificando cobertura futura…</small>
+              <small>Carregando…</small>
             </div>
           ) : cobertura.erro ? (
             <div className="dashboard-priorities-indicator" role="alert">
@@ -109,7 +92,6 @@ export default function PrioridadesFinanceirasPanel({
             <button type="button" className="dashboard-priorities-indicator" onClick={onAbrirRecorrencias}>
               <span>Recorrências sem cobertura</span>
               <strong>{central.resumo.recorrenciasSemCobertura}</strong>
-              <small>Ocorrência(s) nos próximos 90 dias</small>
             </button>
           )}
         </aside>

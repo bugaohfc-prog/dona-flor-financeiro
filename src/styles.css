@@ -1864,8 +1864,8 @@
 }
 
 .dashboard-priorities {
-  padding: 18px;
-  margin-bottom: 14px;
+  padding: 14px;
+  margin-bottom: 10px;
 }
 
 .dashboard-priorities-header,
@@ -1884,15 +1884,7 @@
 .dashboard-priorities-header h2 {
   margin: 0;
   color: var(--dashboard-text);
-  font-size: 20px;
-}
-
-.dashboard-priorities-header p {
-  margin: 0;
-  color: var(--dashboard-muted);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.4;
+  font-size: 18px;
 }
 
 .dashboard-priorities-summary {
@@ -1921,21 +1913,21 @@
 .dashboard-priorities-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(260px, .8fr);
-  gap: 14px;
-  margin-top: 16px;
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .dashboard-priorities-ranking {
   min-width: 0;
-  padding: 14px;
+  padding: 10px;
   border: 1px solid var(--dashboard-border);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--dashboard-white);
 }
 
 .dashboard-priorities-subheader {
   align-items: baseline;
-  margin-bottom: 10px;
+  margin-bottom: 7px;
 }
 
 .dashboard-priorities-subheader strong {
@@ -1952,7 +1944,7 @@
 .dashboard-priorities-ranking ol,
 .dashboard-priorities-block ul {
   display: grid;
-  gap: 7px;
+  gap: 5px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1979,10 +1971,10 @@
 .dashboard-priorities-ranking li button {
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   width: 100%;
-  padding: 10px;
+  padding: 8px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -2004,8 +1996,8 @@
 .dashboard-priorities-rank {
   display: inline-grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 999px;
   background: var(--dashboard-white);
   color: var(--dashboard-secondary);
@@ -2016,14 +2008,14 @@
 .dashboard-priorities-account,
 .dashboard-priorities-value {
   display: grid;
-  gap: 3px;
+  gap: 1px;
   min-width: 0;
 }
 
 .dashboard-priorities-account strong,
 .dashboard-priorities-value strong {
   color: var(--dashboard-text);
-  font-size: 13px;
+  font-size: 12px;
   overflow-wrap: anywhere;
 }
 
@@ -2043,19 +2035,20 @@
 .dashboard-priorities-indicators {
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 7px;
   min-width: 0;
 }
 
 .dashboard-priorities-indicator {
   display: grid;
-  align-content: start;
-  gap: 5px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
   width: 100%;
-  min-height: 100px;
-  padding: 14px;
+  min-height: 64px;
+  padding: 10px 11px;
   border: 1px solid var(--dashboard-border);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--dashboard-white);
   color: var(--dashboard-text);
   font: inherit;
@@ -2080,24 +2073,26 @@ button.dashboard-priorities-indicator:hover {
 
 .dashboard-priorities-indicator span {
   color: var(--dashboard-muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .dashboard-priorities-indicator strong {
   color: var(--dashboard-text);
-  font-size: 22px;
+  font-size: 19px;
 }
 
 .dashboard-priorities-indicator small {
+  grid-column: 1 / -1;
   color: var(--dashboard-muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1.35;
 }
 
 .dashboard-priorities-indicator > button {
+  grid-column: 1 / -1;
   justify-self: start;
   padding: 5px 8px;
   border: 1px solid var(--dashboard-control-border);
@@ -2123,8 +2118,8 @@ button.dashboard-priorities-indicator:hover {
   grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
   gap: 14px;
   align-items: end;
-  margin-bottom: 14px;
-  padding: 14px;
+  margin-bottom: 10px;
+  padding: 12px;
   border: 1px solid var(--dashboard-soft-border);
   border-radius: 16px;
   background: var(--dashboard-white);
@@ -2195,9 +2190,9 @@ button.dashboard-priorities-indicator:hover {
 
 .dashboard-home-finance-card {
   display: grid;
-  gap: 14px;
-  padding: 18px;
-  margin-bottom: 14px;
+  gap: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
   background: linear-gradient(135deg, var(--dashboard-white) 0%, var(--dashboard-surface-soft) 100%) !important;
 }
 
@@ -2279,7 +2274,7 @@ button.dashboard-priorities-indicator:hover {
 
 .dashboard-home-kpi-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
 }
 
 .dashboard-home-kpi,
@@ -2298,13 +2293,13 @@ button.dashboard-priorities-indicator:hover {
 .dashboard-home-kpi {
   display: grid;
   align-content: start;
-  gap: 7px;
-  min-height: 94px;
-  padding: 14px;
+  gap: 4px;
+  min-height: 72px;
+  padding: 10px 11px;
   position: relative;
   overflow: hidden;
   text-align: left;
-  border-radius: 16px;
+  border-radius: 13px;
   background: var(--dashboard-white);
   box-shadow: var(--dashboard-shadow-sm);
 }
@@ -2346,7 +2341,7 @@ button.dashboard-priorities-indicator:hover {
 
 .dashboard-home-kpi strong {
   color: var(--dashboard-text);
-  font-size: clamp(18px, 2.2vw, 24px);
+  font-size: clamp(18px, 2vw, 22px);
   line-height: 1.05;
   overflow-wrap: anywhere;
 }
@@ -2747,6 +2742,10 @@ button.dashboard-priorities-indicator:hover {
   .dashboard-priorities-layout {
     grid-template-columns: 1fr;
   }
+
+  .dashboard-priorities-indicators {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -2775,12 +2774,17 @@ button.dashboard-priorities-indicator:hover {
   .dashboard-priorities,
   .dashboard-home-widget,
   .dashboard-home-notes {
-    padding: 12px !important;
+    padding: 10px !important;
     border-radius: 14px !important;
   }
 
   .dashboard-priorities-header {
     display: grid;
+    gap: 8px;
+  }
+
+  .dashboard-priorities-header > .dashboard-home-action {
+    justify-self: start;
   }
 
   .dashboard-priorities-summary {
@@ -2788,13 +2792,13 @@ button.dashboard-priorities-indicator:hover {
   }
 
   .dashboard-priorities-ranking li button {
-    grid-template-columns: 28px minmax(0, 1fr);
+    grid-template-columns: 26px minmax(0, 1fr) auto;
+    min-height: 52px;
   }
 
   .dashboard-priorities-value {
-    grid-column: 2;
-    justify-items: start;
-    text-align: left;
+    justify-items: end;
+    text-align: right;
   }
 
   .dashboard-home-widget-header,
@@ -2844,11 +2848,29 @@ button.dashboard-priorities-indicator:hover {
     font-size: 18px;
   }
 
-  .dashboard-home-kpi,
+  .dashboard-home-kpi {
+    min-height: 64px;
+    padding: 9px 10px;
+  }
+
+  .dashboard-home-kpi:last-child {
+    grid-column: 1 / -1;
+  }
+
   .dashboard-home-metric,
   .dashboard-home-people-item,
   .dashboard-home-team-row {
     padding: 9px;
+  }
+
+  .dashboard-priorities-layout {
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .dashboard-priorities-indicator {
+    min-height: 58px;
+    padding: 8px 9px;
   }
 
   .dashboard-home-people-item,

@@ -167,11 +167,11 @@ export default function DashboardHome({
   }
 
   const resumoFinanceiro = [
-    { label: 'Saldo projetado', valor: formatarValor(resumoDashboard.saldo), detalhe: `Exercício de ${hoje.slice(0, 4)}`, tone: 'warning', acao: () => navegarPara('relatorios') },
-    { label: 'Vencido', valor: formatarValor(resumoDashboard.vencido), detalhe: 'Todo o saldo vencido', tone: 'danger', destino: 'vencidas' },
-    { label: 'Vence hoje', valor: formatarValor(resumoDashboard.faixas.hoje.valor), detalhe: `${resumoDashboard.faixas.hoje.quantidade} compromisso(s)`, tone: 'warning', destino: 'hoje' },
-    { label: 'Próximos 7 dias', valor: formatarValor(resumoDashboard.faixas.proximos7.valor), detalhe: 'De amanhã até o 7º dia', tone: 'default', destino: 'proximos7' },
-    { label: 'Próximos 90 dias', valor: formatarValor(proximos90.valor), detalhe: `${proximos90.quantidade} compromisso(s)`, tone: 'default', destino: 'proximos90Completo' }
+    { label: 'Saldo projetado', valor: formatarValor(resumoDashboard.saldo), tone: 'warning', acao: () => navegarPara('relatorios') },
+    { label: 'Vencido', valor: formatarValor(resumoDashboard.vencido), tone: 'danger', destino: 'vencidas' },
+    { label: 'Vence hoje', valor: formatarValor(resumoDashboard.faixas.hoje.valor), tone: 'warning', destino: 'hoje' },
+    { label: 'Próximos 7 dias', valor: formatarValor(resumoDashboard.faixas.proximos7.valor), tone: 'default', destino: 'proximos7' },
+    { label: 'Próximos 90 dias', valor: formatarValor(proximos90.valor), tone: 'default', destino: 'proximos90Completo' }
   ]
 
   function abrirContas(tipo, referencia = {}) {
@@ -280,13 +280,11 @@ export default function DashboardHome({
                   >
                     <span>{item.label}</span>
                     <strong>{item.valor}</strong>
-                    <small>{item.detalhe}</small>
                   </button>
                 ) : (
                   <div className={`dashboard-home-kpi dashboard-home-kpi-${item.tone}`} key={item.label}>
                     <span>{item.label}</span>
                     <strong>{item.valor}</strong>
-                    <small>{item.detalhe}</small>
                   </div>
                 ))}
               </div>

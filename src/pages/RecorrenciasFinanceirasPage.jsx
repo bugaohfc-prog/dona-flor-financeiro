@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useRecorrenciaCobertura } from '../hooks/useRecorrenciaCobertura.js'
-import { filtrarCoberturaRecorrencias, resolverHorizonteCobertura } from '../utils/recorrenciaCobertura.js'
+import {
+  filtrarCoberturaRecorrencias,
+  resolverHorizonteCobertura,
+  resumirCentroControle
+} from '../utils/recorrenciaCobertura.js'
 import './RecorrenciasFinanceirasPage.css'
 
 const HORIZONTES = [
@@ -10,6 +14,12 @@ const HORIZONTES = [
   ['60', '60 dias'],
   ['90', '90 dias'],
   ['personalizado', 'Personalizado']
+]
+
+const VISOES_COBERTURA = [
+  ['atencao', 'Exigem atenção'],
+  ['cobertas', 'Cobertas'],
+  ['todas', 'Todas']
 ]
 
 function normalizarTexto(valor) {
@@ -104,10 +114,12 @@ function GestaoRecorrencias({
     })
   }
 
-  if (fonte.carregando) return <div className="recurring-coverage-state" role="status">Carregando recorrências...</div>
-  if (fonte.erro) return <div className="recurring-coverage-state is-error" role="alert"><strong>Não foi possível carregar as recorrências.</strong><button type="button" onClick={fonte.consultar}>Tentar novamente</button></div>
+  if (fonte.carregando && !fonte.resultado) return <div className="recurring-coverage-state" role="status">Carregando recorrências...</div>
+  if (fonte.erro && !fonte.resultado) return <div className="recurring-coverage-state is-error" role="alert"><strong>Não foi possível carregar as recorrências.</strong><button type="button" onClick={fonte.consultar}>Tentar novamente</button></div>
 
   return <section className="content-block accounts-recurring-section recurring-management-panel" style={styles.bloco}>
+    {fonte.carregando && <div className="recurring-coverage-refreshing" role="status">Atualizando recorrências…</div>}
+    {fonte.erro && <div className="recurring-coverage-inline-error" role="alert"><span>Não foi possível atualizar. Exibindo o último resultado válido.</span><button type="button" onClick={fonte.consultar}>Tentar novamente</button></div>}
     <div className="accounts-list-header"><div className="accounts-list-title"><span className="accounts-kicker">Gestão</span><strong>Séries recorrentes</strong><small>{resumo.total} cadastrada(s) · {resumo.ativas} ativa(s) · {resumo.inativas} inativa(s)</small></div></div>
     <div className="accounts-recurring-summary">
       <span><b>Total</b>{resumo.total}</span><span><b>Ativas</b>{resumo.ativas}</span><span><b>Inativas</b>{resumo.inativas}</span>
@@ -158,13 +170,20 @@ export default function RecorrenciasFinanceirasPage({
   const [secao, setSecao] = useState('cobertura')
   const [tipoHorizonte, setTipoHorizonte] = useState('90')
   const [personalizado, setPersonalizado] = useState({ inicio: '', fim: '' })
-  const [filtros, setFiltros] = useState({ filialId: '', centroId: '', cobertura: 'todas', busca: '' })
+  const [visaoCobertura, setVisaoCobertura] = useState('atencao')
+  const [filtros, setFiltros] = useState({ filialId: '', centroId: '', busca: '' })
+  const [filtrosMobileAbertos, setFiltrosMobileAbertos] = useState(false)
   const [expandidas, setExpandidas] = useState(() => new Set())
   const [vinculoEmAndamento, setVinculoEmAndamento] = useState('')
   const [geracaoEmAndamento, setGeracaoEmAndamento] = useState('')
   const horizonte = useMemo(() => resolverHorizonteCobertura(tipoHorizonte, new Date(), personalizado), [personalizado, tipoHorizonte])
   const fonte = useRecorrenciaCobertura({ empresaId, horizonte })
-  const resultado = useMemo(() => filtrarCoberturaRecorrencias(fonte.resultado, filtros), [filtros, fonte.resultado])
+  const resultado = useMemo(
+    () => filtrarCoberturaRecorrencias(fonte.resultado, { ...filtros, visao: visaoCobertura }),
+    [filtros, fonte.resultado, visaoCobertura]
+  )
+  const resumoControle = useMemo(() => resumirCentroControle(fonte.resultado), [fonte.resultado])
+  const horizonteExibido = fonte.resultado?.horizonte || horizonte
 
   function alternarSerie(id) {
     setExpandidas((atuais) => {
@@ -260,23 +279,96 @@ export default function RecorrenciasFinanceirasPage({
       <button type="button" role="tab" aria-selected={secao === 'gestao'} className={secao === 'gestao' ? 'is-active' : ''} onClick={() => setSecao('gestao')}>Gerenciar recorrências</button>
     </div>
     {secao === 'gestao' ? <GestaoRecorrencias {...{ fonte, centros, filiais, styles, formatarValor, formatarData, formatarTipoRecorrencia, abrirConfirmacao, desativarSerieRecorrente, reativarSerieRecorrente }} /> : <section className="content-block recurring-coverage-panel">
-      <div className="recurring-coverage-horizons" aria-label="Horizonte da cobertura">{HORIZONTES.map(([valor, rotulo]) => <button key={valor} type="button" className={tipoHorizonte === valor ? 'is-active' : ''} aria-pressed={tipoHorizonte === valor} onClick={() => setTipoHorizonte(valor)}>{rotulo}</button>)}</div>
-      {tipoHorizonte === 'personalizado' && <div className="recurring-coverage-custom"><label>Início<input type="date" value={personalizado.inicio} onChange={(event) => setPersonalizado((atual) => ({ ...atual, inicio: event.target.value }))} /></label><label>Fim<input type="date" value={personalizado.fim} onChange={(event) => setPersonalizado((atual) => ({ ...atual, fim: event.target.value }))} /></label></div>}
-      <div className="recurring-coverage-period">Período inclusivo: <strong>{horizonte.inicio ? formatarData(horizonte.inicio) : '-'} a {horizonte.fim ? formatarData(horizonte.fim) : '-'}</strong></div>
-      <div className="recurring-coverage-filters"><select value={filtros.filialId} onChange={(event) => setFiltros((atual) => ({ ...atual, filialId: event.target.value }))} aria-label="Filtrar por filial"><option value="">Todas as filiais</option>{filiais.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</select><select value={filtros.centroId} onChange={(event) => setFiltros((atual) => ({ ...atual, centroId: event.target.value }))} aria-label="Filtrar por centro"><option value="">Todos os centros</option>{centros.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</select><select value={filtros.cobertura} onChange={(event) => setFiltros((atual) => ({ ...atual, cobertura: event.target.value }))} aria-label="Filtrar por cobertura"><option value="todas">Todas as coberturas</option><option value="coberta">Cobertas</option><option value="faltante">Faltantes</option><option value="possivel_manual">Possível manual</option><option value="duplicada">Duplicadas</option></select><input type="search" placeholder="Buscar recorrência" value={filtros.busca} onChange={(event) => setFiltros((atual) => ({ ...atual, busca: event.target.value }))} /></div>
-      {fonte.carregando && <div className="recurring-coverage-state" role="status">Calculando cobertura...</div>}
-      {!fonte.carregando && fonte.erro && <div className="recurring-coverage-state is-error" role="alert"><strong>Não foi possível consultar a cobertura.</strong><button type="button" onClick={fonte.consultar}>Tentar novamente</button></div>}
-      {!fonte.carregando && !fonte.erro && fonte.carregado && fonte.resultado && <>
-        <div className="recurring-coverage-summary recurring-coverage-summary-complete"><span><b>Recorrências ativas</b>{fonte.resultado.resumo.recorrenciasAtivas}</span><span><b>Esperadas</b>{fonte.resultado.resumo.esperadas}</span><span><b>Cobertas</b>{fonte.resultado.resumo.cobertas}</span><span><b>Faltantes</b>{fonte.resultado.resumo.faltantes}</span><span><b>Possível manual</b>{fonte.resultado.resumo.possiveisManuais}</span><span><b>Duplicadas</b>{fonte.resultado.resumo.duplicadas}</span><span><b>Valor fixo projetado</b>{formatarValor(fonte.resultado.resumo.valorFixoProjetado)}</span><span><b>Variáveis sem projeção</b>{fonte.resultado.resumo.variaveisSemProjecao}</span><span><b>Inconsistências</b>{fonte.resultado.resumo.inconsistencias}</span></div>
-        {resultado.recorrencias.length === 0 ? <div className="recurring-coverage-state">Nenhuma ocorrência encontrada para os filtros selecionados.</div> : <div className="recurring-coverage-list">{resultado.recorrencias.map(({ serie, ocorrencias }) => {
-          const aberta = expandidas.has(serie.id)
-          const contagens = ocorrencias.reduce((acc, item) => ({ ...acc, [item.cobertura]: (acc[item.cobertura] || 0) + 1 }), {})
-          return <article className="recurring-coverage-series" key={serie.id}><button type="button" className="recurring-coverage-series-toggle" aria-expanded={aberta} aria-controls={`coverage-${serie.id}`} onClick={() => alternarSerie(serie.id)}><span><strong>{serie.descricao || 'Recorrência sem descrição'}</strong><small>{ocorrencias.length} ocorrência(s) · {contagens.coberta || 0} coberta(s) · {contagens.faltante || 0} faltante(s) · {contagens.possivel_manual || 0} possível(is) manual(is) · {contagens.duplicada || 0} duplicada(s)</small></span><span aria-hidden="true">{aberta ? '−' : '+'}</span></button>{aberta && <div className="recurring-coverage-occurrences" id={`coverage-${serie.id}`}>{ocorrencias.map((item) => <div className={`recurring-coverage-occurrence is-${item.cobertura}`} key={item.identidade}><div><strong>{formatarData(item.dataVencimento)}</strong><span>{item.cobertura === 'coberta' ? 'Coberta' : item.cobertura === 'duplicada' ? 'Duplicidade' : item.cobertura === 'possivel_manual' ? 'Possível manual' : 'Faltante'}</span></div>{item.contasVinculadas.map((conta) => <button type="button" key={conta.id} onClick={() => navegarParaConta?.(conta.id)}>Abrir conta vinculada · {formatarValor(Number(conta.valor || 0))}</button>)}{item.sugestoes.map(({ conta, confianca, criterios }) => {
-            const chaveVinculo = `${item.identidade}:${conta.id}`
-            const bloqueado = !podeVincularRecorrencia || vinculoEmAndamento === chaveVinculo
-            return <div className="recurring-coverage-suggestion" key={conta.id}><b>Possível conta manual · confiança {confianca}</b><span>{criterios.join(' · ')}</span><div className="recurring-coverage-suggestion-actions"><button type="button" onClick={() => navegarParaConta?.(conta.id)}>Abrir conta</button><button type="button" disabled={bloqueado} title={podeVincularRecorrencia ? 'Revalidar e confirmar o vínculo manual.' : 'Somente usuários autorizados podem vincular após revisão.'} onClick={() => confirmarVinculoManual(item, conta)}>{vinculoEmAndamento === chaveVinculo ? 'Vinculando...' : 'Vincular após revisão'}</button></div></div>
-          })}{item.cobertura === 'faltante' && <button type="button" className="recurring-coverage-generate-action" disabled={!podeGerarRecorrencia || geracaoEmAndamento === item.identidade} title={podeGerarRecorrencia ? 'Revalidar e confirmar a criação de uma única conta.' : 'Somente Admin ou Master pode gerar uma ocorrência.'} onClick={() => confirmarGeracaoControlada(item)}>{geracaoEmAndamento === item.identidade ? 'Gerando...' : 'Gerar ocorrência'}</button>}</div>)}</div>}</article>
-        })}</div>}
+      {fonte.resultado && <div className="recurring-control-summary" aria-label="Resumo da cobertura">
+        <button type="button" className="is-active" onClick={() => setVisaoCobertura('todas')}><b>Recorrências ativas</b><strong>{resumoControle.ativas}</strong></button>
+        <button type="button" className="is-covered" onClick={() => setVisaoCobertura('cobertas')}><b>Cobertas</b><strong>{resumoControle.cobertas}</strong></button>
+        <button type="button" className="is-missing" onClick={() => setVisaoCobertura('atencao')}><b>Faltantes</b><strong>{resumoControle.faltantes}</strong></button>
+        <button type="button" className="is-conflict" onClick={() => setVisaoCobertura('atencao')}><b>Duplicadas</b><strong>{resumoControle.duplicadas}</strong></button>
+        <button type="button" className="is-suggestion" onClick={() => setVisaoCobertura('atencao')}><b>Sugestões de vínculo</b><strong>{resumoControle.sugestoes}</strong></button>
+      </div>}
+      <div className="recurring-control-view-tabs" role="tablist" aria-label="Visão da cobertura">
+        {VISOES_COBERTURA.map(([valor, rotulo]) => <button key={valor} type="button" role="tab" aria-selected={visaoCobertura === valor} className={visaoCobertura === valor ? 'is-active' : ''} onClick={() => setVisaoCobertura(valor)}>{rotulo}</button>)}
+      </div>
+      <button type="button" className="recurring-control-mobile-toggle" aria-expanded={filtrosMobileAbertos} aria-controls="recurring-control-toolbar" onClick={() => setFiltrosMobileAbertos((aberto) => !aberto)}>
+        Filtros e horizonte <span aria-hidden="true">{filtrosMobileAbertos ? '−' : '+'}</span>
+      </button>
+      <div id="recurring-control-toolbar" className={`recurring-control-toolbar ${filtrosMobileAbertos ? 'is-open' : ''}`}>
+        <div className="recurring-coverage-horizons" aria-label="Horizonte da cobertura">{HORIZONTES.map(([valor, rotulo]) => <button key={valor} type="button" className={tipoHorizonte === valor ? 'is-active' : ''} aria-pressed={tipoHorizonte === valor} onClick={() => setTipoHorizonte(valor)}>{rotulo}</button>)}</div>
+        {tipoHorizonte === 'personalizado' && <div className="recurring-coverage-custom"><label>Início<input type="date" value={personalizado.inicio} onChange={(event) => setPersonalizado((atual) => ({ ...atual, inicio: event.target.value }))} /></label><label>Fim<input type="date" value={personalizado.fim} onChange={(event) => setPersonalizado((atual) => ({ ...atual, fim: event.target.value }))} /></label></div>}
+        <div className="recurring-coverage-period">Período selecionado: <strong>{horizonte.inicio ? formatarData(horizonte.inicio) : '-'} a {horizonte.fim ? formatarData(horizonte.fim) : '-'}</strong></div>
+        <div className="recurring-coverage-filters">
+          <select value={filtros.filialId} onChange={(event) => setFiltros((atual) => ({ ...atual, filialId: event.target.value }))} aria-label="Filtrar por filial"><option value="">Todas as filiais</option>{filiais.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</select>
+          <select value={filtros.centroId} onChange={(event) => setFiltros((atual) => ({ ...atual, centroId: event.target.value }))} aria-label="Filtrar por centro"><option value="">Todos os centros</option>{centros.map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}</select>
+          <input type="search" placeholder="Buscar recorrência" value={filtros.busca} onChange={(event) => setFiltros((atual) => ({ ...atual, busca: event.target.value }))} />
+        </div>
+      </div>
+      {fonte.carregando && !fonte.resultado && <div className="recurring-coverage-state" role="status">Calculando cobertura...</div>}
+      {fonte.carregando && fonte.resultado && <div className="recurring-coverage-refreshing" role="status">Atualizando cobertura para o novo horizonte…</div>}
+      {fonte.erro && !fonte.resultado && <div className="recurring-coverage-state is-error" role="alert"><strong>Não foi possível consultar a cobertura.</strong><button type="button" onClick={fonte.consultar}>Tentar novamente</button></div>}
+      {fonte.erro && fonte.resultado && <div className="recurring-coverage-inline-error" role="alert"><span>Não foi possível atualizar. Exibindo o último resultado válido.</span><button type="button" onClick={fonte.consultar}>Tentar novamente</button></div>}
+      {fonte.carregado && fonte.resultado && <>
+        <div className="recurring-coverage-data-period">Dados exibidos: {horizonteExibido.inicio ? formatarData(horizonteExibido.inicio) : '-'} a {horizonteExibido.fim ? formatarData(horizonteExibido.fim) : '-'}</div>
+        {resultado.recorrencias.length === 0 ? (
+          <div className="recurring-coverage-state">Nenhuma ocorrência encontrada para os filtros selecionados.</div>
+        ) : (
+          <div className="recurring-coverage-list">
+            {resultado.recorrencias.map(({ serie, ocorrencias }) => {
+              const aberta = expandidas.has(serie.id)
+              const contagens = ocorrencias.reduce((acc, item) => ({ ...acc, [item.cobertura]: (acc[item.cobertura] || 0) + 1 }), {})
+              return (
+                <article className="recurring-coverage-series" key={serie.id}>
+                  <button type="button" className="recurring-coverage-series-toggle" aria-expanded={aberta} aria-controls={`coverage-${serie.id}`} onClick={() => alternarSerie(serie.id)}>
+                    <span>
+                      <strong>{serie.descricao || 'Recorrência sem descrição'}</strong>
+                      <small>{ocorrencias.length} ocorrência(s) · {contagens.coberta || 0} coberta(s) · {contagens.faltante || 0} faltante(s) · {contagens.possivel_manual || 0} possível(is) manual(is) · {contagens.duplicada || 0} duplicada(s)</small>
+                    </span>
+                    <span className="recurring-coverage-expand" aria-hidden="true">{aberta ? '−' : '+'}</span>
+                  </button>
+                  {aberta && (
+                    <div className="recurring-coverage-occurrences" id={`coverage-${serie.id}`}>
+                      {ocorrencias.map((item) => {
+                        const rotuloSituacao = item.cobertura === 'coberta' ? 'Coberta' : item.cobertura === 'duplicada' ? 'Duplicidade' : item.cobertura === 'possivel_manual' ? 'Possível manual' : 'Faltante'
+                        return (
+                          <div className={`recurring-coverage-occurrence is-${item.cobertura}`} key={item.identidade}>
+                            <div className="recurring-coverage-occurrence-head">
+                              <span className="recurring-coverage-situation">{rotuloSituacao}</span>
+                              <strong>{formatarValor(Number(item.serie?.valor || 0))}</strong>
+                            </div>
+                            <div className="recurring-coverage-occurrence-meta">
+                              <span>Competência {item.competencia ? formatarData(item.competencia) : '-'}</span>
+                              <span>Vencimento {formatarData(item.dataVencimento)}</span>
+                              <span>{item.serie?.valor_variavel === true ? 'Valor variável' : 'Valor fixo'}</span>
+                            </div>
+                            {item.contasVinculadas.map((conta) => (
+                              <button type="button" key={conta.id} onClick={() => navegarParaConta?.(conta.id)}>Abrir conta vinculada · {formatarValor(Number(conta.valor || 0))}</button>
+                            ))}
+                            {item.sugestoes.map(({ conta, confianca, criterios }) => {
+                              const chaveVinculo = `${item.identidade}:${conta.id}`
+                              const bloqueado = !podeVincularRecorrencia || vinculoEmAndamento === chaveVinculo
+                              return (
+                                <div className="recurring-coverage-suggestion" key={conta.id}>
+                                  <b>Possível conta manual · confiança {confianca}</b>
+                                  <span>{criterios.join(' · ')}</span>
+                                  <div className="recurring-coverage-suggestion-actions">
+                                    <button type="button" onClick={() => navegarParaConta?.(conta.id)}>Abrir conta</button>
+                                    <button type="button" disabled={bloqueado} title={podeVincularRecorrencia ? 'Revalidar e confirmar o vínculo manual.' : 'Somente usuários autorizados podem vincular após revisão.'} onClick={() => confirmarVinculoManual(item, conta)}>{vinculoEmAndamento === chaveVinculo ? 'Vinculando...' : 'Vincular após revisão'}</button>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                            {item.cobertura === 'faltante' && (
+                              <button type="button" className="recurring-coverage-generate-action" disabled={!podeGerarRecorrencia || geracaoEmAndamento === item.identidade} title={podeGerarRecorrencia ? 'Revalidar e confirmar a criação de uma única conta.' : 'Somente Admin ou Master pode gerar uma ocorrência.'} onClick={() => confirmarGeracaoControlada(item)}>{geracaoEmAndamento === item.identidade ? 'Gerando...' : 'Gerar ocorrência'}</button>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </article>
+              )
+            })}
+          </div>
+        )}
       </>}
     </section>}
   </main>

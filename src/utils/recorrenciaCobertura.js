@@ -142,12 +142,29 @@ export function calcularCoberturaRecorrencias({ series = [], contas = [], horizo
   return { recorrencias: Array.from(porSerie.values()), ocorrencias, resumo, inconsistencias }
 }
 
+export function classificarOcorrenciaCentroControle(ocorrencia) {
+  return ocorrencia?.cobertura === 'coberta' ? 'coberta' : 'atencao'
+}
+
+export function resumirCentroControle(resultado) {
+  const resumo = resultado?.resumo || {}
+  return {
+    ativas: Number(resumo.recorrenciasAtivas || 0),
+    cobertas: Number(resumo.cobertas || 0),
+    faltantes: Number(resumo.faltantes || 0),
+    duplicadas: Number(resumo.duplicadas || 0),
+    sugestoes: Number(resumo.possiveisManuais || 0)
+  }
+}
+
 export function filtrarCoberturaRecorrencias(resultado, filtros = {}) {
   const termo = normalizarTexto(filtros.busca)
   const ocorrencias = (resultado?.ocorrencias || []).filter((item) => {
     if (filtros.filialId && item.serie.filial_id !== filtros.filialId) return false
     if (filtros.centroId && item.serie.centro_custo_id !== filtros.centroId) return false
     if (filtros.cobertura && filtros.cobertura !== 'todas' && item.cobertura !== filtros.cobertura) return false
+    if (filtros.visao === 'atencao' && classificarOcorrenciaCentroControle(item) !== 'atencao') return false
+    if (filtros.visao === 'cobertas' && classificarOcorrenciaCentroControle(item) !== 'coberta') return false
     return !termo || normalizarTexto(item.serie.descricao).includes(termo)
   })
   const ids = new Set(ocorrencias.map((item) => item.recorrenciaId))

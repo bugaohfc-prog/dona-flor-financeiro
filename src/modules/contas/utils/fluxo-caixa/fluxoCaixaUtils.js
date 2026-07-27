@@ -433,36 +433,40 @@ function numeroCsv(valor) {
   return normalizarValor(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-export function montarAbaModeloFluxoCaixa({ titulo, filialNome, identificacao = [], ano, resultado, rubricas, observacao }) {
-  const meses = MESES_FLUXO_CAIXA.map((mes) => mes.nome)
-  const valoresPorMes = new Map((resultado?.linhas || []).map((linha) => [linha.mes, linha]))
-  const linhaPorCampo = (rotulo, campo) => {
-    const valores = MESES_FLUXO_CAIXA.map((mes) => normalizarValor(valoresPorMes.get(mes.numero)?.[campo]))
-    const total = normalizarValor(valores.reduce((soma, valor) => soma + valor, 0))
-    return [rotulo, ...valores, total]
-  }
-  const linhasRubricas = (rubricas || []).map((rubrica) => [
-    rubrica.rubrica,
-    ...MESES_FLUXO_CAIXA.map((mes) => normalizarValor(rubrica[mes.chave])),
-    normalizarValor(rubrica.total)
-  ])
+export const TITULO_MODELO_FLUXO_CAIXA = 'DECLARAÇÃO DE FLUXO DE CAIXA DOS ÚLTIMOS 12 MESES'
 
-  return [
-    [titulo],
-    ['Filial', filialNome || 'Todas as filiais'],
-    ...(identificacao || []),
-    ['Ano', ano],
-    ['Gerado em', new Date().toLocaleString('pt-BR')],
-    ['Observação', observacao],
-    [],
-    ['Rubrica', ...meses, 'Total anual'],
-    linhaPorCampo('FATURAMENTO BRUTO', 'entradas'),
-    ...linhasRubricas,
-    linhaPorCampo('TOTAL GERAL', 'saldo'),
-    [],
-    ['Mês', ...meses, 'Total anual'],
-    ['Quantidade de movimentos', ...MESES_FLUXO_CAIXA.map((mes) => valoresPorMes.get(mes.numero)?.movimentos || 0), resultado?.totais?.movimentos || 0]
-  ]
+export function montarAbaModeloFluxoCaixa({
+  empresa,
+  cnpj = '',
+  endereco = '',
+  resultado,
+  rubricas
+}) {
+  const valoresPorMes = new Map((resultado?.linhas || []).map((linha) => [linha.mes, linha]))
+  const rubricasPorNome = new Map((rubricas || []).map((rubrica) => [rubrica.rubrica, rubrica]))
+  const faturamento = MESES_FLUXO_CAIXA.map((mes) => normalizarValor(valoresPorMes.get(mes.numero)?.entradas))
+  const despesas = RUBRICAS_SAIDA_FLUXO_CAIXA.map((nome) => {
+    const rubrica = rubricasPorNome.get(nome) || criarLinhaRubrica(nome)
+    return {
+      nome,
+      valores: MESES_FLUXO_CAIXA.map((mes) => normalizarValor(rubrica[mes.chave]))
+    }
+  })
+  const totais = MESES_FLUXO_CAIXA.map((mes, indice) => normalizarValor(
+    faturamento[indice] - despesas.reduce((soma, rubrica) => soma + rubrica.valores[indice], 0)
+  ))
+
+  return {
+    titulo: TITULO_MODELO_FLUXO_CAIXA,
+    empresa: String(empresa || ''),
+    cnpj: String(cnpj || ''),
+    endereco: String(endereco || ''),
+    meses: MESES_FLUXO_CAIXA.map((mes) => mes.nome.toUpperCase()),
+    faturamento,
+    despesas,
+    totais,
+    assinatura: 'SÓCIO/PROPRIETÁRIO:'
+  }
 }
 
 export function agregarMovimentosPorFilial(movimentos = [], filiais = []) {

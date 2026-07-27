@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { createXlsxBlob, downloadBlob, exportCsv } from '../services/export/reportExportService'
+import { createFluxoCaixaXlsxBlob, downloadBlob, exportCsv } from '../services/export/reportExportService'
 import { useFluxoCaixaV1 } from '../modules/contas/hooks/fluxo-caixa/useFluxoCaixaV1'
 import {
   agregarMovimentosPorFilial,
@@ -60,6 +60,22 @@ function montarIdentificacaoFiscalFilial(filial) {
     ['Cidade/UF', formatarLocalidadeFilial(filial)],
     ['Endereço', formatarEnderecoFilial(filial)]
   ].filter((linha) => linha[1])
+}
+
+function montarIdentificacaoModeloFilial(filial, empresaNome) {
+  if (!filial) {
+    return {
+      empresa: empresaNome || 'Empresa ativa',
+      cnpj: '',
+      endereco: ''
+    }
+  }
+
+  return {
+    empresa: filial.razao_social || filial.nome_fantasia || filial.nome || empresaNome || '',
+    cnpj: formatarCnpj(filial.cnpj),
+    endereco: [formatarEnderecoFilial(filial), formatarLocalidadeFilial(filial)].filter(Boolean).join(' - ')
+  }
 }
 
 function montarIdentificacaoConsolidada({ empresaNome, totalFiliais }) {
@@ -190,31 +206,23 @@ export default function FluxoCaixaPage({
     const sheets = [
       {
         name: 'Consolidado Geral',
-        rows: montarAbaModeloFluxoCaixa({
-          titulo: 'Fluxo de Caixa - Consolidado Geral',
-          filialNome: 'Consolidado geral',
-          identificacao: montarIdentificacaoConsolidada({ empresaNome, totalFiliais: filiais.length }),
-          ano,
+        model: montarAbaModeloFluxoCaixa({
+          ...montarIdentificacaoModeloFilial(null, empresaNome),
           resultado,
-          rubricas,
-          observacao: OBSERVACAO_ENTRADAS
+          rubricas
         })
       },
       ...gruposFiliais.map((grupo) => ({
         name: grupo.filialNome,
-        rows: montarAbaModeloFluxoCaixa({
-          titulo: `Fluxo de Caixa - ${grupo.filialNome}`,
-          filialNome: grupo.filialNome,
-          identificacao: montarIdentificacaoFiscalFilial(grupo.filial),
-          ano,
+        model: montarAbaModeloFluxoCaixa({
+          ...montarIdentificacaoModeloFilial(grupo.filial, grupo.filialNome),
           resultado: grupo.resultado,
-          rubricas: grupo.rubricas,
-          observacao: OBSERVACAO_ENTRADAS
+          rubricas: grupo.rubricas
         })
       }))
     ]
 
-    downloadBlob(nomeArquivo('xlsx'), createXlsxBlob(sheets))
+    downloadBlob(nomeArquivo('xlsx'), createFluxoCaixaXlsxBlob(sheets))
     mostrarAviso?.('Excel do Fluxo de Caixa gerado.', 'sucesso')
   }
 

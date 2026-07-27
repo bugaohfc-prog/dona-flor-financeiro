@@ -255,6 +255,182 @@ export function createXlsxBlob(sheets) {
   return new Blob([zipStore(files)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
 }
 
+export function createFluxoCaixaXlsxBlob(sheets) {
+  const safeSheets = uniqueSheetNames((Array.isArray(sheets) ? sheets : []).map((sheet) => ({
+    name: sheet?.name,
+    model: sheet?.model || {}
+  })))
+
+  if (safeSheets.length === 0) {
+    throw new Error('Nenhuma aba disponível para o Fluxo de Caixa.')
+  }
+
+  const workbookXml = xml(`
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    ${safeSheets.map((sheet, index) => `<sheet name="${escapeXml(sheet.name)}" sheetId="${index + 1}" r:id="rId${index + 1}"/>`).join('')}
+  </sheets>
+  <definedNames>
+    ${safeSheets.map((sheet, index) => `<definedName name="_xlnm.Print_Area" localSheetId="${index}">'${escapeXml(sheet.name.replaceAll("'", "''"))}'!$A$1:$M$27</definedName>`).join('')}
+  </definedNames>
+  <calcPr calcId="191029" calcMode="auto" fullCalcOnLoad="1" forceFullCalc="1"/>
+</workbook>`)
+
+  const workbookRels = xml(`
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  ${safeSheets.map((_, index) => `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${index + 1}.xml"/>`).join('')}
+  <Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`)
+
+  const rootRels = xml(`
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`)
+
+  const contentTypes = xml(`
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+  ${safeSheets.map((_, index) => `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}
+</Types>`)
+
+  const files = [
+    { path: '[Content_Types].xml', content: contentTypes },
+    { path: '_rels/.rels', content: rootRels },
+    { path: 'xl/workbook.xml', content: workbookXml },
+    { path: 'xl/_rels/workbook.xml.rels', content: workbookRels },
+    { path: 'xl/styles.xml', content: createFluxoCaixaStylesXml() },
+    ...safeSheets.map((sheet, index) => ({
+      path: `xl/worksheets/sheet${index + 1}.xml`,
+      content: createFluxoCaixaWorksheetXml(sheet.model)
+    }))
+  ]
+
+  return new Blob([zipStore(files)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+}
+
+export function createFluxoCaixaWorksheetXml(model = {}) {
+  const meses = Array.from({ length: 12 }, (_, index) => String(model.meses?.[index] || ''))
+  const faturamento = Array.from({ length: 12 }, (_, index) => finiteNumber(model.faturamento?.[index]))
+  const despesas = Array.from({ length: 12 }, (_, rowIndex) => ({
+    nome: String(model.despesas?.[rowIndex]?.nome || ''),
+    valores: Array.from({ length: 12 }, (_, monthIndex) => finiteNumber(model.despesas?.[rowIndex]?.valores?.[monthIndex]))
+  }))
+  const totais = Array.from({ length: 12 }, (_, monthIndex) => finiteNumber(
+    model.totais?.[monthIndex] ?? faturamento[monthIndex] - despesas.reduce((sum, row) => sum + row.valores[monthIndex], 0)
+  ))
+
+  const rows = [
+    `<row r="1" ht="20" customHeight="1">${inlineStringCell('A1', model.titulo, 1)}</row>`,
+    `<row r="2" ht="18" customHeight="1">${inlineStringCell('A2', `EMPRESA: ${model.empresa || ''}`, 2)}</row>`,
+    `<row r="3" ht="18" customHeight="1">${inlineStringCell('A3', `CNPJ: ${model.cnpj || ''}`, 2)}</row>`,
+    `<row r="4" ht="18" customHeight="1">${inlineStringCell('A4', `ENDEREÇO: ${model.endereco || ''}`, 2)}</row>`,
+    `<row r="5" ht="18" customHeight="1">${inlineStringCell('A5', '', 3)}${meses.map((mes, index) => inlineStringCell(`${colName(index + 1)}5`, mes, 3)).join('')}</row>`,
+    `<row r="6" ht="18" customHeight="1">${inlineStringCell('A6', 'FATURAMENTO BRUTO', 4)}${faturamento.map((value, index) => numericCell(`${colName(index + 1)}6`, value, 5)).join('')}</row>`,
+    ...despesas.map((row, rowIndex) => {
+      const excelRow = rowIndex + 7
+      return `<row r="${excelRow}" ht="18" customHeight="1">${inlineStringCell(`A${excelRow}`, row.nome, 4)}${row.valores.map((value, index) => numericCell(`${colName(index + 1)}${excelRow}`, value, 5)).join('')}</row>`
+    }),
+    `<row r="19" ht="18" customHeight="1">${Array.from({ length: 13 }, (_, index) => inlineStringCell(`${colName(index)}19`, '', 6)).join('')}</row>`,
+    `<row r="20" ht="18" customHeight="1">${inlineStringCell('A20', 'TOTAL GERAL', 7)}${totais.map((value, index) => formulaCell(`${colName(index + 1)}20`, `${colName(index + 1)}6-SUM(${colName(index + 1)}7:${colName(index + 1)}18)`, value, 8)).join('')}</row>`,
+    `<row r="26" ht="18" customHeight="1">${inlineStringCell('C26', '', 9)}</row>`,
+    `<row r="27" ht="18" customHeight="1">${inlineStringCell('C27', model.assinatura || 'SÓCIO/PROPRIETÁRIO:', 10)}</row>`
+  ].join('')
+
+  return xml(`
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>
+  <sheetViews><sheetView showGridLines="0" workbookViewId="0"/></sheetViews>
+  <sheetFormatPr defaultRowHeight="15"/>
+  <cols>
+    <col min="1" max="1" width="46.140625" customWidth="1"/>
+    <col min="2" max="2" width="14.140625" customWidth="1"/>
+    <col min="3" max="3" width="21.7109375" customWidth="1"/>
+    <col min="4" max="7" width="14.140625" customWidth="1"/>
+    <col min="8" max="12" width="13.42578125" customWidth="1"/>
+    <col min="13" max="13" width="14.5703125" customWidth="1"/>
+  </cols>
+  <sheetData>${rows}</sheetData>
+  <mergeCells count="6">
+    <mergeCell ref="A1:M1"/><mergeCell ref="A2:M2"/><mergeCell ref="A3:M3"/><mergeCell ref="A4:M4"/>
+    <mergeCell ref="C26:G26"/><mergeCell ref="C27:G27"/>
+  </mergeCells>
+  <printOptions horizontalCentered="1"/>
+  <pageMargins left="0.511811024" right="0.511811024" top="0.787401575" bottom="0.787401575" header="0.31496062" footer="0.31496062"/>
+  <pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>
+</worksheet>`)
+}
+
+function createFluxoCaixaStylesXml() {
+  return xml(`
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;R$&quot; #,##0.00;[Red]-&quot;R$&quot; #,##0.00;&quot;R$&quot; 0.00"/></numFmts>
+  <fonts count="2">
+    <font><sz val="10"/><name val="Arial"/><family val="2"/></font>
+    <font><b/><sz val="10"/><name val="Arial"/><family val="2"/></font>
+  </fonts>
+  <fills count="3">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFB7B7B7"/><bgColor indexed="64"/></patternFill></fill>
+  </fills>
+  <borders count="3">
+    <border><left/><right/><top/><bottom/><diagonal/></border>
+    <border><left style="thin"><color rgb="FF000000"/></left><right style="thin"><color rgb="FF000000"/></right><top style="thin"><color rgb="FF000000"/></top><bottom style="thin"><color rgb="FF000000"/></bottom><diagonal/></border>
+    <border><left/><right/><top style="thin"><color rgb="FF000000"/></top><bottom/><diagonal/></border>
+  </borders>
+  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+  <cellXfs count="11">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+    <xf numFmtId="164" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="2" xfId="0" applyBorder="1"/>
+    <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+  </cellXfs>
+</styleSheet>`)
+}
+
+function uniqueSheetNames(sheets) {
+  const used = new Set()
+  return sheets.map((sheet, index) => {
+    const base = sanitizeSheetName(sheet.name || `Planilha ${index + 1}`)
+    let name = base
+    let suffix = 2
+    while (used.has(name.toLocaleLowerCase('pt-BR'))) {
+      const marker = ` (${suffix})`
+      name = `${base.slice(0, 31 - marker.length)}${marker}`
+      suffix += 1
+    }
+    used.add(name.toLocaleLowerCase('pt-BR'))
+    return { ...sheet, name }
+  })
+}
+
+function inlineStringCell(ref, value, style) {
+  return `<c r="${ref}" t="inlineStr" s="${style}"><is><t>${escapeXml(value)}</t></is></c>`
+}
+
+function numericCell(ref, value, style) {
+  return `<c r="${ref}" s="${style}"><v>${finiteNumber(value)}</v></c>`
+}
+
+function formulaCell(ref, formula, value, style) {
+  return `<c r="${ref}" s="${style}"><f>${escapeXml(formula)}</f><v>${finiteNumber(value)}</v></c>`
+}
+
+function finiteNumber(value) {
+  const number = Number(value || 0)
+  return Number.isFinite(number) ? Math.round((number + Number.EPSILON) * 100) / 100 : 0
+}
+
 function createWorksheetXml(rows) {
   const colCount = rows.reduce((max, row) => Math.max(max, row?.length || 0), 0)
   const widths = Array.from({ length: colCount }, (_, index) => {

@@ -215,7 +215,7 @@ export default function FluxoCaixaPage({
       ...gruposFiliais.map((grupo) => ({
         name: grupo.filialNome,
         model: montarAbaModeloFluxoCaixa({
-          ...montarIdentificacaoModeloFilial(grupo.filial, grupo.filialNome),
+          ...montarIdentificacaoModeloFilial(grupo.filial, empresaNome),
           resultado: grupo.resultado,
           rubricas: grupo.rubricas
         })

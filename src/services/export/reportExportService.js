@@ -323,20 +323,20 @@ export function createFluxoCaixaWorksheetXml(model = {}) {
   ))
 
   const rows = [
-    `<row r="1" ht="20" customHeight="1">${inlineStringCell('A1', model.titulo, 1)}</row>`,
-    `<row r="2" ht="18" customHeight="1">${inlineStringCell('A2', `EMPRESA: ${model.empresa || ''}`, 2)}</row>`,
-    `<row r="3" ht="18" customHeight="1">${inlineStringCell('A3', `CNPJ: ${model.cnpj || ''}`, 2)}</row>`,
-    `<row r="4" ht="18" customHeight="1">${inlineStringCell('A4', `ENDEREÇO: ${model.endereco || ''}`, 2)}</row>`,
-    `<row r="5" ht="18" customHeight="1">${inlineStringCell('A5', '', 3)}${meses.map((mes, index) => inlineStringCell(`${colName(index + 1)}5`, mes, 3)).join('')}</row>`,
-    `<row r="6" ht="18" customHeight="1">${inlineStringCell('A6', 'FATURAMENTO BRUTO', 4)}${faturamento.map((value, index) => numericCell(`${colName(index + 1)}6`, value, 5)).join('')}</row>`,
+    `<row r="1" ht="20" customHeight="1">${inlineStringCell('A1', model.titulo, 1)}${emptyCells(1, 1, 12, 4)}</row>`,
+    `<row r="2" ht="18" customHeight="1">${inlineStringCell('A2', `EMPRESA: ${model.empresa || ''}`, 1)}${emptyCells(2, 1, 12, 4)}</row>`,
+    `<row r="3" ht="18" customHeight="1">${inlineStringCell('A3', `CNPJ: ${model.cnpj || ''}`, 1)}${emptyCells(3, 1, 12, 4)}</row>`,
+    `<row r="4" ht="18" customHeight="1">${inlineStringCell('A4', `ENDEREÇO: ${model.endereco || ''}`, 3)}${emptyCells(4, 1, 12, 5)}</row>`,
+    `<row r="5" ht="18" customHeight="1">${inlineStringCell('A5', '', 6)}${meses.map((mes, index) => inlineStringCell(`${colName(index + 1)}5`, mes, 7)).join('')}</row>`,
+    `<row r="6" ht="18" customHeight="1">${inlineStringCell('A6', 'FATURAMENTO BRUTO', 8)}${faturamento.map((value, index) => numericCell(`${colName(index + 1)}6`, value, 9)).join('')}</row>`,
     ...despesas.map((row, rowIndex) => {
       const excelRow = rowIndex + 7
-      return `<row r="${excelRow}" ht="18" customHeight="1">${inlineStringCell(`A${excelRow}`, row.nome, 4)}${row.valores.map((value, index) => numericCell(`${colName(index + 1)}${excelRow}`, value, 5)).join('')}</row>`
+      return `<row r="${excelRow}" ht="18" customHeight="1">${inlineStringCell(`A${excelRow}`, row.nome, 8)}${row.valores.map((value, index) => numericCell(`${colName(index + 1)}${excelRow}`, value, 9)).join('')}</row>`
     }),
-    `<row r="19" ht="18" customHeight="1">${Array.from({ length: 13 }, (_, index) => inlineStringCell(`${colName(index)}19`, '', 6)).join('')}</row>`,
-    `<row r="20" ht="18" customHeight="1">${inlineStringCell('A20', 'TOTAL GERAL', 7)}${totais.map((value, index) => formulaCell(`${colName(index + 1)}20`, `${colName(index + 1)}6-SUM(${colName(index + 1)}7:${colName(index + 1)}18)`, value, 8)).join('')}</row>`,
-    `<row r="26" ht="18" customHeight="1">${inlineStringCell('C26', '', 9)}</row>`,
-    `<row r="27" ht="18" customHeight="1">${inlineStringCell('C27', model.assinatura || 'SÓCIO/PROPRIETÁRIO:', 10)}</row>`
+    `<row r="19" ht="18" customHeight="1">${inlineStringCell('A19', '', 8)}${emptyCells(19, 1, 12, 9)}</row>`,
+    `<row r="20" ht="18" customHeight="1">${inlineStringCell('A20', 'TOTAL GERAL', 10)}${totais.map((value, index) => formulaCell(`${colName(index + 1)}20`, `${colName(index + 1)}6-SUM(${colName(index + 1)}7:${colName(index + 1)}18)`, value, 11)).join('')}</row>`,
+    `<row r="26" ht="18" customHeight="1">${inlineStringCell('C26', '', 12)}</row>`,
+    `<row r="27" ht="18" customHeight="1">${inlineStringCell('C27', model.assinatura || 'SÓCIO/PROPRIETÁRIO:', 13)}</row>`
   ].join('')
 
   return xml(`
@@ -366,33 +366,43 @@ export function createFluxoCaixaWorksheetXml(model = {}) {
 function createFluxoCaixaStylesXml() {
   return xml(`
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;R$&quot; #,##0.00;[Red]-&quot;R$&quot; #,##0.00;&quot;R$&quot; 0.00"/></numFmts>
-  <fonts count="2">
+  <numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;R$&quot; #,##0.00;-&quot;R$&quot; #,##0.00;&quot;-&quot;"/></numFmts>
+  <fonts count="3">
     <font><sz val="10"/><name val="Arial"/><family val="2"/></font>
     <font><b/><sz val="10"/><name val="Arial"/><family val="2"/></font>
+    <font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Arial"/><family val="2"/></font>
   </fonts>
-  <fills count="3">
+  <fills count="4">
     <fill><patternFill patternType="none"/></fill>
     <fill><patternFill patternType="gray125"/></fill>
-    <fill><patternFill patternType="solid"><fgColor rgb="FFB7B7B7"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF595959"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF7F7F7F"/><bgColor indexed="64"/></patternFill></fill>
   </fills>
-  <borders count="3">
+  <borders count="8">
     <border><left/><right/><top/><bottom/><diagonal/></border>
     <border><left style="thin"><color rgb="FF000000"/></left><right style="thin"><color rgb="FF000000"/></right><top style="thin"><color rgb="FF000000"/></top><bottom style="thin"><color rgb="FF000000"/></bottom><diagonal/></border>
+    <border><left style="medium"><color rgb="FF000000"/></left><right/><top/><bottom/><diagonal/></border>
+    <border><left style="medium"><color rgb="FF000000"/></left><right/><top/><bottom style="medium"><color rgb="FF000000"/></bottom><diagonal/></border>
+    <border><left/><right/><top/><bottom style="medium"><color rgb="FF000000"/></bottom><diagonal/></border>
+    <border><left style="medium"><color rgb="FF000000"/></left><right/><top style="medium"><color rgb="FF000000"/></top><bottom style="medium"><color rgb="FF000000"/></bottom><diagonal/></border>
+    <border><left/><right/><top style="medium"><color rgb="FF000000"/></top><bottom/><diagonal/></border>
     <border><left/><right/><top style="thin"><color rgb="FF000000"/></top><bottom/><diagonal/></border>
   </borders>
   <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-  <cellXfs count="11">
+  <cellXfs count="14">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-    <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="2" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="2" borderId="3" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
+    <xf numFmtId="0" fontId="2" fillId="2" borderId="4" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>
+    <xf numFmtId="0" fontId="2" fillId="3" borderId="5" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="3" borderId="6" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="2" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
     <xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/>
-    <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
-    <xf numFmtId="164" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
-    <xf numFmtId="0" fontId="0" fillId="0" borderId="2" xfId="0" applyBorder="1"/>
+    <xf numFmtId="0" fontId="2" fillId="2" borderId="3" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+    <xf numFmtId="164" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="7" xfId="0" applyBorder="1"/>
     <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
   </cellXfs>
 </styleSheet>`)
@@ -424,6 +434,12 @@ function numericCell(ref, value, style) {
 
 function formulaCell(ref, formula, value, style) {
   return `<c r="${ref}" s="${style}"><f>${escapeXml(formula)}</f><v>${finiteNumber(value)}</v></c>`
+}
+
+function emptyCells(row, startColumn, count, style) {
+  return Array.from({ length: count }, (_, index) => (
+    inlineStringCell(`${colName(startColumn + index)}${row}`, '', style)
+  )).join('')
 }
 
 function finiteNumber(value) {

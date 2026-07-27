@@ -45,12 +45,15 @@ test('modelo do cliente mantém exatamente 12 meses e as rubricas na ordem ofici
   assert.equal('quantidadeMovimentos' in modelo, false)
 })
 
-test('worksheet usa fórmulas mensais reais, moeda pt-BR, assinatura e impressão em paisagem', () => {
+test('worksheet usa fórmulas, faixa escura, moeda pt-BR, zeros contábeis e impressão em paisagem', async () => {
   const modelo = criarModelo([
     { tipo: 'entrada', mes: 1, valor: 1000 },
     { tipo: 'saida', mes: 1, valor: 250, rubrica: RUBRICAS_SAIDA_FLUXO_CAIXA[0] }
   ])
   const worksheet = createFluxoCaixaWorksheetXml(modelo)
+  const workbook = new TextDecoder().decode(await createFluxoCaixaXlsxBlob([
+    { name: 'Consolidado Geral', model: modelo }
+  ]).arrayBuffer())
 
   assert.match(worksheet, /<mergeCell ref="A1:M1"\/>/)
   assert.match(worksheet, /<f>B6-SUM\(B7:B18\)<\/f><v>750<\/v>/)
@@ -58,6 +61,10 @@ test('worksheet usa fórmulas mensais reais, moeda pt-BR, assinatura e impressã
   assert.match(worksheet, /SÓCIO\/PROPRIETÁRIO:/)
   assert.match(worksheet, /orientation="landscape"/)
   assert.match(worksheet, /fitToWidth="1"/)
+  assert.match(workbook, /fgColor rgb="FF595959"/)
+  assert.match(workbook, /fgColor rgb="FF7F7F7F"/)
+  assert.match(workbook, /color rgb="FFFFFFFF"/)
+  assert.match(workbook, /#,##0\.00;&quot;-&quot;/)
   assert.doesNotMatch(worksheet, /Total anual|Gerado em|Quantidade de movimentos|Observação/)
 })
 

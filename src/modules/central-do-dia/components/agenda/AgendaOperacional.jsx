@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import AccountPaymentModal from '../../../../components/modals/AccountPaymentModal.jsx'
 import PageHero from '../../../../components/shared/PageHero.jsx'
 import { useAgendaOperacional } from '../../hooks/useAgendaOperacional.js'
-import AgendaOperacionalItem from './AgendaOperacionalItem.jsx'
 import AgendaOperacionalSection from './AgendaOperacionalSection.jsx'
 import './AgendaOperacional.css'
 
@@ -14,21 +14,12 @@ const FILTROS_ORIGEM = [
 ]
 
 const SECOES = [
-  { id: 'atrasados', titulo: 'Atrasados', descricao: 'Itens com prazo vencido que exigem atenção.' },
-  { id: 'hoje', titulo: 'Hoje', descricao: 'Ações e prazos previstos para hoje.' },
-  { id: 'proximosSeteDias', titulo: 'Próximos 7 dias', descricao: 'Prioridades da próxima semana.' },
-  { id: 'proximosQuinzeDias', titulo: 'De 8 a 15 dias', descricao: 'Prazos para preparar com antecedência.' },
-  { id: 'proximosTrintaDias', titulo: 'De 16 a 30 dias', descricao: 'Compromissos do restante da janela operacional.' },
+  { id: 'atrasados', titulo: 'Atrasadas', descricao: 'Compromissos vencidos que exigem ação.', abrirPrimeiroDia: true },
+  { id: 'hoje', titulo: 'Hoje', descricao: 'Compromissos com vencimento hoje.', abrirPrimeiroDia: true },
+  { id: 'proximosSeteDias', titulo: 'Próximos 7 dias', descricao: 'Compromissos imediatos da próxima semana.', abrirPrimeiroDia: true },
+  { id: 'futuras', titulo: 'Futuras', descricao: 'Demais compromissos futuros, organizados por dia.' },
   { id: 'excecoes', titulo: 'Exceções', descricao: 'Inconsistências objetivas que precisam de revisão.' },
   { id: 'semDataAcionaveis', titulo: 'Ações sem data', descricao: 'Ações válidas sem prazo temporal definido.' }
-]
-
-const CONTADORES = [
-  ['atrasados', 'Atrasados'],
-  ['hoje', 'Hoje'],
-  ['proximosSeteDias', 'Próximos 7 dias'],
-  ['oitoATrintaDias', 'De 8 a 30 dias'],
-  ['excecoes', 'Exceções']
 ]
 
 function mensagemFonte(fonte, erro) {
@@ -42,6 +33,7 @@ function mensagemFonte(fonte, erro) {
 }
 
 export default function AgendaOperacional({
+  styles,
   empresaId,
   filiais = [],
   contas = [],
@@ -52,9 +44,14 @@ export default function AgendaOperacional({
   atualizarNotas,
   navegarPara,
   navegarParaOrigemAgenda,
+  podeEditarFinanceiro = false,
+  abrirEdicaoConta,
+  marcarComoPago,
   formatarValor,
-  formatarData
+  formatarData,
+  limitarDataInput
 }) {
+  const [contaEmBaixa, setContaEmBaixa] = useState(null)
   const {
     agenda,
     resumo,
@@ -82,6 +79,10 @@ export default function AgendaOperacional({
     () => (filiais || []).filter((filial) => filial?.ativo !== false),
     [filiais]
   )
+  const contasPorId = useMemo(
+    () => new Map((contas || []).map((conta) => [String(conta?.id || ''), conta])),
+    [contas]
+  )
   const filtrosVisiveis = FILTROS_ORIGEM.filter((filtro) => !filtro.requerPessoas || podeAcessarPessoas)
 
   useEffect(() => {
@@ -93,7 +94,7 @@ export default function AgendaOperacional({
 
   function abrirOrigem(item) {
     const referencia = item?.referenciaOrigem
-    if (item?.destino === 'contas' && referencia?.tipo === 'conta' && referencia.id) {
+    if (referencia?.tipo === 'conta' && referencia.id) {
       navegarParaOrigemAgenda('conta', referencia.id)
       return
     }
@@ -102,6 +103,16 @@ export default function AgendaOperacional({
       return
     }
     if (item?.destino) navegarPara(item.destino)
+  }
+
+  function obterConta(item) {
+    if (item?.referenciaOrigem?.tipo !== 'conta') return null
+    return contasPorId.get(String(item.referenciaOrigem.id)) || null
+  }
+
+  async function confirmarPagamento(payload) {
+    if (!contaEmBaixa?.id || typeof marcarComoPago !== 'function') return false
+    return marcarComoPago(contaEmBaixa.id, payload)
   }
 
   const acoesCabecalho = (
@@ -128,7 +139,7 @@ export default function AgendaOperacional({
   if (!empresaId) {
     return (
       <main className="agenda-operacional-page">
-        <PageHero kicker="Operação" title="Agenda — Central de ações" description="Acompanhe prazos, pendências e ações que exigem atenção." actions={acoesCabecalho} />
+        <PageHero kicker="Operação" title="Agenda operacional" description="Acompanhe compromissos por dia e aja apenas no que exige atenção." actions={acoesCabecalho} />
         <section className="agenda-operacional-estado" role="status">
           <h2>Selecione uma empresa</h2>
           <p>A Agenda será carregada quando houver uma empresa ativa.</p>
@@ -141,8 +152,8 @@ export default function AgendaOperacional({
     <main className="agenda-operacional-page">
       <PageHero
         kicker="Operação"
-        title="Agenda — Central de ações"
-        description="Acompanhe prazos, pendências e ações que exigem atenção."
+        title="Agenda operacional"
+        description="Acompanhe compromissos por dia e aja apenas no que exige atenção."
         actions={acoesCabecalho}
         actionsClassName="agenda-operacional-acoes-cabecalho"
       />
@@ -170,15 +181,6 @@ export default function AgendaOperacional({
 
       {carregandoPessoas && <p className="agenda-operacional-carregando-pessoas" role="status">Atualizando informações de Pessoas…</p>}
 
-      <section className="agenda-operacional-contadores" aria-label="Resumo da Agenda">
-        {CONTADORES.map(([chave, rotulo]) => (
-          <article key={chave} className="agenda-operacional-contador">
-            <span>{rotulo}</span>
-            <strong>{resumo.contadores[chave]}</strong>
-          </article>
-        ))}
-      </section>
-
       {carregandoInicial || (carregandoPessoas && resumo.totalItens === 0) ? (
         <section className="agenda-operacional-estado" role="status">
           <h2>Carregando Agenda</h2>
@@ -190,35 +192,33 @@ export default function AgendaOperacional({
           <p>{origemSelecionada === 'todos' ? 'Não há ações dentro da janela operacional atual.' : 'Escolha outra origem para consultar os demais itens.'}</p>
         </section>
       ) : (
-        <>
-          {resumo.atencaoPrimeiro.length > 0 && (
-            <section className="agenda-operacional-atencao" aria-labelledby="agenda-atencao-titulo">
-              <div className="agenda-operacional-titulo-secao">
-                <h2 id="agenda-atencao-titulo">Atenção primeiro</h2>
-                <p>As três maiores prioridades entre as seções abaixo.</p>
-              </div>
-              <div className="agenda-operacional-atencao-grid">
-                {resumo.atencaoPrimeiro.map((item) => (
-                  <AgendaOperacionalItem key={item.id} item={item} formatarValor={formatarValor} formatarData={formatarData} onAbrir={abrirOrigem} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          <div className="agenda-operacional-secoes">
-            {SECOES.map((secao) => (
-              <AgendaOperacionalSection
-                key={secao.id}
-                {...secao}
-                itens={agenda.secoes[secao.id] || []}
-                formatarValor={formatarValor}
-                formatarData={formatarData}
-                onAbrir={abrirOrigem}
-              />
-            ))}
-          </div>
-        </>
+        <div className="agenda-operacional-secoes">
+          {SECOES.map((secao) => (
+            <AgendaOperacionalSection
+              key={secao.id}
+              {...secao}
+              itens={agenda.secoes[secao.id] || []}
+              formatarValor={formatarValor}
+              formatarData={formatarData}
+              obterConta={obterConta}
+              onAbrir={abrirOrigem}
+              onEditar={abrirEdicaoConta}
+              onPagar={setContaEmBaixa}
+              podeEditarFinanceiro={podeEditarFinanceiro}
+            />
+          ))}
+        </div>
       )}
+
+      <AccountPaymentModal
+        styles={styles}
+        conta={contaEmBaixa}
+        formatarValor={formatarValor}
+        formatarData={formatarData}
+        limitarDataInput={limitarDataInput}
+        onClose={() => setContaEmBaixa(null)}
+        onConfirm={confirmarPagamento}
+      />
     </main>
   )
 }

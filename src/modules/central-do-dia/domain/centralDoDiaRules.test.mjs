@@ -60,6 +60,21 @@ test('exclui contas pagas e notas concluídas ou na lixeira', () => {
   assert.deepEqual(notas.map((item) => item.id), ['nota:aberta'])
 })
 
+test('Agenda financeira exibe saldo restante de conta parcialmente paga', () => {
+  const [conta] = normalizarContasCentral([{
+    id: 'parcial',
+    descricao: 'Conta parcial',
+    status: 'pendente',
+    valor: 200,
+    saldoPendenteParcial: 120,
+    pagamentosParciaisTotal: 80,
+    data_vencimento: hoje
+  }], { dataBaseISO: hoje })
+
+  assert.equal(conta.valor, 120)
+  assert.equal(conta.referenciaOrigem.id, 'parcial')
+})
+
 test('normaliza valor ausente e rejeita data inválida', () => {
   const item = criarItemCentral({ id: 'x', tipo: 'conta', modulo: 'Contas', titulo: 'Sem valor', valor: '' })
   assert.equal(item.valor, null)

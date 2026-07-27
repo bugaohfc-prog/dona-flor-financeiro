@@ -5,29 +5,59 @@ function rotuloSituacao(item) {
   return item?.inconsistencia ? 'Atenção' : 'Informação'
 }
 
-export default function AgendaOperacionalItem({ item, formatarValor, formatarData, onAbrir }) {
+export default function AgendaOperacionalItem({
+  item,
+  conta,
+  formatarValor,
+  formatarData,
+  onAbrir,
+  onEditar,
+  onPagar,
+  podeEditarFinanceiro = false
+}) {
   const temValor = Number.isFinite(item?.valor)
+  const ehConta = item?.referenciaOrigem?.tipo === 'conta' && Boolean(conta?.id)
+  const ehImposto = item?.tipo === 'imposto'
+  const ehRecorrente = Boolean(conta?.recorrencia_id || conta?.df_contas_recorrentes)
+  const possuiPagamentoParcial = Number(conta?.pagamentosParciaisTotal || 0) > 0
+
   return (
     <article className="agenda-operacional-item">
       <div className="agenda-operacional-item-topo">
         <span className={`agenda-operacional-situacao agenda-operacional-situacao-${item?.prioridade || 'baixa'}`}>
           {rotuloSituacao(item)}
         </span>
-        <span className="agenda-operacional-origem">{item?.modulo}</span>
+        <div className="agenda-operacional-item-badges">
+          {ehImposto && <span className="agenda-operacional-badge agenda-operacional-badge-imposto">Imposto</span>}
+          {ehRecorrente && <span className="agenda-operacional-badge agenda-operacional-badge-recorrente">Recorrente</span>}
+          {possuiPagamentoParcial && <span className="agenda-operacional-badge agenda-operacional-badge-parcial">Pagamento parcial</span>}
+          {!ehImposto && !ehRecorrente && !possuiPagamentoParcial && (
+            <span className="agenda-operacional-origem">{item?.modulo}</span>
+          )}
+        </div>
       </div>
       <div className="agenda-operacional-item-conteudo">
         <h3>{item?.titulo}</h3>
-        {item?.descricao && <p>{item.descricao}</p>}
         <div className="agenda-operacional-item-meta">
           {item?.dataReferencia && <span>Data: {formatarData(item.dataReferencia)}</span>}
-          {temValor && <strong>{formatarValor(item.valor)}</strong>}
+          {temValor && (
+            <strong>
+              {possuiPagamentoParcial && <small>Saldo restante</small>}
+              {formatarValor(item.valor)}
+            </strong>
+          )}
         </div>
       </div>
-      <div className="agenda-operacional-item-acao">
-        <span>{item?.proximaAcao}</span>
+      <div className="agenda-operacional-item-acoes">
         <button type="button" className="outline" onClick={() => onAbrir(item)} disabled={!item?.destino}>
-          Abrir origem
+          {ehConta ? 'Abrir conta' : 'Abrir origem'}
         </button>
+        {ehConta && podeEditarFinanceiro && (
+          <>
+            <button type="button" className="outline" onClick={() => onEditar(conta)}>Editar</button>
+            <button type="button" onClick={() => onPagar(conta)}>Marcar pagamento</button>
+          </>
+        )}
       </div>
     </article>
   )

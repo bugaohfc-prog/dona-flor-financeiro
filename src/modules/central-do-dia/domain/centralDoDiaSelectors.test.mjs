@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { agruparProximosVencimentos, criarItemCentral, deduplicarItensOperacionais, montarBaseOperacional } from './centralDoDiaRules.js'
-import { deveCarregarAtividadeCentral, montarCentralDoDia, selecionarAgendaOperacional, selecionarCentralLegada, selecionarResumoDashboard } from './centralDoDiaSelectors.js'
+import {
+  agruparItensAgendaPorDia,
+  deveCarregarAtividadeCentral,
+  montarCentralDoDia,
+  resumirSecaoAgenda,
+  selecionarAgendaOperacional,
+  selecionarCentralLegada,
+  selecionarResumoDashboard
+} from './centralDoDiaSelectors.js'
 
 const hoje = '2026-07-14'
 
@@ -62,7 +70,7 @@ test('eventos diferentes do mesmo colaborador nao sao duplicados', () => {
 test('Agenda coloca cada item em uma unica secao principal', () => {
   const itensOperacionais = [
     item({ id: 'atrasado', dias: -1 }), item({ id: 'hoje', dias: 0 }), item({ id: 'sete', dias: 7 }),
-    item({ id: 'quinze', dias: 15 }), item({ id: 'trinta', dias: 30 }),
+    item({ id: 'quinze', dias: 15 }), item({ id: 'trinta', dias: 30 }), item({ id: 'distante', dias: 90 }),
     item({ id: 'excecao', inconsistencia: true }), item({ id: 'sem-data' })
   ]
   const agenda = selecionarAgendaOperacional({ itensOperacionais })
@@ -70,20 +78,33 @@ test('Agenda coloca cada item em uma unica secao principal', () => {
   assert.deepEqual(agenda.secoes.atrasados.map((registro) => registro.id), ['atrasado'])
   assert.deepEqual(agenda.secoes.hoje.map((registro) => registro.id), ['hoje'])
   assert.deepEqual(agenda.secoes.proximosSeteDias.map((registro) => registro.id), ['sete'])
-  assert.deepEqual(agenda.secoes.proximosQuinzeDias.map((registro) => registro.id), ['quinze'])
-  assert.deepEqual(agenda.secoes.proximosTrintaDias.map((registro) => registro.id), ['trinta'])
+  assert.deepEqual(agenda.secoes.futuras.map((registro) => registro.id), ['distante', 'quinze', 'trinta'])
   assert.deepEqual(agenda.secoes.excecoes.map((registro) => registro.id), ['excecao'])
   assert.deepEqual(agenda.secoes.semDataAcionaveis.map((registro) => registro.id), ['sem-data'])
   assert.equal(new Set(ids).size, itensOperacionais.length)
 })
 
-test('Agenda nao confunde item datado fora de 30 dias com item sem data', () => {
+test('Agenda mantem compromissos futuros alem de 30 dias na secao Futuras', () => {
   const futuro = item({ id: 'futuro', dias: 31 })
   const base = { itensOperacionais: [futuro] }
   const agenda = selecionarAgendaOperacional(base)
   assert.equal(base.itensOperacionais[0], futuro)
   assert.equal(agenda.secoes.semDataAcionaveis.length, 0)
-  assert.equal(agenda.totalItens, 0)
+  assert.deepEqual(agenda.secoes.futuras.map((registro) => registro.id), ['futuro'])
+  assert.equal(agenda.totalItens, 1)
+})
+
+test('Agenda agrupa itens por dia e calcula quantidade e valor da secao', () => {
+  const itens = [
+    { ...item({ id: 'a', dias: 1 }), dataReferencia: '2026-07-15', valor: 50 },
+    { ...item({ id: 'b', dias: 1 }), dataReferencia: '2026-07-15', valor: 30 },
+    { ...item({ id: 'c', dias: 2 }), dataReferencia: '2026-07-16', valor: null }
+  ]
+
+  const grupos = agruparItensAgendaPorDia(itens)
+  assert.deepEqual(grupos.map((grupo) => grupo.id), ['2026-07-15', '2026-07-16'])
+  assert.deepEqual(grupos[0].resumo, { quantidade: 2, valor: 80 })
+  assert.deepEqual(resumirSecaoAgenda(itens), { quantidade: 3, valor: 80 })
 })
 
 test('Agenda nao promove informacao sem destino para semDataAcionaveis', () => {

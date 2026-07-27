@@ -4567,6 +4567,7 @@ export default function App() {
     return renderAppFrame(
       <AppSuspenseBoundary>
         <LazyAgendaPage
+          styles={styles}
           empresaId={empresaId}
           filiais={filiais}
           contas={contasOperacionais}
@@ -4580,6 +4581,10 @@ export default function App() {
           atualizarNotas={() => buscarNotas(empresaId)}
           formatarValor={formatarValor}
           formatarData={formatarData}
+          limitarDataInput={limitarDataInput}
+          podeEditarFinanceiro={podeEditarFinanceiro()}
+          abrirEdicaoConta={abrirEdicaoConta}
+          marcarComoPago={marcarComoPago}
           navegarPara={navegarPara}
           navegarParaOrigemAgenda={navegarParaOrigemAgenda}
         />

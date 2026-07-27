@@ -1,62 +1,54 @@
-import { useEffect, useState } from 'react'
-import AgendaOperacionalItem from './AgendaOperacionalItem.jsx'
+import { useMemo } from 'react'
+import { agruparItensAgendaPorDia, resumirSecaoAgenda } from '../../domain/centralDoDiaSelectors.js'
+import AgendaOperacionalDayGroup from './AgendaOperacionalDayGroup.jsx'
 
-const LIMITE_INICIAL = 5
-
-export default function AgendaOperacionalSection({ id, titulo, descricao, itens, formatarValor, formatarData, onAbrir }) {
-  const [expandida, setExpandida] = useState(false)
-  const [recolhida, setRecolhida] = useState(false)
-
-  useEffect(() => {
-    setExpandida(false)
-    setRecolhida(false)
-  }, [itens])
+export default function AgendaOperacionalSection({
+  id,
+  titulo,
+  descricao,
+  itens,
+  abrirPrimeiroDia = false,
+  formatarValor,
+  formatarData,
+  obterConta,
+  onAbrir,
+  onEditar,
+  onPagar,
+  podeEditarFinanceiro
+}) {
+  const grupos = useMemo(() => agruparItensAgendaPorDia(itens), [itens])
+  const resumo = useMemo(() => resumirSecaoAgenda(itens), [itens])
 
   if (!itens?.length) return null
-  const itensVisiveis = expandida ? itens : itens.slice(0, LIMITE_INICIAL)
-  const conteudoId = `agenda-operacional-secao-${id}`
 
   return (
-    <section className="agenda-operacional-secao" aria-labelledby={`${conteudoId}-titulo`}>
+    <section className={`agenda-operacional-secao agenda-operacional-secao-${id}`} aria-labelledby={`agenda-secao-${id}-titulo`}>
       <div className="agenda-operacional-secao-cabecalho">
         <div>
-          <h2 id={`${conteudoId}-titulo`}>{titulo} <span>{itens.length}</span></h2>
+          <h2 id={`agenda-secao-${id}-titulo`}>{titulo}</h2>
           {descricao && <p>{descricao}</p>}
         </div>
-        <button
-          type="button"
-          className="outline agenda-operacional-recolher"
-          aria-expanded={!recolhida}
-          aria-controls={conteudoId}
-          onClick={() => setRecolhida((valor) => !valor)}
-        >
-          {recolhida ? 'Expandir' : 'Recolher'}
-        </button>
-      </div>
-      {!recolhida && (
-        <div id={conteudoId} className={`agenda-operacional-lista ${id === 'excecoes' ? 'agenda-operacional-lista-larga' : ''}`}>
-          {itensVisiveis.map((item) => (
-            <AgendaOperacionalItem
-              key={item.id}
-              item={item}
-              formatarValor={formatarValor}
-              formatarData={formatarData}
-              onAbrir={onAbrir}
-            />
-          ))}
+        <div className="agenda-operacional-secao-indicadores" aria-label={`Resumo de ${titulo}`}>
+          <span>{resumo.quantidade} {resumo.quantidade === 1 ? 'item' : 'itens'}</span>
+          <strong>{formatarValor(resumo.valor)}</strong>
         </div>
-      )}
-      {!recolhida && itens.length > LIMITE_INICIAL && (
-        <button
-          type="button"
-          className="outline agenda-operacional-mostrar-mais"
-          aria-expanded={expandida}
-          aria-controls={conteudoId}
-          onClick={() => setExpandida((valor) => !valor)}
-        >
-          {expandida ? 'Mostrar menos' : `Mostrar mais (${itens.length - LIMITE_INICIAL})`}
-        </button>
-      )}
+      </div>
+      <div className="agenda-operacional-dias">
+        {grupos.map((grupo, indice) => (
+          <AgendaOperacionalDayGroup
+            key={grupo.id}
+            grupo={grupo}
+            abertoInicialmente={abrirPrimeiroDia && indice === 0}
+            formatarValor={formatarValor}
+            formatarData={formatarData}
+            obterConta={obterConta}
+            onAbrir={onAbrir}
+            onEditar={onEditar}
+            onPagar={onPagar}
+            podeEditarFinanceiro={podeEditarFinanceiro}
+          />
+        ))}
+      </div>
     </section>
   )
 }

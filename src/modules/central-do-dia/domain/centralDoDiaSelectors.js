@@ -33,8 +33,7 @@ export function selecionarAgendaOperacional(base = {}) {
     atrasados: [],
     hoje: [],
     proximosSeteDias: [],
-    proximosQuinzeDias: [],
-    proximosTrintaDias: [],
+    futuras: [],
     excecoes: [],
     semDataAcionaveis: []
   }
@@ -44,8 +43,7 @@ export function selecionarAgendaOperacional(base = {}) {
       if (item.dias < 0) secoes.atrasados.push(item)
       else if (item.dias === 0) secoes.hoje.push(item)
       else if (item.dias <= 7) secoes.proximosSeteDias.push(item)
-      else if (item.dias <= 15) secoes.proximosQuinzeDias.push(item)
-      else if (item.dias <= 30) secoes.proximosTrintaDias.push(item)
+      else secoes.futuras.push(item)
       return
     }
 
@@ -53,12 +51,16 @@ export function selecionarAgendaOperacional(base = {}) {
     else if (possuiAcaoObjetiva(item)) secoes.semDataAcionaveis.push(item)
   })
 
+  secoes.futuras.sort((a, b) => (
+    String(a?.dataReferencia || '').localeCompare(String(b?.dataReferencia || ''))
+    || String(a?.id || '').localeCompare(String(b?.id || ''))
+  ))
+
   const itensPrincipais = [
     ...secoes.atrasados,
     ...secoes.hoje,
     ...secoes.proximosSeteDias,
-    ...secoes.proximosQuinzeDias,
-    ...secoes.proximosTrintaDias,
+    ...secoes.futuras,
     ...secoes.excecoes,
     ...secoes.semDataAcionaveis
   ]
@@ -93,7 +95,7 @@ export function resumirAgendaOperacional(agenda = {}, { limiteAtencao = 3 } = {}
       atrasados: (secoes.atrasados || []).length,
       hoje: (secoes.hoje || []).length,
       proximosSeteDias: (secoes.proximosSeteDias || []).length,
-      oitoATrintaDias: (secoes.proximosQuinzeDias || []).length + (secoes.proximosTrintaDias || []).length,
+      oitoATrintaDias: (secoes.futuras || []).filter((item) => item?.dias <= 30).length,
       excecoes: (secoes.excecoes || []).length
     },
     atencaoPrimeiro: (agenda.atencaoPrimeiro || []).slice(0, limite),
@@ -101,10 +103,47 @@ export function resumirAgendaOperacional(agenda = {}, { limiteAtencao = 3 } = {}
   }
 }
 
+export function resumirSecaoAgenda(itens = []) {
+  return (itens || []).reduce((resumo, item) => {
+    const valor = Number(item?.valor)
+    return {
+      quantidade: resumo.quantidade + 1,
+      valor: resumo.valor + (Number.isFinite(valor) ? valor : 0)
+    }
+  }, { quantidade: 0, valor: 0 })
+}
+
+export function agruparItensAgendaPorDia(itens = []) {
+  const grupos = new Map()
+
+  for (const item of itens || []) {
+    const data = String(item?.dataReferencia || '').slice(0, 10)
+    const chave = data || 'sem-data'
+    if (!grupos.has(chave)) grupos.set(chave, [])
+    grupos.get(chave).push(item)
+  }
+
+  return [...grupos.entries()]
+    .sort(([dataA], [dataB]) => {
+      if (dataA === 'sem-data') return 1
+      if (dataB === 'sem-data') return -1
+      return dataA.localeCompare(dataB)
+    })
+    .map(([data, itensDoDia]) => ({
+      id: data,
+      data: data === 'sem-data' ? null : data,
+      itens: ordenar(itensDoDia),
+      resumo: resumirSecaoAgenda(itensDoDia)
+    }))
+}
+
 export function selecionarResumoDashboard(base = {}, { limitePrioridades = 3 } = {}) {
   const agenda = selecionarAgendaOperacional(base)
   const itens = base.itensOperacionais || []
   const limite = Math.max(0, Number(limitePrioridades) || 0)
+  const prioridadesImediatas = agenda.atencaoPrimeiro.filter((item) => (
+    !Number.isFinite(item?.dias) || item.dias <= 30
+  ))
 
   return {
     contadores: {
@@ -115,7 +154,7 @@ export function selecionarResumoDashboard(base = {}, { limitePrioridades = 3 } =
       // Pessoas é um recorte por origem e pode se sobrepor às faixas temporais.
       pessoas: itens.filter(ehPessoa).length
     },
-    prioridades: agenda.atencaoPrimeiro.slice(0, limite),
+    prioridades: prioridadesImediatas.slice(0, limite),
     possuiDados: itens.length > 0
   }
 }

@@ -1,6 +1,7 @@
 import AgendaOperacional from '../modules/central-do-dia/components/agenda/AgendaOperacional.jsx'
 
 export default function AgendaPage({
+  styles,
   empresaId,
   filiais,
   contas,
@@ -11,11 +12,16 @@ export default function AgendaPage({
   atualizarNotas,
   navegarPara,
   navegarParaOrigemAgenda,
+  podeEditarFinanceiro,
+  abrirEdicaoConta,
+  marcarComoPago,
   formatarValor,
-  formatarData
+  formatarData,
+  limitarDataInput
 }) {
   return (
     <AgendaOperacional
+      styles={styles}
       empresaId={empresaId}
       filiais={filiais}
       contas={contas}
@@ -26,8 +32,12 @@ export default function AgendaPage({
       atualizarNotas={atualizarNotas}
       navegarPara={navegarPara}
       navegarParaOrigemAgenda={navegarParaOrigemAgenda}
+      podeEditarFinanceiro={podeEditarFinanceiro}
+      abrirEdicaoConta={abrirEdicaoConta}
+      marcarComoPago={marcarComoPago}
       formatarValor={formatarValor}
       formatarData={formatarData}
+      limitarDataInput={limitarDataInput}
     />
   )
 }

@@ -12,7 +12,8 @@ function Topbar({
   empresaId = '',
   trocarEmpresaAtiva,
   trocandoEmpresa = false,
-  contextoModulo = 'Área de trabalho'
+  contextoModulo = 'Área de trabalho',
+  menuNavegacaoTriggerRef
 }) {
   const exibirSeletorEmpresa = canSwitchCompany && empresasDisponiveis.length > 0
   const empresaAtual = useMemo(
@@ -39,7 +40,7 @@ function Topbar({
   return (
     <section className="no-print top-shell top-shell-clean" style={styles.usuarioTopo}>
       <div className="top-shell-context">
-        <button className="top-shell-logo" style={styles.logoMarca} onClick={abrirDashboard} title="Ir para o painel">
+        <button type="button" className="top-shell-logo" style={styles.logoMarca} onClick={abrirDashboard} title="Ir para o painel">
           <img src="/icon-192.png" alt="DNA Gestão" style={styles.logoImagem} />
           <span>
             <strong>DNA Gestão</strong>
@@ -72,7 +73,18 @@ function Topbar({
             </div>
           )
         )}
-        <button className="mobile-menu-trigger" style={styles.btnMenuTopo} onClick={alternarMenuMobile} aria-expanded={menuNavegacaoAberto}>☰</button>
+        <button
+          ref={menuNavegacaoTriggerRef}
+          type="button"
+          className="mobile-menu-trigger"
+          style={styles.btnMenuTopo}
+          onClick={alternarMenuMobile}
+          aria-expanded={menuNavegacaoAberto}
+          aria-controls="mobile-navigation-dialog"
+          aria-label={menuNavegacaoAberto ? 'Fechar menu de navegação' : 'Abrir menu de navegação'}
+        >
+          ☰
+        </button>
       </div>
     </section>
   )

@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react'
 
 const COMPANY_SWITCHER_STYLE = {
   margin: '12px 0 18px',
@@ -33,7 +33,7 @@ const COMPANY_NAME_STYLE = {
   fontSize: 15
 }
 
-const MobileMenuItem = memo(function MobileMenuItem({ item, styles, navegarPara, onPreloadRoute }) {
+const MobileMenuItem = memo(function MobileMenuItem({ item, styles, navegarPara, onPreloadRoute, telaAtual }) {
   const handleClick = useCallback(() => {
     navegarPara(item.tela)
   }, [item.tela, navegarPara])
@@ -50,6 +50,7 @@ const MobileMenuItem = memo(function MobileMenuItem({ item, styles, navegarPara,
       onFocus={handlePreload}
       onTouchStart={handlePreload}
       onClick={handleClick}
+      aria-current={telaAtual === item.tela ? 'page' : undefined}
     >
       <span>{item.icon}</span>
       <div><strong>{item.label}</strong><small>{item.desc}</small></div>
@@ -74,8 +75,13 @@ function MobileMenu({
   trocarEmpresaAtiva,
   trocandoEmpresa = false,
   abrirPerfilUsuario,
-  onPreloadRoute
+  onPreloadRoute,
+  telaAtual,
+  menuNavegacaoTriggerRef
 }) {
+  const painelRef = useRef(null)
+  const botaoFecharRef = useRef(null)
+  const elementoAtivadorRef = useRef(null)
   const exibirSeletorEmpresa = canSwitchCompany && empresasDisponiveis.length > 0
   const empresaAtual = useMemo(
     () => empresasDisponiveis.find((empresa) => empresa.id === empresaId),
@@ -106,6 +112,47 @@ function MobileMenu({
     fecharMenu()
   }, [fecharMenu, trocarEmpresaAtiva])
 
+  useEffect(() => {
+    if (!visible) return undefined
+
+    elementoAtivadorRef.current = menuNavegacaoTriggerRef?.current || document.activeElement
+    botaoFecharRef.current?.focus()
+
+    function aoPressionarTecla(event) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        fecharMenu()
+        return
+      }
+      if (event.key !== 'Tab') return
+
+      const elementos = [...(painelRef.current?.querySelectorAll(
+        'button:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+      ) || [])].filter((elemento) => elemento.getClientRects().length > 0)
+      if (elementos.length === 0) {
+        event.preventDefault()
+        return
+      }
+
+      const primeiro = elementos[0]
+      const ultimo = elementos[elementos.length - 1]
+      if (event.shiftKey && document.activeElement === primeiro) {
+        event.preventDefault()
+        ultimo.focus()
+      } else if (!event.shiftKey && document.activeElement === ultimo) {
+        event.preventDefault()
+        primeiro.focus()
+      }
+    }
+
+    document.addEventListener('keydown', aoPressionarTecla)
+    return () => {
+      document.removeEventListener('keydown', aoPressionarTecla)
+      const ativador = menuNavegacaoTriggerRef?.current || elementoAtivadorRef.current
+      if (ativador && document.contains(ativador)) ativador.focus()
+    }
+  }, [fecharMenu, menuNavegacaoTriggerRef, visible])
+
   if (!visible) return null
 
   return (
@@ -116,9 +163,13 @@ function MobileMenu({
       onTouchMove={(e) => e.preventDefault()}
     >
       <div
+        id="mobile-navigation-dialog"
+        ref={painelRef}
         className="mobile-menu-panel"
         style={styles.menuNavegacao}
         role="dialog"
+        aria-modal="true"
+        aria-labelledby="mobile-navigation-title"
         aria-label="Menu de navegação"
         onClick={(e) => e.stopPropagation()}
         onWheel={(e) => e.stopPropagation()}
@@ -127,9 +178,18 @@ function MobileMenu({
         <div style={styles.menuPerfil}>
           <img src="/icon-192.png" alt="DNA Gestão" style={styles.menuPerfilIcone} />
           <div style={{ display: 'grid', gap: 2 }}>
-            <strong>DNA Gestão</strong>
+            <strong id="mobile-navigation-title">DNA Gestão</strong>
             <small>{nomeExibicao} • {perfilExibicao}</small>
           </div>
+          <button
+            ref={botaoFecharRef}
+            type="button"
+            className="mobile-menu-close"
+            onClick={fecharMenu}
+            aria-label="Fechar menu de navegação"
+          >
+            ×
+          </button>
         </div>
 
         {exibirSeletorEmpresa && (
@@ -166,6 +226,7 @@ function MobileMenu({
                 styles={styles}
                 navegarPara={navegarPara}
                 onPreloadRoute={onPreloadRoute}
+                telaAtual={telaAtual}
               />
             ))}
           </details>

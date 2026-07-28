@@ -379,6 +379,11 @@ export default function App() {
     setGruposMenu,
     telaAtual,
     setTelaAtualState,
+    contextoNavegacao,
+    origemNavegacao,
+    telaInformadaNaUrl,
+    consumirDestaqueContexto,
+    menuNavegacaoTriggerRef,
     navegarPara
   } = useAppNavigation()
   const {
@@ -479,12 +484,19 @@ export default function App() {
     if (!tipo || !id) return
     if (tipo === 'conta') {
       setContaFocusTarget(criarAlvoContaParaNavegacao(id, 'agenda'))
-      navegarPara('contas')
+      navegarPara('contas', {
+        origem: telaAtual,
+        contexto: {
+          contaId: id,
+          contaOrigem: 'agenda',
+          telaRetorno: telaAtual,
+        },
+      })
       return
     }
     setAgendaFocusTarget({ tipo, id, nonce: Date.now() })
-    navegarPara('notas')
-  }, [navegarPara])
+    navegarPara('notas', { origem: telaAtual })
+  }, [navegarPara, telaAtual])
 
   const navegarParaContaControleImpostos = useCallback((conta) => {
     const alvo = criarAlvoContaParaNavegacao(conta, 'controle-impostos')
@@ -505,7 +517,21 @@ export default function App() {
     setDataFinal('')
     setTelaRetornoContas('controle-impostos')
     setContaFocusTarget(alvo)
-    navegarPara('contas')
+    navegarPara('contas', {
+      origem: 'controle-impostos',
+      contexto: {
+        filtroStatus: filtroDestino,
+        filtroHorizonte: 'todos',
+        dataInicial: '',
+        dataFinal: '',
+        filial: '',
+        centroCusto: '',
+        conta: alvo,
+        contaId: alvo.id,
+        contaOrigem: 'controle-impostos',
+        telaRetorno: 'controle-impostos',
+      },
+    })
   }, [
     navegarPara,
     setBusca,
@@ -516,6 +542,49 @@ export default function App() {
     setFiltroHorizonte,
     setFiltroMes,
     setFiltroStatus,
+  ])
+
+  useEffect(() => {
+    if (telaAtual !== 'contas' || !contextoNavegacao) return
+
+    if (Object.prototype.hasOwnProperty.call(contextoNavegacao, 'filtroStatus')) {
+      setFiltroStatus(contextoNavegacao.filtroStatus)
+    }
+    if (Object.prototype.hasOwnProperty.call(contextoNavegacao, 'filtroHorizonte')) {
+      setFiltroHorizonte(contextoNavegacao.filtroHorizonte)
+    }
+    if (Object.prototype.hasOwnProperty.call(contextoNavegacao, 'dataInicial')) {
+      setDataInicial(contextoNavegacao.dataInicial)
+    }
+    if (Object.prototype.hasOwnProperty.call(contextoNavegacao, 'dataFinal')) {
+      setDataFinal(contextoNavegacao.dataFinal)
+    }
+    if (Object.prototype.hasOwnProperty.call(contextoNavegacao, 'filial')) {
+      setFiltroFilial(contextoNavegacao.filial)
+    }
+    if (Object.prototype.hasOwnProperty.call(contextoNavegacao, 'centroCusto')) {
+      setFiltroCentro(contextoNavegacao.centroCusto)
+    }
+
+    const alvoConta = contextoNavegacao.conta || contextoNavegacao.contaId
+    if (alvoConta) {
+      setContaFocusTarget(criarAlvoContaParaNavegacao(
+        alvoConta,
+        contextoNavegacao.contaOrigem || contextoNavegacao.origem || origemNavegacao
+      ))
+    }
+    const retorno = contextoNavegacao.telaRetorno || origemNavegacao
+    if (retorno && retorno !== 'contas') setTelaRetornoContas(retorno)
+  }, [
+    contextoNavegacao,
+    origemNavegacao,
+    setDataFinal,
+    setDataInicial,
+    setFiltroCentro,
+    setFiltroFilial,
+    setFiltroHorizonte,
+    setFiltroStatus,
+    telaAtual,
   ])
 
   function limparDadosTenant() {
@@ -640,10 +709,10 @@ export default function App() {
     }
 
     const proximaTela = telaRetornoSessaoSegura(telaRetorno)
-    if (telaRetorno && telaAtualRef.current !== proximaTela) {
-      setTelaAtualState(proximaTela)
+    if (telaRetorno && !telaInformadaNaUrl && telaAtualRef.current !== proximaTela) {
+      navegarPara(proximaTela, { origem: telaAtualRef.current })
     }
-  }, [usuarioLogado?.id])
+  }, [navegarPara, telaInformadaNaUrl, usuarioLogado?.id])
 
   async function podeContinuarOperacaoTenant(empresaAtual = empresaId) {
     if (!empresaAtual || sessaoEncerradaRef.current) return false
@@ -1588,7 +1657,18 @@ export default function App() {
     setDataInicial(inicio)
     setDataFinal(fim)
     limparConsultasSecundarias()
-    navegarPara('contas')
+    navegarPara('contas', {
+      origem: telaAtual,
+      contexto: {
+        filtroStatus: status,
+        filtroHorizonte: horizonte,
+        dataInicial: inicio,
+        dataFinal: fim,
+        filial: filialId,
+        centroCusto: centroCustoId,
+        telaRetorno: telaAtual,
+      },
+    })
   }
 
   function obterPeriodoPagasAtual() {
@@ -3804,6 +3884,7 @@ export default function App() {
         empresaId={empresaId}
         trocarEmpresaAtiva={permissoesUsuario?.canSwitchCompany ? trocarEmpresaAtiva : undefined}
         trocandoEmpresa={trocandoEmpresa}
+        menuNavegacaoTriggerRef={menuNavegacaoTriggerRef}
       />
     )
   }
@@ -3922,6 +4003,7 @@ export default function App() {
         normalizarPerfil={normalizarPerfil}
         perfilUsuario={perfilUsuario}
         menuSections={menuSectionsFiltradas}
+        telaAtual={telaAtual}
         navegarPara={navegarPara}
         sairDoSistema={sairDoSistema}
         canSwitchCompany={permissoesUsuario?.canSwitchCompany}
@@ -3931,6 +4013,7 @@ export default function App() {
         trocandoEmpresa={trocandoEmpresa}
         abrirPerfilUsuario={abrirPerfilUsuario}
         onPreloadRoute={preloadTelaLazy}
+        menuNavegacaoTriggerRef={menuNavegacaoTriggerRef}
       />
     )
   }
@@ -3999,7 +4082,10 @@ export default function App() {
         contas={contasOperacionais}
         contasFiltradas={contasFiltradas}
         contaFocusTarget={contaFocusTarget}
-        onContaFocusHandled={() => setContaFocusTarget(null)}
+        onContaFocusHandled={() => {
+          setContaFocusTarget(null)
+          consumirDestaqueContexto()
+        }}
         onContaForaDoFiltro={() => mostrarAviso(
           'Conta criada, mas não aparece no filtro atual. Consulte em Todas ou Abertas.',
           'aviso'
@@ -4030,7 +4116,9 @@ export default function App() {
         telaRetorno={telaRetornoContas}
         onVoltarOrigem={() => {
           setTelaRetornoContas('')
-          navegarPara('controle-impostos')
+          navegarPara(telaRetornoContas || origemNavegacao || 'controle-impostos', {
+            origem: 'contas',
+          })
         }}
       />
     )

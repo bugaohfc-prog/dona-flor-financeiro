@@ -22,6 +22,7 @@ export default function MobileFinalStyles() {
         }
 
         .mobile-menu-panel {
+          position: relative !important;
           width: min(92vw, 372px) !important;
           height: auto !important;
           max-height: calc(100dvh - 96px - env(safe-area-inset-bottom, 0px)) !important;
@@ -33,6 +34,23 @@ export default function MobileFinalStyles() {
           scrollbar-width: thin !important;
           display: block !important;
           padding: 14px 14px 18px !important;
+        }
+
+        .mobile-menu-panel .mobile-menu-close {
+          position: absolute !important;
+          top: 8px !important;
+          right: 10px !important;
+          width: 40px !important;
+          min-width: 40px !important;
+          min-height: 40px !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          display: inline-grid !important;
+          place-items: center !important;
+          border-radius: 12px !important;
+          font-size: 24px !important;
+          line-height: 1 !important;
+          z-index: 3 !important;
         }
 
         .mobile-menu-panel * {

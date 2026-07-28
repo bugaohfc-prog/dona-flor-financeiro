@@ -5,7 +5,9 @@ const MenuItem = memo(function MenuItem({ tela, icon, label, telaAtual, sidebarC
 
   return (
     <button
+      type="button"
       className={ativo ? 'active' : ''}
+      aria-current={ativo ? 'page' : undefined}
       title={label}
       onPointerEnter={() => onPreloadRoute?.(tela)}
       onFocus={() => onPreloadRoute?.(tela)}
@@ -28,14 +30,22 @@ const ActionItem = memo(function ActionItem({ icon, label, sidebarCompacta, onCl
 
 const MenuGroup = memo(function MenuGroup({ id, titulo, children, sidebarCompacta, gruposMenu, toggleGrupoMenu }) {
   const aberto = sidebarCompacta || Boolean(gruposMenu[id])
+  const conteudoId = `sidebar-group-${id}`
 
   return (
     <div className="sidebar-group-clean">
-      <button className="sidebar-group-toggle" onClick={() => toggleGrupoMenu(id)} title={titulo}>
+      <button
+        type="button"
+        className="sidebar-group-toggle"
+        onClick={() => toggleGrupoMenu(id)}
+        title={titulo}
+        aria-expanded={aberto}
+        aria-controls={conteudoId}
+      >
         <span>{!sidebarCompacta ? titulo : '•'}</span>
         {!sidebarCompacta && <strong>{aberto ? '−' : '+'}</strong>}
       </button>
-      {aberto && <nav className="desktop-sidebar-nav">{children}</nav>}
+      {aberto && <nav id={conteudoId} className="desktop-sidebar-nav">{children}</nav>}
     </div>
   )
 })
@@ -93,7 +103,7 @@ function Sidebar({
         )}
       </div>
 
-      <button className="sidebar-collapse-btn sidebar-collapse-icon" onClick={alternarSidebarCompacta} title={sidebarCompacta ? 'Expandir menu' : 'Recolher menu'} aria-label={sidebarCompacta ? 'Expandir menu' : 'Recolher menu'}>
+      <button type="button" className="sidebar-collapse-btn sidebar-collapse-icon" onClick={alternarSidebarCompacta} title={sidebarCompacta ? 'Expandir menu' : 'Recolher menu'} aria-label={sidebarCompacta ? 'Expandir menu' : 'Recolher menu'}>
         <span className="sidebar-collapse-arrow">{sidebarCompacta ? '→' : '←'}</span>
       </button>
 

@@ -16,6 +16,21 @@ export function contaEstaAtiva(conta) {
     && !conta?.deleted_at
 }
 
+function contaEstaDefinitivamenteDeletada(conta) {
+  return conta?.deletado === true || Boolean(conta?.deleted_at)
+}
+
+function contaEstaLogicamenteExcluida(conta) {
+  return conta?.excluido === true || Boolean(conta?.excluido_em)
+}
+
+function contaEntraNoResumo(conta, modo) {
+  if (contaEstaDefinitivamenteDeletada(conta)) return false
+  if (modo === 'ocultas') return conta?.oculto === true && !contaEstaLogicamenteExcluida(conta)
+  if (modo === 'excluidas') return contaEstaLogicamenteExcluida(conta)
+  return contaEstaAtiva(conta) && conta?.oculto !== true
+}
+
 export function contaEstaVencida(conta, hoje) {
   return conta?.status !== 'pago' && String(conta?.data_vencimento || '') < hoje
 }
@@ -164,9 +179,13 @@ export function selecionarFonteContextualContas({ consumidor, operacionais = [],
   return consumidorRequerHistoricoCompleto(consumidor) ? contextuais : operacionais
 }
 
-export function calcularResumoFinanceiroContas(contas = [], hoje = formatarDataBancoLocal(new Date())) {
+export function calcularResumoFinanceiroContas(
+  contas = [],
+  hoje = formatarDataBancoLocal(new Date()),
+  { modo = 'operacional' } = {}
+) {
   const centavos = contas.reduce((resumo, conta) => {
-    if (!contaEstaAtiva(conta) || conta?.oculto === true) return resumo
+    if (!contaEntraNoResumo(conta, modo)) return resumo
     const verdade = calcularVerdadeFinanceiraConta(conta, undefined, hoje)
     resumo.total += verdade.valorPrevistoCentavos
     resumo.pago += verdade.valorPagoAtualCentavos

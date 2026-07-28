@@ -255,9 +255,12 @@ export default function ContasPage({
     ? ABAS_STATUS_BUSCA
     : [...ABAS_OPERACIONAIS_CONTAS, ...ABAS_HISTORICO_CONTAS]
   const statusAtualLabel = abasStatusAtuais.find((aba) => aba.valor === filtroStatus)?.label || filtroStatus
+  const modoResumoFinanceiro = filtroStatus === 'ocultas'
+    ? 'ocultas'
+    : (filtroStatus === 'excluidas' ? 'excluidas' : 'operacional')
   const resumoResultadoFiltrado = useMemo(
-    () => calcularResumoFinanceiroContas(contasFiltradas),
-    [contasFiltradas]
+    () => calcularResumoFinanceiroContas(contasFiltradas, undefined, { modo: modoResumoFinanceiro }),
+    [contasFiltradas, modoResumoFinanceiro]
   )
   const mostrarEncargosResultado = resumoResultadoFiltrado.encargos > 0
   const mostrarDescontosResultado = resumoResultadoFiltrado.descontos > 0

@@ -123,6 +123,54 @@ test('resumo operacional exclui contas ocultas, excluídas e deletadas', () => {
   })
 })
 
+test('resumo de ocultas reconcilia previsto, parcial e saldo sem incluir excluídas', () => {
+  const resumo = calcularResumoFinanceiroContas([
+    contaBase({
+      id: 'oculta',
+      oculto: true,
+      pagamentos_parciais: [{ id: 'parcial', valor_pago: 400 }],
+    }),
+    contaBase({ id: 'oculta-excluida', oculto: true, excluido: true }),
+  ], HOJE, { modo: 'ocultas' })
+
+  assert.deepEqual(resumo, {
+    total: 1000,
+    pago: 400,
+    pendente: 600,
+    vencido: 0,
+    encargos: 0,
+    descontos: 0,
+  })
+})
+
+test('resumo de excluídas preserva os valores financeiros reconciliados', () => {
+  const resumo = calcularResumoFinanceiroContas([
+    contaBase({
+      id: 'excluida',
+      excluido: true,
+      pagamentos_parciais: [{ id: 'parcial', valor_pago: 400 }],
+    }),
+  ], HOJE, { modo: 'excluidas' })
+
+  assert.equal(resumo.total, 1000)
+  assert.equal(resumo.pago, 400)
+  assert.equal(resumo.pendente, 600)
+})
+
+test('registro definitivamente deletado nunca entra em nenhum modo de resumo', () => {
+  const deletadas = [
+    contaBase({ id: 'deletada-flag', oculto: true, excluido: true, deletado: true }),
+    contaBase({ id: 'deletada-data', oculto: true, excluido_em: '2026-07-01', deleted_at: '2026-07-02' }),
+  ]
+
+  for (const modo of ['operacional', 'ocultas', 'excluidas']) {
+    assert.deepEqual(
+      calcularResumoFinanceiroContas(deletadas, HOJE, { modo }),
+      { total: 0, pago: 0, pendente: 0, vencido: 0, encargos: 0, descontos: 0 }
+    )
+  }
+})
+
 test('relatório ativo também exclui conta removida antes de resumir', () => {
   const registros = consolidarContasComPagamentos([
     contaBase({ id: 'ativa' }),
@@ -223,7 +271,9 @@ test('Resultado filtrado usa o resumo compartilhado e exibe saldo e vencido', ()
   const pagina = readFileSync(new URL('../pages/ContasPage.jsx', import.meta.url), 'utf8')
 
   assert.doesNotMatch(pagina, /function calcularResumoResultadoFiltrado/)
-  assert.match(pagina, /calcularResumoFinanceiroContas\(contasFiltradas\)/)
+  assert.match(pagina, /filtroStatus === 'ocultas'/)
+  assert.match(pagina, /filtroStatus === 'excluidas'/)
+  assert.match(pagina, /calcularResumoFinanceiroContas\(contasFiltradas, undefined, \{ modo: modoResumoFinanceiro \}\)/)
   assert.match(pagina, /<b>Saldo em aberto<\/b>/)
   assert.match(pagina, /<b>Vencido<\/b>/)
 })

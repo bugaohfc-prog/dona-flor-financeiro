@@ -13,6 +13,7 @@ import {
   obterTituloTela,
   registrarNavegacaoNoHistorico,
   removerDestaqueContexto,
+  resolverEstadoEntradaContas,
   sincronizarContextoContas,
 } from './navigation.js'
 import {
@@ -213,13 +214,71 @@ test('consumir destaque mantém filtros, retorno e demais metadados', () => {
   assert.equal(contexto.metadado, 'preservado')
 })
 
+test('entrada em Contas sem contexto limpa alvo e retorno residuais', () => {
+  assert.deepEqual(resolverEstadoEntradaContas(null, 'controle-impostos'), {
+    alvoConta: null,
+    origemAlvo: '',
+    telaRetorno: '',
+  })
+})
+
+test('entrada em Contas aceita retorno vazio e limpa retorno anterior', () => {
+  const estado = resolverEstadoEntradaContas({
+    filtroStatus: 'vencidas',
+    telaRetorno: '',
+  }, 'controle-impostos')
+
+  assert.equal(estado.telaRetorno, '')
+  assert.equal(estado.alvoConta, null)
+})
+
+test('entrada em Contas sem conta limpa alvo e preserva retorno válido', () => {
+  const estado = resolverEstadoEntradaContas({
+    filtroStatus: 'vencidas',
+    telaRetorno: 'controle-impostos',
+  }, 'dashboard')
+
+  assert.equal(estado.alvoConta, null)
+  assert.equal(estado.origemAlvo, '')
+  assert.equal(estado.telaRetorno, 'controle-impostos')
+})
+
+test('entrada vinda de Impostos restaura conta e botão de retorno', () => {
+  const conta = { id: 'conta-77' }
+  const estado = resolverEstadoEntradaContas({
+    conta,
+    contaId: conta.id,
+    contaOrigem: 'controle-impostos',
+    telaRetorno: 'controle-impostos',
+  }, 'dashboard')
+
+  assert.equal(estado.alvoConta, conta)
+  assert.equal(estado.origemAlvo, 'controle-impostos')
+  assert.equal(estado.telaRetorno, 'controle-impostos')
+})
+
+test('novo escopo de logout rejeita entrada financeira anterior', () => {
+  const estadoAnterior = criarEstadoNavegacao({
+    tela: 'contas',
+    contexto: { filtroStatus: 'vencidas' },
+    escopo: 'sessao-anterior',
+  })
+  const estadoLogout = criarEstadoNavegacao({
+    tela: 'dashboard',
+    escopo: 'sessao-apos-logout',
+  })
+
+  assert.equal(estadoPertenceAoEscopo(estadoAnterior, estadoLogout.escopo), false)
+  assert.equal(estadoPertenceAoEscopo(estadoLogout, estadoLogout.escopo), true)
+})
+
 test('App usa o núcleo para onboarding, troca de empresa e logout', async () => {
   const fonte = await ler('App.jsx')
   assert.doesNotMatch(fonte, /setTelaAtualState/)
   assert.match(fonte, /navegarPara\('onboarding', \{ replace: true/)
   assert.match(fonte, /navegarPara\('dashboard', \{ replace: true, origem: 'onboarding'/)
   assert.match(fonte, /limparDadosTenant\(\)[\s\S]*?navegarPara\('dashboard', \{[\s\S]*?invalidarContextoAnterior: true/)
-  assert.match(fonte, /const sairDoSistema[\s\S]*?navegarPara\('dashboard', \{ replace: true/)
+  assert.match(fonte, /const sairDoSistema[\s\S]*?navegarPara\('dashboard', \{[\s\S]*?replace: true,[\s\S]*?invalidarContextoAnterior: true/)
   assert.doesNotMatch(fonte, /sairDoSistema[\s\S]{0,500}setTelaAtualState\('contas'\)/)
 })
 
@@ -237,6 +296,9 @@ test('App sincroniza filtros de Contas preservando o contexto existente', async 
   assert.match(fonte, /atualizarContextoAtual\(\(contextoAtual\) => sincronizarContextoContas\(contextoAtual/)
   assert.match(fonte, /sincronizacaoContextoContasSuspensaRef/)
   assert.match(fonte, /filtroStatus,[\s\S]*?filtroHorizonte,[\s\S]*?telaRetorno: telaRetornoContas/)
+  assert.match(fonte, /resolverEstadoEntradaContas\(contextoNavegacao, origemNavegacao\)/)
+  assert.match(fonte, /setContaFocusTarget\(null\)/)
+  assert.match(fonte, /setTelaRetornoContas\(estadoEntrada\.telaRetorno\)/)
 })
 
 test('Dashboard e Controle de Impostos enviam contexto ao abrir Contas', async () => {

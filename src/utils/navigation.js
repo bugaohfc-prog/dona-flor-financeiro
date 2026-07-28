@@ -108,6 +108,32 @@ export function removerDestaqueContexto(contextoAtual) {
   return normalizarContextoNavegacao(contextoRestante)
 }
 
+export function resolverEstadoEntradaContas(contextoNavegacao, origemNavegacao = '') {
+  const contexto = normalizarContextoNavegacao(contextoNavegacao)
+  if (!contexto) {
+    return {
+      alvoConta: null,
+      origemAlvo: '',
+      telaRetorno: '',
+    }
+  }
+
+  const alvoConta = contexto.conta || contexto.contaId || null
+  const retornoInformado = Object.prototype.hasOwnProperty.call(contexto, 'telaRetorno')
+    ? contexto.telaRetorno
+    : origemNavegacao
+
+  return {
+    alvoConta,
+    origemAlvo: alvoConta
+      ? (contexto.contaOrigem || contexto.origem || origemNavegacao || '')
+      : '',
+    telaRetorno: retornoInformado && retornoInformado !== 'contas'
+      ? retornoInformado
+      : '',
+  }
+}
+
 export function criarEstadoNavegacao({
   tela,
   origem = '',

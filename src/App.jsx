@@ -48,7 +48,7 @@ import { estaVencida, pegarMes } from './utils/contasStatus'
 import { atualizarAposMutacaoContas, calcularResumoFinanceiroContas, carregarFonteContextualContas, consumidorRequerHistoricoCompleto, criarAlvoContaParaNavegacao, filtrarContasPorHorizonte, formatarDataBancoLocal, obterPeriodoConsultaPagas, selecionarFonteContas } from './utils/contasConsultasOperacionais.js'
 import { atualizarListaLixeiraEstavel, diasNaLixeira, obterEstadoRetencaoLixeira, obterLimiteExclusaoDefinitiva, podeExcluirDefinitivo } from './utils/lixeira'
 import { erroEhSessaoExpirada, mensagemSeguraErro, telaRetornoSessaoSegura } from './utils/session'
-import { sincronizarContextoContas } from './utils/navigation.js'
+import { resolverEstadoEntradaContas, sincronizarContextoContas } from './utils/navigation.js'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
 import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario, podeEditarBilling } from './services/permissoesService'
 import { listarFiliaisPorEmpresa } from './services/filiaisService'
@@ -549,41 +549,43 @@ export default function App() {
   ])
 
   useEffect(() => {
-    if (telaAtual !== 'contas' || !contextoNavegacao) {
+    if (telaAtual !== 'contas') {
       sincronizacaoContextoContasSuspensaRef.current = false
       return undefined
     }
 
     sincronizacaoContextoContasSuspensaRef.current = true
 
-    if (Object.prototype.hasOwnProperty.call(contextoNavegacao, 'filtroStatus')) {
+    if (Object.prototype.hasOwnProperty.call(contextoNavegacao || {}, 'filtroStatus')) {
       setFiltroStatus(contextoNavegacao.filtroStatus)
     }
-    if (Object.prototype.hasOwnProperty.call(contextoNavegacao, 'filtroHorizonte')) {
+    if (Object.prototype.hasOwnProperty.call(contextoNavegacao || {}, 'filtroHorizonte')) {
       setFiltroHorizonte(contextoNavegacao.filtroHorizonte)
     }
-    if (Object.prototype.hasOwnProperty.call(contextoNavegacao, 'dataInicial')) {
+    if (Object.prototype.hasOwnProperty.call(contextoNavegacao || {}, 'dataInicial')) {
       setDataInicial(contextoNavegacao.dataInicial)
     }
-    if (Object.prototype.hasOwnProperty.call(contextoNavegacao, 'dataFinal')) {
+    if (Object.prototype.hasOwnProperty.call(contextoNavegacao || {}, 'dataFinal')) {
       setDataFinal(contextoNavegacao.dataFinal)
     }
-    if (Object.prototype.hasOwnProperty.call(contextoNavegacao, 'filial')) {
+    if (Object.prototype.hasOwnProperty.call(contextoNavegacao || {}, 'filial')) {
       setFiltroFilial(contextoNavegacao.filial)
     }
-    if (Object.prototype.hasOwnProperty.call(contextoNavegacao, 'centroCusto')) {
+    if (Object.prototype.hasOwnProperty.call(contextoNavegacao || {}, 'centroCusto')) {
       setFiltroCentro(contextoNavegacao.centroCusto)
     }
 
-    const alvoConta = contextoNavegacao.conta || contextoNavegacao.contaId
+    const estadoEntrada = resolverEstadoEntradaContas(contextoNavegacao, origemNavegacao)
+    const alvoConta = estadoEntrada.alvoConta
     if (alvoConta) {
       setContaFocusTarget(criarAlvoContaParaNavegacao(
         alvoConta,
-        contextoNavegacao.contaOrigem || contextoNavegacao.origem || origemNavegacao
+        estadoEntrada.origemAlvo
       ))
+    } else {
+      setContaFocusTarget(null)
     }
-    const retorno = contextoNavegacao.telaRetorno || origemNavegacao
-    if (retorno && retorno !== 'contas') setTelaRetornoContas(retorno)
+    setTelaRetornoContas(estadoEntrada.telaRetorno)
 
     const liberarSincronizacao = window.requestAnimationFrame(() => {
       sincronizacaoContextoContasSuspensaRef.current = false
@@ -3708,7 +3710,12 @@ export default function App() {
 
   const sairDoSistema = useCallback(async () => {
     logoutExplicitoRef.current = true
-    navegarPara('dashboard', { replace: true, origem: '', contexto: null })
+    navegarPara('dashboard', {
+      replace: true,
+      origem: '',
+      contexto: null,
+      invalidarContextoAnterior: true,
+    })
     try {
       window.sessionStorage.removeItem(SESSION_RETURN_SCREEN_KEY)
     } catch (error) {

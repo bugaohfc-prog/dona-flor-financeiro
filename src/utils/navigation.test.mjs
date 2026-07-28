@@ -6,10 +6,14 @@ import {
   TELAS_NAVEGACAO_PERMITIDAS,
   criarEstadoNavegacao,
   deveCriarEntradaHistorico,
+  estadoPertenceAoEscopo,
   gerarUrlDaTela,
   lerTelaDaUrl,
   normalizarTelaNavegacao,
   obterTituloTela,
+  registrarNavegacaoNoHistorico,
+  removerDestaqueContexto,
+  sincronizarContextoContas,
 } from './navigation.js'
 import {
   TELAS_RETORNO_SESSAO,
@@ -20,6 +24,36 @@ const raiz = new URL('../', import.meta.url)
 
 async function ler(caminho) {
   return readFile(new URL(caminho, raiz), 'utf8')
+}
+
+function criarHistoricoMock(urlInicial = '/?tela=dashboard', estadoInicial = null) {
+  const entradas = [{ url: urlInicial, state: estadoInicial }]
+  let indice = 0
+  let pushes = 0
+  return {
+    get state() {
+      return entradas[indice]?.state
+    },
+    get entradas() {
+      return entradas
+    },
+    get pushes() {
+      return pushes
+    },
+    replaceState(state, _titulo, url) {
+      entradas[indice] = { state, url }
+    },
+    pushState(state, _titulo, url) {
+      entradas.splice(indice + 1)
+      entradas.push({ state, url })
+      indice += 1
+      pushes += 1
+    },
+    voltar() {
+      indice = Math.max(0, indice - 1)
+      return entradas[indice]
+    },
+  }
 }
 
 test('lê uma tela válida da URL', () => {
@@ -49,11 +83,13 @@ test('estado do histórico preserva origem, contexto e rolagem', () => {
     origem: 'dashboard',
     contexto: { filtroStatus: 'vencidas', contaId: 'conta-1' },
     scrollY: 320,
+    escopo: '',
   }), {
     tela: 'contas',
     origem: 'dashboard',
     contexto: { filtroStatus: 'vencidas', contaId: 'conta-1' },
     scrollY: 320,
+    escopo: '',
   })
 })
 
@@ -73,10 +109,134 @@ test('títulos canônicos possuem fallback seguro', () => {
 
 test('hook sincroniza URL, pushState e restaura popstate', async () => {
   const fonte = await ler('hooks/useAppNavigation.js')
-  assert.match(fonte, /history\.pushState\(estado/)
+  assert.match(fonte, /registrarNavegacaoNoHistorico/)
   assert.match(fonte, /addEventListener\('popstate'/)
   assert.match(fonte, /lerTelaDaUrl\(window\.location\.href\)/)
   assert.match(fonte, /document\.title = obterTituloTela\(telaAtual\)/)
+})
+
+test('replace altera tela, URL e estado sem criar entrada', () => {
+  const historico = criarHistoricoMock()
+  const estadoAtual = criarEstadoNavegacao({ tela: 'dashboard' })
+  const proximoEstado = criarEstadoNavegacao({
+    tela: 'onboarding',
+    origem: 'dashboard',
+    contexto: { etapa: 'empresa' },
+  })
+
+  const resultado = registrarNavegacaoNoHistorico({
+    historico,
+    urlAtual: 'https://dna.test/?tela=dashboard&empresa=7',
+    estadoAtual,
+    proximoEstado,
+    substituir: true,
+  })
+
+  assert.deepEqual(resultado, { criouEntrada: false, substituiu: true })
+  assert.equal(historico.pushes, 0)
+  assert.equal(historico.state.tela, 'onboarding')
+  assert.equal(historico.entradas[0].url, '/?tela=onboarding&empresa=7')
+})
+
+test('troca de empresa invalida entradas de contexto do escopo anterior', () => {
+  assert.equal(estadoPertenceAoEscopo({ escopo: 'empresa-a' }, 'empresa-b'), false)
+  assert.equal(estadoPertenceAoEscopo({ escopo: 'empresa-b' }, 'empresa-b'), true)
+  assert.equal(estadoPertenceAoEscopo({ escopo: 'empresa-a' }, ''), true)
+})
+
+test('Back recupera os filtros manuais mais recentes de Contas', () => {
+  const contextoNovo = sincronizarContextoContas(
+    { contaId: 'conta-9', origem: 'dashboard' },
+    {
+      filtroStatus: 'vencidas',
+      filtroHorizonte: '90-dias',
+      dataInicial: '2026-07-01',
+      dataFinal: '2026-09-30',
+      filial: 'filial-2',
+      centroCusto: 'centro-4',
+      telaRetorno: 'dashboard',
+    }
+  )
+  const estadoContas = criarEstadoNavegacao({
+    tela: 'contas',
+    origem: 'dashboard',
+    contexto: contextoNovo,
+  })
+  const historico = criarHistoricoMock('/?tela=contas', estadoContas)
+  registrarNavegacaoNoHistorico({
+    historico,
+    urlAtual: 'https://dna.test/?tela=contas',
+    estadoAtual: estadoContas,
+    proximoEstado: criarEstadoNavegacao({ tela: 'recorrencias', origem: 'contas' }),
+  })
+
+  const restaurado = historico.voltar().state
+  assert.equal(restaurado.contexto.filtroStatus, 'vencidas')
+  assert.equal(restaurado.contexto.filtroHorizonte, '90-dias')
+  assert.equal(restaurado.contexto.filial, 'filial-2')
+  assert.equal(restaurado.contexto.contaId, 'conta-9')
+})
+
+test('sincronizar filtros preserva o alvo até ele ser consumido', () => {
+  const contexto = sincronizarContextoContas({
+    conta: { id: 'conta-1' },
+    contaId: 'conta-1',
+    contaOrigem: 'controle-impostos',
+    metadado: 'preservado',
+  }, {
+    filtroStatus: 'pagas',
+    filtroHorizonte: 'todos',
+    telaRetorno: 'controle-impostos',
+  })
+
+  assert.equal(contexto.contaId, 'conta-1')
+  assert.equal(contexto.metadado, 'preservado')
+  assert.equal(contexto.filtroStatus, 'pagas')
+})
+
+test('consumir destaque mantém filtros, retorno e demais metadados', () => {
+  const contexto = removerDestaqueContexto({
+    conta: { id: 'conta-1' },
+    contaId: 'conta-1',
+    contaOrigem: 'agenda',
+    filtroStatus: 'vencidas',
+    filtroHorizonte: '30-dias',
+    telaRetorno: 'agenda',
+    metadado: 'preservado',
+  })
+
+  assert.equal('conta' in contexto, false)
+  assert.equal('contaId' in contexto, false)
+  assert.equal('contaOrigem' in contexto, false)
+  assert.equal(contexto.filtroStatus, 'vencidas')
+  assert.equal(contexto.telaRetorno, 'agenda')
+  assert.equal(contexto.metadado, 'preservado')
+})
+
+test('App usa o núcleo para onboarding, troca de empresa e logout', async () => {
+  const fonte = await ler('App.jsx')
+  assert.doesNotMatch(fonte, /setTelaAtualState/)
+  assert.match(fonte, /navegarPara\('onboarding', \{ replace: true/)
+  assert.match(fonte, /navegarPara\('dashboard', \{ replace: true, origem: 'onboarding'/)
+  assert.match(fonte, /limparDadosTenant\(\)[\s\S]*?navegarPara\('dashboard', \{[\s\S]*?invalidarContextoAnterior: true/)
+  assert.match(fonte, /const sairDoSistema[\s\S]*?navegarPara\('dashboard', \{ replace: true/)
+  assert.doesNotMatch(fonte, /sairDoSistema[\s\S]{0,500}setTelaAtualState\('contas'\)/)
+})
+
+test('sessão expirada salva o destino sem substituir tela ou URL', async () => {
+  const fonte = await ler('App.jsx')
+  const inicio = fonte.indexOf('const navegarParaLoginCallback')
+  const fim = fonte.indexOf('const mostrarAvisoCallback', inicio)
+  const trecho = fonte.slice(inicio, fim)
+  assert.match(trecho, /SESSION_RETURN_SCREEN_KEY/)
+  assert.doesNotMatch(trecho, /navegarPara\(|setTelaAtualState|history\./)
+})
+
+test('App sincroniza filtros de Contas preservando o contexto existente', async () => {
+  const fonte = await ler('App.jsx')
+  assert.match(fonte, /atualizarContextoAtual\(\(contextoAtual\) => sincronizarContextoContas\(contextoAtual/)
+  assert.match(fonte, /sincronizacaoContextoContasSuspensaRef/)
+  assert.match(fonte, /filtroStatus,[\s\S]*?filtroHorizonte,[\s\S]*?telaRetorno: telaRetornoContas/)
 })
 
 test('Dashboard e Controle de Impostos enviam contexto ao abrir Contas', async () => {

@@ -76,16 +76,84 @@ export function normalizarContextoNavegacao(contexto) {
   return entradas.length ? Object.fromEntries(entradas) : null
 }
 
+export function sincronizarContextoContas(contextoAtual, {
+  filtroStatus = '',
+  filtroHorizonte = '',
+  dataInicial = '',
+  dataFinal = '',
+  filial = '',
+  centroCusto = '',
+  telaRetorno = '',
+} = {}) {
+  return normalizarContextoNavegacao({
+    ...(contextoAtual || {}),
+    filtroStatus,
+    filtroHorizonte,
+    dataInicial,
+    dataFinal,
+    filial,
+    centroCusto,
+    telaRetorno,
+  })
+}
+
+export function removerDestaqueContexto(contextoAtual) {
+  if (!contextoAtual) return null
+  const {
+    contaId: _contaId,
+    conta: _conta,
+    contaOrigem: _contaOrigem,
+    ...contextoRestante
+  } = contextoAtual
+  return normalizarContextoNavegacao(contextoRestante)
+}
+
 export function criarEstadoNavegacao({
   tela,
   origem = '',
   contexto = null,
   scrollY = 0,
+  escopo = '',
 } = {}) {
   return {
     tela: normalizarTelaNavegacao(tela),
     origem: telaNavegacaoPermitida(origem) ? String(origem).trim() : '',
     contexto: normalizarContextoNavegacao(contexto),
     scrollY: Number.isFinite(Number(scrollY)) ? Math.max(0, Number(scrollY)) : 0,
+    escopo: String(escopo || ''),
   }
+}
+
+export function estadoPertenceAoEscopo(estado, escopoAtual) {
+  const escopo = String(escopoAtual || '')
+  return !escopo || String(estado?.escopo || '') === escopo
+}
+
+export function registrarNavegacaoNoHistorico({
+  historico,
+  urlAtual,
+  estadoAtual,
+  proximoEstado,
+  substituir = false,
+} = {}) {
+  if (!historico?.replaceState) return { criouEntrada: false, substituiu: false }
+
+  const urlDestino = gerarUrlDaTela(urlAtual, proximoEstado?.tela)
+  if (substituir) {
+    historico.replaceState(proximoEstado, '', urlDestino)
+    return { criouEntrada: false, substituiu: true }
+  }
+
+  historico.replaceState(
+    estadoAtual,
+    '',
+    gerarUrlDaTela(urlAtual, estadoAtual?.tela)
+  )
+  if (deveCriarEntradaHistorico(estadoAtual?.tela, proximoEstado?.tela)) {
+    historico.pushState(proximoEstado, '', urlDestino)
+    return { criouEntrada: true, substituiu: false }
+  }
+
+  historico.replaceState(proximoEstado, '', urlDestino)
+  return { criouEntrada: false, substituiu: true }
 }

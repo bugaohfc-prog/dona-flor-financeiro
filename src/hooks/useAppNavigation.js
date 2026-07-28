@@ -1,11 +1,14 @@
 import { startTransition, useCallback, useEffect, useRef, useState } from 'react'
 import {
   criarEstadoNavegacao,
+  estadoPertenceAoEscopo,
   gerarUrlDaTela,
   lerTelaDaUrl,
   normalizarContextoNavegacao,
   normalizarTelaNavegacao,
   obterTituloTela,
+  registrarNavegacaoNoHistorico,
+  removerDestaqueContexto,
   deveCriarEntradaHistorico,
 } from '../utils/navigation.js'
 
@@ -34,8 +37,10 @@ export function useAppNavigation(telaInicial = 'dashboard') {
   const [telaAtual, setTelaAtualState] = useState(estadoInicial.tela)
   const [origemNavegacao, setOrigemNavegacao] = useState(estadoInicial.origem)
   const [contextoNavegacao, setContextoNavegacao] = useState(estadoInicial.contexto)
+  const [revisaoNavegacao, setRevisaoNavegacao] = useState(0)
   const telaAtualRef = useRef(estadoInicial.tela)
   const contextoNavegacaoRef = useRef(estadoInicial.contexto)
+  const escopoNavegacaoRef = useRef(estadoInicial.escopo)
   const menuNavegacaoTriggerRef = useRef(null)
 
   const fecharMenus = useCallback(() => {
@@ -46,10 +51,12 @@ export function useAppNavigation(telaInicial = 'dashboard') {
   const aplicarEstadoNavegacao = useCallback((estado) => {
     telaAtualRef.current = estado.tela
     contextoNavegacaoRef.current = estado.contexto
+    escopoNavegacaoRef.current = estado.escopo
     startTransition(() => {
       setTelaAtualState(estado.tela)
       setOrigemNavegacao(estado.origem)
       setContextoNavegacao(estado.contexto)
+      setRevisaoNavegacao((revisao) => revisao + 1)
     })
   }, [])
 
@@ -61,10 +68,14 @@ export function useAppNavigation(telaInicial = 'dashboard') {
     const contexto = contextoInformado
       ? normalizarContextoNavegacao(opcoes.contexto)
       : (mudouTela ? null : contextoNavegacaoRef.current)
+    const origemInformada = Object.prototype.hasOwnProperty.call(opcoes, 'origem')
     const estado = criarEstadoNavegacao({
       tela: proximaTela,
-      origem: opcoes.origem || telaAtualRef.current,
+      origem: origemInformada ? opcoes.origem : telaAtualRef.current,
       contexto,
+      escopo: opcoes.invalidarContextoAnterior === true
+        ? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+        : escopoNavegacaoRef.current,
     })
 
     if (typeof window !== 'undefined') {
@@ -73,18 +84,15 @@ export function useAppNavigation(telaInicial = 'dashboard') {
         tela: telaAtualRef.current,
         contexto: contextoNavegacaoRef.current,
         scrollY: window.scrollY,
+        escopo: escopoNavegacaoRef.current,
       })
-      window.history.replaceState(
+      registrarNavegacaoNoHistorico({
+        historico: window.history,
+        urlAtual: window.location.href,
         estadoAtual,
-        '',
-        gerarUrlDaTela(window.location.href, estadoAtual.tela)
-      )
-
-      if (mudouTela) {
-        window.history.pushState(estado, '', gerarUrlDaTela(window.location.href, proximaTela))
-      } else {
-        window.history.replaceState(estado, '', gerarUrlDaTela(window.location.href, proximaTela))
-      }
+        proximoEstado: estado,
+        substituir: opcoes.replace === true,
+      })
     }
 
     aplicarEstadoNavegacao(estado)
@@ -94,7 +102,10 @@ export function useAppNavigation(telaInicial = 'dashboard') {
   }, [aplicarEstadoNavegacao, fecharMenus])
 
   const atualizarContextoAtual = useCallback((contexto) => {
-    const contextoAtualizado = normalizarContextoNavegacao(contexto)
+    const valorContexto = typeof contexto === 'function'
+      ? contexto(contextoNavegacaoRef.current)
+      : contexto
+    const contextoAtualizado = normalizarContextoNavegacao(valorContexto)
     if (JSON.stringify(contextoAtualizado) === JSON.stringify(contextoNavegacaoRef.current)) return
     contextoNavegacaoRef.current = contextoAtualizado
     setContextoNavegacao(contextoAtualizado)
@@ -104,20 +115,13 @@ export function useAppNavigation(telaInicial = 'dashboard') {
       tela: telaAtualRef.current,
       contexto: contextoAtualizado,
       scrollY: window.scrollY,
+      escopo: escopoNavegacaoRef.current,
     })
     window.history.replaceState(estado, '', gerarUrlDaTela(window.location.href, estado.tela))
   }, [])
 
   const consumirDestaqueContexto = useCallback(() => {
-    const contextoAtual = contextoNavegacaoRef.current
-    if (!contextoAtual) return
-    const {
-      contaId: _contaId,
-      conta: _conta,
-      contaOrigem: _contaOrigem,
-      ...contextoRestante
-    } = contextoAtual
-    atualizarContextoAtual(contextoRestante)
+    atualizarContextoAtual((contextoAtual) => removerDestaqueContexto(contextoAtual))
   }, [atualizarContextoAtual])
 
   useEffect(() => {
@@ -132,6 +136,20 @@ export function useAppNavigation(telaInicial = 'dashboard') {
     aplicarEstadoNavegacao(estado)
 
     function aoVoltar(event) {
+      if (!estadoPertenceAoEscopo(event.state, escopoNavegacaoRef.current)) {
+        const estadoSeguro = criarEstadoNavegacao({
+          tela: 'dashboard',
+          escopo: escopoNavegacaoRef.current,
+        })
+        window.history.replaceState(
+          estadoSeguro,
+          '',
+          gerarUrlDaTela(window.location.href, 'dashboard')
+        )
+        fecharMenus()
+        aplicarEstadoNavegacao(estadoSeguro)
+        return
+      }
       const proximoEstado = criarEstadoNavegacao({
         ...event.state,
         tela: event.state?.tela || lerTelaDaUrl(window.location.href),
@@ -190,9 +208,9 @@ export function useAppNavigation(telaInicial = 'dashboard') {
     gruposMenu,
     setGruposMenu,
     telaAtual,
-    setTelaAtualState,
     origemNavegacao,
     contextoNavegacao,
+    revisaoNavegacao,
     telaInformadaNaUrl: telaInformadaNaUrlRef.current,
     atualizarContextoAtual,
     consumirDestaqueContexto,

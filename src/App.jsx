@@ -48,6 +48,7 @@ import { estaVencida, pegarMes } from './utils/contasStatus'
 import { atualizarAposMutacaoContas, calcularResumoFinanceiroContas, carregarFonteContextualContas, consumidorRequerHistoricoCompleto, criarAlvoContaParaNavegacao, filtrarContasPorHorizonte, formatarDataBancoLocal, obterPeriodoConsultaPagas, selecionarFonteContas } from './utils/contasConsultasOperacionais.js'
 import { atualizarListaLixeiraEstavel, diasNaLixeira, obterEstadoRetencaoLixeira, obterLimiteExclusaoDefinitiva, podeExcluirDefinitivo } from './utils/lixeira'
 import { erroEhSessaoExpirada, mensagemSeguraErro, telaRetornoSessaoSegura } from './utils/session'
+import { sincronizarContextoContas } from './utils/navigation.js'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
 import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario, podeEditarBilling } from './services/permissoesService'
 import { listarFiliaisPorEmpresa } from './services/filiaisService'
@@ -192,6 +193,8 @@ export default function App() {
   const sincronizacaoTenantRef = useRef(null)
   const sessaoEncerradaRef = useRef(true)
   const telaAtualRef = useRef('dashboard')
+  const logoutExplicitoRef = useRef(false)
+  const sincronizacaoContextoContasSuspensaRef = useRef(false)
   const { globalLoading, toast: globalToast, showToast, hideToast, empresaAtiva, setEmpresaAtiva, limparEmpresaAtiva, empresasDisponiveis, setEmpresasDisponiveis } = useApp()
   // =========================
   // BLOCO 0 — UTILITÁRIOS
@@ -378,10 +381,11 @@ export default function App() {
     gruposMenu,
     setGruposMenu,
     telaAtual,
-    setTelaAtualState,
     contextoNavegacao,
     origemNavegacao,
+    revisaoNavegacao,
     telaInformadaNaUrl,
+    atualizarContextoAtual,
     consumirDestaqueContexto,
     menuNavegacaoTriggerRef,
     navegarPara
@@ -545,7 +549,12 @@ export default function App() {
   ])
 
   useEffect(() => {
-    if (telaAtual !== 'contas' || !contextoNavegacao) return
+    if (telaAtual !== 'contas' || !contextoNavegacao) {
+      sincronizacaoContextoContasSuspensaRef.current = false
+      return undefined
+    }
+
+    sincronizacaoContextoContasSuspensaRef.current = true
 
     if (Object.prototype.hasOwnProperty.call(contextoNavegacao, 'filtroStatus')) {
       setFiltroStatus(contextoNavegacao.filtroStatus)
@@ -575,9 +584,13 @@ export default function App() {
     }
     const retorno = contextoNavegacao.telaRetorno || origemNavegacao
     if (retorno && retorno !== 'contas') setTelaRetornoContas(retorno)
+
+    const liberarSincronizacao = window.requestAnimationFrame(() => {
+      sincronizacaoContextoContasSuspensaRef.current = false
+    })
+    return () => window.cancelAnimationFrame(liberarSincronizacao)
   }, [
-    contextoNavegacao,
-    origemNavegacao,
+    revisaoNavegacao,
     setDataFinal,
     setDataInicial,
     setFiltroCentro,
@@ -585,6 +598,30 @@ export default function App() {
     setFiltroHorizonte,
     setFiltroStatus,
     telaAtual,
+  ])
+
+  useEffect(() => {
+    if (telaAtual !== 'contas' || sincronizacaoContextoContasSuspensaRef.current) return
+
+    atualizarContextoAtual((contextoAtual) => sincronizarContextoContas(contextoAtual, {
+      filtroStatus,
+      filtroHorizonte,
+      dataInicial,
+      dataFinal,
+      filial: filtroFilial,
+      centroCusto: filtroCentro,
+      telaRetorno: telaRetornoContas,
+    }))
+  }, [
+    atualizarContextoAtual,
+    dataFinal,
+    dataInicial,
+    filtroCentro,
+    filtroFilial,
+    filtroHorizonte,
+    filtroStatus,
+    telaAtual,
+    telaRetornoContas,
   ])
 
   function limparDadosTenant() {
@@ -653,12 +690,19 @@ export default function App() {
   }, [])
 
   const navegarParaLoginCallback = useCallback(() => {
+    if (logoutExplicitoRef.current) {
+      try {
+        window.sessionStorage.removeItem(SESSION_RETURN_SCREEN_KEY)
+      } catch (error) {
+        console.warn('Nao foi possivel limpar a tela de retorno no logout:', error?.message || error)
+      }
+      return
+    }
     try {
       window.sessionStorage.setItem(SESSION_RETURN_SCREEN_KEY, telaRetornoSessaoSegura(telaAtualRef.current))
     } catch (error) {
       console.warn('Nao foi possivel salvar tela de retorno da sessao:', error?.message || error)
     }
-    setTelaAtualState('dashboard')
   }, [])
 
   const mostrarAvisoCallback = useCallback((mensagem, tipo = 'info') => {
@@ -710,7 +754,7 @@ export default function App() {
 
     const proximaTela = telaRetornoSessaoSegura(telaRetorno)
     if (telaRetorno && !telaInformadaNaUrl && telaAtualRef.current !== proximaTela) {
-      navegarPara(proximaTela, { origem: telaAtualRef.current })
+      navegarPara(proximaTela, { origem: telaAtualRef.current, replace: true })
     }
   }, [navegarPara, telaInformadaNaUrl, usuarioLogado?.id])
 
@@ -1032,17 +1076,18 @@ export default function App() {
     if (!empresaSessaoInicializada || !usuarioLogado?.id || !podeAcessarConfiguracoes()) return
 
     if (configuracaoInicialCompleta && telaAtual === 'onboarding') {
-      setTelaAtualState('dashboard')
+      navegarPara('dashboard', { replace: true, origem: 'onboarding', contexto: null })
       return
     }
 
     if (!configuracaoInicialCompleta && telaAtual === 'dashboard') {
-      setTelaAtualState('onboarding')
+      navegarPara('onboarding', { replace: true, origem: 'dashboard', contexto: null })
     }
   }, [
     configuracaoInicialCompleta,
     empresaSessaoInicializada,
     podeAcessarConfiguracoes,
+    navegarPara,
     telaAtual,
     usuarioLogado?.id
   ])
@@ -1197,6 +1242,12 @@ export default function App() {
           })
 
       limparDadosTenant()
+      navegarPara('dashboard', {
+        replace: true,
+        origem: '',
+        contexto: null,
+        invalidarContextoAnterior: true,
+      })
       setEmpresaId(empresaSelecionada.id)
       setEmpresaAtiva({
         id: empresaSelecionada.id,
@@ -1205,7 +1256,6 @@ export default function App() {
       })
       setPerfilUsuario(perfilSelecionado)
       setPermissoesUsuario(permissoesAtualizadas)
-      setTelaAtualState('dashboard')
       const podeCarregarLixeira = Boolean(permissoesAtualizadas?.isMaster || normalizarPerfil(perfilSelecionado) === 'admin')
       await carregarTudo(empresaSelecionada.id, {
         permitirCarregarLixeira: podeCarregarLixeira
@@ -3657,12 +3707,22 @@ export default function App() {
   }
 
   const sairDoSistema = useCallback(async () => {
+    logoutExplicitoRef.current = true
+    navegarPara('dashboard', { replace: true, origem: '', contexto: null })
+    try {
+      window.sessionStorage.removeItem(SESSION_RETURN_SCREEN_KEY)
+    } catch (error) {
+      console.warn('Nao foi possivel limpar a tela de retorno no logout:', error?.message || error)
+    }
     limparEstadoAutenticacaoCallback()
     setUsuarioLogado(null)
     setCarregandoAuth(false)
-    setTelaAtualState('contas')
-    await supabase.auth.signOut()
-  }, [limparEstadoAutenticacaoCallback, setCarregandoAuth, setTelaAtualState, setUsuarioLogado])
+    try {
+      await supabase.auth.signOut()
+    } finally {
+      logoutExplicitoRef.current = false
+    }
+  }, [limparEstadoAutenticacaoCallback, navegarPara, setCarregandoAuth, setUsuarioLogado])
 
   function voltarPainel() {
     navegarPara('dashboard')

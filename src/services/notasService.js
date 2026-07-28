@@ -1,6 +1,5 @@
 import {
   atualizarPorEmpresa,
-  excluirPorEmpresa,
   inserirComEmpresa,
   selecionarPorEmpresa
 } from './supabaseQueryService'
@@ -51,8 +50,15 @@ export async function restaurarNotaDaLixeira(supabase, id, empresaId) {
   })
 }
 
-export async function excluirNotaPermanentemente(supabase, id, empresaId) {
-  return excluirPorEmpresa(supabase, 'df_notas', id, empresaId)
+export async function excluirNotaPermanentemente(supabase, id, empresaId, excluidoAte) {
+  return supabase
+    .from('df_notas')
+    .delete()
+    .eq('id', id)
+    .eq('empresa_id', empresaId)
+    .eq('excluido', true)
+    .lte('excluido_em', excluidoAte)
+    .select('id')
 }
 
 

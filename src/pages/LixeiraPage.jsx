@@ -26,6 +26,7 @@ export default function LixeiraPage({
   excluirNotaDefinitivo,
   diasNaLixeira,
   podeExcluirDefinitivo,
+  obterEstadoRetencaoLixeira,
   formatarValor,
   formatarData
 }) {
@@ -240,6 +241,8 @@ export default function LixeiraPage({
               {contasLixeira.map((conta) => {
                 const dias = diasNaLixeira(conta.excluido_em)
                 const liberada = podeExcluirDefinitivo(conta.excluido_em)
+                const retencao = obterEstadoRetencaoLixeira(conta.excluido_em)
+                const dataLiberacao = retencao.dataLiberacao?.toLocaleDateString('pt-BR') || 'data não disponível'
                 const key = itemKey('conta', conta.id)
 
                 return (
@@ -263,7 +266,9 @@ export default function LixeiraPage({
                     </div>
 
                     <small className={`trash-quarantine ${liberada ? 'trash-quarantine-ready' : 'trash-quarantine-safe'}`} style={liberada ? styles.textoLiberado : styles.textoQuarentena}>
-                      Excluída há {dias} dia(s) • restauração disponível por 60 dias
+                      {liberada
+                        ? `Excluída há ${dias} dia(s) • exclusão definitiva liberada`
+                        : `Excluída há ${dias} dia(s) • liberação em ${dataLiberacao} (${retencao.diasRestantes} dia(s))`}
                     </small>
 
                     <div className="trash-card-actions" style={styles.acoes}>
@@ -272,7 +277,7 @@ export default function LixeiraPage({
                       </button>
 
                       {podeExcluirDefinitivoFinanceiro && (
-                        <button className="trash-action-danger" style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir definitivamente', mensagem: `Excluir definitivamente a conta ${conta.descricao}? Essa ação não poderá ser desfeita.`, textoConfirmar: 'Excluir definitivo', tipo: 'perigo', acao: () => excluirContaDefinitivo(conta) })}>
+                        <button className="trash-action-danger" style={styles.btnExcluir} disabled={!liberada} title={liberada ? 'Excluir definitivamente' : `Disponível em ${dataLiberacao}`} onClick={() => abrirConfirmacao({ titulo: 'Excluir definitivamente', mensagem: `Excluir definitivamente a conta ${conta.descricao}? Essa ação não poderá ser desfeita.`, textoConfirmar: 'Excluir definitivo', tipo: 'perigo', acao: () => excluirContaDefinitivo(conta) })}>
                           Excluir definitivo
                         </button>
                       )}
@@ -321,6 +326,8 @@ export default function LixeiraPage({
               {notasLixeira.map((nota) => {
                 const dias = diasNaLixeira(nota.excluido_em)
                 const liberada = podeExcluirDefinitivo(nota.excluido_em)
+                const retencao = obterEstadoRetencaoLixeira(nota.excluido_em)
+                const dataLiberacao = retencao.dataLiberacao?.toLocaleDateString('pt-BR') || 'data não disponível'
                 const key = itemKey('nota', nota.id)
 
                 return (
@@ -342,7 +349,9 @@ export default function LixeiraPage({
                     )}
 
                     <small className={`trash-quarantine ${liberada ? 'trash-quarantine-ready' : 'trash-quarantine-safe'}`} style={liberada ? styles.textoLiberado : styles.textoQuarentena}>
-                      Excluída há {dias} dia(s) • restauração disponível por 60 dias
+                      {liberada
+                        ? `Excluída há ${dias} dia(s) • exclusão definitiva liberada`
+                        : `Excluída há ${dias} dia(s) • liberação em ${dataLiberacao} (${retencao.diasRestantes} dia(s))`}
                     </small>
 
                     <div className="trash-card-actions" style={styles.acoes}>
@@ -351,7 +360,7 @@ export default function LixeiraPage({
                       </button>
 
                       {podeExcluirDefinitivoFinanceiro && (
-                        <button className="trash-action-danger" style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Excluir definitivamente', mensagem: `Excluir definitivamente a nota ${nota.titulo}? Essa ação não poderá ser desfeita.`, textoConfirmar: 'Excluir definitivo', tipo: 'perigo', acao: () => excluirNotaDefinitivo(nota) })}>
+                        <button className="trash-action-danger" style={styles.btnExcluir} disabled={!liberada} title={liberada ? 'Excluir definitivamente' : `Disponível em ${dataLiberacao}`} onClick={() => abrirConfirmacao({ titulo: 'Excluir definitivamente', mensagem: `Excluir definitivamente a nota ${nota.titulo}? Essa ação não poderá ser desfeita.`, textoConfirmar: 'Excluir definitivo', tipo: 'perigo', acao: () => excluirNotaDefinitivo(nota) })}>
                           Excluir definitivo
                         </button>
                       )}

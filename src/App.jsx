@@ -10,7 +10,9 @@ import {
   usuarioEhMasterProtegido,
   atualizarNomeUsuarioLogado,
   listarFiliaisUsuariosEmpresa,
-  atualizarFiliaisUsuarioEmpresa
+  atualizarFiliaisUsuarioEmpresa,
+  senhaProvisoriaValida,
+  TAMANHO_MINIMO_SENHA_PROVISORIA
 } from './services/usuariosService'
 import Topbar from './components/layout/Topbar.jsx'
 import Sidebar from './components/layout/Sidebar.jsx'
@@ -43,11 +45,11 @@ import { converterValor, formatarData, formatarDataParaBanco, formatarValor, lim
 import { diferencaDias } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
 import { estaVencida, pegarMes } from './utils/contasStatus'
-import { atualizarAposMutacaoContas, carregarFonteContextualContas, consumidorRequerHistoricoCompleto, filtrarContasPorHorizonte, formatarDataBancoLocal, obterPeriodoConsultaPagas, selecionarFonteContas } from './utils/contasConsultasOperacionais.js'
-import { atualizarListaLixeiraEstavel, diasNaLixeira, podeExcluirDefinitivo } from './utils/lixeira'
-import { erroEhSessaoExpirada, mensagemSeguraErro } from './utils/session'
+import { atualizarAposMutacaoContas, calcularResumoFinanceiroContas, carregarFonteContextualContas, consumidorRequerHistoricoCompleto, criarAlvoContaParaNavegacao, filtrarContasPorHorizonte, formatarDataBancoLocal, obterPeriodoConsultaPagas, selecionarFonteContas } from './utils/contasConsultasOperacionais.js'
+import { atualizarListaLixeiraEstavel, diasNaLixeira, obterEstadoRetencaoLixeira, obterLimiteExclusaoDefinitiva, podeExcluirDefinitivo } from './utils/lixeira'
+import { erroEhSessaoExpirada, mensagemSeguraErro, telaRetornoSessaoSegura } from './utils/session'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
-import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario } from './services/permissoesService'
+import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario, podeEditarBilling } from './services/permissoesService'
 import { listarFiliaisPorEmpresa } from './services/filiaisService'
 import { verificarUsoCentroCusto } from './services/contasService'
 import {
@@ -120,36 +122,6 @@ const DESTINATARIO_ALERTA_FORM_INICIAL = {
 }
 
 const SESSION_RETURN_SCREEN_KEY = 'dna_gestao_session_return_screen'
-const TELAS_RETORNO_SESSAO = new Set([
-  'dashboard',
-  'agenda',
-  'notas',
-  'contas',
-  'receitas',
-  'fluxo-caixa',
-  'relatorios-contas',
-  'relatorios',
-  'configuracoes',
-  'importar',
-  'lixeira',
-  'auditoria',
-  'usuarios',
-  'filiais',
-  'billing',
-  'onboarding',
-  'master-empresas',
-  'funcionarios',
-  'ferias',
-  'fechamento-folha',
-  'relatorios-gestao-pessoas',
-  'relatorios-pessoas',
-  'relatorios-ferias'
-])
-
-function telaRetornoSessaoSegura(tela) {
-  const telaNormalizada = String(tela || '').trim()
-  return TELAS_RETORNO_SESSAO.has(telaNormalizada) ? telaNormalizada : 'dashboard'
-}
 
 function normalizarValorBuscaContas(busca) {
   const texto = String(busca || '')
@@ -488,6 +460,7 @@ export default function App() {
   const [formDestinatarioAlerta, setFormDestinatarioAlerta] = useState(DESTINATARIO_ALERTA_FORM_INICIAL)
   const [agendaFocusTarget, setAgendaFocusTarget] = useState(null)
   const [contaFocusTarget, setContaFocusTarget] = useState(null)
+  const [telaRetornoContas, setTelaRetornoContas] = useState('')
   function mostrarAviso(mensagem, tipo = 'info') {
     showToast(mensagem, tipo)
   }
@@ -505,13 +478,45 @@ export default function App() {
   const navegarParaOrigemAgenda = useCallback((tipo, id) => {
     if (!tipo || !id) return
     if (tipo === 'conta') {
-      setContaFocusTarget({ tipo: 'conta', id, origem: 'agenda', nonce: Date.now() })
+      setContaFocusTarget(criarAlvoContaParaNavegacao(id, 'agenda'))
       navegarPara('contas')
       return
     }
     setAgendaFocusTarget({ tipo, id, nonce: Date.now() })
     navegarPara('notas')
   }, [navegarPara])
+
+  const navegarParaContaControleImpostos = useCallback((conta) => {
+    const alvo = criarAlvoContaParaNavegacao(conta, 'controle-impostos')
+    if (!alvo) return
+    const statusFinanceiro = String(conta?.status_relatorio || conta?.status || '')
+    const filtroDestino = conta?.oculto === true
+      ? 'ocultas'
+      : (conta?.excluido === true
+          ? 'excluidas'
+          : (['pago', 'paga', 'quitada_por_parciais'].includes(statusFinanceiro) ? 'pagas' : 'todas'))
+    setBusca('')
+    setFiltroStatus(filtroDestino)
+    setFiltroHorizonte('todos')
+    setFiltroCentro('')
+    setFiltroFilial('')
+    setFiltroMes('')
+    setDataInicial('')
+    setDataFinal('')
+    setTelaRetornoContas('controle-impostos')
+    setContaFocusTarget(alvo)
+    navegarPara('contas')
+  }, [
+    navegarPara,
+    setBusca,
+    setDataFinal,
+    setDataInicial,
+    setFiltroCentro,
+    setFiltroFilial,
+    setFiltroHorizonte,
+    setFiltroMes,
+    setFiltroStatus,
+  ])
 
   function limparDadosTenant() {
     setContasOperacionais([])
@@ -539,6 +544,7 @@ export default function App() {
     setFiltroMes('')
     setDataInicial('')
     setDataFinal('')
+    setTelaRetornoContas('')
     setArquivoImportacao(null)
     setLinhasImportacao([])
     setStatusImportacao('')
@@ -1198,8 +1204,8 @@ export default function App() {
 
     const senhaProvisoria = senhaConviteUsuario.trim()
 
-    if (senhaProvisoria.length < 6) {
-      mostrarAviso('Informe uma senha provisória com pelo menos 6 caracteres.', 'erro')
+    if (!senhaProvisoriaValida(senhaProvisoria)) {
+      mostrarAviso(`Informe uma senha provisória com pelo menos ${TAMANHO_MINIMO_SENHA_PROVISORIA} caracteres.`, 'erro')
       return
     }
 
@@ -1944,32 +1950,10 @@ export default function App() {
         .some((campo) => String(campo).toLowerCase().includes(termoBuscaContas))
     }), [contasOperacionais, dataFinal, dataInicial, filtroCentro, filtroMes, filtroStatus, termoBuscaContas, valorBuscaContasCentavos, digitosBuscaValorContas])
 
-  const resumoFinanceiro = useMemo(() => {
-    const obterValorRealizadoConta = (conta) => conta.status === 'pago'
-      ? Number(conta.valor_pago ?? conta.valor ?? 0)
-      : 0
-
-    const totalCalculado = contasFiltradas.reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
-    const pagoCalculado = contasFiltradas
-      .reduce((acc, conta) => acc + obterValorRealizadoConta(conta), 0)
-    const vencidoCalculado = contasFiltradas
-      .filter((conta) => estaVencida(conta.data_vencimento, conta.status))
-      .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
-    const pendenteCalculado = contasFiltradas
-      .filter((conta) => conta.status !== 'pago')
-      .reduce((acc, conta) => acc + Number(conta.valor || 0), 0)
-    const encargosCalculado = contasFiltradas.reduce((acc, conta) => acc + Number(conta.juros_multa || 0), 0)
-    const descontosCalculado = contasFiltradas.reduce((acc, conta) => acc + Number(conta.desconto || 0), 0)
-
-    return {
-      total: totalCalculado,
-      pago: pagoCalculado,
-      vencido: vencidoCalculado,
-      pendente: pendenteCalculado,
-      encargos: encargosCalculado,
-      descontos: descontosCalculado
-    }
-  }, [contasFiltradas])
+  const resumoFinanceiro = useMemo(
+    () => calcularResumoFinanceiroContas(contasFiltradas),
+    [contasFiltradas],
+  )
 
   const { total, pago, vencido, pendente, encargos, descontos } = resumoFinanceiro
 
@@ -2599,18 +2583,50 @@ export default function App() {
       return
     }
 
-    const { error } = await supabase
+    const { data: contaAtual, error: consultaError } = await supabase
+      .from('df_contas')
+      .select('id, excluido, excluido_em')
+      .eq('id', conta.id)
+      .eq('empresa_id', empresaId)
+      .maybeSingle()
+
+    if (consultaError) {
+      avisarErro(consultaError)
+      return
+    }
+
+    const retencao = obterEstadoRetencaoLixeira(contaAtual?.excluido_em)
+    if (!contaAtual?.excluido || !retencao.elegivel) {
+      mostrarAviso(
+        `A exclusão definitiva será liberada em ${retencao.diasRestantes} dia(s).`,
+        'aviso',
+      )
+      await buscarLixeira()
+      return
+    }
+
+    const limiteExclusao = obterLimiteExclusaoDefinitiva()
+    const { data: excluidas, error } = await supabase
       .from('df_contas')
       .delete()
       .eq('id', conta.id)
       .eq('empresa_id', empresaId)
+      .eq('excluido', true)
+      .lte('excluido_em', limiteExclusao)
+      .select('id')
 
     if (error) {
       avisarErro(error)
       return
     }
 
-    buscarLixeira()
+    if (!excluidas?.length) {
+      mostrarAviso('A conta não está mais elegível para exclusão definitiva.', 'aviso')
+      await buscarLixeira()
+      return
+    }
+
+    await buscarLixeira()
     mostrarAviso('Conta excluída definitivamente.', 'sucesso')
   }
 
@@ -4011,6 +4027,11 @@ export default function App() {
         ocultarConta={ocultarConta}
         reexibirConta={reexibirConta}
         navegarPara={navegarPara}
+        telaRetorno={telaRetornoContas}
+        onVoltarOrigem={() => {
+          setTelaRetornoContas('')
+          navegarPara('controle-impostos')
+        }}
       />
     )
   }
@@ -4051,6 +4072,7 @@ export default function App() {
           formatarValor={formatarValor}
           formatarData={formatarData}
           navegarPara={navegarPara}
+          navegarParaConta={navegarParaContaControleImpostos}
         />
         </AppSuspenseBoundary>
     )
@@ -4380,7 +4402,7 @@ export default function App() {
   }
 
   if (telaAtual === 'billing') {
-    if (!podeAcessarConfiguracoes()) {
+    if (!temPermissao(['admin'])) {
       return renderAppFrame(
         <>
           <h1 style={styles.titulo}>💼 Plano comercial</h1>
@@ -4401,7 +4423,7 @@ export default function App() {
         filiais={filiais}
         usuarios={usuariosEmpresa}
         mostrarAviso={mostrarAviso}
-        podeEditar={podeAdministrarUsuarios()}
+        podeEditar={podeEditarBilling(permissoesUsuario)}
         voltarPainel={() => navegarPara('configuracoes')}
       />
     )
@@ -4609,6 +4631,7 @@ export default function App() {
           excluirNotaDefinitivo={excluirNotaDefinitivo}
           diasNaLixeira={diasNaLixeira}
           podeExcluirDefinitivo={podeExcluirDefinitivo}
+          obterEstadoRetencaoLixeira={obterEstadoRetencaoLixeira}
           formatarValor={formatarValor}
           formatarData={formatarData}
         />

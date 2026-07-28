@@ -10,6 +10,10 @@ import {
   restaurarNotaDaLixeira
 } from '../services/notasService'
 import { primeiraLetraMaiuscula } from '../utils/format'
+import {
+  obterEstadoRetencaoLixeira,
+  obterLimiteExclusaoDefinitiva,
+} from '../utils/lixeira.js'
 
 function assinaturaListaNotas(itens = []) {
   return itens
@@ -173,10 +177,43 @@ export function useNotas() {
   }
 
   async function excluirNotaDefinitivo({ supabase, nota, empresaId, avisarErro, buscarLixeira, mostrarAviso }) {
-    const { error } = await excluirNotaPermanentemente(supabase, nota.id, empresaId)
+    const { data: notaAtual, error: consultaError } = await supabase
+      .from('df_notas')
+      .select('id, excluido, excluido_em')
+      .eq('id', nota.id)
+      .eq('empresa_id', empresaId)
+      .maybeSingle()
+
+    if (consultaError) {
+      avisarErro(consultaError)
+      return
+    }
+
+    const retencao = obterEstadoRetencaoLixeira(notaAtual?.excluido_em)
+    if (!notaAtual?.excluido || !retencao.elegivel) {
+      mostrarAviso?.(
+        `A exclusão definitiva será liberada em ${retencao.diasRestantes} dia(s).`,
+        'aviso',
+      )
+      await buscarLixeira()
+      return
+    }
+
+    const { data: excluidas, error } = await excluirNotaPermanentemente(
+      supabase,
+      nota.id,
+      empresaId,
+      obterLimiteExclusaoDefinitiva(),
+    )
 
     if (error) {
       avisarErro(error)
+      return
+    }
+
+    if (!excluidas?.length) {
+      mostrarAviso?.('A nota não está mais elegível para exclusão definitiva.', 'aviso')
+      await buscarLixeira()
       return
     }
 

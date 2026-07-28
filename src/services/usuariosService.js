@@ -2,6 +2,11 @@ import { supabase } from '../lib/supabase.js'
 
 const MASTER_EMAIL_FALLBACK = 'bugaohfc@gmail.com'
 const MASTER_VALUES = new Set(['master', 'owner', 'superadmin', 'super_admin', 'super admin'])
+export const TAMANHO_MINIMO_SENHA_PROVISORIA = 12
+
+export function senhaProvisoriaValida(senha) {
+  return String(senha || '').trim().length >= TAMANHO_MINIMO_SENHA_PROVISORIA
+}
 
 export function normalizarPerfilUsuario(perfil) {
   const valor = String(perfil || '').toLowerCase().trim()
@@ -93,7 +98,7 @@ export async function adicionarUsuarioEmpresa({ empresaId, email, nome, perfil, 
   if (!empresaId) throw new Error('Empresa não identificada.')
   if (!emailNormalizado || !emailNormalizado.includes('@')) throw new Error('Informe um e-mail válido.')
 
-  if (criarAuthManual && senhaLimpa.length < 12) {
+  if (criarAuthManual && !senhaProvisoriaValida(senhaLimpa)) {
     throw new Error('Informe uma senha provisória com pelo menos 12 caracteres.')
   }
 

@@ -9,6 +9,7 @@ import {
   criarEstadoExpansaoPadrao,
   reconciliarEstadoExpansao
 } from '../utils/contasAgrupamento.js'
+import { origemPermiteContaForaDoFiltro } from '../utils/contasConsultasOperacionais.js'
 import './ContasPage.css'
 
 const OPCOES_ORDENACAO_CONTAS = [
@@ -216,7 +217,7 @@ export default function ContasPage({
   listarPagamentosParciaisConta,
   estornarPagamentoParcial,
   baixarContaQuitadaPorParciais,
-  navegarPara, podeEditarFinanceiro = true, podeExportarDados = true,
+  navegarPara, telaRetorno = '', onVoltarOrigem, podeEditarFinanceiro = true, podeExportarDados = true,
   periodoPagas, setPeriodoPagas, anoPagas, setAnoPagas, dataInicialPagas, setDataInicialPagas, dataFinalPagas, setDataFinalPagas, loadingConsultaContas = false, haMaisContasConsulta = false, carregarMaisContas, modoBuscaGlobal = false
 }) {
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
@@ -235,8 +236,9 @@ export default function ContasPage({
     if (!contaAlvoId) return null
     return contas.find((conta) => String(conta.id) === String(contaAlvoId))
       || contasFiltradas.find((conta) => String(conta.id) === String(contaAlvoId))
+      || (String(contaFocusTarget?.conta?.id) === String(contaAlvoId) ? contaFocusTarget.conta : null)
       || null
-  }, [contaAlvoId, contas, contasFiltradas])
+  }, [contaAlvoId, contaFocusTarget?.conta, contas, contasFiltradas])
   const contaAlvoEstaFiltrada = useMemo(
     () => Boolean(contaAlvoId) && contasFiltradas.some((conta) => String(conta.id) === String(contaAlvoId)),
     [contaAlvoId, contasFiltradas]
@@ -245,7 +247,7 @@ export default function ContasPage({
     if (!contaAlvo) return contasFiltradas
     if (contaAlvo.oculto === true && filtroStatus !== 'ocultas') return contasFiltradas
     const jaEstaFiltrada = contasFiltradas.some((conta) => String(conta.id) === String(contaAlvo.id))
-    const podeIncluirForaDoFiltro = contaFocusTarget?.origem === 'agenda'
+    const podeIncluirForaDoFiltro = origemPermiteContaForaDoFiltro(contaFocusTarget?.origem)
     return jaEstaFiltrada || !podeIncluirForaDoFiltro ? contasFiltradas : [contaAlvo, ...contasFiltradas]
   }, [contaAlvo, contaFocusTarget?.origem, contasFiltradas, filtroStatus])
   const contasOrdenadas = useMemo(
@@ -936,6 +938,9 @@ export default function ContasPage({
           <p style={styles.textoNota}>Controle vencimentos, baixas e contas por filial, centro de custo e período.</p>
         </div>
         <div className="page-actions-row">
+          {telaRetorno === 'controle-impostos' && (
+            <button style={styles.btnCinza} onClick={onVoltarOrigem}>Voltar ao Controle de Impostos</button>
+          )}
           <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>Voltar ao Painel</button>
         </div>
       </div>

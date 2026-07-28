@@ -58,6 +58,10 @@ export function criarPermissoesUsuario({ perfilEmpresa = 'operador', master = nu
   }
 }
 
+export function podeEditarBilling(permissoes = {}) {
+  return permissoes?.isMaster === true
+}
+
 export async function buscarPermissoesUsuario({ userId, email, perfilEmpresa = 'operador' } = {}) {
   const emailNormalizado = normalizarEmail(email)
   const base = criarPermissoesUsuario({ perfilEmpresa })

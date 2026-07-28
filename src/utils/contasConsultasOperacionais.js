@@ -1,3 +1,8 @@
+import {
+  derivarStatusFinanceiroConta,
+  reconciliarSituacaoConta,
+} from './relatoriosFinanceiros.js'
+
 export function formatarDataBancoLocal(data) {
   const ano = data.getFullYear()
   const mes = String(data.getMonth() + 1).padStart(2, '0')
@@ -160,16 +165,42 @@ export function selecionarFonteContextualContas({ consumidor, operacionais = [],
 export function calcularResumoFinanceiroContas(contas = [], hoje = formatarDataBancoLocal(new Date())) {
   return contas.reduce((resumo, conta) => {
     if (!contaEstaAtiva(conta) || conta?.oculto === true) return resumo
-    const valor = Number(conta?.valor || 0)
-    const pago = conta?.status === 'pago' ? Number(conta?.valor_pago ?? conta?.valor ?? 0) : 0
-    resumo.total += valor
-    resumo.pago += pago
-    if (conta?.status !== 'pago') resumo.pendente += valor
-    if (contaEstaVencida(conta, hoje)) resumo.vencido += valor
+    const pagamentos = Array.isArray(conta.pagamentos_parciais)
+      ? conta.pagamentos_parciais
+      : (Number(conta.pagamentosParciaisTotal || 0) > 0
+          ? [{ valor_pago: conta.pagamentosParciaisTotal }]
+          : [])
+    const situacao = reconciliarSituacaoConta(conta, pagamentos)
+    const statusFinanceiro = derivarStatusFinanceiroConta(conta, situacao, hoje)
+    const valorPrevisto = situacao.valorPrevistoCentavos / 100
+    const valorPago = situacao.valorPagoAtualCentavos / 100
+    const saldo = situacao.saldoRestanteCentavos / 100
+
+    resumo.total += valorPrevisto
+    resumo.pago += valorPago
+    resumo.pendente += saldo
+    if (statusFinanceiro === 'vencida') resumo.vencido += saldo
     resumo.encargos += Number(conta?.juros_multa || 0)
     resumo.descontos += Number(conta?.desconto || 0)
     return resumo
   }, { total: 0, pago: 0, pendente: 0, vencido: 0, encargos: 0, descontos: 0 })
+}
+
+export function criarAlvoContaParaNavegacao(contaOuId, origem = 'agenda', nonce = Date.now()) {
+  const conta = contaOuId && typeof contaOuId === 'object' ? contaOuId : null
+  const id = conta?.id || contaOuId
+  if (!id) return null
+  return {
+    tipo: 'conta',
+    id,
+    conta,
+    origem,
+    nonce,
+  }
+}
+
+export function origemPermiteContaForaDoFiltro(origem) {
+  return origem === 'agenda' || origem === 'controle-impostos'
 }
 
 export function normalizarValorBuscaContas(valor) {

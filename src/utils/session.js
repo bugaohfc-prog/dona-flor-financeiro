@@ -1,3 +1,36 @@
+export const TELAS_RETORNO_SESSAO = new Set([
+  'dashboard',
+  'agenda',
+  'notas',
+  'contas',
+  'receitas',
+  'fluxo-caixa',
+  'relatorios-contas',
+  'relatorios',
+  'recorrencias',
+  'controle-impostos',
+  'configuracoes',
+  'importar',
+  'lixeira',
+  'auditoria',
+  'usuarios',
+  'filiais',
+  'billing',
+  'onboarding',
+  'master-empresas',
+  'funcionarios',
+  'ferias',
+  'fechamento-folha',
+  'relatorios-gestao-pessoas',
+  'relatorios-pessoas',
+  'relatorios-ferias',
+])
+
+export function telaRetornoSessaoSegura(tela) {
+  const telaNormalizada = String(tela || '').trim()
+  return TELAS_RETORNO_SESSAO.has(telaNormalizada) ? telaNormalizada : 'dashboard'
+}
+
 export function erroEhSessaoExpirada(erro) {
   const mensagem = String(erro?.message || erro || '').toLowerCase()
   return mensagem.includes('jwt') || mensagem.includes('expired') || mensagem.includes('unauthorized') || mensagem.includes('session')

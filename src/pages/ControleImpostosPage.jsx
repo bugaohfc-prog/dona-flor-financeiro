@@ -185,7 +185,8 @@ export default function ControleImpostosPage({
   filiais = [],
   formatarValor,
   formatarData,
-  navegarPara
+  navegarPara,
+  navegarParaConta
 }) {
   const [filtro, setFiltro] = useState('todos')
   const [busca, setBusca] = useState('')
@@ -410,7 +411,7 @@ export default function ControleImpostosPage({
                 </div>
 
                 <div className="tax-control-actions">
-                  <button type="button" onClick={() => navegarPara?.('contas')}>
+                  <button type="button" onClick={() => navegarParaConta?.(conta)}>
                     Ver conta original
                   </button>
                 </div>

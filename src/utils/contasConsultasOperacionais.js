@@ -1,6 +1,5 @@
 import {
-  derivarStatusFinanceiroConta,
-  reconciliarSituacaoConta,
+  calcularVerdadeFinanceiraConta,
 } from './relatoriosFinanceiros.js'
 
 export function formatarDataBancoLocal(data) {
@@ -11,7 +10,10 @@ export function formatarDataBancoLocal(data) {
 }
 
 export function contaEstaAtiva(conta) {
-  return conta?.excluido !== true && conta?.deletado !== true
+  return conta?.excluido !== true
+    && conta?.deletado !== true
+    && !conta?.excluido_em
+    && !conta?.deleted_at
 }
 
 export function contaEstaVencida(conta, hoje) {
@@ -163,27 +165,21 @@ export function selecionarFonteContextualContas({ consumidor, operacionais = [],
 }
 
 export function calcularResumoFinanceiroContas(contas = [], hoje = formatarDataBancoLocal(new Date())) {
-  return contas.reduce((resumo, conta) => {
+  const centavos = contas.reduce((resumo, conta) => {
     if (!contaEstaAtiva(conta) || conta?.oculto === true) return resumo
-    const pagamentos = Array.isArray(conta.pagamentos_parciais)
-      ? conta.pagamentos_parciais
-      : (Number(conta.pagamentosParciaisTotal || 0) > 0
-          ? [{ valor_pago: conta.pagamentosParciaisTotal }]
-          : [])
-    const situacao = reconciliarSituacaoConta(conta, pagamentos)
-    const statusFinanceiro = derivarStatusFinanceiroConta(conta, situacao, hoje)
-    const valorPrevisto = situacao.valorPrevistoCentavos / 100
-    const valorPago = situacao.valorPagoAtualCentavos / 100
-    const saldo = situacao.saldoRestanteCentavos / 100
-
-    resumo.total += valorPrevisto
-    resumo.pago += valorPago
-    resumo.pendente += saldo
-    if (statusFinanceiro === 'vencida') resumo.vencido += saldo
-    resumo.encargos += Number(conta?.juros_multa || 0)
-    resumo.descontos += Number(conta?.desconto || 0)
+    const verdade = calcularVerdadeFinanceiraConta(conta, undefined, hoje)
+    resumo.total += verdade.valorPrevistoCentavos
+    resumo.pago += verdade.valorPagoAtualCentavos
+    resumo.pendente += verdade.saldoRestanteCentavos
+    if (verdade.vencida) resumo.vencido += verdade.saldoRestanteCentavos
+    resumo.encargos += verdade.encargosCentavos
+    resumo.descontos += verdade.descontosCentavos
     return resumo
   }, { total: 0, pago: 0, pendente: 0, vencido: 0, encargos: 0, descontos: 0 })
+
+  return Object.fromEntries(
+    Object.entries(centavos).map(([chave, valor]) => [chave, Number((valor / 100).toFixed(2))])
+  )
 }
 
 export function criarAlvoContaParaNavegacao(contaOuId, origem = 'agenda', nonce = Date.now()) {

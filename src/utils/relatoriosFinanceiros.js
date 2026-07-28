@@ -28,6 +28,16 @@ function pagamentosAtivos(pagamentos = []) {
   ))
 }
 
+function pagamentosDisponiveisConta(conta = {}, pagamentos) {
+  if (Array.isArray(pagamentos)) return pagamentos
+  if (Array.isArray(conta.pagamentos_parciais)) return conta.pagamentos_parciais
+
+  const totalConsolidado = valorCentavos(conta.pagamentosParciaisTotal)
+  return totalConsolidado > 0
+    ? [{ id: `consolidado:${conta.id || 'conta'}`, valor_pago: deCentavos(totalConsolidado) }]
+    : []
+}
+
 export function reconciliarSituacaoConta(conta = {}, pagamentos = []) {
   const parciais = pagamentosAtivos(pagamentos)
   const valorPrevisto = valorCentavos(conta.valor)
@@ -65,6 +75,42 @@ export function derivarStatusFinanceiroConta(conta = {}, situacao = null, hoje =
   if (reconciliada.pagoPorParciaisCentavos > 0) return 'parcial'
   if (vencimento && vencimento > hoje) return 'futura'
   return 'aberta'
+}
+
+export function calcularVerdadeFinanceiraConta(
+  conta = {},
+  pagamentos,
+  hoje = new Date().toISOString().slice(0, 10)
+) {
+  const situacao = reconciliarSituacaoConta(conta, pagamentosDisponiveisConta(conta, pagamentos))
+  const statusFinanceiro = derivarStatusFinanceiroConta(conta, situacao, hoje)
+  const encargosCentavos = valorCentavos(conta.juros_multa)
+  const descontosCentavos = valorCentavos(conta.desconto)
+
+  return {
+    valorPrevisto: deCentavos(situacao.valorPrevistoCentavos),
+    valorPagoAtual: deCentavos(situacao.valorPagoAtualCentavos),
+    saldoRestante: deCentavos(situacao.saldoRestanteCentavos),
+    pagoPorParciais: deCentavos(situacao.pagoPorParciaisCentavos),
+    statusFinanceiro,
+    parcialmentePago: situacao.valorPagoAtualCentavos > 0 && situacao.saldoRestanteCentavos > 0,
+    quitadaPorParciais: statusFinanceiro === 'quitada_por_parciais',
+    vencida: statusFinanceiro === 'vencida',
+    encargos: deCentavos(encargosCentavos),
+    descontos: deCentavos(descontosCentavos),
+    diferencaRealizadoPrevisto: deCentavos(situacao.diferencaRealizadoPrevistoCentavos),
+    inconsistenciaValorPago: situacao.inconsistenciaValorPago,
+    valorPrevistoCentavos: situacao.valorPrevistoCentavos,
+    valorPagoAtualCentavos: situacao.valorPagoAtualCentavos,
+    saldoRestanteCentavos: situacao.saldoRestanteCentavos,
+    pagoPorParciaisCentavos: situacao.pagoPorParciaisCentavos,
+    encargosCentavos,
+    descontosCentavos,
+    contaPaga: situacao.contaPaga,
+    valorPagoInferido: situacao.valorPagoInferido,
+    origemValorPago: situacao.origemValorPago,
+    pagamentosAtivos: situacao.pagamentosAtivos
+  }
 }
 
 export function criarMovimentosPagamentoConta(conta = {}, pagamentos = []) {
@@ -156,30 +202,29 @@ export function consolidarContasComPagamentos(contas = [], pagamentos = [], crit
     .filter((conta) => contaRelatorioAtiva(conta, normalizados.incluirOcultas))
     .map((conta) => {
       const pagamentosConta = pagamentosPorConta.get(conta.id) || []
-      const situacao = reconciliarSituacaoConta(conta, pagamentosConta)
-      const statusFinanceiro = derivarStatusFinanceiroConta(conta, situacao, normalizados.hoje)
+      const verdade = calcularVerdadeFinanceiraConta(conta, pagamentosConta, normalizados.hoje)
       const dataPagamentoConta = String(conta.data_pagamento || '').slice(0, 10)
 
       return {
         ...conta,
         pagamentos_parciais: pagamentosConta,
-        valor_previsto_relatorio: deCentavos(situacao.valorPrevistoCentavos),
-        valor_pago_atual_relatorio: deCentavos(situacao.valorPagoAtualCentavos),
+        valor_previsto_relatorio: verdade.valorPrevisto,
+        valor_pago_atual_relatorio: verdade.valorPagoAtual,
         valor_pago_periodo_relatorio: 0,
-        saldo_restante_relatorio: deCentavos(situacao.saldoRestanteCentavos),
-        parcialmente_pago: situacao.valorPagoAtualCentavos > 0 && situacao.saldoRestanteCentavos > 0,
-        data_pagamento_nao_informada: situacao.contaPaga && !dataIsoValida(dataPagamentoConta),
-        status_financeiro_relatorio: statusFinanceiro,
-        status_relatorio: statusFinanceiro,
-        rotulo_status_relatorio: statusFinanceiro === 'quitada_por_parciais'
+        saldo_restante_relatorio: verdade.saldoRestante,
+        parcialmente_pago: verdade.parcialmentePago,
+        data_pagamento_nao_informada: verdade.contaPaga && !dataIsoValida(dataPagamentoConta),
+        status_financeiro_relatorio: verdade.statusFinanceiro,
+        status_relatorio: verdade.statusFinanceiro,
+        rotulo_status_relatorio: verdade.quitadaPorParciais
           ? 'Quitada por parciais — baixa pendente'
           : '',
-        baixa_pendente_relatorio: statusFinanceiro === 'quitada_por_parciais',
-        valor_pago_inferido_relatorio: situacao.valorPagoInferido,
-        origem_valor_pago_relatorio: situacao.origemValorPago,
-        diferenca_realizado_previsto_relatorio: deCentavos(situacao.diferencaRealizadoPrevistoCentavos),
-        inconsistencia_valor_pago_relatorio: situacao.inconsistenciaValorPago,
-        valor_relatorio: deCentavos(situacao.valorPrevistoCentavos),
+        baixa_pendente_relatorio: verdade.quitadaPorParciais,
+        valor_pago_inferido_relatorio: verdade.valorPagoInferido,
+        origem_valor_pago_relatorio: verdade.origemValorPago,
+        diferenca_realizado_previsto_relatorio: verdade.diferencaRealizadoPrevisto,
+        inconsistencia_valor_pago_relatorio: verdade.inconsistenciaValorPago,
+        valor_relatorio: verdade.valorPrevisto,
         data_referencia_relatorio: conta.data_vencimento
       }
     })
@@ -237,24 +282,35 @@ export function calcularResumoRelatorioFinanceiro(contas = [], hoje = new Date()
   const obrigacoesContadas = new Set()
   const centavos = contas.reduce((resumo, conta) => {
     const chaveObrigacao = conta.conta_id_relatorio || conta.id
-    const previsto = valorCentavos(conta.valor_previsto_relatorio ?? conta.valor)
-    const pago = valorCentavos(conta.valor_pago_atual_relatorio)
     const pagoPeriodo = valorCentavos(conta.valor_pago_periodo_relatorio)
-    const saldo = valorCentavos(conta.saldo_restante_relatorio)
     resumo.pagoPeriodo += pagoPeriodo
     if (!obrigacoesContadas.has(chaveObrigacao)) {
       obrigacoesContadas.add(chaveObrigacao)
-      resumo.previsto += previsto
-      resumo.pago += pago
-      resumo.saldo += saldo
-      if (conta.parcialmente_pago) resumo.parcial += pago
-      const status = conta.status_relatorio || statusRelatorioConta(conta, hoje)
+      const verdade = calcularVerdadeFinanceiraConta(conta, undefined, hoje)
+      resumo.previsto += verdade.valorPrevistoCentavos
+      resumo.pago += verdade.valorPagoAtualCentavos
+      resumo.saldo += verdade.saldoRestanteCentavos
+      resumo.encargos += verdade.encargosCentavos
+      resumo.descontos += verdade.descontosCentavos
+      if (verdade.parcialmentePago) resumo.parcial += verdade.valorPagoAtualCentavos
+      const status = verdade.statusFinanceiro
       resumo.quantidades[status] = (resumo.quantidades[status] || 0) + 1
-      if (status === 'vencida') resumo.vencido += saldo
+      if (verdade.vencida) resumo.vencido += verdade.saldoRestanteCentavos
       if (conta.data_pagamento_nao_informada) resumo.semDataPagamento += 1
     }
     return resumo
-  }, { previsto: 0, pago: 0, pagoPeriodo: 0, parcial: 0, saldo: 0, vencido: 0, semDataPagamento: 0, quantidades: {} })
+  }, {
+    previsto: 0,
+    pago: 0,
+    pagoPeriodo: 0,
+    parcial: 0,
+    saldo: 0,
+    vencido: 0,
+    encargos: 0,
+    descontos: 0,
+    semDataPagamento: 0,
+    quantidades: {}
+  })
 
   return {
     totalRegistros: contas.length,
@@ -264,6 +320,8 @@ export function calcularResumoRelatorioFinanceiro(contas = [], hoje = new Date()
     totalParcialmentePago: deCentavos(centavos.parcial),
     saldoEmAberto: deCentavos(centavos.saldo),
     totalVencido: deCentavos(centavos.vencido),
+    totalEncargos: deCentavos(centavos.encargos),
+    totalDescontos: deCentavos(centavos.descontos),
     semDataPagamento: centavos.semDataPagamento,
     quantidades: centavos.quantidades
   }

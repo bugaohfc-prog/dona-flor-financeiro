@@ -9,7 +9,7 @@ import {
   criarEstadoExpansaoPadrao,
   reconciliarEstadoExpansao
 } from '../utils/contasAgrupamento.js'
-import { origemPermiteContaForaDoFiltro } from '../utils/contasConsultasOperacionais.js'
+import { calcularResumoFinanceiroContas, origemPermiteContaForaDoFiltro } from '../utils/contasConsultasOperacionais.js'
 import './ContasPage.css'
 
 const OPCOES_ORDENACAO_CONTAS = [
@@ -173,28 +173,6 @@ function ordenarContasParaListagem(contas, ordenacao, filtroStatus, estaVencida)
   })
 }
 
-function calcularResumoResultadoFiltrado(contas) {
-  return contas.reduce((resumo, conta) => {
-    const valorPrevisto = Number(conta.valor || 0)
-    const valorPago = conta.valor_pago == null ? valorPrevisto : Number(conta.valor_pago || 0)
-
-    resumo.previsto += valorPrevisto
-    resumo.encargos += Number(conta.juros_multa || 0)
-    resumo.descontos += Number(conta.desconto || 0)
-
-    if (conta.status === 'pago') {
-      resumo.realizado += valorPago
-    }
-
-    return resumo
-  }, {
-    previsto: 0,
-    realizado: 0,
-    encargos: 0,
-    descontos: 0
-  })
-}
-
 function EmptyState({ icon, title, description, actionLabel, onAction }) {
   return (
     <div className="empty-state-card">
@@ -278,7 +256,7 @@ export default function ContasPage({
     : [...ABAS_OPERACIONAIS_CONTAS, ...ABAS_HISTORICO_CONTAS]
   const statusAtualLabel = abasStatusAtuais.find((aba) => aba.valor === filtroStatus)?.label || filtroStatus
   const resumoResultadoFiltrado = useMemo(
-    () => calcularResumoResultadoFiltrado(contasFiltradas),
+    () => calcularResumoFinanceiroContas(contasFiltradas),
     [contasFiltradas]
   )
   const mostrarEncargosResultado = resumoResultadoFiltrado.encargos > 0
@@ -774,8 +752,10 @@ export default function ContasPage({
           <small>{contasFiltradas.length} conta(s)</small>
         </div>
         <div className="accounts-result-metrics">
-          <span><b>Previsto</b>{formatarValor(resumoResultadoFiltrado.previsto)}</span>
-          <span><b>Realizado</b>{formatarValor(resumoResultadoFiltrado.realizado)}</span>
+          <span><b>Previsto</b>{formatarValor(resumoResultadoFiltrado.total)}</span>
+          <span><b>Realizado</b>{formatarValor(resumoResultadoFiltrado.pago)}</span>
+          <span><b>Saldo em aberto</b>{formatarValor(resumoResultadoFiltrado.pendente)}</span>
+          <span><b>Vencido</b>{formatarValor(resumoResultadoFiltrado.vencido)}</span>
           {mostrarEncargosResultado && <span><b>Encargos</b>{formatarValor(resumoResultadoFiltrado.encargos)}</span>}
           {mostrarDescontosResultado && <span><b>Descontos</b>{formatarValor(resumoResultadoFiltrado.descontos)}</span>}
         </div>

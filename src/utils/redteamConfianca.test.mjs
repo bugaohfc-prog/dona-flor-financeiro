@@ -15,7 +15,10 @@ import {
   obterEstadoRetencaoLixeira,
   podeExcluirDefinitivo,
 } from './lixeira.js'
-import { avaliarAcessoTela } from './routeAccess.js'
+import {
+  avaliarAcessoTela,
+  construirPermissoesAcessoTelas,
+} from './routeAccess.js'
 import { telaRetornoSessaoSegura } from './session.js'
 
 const lerFonte = (arquivo) => readFile(new URL(arquivo, import.meta.url), 'utf8')
@@ -113,4 +116,90 @@ test('resumo de Contas usa pagamentos parciais, saldo e quitação derivada', ()
     encargos: 0,
     descontos: 0,
   })
+})
+
+test('Admin e Master respeitam canEditSettings false na gestão de centros', () => {
+  for (const permissoes of [
+    { perfilEmpresa: 'admin', canEditSettings: false },
+    { perfilEmpresa: 'master', isMaster: true, canEditSettings: false },
+  ]) {
+    const acesso = construirPermissoesAcessoTelas(permissoes)
+    assert.equal(acesso.canEditSettings, false)
+  }
+})
+
+test('Admin e Master sem canEditSettings explícito preservam o fallback atual', () => {
+  const admin = construirPermissoesAcessoTelas({ perfilEmpresa: 'admin' })
+  const master = construirPermissoesAcessoTelas({
+    perfilEmpresa: 'master',
+    isMaster: true,
+  })
+
+  assert.equal(admin.canEditSettings, true)
+  assert.equal(master.canEditSettings, true)
+})
+
+test('Gerente e Operador não recebem gestão de centros pelo perfil', () => {
+  const gerente = construirPermissoesAcessoTelas({ perfilEmpresa: 'gerente' })
+  const operador = construirPermissoesAcessoTelas({ perfilEmpresa: 'operador' })
+
+  assert.equal(gerente.canEditSettings, false)
+  assert.equal(operador.canEditSettings, false)
+})
+
+test('App fecha e limpa o modal de centros quando canEditSettings é revogado', async () => {
+  const app = await lerFonte('../App.jsx')
+
+  assert.match(
+    app,
+    /const podeGerenciarCentroCusto = useCallback\(\(\) => \{\s*return permissoesAcessoTelas\.canEditSettings\s*\}/,
+  )
+  assert.match(
+    app,
+    /if \(permissoesAcessoTelas\.canEditSettings\) return\s*setModalCentro\(false\)\s*setNovoCentro\(''\)/,
+  )
+  assert.match(app, /modalCentro=\{modalCentro && podeGerenciarCentroCusto\(\)\}/)
+  assert.match(
+    app,
+    /function abrirModalCentro\(\) \{\s*if \(!podeGerenciarCentroCusto\(\)\)/,
+  )
+  assert.match(app, /setModalCentro=\{abrirModalCentro\}/)
+  assert.match(app, /async function salvarCentro\(\) \{\s*if \(!podeGerenciarCentroCusto\(\)\)/)
+  assert.match(app, /async function excluirCentro\(id\) \{\s*if \(!podeGerenciarCentroCusto\(\)\)/)
+})
+
+test('Admin e Master respeitam canManageTrash false na exclusão definitiva', async () => {
+  for (const permissoes of [
+    { perfilEmpresa: 'admin', canManageTrash: false },
+    { perfilEmpresa: 'master', isMaster: true, canManageTrash: false },
+  ]) {
+    const acesso = construirPermissoesAcessoTelas(permissoes)
+    assert.equal(acesso.canManageTrash, false)
+  }
+
+  const app = await lerFonte('../App.jsx')
+  assert.match(
+    app,
+    /return temPermissao\(\['admin'\]\)\s*&& permissoesAcessoTelas\.canManageTrash === true/,
+  )
+})
+
+test('exclusão autorizada preserva a retenção obrigatória de 60 dias', () => {
+  const admin = construirPermissoesAcessoTelas({ perfilEmpresa: 'admin' })
+  const master = construirPermissoesAcessoTelas({
+    perfilEmpresa: 'master',
+    isMaster: true,
+  })
+  const excluidoEm = new Date('2026-05-01T12:00:00.000Z')
+
+  assert.equal(admin.canManageTrash, true)
+  assert.equal(master.canManageTrash, true)
+  assert.equal(
+    podeExcluirDefinitivo(excluidoEm, new Date('2026-06-29T12:00:00.000Z')),
+    false,
+  )
+  assert.equal(
+    podeExcluirDefinitivo(excluidoEm, new Date('2026-06-30T12:00:00.000Z')),
+    true,
+  )
 })

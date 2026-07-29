@@ -1077,11 +1077,18 @@ export default function App() {
 
   const podeExcluirDefinitivoFinanceiro = useCallback(() => {
     return temPermissao(['admin'])
-  }, [temPermissao])
+      && permissoesAcessoTelas.canManageTrash === true
+  }, [permissoesAcessoTelas.canManageTrash, temPermissao])
 
   const podeGerenciarCentroCusto = useCallback(() => {
-    return temPermissao(['admin'])
-  }, [temPermissao])
+    return permissoesAcessoTelas.canEditSettings
+  }, [permissoesAcessoTelas.canEditSettings])
+
+  useEffect(() => {
+    if (permissoesAcessoTelas.canEditSettings) return
+    setModalCentro(false)
+    setNovoCentro('')
+  }, [permissoesAcessoTelas.canEditSettings])
 
   const acessoTelaAtual = useMemo(
     () => avaliarAcessoTela(telaAtual, permissoesAcessoTelas),
@@ -2865,6 +2872,15 @@ export default function App() {
     mostrarAviso('Centro de custo criado com sucesso.', 'sucesso')
   }
 
+  function abrirModalCentro() {
+    if (!podeGerenciarCentroCusto()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+
+    setModalCentro(true)
+  }
+
   async function excluirCentro(id) {
     if (!podeGerenciarCentroCusto()) {
       bloquearAcaoSemPermissao()
@@ -3931,7 +3947,7 @@ export default function App() {
           primeiraLetraMaiuscula,
           limitarDataInput
         }}
-        modalCentro={modalCentro}
+        modalCentro={modalCentro && podeGerenciarCentroCusto()}
         centroProps={{
           novoCentro,
           setNovoCentro,
@@ -4641,7 +4657,7 @@ export default function App() {
           preencherFormularioDestinatarioAlerta={preencherFormularioDestinatarioAlerta}
           alternarStatusDestinatarioAlerta={alternarStatusDestinatarioAlerta}
           centros={centros}
-          setModalCentro={setModalCentro}
+          setModalCentro={abrirModalCentro}
           salvarConfiguracoes={salvarConfiguracoes}
         />
       </AppSuspenseBoundary>

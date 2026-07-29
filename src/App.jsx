@@ -22,6 +22,7 @@ import HeaderExpansivel from './components/ui/HeaderExpansivel.jsx'
 import AppRouteGuards from './components/routes/AppRouteGuards.jsx'
 import AppSuspenseBoundary from './components/routes/AppSuspenseBoundary.jsx'
 import ContasContextualGuard from './components/feedback/ContasContextualGuard.jsx'
+import AccessDeniedPage from './components/feedback/AccessDeniedPage.jsx'
 import AppModalsLayer from './components/render/AppModalsLayer.jsx'
 import AppOverlaysLayer from './components/render/AppOverlaysLayer.jsx'
 import AppShell from './components/shell/AppShell.jsx'
@@ -49,6 +50,7 @@ import { atualizarAposMutacaoContas, calcularResumoFinanceiroContas, carregarFon
 import { atualizarListaLixeiraEstavel, diasNaLixeira, obterEstadoRetencaoLixeira, obterLimiteExclusaoDefinitiva, podeExcluirDefinitivo } from './utils/lixeira'
 import { erroEhSessaoExpirada, mensagemSeguraErro, telaRetornoSessaoSegura } from './utils/session'
 import { resolverEstadoEntradaContas, sincronizarContextoContas } from './utils/navigation.js'
+import { avaliarAcessoTela, filtrarMenuPorAcesso } from './utils/routeAccess.js'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
 import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario, podeEditarBilling } from './services/permissoesService'
 import { listarFiliaisPorEmpresa } from './services/filiaisService'
@@ -861,13 +863,6 @@ export default function App() {
 
 
   useEffect(() => {
-    if (['usuarios', 'auditoria'].includes(telaAtual) && empresaId) {
-      buscarUsuariosEmpresa(empresaId)
-    }
-  }, [telaAtual, empresaId])
-
-
-  useEffect(() => {
     function fecharComEsc(event) {
       if (event.key !== 'Escape') return
 
@@ -1067,6 +1062,43 @@ export default function App() {
     return temPermissao(['admin'])
   }, [temPermissao])
 
+  const permissoesAcessoTelas = useMemo(() => ({
+    ...(permissoesUsuario || {}),
+    perfil: normalizarPerfil(perfilUsuario || permissoesUsuario?.perfilEmpresa),
+    canImport: podeImportarContas(),
+    canManageTrash: podeGerenciarLixeira(),
+    canEditSettings: podeEditarConfiguracoes(),
+    canAccessPeople: podeAcessarGestaoPessoas(),
+  }), [
+    normalizarPerfil,
+    perfilUsuario,
+    permissoesUsuario,
+    podeAcessarGestaoPessoas,
+    podeEditarConfiguracoes,
+    podeGerenciarLixeira,
+    podeImportarContas,
+  ])
+
+  const acessoTelaAtual = useMemo(
+    () => avaliarAcessoTela(telaAtual, permissoesAcessoTelas),
+    [permissoesAcessoTelas, telaAtual]
+  )
+
+  const acessoOnboarding = useMemo(
+    () => avaliarAcessoTela('onboarding', permissoesAcessoTelas),
+    [permissoesAcessoTelas]
+  )
+
+  useEffect(() => {
+    if (
+      acessoTelaAtual.permitido
+      && ['usuarios', 'auditoria'].includes(telaAtual)
+      && empresaId
+    ) {
+      buscarUsuariosEmpresa(empresaId)
+    }
+  }, [acessoTelaAtual.permitido, telaAtual, empresaId])
+
   const configuracaoInicialCompleta = useMemo(() => {
     const filiaisAtivas = filiais.filter((filial) => filial?.ativo !== false)
     const contasAtivas = contasOperacionais.filter((conta) => conta?.excluido !== true)
@@ -1075,7 +1107,7 @@ export default function App() {
   }, [centros, contasOperacionais, empresaId, filiais])
 
   useEffect(() => {
-    if (!empresaSessaoInicializada || !usuarioLogado?.id || !podeAcessarConfiguracoes()) return
+    if (!empresaSessaoInicializada || !usuarioLogado?.id || !acessoOnboarding.permitido) return
 
     if (configuracaoInicialCompleta && telaAtual === 'onboarding') {
       navegarPara('dashboard', { replace: true, origem: 'onboarding', contexto: null })
@@ -1088,7 +1120,7 @@ export default function App() {
   }, [
     configuracaoInicialCompleta,
     empresaSessaoInicializada,
-    podeAcessarConfiguracoes,
+    acessoOnboarding.permitido,
     navegarPara,
     telaAtual,
     usuarioLogado?.id
@@ -1177,22 +1209,10 @@ export default function App() {
     mostrarAviso(novoStatus ? 'Destinatario reativado.' : 'Destinatario inativado.', 'info')
   }
 
-  const menuSectionsFiltradas = useMemo(() => menuSections
-    .map((grupo) => ({
-      ...grupo,
-      items: grupo.items.filter((item) => {
-        if (item.tela === 'importar') return podeImportarContas()
-        if (item.tela === 'lixeira') return podeGerenciarLixeira()
-        if (item.tela === 'usuarios') return podeAdministrarUsuarios()
-        if (item.tela === 'auditoria') return podeAdministrarUsuarios()
-        if (['billing', 'onboarding'].includes(item.tela)) return temPermissao(['admin'])
-        if (item.peopleOnly) return podeAcessarGestaoPessoas()
-        if (item.tela === 'filiais') return podeEditarConfiguracoes()
-        if (item.tela === 'configuracoes') return podeAcessarConfiguracoes()
-        return !item.masterOnly || permissoesUsuario?.canManageCompanies
-      })
-    }))
-    .filter((grupo) => grupo.items.length > 0), [permissoesUsuario?.canManageCompanies, podeAcessarConfiguracoes, podeAcessarGestaoPessoas, podeAdministrarUsuarios, podeEditarConfiguracoes, podeGerenciarLixeira, podeImportarContas, temPermissao])
+  const menuSectionsFiltradas = useMemo(
+    () => filtrarMenuPorAcesso(menuSections, permissoesAcessoTelas),
+    [permissoesAcessoTelas]
+  )
 
   async function recarregarEmpresasDisponiveis() {
     if (!usuarioLogado) return
@@ -3756,7 +3776,8 @@ export default function App() {
   const nomeUsuarioCompleto = useCallback(() => nomeUsuarioCompletoAtual, [nomeUsuarioCompletoAtual])
 
   const contextoModuloAtual = resolverContextoModulo(modalPerfilUsuario ? 'perfil' : telaAtual)
-  const exibirAcoesRapidasFinanceiras = contextoModuloAtual === MODULOS_TOPBAR.financeiro
+  const exibirAcoesRapidasFinanceiras = acessoTelaAtual.permitido
+    && contextoModuloAtual === MODULOS_TOPBAR.financeiro
 
   useEffect(() => {
     if (!exibirAcoesRapidasFinanceiras) setMenuAberto(false)
@@ -4030,9 +4051,10 @@ export default function App() {
   }, [setGruposMenu])
 
   const preloadTelaLazy = useCallback((tela) => {
+    if (!avaliarAcessoTela(tela, permissoesAcessoTelas).permitido) return
     const lazyRouteName = getLazyRouteName(tela)
     if (lazyRouteName) preloadRoute(lazyRouteName)
-  }, [])
+  }, [permissoesAcessoTelas])
 
   const HeaderExpansivelComStyles = useCallback((props) => (
     <HeaderExpansivel styles={styles} {...props} />
@@ -4101,6 +4123,17 @@ export default function App() {
 
   if (carregandoAuth || bloqueandoPorEmpresa || !usuarioLogado || erroEmpresa) {
     return <AppRouteGuards {...routeGuardProps} />
+  }
+
+  if (!acessoTelaAtual.permitido) {
+    return renderAppFrame(
+      <AccessDeniedPage
+        titulo={acessoTelaAtual.titulo}
+        mensagem={acessoTelaAtual.mensagem}
+        onVoltar={() => navegarPara('dashboard')}
+        styles={styles}
+      />
+    )
   }
 
   if (telaAtual === 'contas') {
@@ -4321,19 +4354,6 @@ export default function App() {
   }
 
   if (telaAtual === 'funcionarios') {
-    if (!podeAcessarGestaoPessoas()) {
-      return renderAppFrame(
-        <>
-          <h1 style={styles.titulo}>Funcionários</h1>
-          <section style={styles.cardConfiguracao}>
-            <h2 style={styles.subtitulo}>Acesso restrito</h2>
-            <p style={styles.textoNota}>Seu perfil atual não permite acessar Gestão de Pessoas.</p>
-            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
-          </section>
-        </>
-      )
-    }
-
     return renderAppFrame(
       <LazyFuncionariosPage
         styles={styles}
@@ -4348,19 +4368,6 @@ export default function App() {
   }
 
   if (telaAtual === 'relatorios-pessoas') {
-    if (!podeAcessarGestaoPessoas()) {
-      return renderAppFrame(
-        <>
-          <h1 style={styles.titulo}>Relatórios de Pessoas</h1>
-          <section style={styles.cardConfiguracao}>
-            <h2 style={styles.subtitulo}>Acesso restrito</h2>
-            <p style={styles.textoNota}>Seu perfil atual não permite acessar Gestão de Pessoas.</p>
-            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
-          </section>
-        </>
-      )
-    }
-
     return renderAppFrame(
       <LazyRelatoriosPessoasPage
         styles={styles}
@@ -4372,19 +4379,6 @@ export default function App() {
   }
 
   if (telaAtual === 'relatorios-gestao-pessoas') {
-    if (!podeAcessarGestaoPessoas()) {
-      return renderAppFrame(
-        <>
-          <h1 style={styles.titulo}>Relatorios de Gestao de Pessoas</h1>
-          <section style={styles.cardConfiguracao}>
-            <h2 style={styles.subtitulo}>Acesso restrito</h2>
-            <p style={styles.textoNota}>Seu perfil atual nao permite acessar Gestao de Pessoas.</p>
-            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>Voltar</button>
-          </section>
-        </>
-      )
-    }
-
     return renderAppFrame(
       <LazyRelatoriosGestaoPessoasPage
         styles={styles}
@@ -4396,19 +4390,6 @@ export default function App() {
   }
 
   if (telaAtual === 'relatorios-ferias') {
-    if (!podeAcessarGestaoPessoas()) {
-      return renderAppFrame(
-        <>
-          <h1 style={styles.titulo}>Relatórios de Férias</h1>
-          <section style={styles.cardConfiguracao}>
-            <h2 style={styles.subtitulo}>Acesso restrito</h2>
-            <p style={styles.textoNota}>Seu perfil atual não permite acessar Gestão de Pessoas.</p>
-            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
-          </section>
-        </>
-      )
-    }
-
     return renderAppFrame(
       <LazyRelatoriosFeriasPage
         styles={styles}
@@ -4420,19 +4401,6 @@ export default function App() {
   }
 
   if (telaAtual === 'ferias') {
-    if (!podeAcessarGestaoPessoas()) {
-      return renderAppFrame(
-        <>
-          <h1 style={styles.titulo}>Férias</h1>
-          <section style={styles.cardConfiguracao}>
-            <h2 style={styles.subtitulo}>Acesso restrito</h2>
-            <p style={styles.textoNota}>Seu perfil atual não permite acessar Gestão de Pessoas.</p>
-            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
-          </section>
-        </>
-      )
-    }
-
     return renderAppFrame(
       <LazyFeriasPage
         styles={styles}
@@ -4446,19 +4414,6 @@ export default function App() {
   }
 
   if (telaAtual === 'fechamento-folha') {
-    if (!podeAcessarGestaoPessoas()) {
-      return renderAppFrame(
-        <>
-          <h1 style={styles.titulo}>Fechamento de Folha</h1>
-          <section style={styles.cardConfiguracao}>
-            <h2 style={styles.subtitulo}>Acesso restrito</h2>
-            <p style={styles.textoNota}>Seu perfil atual não permite acessar Gestão de Pessoas.</p>
-            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
-          </section>
-        </>
-      )
-    }
-
     return renderAppFrame(
       <LazyFechamentoFolhaPage
         styles={styles}
@@ -4494,19 +4449,6 @@ export default function App() {
 
 
   if (telaAtual === 'master-empresas') {
-    if (!permissoesUsuario?.canManageCompanies) {
-      return renderAppFrame(
-        <>
-          <h1 style={styles.titulo}>Administração</h1>
-          <section style={styles.cardConfiguracao}>
-            <h2 style={styles.subtitulo}>Acesso restrito</h2>
-            <p style={styles.textoNota}>Seu perfil atual não permite acessar o painel master.</p>
-            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
-          </section>
-        </>
-      )
-    }
-
     return renderAppFrame(
       <LazyMasterPanelPage
         styles={styles}
@@ -4527,19 +4469,6 @@ export default function App() {
 
 
   if (telaAtual === 'onboarding') {
-    if (!podeAcessarConfiguracoes()) {
-      return renderAppFrame(
-        <>
-          <h1 style={styles.titulo}>🚀 Implantação inicial</h1>
-          <section style={styles.cardConfiguracao}>
-            <h2 style={styles.subtitulo}>Acesso restrito</h2>
-            <p style={styles.textoNota}>Seu perfil atual não permite acessar a implantação inicial.</p>
-            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
-          </section>
-        </>
-      )
-    }
-
     return renderAppFrame(
       <LazyOnboardingPage
         styles={styles}
@@ -4557,19 +4486,6 @@ export default function App() {
   }
 
   if (telaAtual === 'billing') {
-    if (!temPermissao(['admin'])) {
-      return renderAppFrame(
-        <>
-          <h1 style={styles.titulo}>💼 Plano comercial</h1>
-          <section style={styles.cardConfiguracao}>
-            <h2 style={styles.subtitulo}>Acesso restrito</h2>
-            <p style={styles.textoNota}>Seu perfil atual não permite acessar o plano comercial.</p>
-            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
-          </section>
-        </>
-      )
-    }
-
     return renderAppFrame(
       <LazyBillingPage
         styles={styles}
@@ -4586,19 +4502,6 @@ export default function App() {
 
 
   if (telaAtual === 'filiais') {
-    if (!podeEditarConfiguracoes()) {
-      return renderAppFrame(
-        <>
-          <h1 style={styles.titulo}>🏬 Filiais</h1>
-          <section style={styles.cardConfiguracao}>
-            <h2 style={styles.subtitulo}>Acesso restrito</h2>
-            <p style={styles.textoNota}>Seu perfil atual não permite gerenciar filiais.</p>
-            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
-          </section>
-        </>
-      )
-    }
-
     return renderAppFrame(
       <LazyFiliaisPage
         styles={styles}
@@ -4612,19 +4515,6 @@ export default function App() {
 
 
   if (telaAtual === 'usuarios') {
-    if (!podeAcessarConfiguracoes()) {
-      return renderAppFrame(
-        <>
-          <h1 style={styles.titulo}>Usuários</h1>
-          <section style={styles.cardConfiguracao}>
-            <h2 style={styles.subtitulo}>Acesso restrito</h2>
-            <p style={styles.textoNota}>Seu perfil atual não permite acessar usuários.</p>
-            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>← Voltar</button>
-          </section>
-        </>
-      )
-    }
-
     return renderAppFrame(
       <LazyUsuariosPage
         styles={styles}

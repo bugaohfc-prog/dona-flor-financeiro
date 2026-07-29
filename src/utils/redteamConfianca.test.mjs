@@ -15,6 +15,7 @@ import {
   obterEstadoRetencaoLixeira,
   podeExcluirDefinitivo,
 } from './lixeira.js'
+import { avaliarAcessoTela } from './routeAccess.js'
 import { telaRetornoSessaoSegura } from './session.js'
 
 const lerFonte = (arquivo) => readFile(new URL(arquivo, import.meta.url), 'utf8')
@@ -47,7 +48,8 @@ test('billing fica editável somente para Master', async () => {
 
   const app = await lerFonte('../App.jsx')
   assert.match(app, /podeEditar=\{podeEditarBilling\(permissoesUsuario\)\}/)
-  assert.match(app, /if \(!temPermissao\(\['admin'\]\)\)/)
+  assert.equal(avaliarAcessoTela('billing', { perfil: 'admin' }).permitido, true)
+  assert.equal(avaliarAcessoTela('billing', { perfil: 'gerente' }).permitido, false)
 })
 
 test('senha provisória exige no mínimo 12 caracteres no serviço e no handler', async () => {

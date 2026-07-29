@@ -52,6 +52,16 @@ const MENSAGENS_NEGADAS = Object.freeze({
   master: 'Seu perfil não possui acesso à administração de empresas.',
 })
 
+const CAPACIDADES_ACESSO = Object.freeze([
+  'canManageCompanies',
+  'canManageUsers',
+  'canAccessSettings',
+  'canImport',
+  'canManageTrash',
+  'canEditSettings',
+  'canAccessPeople',
+])
+
 function perfilNormalizado(permissoes = {}) {
   if (permissoes.isMaster === true) return 'master'
   return String(
@@ -62,11 +72,53 @@ function perfilNormalizado(permissoes = {}) {
   ).trim().toLowerCase()
 }
 
-function capacidade(permissoes, nome, fallback) {
-  if (Object.prototype.hasOwnProperty.call(permissoes || {}, nome)) {
+function valorExplicitoOuFallback(permissoes, derivados, nome, fallback) {
+  if (Object.prototype.hasOwnProperty.call(permissoes, nome)) {
     return permissoes[nome] === true
   }
+  if (Object.prototype.hasOwnProperty.call(derivados, nome)) {
+    return derivados[nome] === true
+  }
   return fallback
+}
+
+export function construirPermissoesAcessoTelas(permissoes = {}, derivados = {}) {
+  const entrada = permissoes && typeof permissoes === 'object' ? permissoes : {}
+  const fallbacks = derivados && typeof derivados === 'object' ? derivados : {}
+  const perfil = String(
+    fallbacks.perfil
+    || perfilNormalizado(entrada)
+    || 'operador'
+  ).trim().toLowerCase()
+  const isMaster = entrada.isMaster === true || perfil === 'master'
+  const isAdmin = perfil === 'admin'
+  const isGerente = perfil === 'gerente'
+  const capacidadesPadrao = {
+    canManageCompanies: isMaster,
+    canManageUsers: isMaster || isAdmin,
+    canAccessSettings: isMaster || isAdmin || isGerente,
+    canImport: isMaster || isAdmin,
+    canManageTrash: isMaster || isAdmin,
+    canEditSettings: isMaster || isAdmin,
+    canAccessPeople: isMaster || isAdmin,
+  }
+
+  const resultado = {
+    ...entrada,
+    perfil,
+    isMaster,
+  }
+
+  CAPACIDADES_ACESSO.forEach((capacidade) => {
+    resultado[capacidade] = valorExplicitoOuFallback(
+      entrada,
+      fallbacks,
+      capacidade,
+      capacidadesPadrao[capacidade],
+    )
+  })
+
+  return resultado
 }
 
 function respostaNegada(categoria, codigo = 'ACESSO_NEGADO') {
@@ -87,38 +139,35 @@ export function avaliarAcessoTela(tela, permissoes = {}) {
   const categoria = CATEGORIA_ACESSO_POR_TELA[telaNormalizada]
   if (!categoria) return respostaNegada('', 'POLITICA_NAO_DEFINIDA')
 
-  const perfil = perfilNormalizado(permissoes)
-  const isMaster = permissoes.isMaster === true || perfil === 'master'
+  const acesso = construirPermissoesAcessoTelas(permissoes)
+  const perfil = acesso.perfil
   const isAdmin = perfil === 'admin'
-  const isGerente = perfil === 'gerente'
 
   if (categoria === 'geral' || categoria === 'financeiro') return RESPOSTA_PERMITIDA
 
   if (categoria === 'master') {
-    return capacidade(permissoes, 'canManageCompanies', isMaster)
+    return acesso.canManageCompanies
       ? RESPOSTA_PERMITIDA
       : respostaNegada(categoria)
   }
 
-  if (isMaster) return RESPOSTA_PERMITIDA
-
   let permitido = false
   if (categoria === 'configuracoes') {
-    permitido = capacidade(permissoes, 'canAccessSettings', isAdmin || isGerente)
+    permitido = acesso.canAccessSettings
   } else if (categoria === 'administracao-usuarios') {
-    permitido = capacidade(permissoes, 'canManageUsers', isAdmin)
+    permitido = acesso.canManageUsers
   } else if (categoria === 'administracao-importacao') {
-    permitido = capacidade(permissoes, 'canImport', isAdmin)
+    permitido = acesso.canImport
   } else if (categoria === 'administracao-lixeira') {
-    permitido = capacidade(permissoes, 'canManageTrash', isAdmin)
+    permitido = acesso.canManageTrash
   } else if (categoria === 'administracao-filiais') {
-    permitido = capacidade(permissoes, 'canEditSettings', isAdmin)
+    permitido = acesso.canEditSettings
   } else if (categoria === 'administracao-onboarding') {
-    permitido = capacidade(permissoes, 'canEditSettings', isAdmin)
+    permitido = acesso.canEditSettings
   } else if (categoria === 'administracao-billing') {
-    permitido = isAdmin
+    permitido = acesso.isMaster || isAdmin
   } else if (categoria === 'pessoas') {
-    permitido = capacidade(permissoes, 'canAccessPeople', isAdmin)
+    permitido = acesso.canAccessPeople
   }
 
   return permitido ? RESPOSTA_PERMITIDA : respostaNegada(categoria)

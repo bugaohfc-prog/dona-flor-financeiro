@@ -6,6 +6,7 @@ import menuSections from '../config/menuSections.js'
 import {
   CATEGORIA_ACESSO_POR_TELA,
   avaliarAcessoTela,
+  construirPermissoesAcessoTelas,
   filtrarMenuPorAcesso,
 } from './routeAccess.js'
 import {
@@ -171,6 +172,126 @@ test('canManageCompanies controla acesso ao painel Master', () => {
   )
 })
 
+test('construtor preserva todas as capacidades explicitamente falsas', () => {
+  const permissoes = construirPermissoesAcessoTelas({
+    perfilEmpresa: 'admin',
+    canManageCompanies: false,
+    canManageUsers: false,
+    canAccessSettings: false,
+    canImport: false,
+    canManageTrash: false,
+    canEditSettings: false,
+    canAccessPeople: false,
+  })
+
+  assert.deepEqual({
+    canManageCompanies: permissoes.canManageCompanies,
+    canManageUsers: permissoes.canManageUsers,
+    canAccessSettings: permissoes.canAccessSettings,
+    canImport: permissoes.canImport,
+    canManageTrash: permissoes.canManageTrash,
+    canEditSettings: permissoes.canEditSettings,
+    canAccessPeople: permissoes.canAccessPeople,
+  }, {
+    canManageCompanies: false,
+    canManageUsers: false,
+    canAccessSettings: false,
+    canImport: false,
+    canManageTrash: false,
+    canEditSettings: false,
+    canAccessPeople: false,
+  })
+})
+
+test('Admin com canManageUsers false perde menu, rota e autorização de consulta', () => {
+  const restrito = construirPermissoesAcessoTelas({
+    ...ADMIN,
+    canManageUsers: false,
+  })
+  const menu = new Set(telasMenu(filtrarMenuPorAcesso(menuSections, restrito)))
+
+  assert.equal(menu.has('usuarios'), false)
+  assert.equal(menu.has('auditoria'), false)
+  assert.equal(avaliarAcessoTela('usuarios', restrito).permitido, false)
+  assert.equal(avaliarAcessoTela('auditoria', restrito).permitido, false)
+})
+
+test('Admin respeita restrições explícitas de importação e lixeira', () => {
+  const restrito = construirPermissoesAcessoTelas({
+    ...ADMIN,
+    canImport: false,
+    canManageTrash: false,
+  })
+
+  assert.equal(avaliarAcessoTela('importar', restrito).permitido, false)
+  assert.equal(avaliarAcessoTela('lixeira', restrito).permitido, false)
+})
+
+test('Admin respeita restrições explícitas de configuração e pessoas', () => {
+  const restrito = construirPermissoesAcessoTelas({
+    ...ADMIN,
+    canEditSettings: false,
+    canAccessPeople: false,
+  })
+
+  assert.equal(avaliarAcessoTela('filiais', restrito).permitido, false)
+  assert.equal(avaliarAcessoTela('onboarding', restrito).permitido, false)
+  assert.equal(avaliarAcessoTela('funcionarios', restrito).permitido, false)
+  assert.equal(avaliarAcessoTela('relatorios-gestao-pessoas', restrito).permitido, false)
+})
+
+test('Gerente com canAccessSettings false não autoriza Configurações', () => {
+  const restrito = construirPermissoesAcessoTelas({
+    ...GERENTE,
+    canAccessSettings: false,
+  })
+
+  assert.equal(avaliarAcessoTela('configuracoes', restrito).permitido, false)
+})
+
+test('capacidades ausentes mantêm fallbacks dos quatro perfis', () => {
+  const operador = construirPermissoesAcessoTelas({ perfilEmpresa: 'operador' })
+  const gerente = construirPermissoesAcessoTelas({ perfilEmpresa: 'gerente' })
+  const admin = construirPermissoesAcessoTelas({ perfilEmpresa: 'admin' })
+  const master = construirPermissoesAcessoTelas({
+    perfilEmpresa: 'master',
+    isMaster: true,
+  })
+
+  assert.equal(operador.canManageUsers, false)
+  assert.equal(operador.canAccessSettings, false)
+  assert.equal(gerente.canAccessSettings, true)
+  assert.equal(gerente.canEditSettings, false)
+  assert.equal(admin.canManageUsers, true)
+  assert.equal(admin.canImport, true)
+  assert.equal(admin.canManageTrash, true)
+  assert.equal(master.canManageCompanies, true)
+  assert.equal(master.canManageUsers, true)
+  assert.equal(master.canAccessPeople, true)
+})
+
+test('Master respeita capacidade explicitamente restritiva', () => {
+  const restrito = construirPermissoesAcessoTelas({
+    perfilEmpresa: 'master',
+    isMaster: true,
+    canManageCompanies: false,
+    canManageUsers: false,
+    canAccessSettings: false,
+    canImport: false,
+    canManageTrash: false,
+    canEditSettings: false,
+    canAccessPeople: false,
+  })
+
+  assert.equal(avaliarAcessoTela('master-empresas', restrito).permitido, false)
+  assert.equal(avaliarAcessoTela('usuarios', restrito).permitido, false)
+  assert.equal(avaliarAcessoTela('configuracoes', restrito).permitido, false)
+  assert.equal(avaliarAcessoTela('importar', restrito).permitido, false)
+  assert.equal(avaliarAcessoTela('lixeira', restrito).permitido, false)
+  assert.equal(avaliarAcessoTela('onboarding', restrito).permitido, false)
+  assert.equal(avaliarAcessoTela('funcionarios', restrito).permitido, false)
+})
+
 test('menu e guarda de rota usam a mesma função de política', () => {
   for (const permissoes of [OPERADOR, GERENTE, ADMIN, MASTER]) {
     const exibidas = new Set(telasMenu(filtrarMenuPorAcesso(menuSections, permissoes)))
@@ -208,6 +329,37 @@ test('preload e buscas administrativas exigem autorização da mesma rota', asyn
   assert.match(
     app,
     /if \(permitirCarregarLixeira\) \{[\s\S]*?buscarLixeira/,
+  )
+  assert.match(
+    app,
+    /avaliarAcessoTela\('lixeira', permissoesCarga\)/,
+  )
+})
+
+test('App usa o construtor central sem sobrescrever capacidades falsas', async () => {
+  const app = await ler('App.jsx')
+  const inicio = app.indexOf('const permissoesAcessoTelas = useMemo')
+  const fim = app.indexOf('const acessoTelaAtual', inicio)
+  const trecho = app.slice(inicio, fim)
+
+  assert.match(trecho, /construirPermissoesAcessoTelas/)
+  assert.doesNotMatch(trecho, /canImport:|canManageTrash:|canEditSettings:|canAccessPeople:/)
+  assert.doesNotMatch(app, /canManageUsers \|\||canAccessSettings \|\|/)
+  assert.doesNotMatch(
+    app,
+    /canManageCompanies: true|canManageUsers: true|canAccessSettings: true/,
+  )
+})
+
+test('destinatários carregam somente na tela Configurações autorizada', async () => {
+  const app = await ler('App.jsx')
+  assert.match(
+    app,
+    /const acessoConfiguracoes = useMemo\([\s\S]*?avaliarAcessoTela\('configuracoes', permissoesAcessoTelas\)/,
+  )
+  assert.match(
+    app,
+    /autoCarregar: Boolean\([\s\S]*?telaAtual === 'configuracoes'[\s\S]*?acessoConfiguracoes\.permitido/,
   )
 })
 

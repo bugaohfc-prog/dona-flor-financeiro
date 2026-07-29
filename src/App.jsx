@@ -50,7 +50,11 @@ import { atualizarAposMutacaoContas, calcularResumoFinanceiroContas, carregarFon
 import { atualizarListaLixeiraEstavel, diasNaLixeira, obterEstadoRetencaoLixeira, obterLimiteExclusaoDefinitiva, podeExcluirDefinitivo } from './utils/lixeira'
 import { erroEhSessaoExpirada, mensagemSeguraErro, telaRetornoSessaoSegura } from './utils/session'
 import { resolverEstadoEntradaContas, sincronizarContextoContas } from './utils/navigation.js'
-import { avaliarAcessoTela, filtrarMenuPorAcesso } from './utils/routeAccess.js'
+import {
+  avaliarAcessoTela,
+  construirPermissoesAcessoTelas,
+  filtrarMenuPorAcesso
+} from './utils/routeAccess.js'
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
 import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario, podeEditarBilling } from './services/permissoesService'
 import { listarFiliaisPorEmpresa } from './services/filiaisService'
@@ -927,7 +931,7 @@ export default function App() {
         setEmpresaId(null)
         limparEmpresaAtiva()
         setPerfilUsuario('master')
-        setPermissoesUsuario({ ...permissoesBase, canSwitchCompany: true, canManageCompanies: true })
+        setPermissoesUsuario({ ...permissoesBase, canSwitchCompany: true })
         setNomeUsuarioPerfil(nomePerfil || usuarioAtual?.user_metadata?.name || usuarioAtual?.user_metadata?.full_name || '')
         setErroEmpresa('Nenhuma empresa cadastrada em df_empresas para o usuário master.')
         return
@@ -942,7 +946,7 @@ export default function App() {
 
       const perfilSelecionado = empresaSelecionada.perfil || vinculo?.perfil || (permissoesBase.isMaster ? 'master' : 'operador')
       const permissoes = permissoesBase.isMaster
-        ? { ...permissoesBase, perfilEmpresa: normalizarPerfil(perfilSelecionado), canSwitchCompany: true, canManageCompanies: true }
+        ? { ...permissoesBase, perfilEmpresa: normalizarPerfil(perfilSelecionado), canSwitchCompany: true }
         : await buscarPermissoesUsuario({
             userId,
             email: usuarioAtual?.email,
@@ -959,9 +963,11 @@ export default function App() {
       setPerfilUsuario(perfilSelecionado)
       setPermissoesUsuario(permissoes)
       setNomeUsuarioPerfil(nomePerfil || usuarioAtual?.user_metadata?.name || usuarioAtual?.user_metadata?.full_name || '')
-      const podeCarregarLixeira = Boolean(permissoes?.isMaster || normalizarPerfil(perfilSelecionado) === 'admin')
+      const permissoesCarregamento = construirPermissoesAcessoTelas(permissoes, {
+        perfil: normalizarPerfil(perfilSelecionado)
+      })
       await carregarTudo(empresaSelecionada.id, {
-        permitirCarregarLixeira: podeCarregarLixeira
+        permissoesAcessoTelas: permissoesCarregamento
       })
       setEmpresaSessaoInicializada(true)
     } catch (error) {
@@ -987,7 +993,10 @@ export default function App() {
   async function carregarTudo(empresaAtual = empresaId, opcoes = {}) {
     if (!empresaAtual) return
 
-    const permitirCarregarLixeira = opcoes.permitirCarregarLixeira ?? podeGerenciarLixeira()
+    const permissoesCarga = opcoes.permissoesAcessoTelas || permissoesAcessoTelas
+    const acessoLixeira = avaliarAcessoTela('lixeira', permissoesCarga)
+    const permitirCarregarLixeira = acessoLixeira.permitido
+      && opcoes.permitirCarregarLixeira !== false
 
     const tarefas = [
       buscarContas(empresaAtual, { permitirGerarRecorrencias: false }),
@@ -998,7 +1007,10 @@ export default function App() {
     ]
 
     if (permitirCarregarLixeira) {
-      tarefas.push(buscarLixeira(empresaAtual, { permitirCarregarLixeira: true }))
+      tarefas.push(buscarLixeira(empresaAtual, {
+        permitirCarregarLixeira: true,
+        permissoesAcessoTelas: permissoesCarga
+      }))
     } else {
       limparLixeiraLocal()
     }
@@ -1014,17 +1026,26 @@ export default function App() {
     return perfisPermitidos.includes(perfilAtual)
   }, [normalizarPerfil, perfilUsuario, permissoesUsuario?.isMaster])
 
+  const permissoesAcessoTelas = useMemo(() => construirPermissoesAcessoTelas(
+    permissoesUsuario,
+    { perfil: normalizarPerfil(perfilUsuario || permissoesUsuario?.perfilEmpresa) }
+  ), [
+    normalizarPerfil,
+    perfilUsuario,
+    permissoesUsuario,
+  ])
+
   const podeAdministrarUsuarios = useCallback(() => {
-    return Boolean(permissoesUsuario?.canManageUsers || temPermissao(['admin']))
-  }, [permissoesUsuario?.canManageUsers, temPermissao])
+    return permissoesAcessoTelas.canManageUsers
+  }, [permissoesAcessoTelas.canManageUsers])
 
   const podeAcessarConfiguracoes = useCallback(() => {
-    return Boolean(permissoesUsuario?.canAccessSettings || temPermissao(['admin', 'gerente']))
-  }, [permissoesUsuario?.canAccessSettings, temPermissao])
+    return permissoesAcessoTelas.canAccessSettings
+  }, [permissoesAcessoTelas.canAccessSettings])
 
   const podeImportarContas = useCallback(() => {
-    return temPermissao(['admin'])
-  }, [temPermissao])
+    return permissoesAcessoTelas.canImport
+  }, [permissoesAcessoTelas.canImport])
 
   const podeEditarFinanceiro = useCallback(() => {
     return temPermissao(['admin', 'gerente'])
@@ -1043,16 +1064,16 @@ export default function App() {
   }, [temPermissao])
 
   const podeEditarConfiguracoes = useCallback(() => {
-    return temPermissao(['admin'])
-  }, [temPermissao])
+    return permissoesAcessoTelas.canEditSettings
+  }, [permissoesAcessoTelas.canEditSettings])
 
   const podeAcessarGestaoPessoas = useCallback(() => {
-    return temPermissao(['admin'])
-  }, [temPermissao])
+    return permissoesAcessoTelas.canAccessPeople
+  }, [permissoesAcessoTelas.canAccessPeople])
 
   const podeGerenciarLixeira = useCallback(() => {
-    return temPermissao(['admin'])
-  }, [temPermissao])
+    return permissoesAcessoTelas.canManageTrash
+  }, [permissoesAcessoTelas.canManageTrash])
 
   const podeExcluirDefinitivoFinanceiro = useCallback(() => {
     return temPermissao(['admin'])
@@ -1062,23 +1083,6 @@ export default function App() {
     return temPermissao(['admin'])
   }, [temPermissao])
 
-  const permissoesAcessoTelas = useMemo(() => ({
-    ...(permissoesUsuario || {}),
-    perfil: normalizarPerfil(perfilUsuario || permissoesUsuario?.perfilEmpresa),
-    canImport: podeImportarContas(),
-    canManageTrash: podeGerenciarLixeira(),
-    canEditSettings: podeEditarConfiguracoes(),
-    canAccessPeople: podeAcessarGestaoPessoas(),
-  }), [
-    normalizarPerfil,
-    perfilUsuario,
-    permissoesUsuario,
-    podeAcessarGestaoPessoas,
-    podeEditarConfiguracoes,
-    podeGerenciarLixeira,
-    podeImportarContas,
-  ])
-
   const acessoTelaAtual = useMemo(
     () => avaliarAcessoTela(telaAtual, permissoesAcessoTelas),
     [permissoesAcessoTelas, telaAtual]
@@ -1086,6 +1090,11 @@ export default function App() {
 
   const acessoOnboarding = useMemo(
     () => avaliarAcessoTela('onboarding', permissoesAcessoTelas),
+    [permissoesAcessoTelas]
+  )
+
+  const acessoConfiguracoes = useMemo(
+    () => avaliarAcessoTela('configuracoes', permissoesAcessoTelas),
     [permissoesAcessoTelas]
   )
 
@@ -1142,7 +1151,12 @@ export default function App() {
   } = useDestinatariosAlertas({
     empresaId,
     incluirInativos: mostrarDestinatariosInativos,
-    autoCarregar: Boolean(usuarioLogado?.id && empresaId && podeAcessarConfiguracoes())
+    autoCarregar: Boolean(
+      usuarioLogado?.id
+      && empresaId
+      && telaAtual === 'configuracoes'
+      && acessoConfiguracoes.permitido
+    )
   })
 
   function limparFormularioDestinatarioAlerta() {
@@ -1252,10 +1266,7 @@ export default function App() {
         ? {
             ...permissoesUsuario,
             perfilEmpresa: normalizarPerfil(perfilSelecionado),
-            canSwitchCompany: true,
-            canManageCompanies: true,
-            canManageUsers: true,
-            canAccessSettings: true
+            canSwitchCompany: true
           }
         : await buscarPermissoesUsuario({
             userId: usuarioLogado?.id,
@@ -1278,9 +1289,11 @@ export default function App() {
       })
       setPerfilUsuario(perfilSelecionado)
       setPermissoesUsuario(permissoesAtualizadas)
-      const podeCarregarLixeira = Boolean(permissoesAtualizadas?.isMaster || normalizarPerfil(perfilSelecionado) === 'admin')
+      const permissoesCarregamento = construirPermissoesAcessoTelas(permissoesAtualizadas, {
+        perfil: normalizarPerfil(perfilSelecionado)
+      })
       await carregarTudo(empresaSelecionada.id, {
-        permitirCarregarLixeira: podeCarregarLixeira
+        permissoesAcessoTelas: permissoesCarregamento
       })
       mostrarAviso(`Empresa ativa: ${empresaSelecionada.nome || 'Empresa'}`, 'sucesso')
     } catch (error) {
@@ -1897,7 +1910,11 @@ export default function App() {
   async function buscarLixeira(empresaAtual = empresaId, opcoes = {}) {
     if (!empresaAtual) return
 
-    const permitirCarregarLixeira = opcoes.permitirCarregarLixeira ?? podeGerenciarLixeira()
+    const permissoesCarga = opcoes.permissoesAcessoTelas || permissoesAcessoTelas
+    const permitirCarregarLixeira = avaliarAcessoTela(
+      'lixeira',
+      permissoesCarga
+    ).permitido && opcoes.permitirCarregarLixeira !== false
 
     if (!permitirCarregarLixeira) {
       limparLixeiraLocal()

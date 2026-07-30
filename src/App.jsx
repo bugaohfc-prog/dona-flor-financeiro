@@ -1057,6 +1057,10 @@ export default function App() {
     return temPermissao(['admin'])
   }, [temPermissao])
 
+  const podeGerenciarRecorrencias = useCallback(() => {
+    return temPermissao(['admin'])
+  }, [temPermissao])
+
   const podeExportarDados = useCallback(() => {
     return temPermissao(['admin', 'gerente'])
   }, [temPermissao])
@@ -2242,6 +2246,17 @@ export default function App() {
       return
     }
 
+    const contaVinculadaRecorrencia = Boolean(editandoContaId && recorrenciaContaId)
+    const solicitaMutacaoRecorrencia = (
+      (!contaVinculadaRecorrencia && contaRecorrente)
+      || (contaVinculadaRecorrencia && escopoEdicaoRecorrencia === 'serie')
+    )
+
+    if (solicitaMutacaoRecorrencia && !podeGerenciarRecorrencias()) {
+      mostrarAviso('Apenas Admin ou Master pode criar ou alterar séries recorrentes.', 'erro')
+      return
+    }
+
     return salvarContaHook({
       supabase,
       empresaId,
@@ -2392,7 +2407,7 @@ export default function App() {
   }
 
   async function desativarSerieRecorrente(id) {
-    if (!podeEditarFinanceiro()) {
+    if (!podeGerenciarRecorrencias()) {
       bloquearAcaoSemPermissao()
       return false
     }
@@ -2408,7 +2423,7 @@ export default function App() {
   }
 
   async function reativarSerieRecorrente(id) {
-    if (!podeEditarFinanceiro()) {
+    if (!podeGerenciarRecorrencias()) {
       bloquearAcaoSemPermissao()
       return false
     }
@@ -3943,6 +3958,7 @@ export default function App() {
           erroParcelamentoGrupo,
           cancelarGrupoParcelamento,
           alterarEscopoEdicaoRecorrencia,
+          podeGerenciarRecorrencias: podeGerenciarRecorrencias(),
           fecharConta,
           salvarConta,
           salvandoConta,
@@ -4276,6 +4292,7 @@ export default function App() {
           abrirConfirmacao={abrirConfirmacao}
           desativarSerieRecorrente={desativarSerieRecorrente}
           reativarSerieRecorrente={reativarSerieRecorrente}
+          podeGerenciarRecorrencias={podeGerenciarRecorrencias()}
           podeVincularRecorrencia={podeVincularRecorrencia()}
           vincularContaManualRecorrencia={vincularContaManualRecorrencia}
           podeGerarRecorrencia={podeGerarRecorrencia()}

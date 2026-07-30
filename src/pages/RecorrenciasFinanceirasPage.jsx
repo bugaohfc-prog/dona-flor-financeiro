@@ -60,7 +60,8 @@ function GestaoRecorrencias({
   formatarTipoRecorrencia,
   abrirConfirmacao,
   desativarSerieRecorrente,
-  reativarSerieRecorrente
+  reativarSerieRecorrente,
+  podeGerenciarRecorrencias
 }) {
   const [filtro, setFiltro] = useState('ativas')
   const [busca, setBusca] = useState('')
@@ -100,6 +101,8 @@ function GestaoRecorrencias({
   }), [busca, centros, duplicidades, filiais, filtro, series])
 
   function confirmarAlteracao(serie, reativar) {
+    if (!podeGerenciarRecorrencias) return
+
     abrirConfirmacao?.({
       titulo: `${reativar ? 'Reativar' : 'Desativar'} série recorrente`,
       mensagem: reativar
@@ -141,7 +144,7 @@ function GestaoRecorrencias({
           <div className="accounts-recurring-value">{formatarValor(Number(serie.valor || 0))}</div>
           <div className="accounts-recurring-meta"><span>{formatarTipoRecorrencia(serie.tipo_recorrencia || 'mensal')}</span><span>Dia {serie.dia_vencimento || '-'}</span><span>Início {serie.data_inicio ? formatarData(serie.data_inicio) : '-'}</span>{proximaReferencia && <span>Próxima referência {formatarData(proximaReferencia)}</span>}<span>{centros.find((item) => item.id === serie.centro_custo_id)?.nome || 'Sem centro'}</span><span>{filiais.find((item) => item.id === serie.filial_id)?.nome || 'Sem filial'}</span><span>{contasPorRecorrencia.get(serie.id) || 0} conta(s) vinculada(s) no horizonte</span></div>
           {grupo?.ativas > 1 && <div className="accounts-recurring-warning">Atenção: existe mais de uma série ativa semelhante.</div>}
-          <div className="accounts-recurring-actions"><button type="button" className={serie.ativo === true ? 'accounts-recurring-disable' : 'accounts-recurring-enable'} onClick={() => confirmarAlteracao(serie, serie.ativo !== true)}>{serie.ativo === true ? 'Desativar' : 'Reativar'}</button></div>
+          <div className="accounts-recurring-actions"><button type="button" className={serie.ativo === true ? 'accounts-recurring-disable' : 'accounts-recurring-enable'} disabled={!podeGerenciarRecorrencias} title={podeGerenciarRecorrencias ? '' : 'Somente Admin ou Master pode alterar séries recorrentes.'} onClick={() => confirmarAlteracao(serie, serie.ativo !== true)}>{serie.ativo === true ? 'Desativar' : 'Reativar'}</button></div>
         </article>
       })}
     </div>}
@@ -162,6 +165,7 @@ export default function RecorrenciasFinanceirasPage({
   abrirConfirmacao,
   desativarSerieRecorrente,
   reativarSerieRecorrente,
+  podeGerenciarRecorrencias = false,
   podeVincularRecorrencia = false,
   vincularContaManualRecorrencia,
   podeGerarRecorrencia = false,
@@ -278,7 +282,7 @@ export default function RecorrenciasFinanceirasPage({
       <button type="button" role="tab" aria-selected={secao === 'cobertura'} className={secao === 'cobertura' ? 'is-active' : ''} onClick={() => setSecao('cobertura')}>Cobertura</button>
       <button type="button" role="tab" aria-selected={secao === 'gestao'} className={secao === 'gestao' ? 'is-active' : ''} onClick={() => setSecao('gestao')}>Gerenciar recorrências</button>
     </div>
-    {secao === 'gestao' ? <GestaoRecorrencias {...{ fonte, centros, filiais, styles, formatarValor, formatarData, formatarTipoRecorrencia, abrirConfirmacao, desativarSerieRecorrente, reativarSerieRecorrente }} /> : <section className="content-block recurring-coverage-panel">
+    {secao === 'gestao' ? <GestaoRecorrencias {...{ fonte, centros, filiais, styles, formatarValor, formatarData, formatarTipoRecorrencia, abrirConfirmacao, desativarSerieRecorrente, reativarSerieRecorrente, podeGerenciarRecorrencias }} /> : <section className="content-block recurring-coverage-panel">
       {fonte.resultado && <div className="recurring-control-summary" aria-label="Resumo da cobertura">
         <button type="button" className="is-active" onClick={() => setVisaoCobertura('todas')}><b>Recorrências ativas</b><strong>{resumoControle.ativas}</strong></button>
         <button type="button" className="is-covered" onClick={() => setVisaoCobertura('cobertas')}><b>Cobertas</b><strong>{resumoControle.cobertas}</strong></button>

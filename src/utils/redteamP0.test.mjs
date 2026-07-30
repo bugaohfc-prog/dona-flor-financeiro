@@ -17,12 +17,24 @@ const migrationFiliais = fs.readFileSync(
   path.join(raiz, 'supabase/migrations/20260730190640_aplicar_escopo_financeiro_por_filial.sql'),
   'utf8'
 ).replace(/\r\n/g, '\n')
+const migrationRecorrencias = fs.readFileSync(
+  path.join(raiz, 'supabase/migrations/20260730194700_restringir_mutacoes_recorrencias_admin.sql'),
+  'utf8'
+).replace(/\r\n/g, '\n')
 const contasServiceFonte = fs.readFileSync(path.join(raiz, 'src/services/contasService.js'), 'utf8')
 const notasServiceFonte = fs.readFileSync(path.join(raiz, 'src/services/notasService.js'), 'utf8')
 const usuariosServiceFonte = fs.readFileSync(path.join(raiz, 'src/services/usuariosService.js'), 'utf8')
 const useContasFonte = fs.readFileSync(path.join(raiz, 'src/hooks/useContas.js'), 'utf8')
 const appFonte = fs.readFileSync(path.join(raiz, 'src/App.jsx'), 'utf8')
 const usuariosPageFonte = fs.readFileSync(path.join(raiz, 'src/pages/UsuariosPage.jsx'), 'utf8')
+const recorrenciasPageFonte = fs.readFileSync(
+  path.join(raiz, 'src/pages/RecorrenciasFinanceirasPage.jsx'),
+  'utf8'
+)
+const accountModalFonte = fs.readFileSync(
+  path.join(raiz, 'src/components/modals/AccountModal.jsx'),
+  'utf8'
+)
 const modalPagamentoFonte = fs.readFileSync(
   path.join(raiz, 'src/components/modals/AccountPartialPaymentModal.jsx'),
   'utf8'
@@ -225,4 +237,49 @@ test('P0-3 frontend nao infere acesso total pela ausencia de atribuicoes', () =>
     usuariosServiceFonte,
     /\.from\('df_usuarios_filiais'\)[\s\S]{0,250}\.(insert|delete)\(/
   )
+})
+
+test('P0-4 separa leitura empresarial de mutacoes administrativas', () => {
+  assert.match(migrationRecorrencias, /create policy "df_contas_recorrentes_select_empresa"[\s\S]+for select/)
+  for (const operacao of ['insert', 'update', 'delete']) {
+    assert.match(
+      migrationRecorrencias,
+      new RegExp(`create policy "df_contas_recorrentes_${operacao}_admin"[\\s\\S]+for ${operacao}[\\s\\S]+df_usuario_eh_admin`)
+    )
+  }
+})
+
+test('P0-4 Gerente e chamada REST direta nao possuem policy paralela de escrita', () => {
+  assert.match(migrationRecorrencias, /drop policy if exists "contas_recorrentes_empresa"/)
+  assert.doesNotMatch(migrationRecorrencias, /create policy "contas_recorrentes_empresa"/)
+  assert.match(migrationRecorrencias, /Policy FOR ALL nao e permitida em recorrencias/)
+  assert.match(migrationRecorrencias, /mutacao nao administrativa em recorrencias/)
+  assert.doesNotMatch(migrationRecorrencias, /df_usuario_tem_perfil_empresa[\s\S]+gerente/i)
+})
+
+test('P0-4 frontend bloqueia criacao e edicao de serie antes de qualquer escrita', () => {
+  const inicioSalvar = appFonte.indexOf('async function salvarConta()')
+  const fimSalvar = appFonte.indexOf('async function marcarComoPago', inicioSalvar)
+  const salvar = appFonte.slice(inicioSalvar, fimSalvar)
+  assert.match(salvar, /solicitaMutacaoRecorrencia/)
+  assert.match(salvar, /!podeGerenciarRecorrencias\(\)/)
+  assert.ok(
+    salvar.indexOf('!podeGerenciarRecorrencias()') < salvar.indexOf('salvarContaHook'),
+    'a autorização precisa anteceder o fluxo que pode criar a conta'
+  )
+  assert.match(accountModalFonte, /disabled=\{!podeGerenciarRecorrencias\}/)
+  assert.match(accountModalFonte, /disabled=\{!recorrenciaEdicaoCarregada \|\| !podeGerenciarRecorrencias\}/)
+})
+
+test('P0-4 gestao de recorrencias revalida Admin ou Master no handler e na pagina', () => {
+  assert.match(appFonte, /async function desativarSerieRecorrente[\s\S]+!podeGerenciarRecorrencias\(\)/)
+  assert.match(appFonte, /async function reativarSerieRecorrente[\s\S]+!podeGerenciarRecorrencias\(\)/)
+  assert.match(recorrenciasPageFonte, /if \(!podeGerenciarRecorrencias\) return/)
+  assert.match(recorrenciasPageFonte, /disabled=\{!podeGerenciarRecorrencias\}/)
+})
+
+test('P0-4 nao altera geracao nem vinculo controlados existentes', () => {
+  assert.doesNotMatch(migrationRecorrencias, /gerar_ocorrencia|vincular_recorrencia|df_contas\s/i)
+  assert.match(appFonte, /podeVincularRecorrencia=\{podeVincularRecorrencia\(\)\}/)
+  assert.match(appFonte, /podeGerarRecorrencia=\{podeGerarRecorrencia\(\)\}/)
 })

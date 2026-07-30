@@ -47,6 +47,7 @@ export default function AccountModal({
   erroParcelamentoGrupo,
   cancelarGrupoParcelamento,
   alterarEscopoEdicaoRecorrencia,
+  podeGerenciarRecorrencias = false,
   fecharConta,
   salvarConta,
   salvandoConta,
@@ -182,7 +183,7 @@ export default function AccountModal({
                   <strong>Editar somente esta conta</strong>
                   <span>Altera apenas esta parcela. A serie permanece igual.</span>
                 </button>
-                <button type="button" className={`account-edit-scope-option ${escopoEdicaoRecorrencia === 'serie' ? 'active' : ''}`} aria-pressed={escopoEdicaoRecorrencia === 'serie'} disabled={!recorrenciaEdicaoCarregada} onClick={() => alterarEscopoEdicaoRecorrencia('serie')}>
+                <button type="button" className={`account-edit-scope-option ${escopoEdicaoRecorrencia === 'serie' ? 'active' : ''}`} aria-pressed={escopoEdicaoRecorrencia === 'serie'} disabled={!recorrenciaEdicaoCarregada || !podeGerenciarRecorrencias} title={podeGerenciarRecorrencias ? '' : 'Somente Admin ou Master pode alterar a série recorrente.'} onClick={() => alterarEscopoEdicaoRecorrencia('serie')}>
                   <strong>Editar serie recorrente</strong>
                   <span>Altera a serie para proximas geracoes. Parcelas antigas nao sao reescritas.</span>
                 </button>
@@ -412,6 +413,8 @@ export default function AccountModal({
                 <input
                   type="checkbox"
                   checked={contaRecorrente}
+                  disabled={!podeGerenciarRecorrencias}
+                  title={podeGerenciarRecorrencias ? '' : 'Somente Admin ou Master pode criar séries recorrentes.'}
                   onChange={(e) => {
                     const marcado = e.target.checked
                     setContaRecorrente(marcado)

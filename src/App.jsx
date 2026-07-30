@@ -26,13 +26,7 @@ import AccessDeniedPage from './components/feedback/AccessDeniedPage.jsx'
 import AppModalsLayer from './components/render/AppModalsLayer.jsx'
 import AppOverlaysLayer from './components/render/AppOverlaysLayer.jsx'
 import AppShell from './components/shell/AppShell.jsx'
-import AppFrameStyles from './components/shell/AppFrameStyles.jsx'
-import DesktopRefinementStyles from './components/shell/DesktopRefinementStyles.jsx'
-import MobileFinalStyles from './components/shell/MobileFinalStyles.jsx'
-import MobileUxPatchStyles from './components/shell/MobileUxPatchStyles.jsx'
-import AppProviders from './components/providers/AppProviders.jsx'
 import CopilotFloatingButton from './components/copilot/layout/CopilotFloatingButton.jsx'
-import CopilotStyles from './components/copilot/layout/CopilotStyles.jsx'
 import { useCopilot } from './components/copilot/core/CopilotProvider.jsx'
 import { useApp } from './context/AppContext.jsx'
 import { useContas } from './hooks/useContas'
@@ -50,6 +44,7 @@ import { atualizarAposMutacaoContas, calcularResumoFinanceiroContas, carregarFon
 import { atualizarListaLixeiraEstavel, diasNaLixeira, obterEstadoRetencaoLixeira, obterLimiteExclusaoDefinitiva, podeExcluirDefinitivo } from './utils/lixeira'
 import { erroEhSessaoExpirada, mensagemSeguraErro, telaRetornoSessaoSegura } from './utils/session'
 import { resolverEstadoEntradaContas, sincronizarContextoContas } from './utils/navigation.js'
+import { resolverLayoutAppShell } from './utils/appShellLayout.js'
 import {
   avaliarAcessoTela,
   construirPermissoesAcessoTelas,
@@ -4040,35 +4035,6 @@ export default function App() {
     )
   }
 
-  function renderAppFrame(children) {
-    return (
-      <AppProviders empresaId={empresaId} navegarPara={navegarPara}>
-      <div className="app-page app-frame" style={styles.page}>
-        <AppFrameStyles />
-      <DesktopRefinementStyles />
-      <MobileFinalStyles />
-      <CopilotStyles />
-      <MobileUxPatchStyles />
-      {renderTopShell()}
-
-        {renderSidebar()}
-        {renderMobileMenu()}
-
-        <main className="app-frame-content">
-          <AppSuspenseBoundary>
-            {children}
-          </AppSuspenseBoundary>
-        </main>
-        {renderFabGlobal()}
-        {renderCopilotFinanceiro()}
-        {renderModaisGlobais()}
-        {renderOverlaysLayer()}
-      </div>
-      </AppProviders>
-    )
-  }
-
-
   function EmptyState({ icon, title, description }) {
     return (
       <div className="empty-state-card">
@@ -4158,19 +4124,20 @@ export default function App() {
     return <AppRouteGuards {...routeGuardProps} />
   }
 
-  if (!acessoTelaAtual.permitido) {
-    return renderAppFrame(
+  function renderConteudoTelaAtual() {
+    if (!acessoTelaAtual.permitido) {
+      return (
       <AccessDeniedPage
         titulo={acessoTelaAtual.titulo}
         mensagem={acessoTelaAtual.mensagem}
         onVoltar={() => navegarPara('dashboard')}
         styles={styles}
       />
-    )
-  }
+      )
+    }
 
-  if (telaAtual === 'contas') {
-    return renderAppFrame(
+    if (telaAtual === 'contas') {
+      return (
       <LazyContasPage
         styles={styles}
         busca={busca}
@@ -4254,12 +4221,11 @@ export default function App() {
           })
         }}
       />
-    )
-  }
+      )
+    }
 
   if (telaAtual === 'recorrencias') {
-    return renderAppFrame(
-      <AppSuspenseBoundary>
+    return (
         <LazyRecorrenciasFinanceirasPage
           empresaId={empresaId}
           empresaNome={empresaAtiva?.nome || empresaId}
@@ -4279,13 +4245,11 @@ export default function App() {
           podeGerarRecorrencia={podeGerarRecorrencia()}
           gerarOcorrenciaRecorrencia={gerarOcorrenciaRecorrencia}
         />
-      </AppSuspenseBoundary>
     )
   }
 
   if (telaAtual === 'controle-impostos') {
-    return renderAppFrame(
-        <AppSuspenseBoundary>
+    return (
         <LazyControleImpostosPage
           empresaId={empresaId}
           centros={centros}
@@ -4295,13 +4259,11 @@ export default function App() {
           navegarPara={navegarPara}
           navegarParaConta={navegarParaContaControleImpostos}
         />
-        </AppSuspenseBoundary>
     )
   }
 
   if (telaAtual === 'relatorios-contas') {
-    return renderAppFrame(
-      <AppSuspenseBoundary>
+    return (
         <LazyRelatoriosContasPage
           empresaId={empresaId}
           empresaNome={empresaAtiva?.nome}
@@ -4314,13 +4276,11 @@ export default function App() {
           podeExportarDados={podeExportarDados()}
           mostrarAviso={mostrarAviso}
         />
-      </AppSuspenseBoundary>
     )
   }
 
   if (telaAtual === 'receitas') {
-    return renderAppFrame(
-      <AppSuspenseBoundary>
+    return (
         <LazyReceitasPage
           empresaId={empresaId}
           empresaNome={empresaAtiva?.nome}
@@ -4329,13 +4289,11 @@ export default function App() {
           mostrarAviso={mostrarAviso}
           podeEditarFinanceiro={podeEditarFinanceiro()}
         />
-      </AppSuspenseBoundary>
     )
   }
 
   if (telaAtual === 'fluxo-caixa') {
-    return renderAppFrame(
-      <AppSuspenseBoundary>
+    return (
         <LazyFluxoCaixaPage
           empresaId={empresaId}
           empresaNome={empresaAtiva?.nome}
@@ -4343,12 +4301,11 @@ export default function App() {
           mostrarAviso={mostrarAviso}
           podeExportarDados={podeExportarDados()}
         />
-      </AppSuspenseBoundary>
     )
   }
 
   if (telaAtual === 'relatorios') {
-    return renderAppFrame(
+    return (
       <LazyRelatorios voltar={() => navegarPara('contas')} empresaId={empresaId} empresaNome={empresaAtiva?.nome} usuario={usuarioLogado} mostrarAviso={mostrarAviso} podeExportarDados={podeExportarDados()} />
     )
   }
@@ -4356,7 +4313,7 @@ export default function App() {
 
 
   if (telaAtual === 'notas') {
-    return renderAppFrame(
+    return (
       <LazyNotasPage
         styles={styles}
         navegarPara={navegarPara}
@@ -4387,7 +4344,7 @@ export default function App() {
   }
 
   if (telaAtual === 'funcionarios') {
-    return renderAppFrame(
+    return (
       <LazyFuncionariosPage
         styles={styles}
         empresaId={empresaId}
@@ -4401,7 +4358,7 @@ export default function App() {
   }
 
   if (telaAtual === 'relatorios-pessoas') {
-    return renderAppFrame(
+    return (
       <LazyRelatoriosPessoasPage
         styles={styles}
         empresaId={empresaId}
@@ -4412,7 +4369,7 @@ export default function App() {
   }
 
   if (telaAtual === 'relatorios-gestao-pessoas') {
-    return renderAppFrame(
+    return (
       <LazyRelatoriosGestaoPessoasPage
         styles={styles}
         empresaId={empresaId}
@@ -4423,7 +4380,7 @@ export default function App() {
   }
 
   if (telaAtual === 'relatorios-ferias') {
-    return renderAppFrame(
+    return (
       <LazyRelatoriosFeriasPage
         styles={styles}
         empresaId={empresaId}
@@ -4434,7 +4391,7 @@ export default function App() {
   }
 
   if (telaAtual === 'ferias') {
-    return renderAppFrame(
+    return (
       <LazyFeriasPage
         styles={styles}
         empresaId={empresaId}
@@ -4447,7 +4404,7 @@ export default function App() {
   }
 
   if (telaAtual === 'fechamento-folha') {
-    return renderAppFrame(
+    return (
       <LazyFechamentoFolhaPage
         styles={styles}
         empresaId={empresaId}
@@ -4461,8 +4418,7 @@ export default function App() {
 
 
   if (telaAtual === 'importar') {
-    return renderAppFrame(
-      <AppSuspenseBoundary>
+    return (
         <LazyImportarPage
           styles={styles}
           podeImportarContas={podeImportarContas()}
@@ -4475,14 +4431,13 @@ export default function App() {
           formatarData={formatarData}
           formatarValor={formatarValor}
         />
-      </AppSuspenseBoundary>
     )
   }
 
 
 
   if (telaAtual === 'master-empresas') {
-    return renderAppFrame(
+    return (
       <LazyMasterPanelPage
         styles={styles}
         usuarioLogado={usuarioLogado}
@@ -4502,7 +4457,7 @@ export default function App() {
 
 
   if (telaAtual === 'onboarding') {
-    return renderAppFrame(
+    return (
       <LazyOnboardingPage
         styles={styles}
         empresaId={empresaId}
@@ -4519,7 +4474,7 @@ export default function App() {
   }
 
   if (telaAtual === 'billing') {
-    return renderAppFrame(
+    return (
       <LazyBillingPage
         styles={styles}
         empresaId={empresaId}
@@ -4535,7 +4490,7 @@ export default function App() {
 
 
   if (telaAtual === 'filiais') {
-    return renderAppFrame(
+    return (
       <LazyFiliaisPage
         styles={styles}
         empresaId={empresaId}
@@ -4548,7 +4503,7 @@ export default function App() {
 
 
   if (telaAtual === 'usuarios') {
-    return renderAppFrame(
+    return (
       <LazyUsuariosPage
         styles={styles}
         EmptyState={EmptyState}
@@ -4600,12 +4555,11 @@ export default function App() {
   }
 
   if (telaAtual === 'auditoria') {
-    return renderAppFrame(<LazyAuditoriaPage empresaId={empresaId} permissoesUsuario={permissoesUsuario} usuariosEmpresa={usuariosEmpresa} navegarPara={navegarPara} />)
+    return <LazyAuditoriaPage empresaId={empresaId} permissoesUsuario={permissoesUsuario} usuariosEmpresa={usuariosEmpresa} navegarPara={navegarPara} />
   }
 
   if (telaAtual === 'configuracoes') {
-    return renderAppFrame(
-      <AppSuspenseBoundary>
+    return (
         <LazyConfiguracoesPage
           styles={styles}
           podeAcessarConfiguracoes={podeAcessarConfiguracoes()}
@@ -4660,12 +4614,10 @@ export default function App() {
           setModalCentro={abrirModalCentro}
           salvarConfiguracoes={salvarConfiguracoes}
         />
-      </AppSuspenseBoundary>
     )
   }
   if (telaAtual === 'agenda') {
-    return renderAppFrame(
-      <AppSuspenseBoundary>
+    return (
         <LazyAgendaPage
           styles={styles}
           empresaId={empresaId}
@@ -4688,13 +4640,11 @@ export default function App() {
           navegarPara={navegarPara}
           navegarParaOrigemAgenda={navegarParaOrigemAgenda}
         />
-      </AppSuspenseBoundary>
     )
   }
 
   if (telaAtual === 'lixeira') {
-    return renderAppFrame(
-      <AppSuspenseBoundary>
+    return (
         <LazyLixeiraPage
           styles={styles}
           contasLixeira={contasLixeira}
@@ -4713,9 +4663,34 @@ export default function App() {
           formatarValor={formatarValor}
           formatarData={formatarData}
         />
-      </AppSuspenseBoundary>
     )
   }
+
+    if (telaAtual === 'dashboard') {
+      return (
+        <LazyDashboardRouteComposition
+          routeProps={{
+            nomeUsuario: nomeUsuario(),
+            formatarValor,
+            navegarPara,
+            loading,
+            filiais,
+            centros,
+            contasCentral: contasOperacionais,
+            notasCentral: notas,
+            onAtualizarContasCentral: atualizarFontesContasDashboard,
+            onAtualizarNotasCentral: () => buscarNotas(empresaId),
+            navegarParaOrigemAgenda,
+            onAbrirContasPlanejamento: abrirContasComPlanejamento
+          }}
+        />
+      )
+    }
+
+    return null
+  }
+
+  const layoutAppShell = resolverLayoutAppShell(telaAtual)
 
   // =========================
   // BLOCO 11 — UI
@@ -4727,56 +4702,18 @@ export default function App() {
       menuAberto={menuAberto}
       setMenuAberto={setMenuAberto}
       pageStyle={styles.page}
+      modoFrame={layoutAppShell.modoFrame}
+      envolverConteudoEmMain={layoutAppShell.envolverConteudoEmMain}
+      mostrarElementosImpressao={layoutAppShell.mostrarElementosImpressao}
+      topShell={renderTopShell()}
+      sidebar={renderSidebar()}
+      mobileMenu={renderMobileMenu()}
+      fab={renderFabGlobal()}
+      copilot={renderCopilotFinanceiro()}
+      modals={renderModaisGlobais()}
+      overlays={renderOverlaysLayer()}
     >
-      
-      <DesktopRefinementStyles />
-      <MobileFinalStyles />
-      <CopilotStyles />
-
-      <div className="print-header">
-        <h1>Relatório Financeiro</h1>
-        <p>Gerado em {new Date().toLocaleDateString('pt-BR')}</p>
-      </div>
-
-      <div className="print-footer">
-        Relatório gerado pelo DNA Gestão
-      </div>
-      {renderTopShell()}
-
-      {renderSidebar()}
-
-      {renderMobileMenu()}
-
-      {renderFabGlobal()}
-      {renderCopilotFinanceiro()}
-
-      
-
-      <AppSuspenseBoundary>
-        <LazyDashboardRouteComposition
-          routeProps={{
-          nomeUsuario: nomeUsuario(),
-          formatarValor,
-          navegarPara,
-          loading,
-          filiais,
-          centros,
-          contasCentral: contasOperacionais,
-          notasCentral: notas,
-          onAtualizarContasCentral: atualizarFontesContasDashboard,
-          onAtualizarNotasCentral: () => buscarNotas(empresaId),
-          navegarParaOrigemAgenda,
-          onAbrirContasPlanejamento: abrirContasComPlanejamento
-        }}
-        />
-      </AppSuspenseBoundary>
-
-      {/* Lista de contas movida para a tela Financeiro > Contas. */}
-
-
-      {renderModaisGlobais()}
-
-      {renderOverlaysLayer()}
+      {renderConteudoTelaAtual()}
     </AppShell>
   )
 }

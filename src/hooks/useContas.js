@@ -26,7 +26,6 @@ import {
   listarCentrosCustoValidosPorIds,
   listarFiliaisValidasPorIds,
   listarPagamentosParciaisPorContas,
-  registrarAuditoriaPagamentoParcialCriado,
   registrarPagamentoParcial as registrarPagamentoParcialService,
   estornarPagamentoParcial as estornarPagamentoParcialService,
   baixarContaQuitadaPorParciais as baixarContaQuitadaPorParciaisService,
@@ -1173,28 +1172,12 @@ export function useContas() {
 
   async function registrarPagamentoParcial(contexto) {
     const { supabase, id, empresaId, buscarContas, mostrarAviso, pagamento } = contexto
-    const { auditoria, error } = await registrarPagamentoParcialService(supabase, id, empresaId, pagamento)
+    const { error } = await registrarPagamentoParcialService(supabase, id, empresaId, pagamento)
 
     if (error) {
       console.warn('Falha ao registrar pagamento parcial:', error)
       mostrarAviso?.(mensagemSeguraErro(error, 'Não foi possível registrar o pagamento parcial.'), 'erro')
       return false
-    }
-
-    if (auditoria) {
-      registrarAuditoriaPagamentoParcialCriado(supabase, auditoria).then(({ error: auditoriaError }) => {
-        if (auditoriaError) {
-          console.warn('Falha ao registrar auditoria do pagamento parcial.', {
-            message: auditoriaError?.message,
-            code: auditoriaError?.code,
-            status: auditoriaError?.status
-          })
-        }
-      }).catch((auditoriaError) => {
-        console.warn('Falha inesperada ao registrar auditoria do pagamento parcial.', {
-          message: auditoriaError?.message
-        })
-      })
     }
 
     await buscarContas()

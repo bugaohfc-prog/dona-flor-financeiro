@@ -3,8 +3,8 @@ import {
   inserirComEmpresa,
   inserirLoteComEmpresa,
   selecionarPorEmpresa
-} from './supabaseQueryService'
-import { assertEmpresaId } from './tenantService'
+} from './supabaseQueryService.js'
+import { assertEmpresaId } from './tenantService.js'
 import { executarConsultaPaginada } from './supabasePaginationService.js'
 import { interpretarTermoBuscaContas } from '../utils/contasConsultasOperacionais.js'
 
@@ -322,46 +322,6 @@ export async function listarPagamentosParciaisPorContas(supabase, empresaId, con
   return { data: registros, error: null }
 }
 
-function primeiroRegistro(resposta) {
-  if (Array.isArray(resposta?.data)) return resposta.data[0] || null
-  return resposta?.data || null
-}
-
-function montarPayloadAuditoriaPagamentoParcial({ contaAtual, pagamentoCriado, pagamento, consolidacaoAntes, valorNovo }) {
-  if (!contaAtual?.id || !pagamentoCriado?.id) return null
-
-  const valorPagoAnterior = arredondarValorFinanceiro(consolidacaoAntes?.totalPagoParcial)
-  const valorPagoPosterior = arredondarValorFinanceiro(valorPagoAnterior + valorNovo)
-  const saldoAnterior = arredondarValorFinanceiro(consolidacaoAntes?.saldoPendente)
-  const saldoPosterior = arredondarValorFinanceiro(Math.max(saldoAnterior - valorNovo, 0))
-  const quantidadeParciaisAnterior = Number(consolidacaoAntes?.quantidadePagamentos || 0)
-  const possuiObservacao = String(pagamento?.observacao || '').trim().length > 0
-
-  return {
-    acao: 'financeiro.pagamento_parcial.criado',
-    empresa_id: contaAtual.empresa_id,
-    conta_id: contaAtual.id,
-    pagamento_id: pagamentoCriado.id,
-    filial_id: contaAtual.filial_id || null,
-    valor_pagamento: valorNovo,
-    data_pagamento: pagamentoCriado.data_pagamento || pagamento.data_pagamento,
-    forma_pagamento: null,
-    conta_status_anterior: contaAtual.status || null,
-    conta_status_posterior: contaAtual.status || null,
-    valor_pago_anterior: valorPagoAnterior,
-    valor_pago_posterior: valorPagoPosterior,
-    saldo_anterior: saldoAnterior,
-    saldo_posterior: saldoPosterior,
-    quantidade_parciais_anterior: quantidadeParciaisAnterior,
-    quantidade_parciais_posterior: quantidadeParciaisAnterior + 1,
-    origem_fluxo: 'pagamento_parcial',
-    possui_observacao: possuiObservacao,
-    competencia: contaAtual.competencia ? String(contaAtual.competencia).slice(0, 7) : null,
-    vencimento: contaAtual.data_vencimento || contaAtual.vencimento || null,
-    correlation_id: `financeiro.pagamento_parcial.criado:${pagamentoCriado.id}`
-  }
-}
-
 export async function registrarPagamentoParcial(supabase, contaId, empresaId, pagamento = {}) {
   assertEmpresaId(empresaId)
 
@@ -372,82 +332,27 @@ export async function registrarPagamentoParcial(supabase, contaId, empresaId, pa
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(pagamento.data_pagamento || ''))) {
     return { data: null, error: new Error('Informe uma data de pagamento válida.') }
   }
-
-  const { data: contaAtual, error: erroConta } = await selecionarPorEmpresa(
-    supabase,
-    'df_contas',
-    empresaId,
-    'id, empresa_id, valor, status, oculto, excluido, deletado, filial_id, data_vencimento, vencimento, competencia'
-  )
-    .eq('id', contaId)
-    .maybeSingle()
-
-  if (erroConta) return { data: null, error: erroConta }
-  if (!contaAtual?.id) return { data: null, error: new Error('Conta não encontrada.') }
-  if (contaAtual.status === 'pago') {
-    return { data: null, error: new Error('A conta já está marcada como paga.') }
-  }
-  if (contaAtual.oculto === true || contaAtual.excluido === true || contaAtual.deletado === true) {
-    return { data: null, error: new Error('A conta não está disponível para pagamento parcial.') }
+  if (!pagamento.idempotency_key) {
+    return { data: null, error: new Error('Chave de idempotência do pagamento não informada.') }
   }
 
-  const { data: pagamentosAtuais, error: erroPagamentos } = await listarPagamentosParciaisPorContas(
-    supabase,
-    empresaId,
-    [contaId]
-  )
-  if (erroPagamentos) return { data: null, error: erroPagamentos }
-
-  const consolidacao = consolidarPagamentosParciaisDaConta(contaAtual, pagamentosAtuais || [])
-  if (valorNovo > consolidacao.saldoPendente) {
-    return {
-      data: null,
-      error: new Error(`O valor informado supera o saldo pendente de R$ ${consolidacao.saldoPendente.toFixed(2).replace('.', ',')}.`)
-    }
-  }
-
-  const resposta = await inserirComEmpresa(
-    supabase,
-    'df_contas_pagamentos',
-    {
-      empresa_id: empresaId,
-      conta_id: contaId,
-      valor_pago: valorNovo,
-      data_pagamento: pagamento.data_pagamento,
-      observacao: String(pagamento.observacao || '').trim() || null
-    },
-    { select: true }
-  )
-
+  const resposta = await supabase.rpc('registrar_pagamento_parcial_controlado', {
+    p_empresa_id: empresaId,
+    p_conta_id: contaId,
+    p_valor: valorNovo,
+    p_data_pagamento: pagamento.data_pagamento,
+    p_observacao: String(pagamento.observacao || '').trim() || null,
+    p_idempotency_key: pagamento.idempotency_key
+  })
   if (resposta.error) return resposta
 
-  const pagamentoCriado = primeiroRegistro(resposta)
+  const pagamentoCriado = resposta.data?.pagamento || null
   return {
-    ...resposta,
-    auditoria: montarPayloadAuditoriaPagamentoParcial({
-      contaAtual,
-      pagamentoCriado,
-      pagamento,
-      consolidacaoAntes: consolidacao,
-      valorNovo
-    })
+    data: pagamentoCriado ? [pagamentoCriado] : [],
+    error: null,
+    idempotente: resposta.data?.idempotente === true,
+    auditoriaRegistrada: resposta.data?.auditoria_registrada === true
   }
-}
-
-export async function registrarAuditoriaPagamentoParcialCriado(supabase, payloadAuditoria) {
-  if (!payloadAuditoria?.pagamento_id || !payloadAuditoria?.conta_id || !payloadAuditoria?.empresa_id) {
-    return { data: null, error: new Error('Payload de auditoria incompleto.') }
-  }
-
-  const resposta = await supabase.functions.invoke('registrar-auditoria-evento', {
-    body: payloadAuditoria
-  })
-  if (!resposta?.error && resposta?.data?.ok === false) {
-    const error = new Error(`Auditoria rejeitada (${resposta.data.code || 'AUDITORIA_REJEITADA'}).`)
-    error.code = resposta.data.code || 'AUDITORIA_REJEITADA'
-    return { data: resposta.data, error }
-  }
-  return resposta
 }
 
 export async function estornarPagamentoParcial(supabase, pagamentoId, contaId, empresaId) {

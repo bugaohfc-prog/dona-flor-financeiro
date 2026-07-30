@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 function dataAtualBanco() {
   const hoje = new Date()
@@ -39,6 +39,7 @@ export default function AccountPartialPaymentModal({
   const [pagamentos, setPagamentos] = useState([])
   const [pagamentoEmEstorno, setPagamentoEmEstorno] = useState('')
   const [baixandoConta, setBaixandoConta] = useState(false)
+  const idempotencyKeyRef = useRef(globalThis.crypto.randomUUID())
 
   const totalPagoParcial = carregandoPagamentos
     ? normalizarValor(conta?.pagamentosParciaisTotal)
@@ -93,7 +94,8 @@ export default function AccountPartialPaymentModal({
     const sucesso = await onConfirm({
       valor_pago: valorNumerico,
       data_pagamento: dataPagamento,
-      observacao: observacao.trim() || null
+      observacao: observacao.trim() || null,
+      idempotency_key: idempotencyKeyRef.current
     })
 
     if (!sucesso) {
@@ -118,6 +120,7 @@ export default function AccountPartialPaymentModal({
     setCarregandoPagamentos(false)
     setValorPago('')
     setObservacao('')
+    idempotencyKeyRef.current = globalThis.crypto.randomUUID()
     setSalvando(false)
 
     if (saldoAtualizado > 0) onClose()

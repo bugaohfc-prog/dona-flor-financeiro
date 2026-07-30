@@ -50,15 +50,11 @@ export async function restaurarNotaDaLixeira(supabase, id, empresaId) {
   })
 }
 
-export async function excluirNotaPermanentemente(supabase, id, empresaId, excluidoAte) {
-  return supabase
-    .from('df_notas')
-    .delete()
-    .eq('id', id)
-    .eq('empresa_id', empresaId)
-    .eq('excluido', true)
-    .lte('excluido_em', excluidoAte)
-    .select('id')
+export async function excluirNotaPermanentemente(supabase, id, empresaId) {
+  return supabase.rpc('excluir_nota_definitivamente', {
+    p_empresa_id: empresaId,
+    p_nota_id: id
+  })
 }
 
 

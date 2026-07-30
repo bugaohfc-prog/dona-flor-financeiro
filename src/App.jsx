@@ -41,7 +41,7 @@ import { diferencaDias } from './utils/dates'
 import { formatarTipoRecorrencia, obterTipoRecorrenciaConta } from './utils/recorrencia'
 import { estaVencida, pegarMes } from './utils/contasStatus'
 import { atualizarAposMutacaoContas, calcularResumoFinanceiroContas, carregarFonteContextualContas, consumidorRequerHistoricoCompleto, criarAlvoContaParaNavegacao, filtrarContasPorHorizonte, formatarDataBancoLocal, obterPeriodoConsultaPagas, selecionarFonteContas } from './utils/contasConsultasOperacionais.js'
-import { atualizarListaLixeiraEstavel, diasNaLixeira, obterEstadoRetencaoLixeira, obterLimiteExclusaoDefinitiva, podeExcluirDefinitivo } from './utils/lixeira'
+import { atualizarListaLixeiraEstavel, diasNaLixeira, obterEstadoRetencaoLixeira, podeExcluirDefinitivo } from './utils/lixeira'
 import { erroEhSessaoExpirada, mensagemSeguraErro, telaRetornoSessaoSegura } from './utils/session'
 import { resolverEstadoEntradaContas, sincronizarContextoContas } from './utils/navigation.js'
 import {
@@ -56,7 +56,7 @@ import {
 import { buscarNomePerfilUsuario, buscarVinculoEmpresaDoUsuario, sincronizarUsuarioLogadoComEmpresa, TENANT_ERRORS } from './services/tenantService'
 import { buscarPermissoesUsuario, criarPermissoesUsuario, listarEmpresasDisponiveisParaUsuario, podeEditarBilling } from './services/permissoesService'
 import { listarFiliaisPorEmpresa } from './services/filiaisService'
-import { verificarUsoCentroCusto } from './services/contasService'
+import { excluirContaPermanentemente, verificarUsoCentroCusto } from './services/contasService'
 import {
   gerarOcorrenciaRecorrencia as gerarOcorrenciaRecorrenciaService,
   vincularContaManualRecorrencia as vincularContaManualRecorrenciaService
@@ -2779,22 +2779,18 @@ export default function App() {
       return
     }
 
-    const limiteExclusao = obterLimiteExclusaoDefinitiva()
-    const { data: excluidas, error } = await supabase
-      .from('df_contas')
-      .delete()
-      .eq('id', conta.id)
-      .eq('empresa_id', empresaId)
-      .eq('excluido', true)
-      .lte('excluido_em', limiteExclusao)
-      .select('id')
+    const { data: excluida, error } = await excluirContaPermanentemente(
+      supabase,
+      conta.id,
+      empresaId,
+    )
 
     if (error) {
       avisarErro(error)
       return
     }
 
-    if (!excluidas?.length) {
+    if (!excluida?.excluida) {
       mostrarAviso('A conta não está mais elegível para exclusão definitiva.', 'aviso')
       await buscarLixeira()
       return

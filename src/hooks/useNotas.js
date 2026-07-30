@@ -12,7 +12,6 @@ import {
 import { primeiraLetraMaiuscula } from '../utils/format'
 import {
   obterEstadoRetencaoLixeira,
-  obterLimiteExclusaoDefinitiva,
 } from '../utils/lixeira.js'
 
 function assinaturaListaNotas(itens = []) {
@@ -199,11 +198,10 @@ export function useNotas() {
       return
     }
 
-    const { data: excluidas, error } = await excluirNotaPermanentemente(
+    const { data: excluida, error } = await excluirNotaPermanentemente(
       supabase,
       nota.id,
       empresaId,
-      obterLimiteExclusaoDefinitiva(),
     )
 
     if (error) {
@@ -211,7 +209,7 @@ export function useNotas() {
       return
     }
 
-    if (!excluidas?.length) {
+    if (!excluida?.excluida) {
       mostrarAviso?.('A nota não está mais elegível para exclusão definitiva.', 'aviso')
       await buscarLixeira()
       return

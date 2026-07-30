@@ -9,8 +9,14 @@ const migrationPagamento = fs.readFileSync(
   path.join(raiz, 'supabase/migrations/20260730183313_registrar_pagamento_parcial_controlado.sql'),
   'utf8'
 ).replace(/\r\n/g, '\n')
+const migrationLixeira = fs.readFileSync(
+  path.join(raiz, 'supabase/migrations/20260730184527_proteger_exclusao_definitiva_lixeira.sql'),
+  'utf8'
+).replace(/\r\n/g, '\n')
 const contasServiceFonte = fs.readFileSync(path.join(raiz, 'src/services/contasService.js'), 'utf8')
+const notasServiceFonte = fs.readFileSync(path.join(raiz, 'src/services/notasService.js'), 'utf8')
 const useContasFonte = fs.readFileSync(path.join(raiz, 'src/hooks/useContas.js'), 'utf8')
+const appFonte = fs.readFileSync(path.join(raiz, 'src/App.jsx'), 'utf8')
 const modalPagamentoFonte = fs.readFileSync(
   path.join(raiz, 'src/components/modals/AccountPartialPaymentModal.jsx'),
   'utf8'
@@ -113,4 +119,51 @@ test('P0-1 chamadas repetidas e simultaneas preservam a mesma identidade logica'
 test('P0-1 hook nao dispara auditoria separada depois da escrita', () => {
   assert.doesNotMatch(useContasFonte, /registrarAuditoriaPagamentoParcialCriado/)
   assert.doesNotMatch(contasServiceFonte, /functions\.invoke\('registrar-auditoria-evento'/)
+})
+
+test('P0-2 RPCs bloqueiam registros e revalidam a retencao de 60 dias', () => {
+  assert.match(migrationLixeira, /create or replace function public\.excluir_conta_definitivamente/)
+  assert.match(migrationLixeira, /create or replace function public\.excluir_nota_definitivamente/)
+  assert.equal((migrationLixeira.match(/for update/gi) || []).length, 2)
+  assert.equal((migrationLixeira.match(/now\(\) - interval '60 days'/gi) || []).length, 2)
+})
+
+test('P0-2 auditoria obrigatoria permanece na mesma transacao das exclusoes', () => {
+  assert.match(migrationLixeira, /trg_df_contas_auditoria_lixeira/)
+  assert.match(migrationLixeira, /trg_df_notas_auditoria_lixeira/)
+  assert.match(migrationLixeira, /begin;[\s\S]+delete from public\.df_contas[\s\S]+delete from public\.df_notas[\s\S]+commit;/i)
+})
+
+test('P0-2 remove grants e policies de DELETE direto sem caminho paralelo', () => {
+  assert.match(migrationLixeira, /revoke delete on table public\.df_contas from authenticated/i)
+  assert.match(migrationLixeira, /revoke delete on table public\.df_notas from authenticated/i)
+  assert.match(migrationLixeira, /drop policy if exists "df_contas_delete_admin_master"/i)
+  assert.match(migrationLixeira, /drop policy if exists "df_notas_delete_admin_master"/i)
+  assert.doesNotMatch(appFonte, /\.from\(['"]df_contas['"]\)[\s\S]{0,300}\.delete\(\)/)
+  assert.doesNotMatch(notasServiceFonte, /\.from\(['"]df_notas['"]\)[\s\S]{0,300}\.delete\(\)/)
+})
+
+test('P0-2 frontend chama somente as RPCs controladas para exclusao definitiva', async () => {
+  const { excluirContaPermanentemente } = await import(
+    `${pathToFileURL(path.join(raiz, 'src/services/contasService.js')).href}?lixeira=${Date.now()}`
+  )
+  const chamadas = []
+  const supabase = {
+    rpc: async (nome, payload) => {
+      chamadas.push({ nome, payload })
+      return { data: { id: payload.p_conta_id, excluida: true }, error: null }
+    },
+    from: () => {
+      throw new Error('DELETE direto nao pode ser usado')
+    }
+  }
+
+  const resposta = await excluirContaPermanentemente(supabase, 'conta-1', 'empresa-1')
+
+  assert.equal(resposta.error, null)
+  assert.deepEqual(chamadas, [{
+    nome: 'excluir_conta_definitivamente',
+    payload: { p_empresa_id: 'empresa-1', p_conta_id: 'conta-1' }
+  }])
+  assert.match(notasServiceFonte, /supabase\.rpc\('excluir_nota_definitivamente'/)
 })

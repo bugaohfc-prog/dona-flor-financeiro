@@ -322,6 +322,14 @@ export async function listarPagamentosParciaisPorContas(supabase, empresaId, con
   return { data: registros, error: null }
 }
 
+export async function excluirContaPermanentemente(supabase, contaId, empresaId) {
+  assertEmpresaId(empresaId)
+  return supabase.rpc('excluir_conta_definitivamente', {
+    p_empresa_id: empresaId,
+    p_conta_id: contaId
+  })
+}
+
 export async function registrarPagamentoParcial(supabase, contaId, empresaId, pagamento = {}) {
   assertEmpresaId(empresaId)
 

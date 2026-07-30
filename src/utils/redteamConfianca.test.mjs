@@ -40,8 +40,9 @@ test('lixeira exige 60 dias e a interface revalida antes da exclusão definitiva
   assert.match(pagina, /disabled=\{!liberada\}/)
   assert.match(pagina, /retencao\.diasRestantes/)
   assert.match(app, /\.select\('id, excluido, excluido_em'\)/)
-  assert.match(app, /\.lte\('excluido_em', limiteExclusao\)/)
+  assert.match(app, /excluirContaPermanentemente\(/)
   assert.match(hookNotas, /obterEstadoRetencaoLixeira\(notaAtual\?\.excluido_em\)/)
+  assert.match(hookNotas, /excluirNotaPermanentemente\(/)
 })
 
 test('billing fica editável somente para Master', async () => {

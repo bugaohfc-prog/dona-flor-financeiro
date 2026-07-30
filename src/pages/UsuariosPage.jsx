@@ -250,7 +250,7 @@ export default function UsuariosPage({
                 const masterBloqueadoParaAdmin = podeEditarUsuarios && !permissoesUsuario?.isMaster && masterProtegido
                 const perfilExibido = masterProtegido ? 'master' : perfilNormalizado
                 const filiaisSelecionadas = filiaisUsuariosEmpresa[usuario.id] || []
-                const acessoTotalFiliais = filiaisSelecionadas.length === 0
+                const acessoTotalFiliais = usuario.acesso_todas_filiais === true
 
                 return (
                   <article key={usuario.id || usuario.user_id || usuario.email} className="user-card userCard users-user-card admin-item-card">

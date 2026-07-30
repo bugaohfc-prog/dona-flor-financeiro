@@ -1522,7 +1522,11 @@ export default function App() {
     })
   }
 
-  async function atualizarFiliaisDoUsuario(usuario, proximasFiliais) {
+  async function atualizarFiliaisDoUsuario(
+    usuario,
+    proximasFiliais,
+    acessoTodasFiliais = false,
+  ) {
     if (!podeAdministrarUsuarios()) {
       mostrarAviso('Apenas administradores podem alterar filiais dos usuários.', 'erro')
       return
@@ -1548,14 +1552,23 @@ export default function App() {
       }
 
       const filiaisAnteriores = filiaisUsuariosEmpresa[usuario.id] || []
-      await atualizarFiliaisUsuarioEmpresa({
+      const escopoAtualizado = await atualizarFiliaisUsuarioEmpresa({
         empresaId,
         usuario,
-        filialIds: proximasFiliais
+        filialIds: proximasFiliais,
+        acessoTodasFiliais,
       })
+      setUsuariosEmpresa((atuais) => atuais.map((item) => (
+        item.id === usuario.id
+          ? {
+              ...item,
+              acesso_todas_filiais: escopoAtualizado.acessoTodasFiliais,
+            }
+          : item
+      )))
       setFiliaisUsuariosEmpresa((atual) => ({
         ...atual,
-        [usuario.id]: proximasFiliais
+        [usuario.id]: escopoAtualizado.filialIds,
       }))
       await registrarEventoAuditoriaSeguro(supabase, {
         empresa_id: empresaId,
@@ -1565,8 +1578,14 @@ export default function App() {
         modulo: 'administracao',
         severidade: 'alta',
         status: 'sucesso',
-        dados_antes: { quantidade_filiais: filiaisAnteriores.length },
-        dados_depois: { quantidade_filiais: proximasFiliais.length }
+        dados_antes: {
+          quantidade_filiais: filiaisAnteriores.length,
+          acesso_todas_filiais: usuario.acesso_todas_filiais === true,
+        },
+        dados_depois: {
+          quantidade_filiais: escopoAtualizado.filialIds.length,
+          acesso_todas_filiais: escopoAtualizado.acessoTodasFiliais,
+        }
       }, 'alteração de filiais')
       mostrarAviso('Filiais do usuário atualizadas.', 'sucesso')
     } catch (error) {
@@ -1583,11 +1602,11 @@ export default function App() {
       ? filiaisAtuais.filter((id) => id !== filialId)
       : [...filiaisAtuais, filialId]
 
-    atualizarFiliaisDoUsuario(usuario, proximasFiliais)
+    atualizarFiliaisDoUsuario(usuario, proximasFiliais, false)
   }
 
   function liberarTodasFiliaisUsuario(usuario) {
-    atualizarFiliaisDoUsuario(usuario, [])
+    atualizarFiliaisDoUsuario(usuario, [], true)
   }
 
   async function removerUsuarioEmpresa(usuario) {

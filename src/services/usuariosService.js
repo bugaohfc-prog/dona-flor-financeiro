@@ -284,33 +284,27 @@ export async function listarFiliaisUsuariosEmpresa(empresaId) {
   return data || []
 }
 
-export async function atualizarFiliaisUsuarioEmpresa({ empresaId, usuario, filialIds }) {
+export async function atualizarFiliaisUsuarioEmpresa({
+  empresaId,
+  usuario,
+  filialIds,
+  acessoTodasFiliais = false
+}) {
   if (!empresaId) throw new Error('Empresa não identificada.')
   if (!usuario?.id) throw new Error('Usuário da empresa não identificado.')
 
   const filiaisNormalizadas = Array.from(new Set((filialIds || []).filter(Boolean)))
-
-  const { error: deleteError } = await supabase
-    .from('df_usuarios_filiais')
-    .delete()
-    .eq('empresa_id', empresaId)
-    .eq('usuario_id', usuario.id)
-
-  if (deleteError) throw deleteError
-
-  if (filiaisNormalizadas.length === 0) return []
-
-  const payload = filiaisNormalizadas.map((filialId) => ({
-    empresa_id: empresaId,
-    usuario_id: usuario.id,
-    filial_id: filialId
-  }))
-
   const { data, error } = await supabase
-    .from('df_usuarios_filiais')
-    .insert(payload)
-    .select('id, empresa_id, usuario_id, filial_id, created_at')
+    .rpc('definir_escopo_filiais_usuario', {
+      p_empresa_id: empresaId,
+      p_usuario_empresa_id: usuario.id,
+      p_acesso_todas_filiais: acessoTodasFiliais === true,
+      p_filial_ids: acessoTodasFiliais === true ? [] : filiaisNormalizadas
+    })
 
   if (error) throw error
-  return data || []
+  return {
+    acessoTodasFiliais: data?.acesso_todas_filiais === true,
+    filialIds: Array.isArray(data?.filial_ids) ? data.filial_ids : []
+  }
 }

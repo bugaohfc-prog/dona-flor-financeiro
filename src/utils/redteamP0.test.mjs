@@ -13,10 +13,16 @@ const migrationLixeira = fs.readFileSync(
   path.join(raiz, 'supabase/migrations/20260730184527_proteger_exclusao_definitiva_lixeira.sql'),
   'utf8'
 ).replace(/\r\n/g, '\n')
+const migrationFiliais = fs.readFileSync(
+  path.join(raiz, 'supabase/migrations/20260730190640_aplicar_escopo_financeiro_por_filial.sql'),
+  'utf8'
+).replace(/\r\n/g, '\n')
 const contasServiceFonte = fs.readFileSync(path.join(raiz, 'src/services/contasService.js'), 'utf8')
 const notasServiceFonte = fs.readFileSync(path.join(raiz, 'src/services/notasService.js'), 'utf8')
+const usuariosServiceFonte = fs.readFileSync(path.join(raiz, 'src/services/usuariosService.js'), 'utf8')
 const useContasFonte = fs.readFileSync(path.join(raiz, 'src/hooks/useContas.js'), 'utf8')
 const appFonte = fs.readFileSync(path.join(raiz, 'src/App.jsx'), 'utf8')
+const usuariosPageFonte = fs.readFileSync(path.join(raiz, 'src/pages/UsuariosPage.jsx'), 'utf8')
 const modalPagamentoFonte = fs.readFileSync(
   path.join(raiz, 'src/components/modals/AccountPartialPaymentModal.jsx'),
   'utf8'
@@ -166,4 +172,57 @@ test('P0-2 frontend chama somente as RPCs controladas para exclusao definitiva',
     payload: { p_empresa_id: 'empresa-1', p_conta_id: 'conta-1' }
   }])
   assert.match(notasServiceFonte, /supabase\.rpc\('excluir_nota_definitivamente'/)
+})
+
+test('P0-3 cria flag explicita, preserva vinculos antigos e restringe novos por padrao', () => {
+  assert.match(migrationFiliais, /add column if not exists acesso_todas_filiais boolean/)
+  assert.match(migrationFiliais, /set acesso_todas_filiais = not exists/)
+  assert.match(migrationFiliais, /alter column acesso_todas_filiais set default false/)
+  assert.match(migrationFiliais, /alter column acesso_todas_filiais set not null/)
+})
+
+test('P0-3 corrige a identidade da atribuicao para o vinculo empresarial', () => {
+  assert.match(migrationFiliais, /references public\.df_usuarios_empresas\(id\)/)
+  assert.match(migrationFiliais, /uq_df_usuarios_filiais_escopo/)
+  assert.match(migrationFiliais, /Existem atribuicoes de filial sem vinculo empresarial correspondente/)
+})
+
+test('P0-3 escopo canonico nega registro sem filial para usuario restrito', () => {
+  const inicio = migrationFiliais.indexOf('create or replace function public.df_usuario_pode_acessar_filial')
+  const fim = migrationFiliais.indexOf('create or replace function public.definir_escopo_filiais_usuario')
+  const funcao = migrationFiliais.slice(inicio, fim)
+  assert.match(funcao, /public\.is_master\(\)/)
+  assert.match(funcao, /public\.df_usuario_eh_admin\(p_empresa_id\)/)
+  assert.match(funcao, /ue\.acesso_todas_filiais = true/)
+  assert.match(funcao, /p_filial_id is not null[\s\S]+uf\.filial_id = p_filial_id/)
+  assert.doesNotMatch(funcao, /p_filial_id is null\s+or/i)
+})
+
+test('P0-3 toda policy financeira afetada usa a autoridade canonica de filial', () => {
+  for (const tabela of [
+    'df_contas',
+    'df_notas',
+    'df_contas_pagamentos',
+    'df_contas_recorrentes',
+    'df_receitas'
+  ]) {
+    assert.match(migrationFiliais, new RegExp(`on public\\.${tabela}[\\s\\S]+df_usuario_pode_acessar_filial`))
+  }
+  assert.match(migrationFiliais, /policy financeira sem escopo canonico de filial/i)
+})
+
+test('P0-3 bypass direto em pagamento parcial tambem valida a filial da conta', () => {
+  assert.match(migrationFiliais, /trg_df_contas_pagamentos_validar_escopo_filial/)
+  assert.match(migrationFiliais, /before insert or update of empresa_id, conta_id/)
+  assert.match(migrationFiliais, /Usuario sem acesso a filial da conta/)
+})
+
+test('P0-3 frontend nao infere acesso total pela ausencia de atribuicoes', () => {
+  assert.match(usuariosPageFonte, /usuario\.acesso_todas_filiais === true/)
+  assert.doesNotMatch(usuariosPageFonte, /acessoTotalFiliais = filiaisSelecionadas\.length === 0/)
+  assert.match(usuariosServiceFonte, /\.rpc\('definir_escopo_filiais_usuario'/)
+  assert.doesNotMatch(
+    usuariosServiceFonte,
+    /\.from\('df_usuarios_filiais'\)[\s\S]{0,250}\.(insert|delete)\(/
+  )
 })

@@ -22,6 +22,8 @@ export default function AppShell({
   mobileMenu,
   fab,
   copilot,
+  mostrarFab = true,
+  mostrarCopilot = true,
   modals,
   overlays,
   children,
@@ -70,8 +72,8 @@ export default function AppShell({
           <main className="app-frame-content">{conteudoRota}</main>
         ) : conteudoRota}
 
-        {fab}
-        {copilot}
+        {mostrarFab ? fab : null}
+        {mostrarCopilot ? copilot : null}
         {modals}
         {overlays}
       </div>

@@ -44,7 +44,10 @@ import { atualizarAposMutacaoContas, calcularResumoFinanceiroContas, carregarFon
 import { atualizarListaLixeiraEstavel, diasNaLixeira, obterEstadoRetencaoLixeira, obterLimiteExclusaoDefinitiva, podeExcluirDefinitivo } from './utils/lixeira'
 import { erroEhSessaoExpirada, mensagemSeguraErro, telaRetornoSessaoSegura } from './utils/session'
 import { resolverEstadoEntradaContas, sincronizarContextoContas } from './utils/navigation.js'
-import { resolverLayoutAppShell } from './utils/appShellLayout.js'
+import {
+  resolverAcoesFlutuantesAppShell,
+  resolverLayoutAppShell,
+} from './utils/appShellLayout.js'
 import {
   avaliarAcessoTela,
   construirPermissoesAcessoTelas,
@@ -3806,10 +3809,28 @@ export default function App() {
   const contextoModuloAtual = resolverContextoModulo(modalPerfilUsuario ? 'perfil' : telaAtual)
   const exibirAcoesRapidasFinanceiras = acessoTelaAtual.permitido
     && contextoModuloAtual === MODULOS_TOPBAR.financeiro
+  const politicaAcoesFlutuantesAppShell = resolverAcoesFlutuantesAppShell({
+    modalConta,
+    modalNota,
+    modalCentro,
+    modalPerfilUsuario,
+    menuNavegacaoAberto,
+    confirmacaoAtiva: Boolean(confirmacao?.aberto),
+    globalLoading: Boolean(globalLoading),
+  })
 
   useEffect(() => {
-    if (!exibirAcoesRapidasFinanceiras) setMenuAberto(false)
-  }, [exibirAcoesRapidasFinanceiras, setMenuAberto])
+    if (
+      !exibirAcoesRapidasFinanceiras
+      || politicaAcoesFlutuantesAppShell.bloqueioInteracaoAtivo
+    ) {
+      setMenuAberto(false)
+    }
+  }, [
+    exibirAcoesRapidasFinanceiras,
+    politicaAcoesFlutuantesAppShell.bloqueioInteracaoAtivo,
+    setMenuAberto,
+  ])
 
   const abrirPerfilUsuario = useCallback(() => {
     setNomePerfilEditando(nomeUsuarioCompletoAtual)
@@ -4710,6 +4731,8 @@ export default function App() {
       mobileMenu={renderMobileMenu()}
       fab={renderFabGlobal()}
       copilot={renderCopilotFinanceiro()}
+      mostrarFab={politicaAcoesFlutuantesAppShell.mostrarFab}
+      mostrarCopilot={politicaAcoesFlutuantesAppShell.mostrarCopilot}
       modals={renderModaisGlobais()}
       overlays={renderOverlaysLayer()}
     >

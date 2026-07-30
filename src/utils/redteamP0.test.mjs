@@ -21,8 +21,20 @@ const migrationFiliais = fs.readFileSync(
   path.join(raiz, 'supabase/migrations/20260730190640_aplicar_escopo_financeiro_por_filial.sql'),
   'utf8'
 ).replace(/\r\n/g, '\n')
+const migrationFiliaisFolha = fs.readFileSync(
+  path.join(raiz, 'supabase/migrations/20260730224500_aplicar_escopo_filial_folha.sql'),
+  'utf8'
+).replace(/\r\n/g, '\n')
+const migrationFolhaFuncoes = fs.readFileSync(
+  path.join(raiz, 'supabase/migrations/20260605143629_fix_df_folha_lancamento_itens_recalculo_security.sql'),
+  'utf8'
+).replace(/\r\n/g, '\n')
 const migrationRecorrencias = fs.readFileSync(
   path.join(raiz, 'supabase/migrations/20260730194700_restringir_mutacoes_recorrencias_admin.sql'),
+  'utf8'
+).replace(/\r\n/g, '\n')
+const progressoAuditoriaFonte = fs.readFileSync(
+  path.join(raiz, 'PROGRESSO_AUDITORIA.md'),
   'utf8'
 ).replace(/\r\n/g, '\n')
 const contasServiceFonte = fs.readFileSync(path.join(raiz, 'src/services/contasService.js'), 'utf8')
@@ -310,17 +322,102 @@ test('P0-3 escopo canonico nega registro sem filial para usuario restrito', () =
   assert.doesNotMatch(funcao, /p_filial_id is null\s+or/i)
 })
 
-test('P0-3 toda policy financeira afetada usa a autoridade canonica de filial', () => {
-  for (const tabela of [
-    'df_contas',
-    'df_notas',
-    'df_contas_pagamentos',
-    'df_contas_recorrentes',
-    'df_receitas'
-  ]) {
-    assert.match(migrationFiliais, new RegExp(`on public\\.${tabela}[\\s\\S]+df_usuario_pode_acessar_filial`))
+test('P0-3 inventario do catalogo classifica toda tabela com empresa e filial', () => {
+  assert.match(migrationFiliaisFolha, /from information_schema\.columns empresa/)
+  assert.match(migrationFiliaisFolha, /filial\.column_name = 'filial_id'/)
+  assert.match(migrationFiliaisFolha, /empresa\.column_name = 'empresa_id'/)
+  assert.match(migrationFiliaisFolha, /Tabela com empresa_id e filial_id sem classificacao P0-3/)
+
+  const classificacoesEsperadas = new Map([
+    ['df_contas', 'financeira'],
+    ['df_contas_recorrentes', 'financeira'],
+    ['df_receitas', 'financeira'],
+    ['df_folha_lancamentos', 'financeira'],
+    ['df_folha_lancamento_itens', 'financeira'],
+    ['df_notas', 'operacional_escopada'],
+    ['df_funcionarios', 'rh_fora_p0_3'],
+    ['df_usuarios_filiais', 'controle_acesso']
+  ])
+
+  for (const [tabela, classificacao] of classificacoesEsperadas) {
+    assert.match(migrationFiliaisFolha, new RegExp(`'${tabela}'`))
+    assert.match(migrationFiliaisFolha, new RegExp(`'${classificacao}'`))
+  }
+})
+
+test('P0-3 policies financeiras anteriores permanecem sob a autoridade canonica', () => {
+  for (const tabela of ['df_contas', 'df_notas', 'df_contas_recorrentes', 'df_receitas']) {
+    assert.match(
+      migrationFiliais,
+      new RegExp(`on public\\.${tabela}[\\s\\S]+df_usuario_pode_acessar_filial`)
+    )
   }
   assert.match(migrationFiliais, /policy financeira sem escopo canonico de filial/i)
+})
+
+test('P0-3 Folha aplica escopo canonico em leitura e escrita sem permitir mudanca de filial', () => {
+  for (const tabela of ['df_folha_lancamentos', 'df_folha_lancamento_itens']) {
+    for (const operacao of ['select', 'insert', 'update']) {
+      const inicio = migrationFiliaisFolha.indexOf(
+        `create policy "${tabela}_${operacao}_admin_master"`
+      )
+      assert.notEqual(inicio, -1, `policy ${operacao} ausente em ${tabela}`)
+      const proximaPolicy = migrationFiliaisFolha.indexOf('create policy "', inicio + 15)
+      const fim = proximaPolicy === -1
+        ? migrationFiliaisFolha.indexOf('do $$', inicio)
+        : proximaPolicy
+      const policy = migrationFiliaisFolha.slice(inicio, fim)
+
+      assert.match(policy, new RegExp(`on public\\.${tabela}`))
+      assert.match(policy, new RegExp(`for ${operacao}`))
+      assert.match(policy, /df_usuario_pode_acessar_filial\(empresa_id, filial_id\)/)
+
+      if (operacao === 'update') {
+        assert.equal(
+          (policy.match(/df_usuario_pode_acessar_filial\(empresa_id, filial_id\)/g) || []).length,
+          2,
+          `UPDATE de ${tabela} deve validar filial antiga e nova`
+        )
+        assert.match(policy, /using \([\s\S]+with check \(/)
+      }
+    }
+  }
+
+  assert.match(migrationFiliaisFolha, /cmd in \('DELETE', 'ALL'\)/)
+  assert.match(migrationFiliaisFolha, /Policies sem escopo canonico de filial/)
+})
+
+test('P0-3 RH fica fora do commit e a exclusao de escopo permanece documentada', () => {
+  assert.match(migrationFiliaisFolha, /when v_tabela = 'df_funcionarios' then 'rh_fora_p0_3'/)
+  assert.doesNotMatch(migrationFiliaisFolha, /on public\.df_funcionarios/)
+  assert.match(progressoAuditoriaFonte, /df_funcionarios foi excluída por pertencer a RH/)
+  assert.match(progressoAuditoriaFonte, /df_usuarios_filiais por ser controle de acesso/)
+})
+
+test('P0-3 caminhos privilegiados internos da Folha nao ficam executaveis pelo cliente', () => {
+  assert.match(
+    migrationFolhaFuncoes,
+    /revoke all on function public\.df_folha_lancamento_itens_recalcular_lancamento\(uuid\)[\s\S]+from public, anon, authenticated/
+  )
+  assert.match(
+    migrationFiliaisFolha,
+    /has_function_privilege\([\s\S]+authenticated[\s\S]+df_folha_lancamento_itens_recalcular_lancamento\(uuid\)[\s\S]+EXECUTE/
+  )
+})
+
+test('P0-3 progresso registra semantica de filial nula e limitacao de teste RLS', () => {
+  assert.match(
+    progressoAuditoriaFonte,
+    /Usuário restrito não acessa filial_id NULL/
+  )
+  assert.match(
+    progressoAuditoriaFonte,
+    /Admin, Master e acesso total explícito permanecem autorizados/
+  )
+  assert.match(
+    progressoAuditoriaFonte,
+    /Validação RLS autenticada em banco isolado continua pendente/
+  )
 })
 
 test('P0-3 bypass direto em pagamento parcial tambem valida a filial da conta', () => {

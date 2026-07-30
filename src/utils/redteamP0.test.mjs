@@ -9,6 +9,10 @@ const migrationPagamento = fs.readFileSync(
   path.join(raiz, 'supabase/migrations/20260730183313_registrar_pagamento_parcial_controlado.sql'),
   'utf8'
 ).replace(/\r\n/g, '\n')
+const migrationArquivamentoPagamento = fs.readFileSync(
+  path.join(raiz, 'supabase/migrations/20260730213000_proteger_arquivamento_pagamento_parcial.sql'),
+  'utf8'
+).replace(/\r\n/g, '\n')
 const migrationLixeira = fs.readFileSync(
   path.join(raiz, 'supabase/migrations/20260730184527_proteger_exclusao_definitiva_lixeira.sql'),
   'utf8'
@@ -137,6 +141,102 @@ test('P0-1 chamadas repetidas e simultaneas preservam a mesma identidade logica'
 test('P0-1 hook nao dispara auditoria separada depois da escrita', () => {
   assert.doesNotMatch(useContasFonte, /registrarAuditoriaPagamentoParcialCriado/)
   assert.doesNotMatch(contasServiceFonte, /functions\.invoke\('registrar-auditoria-evento'/)
+  assert.doesNotMatch(useContasFonte, /financeiro\.pagamento_parcial\.estornado/)
+})
+
+test('P0-1 remove UPDATE direto e qualquer policy paralela de pagamentos', () => {
+  assert.match(
+    migrationArquivamentoPagamento,
+    /revoke update on table public\.df_contas_pagamentos from authenticated/i
+  )
+  assert.match(
+    migrationArquivamentoPagamento,
+    /drop policy if exists "df_contas_pagamentos_update_empresa_operacional"/i
+  )
+  assert.match(
+    migrationArquivamentoPagamento,
+    /has_table_privilege\([\s\S]+authenticated[\s\S]+df_contas_pagamentos[\s\S]+UPDATE/i
+  )
+  assert.match(
+    migrationArquivamentoPagamento,
+    /cmd in \('UPDATE', 'ALL'\)/
+  )
+})
+
+test('P0-1 arquivamento usa RPC transacional limitada aos campos de estado', async () => {
+  const { estornarPagamentoParcial } = await import(
+    `${pathToFileURL(path.join(raiz, 'src/services/contasService.js')).href}?arquivamento=${Date.now()}`
+  )
+  const chamadas = []
+  const supabase = {
+    rpc: async (nome, payload) => {
+      chamadas.push({ nome, payload })
+      return {
+        data: {
+          pagamento: {
+            id: payload.p_pagamento_id,
+            conta_id: payload.p_conta_id,
+            arquivado: true,
+            arquivado_em: '2026-07-30T21:30:00.000Z'
+          },
+          idempotente: false,
+          auditoria_registrada: true
+        },
+        error: null
+      }
+    },
+    from: () => {
+      throw new Error('UPDATE direto nao pode ser usado')
+    }
+  }
+
+  const resposta = await estornarPagamentoParcial(
+    supabase,
+    'pagamento-1',
+    'conta-1',
+    'empresa-1'
+  )
+
+  assert.equal(resposta.error, null)
+  assert.equal(resposta.data.arquivado, true)
+  assert.deepEqual(chamadas, [{
+    nome: 'definir_arquivamento_pagamento_parcial',
+    payload: {
+      p_empresa_id: 'empresa-1',
+      p_conta_id: 'conta-1',
+      p_pagamento_id: 'pagamento-1',
+      p_arquivado: true
+    }
+  }])
+})
+
+test('P0-1 RPC revalida tenant, permissao, filial e audita na mesma transacao', () => {
+  const inicio = migrationArquivamentoPagamento.indexOf(
+    'create or replace function public.definir_arquivamento_pagamento_parcial'
+  )
+  const fim = migrationArquivamentoPagamento.indexOf(
+    'revoke all on function public.definir_arquivamento_pagamento_parcial'
+  )
+  const corpo = migrationArquivamentoPagamento.slice(inicio, fim)
+
+  assert.match(corpo, /public\.df_usuario_eh_admin\(p_empresa_id\)/)
+  assert.match(corpo, /public\.df_usuario_tem_perfil_empresa\(p_empresa_id, array\['gerente'\]\)/)
+  assert.match(corpo, /c\.id = p_conta_id[\s\S]+c\.empresa_id = p_empresa_id[\s\S]+for update/i)
+  assert.match(corpo, /p\.id = p_pagamento_id[\s\S]+p\.empresa_id = p_empresa_id[\s\S]+p\.conta_id = p_conta_id[\s\S]+for update/i)
+  assert.match(corpo, /public\.df_usuario_pode_acessar_filial/)
+  const inicioUpdate = corpo.indexOf('update public.df_contas_pagamentos')
+  const fimUpdate = corpo.indexOf('returning * into v_pagamento', inicioUpdate)
+  const updatePagamento = corpo.slice(inicioUpdate, fimUpdate)
+  const setPagamento = updatePagamento.slice(
+    updatePagamento.indexOf('set '),
+    updatePagamento.indexOf('where ')
+  )
+  assert.match(updatePagamento, /set arquivado = p_arquivado,\s+arquivado_em = v_arquivado_em/)
+  assert.doesNotMatch(
+    setPagamento,
+    /(valor_pago|conta_id|empresa_id|data_pagamento|idempotency_key)\s*=/i
+  )
+  assert.match(corpo, /insert into public\.df_auditoria_eventos/)
 })
 
 test('P0-2 RPCs bloqueiam registros e revalidam a retencao de 60 dias', () => {

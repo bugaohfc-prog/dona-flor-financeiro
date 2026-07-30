@@ -1216,20 +1216,6 @@ export function useContas() {
       return false
     }
 
-    await registrarEventoAuditoriaSeguro(supabase, {
-      empresa_id: empresaId,
-      acao: 'financeiro.pagamento_parcial.estornado',
-      entidade_tipo: 'df_contas_pagamentos',
-      entidade_id: pagamentoId,
-      modulo: 'financeiro',
-      origem: 'app',
-      severidade: 'alta',
-      status: 'sucesso',
-      dados_antes: { arquivado: false, conta_id: contaId },
-      dados_depois: { arquivado: true, conta_id: contaId },
-      metadados: { conta_id: contaId }
-    }, 'estorno parcial')
-
     await buscarContas()
     mostrarAviso?.('Pagamento parcial estornado com sucesso.', 'sucesso')
     return true

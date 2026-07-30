@@ -366,51 +366,21 @@ export async function registrarPagamentoParcial(supabase, contaId, empresaId, pa
 export async function estornarPagamentoParcial(supabase, pagamentoId, contaId, empresaId) {
   assertEmpresaId(empresaId)
 
-  const { data: contaAtual, error: erroConta } = await selecionarPorEmpresa(
-    supabase,
-    'df_contas',
-    empresaId,
-    'id, oculto, excluido, deletado'
-  )
-    .eq('id', contaId)
-    .maybeSingle()
+  const resposta = await supabase.rpc('definir_arquivamento_pagamento_parcial', {
+    p_empresa_id: empresaId,
+    p_conta_id: contaId,
+    p_pagamento_id: pagamentoId,
+    p_arquivado: true
+  })
 
-  if (erroConta) return { data: null, error: erroConta }
-  if (!contaAtual?.id) return { data: null, error: new Error('Conta não encontrada.') }
-  if (contaAtual.oculto === true || contaAtual.excluido === true || contaAtual.deletado === true) {
-    return { data: null, error: new Error('A conta não está disponível para estorno parcial.') }
+  if (resposta.error) return { data: null, error: resposta.error }
+
+  return {
+    data: resposta.data?.pagamento || null,
+    error: null,
+    idempotente: resposta.data?.idempotente === true,
+    auditoriaRegistrada: resposta.data?.auditoria_registrada === true
   }
-
-  const { data: pagamentoAtual, error: erroPagamento } = await selecionarPorEmpresa(
-    supabase,
-    'df_contas_pagamentos',
-    empresaId,
-    'id, conta_id, arquivado'
-  )
-    .eq('id', pagamentoId)
-    .eq('conta_id', contaId)
-    .eq('arquivado', false)
-    .maybeSingle()
-
-  if (erroPagamento) return { data: null, error: erroPagamento }
-  if (!pagamentoAtual?.id) {
-    return { data: null, error: new Error('Pagamento parcial não encontrado ou já estornado.') }
-  }
-
-  return atualizarPorEmpresa(
-    supabase,
-    'df_contas_pagamentos',
-    pagamentoId,
-    empresaId,
-    {
-      arquivado: true,
-      arquivado_em: new Date().toISOString()
-    }
-  )
-    .eq('conta_id', contaId)
-    .eq('arquivado', false)
-    .select('id, conta_id, arquivado, arquivado_em')
-    .maybeSingle()
 }
 
 export async function baixarContaQuitadaPorParciais(supabase, contaId, empresaId) {

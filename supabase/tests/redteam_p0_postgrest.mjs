@@ -159,6 +159,8 @@ async function prepararFixture() {
     { id: IDS.contaA, empresa_id: IDS.empresa, descricao: 'Conta HTTP A', valor: 100, data_vencimento: '2026-08-10', vencimento: '2026-08-10', filial_id: IDS.filialA, status: 'pendente' },
     { id: IDS.contaB, empresa_id: IDS.empresa, descricao: 'Conta HTTP B', valor: 100, data_vencimento: '2026-08-10', vencimento: '2026-08-10', filial_id: IDS.filialB, status: 'pendente' },
     { id: IDS.contaNull, empresa_id: IDS.empresa, descricao: 'Conta HTTP sem filial', valor: 100, data_vencimento: '2026-08-10', vencimento: '2026-08-10', filial_id: null, status: 'pendente' },
+  ]);
+  await inserir('df_contas', [
     { id: IDS.contaRecente, empresa_id: IDS.empresa, descricao: 'Lixeira HTTP recente', valor: 10, data_vencimento: '2026-07-01', filial_id: IDS.filialA, status: 'pendente', excluido: true, excluido_em: new Date(Date.now() - 10 * 86400000).toISOString() },
     { id: IDS.contaAntiga, empresa_id: IDS.empresa, descricao: 'Lixeira HTTP antiga', valor: 10, data_vencimento: '2026-07-01', filial_id: IDS.filialA, status: 'pendente', excluido: true, excluido_em: new Date(Date.now() - 61 * 86400000).toISOString() },
   ]);

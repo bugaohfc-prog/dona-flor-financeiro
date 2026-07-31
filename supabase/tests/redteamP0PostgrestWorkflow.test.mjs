@@ -12,6 +12,8 @@ test('workflow PostgREST e manual, efemero e usa CLI fixada', () => {
   assert.match(workflow, /version: 2\.110\.0/);
   assert.match(workflow, /supabase start/);
   assert.match(workflow, /supabase migration up --local --include-all/);
+  assert.match(workflow, /VITE_SUPABASE_URL=\$API_URL/);
+  assert.match(workflow, /VITE_SUPABASE_ANON_KEY=\$ANON_KEY/);
 });
 
 test('workflow nao acessa remoto nem possui deploy ou secrets', () => {

@@ -1,0 +1,205 @@
+name: REDTEAM P0 - PostgREST e Playwright isolados
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - refactor/shell-unico-aplicacao-v1
+    paths:
+      - .github/workflows/redteam-p0-postgrest.yml
+      - supabase/migrations/**
+      - supabase/tests/redteam_p0_baseline.sql
+      - supabase/tests/redteam_p0_postgrest.mjs
+      - supabase/tests/redteam_p0_frontend_playwright.mjs
+      - supabase/tests/redteamP0PostgrestWorkflow.test.mjs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: redteam-p0-postgrest-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  postgrest-isolado:
+    name: HTTP real e smoke do frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      LOG_DIR: artifacts/redteam-p0-postgrest
+      FRONTEND_URL: http://127.0.0.1:4173
+      SUPABASE_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Checkout sem credenciais persistentes
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Configurar Node fixado pelo projeto
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependencias do projeto
+        run: npm ci
+
+      - name: Instalar Supabase CLI fixada
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.110.0
+
+      - name: Preparar artefatos
+        shell: bash
+        run: mkdir -p "$LOG_DIR"
+
+      - name: Iniciar Supabase local efemero
+        shell: bash
+        run: |
+          set -euo pipefail
+          mv supabase/migrations "$RUNNER_TEMP/redteam-migrations"
+          mkdir -p supabase/migrations
+          supabase start --debug 2>&1 | tee "$LOG_DIR/supabase-start.log"
+          psql "$DB_URL" -v ON_ERROR_STOP=1 \
+            -f supabase/tests/redteam_p0_baseline.sql \
+            2>&1 | tee "$LOG_DIR/baseline.log"
+          rmdir supabase/migrations
+          mv "$RUNNER_TEMP/redteam-migrations" supabase/migrations
+
+      - name: Aplicar todas as migrations localmente
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase migration up --local --include-all --debug \
+            2>&1 | tee "$LOG_DIR/migrations.log"
+          psql "$DB_URL" -v ON_ERROR_STOP=1 \
+            -c "notify pgrst, 'reload schema';" \
+            2>&1 | tee "$LOG_DIR/postgrest-reload.log"
+          supabase migration list --local \
+            2>&1 | tee "$LOG_DIR/migration-list.log"
+
+      - name: Capturar credenciais somente do stack local
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase status -o env >"$RUNNER_TEMP/supabase-local.env"
+          set -a
+          source "$RUNNER_TEMP/supabase-local.env"
+          set +a
+          {
+            echo "API_URL=$API_URL"
+            echo "ANON_KEY=$ANON_KEY"
+            echo "SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+          } >>"$GITHUB_ENV"
+          printf 'Stack local pronto em %s\n' "$API_URL" | tee "$LOG_DIR/stack-local.log"
+
+      - name: Executar bypass real por Auth, HTTP, PostgREST e RPC
+        id: postgrest
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          node supabase/tests/redteam_p0_postgrest.mjs \
+            2>&1 | tee "$LOG_DIR/postgrest.log"
+
+      - name: Instalar navegador Playwright sem alterar o projeto
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium \
+            2>&1 | tee "$LOG_DIR/playwright-install.log"
+
+      - name: Build do frontend ligado apenas ao Supabase efemero
+        shell: bash
+        run: npm run build 2>&1 | tee "$LOG_DIR/frontend-build.log"
+
+      - name: Subir frontend local do runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run preview -- --host 127.0.0.1 --port 4173 \
+            >"$LOG_DIR/frontend.log" 2>&1 &
+          echo $! >"$RUNNER_TEMP/frontend.pid"
+          for tentativa in $(seq 1 30); do
+            if curl --fail --silent "$FRONTEND_URL" >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$LOG_DIR/frontend.log"
+          exit 1
+
+      - name: Smoke essencial no navegador real
+        id: playwright
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          node supabase/tests/redteam_p0_frontend_playwright.mjs \
+            2>&1 | tee "$LOG_DIR/playwright.log"
+
+      - name: Consolidar vereditos
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          P0_1=BLOQUEADO; P0_2=BLOQUEADO; P0_3=BLOQUEADO; P0_4=BLOQUEADO
+          if [[ -f "$LOG_DIR/postgrest-veredictos.env" ]]; then
+            source "$LOG_DIR/postgrest-veredictos.env"
+          fi
+          if [[ "${{ steps.playwright.outcome }}" != "success" ]]; then
+            P0_1=BLOQUEADO; P0_2=BLOQUEADO; P0_3=BLOQUEADO; P0_4=BLOQUEADO
+          fi
+          cat >"$LOG_DIR/RELATORIO.md" <<EOF
+          # REDTEAM P0 via PostgREST no CI
+
+          - Runner: ubuntu-latest
+          - Supabase CLI: 2.110.0
+          - Commit: ${GITHUB_SHA}
+          - Banco: Supabase local efemero no proprio runner
+          - Auth: usuarios JWT efemeros reais
+          - PostgREST/RPC: HTTP real
+          - Frontend: Vite local ligado ao Supabase efemero
+          - Playwright: ${{ steps.playwright.outcome }}
+          - P0-1: ${P0_1}
+          - P0-2: ${P0_2}
+          - P0-3: ${P0_3}
+          - P0-4: ${P0_4}
+
+          Nenhum secret, plataforma externa, projeto remoto, dado real, deploy ou db push foi usado.
+          EOF
+          cat "$LOG_DIR/RELATORIO.md" >>"$GITHUB_STEP_SUMMARY"
+          printf 'P0_1=%s\nP0_2=%s\nP0_3=%s\nP0_4=%s\n' \
+            "$P0_1" "$P0_2" "$P0_3" "$P0_4" >"$LOG_DIR/veredictos-finais.env"
+
+      - name: Publicar relatorio, logs e screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: redteam-p0-postgrest-${{ github.run_id }}
+          path: artifacts/redteam-p0-postgrest/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Falhar fechado diante de qualquer bloqueio
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          source "$LOG_DIR/veredictos-finais.env"
+          [[ "${{ steps.postgrest.outcome }}" == "success" ]]
+          [[ "${{ steps.playwright.outcome }}" == "success" ]]
+          [[ "$P0_1" == APROVADO && "$P0_2" == APROVADO && \
+             "$P0_3" == APROVADO && "$P0_4" == APROVADO ]]
+
+      - name: Encerrar recursos efemeros
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f "$RUNNER_TEMP/frontend.pid" ]]; then
+            kill "$(cat "$RUNNER_TEMP/frontend.pid")" || true
+          fi
+          supabase stop --no-backup || true

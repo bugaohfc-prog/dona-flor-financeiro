@@ -1,0 +1,154 @@
+name: REDTEAM P0 - banco isolado
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - refactor/shell-unico-aplicacao-v1
+    paths:
+      - .github/workflows/redteam-p0-banco-isolado.yml
+      - supabase/migrations/**
+      - supabase/tests/redteam_p0_*
+
+permissions:
+  contents: read
+
+concurrency:
+  group: redteam-p0-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  banco-isolado:
+    name: Migrations e bypass autenticado
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      LOG_DIR: artifacts/redteam-p0
+
+    steps:
+      - name: Checkout sem credenciais persistentes
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Instalar Supabase CLI fixada
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.110.0
+
+      - name: Preparar artefatos
+        shell: bash
+        run: mkdir -p "$LOG_DIR"
+
+      - name: Iniciar somente o banco efemero
+        shell: bash
+        run: |
+          set -euo pipefail
+          mv supabase/migrations "$RUNNER_TEMP/redteam-migrations"
+          mkdir -p supabase/migrations
+          supabase db start --debug 2>&1 | tee "$LOG_DIR/db-start.log"
+          psql "$DB_URL" -v ON_ERROR_STOP=1 \
+            -f supabase/tests/redteam_p0_baseline.sql \
+            2>&1 | tee "$LOG_DIR/baseline.log"
+          rmdir supabase/migrations
+          mv "$RUNNER_TEMP/redteam-migrations" supabase/migrations
+
+      - name: Aplicar todas as migrations versionadas
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase migration up --local --include-all --debug \
+            2>&1 | tee "$LOG_DIR/migrations.log"
+          supabase migration list --local \
+            2>&1 | tee "$LOG_DIR/migration-list.log"
+
+      - name: Carregar auxiliares exclusivos do teste
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "$DB_URL" -v ON_ERROR_STOP=1 \
+            -f supabase/tests/redteam_p0_helpers.sql \
+            2>&1 | tee "$LOG_DIR/helpers.log"
+
+      - name: Validar P0-1 com sessoes PostgreSQL paralelas
+        id: concurrency
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          bash supabase/tests/redteam_p0_concurrency.sh \
+            2>&1 | tee "$LOG_DIR/p0-1-concurrency.log"
+
+      - name: Executar matriz autenticada pgTAP dos quatro P0
+        id: pgtap
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          supabase test db supabase/tests/redteam_p0_authenticated.test.sql --local \
+            2>&1 | tee "$LOG_DIR/pgtap.log"
+
+      - name: Consolidar vereditos e falhar de forma auditavel
+        id: verdict
+        shell: bash
+        run: |
+          set -euo pipefail
+          p0_1=APROVADO
+          p0_2=APROVADO
+          p0_3=APROVADO
+          p0_4=APROVADO
+
+          [[ "${{ steps.concurrency.outcome }}" == "success" ]] || p0_1=BLOQUEADO
+          if [[ "${{ steps.pgtap.outcome }}" != "success" ]]; then
+            p0_1=BLOQUEADO
+            p0_2=BLOQUEADO
+            p0_3=BLOQUEADO
+            p0_4=BLOQUEADO
+          fi
+
+          printf 'P0_1=%s\nP0_2=%s\nP0_3=%s\nP0_4=%s\n' \
+            "$p0_1" "$p0_2" "$p0_3" "$p0_4" | tee "$LOG_DIR/veredictos.env"
+
+          [[ "$p0_1" == APROVADO && "$p0_2" == APROVADO && \
+             "$p0_3" == APROVADO && "$p0_4" == APROVADO ]]
+
+      - name: Gerar relatorio da execucao
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f "$LOG_DIR/veredictos.env" ]]; then
+            source "$LOG_DIR/veredictos.env"
+          else
+            P0_1=BLOQUEADO; P0_2=BLOQUEADO; P0_3=BLOQUEADO; P0_4=BLOQUEADO
+          fi
+          cat >"$LOG_DIR/RELATORIO.md" <<EOF
+          # REDTEAM P0 em banco isolado
+
+          - Runner: ubuntu-latest
+          - Supabase CLI: 2.110.0
+          - Commit: ${GITHUB_SHA}
+          - Banco: PostgreSQL efemero do proprio runner
+          - P0-1: ${P0_1}
+          - P0-2: ${P0_2}
+          - P0-3: ${P0_3}
+          - P0-4: ${P0_4}
+
+          Nenhum secret, projeto remoto, dado real, deploy ou db push foi usado.
+          EOF
+          cat "$LOG_DIR/RELATORIO.md" >>"$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar relatorio e logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: redteam-p0-${{ github.run_id }}
+          path: artifacts/redteam-p0/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Encerrar banco efemero
+        if: always()
+        shell: bash
+        run: supabase db stop --no-backup || true

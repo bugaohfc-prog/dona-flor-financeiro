@@ -53,3 +53,24 @@ insert into public.df_folha_lancamento_itens
 values
   ('78000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000011', '76000000-0000-0000-0000-000000000011', '77000000-0000-0000-0000-000000000011', '75000000-0000-0000-0000-000000000011', '20000000-0000-0000-0000-000000000011', 'compras_vales', 10),
   ('78000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000011', '76000000-0000-0000-0000-000000000011', '77000000-0000-0000-0000-000000000012', '75000000-0000-0000-0000-000000000012', '20000000-0000-0000-0000-000000000012', 'compras_vales', 10);
+
+-- O baseline minimo nao traz as policies legadas de identidade necessarias ao
+-- bootstrap do frontend. Estas duas policies existem apenas no banco efemero;
+-- nao afetam as tabelas financeiras exercitadas pelos P0.
+create policy redteam_usuario_le_proprio_vinculo
+on public.df_usuarios_empresas
+for select to authenticated
+using (user_id = (select auth.uid()));
+
+create policy redteam_usuario_le_empresa_vinculada
+on public.df_empresas
+for select to authenticated
+using (
+  exists (
+    select 1
+    from public.df_usuarios_empresas ue
+    where ue.empresa_id = df_empresas.id
+      and ue.user_id = (select auth.uid())
+      and ue.ativo is true
+  )
+);

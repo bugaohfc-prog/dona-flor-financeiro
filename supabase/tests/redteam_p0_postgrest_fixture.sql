@@ -1,0 +1,55 @@
+-- Dados sinteticos exclusivos do stack efemero do workflow PostgREST.
+-- Identidades Auth e vinculos sao criados depois pela API local, para que os
+-- testes usem JWTs reais emitidos pelo GoTrue.
+
+insert into public.df_empresas (id, nome)
+values ('10000000-0000-0000-0000-000000000011', 'Empresa HTTP P0');
+
+insert into public.df_filiais (id, empresa_id, nome)
+values
+  ('20000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000011', 'Filial HTTP A'),
+  ('20000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000011', 'Filial HTTP B');
+
+insert into public.df_centros_custo (id, empresa_id, nome)
+values ('30000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000011', 'Centro HTTP');
+
+insert into public.df_contas_recorrentes
+  (id, empresa_id, descricao, valor, dia_vencimento, filial_id, ativo)
+values
+  ('60000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000011', 'Serie HTTP A', 100, 10, '20000000-0000-0000-0000-000000000011', true),
+  ('60000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000011', 'Serie HTTP B', 100, 10, '20000000-0000-0000-0000-000000000012', true),
+  ('60000000-0000-0000-0000-000000000013', '10000000-0000-0000-0000-000000000011', 'Serie HTTP sem filial', 100, 10, null, true);
+
+insert into public.df_contas
+  (id, empresa_id, descricao, valor, data_vencimento, vencimento, filial_id, status, excluido, excluido_em)
+values
+  ('70000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000011', 'Conta HTTP A', 100, '2026-08-10', '2026-08-10', '20000000-0000-0000-0000-000000000011', 'pendente', false, null),
+  ('70000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000011', 'Conta HTTP B', 100, '2026-08-10', '2026-08-10', '20000000-0000-0000-0000-000000000012', 'pendente', false, null),
+  ('70000000-0000-0000-0000-000000000013', '10000000-0000-0000-0000-000000000011', 'Conta HTTP sem filial', 100, '2026-08-10', '2026-08-10', null, 'pendente', false, null),
+  ('73000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000011', 'Lixeira HTTP recente', 10, current_date, current_date, '20000000-0000-0000-0000-000000000011', 'pendente', true, now() - interval '10 days'),
+  ('73000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000011', 'Lixeira HTTP antiga', 10, current_date, current_date, '20000000-0000-0000-0000-000000000011', 'pendente', true, now() - interval '61 days');
+
+insert into public.df_notas
+  (id, empresa_id, titulo, filial_id, excluido, excluido_em)
+values
+  ('74000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000011', 'Nota HTTP antiga', '20000000-0000-0000-0000-000000000011', true, now() - interval '61 days');
+
+insert into public.df_funcionarios (id, empresa_id, filial_id, nome)
+values
+  ('75000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000011', '20000000-0000-0000-0000-000000000011', 'Funcionario HTTP A'),
+  ('75000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000011', '20000000-0000-0000-0000-000000000012', 'Funcionario HTTP B');
+
+insert into public.df_folha_competencias (id, empresa_id, competencia)
+values ('76000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000011', '2026-07');
+
+insert into public.df_folha_lancamentos
+  (id, empresa_id, competencia_id, funcionario_id, filial_id, natureza, categoria, valor)
+values
+  ('77000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000011', '76000000-0000-0000-0000-000000000011', '75000000-0000-0000-0000-000000000011', '20000000-0000-0000-0000-000000000011', 'desconto', 'compras_vales', 10),
+  ('77000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000011', '76000000-0000-0000-0000-000000000011', '75000000-0000-0000-0000-000000000012', '20000000-0000-0000-0000-000000000012', 'desconto', 'compras_vales', 10);
+
+insert into public.df_folha_lancamento_itens
+  (id, empresa_id, competencia_id, lancamento_id, funcionario_id, filial_id, categoria, valor)
+values
+  ('78000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000011', '76000000-0000-0000-0000-000000000011', '77000000-0000-0000-0000-000000000011', '75000000-0000-0000-0000-000000000011', '20000000-0000-0000-0000-000000000011', 'compras_vales', 10),
+  ('78000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000011', '76000000-0000-0000-0000-000000000011', '77000000-0000-0000-0000-000000000012', '75000000-0000-0000-0000-000000000012', '20000000-0000-0000-0000-000000000012', 'compras_vales', 10);

@@ -5,6 +5,7 @@ import test from 'node:test';
 const workflow = await readFile('.github/workflows/redteam-p0-postgrest.yml', 'utf8');
 const postgrest = await readFile('supabase/tests/redteam_p0_postgrest.mjs', 'utf8');
 const playwright = await readFile('supabase/tests/redteam_p0_frontend_playwright.mjs', 'utf8');
+const fixture = await readFile('supabase/tests/redteam_p0_postgrest_fixture.sql', 'utf8');
 
 test('workflow PostgREST e manual, efemero e usa CLI fixada', () => {
   assert.match(workflow, /workflow_dispatch:/);
@@ -14,6 +15,7 @@ test('workflow PostgREST e manual, efemero e usa CLI fixada', () => {
   assert.match(workflow, /supabase migration up --local --include-all/);
   assert.match(workflow, /VITE_SUPABASE_URL=\$API_URL/);
   assert.match(workflow, /VITE_SUPABASE_ANON_KEY=\$ANON_KEY/);
+  assert.match(workflow, /redteam_p0_postgrest_fixture\.sql/);
 });
 
 test('workflow nao acessa remoto nem possui deploy ou secrets', () => {
@@ -40,6 +42,13 @@ test('suite HTTP cobre matriz de filial, NULL, Folha e recorrencias', () => {
   assert.match(postgrest, /df_folha_lancamento_itens/);
   assert.match(postgrest, /gerente nao insere, altera ou exclui recorrencia/);
   assert.match(postgrest, /Admin e Master/);
+});
+
+test('fixture sintetica cobre as duas filiais, NULL e Folha sem service_role', () => {
+  assert.match(fixture, /Conta HTTP sem filial/);
+  assert.match(fixture, /df_folha_lancamentos/);
+  assert.match(fixture, /df_folha_lancamento_itens/);
+  assert.doesNotMatch(fixture, /auth\.users|service_role/);
 });
 
 test('Playwright valida login e telas contra o Supabase efemero', () => {

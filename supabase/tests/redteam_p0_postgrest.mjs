@@ -133,12 +133,6 @@ async function prepararFixture() {
     usuarios[perfil] = await criarUsuario(email);
   }
 
-  await inserir('df_empresas', { id: IDS.empresa, nome: 'Empresa HTTP P0' });
-  await inserir('df_filiais', [
-    { id: IDS.filialA, empresa_id: IDS.empresa, nome: 'Filial HTTP A' },
-    { id: IDS.filialB, empresa_id: IDS.empresa, nome: 'Filial HTTP B' },
-  ]);
-  await inserir('df_centros_custo', { id: IDS.centro, empresa_id: IDS.empresa, nome: 'Centro HTTP' });
   await inserir('df_usuarios_empresas', [
     { id: IDS.vinculoAdmin, empresa_id: IDS.empresa, user_id: usuarios.admin, email: emails.admin, perfil: 'admin', acesso_todas_filiais: false },
     { id: IDS.vinculoGerente, empresa_id: IDS.empresa, user_id: usuarios.gerente, email: emails.gerente, perfil: 'gerente', acesso_todas_filiais: false },
@@ -150,42 +144,6 @@ async function prepararFixture() {
     usuario_id: IDS.vinculoGerente,
     filial_id: IDS.filialA,
   });
-  await inserir('df_contas_recorrentes', [
-    { id: IDS.serieA, empresa_id: IDS.empresa, descricao: 'Serie HTTP A', valor: 100, dia_vencimento: 10, filial_id: IDS.filialA, ativo: true },
-    { id: IDS.serieB, empresa_id: IDS.empresa, descricao: 'Serie HTTP B', valor: 100, dia_vencimento: 10, filial_id: IDS.filialB, ativo: true },
-    { id: IDS.serieNull, empresa_id: IDS.empresa, descricao: 'Serie HTTP sem filial', valor: 100, dia_vencimento: 10, filial_id: null, ativo: true },
-  ]);
-  await inserir('df_contas', [
-    { id: IDS.contaA, empresa_id: IDS.empresa, descricao: 'Conta HTTP A', valor: 100, data_vencimento: '2026-08-10', vencimento: '2026-08-10', filial_id: IDS.filialA, status: 'pendente' },
-    { id: IDS.contaB, empresa_id: IDS.empresa, descricao: 'Conta HTTP B', valor: 100, data_vencimento: '2026-08-10', vencimento: '2026-08-10', filial_id: IDS.filialB, status: 'pendente' },
-    { id: IDS.contaNull, empresa_id: IDS.empresa, descricao: 'Conta HTTP sem filial', valor: 100, data_vencimento: '2026-08-10', vencimento: '2026-08-10', filial_id: null, status: 'pendente' },
-  ]);
-  await inserir('df_contas', [
-    { id: IDS.contaRecente, empresa_id: IDS.empresa, descricao: 'Lixeira HTTP recente', valor: 10, data_vencimento: '2026-07-01', filial_id: IDS.filialA, status: 'pendente', excluido: true, excluido_em: new Date(Date.now() - 10 * 86400000).toISOString() },
-    { id: IDS.contaAntiga, empresa_id: IDS.empresa, descricao: 'Lixeira HTTP antiga', valor: 10, data_vencimento: '2026-07-01', filial_id: IDS.filialA, status: 'pendente', excluido: true, excluido_em: new Date(Date.now() - 61 * 86400000).toISOString() },
-  ]);
-  await inserir('df_notas', {
-    id: IDS.notaAntiga,
-    empresa_id: IDS.empresa,
-    titulo: 'Nota HTTP antiga',
-    filial_id: IDS.filialA,
-    excluido: true,
-    excluido_em: new Date(Date.now() - 61 * 86400000).toISOString(),
-  });
-  await inserir('df_funcionarios', [
-    { id: IDS.funcionarioA, empresa_id: IDS.empresa, filial_id: IDS.filialA, nome: 'Funcionario HTTP A' },
-    { id: IDS.funcionarioB, empresa_id: IDS.empresa, filial_id: IDS.filialB, nome: 'Funcionario HTTP B' },
-  ]);
-  await inserir('df_folha_competencias', { id: IDS.competencia, empresa_id: IDS.empresa, competencia: '2026-07' });
-  await inserir('df_folha_lancamentos', [
-    { id: IDS.folhaA, empresa_id: IDS.empresa, competencia_id: IDS.competencia, funcionario_id: IDS.funcionarioA, filial_id: IDS.filialA, natureza: 'desconto', categoria: 'compras_vales', valor: 10 },
-    { id: IDS.folhaB, empresa_id: IDS.empresa, competencia_id: IDS.competencia, funcionario_id: IDS.funcionarioB, filial_id: IDS.filialB, natureza: 'desconto', categoria: 'compras_vales', valor: 10 },
-  ]);
-  await inserir('df_folha_lancamento_itens', [
-    { id: IDS.itemFolhaA, empresa_id: IDS.empresa, competencia_id: IDS.competencia, lancamento_id: IDS.folhaA, funcionario_id: IDS.funcionarioA, filial_id: IDS.filialA, categoria: 'compras_vales', valor: 10 },
-    { id: IDS.itemFolhaB, empresa_id: IDS.empresa, competencia_id: IDS.competencia, lancamento_id: IDS.folhaB, funcionario_id: IDS.funcionarioB, filial_id: IDS.filialB, categoria: 'compras_vales', valor: 10 },
-  ]);
-
   return {
     emails,
     tokens: {

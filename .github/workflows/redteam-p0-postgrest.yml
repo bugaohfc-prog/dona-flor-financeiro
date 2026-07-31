@@ -9,6 +9,7 @@ on:
       - .github/workflows/redteam-p0-postgrest.yml
       - supabase/migrations/**
       - supabase/tests/redteam_p0_baseline.sql
+      - supabase/tests/redteam_p0_postgrest_fixture.sql
       - supabase/tests/redteam_p0_postgrest.mjs
       - supabase/tests/redteam_p0_frontend_playwright.mjs
       - supabase/tests/redteamP0PostgrestWorkflow.test.mjs
@@ -77,6 +78,9 @@ jobs:
           psql "$DB_URL" -v ON_ERROR_STOP=1 \
             -c "notify pgrst, 'reload schema';" \
             2>&1 | tee "$LOG_DIR/postgrest-reload.log"
+          psql "$DB_URL" -v ON_ERROR_STOP=1 \
+            -f supabase/tests/redteam_p0_postgrest_fixture.sql \
+            2>&1 | tee "$LOG_DIR/postgrest-fixture.log"
           supabase migration list --local \
             2>&1 | tee "$LOG_DIR/migration-list.log"
 

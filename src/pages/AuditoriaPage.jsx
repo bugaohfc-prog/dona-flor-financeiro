@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import PageHero from '../components/shared/PageHero.jsx'
+import { ExportMenu, FilterCard, FilterGrid } from '../components/shared/PagePatterns.jsx'
 import { supabase } from '../lib/supabase'
 import { createXlsxBlob, downloadBlob } from '../services/export/reportExportService'
 import { listarUsuariosEmpresa, normalizarPerfilUsuario } from '../services/usuariosService'
@@ -101,6 +102,7 @@ export default function AuditoriaPage({ empresaId, permissoesUsuario, usuariosEm
   const [porPagina, setPorPagina] = useState(50)
   const [total, setTotal] = useState(0)
   const [filtros, setFiltros] = useState(FILTROS_INICIAIS)
+  const [maisFiltros, setMaisFiltros] = useState(false)
   const [filtrosAplicados, setFiltrosAplicados] = useState(FILTROS_INICIAIS)
   const [estado, setEstado] = useState('carregando')
   const [erro, setErro] = useState('')
@@ -219,30 +221,31 @@ export default function AuditoriaPage({ empresaId, permissoesUsuario, usuariosEm
       title="Auditoria e logs"
       description="Acompanhe alterações e eventos operacionais da empresa em modo somente leitura."
       className="audit-page-hero"
-      actions={<button type="button" className="admin-btn admin-btn-secondary" onClick={() => setRecarregar((valor) => valor + 1)}>Atualizar</button>}
+      actions={<><button type="button" className="admin-btn admin-btn-secondary" onClick={() => setRecarregar((valor) => valor + 1)}>Atualizar</button><ExportMenu disabled={!eventos.length || estado !== 'pronto'} options={[{ id: 'csv', label: 'CSV', onSelect: exportarCsv }, { id: 'xlsx', label: 'XLSX', onSelect: exportarXlsx }]} /></>}
     />
 
-    <section className="audit-filter-panel" aria-labelledby="audit-filter-title">
-      <div className="audit-panel-heading"><div><span className="audit-section-kicker">Consulta</span><h2 id="audit-filter-title">Filtrar eventos</h2></div><span className="audit-result-count">{total} evento(s)</span></div>
-      <div className="audit-toolbar">
+    <FilterCard className="audit-filter-panel" description="Refine o histórico administrativo sem alterar os eventos." actions={<span className="audit-result-count">{total} evento(s)</span>} aria-label="Filtros de auditoria">
+      <FilterGrid className="audit-toolbar">
         <label><span>Data inicial</span><input type="date" value={filtros.inicio} onChange={(e) => setFiltros((atual) => ({ ...atual, inicio: e.target.value }))} /></label>
         <label><span>Data final</span><input type="date" value={filtros.fim} onChange={(e) => setFiltros((atual) => ({ ...atual, fim: e.target.value }))} /></label>
         <label><span>Módulo</span><select value={filtros.modulo} onChange={(e) => setFiltros((atual) => ({ ...atual, modulo: e.target.value }))}><option value="">Todos os módulos</option><OptionList opcoes={MODULOS} /></select></label>
         <label><span>Ação</span><select value={filtros.acao} onChange={(e) => setFiltros((atual) => ({ ...atual, acao: e.target.value }))}><option value="">Todas as ações</option><OptionList opcoes={ACOES} /></select></label>
+        <button type="button" className="admin-btn admin-btn-secondary" aria-expanded={maisFiltros} onClick={() => setMaisFiltros((aberto) => !aberto)}>Mais filtros</button>
+      </FilterGrid>
+      {maisFiltros ? <FilterGrid secondary className="audit-toolbar audit-toolbar-secondary">
         <label><span>Tipo de registro</span><select value={filtros.entidade_tipo} onChange={(e) => setFiltros((atual) => ({ ...atual, entidade_tipo: e.target.value }))}><option value="">Todos os registros</option><OptionList opcoes={ENTIDADES} /></select></label>
         <label><span>Responsável</span><select value={filtros.user_id} onChange={(e) => setFiltros((atual) => ({ ...atual, user_id: e.target.value }))}><option value="">Todos os responsáveis</option>{responsaveis.map((usuario) => <option key={usuario.id} value={usuario.id}>{usuario.rotulo}</option>)}</select></label>
         <label><span>Severidade</span><select value={filtros.severidade} onChange={(e) => setFiltros((atual) => ({ ...atual, severidade: e.target.value }))}><option value="">Todas as severidades</option><OptionList opcoes={SEVERIDADES} /></select></label>
         <label><span>Status</span><select value={filtros.status} onChange={(e) => setFiltros((atual) => ({ ...atual, status: e.target.value }))}><option value="">Todos os status</option><OptionList opcoes={STATUS} /></select></label>
-      </div>
+      </FilterGrid> : null}
       <div className="audit-filter-actions">
         <button type="button" className="admin-btn admin-btn-primary" onClick={aplicarFiltros}>Aplicar filtros</button>
         <button type="button" className="admin-btn admin-btn-secondary" onClick={limparFiltros}>Limpar filtros</button>
       </div>
-    </section>
+    </FilterCard>
 
     <div className="audit-list-toolbar">
       <label><span>Eventos por página</span><select value={porPagina} onChange={(e) => { setPagina(0); setPorPagina(Number(e.target.value)) }}>{TAMANHOS_PAGINA.map((valor) => <option key={valor} value={valor}>{valor}</option>)}</select></label>
-      <div className="audit-actions"><button type="button" className="admin-btn admin-btn-secondary" onClick={exportarCsv} disabled={!eventos.length}>Exportar CSV</button><button type="button" className="admin-btn admin-btn-secondary" onClick={exportarXlsx} disabled={!eventos.length}>Exportar XLSX</button></div>
     </div>
 
     {estado === 'erro' && <div className="empty-state-card" role="alert"><strong>Não foi possível concluir a consulta</strong><p>{erro}</p><button type="button" className="admin-btn admin-btn-secondary" onClick={() => setRecarregar((valor) => valor + 1)}>Tentar novamente</button></div>}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import HeaderExpansivel from '../components/ui/HeaderExpansivel.jsx'
+import { PageHeader } from '../components/shared/PagePatterns.jsx'
 import {
   alternarStatusFilial,
   atualizarCadastroFiscalFilial,
@@ -270,15 +271,7 @@ export default function FiliaisPage({
 
   return (
     <div className="admin-page branches-settings-page">
-      <div className="admin-page-hero">
-        <div>
-          <span className="admin-kicker">Configurações da empresa</span>
-          <h1 style={styles.titulo}>Filiais / Unidades</h1>
-          <p style={styles.textoNota}>Cadastre unidades operacionais e dados fiscais dentro da empresa ativa.</p>
-          <small style={styles.textoAjuda}>Empresa ativa: <strong>{empresaNome || '-'}</strong></small>
-        </div>
-        <button className="admin-btn admin-btn-secondary" type="button" onClick={voltarPainel}>Configurações</button>
-      </div>
+      <PageHeader kicker="Configurações da empresa" title="Filiais / Unidades" description="Cadastre unidades operacionais e dados fiscais dentro da empresa ativa." meta={<>Empresa ativa: <strong>{empresaNome || '-'}</strong></>} className="admin-page-hero" actions={<button className="admin-btn admin-btn-secondary" type="button" onClick={voltarPainel}>Configurações</button>} />
 
       <section style={styles.cardConfiguracao} className="admin-config-card master-create-card">
         <HeaderExpansivel

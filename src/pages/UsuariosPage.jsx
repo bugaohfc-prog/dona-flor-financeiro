@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import UserSecurityCards from '../components/UserSecurityCards.jsx'
 import HeaderExpansivel from '../components/ui/HeaderExpansivel.jsx'
+import { PageHeader } from '../components/shared/PagePatterns.jsx'
 import { usuarioEhMasterProtegido } from '../services/usuariosService'
 
 const PROFILE_OPTIONS = [
@@ -67,14 +68,7 @@ export default function UsuariosPage({
   if (!podeAcessarConfiguracoes()) {
     return (
       <div className="admin-page users-admin-page">
-        <div className="admin-page-hero">
-          <div>
-            <span className="admin-kicker">Administração</span>
-            <h1 style={styles.titulo}>Usuários</h1>
-            <p style={styles.textoNota}>Seu perfil atual não permite acessar a gestão de usuários.</p>
-          </div>
-          <button className="admin-btn admin-btn-secondary" onClick={() => navegarPara('contas')}>← Voltar</button>
-        </div>
+        <PageHeader kicker="Administração" title="Usuários" description="Seu perfil atual não permite acessar a gestão de usuários." className="admin-page-hero" actions={<button className="admin-btn admin-btn-secondary" onClick={() => navegarPara('contas')}>← Voltar</button>} />
       </div>
     )
   }
@@ -84,14 +78,7 @@ export default function UsuariosPage({
 
   return (
     <div className="admin-page users-admin-page">
-      <div className="admin-page-hero">
-        <div>
-          <span className="admin-kicker">Administração de acesso</span>
-          <h1 style={styles.titulo}>Gestão de usuários</h1>
-          <p style={styles.textoNota}>Gerencie segurança da conta, perfis e escopo por filial.</p>
-        </div>
-        <button className="admin-btn admin-btn-secondary" onClick={() => navegarPara('dashboard')}>← Painel</button>
-      </div>
+      <PageHeader kicker="Administração de acesso" title="Gestão de usuários" description="Gerencie segurança da conta, perfis e escopo por filial." className="admin-page-hero" actions={<button className="admin-btn admin-btn-secondary" onClick={() => navegarPara('dashboard')}>← Painel</button>} />
 
       <div className="users-admin-summary" aria-label="Resumo de usuários e empresa">
         <div>

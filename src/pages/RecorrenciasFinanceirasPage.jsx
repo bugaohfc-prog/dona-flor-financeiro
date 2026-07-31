@@ -6,6 +6,7 @@ import {
   resumirCentroControle
 } from '../utils/recorrenciaCobertura.js'
 import './RecorrenciasFinanceirasPage.css'
+import { PageHeader } from '../components/shared/PagePatterns.jsx'
 
 const HORIZONTES = [
   ['mes_atual', 'Mês atual'],
@@ -277,7 +278,7 @@ export default function RecorrenciasFinanceirasPage({
   }
 
   return <main className="accounts-page recurring-coverage-page">
-    <div className="page-title-actions accounts-page-header"><div className="accounts-page-header-copy"><span>Financeiro</span><h1>Recorrências financeiras</h1><p>Confira a cobertura por horizonte e gerencie séries sem gerar contas automaticamente.</p></div><button type="button" onClick={() => navegarPara?.('contas')}>Voltar para Contas</button></div>
+    <PageHeader kicker="Financeiro" title="Recorrências financeiras" description="Confira a cobertura por horizonte e gerencie séries sem gerar contas automaticamente." className="page-title-actions accounts-page-header" actions={<button type="button" onClick={() => navegarPara?.('contas')}>Voltar para Contas</button>} />
     <div className="recurring-page-tabs" role="tablist" aria-label="Seções de recorrências">
       <button type="button" role="tab" aria-selected={secao === 'cobertura'} className={secao === 'cobertura' ? 'is-active' : ''} onClick={() => setSecao('cobertura')}>Cobertura</button>
       <button type="button" role="tab" aria-selected={secao === 'gestao'} className={secao === 'gestao' ? 'is-active' : ''} onClick={() => setSecao('gestao')}>Gerenciar recorrências</button>

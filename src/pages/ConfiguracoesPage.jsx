@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import HeaderExpansivel from '../components/ui/HeaderExpansivel.jsx'
+import { PageHeader } from '../components/shared/PagePatterns.jsx'
 import { primeiraLetraMaiuscula } from '../utils/format'
 
 export default function ConfiguracoesPage({
@@ -62,28 +63,14 @@ export default function ConfiguracoesPage({
   if (!podeAcessarConfiguracoes) {
     return (
       <div className="admin-page">
-        <div className="admin-page-hero">
-          <div>
-            <span className="admin-kicker">Administração</span>
-            <h1 style={styles.titulo}>Configurações</h1>
-            <p style={styles.textoNota}>Seu perfil atual não permite acessar configurações.</p>
-          </div>
-          <button className="admin-btn admin-btn-secondary" onClick={() => navegarPara('contas')}>← Voltar</button>
-        </div>
+        <PageHeader kicker="Administração" title="Configurações" description="Seu perfil atual não permite acessar configurações." className="admin-page-hero" actions={<button className="admin-btn admin-btn-secondary" onClick={() => navegarPara('contas')}>← Voltar</button>} />
       </div>
     )
   }
 
   return (
     <div className="admin-page settings-admin-page">
-      <div className="admin-page-hero">
-        <div>
-          <span className="admin-kicker">Administração da empresa</span>
-          <h1 style={styles.titulo}>Configurações</h1>
-          <p style={styles.textoNota}>Centralize alertas, dados do negócio, destinatários e parâmetros operacionais.</p>
-        </div>
-        <button className="admin-btn admin-btn-secondary" onClick={() => navegarPara('dashboard')}>← Painel</button>
-      </div>
+      <PageHeader kicker="Administração da empresa" title="Configurações" description="Centralize alertas, dados do negócio, destinatários e parâmetros operacionais." className="admin-page-hero" actions={<button className="admin-btn admin-btn-secondary" onClick={() => navegarPara('dashboard')}>← Painel</button>} />
 
       <section style={styles.cardConfiguracao} className="settings-card admin-config-card settings-notifications-card">
         <HeaderExpansivel

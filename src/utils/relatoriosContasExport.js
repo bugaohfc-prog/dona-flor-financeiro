@@ -99,12 +99,11 @@ function normalizarLinha(linha = {}) {
   }
 }
 
-const CABECALHO_EXPORTACAO = [
+const CABECALHO_EXPORTACAO_BASE = [
   'Descrição',
   'Previsto',
   'Pago',
   'Saldo',
-  'Movimento no período',
   'Data de referência',
   'Status gerencial',
   'Tipo de pagamento',
@@ -113,25 +112,25 @@ const CABECALHO_EXPORTACAO = [
   'Observação',
 ]
 
+export function cabecalhoExportacaoAnaliseFinanceira(contexto = {}) {
+  return basePorPagamento(contexto)
+    ? [...CABECALHO_EXPORTACAO_BASE.slice(0, 4), 'Movimento no período', ...CABECALHO_EXPORTACAO_BASE.slice(4)]
+    : [...CABECALHO_EXPORTACAO_BASE]
+}
+
+function valoresLinhaExportacao(linha, contexto = {}) {
+  const valores = [linha.descricao, moeda(linha.valorPrevisto), moeda(linha.valorPago), moeda(linha.saldoRestante)]
+  if (basePorPagamento(contexto)) valores.push(moeda(linha.valorMovimentoPeriodo))
+  return [...valores, linha.dataReferencia, linha.statusGerencial, linha.tipoPagamento, linha.centroNome, linha.filialNome, linha.observacao]
+}
+
 export function gerarConteudoCsvAnaliseFinanceira(linhas = [], contexto = {}) {
   const registros = linhas.map(normalizarLinha)
   return [
     ...metadadosExportacaoRelatorio(contexto).map((linha) => linha.map(escaparCsv).join(';')),
     '',
-    CABECALHO_EXPORTACAO.map(escaparCsv).join(';'),
-    ...registros.map((linha) => [
-      linha.descricao,
-      moeda(linha.valorPrevisto),
-      moeda(linha.valorPago),
-      moeda(linha.saldoRestante),
-      moeda(linha.valorMovimentoPeriodo),
-      linha.dataReferencia,
-      linha.statusGerencial,
-      linha.tipoPagamento,
-      linha.centroNome,
-      linha.filialNome,
-      linha.observacao,
-    ].map(escaparCsv).join(';')),
+    cabecalhoExportacaoAnaliseFinanceira(contexto).map(escaparCsv).join(';'),
+    ...registros.map((linha) => valoresLinhaExportacao(linha, contexto).map(escaparCsv).join(';')),
   ].join('\n')
 }
 
@@ -143,20 +142,8 @@ export function exportarRelatorioContasCsv(linhas, contexto) {
   )
 }
 
-function celulasLinhaHtml(linha) {
-  return `
-    <td>${escaparHtml(linha.descricao)}</td>
-    <td>${escaparHtml(moeda(linha.valorPrevisto))}</td>
-    <td>${escaparHtml(moeda(linha.valorPago))}</td>
-    <td>${escaparHtml(moeda(linha.saldoRestante))}</td>
-    <td>${escaparHtml(moeda(linha.valorMovimentoPeriodo))}</td>
-    <td>${escaparHtml(linha.dataReferencia)}</td>
-    <td>${escaparHtml(linha.statusGerencial)}</td>
-    <td>${escaparHtml(linha.tipoPagamento)}</td>
-    <td>${escaparHtml(linha.centroNome)}</td>
-    <td>${escaparHtml(linha.filialNome)}</td>
-    <td>${escaparHtml(linha.observacao)}</td>
-  `
+function celulasLinhaHtml(linha, contexto = {}) {
+  return valoresLinhaExportacao(linha, contexto).map((valor) => `<td>${escaparHtml(valor)}</td>`).join('')
 }
 
 export function gerarHtmlExcelAnaliseFinanceira(linhas = [], contexto = {}) {
@@ -172,8 +159,8 @@ export function gerarHtmlExcelAnaliseFinanceira(linhas = [], contexto = {}) {
         <table><tbody>${metadadosExportacaoRelatorio(contexto).map(([rotulo, valor]) => `<tr><th>${escaparHtml(rotulo)}</th><td>${escaparHtml(valor)}</td></tr>`).join('')}</tbody></table>
         <br />
         <table>
-          <thead><tr>${CABECALHO_EXPORTACAO.map((titulo) => `<th>${escaparHtml(titulo)}</th>`).join('')}</tr></thead>
-          <tbody>${registros.map((linha) => `<tr>${celulasLinhaHtml(linha)}</tr>`).join('')}</tbody>
+          <thead><tr>${cabecalhoExportacaoAnaliseFinanceira(contexto).map((titulo) => `<th>${escaparHtml(titulo)}</th>`).join('')}</tr></thead>
+          <tbody>${registros.map((linha) => `<tr>${celulasLinhaHtml(linha, contexto)}</tr>`).join('')}</tbody>
         </table>
       </body>
     </html>`

@@ -184,7 +184,9 @@ test('CSV Excel e PDFs compartilham linhas completas e não imprimem valores inv
     gerarHtmlImpressaoAnaliseFinanceira({ linhas, grupos, contexto, resumo, modo: 'gerencial' }),
   ]
   for (const artefato of artefatos) assert.doesNotMatch(artefato, /undefined|null|NaN/)
-  assert.match(artefatos[0], /"Previsto";"Pago";"Saldo";"Movimento no período"/)
+  assert.match(artefatos[0], /"Previsto";"Pago";"Saldo";"Data de referência"/)
+  assert.doesNotMatch(artefatos[0], /Movimento no período/)
+  assert.doesNotMatch(artefatos[1], /Movimento no período/)
   assert.match(artefatos[1], /Análise Financeira — HTML compatível com Excel/)
   assert.match(artefatos[2], /<h1>Análise Financeira<\/h1>/)
   assert.match(artefatos[2], /Energia[\s\S]*R\$\s*800,00[\s\S]*R\$\s*300,00[\s\S]*R\$\s*500,00/)
@@ -231,16 +233,28 @@ test('layout possui breakpoint mobile e não mantém drawer flutuante', async ()
   assert.doesNotMatch(css, /position:fixed|copilot-drawer|copilot-floating-button/)
 })
 
-test('mobile confina a largura da página e a rolagem ao detalhamento', async () => {
-  const [pagina, css] = await Promise.all([
+test('mobile confina a largura da página e a rolagem ao detalhamento compartilhado', async () => {
+  const [pagina, css, padroes] = await Promise.all([
     ler('../pages/AnaliseFinanceiraPage.jsx'),
     ler('../pages/AnaliseFinanceiraPage.css'),
+    ler('../components/shared/PagePatterns.css'),
   ])
   assert.match(pagina, /Detalhamento financeiro com rolagem horizontal/)
   assert.match(css, /\.analise-financeira-page\s*\{[\s\S]*?width:\s*100%[\s\S]*?overflow-x:\s*clip/)
   assert.match(css, /\.analise-table\s*\{[\s\S]*?max-width:\s*100%[\s\S]*?overflow-x:\s*auto/)
   assert.match(css, /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/)
-  assert.match(pagina, /<summary aria-label="Abrir opções de exportação">Exportar<\/summary>/)
+  assert.match(pagina, /<ExportMenu/)
+  assert.match(padroes, /\.df-export-menu summary/)
+  assert.match(padroes, /\.df-data-region-scroll[\s\S]*?overflow-x:\s*auto/)
+})
+
+test('movimento no período existe somente nas exportações por pagamento', () => {
+  const [linha] = montarLinhasAnaliseFinanceira([
+    conta({ valor_pago_atual_relatorio: 900, valor_pago_periodo_relatorio: 300 }),
+  ], { base: 'pagamento' })
+  const contexto = { base: 'Por pagamento', totalRegistros: 1 }
+  assert.match(gerarConteudoCsvAnaliseFinanceira([linha], contexto), /"Movimento no período"/)
+  assert.match(gerarHtmlExcelAnaliseFinanceira([linha], contexto), /Movimento no período/)
 })
 
 test('não existem rotas ou imports para as implementações removidas', async () => {

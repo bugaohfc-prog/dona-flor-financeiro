@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { createFluxoCaixaXlsxBlob, downloadBlob, exportCsv } from '../services/export/reportExportService'
+import { ExportMenu, FilterCard, FilterGrid, PageHeader } from '../components/shared/PagePatterns.jsx'
 import { useFluxoCaixaV1 } from '../modules/contas/hooks/fluxo-caixa/useFluxoCaixaV1'
 import {
   agregarMovimentosPorFilial,
@@ -230,25 +231,25 @@ export default function FluxoCaixaPage({
     <main className="fluxo-caixa-page">
       <style>{cssFluxoCaixa}</style>
 
-      <header className="fluxo-caixa-hero">
-        <div>
-          <span>Contas / Relatórios</span>
-          <h1>Fluxo de Caixa</h1>
-          <p>Realizado por data de pagamento. Usa pagamentos e baixas reais já registrados no sistema.</p>
-        </div>
-        <div className="fluxo-caixa-actions">
+      <PageHeader
+        kicker="Contas / Relatórios"
+        title="Fluxo de Caixa"
+        description="Realizado por data de pagamento. Usa pagamentos e baixas reais já registrados no sistema."
+        className="fluxo-caixa-hero"
+        actionsClassName="fluxo-caixa-actions"
+        actions={(
+          <>
           <button type="button" className="fluxo-btn secondary" onClick={voltar}>Voltar</button>
-          <button type="button" className="fluxo-btn secondary" onClick={exportarCsvFluxo} disabled={!dadosDisponiveis || !possuiMovimentos}>
-            Exportar CSV
-          </button>
-          <button type="button" className="fluxo-btn primary" onClick={exportarExcelFluxo} disabled={!dadosDisponiveis || !possuiMovimentos}>
-            Exportar Excel
-          </button>
-        </div>
-      </header>
+          <ExportMenu disabled={!dadosDisponiveis || !possuiMovimentos} options={[
+            { id: 'csv', label: 'CSV', onSelect: exportarCsvFluxo },
+            { id: 'excel', label: 'Excel', onSelect: exportarExcelFluxo },
+          ]} />
+          </>
+        )}
+      />
 
-      <section className="fluxo-caixa-panel">
-        <div className="fluxo-caixa-filtros">
+      <FilterCard className="fluxo-caixa-panel" description="Selecione o exercício e a unidade para recalcular a visualização.">
+        <FilterGrid className="fluxo-caixa-filtros">
           <label>
             <span>Ano</span>
             <select value={ano} onChange={(event) => setAno(event.target.value)}>
@@ -269,8 +270,8 @@ export default function FluxoCaixaPage({
           <button type="button" className="fluxo-btn secondary" onClick={recarregar} disabled={loading}>
             {loading ? 'Atualizando...' : 'Atualizar'}
           </button>
-        </div>
-      </section>
+        </FilterGrid>
+      </FilterCard>
 
       <FiscalInfoBlock filial={filialSelecionada} empresaNome={empresaNome} totalFiliais={filiais.length} />
 

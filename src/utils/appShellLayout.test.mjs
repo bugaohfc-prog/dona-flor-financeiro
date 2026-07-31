@@ -6,6 +6,7 @@ import { dirname, resolve } from 'node:path'
 import {
   resolverAcoesFlutuantesAppShell,
   resolverLayoutAppShell,
+  ROTAS_COM_ACOES_FLUTUANTES,
 } from './appShellLayout.js'
 import { TELAS_NAVEGACAO_PERMITIDAS } from './navigation.js'
 
@@ -175,8 +176,16 @@ test('ações flutuantes permanecem disponíveis sem camada bloqueante', () => {
   assert.equal(Object.isFrozen(politica), true)
 })
 
-test('Análise Financeira oculta o FAB na rota canônica e no alias', () => {
-  for (const telaAtual of ['relatorios-contas', 'relatorios']) {
+test('FAB aparece somente nas rotas operacionais com ação contextual clara', () => {
+  assert.deepEqual(ROTAS_COM_ACOES_FLUTUANTES, ['dashboard', 'agenda', 'notas', 'contas'])
+  for (const telaAtual of ROTAS_COM_ACOES_FLUTUANTES) {
+    assert.deepEqual(resolverAcoesFlutuantesAppShell({ telaAtual }), {
+      bloqueioInteracaoAtivo: false,
+      mostrarFab: true,
+    })
+  }
+
+  for (const telaAtual of ['relatorios-contas', 'relatorios', 'controle-impostos', 'configuracoes', 'usuarios', 'fluxo-caixa']) {
     assert.deepEqual(resolverAcoesFlutuantesAppShell({ telaAtual }), {
       bloqueioInteracaoAtivo: false,
       mostrarFab: false,

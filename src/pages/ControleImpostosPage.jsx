@@ -4,6 +4,7 @@ import { useRelatorioFinanceiro } from '../hooks/useRelatorioFinanceiro.js'
 import { podeExportarRelatorio } from '../utils/relatoriosFinanceiros.js'
 import { impostoPertenceAoFiltro, obterSaldoExibidoImposto, obterStatusOperacionalImposto } from '../utils/consumidoresFinanceiros.js'
 import { exportCsv } from '../services/export/reportExportService.js'
+import { ExportMenu, FilterCard, FilterGrid, PageHeader } from '../components/shared/PagePatterns.jsx'
 
 const FILTROS_IMPOSTOS = [
   ['todos', 'Todos'],
@@ -190,6 +191,7 @@ export default function ControleImpostosPage({
 }) {
   const [filtro, setFiltro] = useState('todos')
   const [busca, setBusca] = useState('')
+  const [maisFiltros, setMaisFiltros] = useState(false)
   const agora = new Date()
   const [dataInicial, setDataInicial] = useState(`${agora.getFullYear()}-01-01`)
   const [dataFinal, setDataFinal] = useState(`${agora.getFullYear()}-12-31`)
@@ -305,19 +307,21 @@ export default function ControleImpostosPage({
 
   return (
     <main className="accounts-page tax-control-page">
-      <div className="page-title-actions accounts-page-header tax-control-header">
-        <div className="accounts-page-header-copy">
-          <span>Financeiro</span>
-          <h1>Controle de impostos</h1>
-          <p>Acompanhe Simples Nacional, FGTS e INSS por vencimento e status.</p>
-        </div>
-        <div className="page-actions-row">
-          <button type="button" onClick={exportarImpostos} disabled={!exportacaoDisponivel}>Exportar CSV</button>
+      <PageHeader
+        kicker="Financeiro"
+        title="Controle de impostos"
+        description="Acompanhe Simples Nacional, FGTS e INSS por vencimento e status."
+        className="page-title-actions accounts-page-header tax-control-header"
+        actionsClassName="page-actions-row"
+        actions={(
+          <>
+          <ExportMenu disabled={!exportacaoDisponivel} options={[{ id: 'csv', label: 'CSV', onSelect: exportarImpostos }]} />
           <button type="button" onClick={() => navegarPara?.('contas')}>
             Ver contas
           </button>
-        </div>
-      </div>
+          </>
+        )}
+      />
 
       <section className="content-block accounts-recurring-section tax-control-section">
         <div className="accounts-recurring-guidance tax-control-guidance" role="note">
@@ -337,7 +341,8 @@ export default function ControleImpostosPage({
           </span>
         </div>
 
-        <div className="accounts-recurring-controls tax-control-controls">
+        <FilterCard className="tax-control-filter-card" description="Refine por período, unidade, situação e classificação.">
+        <FilterGrid className="accounts-recurring-controls tax-control-controls">
           <select value={campoPeriodo} onChange={(event) => setCampoPeriodo(event.target.value)} aria-label="Base do período dos impostos">
             <option value="data_vencimento">Vencimento</option>
             <option value="competencia">Competência</option>
@@ -349,6 +354,9 @@ export default function ControleImpostosPage({
             {(filiais || []).map((filial) => <option key={filial.id} value={filial.id}>{filial.nome}</option>)}
           </select>
           <label><input type="checkbox" checked={incluirOcultas} onChange={(event) => setIncluirOcultas(event.target.checked)} /> Incluir ocultas</label>
+          <button type="button" aria-expanded={maisFiltros} onClick={() => setMaisFiltros((aberto) => !aberto)}>Mais filtros</button>
+        </FilterGrid>
+        {maisFiltros ? <FilterGrid secondary className="tax-control-controls tax-control-secondary-filters">
           <div className="accounts-status-tabs accounts-recurring-tabs tax-control-tabs" role="tablist" aria-label="Filtro de impostos">
             {FILTROS_IMPOSTOS.map(([valor, label]) => (
               <button
@@ -370,7 +378,8 @@ export default function ControleImpostosPage({
             value={busca}
             onChange={(event) => setBusca(event.target.value)}
           />
-        </div>
+        </FilterGrid> : null}
+        </FilterCard>
 
         <ContasContextualGuard carregando={fonteFinanceira.carregando} carregada={fonteFinanceira.carregado} erro={fonteFinanceira.erro} onRetry={fonteFinanceira.consultar}>
         {impostosEncontrados.length === 0 ? (

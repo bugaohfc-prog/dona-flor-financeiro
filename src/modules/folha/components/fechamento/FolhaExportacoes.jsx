@@ -1,3 +1,5 @@
+import { ExportMenu } from '../../../../components/shared/PagePatterns.jsx'
+
 export default function FolhaExportacoes({
   styles,
   desabilitado,
@@ -5,23 +7,12 @@ export default function FolhaExportacoes({
   onExportarContabilidade
 }) {
   return (
-    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-      <button
-        type="button"
-        style={styles.btnCinza}
-        disabled={desabilitado}
-        onClick={onExportarCompras}
-      >
-        Exportar compras
-      </button>
-      <button
-        type="button"
-        style={styles.btnPrimario}
-        disabled={desabilitado}
-        onClick={onExportarContabilidade}
-      >
-        Exportar contabilidade
-      </button>
-    </div>
+    <ExportMenu
+      disabled={desabilitado}
+      options={[
+        { id: 'compras', label: 'Controle de compras', onSelect: onExportarCompras },
+        { id: 'contabilidade', label: 'Consolidado contábil', onSelect: onExportarContabilidade },
+      ]}
+    />
   )
 }

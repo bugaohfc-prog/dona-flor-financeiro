@@ -1,4 +1,5 @@
 import { useReceitasV1 } from '../modules/contas/hooks/receitas/useReceitasV1'
+import { FilterCard, FilterGrid, PageHeader } from '../components/shared/PagePatterns.jsx'
 
 const MESES = [
   { valor: '', label: 'Todos os meses' },
@@ -75,20 +76,22 @@ export default function ReceitasPage({
     <main className="receitas-page">
       <style>{cssReceitas}</style>
 
-      <header className="receitas-hero">
-        <div>
-          <span>Financeiro</span>
-          <h1>Receitas</h1>
-          <p>Entradas de dinheiro da loja. Alimenta o FATURAMENTO BRUTO do Fluxo de Caixa.</p>
-          {empresaNome && <small>{empresaNome}</small>}
-        </div>
-        <div className="receitas-actions">
+      <PageHeader
+        kicker="Financeiro"
+        title="Receitas"
+        description="Entradas de dinheiro da loja. Alimenta o FATURAMENTO BRUTO do Fluxo de Caixa."
+        meta={empresaNome || ''}
+        className="receitas-hero"
+        actionsClassName="receitas-actions"
+        actions={(
+          <>
           <button type="button" className="receitas-btn secondary" onClick={voltar}>Voltar</button>
           <button type="button" className="receitas-btn secondary" onClick={carregar} disabled={loading}>
             {loading ? 'Atualizando...' : 'Atualizar'}
           </button>
-        </div>
-      </header>
+          </>
+        )}
+      />
 
       {erro && (
         <section className="receitas-error">
@@ -97,8 +100,8 @@ export default function ReceitasPage({
         </section>
       )}
 
-      <section className="receitas-panel">
-        <div className="receitas-filtros">
+      <FilterCard className="receitas-panel" description="Refine as entradas por exercício, unidade e origem.">
+        <FilterGrid className="receitas-filtros">
           <label>
             <span>Ano</span>
             <select value={filtros.ano} onChange={(event) => atualizarFiltro('ano', event.target.value)}>
@@ -133,8 +136,8 @@ export default function ReceitasPage({
               <option value="todos">Todos</option>
             </select>
           </label>
-        </div>
-      </section>
+        </FilterGrid>
+      </FilterCard>
 
       <section className="receitas-summary">
         <ReceitaMetricCard titulo="Receitas" valor={moeda(resumo.total)} detalhe="Total no filtro" />

@@ -1,0 +1,337 @@
+:root {
+  --df-page-bg: #f4faf8;
+  --df-surface: #ffffff;
+  --df-surface-soft: #f8fafc;
+  --df-primary-900: #052e2b;
+  --df-primary-700: #0f766e;
+  --df-primary-500: #14b8a6;
+  --df-primary-100: #ccfbf1;
+  --df-primary-50: #f0fdfa;
+  --df-text: #0f172a;
+  --df-muted: #64748b;
+  --df-border: #e2e8f0;
+  --df-danger: #b91c1c;
+  --df-danger-soft: #fff1f2;
+  --df-warning: #b45309;
+  --df-warning-soft: #fffbeb;
+  --df-success: #15803d;
+  --df-info: #2563eb;
+  --df-space-1: 4px;
+  --df-space-2: 8px;
+  --df-space-3: 12px;
+  --df-space-4: 16px;
+  --df-space-5: 20px;
+  --df-space-6: 24px;
+  --df-radius-control: 11px;
+  --df-radius-card: 20px;
+  --df-control-height: 42px;
+  --df-shadow-card: 0 8px 24px rgba(15, 23, 42, .055);
+  --df-focus: 0 0 0 3px rgba(20, 184, 166, .28);
+}
+
+.app-frame-content,
+.app-frame-content > *,
+.df-page-header > *,
+.df-section-card,
+.df-section-card > *,
+.df-filter-grid > *,
+.df-data-region,
+.df-data-region-scroll {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.app-frame-content {
+  width: 100%;
+  overflow-x: clip;
+}
+
+.app-page,
+.app-frame {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.df-page-header,
+:is(.accounts-page-header, .admin-page-hero, .master-page-hero, .billing-page-header, .fluxo-caixa-hero, .receitas-hero, .funcionarios-page-hero, .ferias-page-hero, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 1400px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--df-space-5);
+  margin: 0 auto var(--df-space-4);
+  padding: var(--df-space-6);
+  border: 1px solid rgba(153, 246, 228, .2);
+  border-radius: 24px;
+  background: linear-gradient(135deg, var(--df-primary-900), var(--df-primary-700));
+  color: white;
+  box-shadow: var(--df-shadow-card);
+}
+
+.df-page-header-copy,
+:is(.accounts-page-header-copy, .billing-page-heading, .fluxo-caixa-hero, .receitas-hero, .funcionarios-hero-copy, .ferias-hero-copy, .folha-page-intro) > div:first-child {
+  min-width: 0;
+}
+
+.df-page-kicker,
+:is(.accounts-page-header-copy, .admin-page-hero, .master-page-hero, .billing-page-heading, .fluxo-caixa-hero, .receitas-hero, .funcionarios-hero-copy, .ferias-hero-copy, .folha-page-intro) span:first-child {
+  font-size: .75rem;
+  font-weight: 900;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.df-page-header h1,
+:is(.accounts-page-header, .admin-page-hero, .master-page-hero, .billing-page-header, .fluxo-caixa-hero, .receitas-hero, .funcionarios-page-hero, .ferias-page-hero, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) h1 {
+  margin: 5px 0;
+  color: inherit !important;
+  font-size: clamp(1.75rem, 4vw, 2.65rem) !important;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.df-page-header p,
+.df-page-header small,
+:is(.accounts-page-header, .admin-page-hero, .master-page-hero, .billing-page-header, .fluxo-caixa-hero, .receitas-hero, .funcionarios-page-hero, .ferias-page-hero, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) p,
+:is(.accounts-page-header, .admin-page-hero, .master-page-hero, .billing-page-header, .fluxo-caixa-hero, .receitas-hero, .funcionarios-page-hero, .ferias-page-hero, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) small {
+  margin: 4px 0;
+  color: #d1fae5 !important;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.df-page-actions,
+:is(.page-actions-row, .billing-page-actions, .fluxo-caixa-actions, .receitas-actions) {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--df-space-2);
+}
+
+.df-page-actions button,
+.df-page-header button,
+.df-section-card button,
+.df-page-state button,
+.df-export-menu summary {
+  box-sizing: border-box;
+  min-height: var(--df-control-height);
+  border: 1px solid var(--df-border);
+  border-radius: 12px;
+  padding: 9px 13px;
+  background: var(--df-surface);
+  color: var(--df-text);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+:is(button, input, select, textarea, summary):focus-visible {
+  outline: none;
+  box-shadow: var(--df-focus);
+}
+
+button:disabled,
+.df-export-menu summary[aria-disabled='true'] {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.df-section-card,
+:is(.content-block, .admin-config-card, .billing-panel, .fluxo-caixa-panel, .receitas-panel, .notes-page-section, .audit-filter-panel) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 1400px;
+  margin-inline: auto;
+  padding: 18px;
+  border: 1px solid var(--df-border);
+  border-radius: var(--df-radius-card);
+  background: var(--df-surface);
+  box-shadow: var(--df-shadow-card);
+}
+
+.df-section-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--df-space-3);
+  margin-bottom: 14px;
+}
+
+.df-section-card-header h2 { margin: 0; font-size: 1.15rem; }
+.df-section-card-header p { margin: 4px 0 0; color: var(--df-muted); }
+
+.df-filter-grid,
+:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .receitas-filtros, .tax-control-controls) {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.df-filter-grid.is-secondary {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--df-border);
+}
+
+.df-filter-grid label,
+:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .receitas-filtros, .tax-control-controls) label {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.df-filter-grid label > span,
+:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .receitas-filtros, .tax-control-controls) label > span {
+  color: #475569;
+  font-size: .75rem;
+  font-weight: 850;
+}
+
+.df-filter-grid :is(input, select, textarea),
+:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .receitas-filtros, .tax-control-controls) :is(input, select, textarea) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--df-control-height);
+  border: 1px solid #cbd5e1;
+  border-radius: var(--df-radius-control);
+  padding: 8px 10px;
+  background: var(--df-surface);
+  color: var(--df-text);
+  font: inherit;
+}
+
+.df-export-menu { position: relative; min-width: 140px; }
+.df-export-menu summary { display: flex; align-items: center; justify-content: center; list-style: none; padding-right: 30px; }
+.df-export-menu summary::-webkit-details-marker { display: none; }
+.df-export-menu summary::after { content: '▾'; position: absolute; right: 12px; }
+.df-export-menu[open] summary::after { transform: rotate(180deg); }
+.df-export-menu-options {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  width: min(280px, calc(100vw - 32px));
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  background: var(--df-surface);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, .18);
+}
+.df-export-menu-options button { width: 100%; text-align: left; }
+
+.df-data-region { width: 100%; min-width: 0; }
+.df-data-region-hint { display: none; margin: 0 0 8px; color: var(--df-muted); font-size: .76rem; }
+.df-data-region-scroll {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
+}
+.df-data-region-scroll:focus-visible { box-shadow: var(--df-focus); }
+
+.df-page-state {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 28px;
+  border: 1px dashed #94a3b8;
+  border-radius: var(--df-radius-card);
+  background: var(--df-surface);
+  text-align: center;
+}
+.df-page-state h2 { margin: 0; }
+.df-page-state p { color: var(--df-muted); }
+.df-page-state.is-error { border-color: #fecaca; background: var(--df-danger-soft); }
+
+.app-frame-content .empty-state-card,
+.app-frame-content :is(.recurring-coverage-state, .receitas-error, .funcionario-exames-empty, .ferias-empty-state) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--df-space-5);
+  border: 1px dashed #94a3b8;
+  border-radius: var(--df-radius-card);
+  background: var(--df-surface);
+  color: var(--df-text);
+}
+
+.app-frame-content :is(.recurring-coverage-state.is-error, .receitas-error, [role='alert'].empty-state-card) {
+  border-color: #fecaca;
+  background: var(--df-danger-soft);
+}
+
+.app-frame-content :is(.status-badge, .badge, [class*='status-badge']) {
+  border-radius: 999px;
+}
+
+:is(.app-frame-content, .app-frame-content > *, .accounts-page, .admin-page, .billing-page, .fluxo-caixa-page, .receitas-page, .funcionarios-page, .ferias-page, .folha-page, .importacao-page, .trash-page, .page-section) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+:is(.fluxo-table-wrap, .receitas-table-wrap, .table-responsive, .audit-change-table) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+@media (max-width: 640px) {
+  .df-page-header,
+  :is(.accounts-page-header, .admin-page-hero, .master-page-hero, .billing-page-header, .fluxo-caixa-hero, .receitas-hero, .funcionarios-page-hero, .ferias-page-hero, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) {
+    display: grid;
+    gap: var(--df-space-4);
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .df-page-actions,
+  :is(.page-actions-row, .billing-page-actions, .fluxo-caixa-actions, .receitas-actions) {
+    display: grid;
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .df-page-actions > *,
+  :is(.page-actions-row, .billing-page-actions, .fluxo-caixa-actions, .receitas-actions) > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .df-export-menu,
+  .df-export-menu summary { width: 100%; min-width: 0; }
+  .df-export-menu-options { right: 0; left: auto; }
+  .df-section-card { padding: 14px; border-radius: 16px; }
+  .df-section-card-header { display: grid; }
+  .df-filter-grid,
+  :is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .receitas-filtros, .tax-control-controls) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .df-data-region-hint { display: block; }
+}
+
+@media print {
+  .df-page-actions,
+  .df-export-menu,
+  .df-filter-card { display: none !important; }
+  .df-page-header { background: white; color: #111; border-color: #ccc; box-shadow: none; }
+  .df-page-header p, .df-page-header small { color: #333 !important; }
+  .df-section-card { box-shadow: none; }
+}

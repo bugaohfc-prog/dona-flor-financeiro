@@ -25,6 +25,13 @@ const ACOES_FLUTUANTES_OCULTAS_NA_ROTA = Object.freeze({
   mostrarFab: false,
 })
 
+export const ROTAS_COM_ACOES_FLUTUANTES = Object.freeze([
+  'dashboard',
+  'agenda',
+  'notas',
+  'contas',
+])
+
 export function resolverLayoutAppShell(tela) {
   return tela === 'dashboard' ? LAYOUT_DASHBOARD : LAYOUT_FRAME
 }
@@ -50,6 +57,6 @@ export function resolverAcoesFlutuantesAppShell({
   ].some(Boolean)
 
   if (bloqueioInteracaoAtivo) return ACOES_FLUTUANTES_BLOQUEADAS
-  if (['relatorios-contas', 'relatorios'].includes(telaAtual)) return ACOES_FLUTUANTES_OCULTAS_NA_ROTA
+  if (telaAtual && !ROTAS_COM_ACOES_FLUTUANTES.includes(telaAtual)) return ACOES_FLUTUANTES_OCULTAS_NA_ROTA
   return ACOES_FLUTUANTES_LIBERADAS
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { PLANOS_BASE, buscarResumoBilling, salvarAssinaturaEmpresa } from '../services/billingService'
 import { mensagemSeguraErro } from '../utils/session'
+import { PageHeader } from '../components/shared/PagePatterns.jsx'
 
 function formatarLimite(valor, singular, plural) {
   if (valor === null || valor === undefined || valor === '') return 'Ilimitado'
@@ -131,17 +132,19 @@ export default function BillingPage({ styles, empresaId, empresaNome, filiais = 
 
   return (
     <div className="billing-page">
-      <header className="billing-page-header">
-        <div className="billing-page-heading">
-          <span className="billing-page-kicker">Plano comercial</span>
-          <h1>Planos e assinatura</h1>
-          <p>Controle o plano atual, limites e status comercial da empresa sem alterar a operação.</p>
-        </div>
-        <div className="billing-page-actions">
+      <PageHeader
+        kicker="Plano comercial"
+        title="Planos e assinatura"
+        description="Controle o plano atual, limites e status comercial da empresa sem alterar a operação."
+        className="billing-page-header"
+        actionsClassName="billing-page-actions"
+        actions={(
+          <>
           {assinatura?.status && <span className="billing-status-chip">{assinatura.status}</span>}
           <button style={styles.btnCinza} className="billing-back-button" onClick={voltarPainel}>Voltar</button>
-        </div>
-      </header>
+          </>
+        )}
+      />
 
       <section style={styles.cardConfiguracao} className="billing-panel billing-hero">
         <div>

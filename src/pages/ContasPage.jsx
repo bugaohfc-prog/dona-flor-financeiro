@@ -10,6 +10,7 @@ import {
   reconciliarEstadoExpansao
 } from '../utils/contasAgrupamento.js'
 import { calcularResumoFinanceiroContas, origemPermiteContaForaDoFiltro } from '../utils/contasConsultasOperacionais.js'
+import { ExportMenu, FilterCard, PageHeader } from '../components/shared/PagePatterns.jsx'
 import './ContasPage.css'
 
 const OPCOES_ORDENACAO_CONTAS = [
@@ -203,7 +204,6 @@ export default function ContasPage({
   const [contaEmPagamentoParcial, setContaEmPagamentoParcial] = useState(null)
   const [modoPagamento, setModoPagamento] = useState('baixa')
   const [contaDestacadaId, setContaDestacadaId] = useState('')
-  const [mostrarExportacoes, setMostrarExportacoes] = useState(false)
   const [expansaoContas, setExpansaoContas] = useState({ anos: {}, meses: {} })
   const contaDestacadaRef = useRef(null)
   const avisoContaForaDoFiltroRef = useRef(null)
@@ -592,7 +592,7 @@ export default function ContasPage({
   function renderListaContasConteudo() {
     return (
       <>
-      <section className="no-print filters-desktop accounts-control-panel" style={styles.filtrosBox}>
+      <FilterCard className="no-print filters-desktop accounts-control-panel" style={styles.filtrosBox} description="Busque no histórico ou refine a visão operacional sem alterar os dados.">
         <div className="accounts-search-row">
           <input
             className="accounts-search-input"
@@ -604,30 +604,11 @@ export default function ContasPage({
         </div>
         <div className="accounts-filter-actions">
           <button className="filter-toggle-button" onClick={() => setMostrarFiltros(!mostrarFiltros)}>
-            {mostrarFiltros ? 'Ocultar filtros' : 'Filtros'}
+            {mostrarFiltros ? 'Ocultar filtros' : 'Mais filtros'}
           </button>
 
           <button className="accounts-clear-button" style={styles.btnCinza} onClick={limparFiltros}>Limpar</button>
 
-          {podeExportarDados && (
-            <div className="export-actions accounts-export-actions" style={styles.acoes}>
-              <button
-                className="accounts-export-toggle"
-                type="button"
-                onClick={() => setMostrarExportacoes((atual) => !atual)}
-                aria-expanded={mostrarExportacoes}
-              >
-                Exportar
-              </button>
-              {mostrarExportacoes && (
-                <div className="accounts-export-menu">
-                  <button type="button" onClick={imprimirPDF}>PDF</button>
-                  <button type="button" onClick={exportarExcel}>Excel</button>
-                  <button type="button" onClick={exportarCSV}>CSV</button>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {modoBuscaGlobal ? (
@@ -747,7 +728,7 @@ export default function ContasPage({
             <input style={styles.input} type="date" value={dataFinal} onChange={(e) => setDataFinal(limitarDataInput(e.target.value))} />
           </div>
         )}
-      </section>
+      </FilterCard>
 
       <section className="result-summary accounts-result-summary" style={styles.resumoFiltro}>
         <div className="accounts-result-heading">
@@ -914,19 +895,29 @@ export default function ContasPage({
 
   return (
     <>
-      <div className="page-title-actions accounts-page-header">
-        <div className="accounts-page-header-copy">
-          <span>Financeiro</span>
-          <h1 style={styles.titulo}>Contas</h1>
-          <p style={styles.textoNota}>Controle vencimentos, baixas e contas por filial, centro de custo e período.</p>
-        </div>
-        <div className="page-actions-row">
+      <PageHeader
+        kicker="Financeiro"
+        title="Contas"
+        description="Controle vencimentos, baixas e contas por filial, centro de custo e período."
+        className="page-title-actions accounts-page-header"
+        actionsClassName="page-actions-row"
+        actions={(
+          <>
           {telaRetorno === 'controle-impostos' && (
             <button style={styles.btnCinza} onClick={onVoltarOrigem}>Voltar ao Controle de Impostos</button>
           )}
           <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>Voltar ao Painel</button>
-        </div>
-      </div>
+          {podeExportarDados ? <ExportMenu
+            disabled={loading || loadingConsultaContas || contasFiltradas.length === 0}
+            options={[
+              { id: 'pdf', label: 'PDF', onSelect: imprimirPDF },
+              { id: 'excel', label: 'Excel', onSelect: exportarExcel },
+              { id: 'csv', label: 'CSV', onSelect: exportarCSV },
+            ]}
+          /> : null}
+          </>
+        )}
+      />
       {renderListaContasConteudo()}
       {contaEmBaixa && (
         <AccountPaymentModal

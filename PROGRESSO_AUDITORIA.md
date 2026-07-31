@@ -1,6 +1,17 @@
 # Progresso da Auditoria REDTEAM
 
-[P0-1] [status: bloqueado] [commit: security: fecha bypass de atualizacao de pagamentos] Criação e arquivamento usam RPCs transacionais; INSERT e UPDATE diretos ficam revogados, aguardando validação autenticada em banco isolado.
-[P0-2] [status: aplicado] [commit: security: protege exclusao definitiva da lixeira] Exclusões definitivas de contas e notas migradas para RPCs com retenção e auditoria transacionais.
-[P0-3] [status: bloqueado] [commit: security: completa escopo financeiro por filial] Incluídas df_contas, df_contas_recorrentes, df_receitas, df_folha_lancamentos e df_folha_lancamento_itens; df_notas permanece operacional escopada; df_funcionarios foi excluída por pertencer a RH e df_usuarios_filiais por ser controle de acesso. Usuário restrito não acessa filial_id NULL; Admin, Master e acesso total explícito permanecem autorizados. Validação RLS autenticada em banco isolado continua pendente.
-[P0-4] [status: aplicado] [commit: security: restringe mutacoes de recorrencias] Leitura de recorrências preservada por empresa e filial; criação, alteração e exclusão limitadas a Admin/Master no banco e na interface.
+[P0-1] [status: APROVADO] [commit: security: fecha bypass de atualizacao de pagamentos] Criacao e arquivamento usam RPCs transacionais; INSERT e UPDATE diretos permanecem revogados.
+[P0-2] [status: APROVADO] [commit: security: protege exclusao definitiva da lixeira] Exclusoes definitivas de contas e notas usam RPCs com retencao de 60 dias e auditoria transacional.
+[P0-3] [status: APROVADO] [commit: security: completa escopo financeiro por filial] Escopo canonico por filial validado nas tabelas financeiras, inclusive Folha; usuario restrito nao acessa filial_id NULL.
+[P0-4] [status: APROVADO] [commit: security: restringe mutacoes de recorrencias] Leitura de recorrencias permanece autorizada; mutacoes ficam limitadas a Admin/Master.
+
+## Validacao autenticada em banco isolado
+
+- CI: `30625132588`
+- Resultado: `43/43` testes autenticados aprovados
+- SHA de infraestrutura: `0308ec6cd1e505942130b1b4c48c3f0b813d2af5`
+
+## Limitacoes residuais
+
+- Os testes autenticados foram executados diretamente no PostgreSQL, sem passagem pelo PostgREST.
+- As migrations ainda nao foram aplicadas no banco usado pelo Preview.

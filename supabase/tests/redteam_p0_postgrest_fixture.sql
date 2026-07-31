@@ -2,6 +2,10 @@
 -- Identidades Auth e vinculos sao criados depois pela API local, para que os
 -- testes usem JWTs reais emitidos pelo GoTrue.
 
+-- Compatibilidade do baseline minimo com o contrato de leitura do frontend.
+alter table public.df_empresas
+  add column if not exists created_at timestamptz not null default now();
+
 insert into public.df_empresas (id, nome)
 values ('10000000-0000-0000-0000-000000000011', 'Empresa HTTP P0');
 

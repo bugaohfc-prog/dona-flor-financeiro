@@ -51,6 +51,7 @@ test('fixture sintetica cobre as duas filiais, NULL e Folha sem service_role', (
   assert.doesNotMatch(fixture, /auth\.users|service_role/);
   assert.match(fixture, /redteam_usuario_le_proprio_vinculo/);
   assert.match(fixture, /redteam_usuario_le_empresa_vinculada/);
+  assert.match(fixture, /add column if not exists created_at/);
 });
 
 test('Playwright valida login e telas contra o Supabase efemero', () => {

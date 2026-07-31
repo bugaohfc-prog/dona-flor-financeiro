@@ -175,6 +175,15 @@ test('ações flutuantes permanecem disponíveis sem camada bloqueante', () => {
   assert.equal(Object.isFrozen(politica), true)
 })
 
+test('Análise Financeira oculta o FAB na rota canônica e no alias', () => {
+  for (const telaAtual of ['relatorios-contas', 'relatorios']) {
+    assert.deepEqual(resolverAcoesFlutuantesAppShell({ telaAtual }), {
+      bloqueioInteracaoAtivo: false,
+      mostrarFab: false,
+    })
+  }
+})
+
 test('modal de conta bloqueia o FAB', () => {
   assert.deepEqual(resolverAcoesFlutuantesAppShell({ modalConta: true }), {
     bloqueioInteracaoAtivo: true,
@@ -243,6 +252,7 @@ test('App usa a política central com os estados reais e fecha o menu rápido', 
 
   assert.equal(fonte.includes('resolverAcoesFlutuantesAppShell({'), true)
   for (const estado of [
+    'telaAtual,',
     'modalConta,',
     'modalNota,',
     'modalCentro,',

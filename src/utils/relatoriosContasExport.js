@@ -7,6 +7,21 @@ function normalizarSlug(valor) {
     .replace(/^-+|-+$/g, '')
 }
 
+function numeroSeguro(valor) {
+  const numero = Number(valor)
+  return Number.isFinite(numero) ? numero : 0
+}
+
+function textoSeguro(valor, fallback = '') {
+  if (typeof valor === 'number' && !Number.isFinite(valor)) return fallback
+  const texto = String(valor ?? '').trim()
+  return texto || fallback
+}
+
+function moeda(valor) {
+  return numeroSeguro(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
 function baixarArquivo(conteudo, nomeArquivo, tipo) {
   const blob = new Blob([conteudo], { type: tipo })
   const url = URL.createObjectURL(blob)
@@ -20,12 +35,11 @@ function baixarArquivo(conteudo, nomeArquivo, tipo) {
 }
 
 function escaparCsv(valor) {
-  const texto = String(valor ?? '')
-  return `"${texto.replace(/"/g, '""')}"`
+  return `"${textoSeguro(valor).replace(/"/g, '""')}"`
 }
 
 function escaparHtml(valor) {
-  return String(valor ?? '')
+  return textoSeguro(valor)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -33,283 +47,209 @@ function escaparHtml(valor) {
     .replace(/'/g, '&#039;')
 }
 
-export function nomeArquivoRelatorioContas({ tipoRelatorio, filialNome, extensao }) {
-  const tipoSlug = normalizarSlug(tipoRelatorio)
-    .replace(/^relatorio-de-contas-/, '')
-    .replace(/^relatorio-/, '')
-  const partes = ['relatorio-contas', tipoSlug]
+function basePorPagamento(contexto = {}) {
+  return normalizarSlug(contexto.base) === 'por-pagamento'
+}
+
+export function resolverTotalPagoExportacao(contexto = {}) {
+  const resumo = contexto.resumoFinanceiro || {}
+  return basePorPagamento(contexto)
+    ? numeroSeguro(resumo.totalPagoPeriodo ?? resumo.totalPago)
+    : numeroSeguro(resumo.totalPago ?? resumo.totalPagoPeriodo)
+}
+
+export function nomeArquivoRelatorioContas({ filialNome, extensao }) {
+  const partes = ['analise-financeira']
   const filialSlug = normalizarSlug(filialNome)
   if (filialSlug && filialSlug !== 'todas') partes.push(filialSlug)
-  return `${partes.filter(Boolean).join('-')}.${extensao}`
+  return `${partes.join('-')}.${extensao}`
 }
 
 export function metadadosExportacaoRelatorio(contexto = {}) {
   const resumo = contexto.resumoFinanceiro || {}
   return [
-    ['Empresa', contexto.empresaNome || 'Empresa ativa'],
-    ['Periodo', contexto.periodo || '-'],
-    ['Base', contexto.base || 'Por vencimento'],
-    ['Filial', contexto.filialNome || 'Todas'],
-    ['Centro de custo', contexto.centroNome || 'Todos'],
-    ['Status', contexto.status || 'Todos'],
-    ['Gerado em', contexto.dataGeracao || new Date().toLocaleString('pt-BR')],
-    ['Quantidade de registros', contexto.totalRegistros ?? 0],
-    ['Total previsto', resumo.totalPrevisto ?? 0],
-    ['Total pago', resumo.totalPagoPeriodo ?? resumo.totalPago ?? 0],
-    ['Saldo em aberto', resumo.saldoEmAberto ?? 0]
+    ['Empresa', textoSeguro(contexto.empresaNome, 'Empresa ativa')],
+    ['Período', textoSeguro(contexto.periodo, '-')],
+    ['Base', textoSeguro(contexto.base, 'Por vencimento')],
+    ['Filial', textoSeguro(contexto.filialNome, 'Todas')],
+    ['Centro de custo', textoSeguro(contexto.centroNome, 'Todos')],
+    ['Status', textoSeguro(contexto.status, 'Todos')],
+    ['Gerado em', textoSeguro(contexto.dataGeracao, new Date().toLocaleString('pt-BR'))],
+    ['Quantidade de registros', numeroSeguro(contexto.totalRegistros)],
+    ['Total previsto', numeroSeguro(resumo.totalPrevisto)],
+    ['Total pago', resolverTotalPagoExportacao(contexto)],
+    ['Saldo em aberto', numeroSeguro(resumo.saldoEmAberto)],
+    ['Vencido', numeroSeguro(resumo.totalVencido)],
   ]
+}
+
+function normalizarLinha(linha = {}) {
+  return {
+    descricao: textoSeguro(linha.descricao, 'Conta sem descrição'),
+    valorPrevisto: numeroSeguro(linha.valorPrevisto),
+    valorPago: numeroSeguro(linha.valorPago),
+    saldoRestante: Math.max(0, numeroSeguro(linha.saldoRestante)),
+    valorMovimentoPeriodo: numeroSeguro(linha.valorMovimentoPeriodo),
+    dataReferencia: textoSeguro(linha.dataReferenciaFormatada || linha.dataReferencia || linha.vencimentoFormatado, '-'),
+    statusGerencial: textoSeguro(linha.statusGerencial, 'Em aberto'),
+    tipoPagamento: textoSeguro(linha.tipoPagamento),
+    centroNome: textoSeguro(linha.centroNome, 'Sem centro'),
+    filialNome: textoSeguro(linha.filialNome, 'Sem filial'),
+    observacao: textoSeguro(linha.observacao),
+  }
+}
+
+const CABECALHO_EXPORTACAO = [
+  'Descrição',
+  'Previsto',
+  'Pago',
+  'Saldo',
+  'Movimento no período',
+  'Data de referência',
+  'Status gerencial',
+  'Tipo de pagamento',
+  'Centro de custo',
+  'Filial/Unidade',
+  'Observação',
+]
+
+export function gerarConteudoCsvAnaliseFinanceira(linhas = [], contexto = {}) {
+  const registros = linhas.map(normalizarLinha)
+  return [
+    ...metadadosExportacaoRelatorio(contexto).map((linha) => linha.map(escaparCsv).join(';')),
+    '',
+    CABECALHO_EXPORTACAO.map(escaparCsv).join(';'),
+    ...registros.map((linha) => [
+      linha.descricao,
+      moeda(linha.valorPrevisto),
+      moeda(linha.valorPago),
+      moeda(linha.saldoRestante),
+      moeda(linha.valorMovimentoPeriodo),
+      linha.dataReferencia,
+      linha.statusGerencial,
+      linha.tipoPagamento,
+      linha.centroNome,
+      linha.filialNome,
+      linha.observacao,
+    ].map(escaparCsv).join(';')),
+  ].join('\n')
 }
 
 export function exportarRelatorioContasCsv(linhas, contexto) {
-  const cabecalho = [
-    'Descricao',
-    'Valor',
-    'Data de referencia',
-    'Status operacional',
-    'Tipo de pagamento',
-    'Centro de custo',
-    'Filial/Unidade',
-    'Observacao'
-  ]
-
-  const conteudo = [
-    ...metadadosExportacaoRelatorio(contexto).map((linha) => linha.map(escaparCsv).join(';')),
-    '',
-    cabecalho.map(escaparCsv).join(';'),
-    ...linhas.map((linha) => [
-      linha.descricao,
-      linha.valorFormatado,
-      linha.dataReferenciaFormatada || linha.vencimentoFormatado,
-      linha.statusOperacional,
-      linha.tipoPagamento || '',
-      linha.centroNome,
-      linha.filialNome,
-      linha.observacao
-    ].map(escaparCsv).join(';'))
-  ].join('\n')
-
   baixarArquivo(
-    `\uFEFF${conteudo}`,
+    `\uFEFF${gerarConteudoCsvAnaliseFinanceira(linhas, contexto)}`,
     nomeArquivoRelatorioContas({ ...contexto, extensao: 'csv' }),
-    'text/csv;charset=utf-8;'
+    'text/csv;charset=utf-8;',
   )
+}
+
+function celulasLinhaHtml(linha) {
+  return `
+    <td>${escaparHtml(linha.descricao)}</td>
+    <td>${escaparHtml(moeda(linha.valorPrevisto))}</td>
+    <td>${escaparHtml(moeda(linha.valorPago))}</td>
+    <td>${escaparHtml(moeda(linha.saldoRestante))}</td>
+    <td>${escaparHtml(moeda(linha.valorMovimentoPeriodo))}</td>
+    <td>${escaparHtml(linha.dataReferencia)}</td>
+    <td>${escaparHtml(linha.statusGerencial)}</td>
+    <td>${escaparHtml(linha.tipoPagamento)}</td>
+    <td>${escaparHtml(linha.centroNome)}</td>
+    <td>${escaparHtml(linha.filialNome)}</td>
+    <td>${escaparHtml(linha.observacao)}</td>
+  `
+}
+
+export function gerarHtmlExcelAnaliseFinanceira(linhas = [], contexto = {}) {
+  const registros = linhas.map(normalizarLinha)
+  return `<!doctype html>
+    <html lang="pt-BR">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="generator" content="DNA Gestão — HTML compatível com Microsoft Excel (.xls)" />
+        <title>Análise Financeira — HTML compatível com Excel</title>
+      </head>
+      <body>
+        <table><tbody>${metadadosExportacaoRelatorio(contexto).map(([rotulo, valor]) => `<tr><th>${escaparHtml(rotulo)}</th><td>${escaparHtml(valor)}</td></tr>`).join('')}</tbody></table>
+        <br />
+        <table>
+          <thead><tr>${CABECALHO_EXPORTACAO.map((titulo) => `<th>${escaparHtml(titulo)}</th>`).join('')}</tr></thead>
+          <tbody>${registros.map((linha) => `<tr>${celulasLinhaHtml(linha)}</tr>`).join('')}</tbody>
+        </table>
+      </body>
+    </html>`
 }
 
 export function exportarRelatorioContasExcel(linhas, contexto) {
-  const linhasHtml = linhas.map((linha) => `
-    <tr>
-      <td>${escaparHtml(linha.descricao)}</td>
-      <td>${escaparHtml(linha.valorFormatado)}</td>
-      <td>${escaparHtml(linha.dataReferenciaFormatada || linha.vencimentoFormatado)}</td>
-      <td>${escaparHtml(linha.statusOperacional)}</td>
-      <td>${escaparHtml(linha.tipoPagamento || '')}</td>
-      <td>${escaparHtml(linha.centroNome)}</td>
-      <td>${escaparHtml(linha.filialNome)}</td>
-      <td>${escaparHtml(linha.observacao)}</td>
-    </tr>
-  `).join('')
-
-  const html = `
-    <html>
-      <head>
-        <meta charset="utf-8" />
-      </head>
-      <body>
-        <table>
-          <tbody>
-            ${metadadosExportacaoRelatorio(contexto).map(([rotulo, valor]) => `
-              <tr>
-                <th>${escaparHtml(rotulo)}</th>
-                <td>${escaparHtml(valor)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        <br />
-        <table>
-          <thead>
-            <tr>
-              <th>Descricao</th>
-              <th>Valor</th>
-              <th>Data de referencia</th>
-              <th>Status operacional</th>
-              <th>Tipo de pagamento</th>
-              <th>Centro de custo</th>
-              <th>Filial/Unidade</th>
-              <th>Observacao</th>
-            </tr>
-          </thead>
-          <tbody>${linhasHtml}</tbody>
-        </table>
-      </body>
-    </html>
-  `
-
   baixarArquivo(
-    html,
+    gerarHtmlExcelAnaliseFinanceira(linhas, contexto),
     nomeArquivoRelatorioContas({ ...contexto, extensao: 'xls' }),
-    'application/vnd.ms-excel;charset=utf-8;'
+    'application/vnd.ms-excel;charset=utf-8;',
   )
 }
 
-export function imprimirRelatorioContas({ linhas, grupos, contexto, resumo, modo = 'compacto' }) {
-  const janela = window.open('', '_blank')
-  if (!janela) return false
-  const dataEmissao = new Date()
-  const dataEmissaoFormatada = dataEmissao.toLocaleString('pt-BR')
+function humanizarGrupo(titulo) {
+  const chave = normalizarSlug(titulo)
+  if (chave.startsWith('vencid')) return 'Vencidas'
+  if (chave.startsWith('pag') || chave.startsWith('quitad')) return 'Pagas'
+  if (chave.startsWith('futur') || chave.includes('a-vencer')) return 'A vencer'
+  if (chave.startsWith('abert') || chave.startsWith('parcial')) return 'Em aberto'
+  return textoSeguro(titulo, 'Detalhamento')
+}
+
+function cabecalhoTabelaHtml() {
+  return '<tr><th>Descrição</th><th>Previsto</th><th>Pago</th><th>Saldo</th><th>Data de referência</th><th>Status</th><th>Centro / Filial</th><th>Observação</th></tr>'
+}
+
+function linhaTabelaHtml(linha) {
+  return `<tr>
+    <td><strong>${escaparHtml(linha.descricao)}</strong></td>
+    <td>${escaparHtml(moeda(linha.valorPrevisto))}</td>
+    <td>${escaparHtml(moeda(linha.valorPago))}</td>
+    <td>${escaparHtml(moeda(linha.saldoRestante))}</td>
+    <td>${escaparHtml(linha.dataReferencia)}</td>
+    <td>${escaparHtml(linha.statusGerencial)}</td>
+    <td>${escaparHtml(`${linha.centroNome} · ${linha.filialNome}`)}</td>
+    <td>${escaparHtml(linha.observacao)}</td>
+  </tr>`
+}
+
+export function gerarHtmlImpressaoAnaliseFinanceira({ linhas = [], grupos = [], contexto = {}, resumo = {}, modo = 'compacto' } = {}) {
+  const registros = linhas.map(normalizarLinha)
   const modoCompacto = modo !== 'gerencial'
+  const gruposNormalizados = (grupos.length ? grupos : [{ titulo: 'Detalhamento', linhas }]).map((grupo) => ({
+    titulo: humanizarGrupo(grupo?.titulo),
+    linhas: Array.isArray(grupo?.linhas) ? grupo.linhas.map(normalizarLinha) : [],
+  }))
+  const quantidade = numeroSeguro(resumo.quantidade ?? resumo.totalContas ?? registros.length)
+  const previsto = numeroSeguro(resumo.previsto ?? resumo.totalPrevisto)
+  const pago = numeroSeguro(resumo.pago ?? resumo.totalPago)
+  const saldo = numeroSeguro(resumo.saldo ?? resumo.saldoEmAberto)
+  const vencido = numeroSeguro(resumo.vencido ?? resumo.totalVencido)
+  const tabelaCompacta = `<table><thead>${cabecalhoTabelaHtml()}</thead><tbody>${registros.map(linhaTabelaHtml).join('')}</tbody></table>`
+  const tabelasGerenciais = gruposNormalizados.map((grupo) => `<section><h2>${escaparHtml(grupo.titulo)} <span>${grupo.linhas.length} conta(s)</span></h2><table><thead>${cabecalhoTabelaHtml()}</thead><tbody>${grupo.linhas.map(linhaTabelaHtml).join('')}</tbody></table></section>`).join('')
 
-  const linhasCompactasHtml = linhas.map((linha) => `
-    <tr>
-      <td>
-        <strong>${escaparHtml(linha.descricao)}</strong>
-        ${linha.observacao ? `<small>Obs.: ${escaparHtml(linha.observacao)}</small>` : ''}
-      </td>
-      <td>${escaparHtml(linha.valorFormatado)}</td>
-      <td>${escaparHtml(linha.dataReferenciaFormatada || linha.vencimentoFormatado)}</td>
-      <td>${escaparHtml(`${linha.statusOperacional}${linha.tipoPagamento ? ` · ${linha.tipoPagamento}` : ''}`)}</td>
-      <td>${escaparHtml(linha.centroNome)}</td>
-      <td>${escaparHtml(linha.filialNome)}</td>
-    </tr>
-  `).join('')
-
-  const gruposHtml = grupos.map((grupo) => `
-    <section>
-      <h2>${escaparHtml(grupo.titulo)} <span>${grupo.linhas.length} conta(s)</span></h2>
-      <table>
-        <colgroup>
-          <col style="width: 24%" />
-          <col style="width: 10%" />
-          <col style="width: 10%" />
-          <col style="width: 13%" />
-          <col style="width: 14%" />
-          <col style="width: 13%" />
-          <col style="width: 16%" />
-        </colgroup>
-        <thead>
-          <tr>
-            <th>Descrição</th>
-            <th>Valor</th>
-            <th>Data de referencia</th>
-            <th>Status operacional</th>
-            <th>Centro de custo</th>
-            <th>Filial/Unidade</th>
-            <th>Observação</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${grupo.linhas.map((linha) => `
-            <tr>
-              <td>${escaparHtml(linha.descricao)}</td>
-              <td>${escaparHtml(linha.valorFormatado)}</td>
-              <td>${escaparHtml(linha.dataReferenciaFormatada || linha.vencimentoFormatado)}</td>
-              <td>${escaparHtml(`${linha.statusOperacional}${linha.tipoPagamento ? ` · ${linha.tipoPagamento}` : ''}`)}</td>
-              <td>${escaparHtml(linha.centroNome)}</td>
-              <td>${escaparHtml(linha.filialNome)}</td>
-              <td class="observacao-cell">${escaparHtml(linha.observacao)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </section>
-  `).join('')
-
-  janela.document.write(`
-    <html>
+  return `<!doctype html>
+    <html lang="pt-BR">
       <head>
-        <title>Relatorio de Contas</title>
         <meta charset="utf-8" />
+        <title>Análise Financeira</title>
         <style>
-          * { box-sizing: border-box; }
-          @page { size: A4 landscape; margin: ${modoCompacto ? '5mm' : '8mm'}; }
-          body { font-family: Arial, sans-serif; color: #17212b; margin: 0; background: #ffffff; }
-          .page { width: 100%; max-width: 100%; padding: ${modoCompacto ? '6px' : '14px'}; overflow: visible; }
-          header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: ${modoCompacto ? '8px' : '14px'}; border-bottom: 1px solid #ccfbf1; margin-bottom: ${modoCompacto ? '4px' : '10px'}; padding-bottom: ${modoCompacto ? '4px' : '9px'}; }
-          .brand { color: #0f766e; font-size: ${modoCompacto ? '7px' : '10px'}; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-          h1 { margin: 1px 0; font-size: ${modoCompacto ? '13px' : '21px'}; color: #0f172a; line-height: 1.05; }
-          .subtitle { color: #586275; font-size: ${modoCompacto ? '8px' : '12px'}; font-weight: 700; line-height: 1.15; }
-          p { margin: 2px 0; color: #4b5563; }
-          .meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: ${modoCompacto ? '1px 8px' : '5px 14px'}; margin-top: ${modoCompacto ? '3px' : '10px'}; font-size: ${modoCompacto ? '7px' : '10px'}; line-height: 1.1; }
-          .issued { color: #64748b; font-size: ${modoCompacto ? '7px' : '10px'}; text-align: right; line-height: 1.15; }
-          .resumo { display: flex; gap: 0; margin: ${modoCompacto ? '3px 0 4px' : '12px 0'}; border: 1px solid #d8e3df; border-radius: ${modoCompacto ? '4px' : '8px'}; overflow: hidden; }
-          .resumo div { flex: 1 1 0; padding: ${modoCompacto ? '2px 5px' : '7px 9px'}; font-size: ${modoCompacto ? '7px' : '10px'}; color: #475569; border-right: 1px solid #d8e3df; min-width: 0; white-space: nowrap; }
-          .resumo div:last-child { border-right: 0; }
-          .resumo strong { display: inline-block; margin-left: 4px; font-size: ${modoCompacto ? '8px' : '13px'}; color: #0f172a; }
-          h2 { margin: ${modoCompacto ? '5px 0 2px' : '16px 0 7px'}; font-size: ${modoCompacto ? '9px' : '14px'}; line-height: 1.1; }
-          h2 span { color: #64748b; font-size: ${modoCompacto ? '7px' : '10px'}; font-weight: 500; }
-          table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: ${modoCompacto ? '7px' : '9px'}; line-height: ${modoCompacto ? '1.02' : '1.15'}; page-break-inside: auto; }
-          th, td { border: 1px solid #d9e2df; padding: ${modoCompacto ? '1px 2px' : '5px 6px'}; text-align: left; vertical-align: top; overflow-wrap: anywhere; word-break: break-word; }
-          th { background: #eef8f5; color: #0f4f49; }
-          td strong { display: block; font-size: ${modoCompacto ? '7px' : '9px'}; line-height: 1.02; }
-          td small { display: block; margin-top: 1px; font-size: ${modoCompacto ? '6px' : '8px'}; line-height: 1; color: #475569; }
-          .observacao-cell { font-size: ${modoCompacto ? '6px' : '8px'}; line-height: 1.02; color: #475569; }
-          thead { display: table-header-group; }
-          tr { page-break-inside: auto; page-break-after: auto; }
-          footer { margin-top: ${modoCompacto ? '3px' : '12px'}; padding-top: ${modoCompacto ? '3px' : '7px'}; border-top: 1px solid #d9e2df; color: #64748b; font-size: ${modoCompacto ? '6px' : '9px'}; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-          @media print { .page { padding: 0; } }
-          @media (max-width: 760px) {
-            .page { padding: 16px; }
-            header { grid-template-columns: 1fr; }
-            .issued { text-align: left; }
-            .meta, .resumo { grid-template-columns: 1fr; }
-          }
+          *{box-sizing:border-box}@page{size:A4 landscape;margin:${modoCompacto ? '5mm' : '8mm'}}body{font-family:Arial,sans-serif;color:#17212b;margin:0;background:#fff}.page{width:100%;max-width:100%;padding:${modoCompacto ? '6px' : '14px'}}header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;border-bottom:2px solid #99f6e4;padding-bottom:8px;margin-bottom:8px}.brand{color:#0f766e;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}h1{margin:2px 0;font-size:${modoCompacto ? '16px' : '22px'}}.subtitle,.issued{color:#64748b;font-size:9px}.issued{text-align:right}.meta{display:flex;flex-wrap:wrap;gap:5px 14px;margin-top:6px;font-size:8px}.resumo{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid #d8e3df;border-radius:7px;overflow:hidden;margin:8px 0}.resumo div{padding:6px;border-right:1px solid #d8e3df;font-size:8px}.resumo div:last-child{border:0}.resumo strong{display:block;margin-top:2px;font-size:11px}h2{font-size:12px;margin:12px 0 4px}h2 span{color:#64748b;font-size:8px}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:${modoCompacto ? '7px' : '8px'}}th,td{border:1px solid #d9e2df;padding:${modoCompacto ? '2px' : '4px'};text-align:left;vertical-align:top;overflow-wrap:anywhere}th{background:#eef8f5;color:#0f4f49}thead{display:table-header-group}tr{break-inside:avoid}footer{margin-top:8px;padding-top:6px;border-top:1px solid #d9e2df;color:#64748b;font-size:7px}@media print{.page{padding:0}}
         </style>
       </head>
-      <body>
-        <div class="page">
-          <header>
-            <div>
-              <div class="brand">DNA Gestão</div>
-              <h1>Relatório de Contas</h1>
-              <div class="subtitle">Documento gerencial para conferência de contas por tipo, período, centro e unidade.</div>
-              <div class="meta">
-                <span><strong>Tipo:</strong> ${escaparHtml(contexto.tipoRelatorio)}</span>
-                <span><strong>Filial/Unidade:</strong> ${escaparHtml(contexto.filialNome)}</span>
-                <span><strong>Centro de custo:</strong> ${escaparHtml(contexto.centroNome)}</span>
-                <span><strong>Período:</strong> ${escaparHtml(contexto.periodo)}</span>
-                <span><strong>Total de contas:</strong> ${linhas.length}</span>
-                <span><strong>Valor total:</strong> ${escaparHtml(resumo.valorTotalFormatado)}</span>
-              </div>
-            </div>
-            <div class="issued">Emitido em ${escaparHtml(dataEmissaoFormatada)}</div>
-          </header>
-          <div class="resumo">
-            <div>Total de contas<strong>${resumo.totalContas}</strong></div>
-            <div>Valor total<strong>${escaparHtml(resumo.valorTotalFormatado)}</strong></div>
-            <div>Vencidas<strong>${resumo.quantidadeVencidas}</strong></div>
-            <div>A vencer<strong>${resumo.quantidadeAVencer}</strong></div>
-          </div>
-          ${modoCompacto ? `
-            <table>
-              <colgroup>
-                <col style="width: 34%" />
-                <col style="width: 10%" />
-                <col style="width: 10%" />
-                <col style="width: 12%" />
-                <col style="width: 17%" />
-                <col style="width: 17%" />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th>Descrição / observação</th>
-                  <th>Valor</th>
-                  <th>Data de referencia</th>
-                  <th>Status</th>
-                  <th>Centro</th>
-                  <th>Filial/Unidade</th>
-                </tr>
-              </thead>
-              <tbody>${linhasCompactasHtml}</tbody>
-            </table>
-          ` : gruposHtml}
-          <footer>
-            <span>DNA Gestão • Documento para conferência interna.</span>
-            <span>Emitido em ${escaparHtml(dataEmissaoFormatada)}</span>
-          </footer>
-        </div>
-      </body>
-    </html>
-  `)
+      <body><div class="page">
+        <header><div><div class="brand">DNA Gestão</div><h1>Análise Financeira</h1><div class="subtitle">Painel gerencial de contas, despesas e obrigações.</div><div class="meta"><span><strong>Empresa:</strong> ${escaparHtml(textoSeguro(contexto.empresaNome, 'Empresa ativa'))}</span><span><strong>Período:</strong> ${escaparHtml(textoSeguro(contexto.periodo, '-'))}</span><span><strong>Base:</strong> ${escaparHtml(textoSeguro(contexto.base, 'Por vencimento'))}</span><span><strong>Filial:</strong> ${escaparHtml(textoSeguro(contexto.filialNome, 'Todas'))}</span><span><strong>Centro:</strong> ${escaparHtml(textoSeguro(contexto.centroNome, 'Todos'))}</span></div></div><div class="issued">Emitido em ${escaparHtml(textoSeguro(contexto.dataGeracao, new Date().toLocaleString('pt-BR')))}</div></header>
+        <div class="resumo"><div>Quantidade<strong>${quantidade}</strong></div><div>Previsto<strong>${escaparHtml(moeda(previsto))}</strong></div><div>Pago<strong>${escaparHtml(moeda(pago))}</strong></div><div>Saldo em aberto<strong>${escaparHtml(moeda(saldo))}</strong></div><div>Vencido<strong>${escaparHtml(moeda(vencido))}</strong></div></div>
+        ${modoCompacto ? tabelaCompacta : tabelasGerenciais}
+        <footer>DNA Gestão · Documento para conferência interna.</footer>
+      </div></body>
+    </html>`
+}
+
+export function imprimirRelatorioContas(opcoes) {
+  const janela = window.open('', '_blank')
+  if (!janela) return false
+  janela.document.write(gerarHtmlImpressaoAnaliseFinanceira(opcoes))
   janela.document.close()
   janela.focus()
   janela.print()

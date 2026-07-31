@@ -12,30 +12,12 @@ import {
   exportarRelatorioContasExcel,
   imprimirRelatorioContas,
 } from '../utils/relatoriosContasExport.js'
+import { montarLinhasAnaliseFinanceira } from '../utils/analiseFinanceira.js'
 import './AnaliseFinanceiraPage.css'
 import './AnaliseFinanceiraTrends.css'
 
 const formatarMoedaPadrao = (valor) => Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const formatarDataPadrao = (valor) => valor ? new Date(`${valor}T00:00:00`).toLocaleDateString('pt-BR') : '-'
-
-function rotuloStatus(conta) {
-  return conta.rotulo_status_relatorio || ({
-    paga: 'Paga',
-    quitada_por_parciais: 'Quitada por parciais — baixa pendente',
-    parcial: 'Parcialmente paga',
-    vencida: 'Vencida',
-    futura: 'A vencer',
-    aberta: 'Em aberto',
-  }[conta.status_financeiro_relatorio] || 'Em aberto')
-}
-
-function nomeCentro(conta, centros) {
-  return conta.df_centros_custo?.nome || centros.find((centro) => centro.id === conta.centro_custo_id)?.nome || 'Sem centro'
-}
-
-function nomeFilial(conta, filiais) {
-  return conta.df_filiais?.nome || filiais.find((filial) => filial.id === conta.filial_id)?.nome || 'Sem filial'
-}
 
 function Bloco({ titulo, descricao, children, className = '' }) {
   return <section className={`analise-card ${className}`}><header><div><h2>{titulo}</h2>{descricao ? <p>{descricao}</p> : null}</div></header>{children}</section>
@@ -56,23 +38,12 @@ export default function AnaliseFinanceiraPage({
   const [maisFiltros, setMaisFiltros] = useState(false)
   const [perguntaAtiva, setPerguntaAtiva] = useState('')
   const [limiteDetalhes, setLimiteDetalhes] = useState(30)
-  const linhas = useMemo(() => controller.registros.map((conta) => {
-    const valor = controller.filtros.base === 'pagamento'
-      ? Number(conta.valor_pago_periodo_relatorio ?? conta.valor_movimento_relatorio ?? 0)
-      : Number(conta.valor_previsto_relatorio || 0)
-    return {
-      conta,
-      descricao: conta.descricao || 'Conta sem descrição',
-      valor,
-      valorFormatado: formatarValor(valor),
-      dataReferenciaFormatada: formatarData(conta.data_referencia_relatorio || conta.data_vencimento),
-      vencimentoFormatado: formatarData(conta.data_vencimento),
-      statusOperacional: rotuloStatus(conta),
-      tipoPagamento: conta.tipo_pagamento_relatorio || '',
-      centroNome: nomeCentro(conta, centros),
-      filialNome: nomeFilial(conta, filiais),
-      observacao: conta.observacao || '',
-    }
+  const linhas = useMemo(() => montarLinhasAnaliseFinanceira(controller.registros, {
+    base: controller.filtros.base,
+    centros,
+    filiais,
+    formatarData,
+    formatarValor,
   }), [centros, controller.filtros.base, controller.registros, filiais, formatarData, formatarValor])
   const linhasPorId = useMemo(() => new Map(linhas.map((linha) => [linha.conta, linha])), [linhas])
   const gruposExportacao = useMemo(() => controller.grupos.map((grupo) => ({
@@ -95,10 +66,11 @@ export default function AnaliseFinanceiraPage({
   function imprimir(modo) {
     if (!validarExportacao()) return
     imprimirRelatorioContas({ linhas, grupos: gruposExportacao, contexto: controller.contextoExportacao, resumo: {
-      totalContas: controller.indicadores.quantidade,
-      valorTotalFormatado: formatarValor(controller.indicadores.previsto),
-      valorVencidoFormatado: formatarValor(controller.indicadores.vencido),
-      valorPagoFormatado: formatarValor(controller.indicadores.pago),
+      quantidade: controller.indicadores.quantidade,
+      previsto: controller.indicadores.previsto,
+      pago: controller.indicadores.pago,
+      saldo: controller.indicadores.saldo,
+      vencido: controller.indicadores.vencido,
     }, modo })
   }
 
@@ -117,10 +89,15 @@ export default function AnaliseFinanceiraPage({
         </div>
         <div className="analise-actions">
           <button type="button" onClick={controller.atualizar} disabled={controller.carregando}>{controller.carregando ? 'Atualizando…' : 'Atualizar'}</button>
-          <button type="button" onClick={exportarCsv} disabled={!podeExportar}>CSV</button>
-          <button type="button" onClick={exportarExcel} disabled={!podeExportar}>Excel</button>
-          <button type="button" onClick={() => imprimir('compacto')} disabled={!podeExportar}>PDF compacto</button>
-          <button type="button" onClick={() => imprimir('gerencial')} disabled={!podeExportar}>PDF gerencial</button>
+          <details className="analise-export">
+            <summary aria-label="Abrir opções de exportação">Exportar</summary>
+            <div className="analise-export-menu" role="group" aria-label="Formatos de exportação">
+              <button type="button" onClick={exportarCsv} disabled={!podeExportar}>CSV</button>
+              <button type="button" onClick={exportarExcel} disabled={!podeExportar}>Excel compatível (.xls)</button>
+              <button type="button" onClick={() => imprimir('compacto')} disabled={!podeExportar}>PDF compacto</button>
+              <button type="button" onClick={() => imprimir('gerencial')} disabled={!podeExportar}>PDF gerencial</button>
+            </div>
+          </details>
         </div>
       </header>
 
@@ -188,20 +165,26 @@ export default function AnaliseFinanceiraPage({
         </Bloco>
 
         <Bloco titulo="Detalhamento" descricao={`${controller.registros.length} registro(s); exportações usam exatamente este conjunto.`}>
-          <div className="analise-table" role="table" aria-label="Detalhamento financeiro">
+          <p className="analise-scroll-hint">No celular, deslize somente o detalhamento para ver todas as colunas.</p>
+          <div className="analise-table" role="region" aria-label="Detalhamento financeiro com rolagem horizontal" tabIndex="0">
+            <div role="table" aria-label="Registros da análise financeira">
             <div className="analise-table-head" role="row"><span>Descrição</span><span>Previsto</span><span>Pago</span><span>Saldo</span><span>Data</span><span>Status</span><span>Centro / filial</span></div>
             {controller.grupos.flatMap((grupo) => [
               <div className="analise-group" key={`grupo-${grupo.titulo}`}>{grupo.titulo} · {grupo.contas.length}</div>,
-              ...grupo.contas.slice(0, limiteDetalhes).map((conta) => <article role="row" key={`${grupo.titulo}-${conta.id}-${conta.pagamento_id_relatorio || ''}`}>
-                <strong>{conta.descricao || 'Conta sem descrição'}</strong>
-                <span>{formatarValor(conta.valor_previsto_relatorio)}</span>
-                <span>{formatarValor(controller.filtros.base === 'pagamento' ? conta.valor_pago_periodo_relatorio : conta.valor_pago_atual_relatorio)}</span>
-                <span>{formatarValor(conta.saldo_restante_relatorio)}</span>
-                <span>{formatarData(conta.data_referencia_relatorio || conta.data_vencimento)}</span>
-                <span>{rotuloStatus(conta)}</span>
-                <span>{nomeCentro(conta, centros)} · {nomeFilial(conta, filiais)}</span>
-              </article>),
+              ...grupo.contas.slice(0, limiteDetalhes).map((conta) => {
+                const linha = linhasPorId.get(conta)
+                return <article role="row" key={`${grupo.titulo}-${conta.id}-${conta.pagamento_id_relatorio || ''}`}>
+                  <strong>{linha.descricao}</strong>
+                  <span>{linha.valorPrevistoFormatado}</span>
+                  <span>{linha.valorPagoFormatado}</span>
+                  <span>{linha.saldoRestanteFormatado}</span>
+                  <span>{linha.dataReferenciaFormatada}</span>
+                  <span>{linha.statusGerencial}</span>
+                  <span>{linha.centroNome} · {linha.filialNome}</span>
+                </article>
+              }),
             ])}
+            </div>
           </div>
           {controller.registros.length > limiteDetalhes ? <button type="button" className="analise-more-results" onClick={() => setLimiteDetalhes((limite) => limite + 30)}>Carregar mais 30</button> : null}
         </Bloco>

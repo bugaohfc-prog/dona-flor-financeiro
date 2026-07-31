@@ -3119,7 +3119,7 @@ export default function App() {
         <head>
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>Relatório de contas</title>
+          <title>Contas — resultado exibido</title>
           <style>
             * { box-sizing: border-box; }
             @page { size: A4 landscape; margin: 8mm; }
@@ -3186,7 +3186,7 @@ export default function App() {
             <header>
               <div>
                 <div class="brand">DNA Gestão</div>
-                <h1>Relatório de Contas</h1>
+                <h1>Contas — resultado exibido</h1>
                 <div class="subtitle">Documento gerencial para conferência de contas, valores e situação operacional.</div>
                 <div class="empresa">${escapeHtml(nomeEmpresa || 'Empresa não identificada')}</div>
               </div>
@@ -3823,6 +3823,7 @@ export default function App() {
   const exibirAcoesRapidasFinanceiras = acessoTelaAtual.permitido
     && contextoModuloAtual === MODULOS_TOPBAR.financeiro
   const politicaAcoesFlutuantesAppShell = resolverAcoesFlutuantesAppShell({
+    telaAtual,
     modalConta,
     modalNota,
     modalCentro,

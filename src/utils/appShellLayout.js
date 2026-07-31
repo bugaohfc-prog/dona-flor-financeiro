@@ -13,13 +13,11 @@ const LAYOUT_FRAME = Object.freeze({
 const ACOES_FLUTUANTES_LIBERADAS = Object.freeze({
   bloqueioInteracaoAtivo: false,
   mostrarFab: true,
-  mostrarCopilot: true,
 })
 
 const ACOES_FLUTUANTES_BLOQUEADAS = Object.freeze({
   bloqueioInteracaoAtivo: true,
   mostrarFab: false,
-  mostrarCopilot: false,
 })
 
 export function resolverLayoutAppShell(tela) {

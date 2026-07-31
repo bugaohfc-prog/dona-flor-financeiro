@@ -17,8 +17,7 @@ const menuSections = [
       { tela: 'recorrencias', icon: 'RC', label: 'Recorrências', desc: 'Séries financeiras recorrentes' },
       { tela: 'controle-impostos', icon: 'IM', label: 'Controle de impostos', desc: 'Simples, FGTS e INSS' },
       { tela: 'fluxo-caixa', icon: 'FC', label: 'Fluxo de Caixa', desc: 'Realizado por ano e filial' },
-      { tela: 'relatorios', icon: 'RF', label: 'Relatórios financeiros', desc: 'Análise e indicadores' },
-      { tela: 'relatorios-contas', icon: 'RC', label: 'Relatórios de contas', desc: 'Impressão e exportação' },
+      { tela: 'relatorios-contas', icon: 'AF', label: 'Análise Financeira', desc: 'Painel gerencial, indicadores e detalhamento de contas' },
       { tela: 'importar', icon: 'IM', label: 'Importação', desc: 'Importar contas por CSV' }
     ]
   },

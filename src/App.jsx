@@ -20,14 +20,11 @@ import MobileMenu from './components/layout/MobileMenu.jsx'
 import GlobalFab from './components/layout/GlobalFab.jsx'
 import HeaderExpansivel from './components/ui/HeaderExpansivel.jsx'
 import AppRouteGuards from './components/routes/AppRouteGuards.jsx'
-import AppSuspenseBoundary from './components/routes/AppSuspenseBoundary.jsx'
 import ContasContextualGuard from './components/feedback/ContasContextualGuard.jsx'
 import AccessDeniedPage from './components/feedback/AccessDeniedPage.jsx'
 import AppModalsLayer from './components/render/AppModalsLayer.jsx'
 import AppOverlaysLayer from './components/render/AppOverlaysLayer.jsx'
 import AppShell from './components/shell/AppShell.jsx'
-import CopilotFloatingButton from './components/copilot/layout/CopilotFloatingButton.jsx'
-import { useCopilot } from './components/copilot/core/CopilotProvider.jsx'
 import { useApp } from './context/AppContext.jsx'
 import { useContas } from './hooks/useContas'
 import { useNotas } from './hooks/useNotas'
@@ -79,7 +76,7 @@ import {
   LazyConfiguracoesPage,
   LazyContasPage,
   LazyControleImpostosPage,
-  LazyCopilotDrawer,
+  LazyAnaliseFinanceiraPage,
   LazyDashboardRouteComposition,
   LazyFechamentoFolhaPage,
   LazyFiliaisPage,
@@ -93,8 +90,6 @@ import {
   LazyOnboardingPage,
   LazyReceitasPage,
   LazyRecorrenciasFinanceirasPage,
-  LazyRelatorios,
-  LazyRelatoriosContasPage,
   LazyRelatoriosGestaoPessoasPage,
   LazyRelatoriosFeriasPage,
   LazyRelatoriosPessoasPage,
@@ -103,18 +98,6 @@ import {
   getLazyRouteName,
   preloadRoute,
 } from './routes/lazyRoutes.js'
-
-function CopilotDrawerBoundary() {
-  const { open } = useCopilot()
-
-  if (!open) return null
-
-  return (
-    <AppSuspenseBoundary>
-      <LazyCopilotDrawer />
-    </AppSuspenseBoundary>
-  )
-}
 
 const DESTINATARIO_ALERTA_FORM_INICIAL = {
   nome: '',
@@ -4072,21 +4055,6 @@ export default function App() {
     )
   }
 
-  function prepararCopilotFinanceiro() {
-    preloadRoute('copilotDrawer')
-  }
-
-  function renderCopilotFinanceiro() {
-    if (!exibirAcoesRapidasFinanceiras) return null
-
-    return (
-      <>
-        <CopilotFloatingButton onPreload={prepararCopilotFinanceiro} />
-        <CopilotDrawerBoundary />
-      </>
-    )
-  }
-
   function EmptyState({ icon, title, description }) {
     return (
       <div className="empty-state-card">
@@ -4315,14 +4283,13 @@ export default function App() {
     )
   }
 
-  if (telaAtual === 'relatorios-contas') {
+  if (telaAtual === 'relatorios-contas' || telaAtual === 'relatorios') {
     return (
-        <LazyRelatoriosContasPage
+        <LazyAnaliseFinanceiraPage
           empresaId={empresaId}
           empresaNome={empresaAtiva?.nome}
           centros={centros}
           filiais={filiais}
-          estaVencida={estaVencida}
           formatarValor={formatarValor}
           formatarData={formatarData}
           navegarPara={navegarPara}
@@ -4356,14 +4323,6 @@ export default function App() {
         />
     )
   }
-
-  if (telaAtual === 'relatorios') {
-    return (
-      <LazyRelatorios voltar={() => navegarPara('contas')} empresaId={empresaId} empresaNome={empresaAtiva?.nome} usuario={usuarioLogado} mostrarAviso={mostrarAviso} podeExportarDados={podeExportarDados()} />
-    )
-  }
-
-
 
   if (telaAtual === 'notas') {
     return (
@@ -4762,9 +4721,7 @@ export default function App() {
       sidebar={renderSidebar()}
       mobileMenu={renderMobileMenu()}
       fab={renderFabGlobal()}
-      copilot={renderCopilotFinanceiro()}
       mostrarFab={politicaAcoesFlutuantesAppShell.mostrarFab}
-      mostrarCopilot={politicaAcoesFlutuantesAppShell.mostrarCopilot}
       modals={renderModaisGlobais()}
       overlays={renderOverlaysLayer()}
     >

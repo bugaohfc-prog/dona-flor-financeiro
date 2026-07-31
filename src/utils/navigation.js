@@ -33,6 +33,8 @@ const TITULOS_TELA = Object.freeze({
   contas: 'Contas | DNA Gestão',
   'controle-impostos': 'Controle de Impostos | DNA Gestão',
   recorrencias: 'Recorrências | DNA Gestão',
+  relatorios: 'Análise Financeira | DNA Gestão',
+  'relatorios-contas': 'Análise Financeira | DNA Gestão',
 })
 
 export function telaNavegacaoPermitida(tela) {

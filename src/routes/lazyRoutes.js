@@ -10,10 +10,9 @@ export const lazyRouteImports = {
   recorrenciasFinanceiras: () => import('../pages/RecorrenciasFinanceirasPage.jsx'),
   receitas: () => import('../pages/ReceitasPage.jsx'),
   fluxoCaixa: () => import('../pages/FluxoCaixaPage.jsx'),
-  relatoriosContas: () => import('../pages/RelatoriosContasPage.jsx'),
+  analiseFinanceira: () => import('../pages/AnaliseFinanceiraPage.jsx'),
   importar: () => import('../pages/ImportarPage.jsx'),
   lixeira: () => import('../pages/LixeiraPage.jsx'),
-  relatorios: () => import('../pages/Relatorios.jsx'),
   notas: () => import('../pages/NotasPage.jsx'),
   masterPanel: () => import('../pages/MasterPanelPage.jsx'),
   onboarding: () => import('../pages/OnboardingPage.jsx'),
@@ -27,7 +26,6 @@ export const lazyRouteImports = {
   relatoriosFerias: () => import('../pages/RelatoriosFeriasPage.jsx'),
   usuarios: () => import('../pages/UsuariosPage.jsx'),
   auditoria: () => import('../pages/AuditoriaPage.jsx'),
-  copilotDrawer: () => import('../components/copilot/layout/CopilotDrawer.jsx')
 }
 
 
@@ -40,10 +38,10 @@ export const routeImportByScreen = {
   recorrencias: 'recorrenciasFinanceiras',
   receitas: 'receitas',
   'fluxo-caixa': 'fluxoCaixa',
-  'relatorios-contas': 'relatoriosContas',
+  'relatorios-contas': 'analiseFinanceira',
   importar: 'importar',
   lixeira: 'lixeira',
-  relatorios: 'relatorios',
+  relatorios: 'analiseFinanceira',
   notas: 'notas',
   master: 'masterPanel',
   'master-empresas': 'masterPanel',
@@ -82,10 +80,9 @@ export const LazyControleImpostosPage = lazyWithRecovery('controleImpostos')
 export const LazyRecorrenciasFinanceirasPage = lazyWithRecovery('recorrenciasFinanceiras')
 export const LazyReceitasPage = lazyWithRecovery('receitas')
 export const LazyFluxoCaixaPage = lazyWithRecovery('fluxoCaixa')
-export const LazyRelatoriosContasPage = lazyWithRecovery('relatoriosContas')
+export const LazyAnaliseFinanceiraPage = lazyWithRecovery('analiseFinanceira')
 export const LazyImportarPage = lazyWithRecovery('importar')
 export const LazyLixeiraPage = lazyWithRecovery('lixeira')
-export const LazyRelatorios = lazyWithRecovery('relatorios')
 export const LazyNotasPage = lazyWithRecovery('notas')
 export const LazyMasterPanelPage = lazyWithRecovery('masterPanel')
 export const LazyOnboardingPage = lazyWithRecovery('onboarding')
@@ -99,7 +96,6 @@ export const LazyRelatoriosPessoasPage = lazyWithRecovery('relatoriosPessoas')
 export const LazyRelatoriosFeriasPage = lazyWithRecovery('relatoriosFerias')
 export const LazyUsuariosPage = lazyWithRecovery('usuarios')
 export const LazyAuditoriaPage = lazyWithRecovery('auditoria')
-export const LazyCopilotDrawer = lazyWithRecovery('copilotDrawer')
 
 
 const preloadedRoutes = new Set()

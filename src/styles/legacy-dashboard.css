@@ -1835,8 +1835,6 @@ button.danger,
   box-shadow: var(--df-shadow-soft) !important;
 }
 
-.relatorios-page [style*="grid-template-columns: 1fr 1fr 1fr"],
-.relatorios-page [style*="grid-template-columns: repeat(3"],
 .grid3,
 .summary-grid,
 .metrics,
@@ -1861,7 +1859,6 @@ button.danger,
     order: 3;
   }
 
-  .relatorios-page [style*="grid-template-columns"],
   .summary-grid,
   .metrics {
     grid-template-columns: 1fr !important;
@@ -3312,7 +3309,6 @@ body .note-card-action::before{
 @media (prefers-reduced-motion: no-preference) {
   .app-frame-content > h1,
   .app-frame-content > section,
-  .relatorios-page > section,
   .notes-page-section,
   .content-block,
   .result-summary,
@@ -3323,18 +3319,15 @@ body .note-card-action::before{
     will-change: opacity, transform;
   }
 
-  .app-frame-content > section:nth-of-type(1),
-  .relatorios-page > section:nth-of-type(1) {
+  .app-frame-content > section:nth-of-type(1) {
     animation-delay: 0.03s !important;
   }
 
-  .app-frame-content > section:nth-of-type(2),
-  .relatorios-page > section:nth-of-type(2) {
+  .app-frame-content > section:nth-of-type(2) {
     animation-delay: 0.07s !important;
   }
 
-  .app-frame-content > section:nth-of-type(3),
-  .relatorios-page > section:nth-of-type(3) {
+  .app-frame-content > section:nth-of-type(3) {
     animation-delay: 0.10s !important;
   }
 }
@@ -5453,7 +5446,6 @@ button[title*="Adicionar"],
 }
 
 .app-frame-content > h1,
-.relatorios-page h1,
 .main-title {
   letter-spacing: -0.025em !important;
   line-height: 1.12 !important;
@@ -5638,26 +5630,6 @@ textarea:focus {
   gap: 8px !important;
 }
 
-.relatorios-page header.no-print,
-.relatorio-sticky-filtros,
-.relatorios-page section[style] {
-  border-radius: var(--df-radius-card) !important;
-}
-
-.relatorio-sticky-filtros {
-  display: grid !important;
-  gap: 12px !important;
-}
-
-.relatorio-sticky-filtros button {
-  min-height: 40px !important;
-}
-
-.relatorios-page .recharts-wrapper,
-.relatorios-page .recharts-responsive-container {
-  max-width: 100% !important;
-}
-
 @media (min-width: 980px) {
   .advanced-filters {
     grid-template-columns: minmax(220px, 1.2fr) repeat(4, minmax(130px, 1fr)) !important;
@@ -5690,7 +5662,6 @@ textarea:focus {
 
 @media (max-width: 979px) {
   .app-frame-content > h1,
-  .relatorios-page h1,
   .main-title {
     font-size: clamp(24px, 7vw, 30px) !important;
   }

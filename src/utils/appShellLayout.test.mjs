@@ -75,7 +75,6 @@ test('AppShell centraliza providers, suspense, estilos e slots globais', async (
     '<DesktopRefinementStyles',
     '<MobileFinalStyles',
     '<MobileUxPatchStyles',
-    '<CopilotStyles',
     '{topShell}',
     '{sidebar}',
     '{mobileMenu}',
@@ -157,7 +156,6 @@ test('App fornece ao shell o contrato explícito de layout e elementos globais',
     'sidebar={renderSidebar()}',
     'mobileMenu={renderMobileMenu()}',
     'fab={renderFabGlobal()}',
-    'copilot={renderCopilotFinanceiro()}',
     'modals={renderModaisGlobais()}',
     'overlays={renderOverlaysLayer()}',
   ]) {
@@ -173,64 +171,56 @@ test('ações flutuantes permanecem disponíveis sem camada bloqueante', () => {
   assert.deepEqual(politica, {
     bloqueioInteracaoAtivo: false,
     mostrarFab: true,
-    mostrarCopilot: true,
   })
   assert.equal(Object.isFrozen(politica), true)
 })
 
-test('modal de conta bloqueia FAB e Copilot', () => {
+test('modal de conta bloqueia o FAB', () => {
   assert.deepEqual(resolverAcoesFlutuantesAppShell({ modalConta: true }), {
     bloqueioInteracaoAtivo: true,
     mostrarFab: false,
-    mostrarCopilot: false,
   })
 })
 
-test('modal de nota bloqueia FAB e Copilot', () => {
+test('modal de nota bloqueia o FAB', () => {
   assert.deepEqual(resolverAcoesFlutuantesAppShell({ modalNota: true }), {
     bloqueioInteracaoAtivo: true,
     mostrarFab: false,
-    mostrarCopilot: false,
   })
 })
 
-test('modal de centro de custo bloqueia FAB e Copilot', () => {
+test('modal de centro de custo bloqueia o FAB', () => {
   assert.deepEqual(resolverAcoesFlutuantesAppShell({ modalCentro: true }), {
     bloqueioInteracaoAtivo: true,
     mostrarFab: false,
-    mostrarCopilot: false,
   })
 })
 
-test('modal de perfil bloqueia FAB e Copilot', () => {
+test('modal de perfil bloqueia o FAB', () => {
   assert.deepEqual(resolverAcoesFlutuantesAppShell({ modalPerfilUsuario: true }), {
     bloqueioInteracaoAtivo: true,
     mostrarFab: false,
-    mostrarCopilot: false,
   })
 })
 
-test('menu móvel bloqueia FAB e Copilot', () => {
+test('menu móvel bloqueia o FAB', () => {
   assert.deepEqual(resolverAcoesFlutuantesAppShell({ menuNavegacaoAberto: true }), {
     bloqueioInteracaoAtivo: true,
     mostrarFab: false,
-    mostrarCopilot: false,
   })
 })
 
-test('confirmação ativa bloqueia FAB e Copilot', () => {
+test('confirmação ativa bloqueia o FAB', () => {
   assert.deepEqual(resolverAcoesFlutuantesAppShell({ confirmacaoAtiva: true }), {
     bloqueioInteracaoAtivo: true,
     mostrarFab: false,
-    mostrarCopilot: false,
   })
 })
 
-test('loading global bloqueante bloqueia FAB e Copilot', () => {
+test('loading global bloqueante bloqueia o FAB', () => {
   assert.deepEqual(resolverAcoesFlutuantesAppShell({ globalLoading: true }), {
     bloqueioInteracaoAtivo: true,
     mostrarFab: false,
-    mostrarCopilot: false,
   })
 })
 
@@ -244,7 +234,6 @@ test('toast e navegação comum não fazem parte das condições bloqueantes', (
     {
       bloqueioInteracaoAtivo: false,
       mostrarFab: true,
-      mostrarCopilot: true,
     },
   )
 })
@@ -273,19 +262,13 @@ test('App usa a política central com os estados reais e fecha o menu rápido', 
     fonte.includes('mostrarFab={politicaAcoesFlutuantesAppShell.mostrarFab}'),
     true,
   )
-  assert.equal(
-    fonte.includes('mostrarCopilot={politicaAcoesFlutuantesAppShell.mostrarCopilot}'),
-    true,
-  )
 })
 
-test('AppShell remove FAB e Copilot do DOM enquanto a política bloquear', async () => {
+test('AppShell remove o FAB do DOM enquanto a política bloquear', async () => {
   const fonte = await lerFonte('src/components/shell/AppShell.jsx')
 
   assert.equal(fonte.includes('mostrarFab = true'), true)
-  assert.equal(fonte.includes('mostrarCopilot = true'), true)
   assert.equal(fonte.includes('{mostrarFab ? fab : null}'), true)
-  assert.equal(fonte.includes('{mostrarCopilot ? copilot : null}'), true)
 })
 
 test('proteção interativa não depende de z-index, opacidade ou pointer-events', async () => {

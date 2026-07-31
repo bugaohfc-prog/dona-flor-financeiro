@@ -127,19 +127,6 @@ export default function MobileUxPatchStyles() {
           color: #166534 !important;
         }
 
-        .relatorios-page .report-status-tabs {
-          display: grid !important;
-          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-          gap: 10px !important;
-        }
-
-        .relatorios-page .report-status-tabs button {
-          width: 100% !important;
-          min-height: 48px !important;
-          margin: 0 !important;
-          border-radius: 14px !important;
-        }
-
         .user-badge,
         .roleBadge {
           display: inline-flex !important;

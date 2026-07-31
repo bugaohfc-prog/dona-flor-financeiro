@@ -6,7 +6,6 @@ import AppFrameStyles from './AppFrameStyles.jsx'
 import DesktopRefinementStyles from './DesktopRefinementStyles.jsx'
 import MobileFinalStyles from './MobileFinalStyles.jsx'
 import MobileUxPatchStyles from './MobileUxPatchStyles.jsx'
-import CopilotStyles from '../copilot/layout/CopilotStyles.jsx'
 
 export default function AppShell({
   empresaId,
@@ -21,9 +20,7 @@ export default function AppShell({
   sidebar,
   mobileMenu,
   fab,
-  copilot,
   mostrarFab = true,
-  mostrarCopilot = true,
   modals,
   overlays,
   children,
@@ -50,7 +47,6 @@ export default function AppShell({
         <DesktopRefinementStyles />
         <MobileFinalStyles />
         {modoFrame ? <MobileUxPatchStyles /> : null}
-        <CopilotStyles />
 
         {mostrarElementosImpressao ? (
           <>
@@ -73,7 +69,6 @@ export default function AppShell({
         ) : conteudoRota}
 
         {mostrarFab ? fab : null}
-        {mostrarCopilot ? copilot : null}
         {modals}
         {overlays}
       </div>

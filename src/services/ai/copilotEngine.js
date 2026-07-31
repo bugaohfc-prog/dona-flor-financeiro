@@ -1,15 +1,18 @@
 import { gerarNarrativaExecutiva } from './narrativeEngine.js'
-import { statusRelatorioConta } from '../../utils/relatoriosFinanceiros.js'
 function valorConta(conta) {
-  return Number(conta?.valor_previsto_relatorio ?? conta?.valor ?? 0)
+  return Number(conta?.valor_previsto_relatorio || 0)
 }
 
 function valorRealizadoConta(conta) {
-  return Number(conta?.valor_pago_atual_relatorio ?? conta?.valor_pago ?? 0)
+  return Number(conta?.valor_pago_atual_relatorio || 0)
 }
 
 function saldoConta(conta) {
-  return Number(conta?.saldo_restante_relatorio ?? conta?.valor ?? 0)
+  return Number(conta?.saldo_restante_relatorio || 0)
+}
+
+function statusRelatorioConta(conta) {
+  return String(conta?.status_financeiro_relatorio || conta?.status_relatorio || '')
 }
 
 function encargosConta(conta) {
@@ -54,7 +57,7 @@ function nomeCentro(conta) {
 }
 
 function chaveMes(conta) {
-  return String(conta?.data_vencimento || conta?.created_at || '').slice(0, 7) || 'Sem mês'
+  return String(conta?.data_referencia_relatorio || conta?.data_vencimento || '').slice(0, 7) || 'Sem mês'
 }
 
 function calcularRankingPorCentro(contas = []) {
@@ -66,8 +69,8 @@ function calcularRankingPorCentro(contas = []) {
     atual.total += valor
     atual.quantidade += 1
     const status = statusRelatorioConta(conta)
-    if (['paga', 'quitada_por_parciais'].includes(status)) atual.pago += valorRealizadoConta(conta)
-    else atual.pendente += saldoConta(conta)
+    atual.pago += valorRealizadoConta(conta)
+    atual.pendente += saldoConta(conta)
     atual.encargos += encargosConta(conta)
     atual.descontos += descontoConta(conta)
     if (dataVencida(conta.data_vencimento, status)) atual.vencido += saldoConta(conta)
@@ -91,8 +94,8 @@ function calcularTendenciaMensal(contas = []) {
     const valor = valorConta(conta)
     atual.total += valor
     const status = statusRelatorioConta(conta)
-    if (['paga', 'quitada_por_parciais'].includes(status)) atual.pago += valorRealizadoConta(conta)
-    else atual.pendente += saldoConta(conta)
+    atual.pago += valorRealizadoConta(conta)
+    atual.pendente += saldoConta(conta)
     atual.encargos += encargosConta(conta)
     atual.descontos += descontoConta(conta)
     if (dataVencida(conta.data_vencimento, status)) atual.vencido += saldoConta(conta)
@@ -148,25 +151,32 @@ export function gerarCopilotFinanceiro({ contas = [], contasFiltradas = [], empr
     (!empresaId || String(conta?.empresa_id || '') === String(empresaId)) &&
     conta?.oculto !== true && conta?.excluido !== true && conta?.deletado !== true
   ))
-  const total = base.reduce((acc, conta) => acc + valorConta(conta), 0)
-  const contasPagas = base.filter((conta) => ['paga', 'quitada_por_parciais'].includes(statusRelatorioConta(conta)))
-  const contasPendentes = base.filter((conta) => !['paga', 'quitada_por_parciais'].includes(statusRelatorioConta(conta)))
-  const contasVencidas = base.filter((conta) => dataVencida(conta.data_vencimento, statusRelatorioConta(conta)))
-  const pago = contasPagas.reduce((acc, conta) => acc + valorRealizadoConta(conta), 0)
+  const obrigacoes = Array.from(new Map(base.map((conta) => [conta.conta_id_relatorio || conta.id, conta])).values())
+  const basePagamento = base.some((conta) => conta.movimento_pagamento_relatorio === true)
+  const total = obrigacoes.reduce((acc, conta) => acc + valorConta(conta), 0)
+  const contasPendentes = obrigacoes.filter((conta) => !['paga', 'quitada_por_parciais'].includes(statusRelatorioConta(conta)))
+  const contasVencidas = obrigacoes.filter((conta) => dataVencida(conta.data_vencimento, statusRelatorioConta(conta)))
+  const pago = basePagamento
+    ? base.reduce((acc, conta) => acc + Number(conta.valor_pago_periodo_relatorio || 0), 0)
+    : obrigacoes.reduce((acc, conta) => acc + valorRealizadoConta(conta), 0)
   const pendente = contasPendentes.reduce((acc, conta) => acc + saldoConta(conta), 0)
   const vencido = contasVencidas.reduce((acc, conta) => acc + saldoConta(conta), 0)
-  const encargos = base.reduce((acc, conta) => acc + encargosConta(conta), 0)
-  const descontos = base.reduce((acc, conta) => acc + descontoConta(conta), 0)
+  const encargos = obrigacoes.reduce((acc, conta) => acc + encargosConta(conta), 0)
+  const descontos = obrigacoes.reduce((acc, conta) => acc + descontoConta(conta), 0)
   const taxaPago = total ? (pago / total) * 100 : 0
   const taxaVencido = total ? (vencido / total) * 100 : 0
-  const rankingCentros = calcularRankingPorCentro(base).map((centro) => ({ ...centro, peso: total ? Math.round((centro.total / total) * 100) : 0 }))
+  const rankingCentros = calcularRankingPorCentro(obrigacoes).map((centro) => ({ ...centro, peso: total ? Math.round((centro.total / total) * 100) : 0 }))
   const centroCritico = rankingCentros[0] || null
-  const tendenciaMensal = calcularTendenciaMensal(base)
+  const tendenciaMensal = calcularTendenciaMensal(basePagamento ? base.map((conta) => ({
+    ...conta,
+    valor_pago_atual_relatorio: Number(conta.valor_pago_periodo_relatorio || 0),
+    saldo_restante_relatorio: 0,
+  })) : obrigacoes)
   const vencemEm7Dias = contasPendentes.filter((conta) => {
     const dias = diasAte(conta.data_vencimento)
     return dias >= 0 && dias <= 7
   })
-  const total7Dias = vencemEm7Dias.reduce((acc, conta) => acc + valorConta(conta), 0)
+  const total7Dias = vencemEm7Dias.reduce((acc, conta) => acc + saldoConta(conta), 0)
   const score = calcularScore({ total, pendente, vencido, taxaVencido, contasVencidas, contasPendentes })
   const status = classificarScore(score)
 

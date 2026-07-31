@@ -322,7 +322,7 @@ test('hook financeiro invalida resposta obsoleta', async () => {
 test('consumidores não disparam geração recorrente', async () => {
   const arquivos = await Promise.all([
     '../components/dashboard/DashboardHome.jsx', '../pages/ControleImpostosPage.jsx',
-    '../components/copilot/core/CopilotProvider.jsx', '../modules/central-do-dia/domain/centralDoDiaRules.js'
+    '../pages/AnaliseFinanceiraPage.jsx', '../modules/central-do-dia/domain/centralDoDiaRules.js'
   ].map((arquivo) => readFile(new URL(arquivo, import.meta.url), 'utf8')))
   assert.equal(arquivos.some((conteudo) => /planejar|gerarRecorrenc|executarPlanejamento/.test(conteudo)), false)
 })

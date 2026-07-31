@@ -387,11 +387,10 @@ test('P0-3 Folha aplica escopo canonico em leitura e escrita sem permitir mudanc
   assert.match(migrationFiliaisFolha, /Policies sem escopo canonico de filial/)
 })
 
-test('P0-3 RH fica fora do commit e a exclusao de escopo permanece documentada', () => {
+test('P0-3 RH fica fora da migration financeira e Folha permanece documentada', () => {
   assert.match(migrationFiliaisFolha, /when v_tabela = 'df_funcionarios' then 'rh_fora_p0_3'/)
   assert.doesNotMatch(migrationFiliaisFolha, /on public\.df_funcionarios/)
-  assert.match(progressoAuditoriaFonte, /df_funcionarios foi excluída por pertencer a RH/)
-  assert.match(progressoAuditoriaFonte, /df_usuarios_filiais por ser controle de acesso/)
+  assert.match(progressoAuditoriaFonte, /Escopo canonico por filial validado nas tabelas financeiras, inclusive Folha/)
 })
 
 test('P0-3 caminhos privilegiados internos da Folha nao ficam executaveis pelo cliente', () => {
@@ -405,19 +404,16 @@ test('P0-3 caminhos privilegiados internos da Folha nao ficam executaveis pelo c
   )
 })
 
-test('P0-3 progresso registra semantica de filial nula e limitacao de teste RLS', () => {
+test('P0-3 progresso registra semantica de filial nula e limite sem PostgREST', () => {
   assert.match(
     progressoAuditoriaFonte,
-    /Usuário restrito não acessa filial_id NULL/
+    /usuario restrito nao acessa filial_id NULL/
   )
   assert.match(
     progressoAuditoriaFonte,
-    /Admin, Master e acesso total explícito permanecem autorizados/
+    /43\/43` testes autenticados aprovados/
   )
-  assert.match(
-    progressoAuditoriaFonte,
-    /Validação RLS autenticada em banco isolado continua pendente/
-  )
+  assert.match(progressoAuditoriaFonte, /diretamente no PostgreSQL, sem passagem pelo PostgREST/)
 })
 
 test('P0-3 bypass direto em pagamento parcial tambem valida a filial da conta', () => {

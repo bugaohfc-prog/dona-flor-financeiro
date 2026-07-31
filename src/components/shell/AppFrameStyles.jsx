@@ -261,8 +261,6 @@ export default function AppFrameStyles() {
             .app-frame-content { max-width: 1280px; margin: 0 auto; }
             .app-frame-content > h1 { font-size: 34px !important; margin: 0 0 16px 0 !important; }
             .app-frame-content > section { border-radius: 22px !important; box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07) !important; }
-            .relatorios-page { max-width: 1280px !important; width: 100% !important; padding: 0 !important; margin: 0 !important; background: transparent !important; }
-            .relatorios-page [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
             .desktop-sidebar { display: flex !important; position: fixed; left: 24px; top: 24px; bottom: 24px; width: 244px; padding: 18px; border-radius: 24px; background: linear-gradient(180deg, #064e3b 0%, #0f766e 48%, #14b8a6 100%); color: white; box-shadow: 0 24px 60px rgba(15, 118, 110, 0.28); z-index: 60; flex-direction: column; gap: 14px; box-sizing: border-box; }
             .desktop-sidebar-brand { display:flex; align-items:center; gap:12px; padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,.18); }
             .desktop-sidebar-brand img { width:48px; height:48px; border-radius:16px; background:white; }
@@ -410,9 +408,6 @@ export default function AppFrameStyles() {
 
 
         /* PARIDADE MOBILE/DESKTOP + CSS SUAVE */
-        .relatorios-page [style*="grid-template-columns: 1fr 1fr 1fr"],
-        .relatorios-page [style*="grid-template-columns: repeat(3"],
-        .relatorios-page .report-grid-fluid,
         .summary-grid,
         .metrics-grid,
         .dashboard-grid-fluid {

@@ -100,6 +100,40 @@ export function FilterGrid({ children, secondary = false, className = '', ...pro
   return <div className={`df-filter-grid ${secondary ? 'is-secondary' : ''} ${className}`.trim()} {...props}>{children}</div>
 }
 
+export function KpiGrid({ children, className = '', ...props }) {
+  return <div className={`df-kpi-grid ${className}`.trim()} {...props}>{children}</div>
+}
+
+export function KpiCard({
+  label,
+  value,
+  detail,
+  tone = 'default',
+  className = '',
+  onClick,
+  disabled = false,
+  ...props
+}) {
+  const classes = `df-kpi-card is-${tone} ${onClick ? 'is-action' : ''} ${className}`.trim()
+  const content = (
+    <>
+      <span className="df-kpi-label">{label}</span>
+      <strong className="df-kpi-value">{value}</strong>
+      {detail ? <small className="df-kpi-detail">{detail}</small> : null}
+    </>
+  )
+
+  if (onClick) {
+    return (
+      <button type="button" className={classes} onClick={onClick} disabled={disabled} {...props}>
+        {content}
+      </button>
+    )
+  }
+
+  return <article className={classes} {...props}>{content}</article>
+}
+
 export function DataTableRegion({ label, hint = 'No celular, deslize somente esta região para ver todas as colunas.', children, className = '' }) {
   return (
     <div className={`df-data-region ${className}`.trim()}>

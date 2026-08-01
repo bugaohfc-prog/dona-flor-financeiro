@@ -1,0 +1,164 @@
+.fluxo-caixa-page,
+.fluxo-caixa-page *,
+.fluxo-caixa-page *::before,
+.fluxo-caixa-page *::after {
+  box-sizing: border-box;
+}
+
+.fluxo-caixa-page {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 1280px;
+  gap: var(--df-space-4);
+  margin: 0 auto;
+  color: var(--df-text);
+}
+
+.fluxo-caixa-page > *,
+.fluxo-caixa-page section,
+.fluxo-caixa-page section > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.fluxo-caixa-hero { max-width: 1280px; }
+.fluxo-caixa-actions { align-items: flex-start; }
+
+.fluxo-caixa-panel,
+.fluxo-caixa-alert,
+.fluxo-caixa-error,
+.fluxo-caixa-identificacao {
+  width: 100%;
+  padding: var(--df-space-4);
+  border: 1px solid var(--df-border);
+  border-radius: var(--df-radius-control);
+  background: var(--df-surface);
+}
+
+.fluxo-caixa-filtros {
+  grid-template-columns: repeat(2, minmax(180px, 1fr)) auto;
+}
+
+.fluxo-btn {
+  min-height: var(--df-control-height);
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--df-radius-control);
+  background: var(--df-surface-soft);
+  color: var(--df-text);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.fluxo-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.fluxo-caixa-identificacao {
+  display: grid;
+  gap: var(--df-space-3);
+  border-color: #dbeafe;
+  background: var(--df-surface-soft);
+}
+
+.fluxo-caixa-identificacao > div:first-child { display: grid; gap: 3px; }
+.fluxo-caixa-identificacao > div:first-child span {
+  color: var(--df-primary-700);
+  font-size: .75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.fluxo-caixa-identificacao > div:first-child strong { font-size: 1.125rem; }
+.fluxo-caixa-identificacao dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin: 0;
+}
+.fluxo-caixa-identificacao dl div { display: grid; min-width: 0; gap: 3px; }
+.fluxo-caixa-identificacao dt { color: var(--df-muted); font-size: .75rem; font-weight: 800; text-transform: uppercase; }
+.fluxo-caixa-identificacao dd { margin: 0; line-height: 1.35; overflow-wrap: anywhere; }
+
+.fluxo-caixa-alert { border-color: #fde68a; background: var(--df-warning-soft); color: #854d0e; }
+.fluxo-caixa-alert p { overflow-wrap: anywhere; }
+.fluxo-caixa-error { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+
+.fluxo-caixa-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.fluxo-caixa-summary .df-kpi-value { white-space: nowrap; }
+
+.fluxo-caixa-section-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: var(--df-space-3);
+}
+.fluxo-caixa-section-title h2 { margin: 0 0 4px; }
+.fluxo-caixa-section-title p,
+.fluxo-note { margin: 0; color: var(--df-muted); }
+.fluxo-status { color: var(--df-primary-700); font-weight: 800; }
+
+.fluxo-table-wrap { width: 100%; }
+.fluxo-table-wrap .df-data-region-scroll {
+  border: 1px solid var(--df-border);
+  border-radius: 10px;
+}
+.fluxo-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.fluxo-rubricas-table { min-width: 1420px; }
+.fluxo-table th,
+.fluxo-table td { padding: 10px 12px; border-bottom: 1px solid var(--df-border); text-align: right; }
+.fluxo-table th:first-child,
+.fluxo-table td:first-child { text-align: left; }
+.fluxo-rubricas-table th:first-child,
+.fluxo-rubricas-table td:first-child { min-width: 280px; white-space: normal; }
+.fluxo-table th { background: var(--df-surface-soft); color: #334155; font-size: .75rem; text-transform: uppercase; }
+.fluxo-total-row td { background: #ecfdf5; font-weight: 900; }
+.fluxo-caixa-page .is-negative { color: var(--df-danger); }
+
+.fluxo-rubrica-diagnostics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--df-space-2);
+  margin-bottom: var(--df-space-3);
+}
+.fluxo-rubrica-diagnostics span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid var(--df-border);
+  border-radius: 10px;
+  background: var(--df-surface-soft);
+  color: var(--df-muted);
+  font-size: .75rem;
+}
+.fluxo-rubrica-diagnostics b { color: var(--df-text); font-size: .8125rem; }
+
+.fluxo-movimentos { display: grid; gap: var(--df-space-2); }
+.fluxo-movimento,
+.fluxo-empty {
+  padding: var(--df-space-3);
+  border: 1px solid var(--df-border);
+  border-radius: 10px;
+  background: var(--df-surface);
+}
+.fluxo-movimento { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.fluxo-movimento div { display: grid; min-width: 0; gap: 3px; }
+.fluxo-movimento span { color: var(--df-muted); font-size: .8125rem; overflow-wrap: anywhere; }
+
+@media (max-width: 760px) {
+  .fluxo-caixa-actions,
+  .fluxo-caixa-filtros { width: 100%; }
+  .fluxo-caixa-filtros { grid-template-columns: minmax(0, 1fr); }
+  .fluxo-btn { width: 100%; }
+  .fluxo-caixa-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fluxo-rubrica-diagnostics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fluxo-caixa-identificacao dl { grid-template-columns: minmax(0, 1fr); }
+  .fluxo-movimento { align-items: flex-start; flex-direction: column; }
+}
+
+@media (max-width: 420px) {
+  .fluxo-caixa-summary,
+  .fluxo-rubrica-diagnostics { grid-template-columns: minmax(0, 1fr); }
+}

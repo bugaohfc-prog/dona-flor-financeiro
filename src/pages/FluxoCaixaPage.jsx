@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { createFluxoCaixaXlsxBlob, downloadBlob, exportCsv } from '../services/export/reportExportService'
-import { ExportMenu, FilterCard, FilterGrid, PageHeader } from '../components/shared/PagePatterns.jsx'
+import { DataTableRegion, ExportMenu, FilterCard, FilterGrid, KpiCard, KpiGrid, PageHeader } from '../components/shared/PagePatterns.jsx'
 import { useFluxoCaixaV1 } from '../modules/contas/hooks/fluxo-caixa/useFluxoCaixaV1'
 import {
   agregarMovimentosPorFilial,
@@ -10,6 +10,7 @@ import {
   montarAbaModeloFluxoCaixa,
   prepararLinhasCsvFluxoCaixa
 } from '../modules/contas/utils/fluxo-caixa/fluxoCaixaUtils'
+import './FluxoCaixaPage.css'
 
 const OBSERVACAO_ENTRADAS = 'FATURAMENTO BRUTO usa receitas ativas em df_receitas por data_receita. Critério histórico: até 05/2026, contas pagas sem data de pagamento usam vencimento como referência. A partir de 06/2026, somente pagamentos baixados com data de pagamento entram no realizado.'
 
@@ -21,7 +22,6 @@ function slug(valor) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 }
-
 function anosDisponiveis() {
   const atual = new Date().getFullYear()
   return Array.from({ length: 6 }, (_, index) => atual - index)
@@ -108,16 +108,6 @@ function FiscalInfoBlock({ filial, empresaNome, totalFiliais }) {
         ))}
       </dl>
     </section>
-  )
-}
-
-function FluxoResumoCard({ titulo, valor, detalhe, destaque }) {
-  return (
-    <article className={`fluxo-caixa-card ${destaque ? 'is-highlight' : ''}`}>
-      <span>{titulo}</span>
-      <strong>{valor}</strong>
-      {detalhe && <small>{detalhe}</small>}
-    </article>
   )
 }
 
@@ -229,8 +219,6 @@ export default function FluxoCaixaPage({
 
   return (
     <main className="fluxo-caixa-page">
-      <style>{cssFluxoCaixa}</style>
-
       <PageHeader
         kicker="Contas / Relatórios"
         title="Fluxo de Caixa"
@@ -291,12 +279,12 @@ export default function FluxoCaixaPage({
       )}
 
       {dadosDisponiveis && (
-        <section className="fluxo-caixa-summary">
-          <FluxoResumoCard titulo="Entradas" valor={formatarMoedaFluxo(resultado.totais.entradas)} detalhe="Receitas ativas" />
-          <FluxoResumoCard titulo="Saídas" valor={formatarMoedaFluxo(resultado.totais.saidas)} detalhe="Pagamentos realizados" />
-          <FluxoResumoCard titulo="Saldo" valor={formatarMoedaFluxo(resultado.totais.saldo)} detalhe="Entradas - saídas" destaque />
-          <FluxoResumoCard titulo="Movimentos" valor={resultado.totais.movimentos} detalhe="Pagamentos considerados" />
-        </section>
+        <KpiGrid className="fluxo-caixa-summary" aria-label="Resumo do fluxo de caixa">
+          <KpiCard label="Entradas" value={formatarMoedaFluxo(resultado.totais.entradas)} detail="Receitas ativas" tone="success" />
+          <KpiCard label="Saídas" value={formatarMoedaFluxo(resultado.totais.saidas)} detail="Pagamentos realizados" />
+          <KpiCard label="Saldo" value={formatarMoedaFluxo(resultado.totais.saldo)} detail="Entradas - saídas" tone={resultado.totais.saldo < 0 ? 'danger' : 'success'} />
+          <KpiCard label="Movimentos" value={resultado.totais.movimentos} detail="Pagamentos considerados" />
+        </KpiGrid>
       )}
 
       <section className="fluxo-caixa-panel">
@@ -315,7 +303,7 @@ export default function FluxoCaixaPage({
           </div>
         )}
 
-        <div className="fluxo-table-wrap">
+        <DataTableRegion label="Resumo mensal do fluxo de caixa" className="fluxo-table-wrap">
           <table className="fluxo-table">
             <thead>
               <tr>
@@ -345,21 +333,7 @@ export default function FluxoCaixaPage({
               </tr>
             </tbody>
           </table>
-        </div>
-
-        <div className="fluxo-mobile-list">
-          {resultado.linhas.map((linha) => (
-            <article key={`card-${linha.chave}`} className="fluxo-month-card">
-              <header>
-                <strong>{linha.nome}</strong>
-                <span>{linha.movimentos} movimento(s)</span>
-              </header>
-              <div><span>Entradas</span><strong>{formatarMoedaFluxo(linha.entradas)}</strong></div>
-              <div><span>Saídas</span><strong>{formatarMoedaFluxo(linha.saidas)}</strong></div>
-              <div><span>Saldo</span><strong className={linha.saldo < 0 ? 'is-negative' : ''}>{formatarMoedaFluxo(linha.saldo)}</strong></div>
-            </article>
-          ))}
-        </div>
+        </DataTableRegion>
       </section>
 
       <section className="fluxo-caixa-panel">
@@ -386,7 +360,7 @@ export default function FluxoCaixaPage({
           <span><b>Perdidos</b>{diagnosticoRubricas.movimentosPerdidos}</span>
         </div>
 
-        <div className="fluxo-table-wrap fluxo-rubricas-wrap">
+        <DataTableRegion label="Saídas por rubrica" className="fluxo-table-wrap fluxo-rubricas-wrap">
           <table className="fluxo-table fluxo-rubricas-table">
             <thead>
               <tr>
@@ -414,19 +388,7 @@ export default function FluxoCaixaPage({
               </tr>
             </tbody>
           </table>
-        </div>
-
-        <div className="fluxo-mobile-list">
-          {rubricas.filter((rubrica) => rubrica.total > 0).map((rubrica) => (
-            <article key={`rubrica-card-${rubrica.rubrica}`} className="fluxo-month-card">
-              <header>
-                <strong>{rubrica.rubrica}</strong>
-                <span>{rubrica.movimentos} movimento(s)</span>
-              </header>
-              <div><span>Total anual</span><strong>{formatarMoedaFluxo(rubrica.total)}</strong></div>
-            </article>
-          ))}
-        </div>
+        </DataTableRegion>
       </section>
 
       <section className="fluxo-caixa-panel">
@@ -459,75 +421,3 @@ export default function FluxoCaixaPage({
     </main>
   )
 }
-
-const cssFluxoCaixa = `
-.fluxo-caixa-page {
-  --fluxo-brand: #0f766e;
-  --fluxo-surface: #fff;
-  --fluxo-surface-soft: #f8fafc;
-  --fluxo-text: #0f172a;
-  --fluxo-muted: #64748b;
-  --fluxo-border: #e2e8f0;
-  --fluxo-control-border: #cbd5e1;
-  --fluxo-panel-radius: 12px;
-  --fluxo-control-radius: 8px;
-  --fluxo-compact-radius: 10px;
-  display: grid; gap: 16px; width: 100%; max-width: 1280px; margin: 0 auto; }
-.fluxo-caixa-hero, .fluxo-caixa-panel, .fluxo-caixa-alert, .fluxo-caixa-error { border: 1px solid var(--fluxo-border); border-radius: var(--fluxo-panel-radius); background: var(--fluxo-surface); padding: 16px; }
-.fluxo-caixa-hero { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
-.fluxo-caixa-hero span { color: var(--fluxo-brand); font-weight: 800; font-size: 12px; text-transform: uppercase; }
-.fluxo-caixa-hero h1 { margin: 4px 0; color: var(--fluxo-text); }
-.fluxo-caixa-hero p, .fluxo-caixa-section-title p, .fluxo-note { margin: 0; color: var(--fluxo-muted); }
-.fluxo-caixa-identificacao { border: 1px solid #dbeafe; border-radius: var(--fluxo-panel-radius); background: var(--fluxo-surface-soft); padding: 14px 16px; display: grid; gap: 12px; }
-.fluxo-caixa-identificacao > div:first-child { display: grid; gap: 3px; }
-.fluxo-caixa-identificacao > div:first-child span { color: var(--fluxo-brand); font-weight: 800; font-size: 12px; text-transform: uppercase; }
-.fluxo-caixa-identificacao > div:first-child strong { color: var(--fluxo-text); font-size: 18px; }
-.fluxo-caixa-identificacao dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 14px; margin: 0; }
-.fluxo-caixa-identificacao dl div { display: grid; gap: 3px; min-width: 0; }
-.fluxo-caixa-identificacao dt { color: var(--fluxo-muted); font-size: 12px; font-weight: 800; text-transform: uppercase; }
-.fluxo-caixa-identificacao dd { margin: 0; color: var(--fluxo-text); line-height: 1.35; overflow-wrap: anywhere; }
-.fluxo-caixa-actions, .fluxo-caixa-filtros { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
-.fluxo-caixa-filtros label { display: grid; gap: 6px; min-width: 180px; color: #334155; font-weight: 700; font-size: 13px; }
-.fluxo-caixa-filtros select { min-height: 40px; border: 1px solid var(--fluxo-control-border); border-radius: var(--fluxo-control-radius); padding: 8px 10px; font: inherit; background: var(--fluxo-surface); }
-.fluxo-btn { min-height: 40px; border-radius: var(--fluxo-control-radius); border: 1px solid var(--fluxo-control-border); padding: 8px 12px; font-weight: 800; cursor: pointer; }
-.fluxo-btn:disabled { opacity: .55; cursor: not-allowed; }
-.fluxo-btn.primary { background: var(--fluxo-brand); border-color: var(--fluxo-brand); color: var(--fluxo-surface); }
-.fluxo-btn.secondary { background: var(--fluxo-surface-soft); color: var(--fluxo-text); }
-.fluxo-caixa-alert { background: #fefce8; border-color: #fde68a; color: #854d0e; }
-.fluxo-caixa-error { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
-.fluxo-caixa-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.fluxo-caixa-card { border: 1px solid var(--fluxo-border); border-radius: var(--fluxo-panel-radius); padding: 14px; background: var(--fluxo-surface); display: grid; gap: 4px; }
-.fluxo-caixa-card span, .fluxo-caixa-card small { color: var(--fluxo-muted); }
-.fluxo-caixa-card strong { font-size: 20px; color: var(--fluxo-text); }
-.fluxo-caixa-card.is-highlight strong, .is-negative { color: #b91c1c; }
-.fluxo-caixa-section-title { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
-.fluxo-caixa-section-title h2 { margin: 0 0 4px; color: var(--fluxo-text); }
-.fluxo-status { color: var(--fluxo-brand); font-weight: 800; }
-.fluxo-table-wrap { overflow-x: auto; border: 1px solid var(--fluxo-border); border-radius: var(--fluxo-compact-radius); }
-.fluxo-table { width: 100%; border-collapse: collapse; min-width: 720px; }
-.fluxo-rubricas-table { min-width: 1420px; }
-.fluxo-table th, .fluxo-table td { padding: 10px 12px; border-bottom: 1px solid var(--fluxo-border); text-align: right; }
-.fluxo-table th:first-child, .fluxo-table td:first-child { text-align: left; }
-.fluxo-rubricas-table th:first-child, .fluxo-rubricas-table td:first-child { min-width: 280px; white-space: normal; }
-.fluxo-table th { background: var(--fluxo-surface-soft); color: #334155; font-size: 12px; text-transform: uppercase; }
-.fluxo-total-row td { font-weight: 900; background: #ecfdf5; }
-.fluxo-rubrica-diagnostics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
-.fluxo-rubrica-diagnostics span { display: grid; gap: 3px; border: 1px solid var(--fluxo-border); border-radius: var(--fluxo-compact-radius); padding: 10px; background: var(--fluxo-surface-soft); color: var(--fluxo-muted); font-size: 12px; }
-.fluxo-rubrica-diagnostics b { color: var(--fluxo-text); font-size: 13px; }
-.fluxo-mobile-list { display: none; gap: 10px; }
-.fluxo-month-card, .fluxo-movimento, .fluxo-empty { border: 1px solid var(--fluxo-border); border-radius: var(--fluxo-compact-radius); padding: 12px; background: var(--fluxo-surface); }
-.fluxo-month-card { display: grid; gap: 8px; }
-.fluxo-month-card header, .fluxo-month-card div, .fluxo-movimento { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
-.fluxo-month-card span, .fluxo-movimento span { color: var(--fluxo-muted); font-size: 13px; }
-.fluxo-movimentos { display: grid; gap: 8px; }
-.fluxo-movimento div { display: grid; gap: 3px; }
-@media (max-width: 760px) {
-  .fluxo-caixa-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .fluxo-rubrica-diagnostics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .fluxo-caixa-identificacao dl { grid-template-columns: 1fr; }
-  .fluxo-caixa-actions, .fluxo-caixa-filtros { width: 100%; }
-  .fluxo-btn, .fluxo-caixa-filtros label { width: 100%; }
-  .fluxo-table-wrap { display: none; }
-  .fluxo-mobile-list { display: grid; }
-}
-`

@@ -1,0 +1,232 @@
+.dashboard-finance-filters,
+.dashboard-finance-summary,
+.dashboard-priorities {
+  box-sizing: border-box;
+  width: min(100%, var(--df-dashboard-max, 1280px));
+  min-width: 0;
+  max-width: var(--df-dashboard-max, 1280px);
+  margin-inline: auto;
+  color: var(--df-text);
+}
+
+.dashboard-finance-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  align-items: end;
+  gap: 14px;
+  margin-bottom: 10px;
+  padding: var(--df-space-3);
+  border: 1px solid #dbe7e3;
+  border-radius: 16px;
+  background: var(--df-surface);
+  box-shadow: var(--df-shadow-soft);
+}
+
+.dashboard-finance-filter-copy { display: grid; min-width: 0; gap: 3px; }
+.dashboard-finance-filter-copy strong { color: var(--df-text); font-size: 1rem; line-height: 1.2; }
+.dashboard-finance-filter-copy small { color: var(--df-muted); font-size: .75rem; font-weight: 700; line-height: 1.35; }
+.dashboard-finance-kicker {
+  display: block;
+  color: var(--df-primary-700);
+  font-size: .6875rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.dashboard-finance-filter-controls { display: grid; grid-template-columns: repeat(2, minmax(150px, 1fr)); gap: 10px; }
+.dashboard-finance-filter-controls label { display: grid; min-width: 0; gap: 5px; color: var(--df-muted); font-size: .6875rem; font-weight: 900; text-transform: uppercase; }
+.dashboard-finance-select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: var(--df-surface);
+  color: var(--df-text);
+  font-size: .8125rem;
+  font-weight: 800;
+}
+.dashboard-finance-select:focus { border-color: var(--df-primary-500); outline: none; box-shadow: var(--df-focus); }
+
+.dashboard-finance-card {
+  box-sizing: border-box;
+  min-width: 0;
+  border: 1px solid rgba(226, 232, 240, .95);
+  border-radius: var(--df-radius-card);
+  background: var(--df-surface);
+  box-shadow: var(--df-shadow-card);
+}
+.dashboard-finance-summary-card {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--df-surface) 0%, var(--df-surface-soft) 100%);
+}
+.dashboard-finance-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--df-space-3); min-width: 0; }
+.dashboard-finance-header-copy { display: grid; min-width: 0; gap: 3px; }
+.dashboard-finance-header-copy strong { color: var(--df-text); font-size: 1.0625rem; line-height: 1.2; overflow-wrap: anywhere; }
+.dashboard-finance-header-copy small { display: block; min-width: 0; color: var(--df-muted); font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.dashboard-finance-header-tools { display: inline-flex; max-width: 100%; align-items: center; justify-content: flex-end; gap: var(--df-space-2); margin-left: auto; }
+.dashboard-finance-badge {
+  display: inline-flex;
+  min-height: 28px;
+  max-width: 180px;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 9px;
+  border: 1px solid #dbe7e3;
+  border-radius: var(--df-radius-pill);
+  background: var(--df-surface-soft);
+  color: #475569;
+  font-size: .6875rem;
+  font-weight: 900;
+  line-height: 1;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-finance-action {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 12px;
+  border-radius: var(--df-radius-pill);
+  font: inherit;
+  font-size: .75rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.dashboard-finance-action-primary { border: 1px solid var(--df-primary-700); background: var(--df-primary-700); color: var(--df-surface); }
+.dashboard-finance-action-secondary { border: 1px solid #99f6e4; background: var(--df-primary-50); color: var(--df-primary-700); }
+.dashboard-finance-action-danger { border: 1px solid #fecaca; background: #fffafa; color: #991b1b; }
+.dashboard-finance-action:focus-visible,
+.dashboard-finance-collapse:focus-visible { outline: none; box-shadow: var(--df-focus); }
+.dashboard-finance-collapse {
+  display: inline-flex;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  flex: 0 0 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid #dbe7e3;
+  border-radius: var(--df-radius-pill);
+  background: var(--df-surface);
+  color: var(--df-primary-700);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dashboard-finance-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--df-space-2); }
+.dashboard-finance-kpis .df-kpi-card { min-height: 72px; padding: 10px 11px; border-radius: 13px; }
+.dashboard-finance-kpis .df-kpi-value { font-size: clamp(1.125rem, 2vw, 1.375rem); white-space: nowrap; }
+
+.dashboard-priorities { margin-bottom: 10px; padding: 14px; }
+.dashboard-priorities-header,
+.dashboard-priorities-subheader { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--df-space-3); }
+.dashboard-priorities-header > div:first-child { display: grid; gap: var(--df-space-1); }
+.dashboard-priorities-header h2 { margin: 0; font-size: 1.125rem; }
+.dashboard-priorities-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, .8fr); gap: 10px; margin-top: 10px; }
+.dashboard-priorities-ranking { min-width: 0; padding: 10px; border: 1px solid var(--df-border); border-radius: var(--df-radius-control); background: var(--df-surface); }
+.dashboard-priorities-subheader { align-items: baseline; margin-bottom: 7px; }
+.dashboard-priorities-subheader strong { font-size: .875rem; }
+.dashboard-priorities-ranking ol { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.dashboard-priorities-ranking li { overflow: hidden; border: 1px solid var(--df-border); border-left: 4px solid #94a3b8; border-radius: 11px; background: var(--df-surface-soft); }
+.dashboard-priorities-ranking li.is-critica { border-left-color: #ef4444; background: var(--df-danger-soft); }
+.dashboard-priorities-ranking li.is-atencao { border-left-color: #f59e0b; background: var(--df-warning-soft); }
+.dashboard-priorities-ranking li button {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--df-space-2);
+  padding: var(--df-space-2);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.dashboard-priorities-ranking li button:hover { background: rgba(255, 255, 255, .58); }
+.dashboard-priorities-ranking li button:focus-visible { outline: none; box-shadow: inset var(--df-focus); }
+.dashboard-priorities-rank { display: inline-grid; width: 26px; height: 26px; place-items: center; border-radius: var(--df-radius-pill); background: var(--df-surface); color: #475569; font-size: .75rem; font-weight: 900; }
+.dashboard-priorities-account,
+.dashboard-priorities-value { display: grid; min-width: 0; gap: 1px; }
+.dashboard-priorities-account strong,
+.dashboard-priorities-value strong { font-size: .75rem; overflow-wrap: anywhere; }
+.dashboard-priorities-account small,
+.dashboard-priorities-value small { color: var(--df-muted); font-size: .6875rem; font-weight: 700; line-height: 1.35; }
+.dashboard-priorities-value { justify-items: end; text-align: right; }
+.dashboard-priorities-indicators { display: grid; min-width: 0; align-content: start; gap: 7px; }
+.dashboard-priorities-indicator {
+  box-sizing: border-box;
+  display: grid;
+  width: 100%;
+  min-height: 64px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--df-space-2);
+  padding: 10px 11px;
+  border: 1px solid var(--df-border);
+  border-radius: var(--df-radius-control);
+  background: var(--df-surface);
+  color: var(--df-text);
+  font: inherit;
+  text-align: left;
+}
+button.dashboard-priorities-indicator { cursor: pointer; }
+button.dashboard-priorities-indicator:hover { border-color: #99f6e4; background: var(--df-primary-50); }
+.dashboard-priorities-indicator:focus-visible { outline: none; box-shadow: var(--df-focus); }
+.dashboard-priorities-indicator span { color: var(--df-muted); font-size: .625rem; font-weight: 900; text-transform: uppercase; }
+.dashboard-priorities-indicator strong { font-size: 1.1875rem; }
+.dashboard-priorities-indicator small { grid-column: 1 / -1; color: var(--df-muted); font-size: .6875rem; font-weight: 700; line-height: 1.35; }
+.dashboard-priorities-indicator > button { grid-column: 1 / -1; justify-self: start; padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 8px; background: var(--df-surface); color: var(--df-primary-700); font: inherit; font-size: .6875rem; font-weight: 900; cursor: pointer; }
+.dashboard-priorities-empty { padding: 20px 12px; color: var(--df-muted); font-size: .8125rem; font-weight: 700; text-align: center; }
+
+@media (max-width: 900px) {
+  .dashboard-finance-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-priorities-layout { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-priorities-indicators { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .dashboard-finance-filters,
+  .dashboard-finance-filter-controls { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-finance-filters,
+  .dashboard-finance-summary-card,
+  .dashboard-priorities { padding: 10px; border-radius: 14px; }
+  .dashboard-priorities-header { display: grid; gap: var(--df-space-2); }
+  .dashboard-priorities-header > .dashboard-finance-action { justify-self: start; }
+  .dashboard-priorities-ranking li button { min-height: 52px; grid-template-columns: 26px minmax(0, 1fr) auto; }
+  .dashboard-finance-header { gap: 10px; }
+  .dashboard-finance-header-tools { min-width: 0; }
+  .dashboard-finance-badge { max-width: 116px; }
+  .dashboard-finance-kpis .df-kpi-card { min-height: 64px; padding: 9px 10px; }
+  .dashboard-finance-kpis .df-kpi-value { font-size: clamp(.9375rem, 4.5vw, 1.125rem); }
+  .dashboard-finance-kpis .df-kpi-card:last-child { grid-column: 1 / -1; }
+  .dashboard-priorities-layout { gap: var(--df-space-2); margin-top: var(--df-space-2); }
+  .dashboard-priorities-indicator { min-height: 58px; padding: 8px 9px; }
+}
+
+@media (max-width: 420px) {
+  .dashboard-finance-kpis { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-finance-kpis .df-kpi-card:last-child { grid-column: auto; }
+}

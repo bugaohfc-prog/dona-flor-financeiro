@@ -229,7 +229,7 @@ test('Copilot é seção fixa por props e não depende de provider global', asyn
 
 test('layout possui breakpoint mobile e não mantém drawer flutuante', async () => {
   const css = await ler('../pages/AnaliseFinanceiraPage.css')
-  assert.match(css, /@media\(max-width:640px\)/)
+  assert.match(css, /@media \(max-width: 640px\)/)
   assert.doesNotMatch(css, /position:fixed|copilot-drawer|copilot-floating-button/)
 })
 
@@ -240,10 +240,13 @@ test('mobile confina a largura da página e a rolagem ao detalhamento compartilh
     ler('../components/shared/PagePatterns.css'),
   ])
   assert.match(pagina, /Detalhamento financeiro com rolagem horizontal/)
-  assert.match(css, /\.analise-financeira-page\s*\{[\s\S]*?width:\s*100%[\s\S]*?overflow-x:\s*clip/)
-  assert.match(css, /\.analise-table\s*\{[\s\S]*?max-width:\s*100%[\s\S]*?overflow-x:\s*auto/)
+  assert.match(css, /\.analise-financeira-page\s*\{[\s\S]*?width:\s*100%[\s\S]*?min-width:\s*0/)
+  assert.doesNotMatch(css, /overflow-x:\s*clip/)
+  assert.match(css, /\.analise-table\s*\{[^}]*max-width:\s*100%/)
+  assert.doesNotMatch(css, /\.analise-table\s*\{[^}]*overflow-x:/)
   assert.match(css, /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/)
   assert.match(pagina, /<ExportMenu/)
+  assert.match(pagina, /<KpiGrid className="analise-kpis"/)
   assert.match(padroes, /\.df-export-menu summary/)
   assert.match(padroes, /\.df-data-region-scroll[\s\S]*?overflow-x:\s*auto/)
 })

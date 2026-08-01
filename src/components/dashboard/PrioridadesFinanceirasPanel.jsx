@@ -32,13 +32,13 @@ export default function PrioridadesFinanceirasPanel({
   const ranking = central.prioridades.slice(0, 3)
 
   return (
-    <section className="dashboard-priorities dashboard-home-card" aria-labelledby="dashboard-priorities-title">
+    <section className="dashboard-priorities dashboard-finance-card" aria-labelledby="dashboard-priorities-title">
       <header className="dashboard-priorities-header">
         <div>
-          <span className="dashboard-home-kicker">Central de prioridades financeiras</span>
+          <span className="dashboard-finance-kicker">Central de prioridades financeiras</span>
           <h2 id="dashboard-priorities-title">Exige atenção</h2>
         </div>
-        <button type="button" className="dashboard-home-action dashboard-home-action-secondary" onClick={onAbrirRelatorios}>
+        <button type="button" className="dashboard-finance-action dashboard-finance-action-secondary" onClick={onAbrirRelatorios}>
           Ver análise completa
         </button>
       </header>

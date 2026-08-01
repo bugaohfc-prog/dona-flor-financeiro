@@ -3,10 +3,6 @@ import DashboardPage from '../../pages/DashboardPage.jsx'
 export default function DashboardRoute({
   nomeUsuario,
   formatarValor,
-  total,
-  pago,
-  pendente,
-  vencido,
   navegarPara,
   loading,
   filiais,
@@ -26,10 +22,6 @@ export default function DashboardRoute({
 
       <DashboardPage
         formatarValor={formatarValor}
-        total={total}
-        pago={pago}
-        pendente={pendente}
-        vencido={vencido}
         navegarPara={navegarPara}
         loading={loading}
         nomeUsuario={nomeUsuario}

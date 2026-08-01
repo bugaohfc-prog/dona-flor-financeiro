@@ -82,9 +82,9 @@ test('checkboxes e radios ficam fora do contrato dimensional de campos textuais'
 })
 
 test('valores monetários do Dashboard não quebram e usam uma coluna até 420px', () => {
-  const css = read('src/styles.css')
-  assert.match(css, /\.dashboard-home-kpi strong \{[\s\S]*?white-space: nowrap;/)
-  assert.match(css, /@media \(max-width: 420px\)[\s\S]*?\.dashboard-home-kpi-grid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/)
+  const css = read('src/components/dashboard/DashboardHome.css')
+  assert.match(css, /\.dashboard-finance-kpis \.df-kpi-value \{[^}]*white-space: nowrap;/)
+  assert.match(css, /@media \(max-width: 420px\)[\s\S]*?\.dashboard-finance-kpis \{[^}]*grid-template-columns: minmax\(0, 1fr\)/)
 })
 
 test('kickers dos cabeçalhos escuros têm contraste explícito e escopo restrito', () => {

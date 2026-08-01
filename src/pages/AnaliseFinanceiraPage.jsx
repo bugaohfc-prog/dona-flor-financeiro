@@ -18,6 +18,8 @@ import {
   ExportMenu,
   FilterCard,
   FilterGrid,
+  KpiCard,
+  KpiGrid,
   PageHeader,
   PageState,
   SectionCard,
@@ -129,14 +131,14 @@ export default function AnaliseFinanceiraPage({
       {!controller.erro && controller.carregado && !controller.registros.length ? <PageState title="Nenhum registro no recorte" description="Ajuste o período ou os filtros para compor a análise." className="analise-state" /> : null}
 
       {!controller.erro && controller.carregado && controller.registros.length ? <>
-        <section className="analise-kpis" aria-label="Indicadores financeiros">
-          <article><span>Valor previsto</span><strong>{formatarValor(controller.indicadores.previsto)}</strong><small>{controller.indicadores.quantidade} registro(s)</small></article>
-          <article><span>Valor pago</span><strong>{formatarValor(controller.indicadores.pago)}</strong><small>{controller.indicadores.taxaPagamento}% do previsto</small></article>
-          <article><span>Saldo em aberto</span><strong>{formatarValor(controller.indicadores.saldo)}</strong><small>Após pagamentos parciais</small></article>
-          <article className="is-danger"><span>Valor vencido</span><strong>{formatarValor(controller.indicadores.vencido)}</strong><small>Somente saldo restante</small></article>
-          <article><span>Taxa de pagamento</span><strong>{controller.indicadores.taxaPagamento}%</strong><small>Realizado / previsto</small></article>
-          <article><span>Variação anterior</span><strong>{variacaoTexto}</strong><small>{formatarValor(controller.comparacao.diferenca)}</small></article>
-        </section>
+        <KpiGrid className="analise-kpis" aria-label="Indicadores financeiros">
+          <KpiCard label="Valor previsto" value={formatarValor(controller.indicadores.previsto)} detail={`${controller.indicadores.quantidade} registro(s)`} />
+          <KpiCard label="Valor pago" value={formatarValor(controller.indicadores.pago)} detail={`${controller.indicadores.taxaPagamento}% do previsto`} />
+          <KpiCard label="Saldo em aberto" value={formatarValor(controller.indicadores.saldo)} detail="Após pagamentos parciais" />
+          <KpiCard label="Valor vencido" value={formatarValor(controller.indicadores.vencido)} detail="Somente saldo restante" tone="danger" />
+          <KpiCard label="Taxa de pagamento" value={`${controller.indicadores.taxaPagamento}%`} detail="Realizado / previsto" />
+          <KpiCard label="Variação anterior" value={variacaoTexto} detail={formatarValor(controller.comparacao.diferenca)} />
+        </KpiGrid>
 
         <SectionCard title="Inteligência gerencial" description="Assistente determinístico calculado exclusivamente sobre os registros filtrados." className="analise-card analise-inteligencia">
           <div className="analise-grid-2"><ExecutiveSummary intelligence={controller.copilot} /><NarrativeIntelligenceCard intelligence={controller.copilot} /><SmartPriorityList intelligence={controller.copilot} onNavigate={navegarPara} /><RecommendationsCard intelligence={controller.copilot} /></div>

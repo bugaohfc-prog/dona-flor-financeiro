@@ -4,6 +4,7 @@
 .df-section-card,
 .df-section-card > *,
 .df-filter-grid > *,
+.df-kpi-grid > *,
 .df-data-region,
 .df-data-region-scroll {
   min-width: 0;
@@ -22,7 +23,7 @@
 }
 
 .df-page-header,
-:is(.admin-page-hero, .master-page-hero, .billing-page-header, .fluxo-caixa-hero, .funcionarios-page-hero, .ferias-page-hero, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) {
+:is(.admin-page-hero, .master-page-hero, .billing-page-header, .funcionarios-page-hero, .ferias-page-hero, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) {
   box-sizing: border-box;
   display: flex;
   width: 100%;
@@ -41,12 +42,12 @@
 }
 
 .df-page-header-copy,
-:is(.billing-page-heading, .fluxo-caixa-hero, .funcionarios-hero-copy, .ferias-hero-copy, .folha-page-intro) > div:first-child {
+:is(.billing-page-heading, .funcionarios-hero-copy, .ferias-hero-copy, .folha-page-intro) > div:first-child {
   min-width: 0;
 }
 
 .df-page-kicker,
-:is(.admin-page-hero, .master-page-hero, .billing-page-heading, .fluxo-caixa-hero, .funcionarios-hero-copy, .ferias-hero-copy, .folha-page-intro) span:first-child {
+:is(.admin-page-hero, .master-page-hero, .billing-page-heading, .funcionarios-hero-copy, .ferias-hero-copy, .folha-page-intro) span:first-child {
   color: #ccfbf1 !important;
   font-size: .75rem;
   font-weight: 900;
@@ -55,7 +56,7 @@
 }
 
 .df-page-header h1,
-:is(.admin-page-hero, .master-page-hero, .billing-page-header, .fluxo-caixa-hero, .funcionarios-page-hero, .ferias-page-hero, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) h1 {
+:is(.admin-page-hero, .master-page-hero, .billing-page-header, .funcionarios-page-hero, .ferias-page-hero, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) h1 {
   margin: 5px 0;
   color: inherit !important;
   font-size: clamp(1.75rem, 4vw, 2.65rem) !important;
@@ -65,8 +66,8 @@
 
 .df-page-header p,
 .df-page-header small,
-:is(.admin-page-hero, .master-page-hero, .billing-page-header, .fluxo-caixa-hero, .funcionarios-page-hero, .ferias-page-hero, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) p,
-:is(.admin-page-hero, .master-page-hero, .billing-page-header, .fluxo-caixa-hero, .funcionarios-page-hero, .ferias-page-hero, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) small {
+:is(.admin-page-hero, .master-page-hero, .billing-page-header, .funcionarios-page-hero, .ferias-page-hero, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) p,
+:is(.admin-page-hero, .master-page-hero, .billing-page-header, .funcionarios-page-hero, .ferias-page-hero, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) small {
   margin: 4px 0;
   color: #d1fae5 !important;
   line-height: 1.45;
@@ -74,7 +75,7 @@
 }
 
 .df-page-actions,
-:is(.page-actions-row, .billing-page-actions, .fluxo-caixa-actions) {
+:is(.page-actions-row, .billing-page-actions) {
   display: flex;
   min-width: 0;
   align-items: center;
@@ -112,7 +113,7 @@ button:disabled,
 }
 
 .df-section-card,
-:is(.content-block, .admin-config-card, .billing-panel, .fluxo-caixa-panel, .audit-filter-panel) {
+:is(.content-block, .admin-config-card, .billing-panel, .audit-filter-panel) {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -137,7 +138,7 @@ button:disabled,
 .df-section-card-header p { margin: 4px 0 0; color: var(--df-muted); }
 
 .df-filter-grid,
-:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros) {
+:is(.advanced-filters, .audit-toolbar) {
   display: grid;
   width: 100%;
   min-width: 0;
@@ -153,21 +154,21 @@ button:disabled,
 }
 
 .df-filter-grid label,
-:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros) label {
+:is(.advanced-filters, .audit-toolbar) label {
   display: grid;
   min-width: 0;
   gap: 5px;
 }
 
 .df-filter-grid label > span,
-:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros) label > span {
+:is(.advanced-filters, .audit-toolbar) label > span {
   color: #475569;
   font-size: .75rem;
   font-weight: 850;
 }
 
 .df-filter-grid :is(input:not([type='checkbox']):not([type='radio']), select, textarea),
-:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros) :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+:is(.advanced-filters, .audit-toolbar) :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -181,7 +182,7 @@ button:disabled,
 }
 
 .df-filter-grid label:has(> :is(input[type='checkbox'], input[type='radio'], [role='switch'])),
-:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros) label:has(> :is(input[type='checkbox'], input[type='radio'], [role='switch'])) {
+:is(.advanced-filters, .audit-toolbar) label:has(> :is(input[type='checkbox'], input[type='radio'], [role='switch'])) {
   display: inline-flex;
   min-height: var(--df-control-height);
   align-items: center;
@@ -191,7 +192,7 @@ button:disabled,
 }
 
 .df-filter-grid :is(input[type='checkbox'], input[type='radio']),
-:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros) :is(input[type='checkbox'], input[type='radio']) {
+:is(.advanced-filters, .audit-toolbar) :is(input[type='checkbox'], input[type='radio']) {
   box-sizing: border-box;
   flex: 0 0 22px;
   width: 22px;
@@ -202,6 +203,55 @@ button:disabled,
   padding: 0;
   accent-color: var(--df-primary-700);
 }
+
+.df-kpi-grid {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: var(--df-space-3);
+}
+
+.df-kpi-card {
+  box-sizing: border-box;
+  display: grid;
+  min-width: 0;
+  min-height: 84px;
+  align-content: start;
+  gap: var(--df-space-1);
+  padding: var(--df-space-4);
+  border: 1px solid var(--df-border);
+  border-radius: var(--df-radius-card);
+  background: var(--df-surface);
+  color: var(--df-text);
+  box-shadow: var(--df-shadow-soft);
+  text-align: left;
+}
+
+button.df-kpi-card {
+  width: 100%;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.df-kpi-card:hover { border-color: var(--df-primary-500); }
+button.df-kpi-card:focus-visible { outline: none; box-shadow: var(--df-focus); }
+.df-kpi-card.is-danger { border-color: #fecaca; background: var(--df-danger-soft); }
+.df-kpi-card.is-warning { border-color: #fde68a; background: var(--df-warning-soft); }
+.df-kpi-card.is-success { border-color: #bbf7d0; background: #f0fdf4; }
+.df-kpi-label,
+.df-kpi-detail { color: var(--df-muted); font-size: .76rem; line-height: 1.3; }
+.df-kpi-label { font-weight: 850; text-transform: uppercase; }
+.df-kpi-value {
+  min-width: 0;
+  color: var(--df-text);
+  font-size: clamp(1rem, 2vw, var(--df-kpi-value));
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.df-kpi-card.is-danger .df-kpi-value { color: var(--df-danger); }
+.df-kpi-card.is-warning .df-kpi-value { color: var(--df-warning); }
+.df-kpi-card.is-success .df-kpi-value { color: var(--df-success); }
 
 :is(.importacao-page > header, .master-page-hero, .ferias-page-hero) :is(.master-kicker, .ferias-kicker, .importacao-hero-copy > span:first-child) {
   color: #ccfbf1 !important;
@@ -275,14 +325,14 @@ button:disabled,
   border-radius: 999px;
 }
 
-:is(.app-frame-content, .app-frame-content > *, .admin-page, .billing-page, .fluxo-caixa-page, .funcionarios-page, .ferias-page, .folha-page, .importacao-page, .trash-page, .page-section) {
+:is(.app-frame-content, .app-frame-content > *, .admin-page, .billing-page, .funcionarios-page, .ferias-page, .folha-page, .importacao-page, .trash-page, .page-section) {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
   max-width: 100%;
 }
 
-:is(.fluxo-table-wrap, .table-responsive, .audit-change-table) {
+:is(.table-responsive, .audit-change-table) {
   width: 100%;
   min-width: 0;
   max-width: 100%;
@@ -292,7 +342,7 @@ button:disabled,
 
 @media (max-width: 640px) {
   .df-page-header,
-  :is(.admin-page-hero, .master-page-hero, .billing-page-header, .fluxo-caixa-hero, .funcionarios-page-hero, .ferias-page-hero, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) {
+  :is(.admin-page-hero, .master-page-hero, .billing-page-header, .funcionarios-page-hero, .ferias-page-hero, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) {
     display: grid;
     gap: var(--df-space-4);
     padding: 18px;
@@ -300,14 +350,14 @@ button:disabled,
   }
 
   .df-page-actions,
-  :is(.page-actions-row, .billing-page-actions, .fluxo-caixa-actions) {
+  :is(.page-actions-row, .billing-page-actions) {
     display: grid;
     width: 100%;
     grid-template-columns: minmax(0, 1fr);
   }
 
   .df-page-actions > *,
-  :is(.page-actions-row, .billing-page-actions, .fluxo-caixa-actions) > * {
+  :is(.page-actions-row, .billing-page-actions) > * {
     width: 100%;
     min-width: 0;
   }
@@ -318,10 +368,12 @@ button:disabled,
   .df-section-card { padding: 14px; border-radius: 16px; }
   .df-section-card-header { display: grid; }
   .df-filter-grid,
-  :is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros) {
+  :is(.advanced-filters, .audit-toolbar) {
     grid-template-columns: minmax(0, 1fr);
   }
   .df-data-region-hint { display: block; }
+  .df-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .df-kpi-card { padding: var(--df-space-3); border-radius: 16px; }
 }
 
 @media print {

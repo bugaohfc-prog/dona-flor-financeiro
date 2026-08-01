@@ -12,10 +12,12 @@ import { useResumoGestaoPessoasPainel } from '../../hooks/useResumoGestaoPessoas
 import { ResumoOperacionalDashboard } from '../../modules/central-do-dia/components/dashboard/ResumoOperacionalDashboard.jsx'
 import { useCentralDoDia } from '../../modules/central-do-dia/hooks/useCentralDoDia.js'
 import PrioridadesFinanceirasPanel from './PrioridadesFinanceirasPanel.jsx'
+import { KpiCard, KpiGrid } from '../shared/PagePatterns.jsx'
+import './DashboardHome.css'
 
 function DashboardAction({ children, variant = 'primary', className = '', ...props }) {
   return (
-    <button className={`dashboard-home-action dashboard-home-action-${variant} ${className}`} type="button" {...props}>
+    <button className={`dashboard-finance-action dashboard-finance-action-${variant} ${className}`} type="button" {...props}>
       {children}
     </button>
   )
@@ -24,7 +26,7 @@ function DashboardAction({ children, variant = 'primary', className = '', ...pro
 function DashboardCollapseButton({ expanded, onClick, label }) {
   return (
     <button
-      className="dashboard-home-icon-button"
+      className="dashboard-finance-collapse"
       type="button"
       onClick={onClick}
       title={expanded ? `Recolher ${label}` : `Expandir ${label}`}
@@ -38,14 +40,14 @@ function DashboardCollapseButton({ expanded, onClick, label }) {
 
 function DashboardWidgetHeader({ kicker, title, subtitle, badge, actions, expanded, onToggle, label }) {
   return (
-    <div className="dashboard-home-widget-header">
-      <div className="dashboard-home-header-copy">
-        <span className="dashboard-home-kicker">{kicker}</span>
+    <div className="dashboard-finance-header">
+      <div className="dashboard-finance-header-copy">
+        <span className="dashboard-finance-kicker">{kicker}</span>
         <strong>{title}</strong>
         {subtitle && <small>{subtitle}</small>}
       </div>
-      <div className="dashboard-home-header-tools">
-        {badge && <span className="dashboard-home-badge">{badge}</span>}
+      <div className="dashboard-finance-header-tools">
+        {badge && <span className="dashboard-finance-badge">{badge}</span>}
         {actions}
         {onToggle && (
           <DashboardCollapseButton expanded={expanded} onClick={onToggle} label={label || title} />
@@ -57,16 +59,8 @@ function DashboardWidgetHeader({ kicker, title, subtitle, badge, actions, expand
 
 export default function DashboardHome({
   formatarValor,
-  total,
-  pago,
-  pendente,
-  vencido,
   navegarPara,
   loading = false,
-  loadingHistoricoFinanceiro = false,
-  historicoFinanceiroCarregado = false,
-  erroHistoricoFinanceiro = null,
-  onRetryHistoricoFinanceiro,
   filiais = [],
   centros = [],
   contasCentral = [],
@@ -193,9 +187,9 @@ export default function DashboardHome({
 
   return (
     <>
-      <section className="dashboard-home-branch no-print" aria-label="Filtros financeiros do painel">
-        <div className="dashboard-home-branch-copy">
-          <span className="dashboard-home-kicker">Escopo da projeção</span>
+      <section className="dashboard-finance-filters no-print" aria-label="Filtros financeiros do painel">
+        <div className="dashboard-finance-filter-copy">
+          <span className="dashboard-finance-kicker">Escopo da projeção</span>
           <strong>
             {filialSelecionada ? filialSelecionada.nome : 'Todas as filiais'}
             {' · '}
@@ -204,11 +198,11 @@ export default function DashboardHome({
           <small>Indicadores e projeção usam consultas próprias, completas e delimitadas por período.</small>
         </div>
 
-        <div className="dashboard-home-filter-controls">
+        <div className="dashboard-finance-filter-controls">
           <label>
             <span>Filial</span>
             <select
-              className="dashboard-home-select"
+              className="dashboard-finance-select"
               value={filtroFilialDashboard}
               onChange={(e) => setFiltroFilialDashboard(e.target.value)}
               aria-label="Filtrar projeção por filial"
@@ -222,7 +216,7 @@ export default function DashboardHome({
           <label>
             <span>Centro de custo</span>
             <select
-              className="dashboard-home-select"
+              className="dashboard-finance-select"
               value={filtroCentroDashboard}
               onChange={(e) => setFiltroCentroDashboard(e.target.value)}
               aria-label="Filtrar projeção por centro de custo"
@@ -247,14 +241,14 @@ export default function DashboardHome({
         onAbrirOrigem={abrirOrigemResumo}
       />
 
-      <section className="dashboard-home-finance" aria-label="Resumo financeiro rápido">
+      <section className="dashboard-finance-summary" aria-label="Resumo financeiro rápido">
         <ContasContextualGuard
           carregando={fonteFinanceira.carregando || fonteVencidos.carregando}
           carregada={fonteFinanceira.carregado && fonteVencidos.carregado}
           erro={fonteFinanceira.erro || fonteVencidos.erro}
           onRetry={tentarNovamenteResumoFinanceiro}
         >
-          <div className="dashboard-home-card dashboard-home-finance-card">
+          <div className="dashboard-finance-card dashboard-finance-summary-card">
             <DashboardWidgetHeader
               kicker="Resumo financeiro rápido"
               title="Visão operacional"
@@ -269,25 +263,18 @@ export default function DashboardHome({
             />
 
             {mostrarResumoFinanceiro && (
-              <div className="dashboard-home-kpi-grid">
-                {resumoFinanceiro.map((item) => (item.destino || item.acao) ? (
-                  <button
-                    type="button"
-                    className={`dashboard-home-kpi dashboard-home-kpi-${item.tone} is-action`}
+              <KpiGrid className="dashboard-finance-kpis">
+                {resumoFinanceiro.map((item) => (
+                  <KpiCard
                     key={item.label}
-                    onClick={item.acao || (() => abrirContas(item.destino))}
+                    label={item.label}
+                    value={item.valor}
+                    tone={item.tone}
+                    onClick={item.acao || (item.destino ? () => abrirContas(item.destino) : undefined)}
                     aria-label={`${item.label}: ${item.valor}. ${item.acao ? 'Abrir relatórios financeiros.' : 'Abrir contas correspondentes.'}`}
-                  >
-                    <span>{item.label}</span>
-                    <strong>{item.valor}</strong>
-                  </button>
-                ) : (
-                  <div className={`dashboard-home-kpi dashboard-home-kpi-${item.tone}`} key={item.label}>
-                    <span>{item.label}</span>
-                    <strong>{item.valor}</strong>
-                  </div>
+                  />
                 ))}
-              </div>
+              </KpiGrid>
             )}
           </div>
         </ContasContextualGuard>

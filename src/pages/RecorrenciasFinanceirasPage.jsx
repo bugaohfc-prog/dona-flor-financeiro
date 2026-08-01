@@ -55,7 +55,6 @@ function GestaoRecorrencias({
   fonte,
   centros,
   filiais,
-  styles,
   formatarValor,
   formatarData,
   formatarTipoRecorrencia,
@@ -121,31 +120,31 @@ function GestaoRecorrencias({
   if (fonte.carregando && !fonte.resultado) return <div className="recurring-coverage-state" role="status">Carregando recorrências...</div>
   if (fonte.erro && !fonte.resultado) return <div className="recurring-coverage-state is-error" role="alert"><strong>Não foi possível carregar as recorrências.</strong><button type="button" onClick={fonte.consultar}>Tentar novamente</button></div>
 
-  return <section className="content-block accounts-recurring-section recurring-management-panel" style={styles.bloco}>
+  return <section className="recurring-management-panel">
     {fonte.carregando && <div className="recurring-coverage-refreshing" role="status">Atualizando recorrências…</div>}
     {fonte.erro && <div className="recurring-coverage-inline-error" role="alert"><span>Não foi possível atualizar. Exibindo o último resultado válido.</span><button type="button" onClick={fonte.consultar}>Tentar novamente</button></div>}
-    <div className="accounts-list-header"><div className="accounts-list-title"><span className="accounts-kicker">Gestão</span><strong>Séries recorrentes</strong><small>{resumo.total} cadastrada(s) · {resumo.ativas} ativa(s) · {resumo.inativas} inativa(s)</small></div></div>
-    <div className="accounts-recurring-summary">
+    <div className="recurring-management-header"><div><span>Gestão</span><strong>Séries recorrentes</strong><small>{resumo.total} cadastrada(s) · {resumo.ativas} ativa(s) · {resumo.inativas} inativa(s)</small></div></div>
+    <div className="recurring-management-summary">
       <span><b>Total</b>{resumo.total}</span><span><b>Ativas</b>{resumo.ativas}</span><span><b>Inativas</b>{resumo.inativas}</span>
       <span className={resumo.duplicadasAtivas ? 'has-warning' : ''}><b>Duplicidades ativas</b>{resumo.duplicadasAtivas}</span>
       <span className={resumo.historicas ? 'has-info' : ''}><b>Pares históricos</b>{resumo.historicas}</span>
     </div>
-    <div className="accounts-recurring-controls">
-      <div className="accounts-status-tabs accounts-recurring-tabs" role="tablist" aria-label="Filtro de séries recorrentes">
-        {[['ativas', 'Ativas'], ['inativas', 'Inativas'], ['duplicadas', 'Atenção'], ['historicas', 'Históricas'], ['todas', 'Todas']].map(([valor, label]) => <button key={valor} type="button" role="tab" aria-selected={filtro === valor} className={`accounts-status-tab ${filtro === valor ? 'is-active' : ''}`} onClick={() => setFiltro(valor)}>{label}</button>)}
+    <div className="recurring-management-controls">
+      <div className="recurring-management-tabs" role="tablist" aria-label="Filtro de séries recorrentes">
+        {[['ativas', 'Ativas'], ['inativas', 'Inativas'], ['duplicadas', 'Atenção'], ['historicas', 'Históricas'], ['todas', 'Todas']].map(([valor, label]) => <button key={valor} type="button" role="tab" aria-selected={filtro === valor} className={filtro === valor ? 'is-active' : ''} onClick={() => setFiltro(valor)}>{label}</button>)}
       </div>
-      <input className="accounts-recurring-search" style={styles.input} type="search" placeholder="Buscar série por descrição, centro ou filial" value={busca} onChange={(event) => setBusca(event.target.value)} />
+      <input className="recurring-management-search" type="search" placeholder="Buscar série por descrição, centro ou filial" value={busca} onChange={(event) => setBusca(event.target.value)} />
     </div>
-    {visiveis.length === 0 ? <div className="recurring-coverage-state">Nenhuma série encontrada.</div> : <div className="accounts-recurring-grid">
+    {visiveis.length === 0 ? <div className="recurring-coverage-state">Nenhuma série encontrada.</div> : <div className="recurring-management-grid">
       {visiveis.map((serie) => {
         const grupo = duplicidades.get(chaveDuplicidadeSerie(serie))
         const proximaReferencia = calcularProximaReferenciaSerie(serie)
-        return <article className={`accounts-recurring-card ${serie.ativo === true ? 'is-active' : 'is-inactive'} ${grupo?.ativas > 1 ? 'is-duplicate' : ''}`} key={serie.id}>
-          <div className="accounts-recurring-card-head"><strong>{serie.descricao || 'Série sem descrição'}</strong><span className={`status-pill ${serie.ativo === true ? 'status-pago' : 'status-pendente'}`}>{serie.ativo === true ? 'Ativa' : 'Inativa'}</span></div>
-          <div className="accounts-recurring-value">{formatarValor(Number(serie.valor || 0))}</div>
-          <div className="accounts-recurring-meta"><span>{formatarTipoRecorrencia(serie.tipo_recorrencia || 'mensal')}</span><span>Dia {serie.dia_vencimento || '-'}</span><span>Início {serie.data_inicio ? formatarData(serie.data_inicio) : '-'}</span>{proximaReferencia && <span>Próxima referência {formatarData(proximaReferencia)}</span>}<span>{centros.find((item) => item.id === serie.centro_custo_id)?.nome || 'Sem centro'}</span><span>{filiais.find((item) => item.id === serie.filial_id)?.nome || 'Sem filial'}</span><span>{contasPorRecorrencia.get(serie.id) || 0} conta(s) vinculada(s) no horizonte</span></div>
-          {grupo?.ativas > 1 && <div className="accounts-recurring-warning">Atenção: existe mais de uma série ativa semelhante.</div>}
-          <div className="accounts-recurring-actions"><button type="button" className={serie.ativo === true ? 'accounts-recurring-disable' : 'accounts-recurring-enable'} disabled={!podeGerenciarRecorrencias} title={podeGerenciarRecorrencias ? '' : 'Somente Admin ou Master pode alterar séries recorrentes.'} onClick={() => confirmarAlteracao(serie, serie.ativo !== true)}>{serie.ativo === true ? 'Desativar' : 'Reativar'}</button></div>
+        return <article className={`recurring-management-card ${serie.ativo === true ? 'is-active' : 'is-inactive'} ${grupo?.ativas > 1 ? 'is-duplicate' : ''}`} key={serie.id}>
+          <div className="recurring-management-card-head"><strong>{serie.descricao || 'Série sem descrição'}</strong><span className={`recurring-management-status ${serie.ativo === true ? 'is-active' : 'is-inactive'}`}>{serie.ativo === true ? 'Ativa' : 'Inativa'}</span></div>
+          <div className="recurring-management-value">{formatarValor(Number(serie.valor || 0))}</div>
+          <div className="recurring-management-meta"><span>{formatarTipoRecorrencia(serie.tipo_recorrencia || 'mensal')}</span><span>Dia {serie.dia_vencimento || '-'}</span><span>Início {serie.data_inicio ? formatarData(serie.data_inicio) : '-'}</span>{proximaReferencia && <span>Próxima referência {formatarData(proximaReferencia)}</span>}<span>{centros.find((item) => item.id === serie.centro_custo_id)?.nome || 'Sem centro'}</span><span>{filiais.find((item) => item.id === serie.filial_id)?.nome || 'Sem filial'}</span><span>{contasPorRecorrencia.get(serie.id) || 0} conta(s) vinculada(s) no horizonte</span></div>
+          {grupo?.ativas > 1 && <div className="recurring-management-warning">Atenção: existe mais de uma série ativa semelhante.</div>}
+          <div className="recurring-management-actions"><button type="button" className={serie.ativo === true ? 'is-disable' : 'is-enable'} disabled={!podeGerenciarRecorrencias} title={podeGerenciarRecorrencias ? '' : 'Somente Admin ou Master pode alterar séries recorrentes.'} onClick={() => confirmarAlteracao(serie, serie.ativo !== true)}>{serie.ativo === true ? 'Desativar' : 'Reativar'}</button></div>
         </article>
       })}
     </div>}
@@ -155,7 +154,6 @@ function GestaoRecorrencias({
 export default function RecorrenciasFinanceirasPage({
   empresaId,
   empresaNome,
-  styles,
   centros = [],
   filiais = [],
   formatarValor,
@@ -277,13 +275,13 @@ export default function RecorrenciasFinanceirasPage({
     })
   }
 
-  return <main className="accounts-page recurring-coverage-page">
-    <PageHeader kicker="Financeiro" title="Recorrências financeiras" description="Confira a cobertura por horizonte e gerencie séries sem gerar contas automaticamente." className="page-title-actions accounts-page-header" actions={<button type="button" onClick={() => navegarPara?.('contas')}>Voltar para Contas</button>} />
+  return <main className="recurring-coverage-page">
+    <PageHeader kicker="Financeiro" title="Recorrências financeiras" description="Confira a cobertura por horizonte e gerencie séries sem gerar contas automaticamente." className="recurring-page-header" actions={<button type="button" onClick={() => navegarPara?.('contas')}>Voltar para Contas</button>} />
     <div className="recurring-page-tabs" role="tablist" aria-label="Seções de recorrências">
       <button type="button" role="tab" aria-selected={secao === 'cobertura'} className={secao === 'cobertura' ? 'is-active' : ''} onClick={() => setSecao('cobertura')}>Cobertura</button>
       <button type="button" role="tab" aria-selected={secao === 'gestao'} className={secao === 'gestao' ? 'is-active' : ''} onClick={() => setSecao('gestao')}>Gerenciar recorrências</button>
     </div>
-    {secao === 'gestao' ? <GestaoRecorrencias {...{ fonte, centros, filiais, styles, formatarValor, formatarData, formatarTipoRecorrencia, abrirConfirmacao, desativarSerieRecorrente, reativarSerieRecorrente, podeGerenciarRecorrencias }} /> : <section className="content-block recurring-coverage-panel">
+    {secao === 'gestao' ? <GestaoRecorrencias {...{ fonte, centros, filiais, formatarValor, formatarData, formatarTipoRecorrencia, abrirConfirmacao, desativarSerieRecorrente, reativarSerieRecorrente, podeGerenciarRecorrencias }} /> : <section className="recurring-coverage-panel">
       {fonte.resultado && <div className="recurring-control-summary" aria-label="Resumo da cobertura">
         <button type="button" className="is-active" onClick={() => setVisaoCobertura('todas')}><b>Recorrências ativas</b><strong>{resumoControle.ativas}</strong></button>
         <button type="button" className="is-covered" onClick={() => setVisaoCobertura('cobertas')}><b>Cobertas</b><strong>{resumoControle.cobertas}</strong></button>

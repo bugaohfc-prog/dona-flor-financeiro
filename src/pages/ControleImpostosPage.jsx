@@ -5,6 +5,7 @@ import { podeExportarRelatorio } from '../utils/relatoriosFinanceiros.js'
 import { impostoPertenceAoFiltro, obterSaldoExibidoImposto, obterStatusOperacionalImposto } from '../utils/consumidoresFinanceiros.js'
 import { exportCsv } from '../services/export/reportExportService.js'
 import { ExportMenu, FilterCard, FilterGrid, PageHeader } from '../components/shared/PagePatterns.jsx'
+import './ControleImpostosPage.css'
 
 const FILTROS_IMPOSTOS = [
   ['todos', 'Todos'],
@@ -306,12 +307,12 @@ export default function ControleImpostosPage({
   }
 
   return (
-    <main className="accounts-page tax-control-page">
+    <main className="tax-control-page">
       <PageHeader
         kicker="Financeiro"
         title="Controle de impostos"
         description="Acompanhe Simples Nacional, FGTS e INSS por vencimento e status."
-        className="page-title-actions accounts-page-header tax-control-header"
+        className="tax-control-header"
         actionsClassName="page-actions-row"
         actions={(
           <>
@@ -323,14 +324,14 @@ export default function ControleImpostosPage({
         )}
       />
 
-      <section className="content-block accounts-recurring-section tax-control-section">
-        <div className="accounts-recurring-guidance tax-control-guidance" role="note">
+      <section className="tax-control-section">
+        <div className="tax-control-guidance" role="note">
           <span>Visão somente leitura baseada nas contas existentes.</span>
           <span>Contas classificadas usam competência informada; contas antigas continuam com competência estimada pelo vencimento.</span>
           <span>Nenhuma conta é criada, baixada ou reclassificada por esta tela.</span>
         </div>
 
-        <div className="accounts-recurring-summary tax-control-summary">
+        <div className="tax-control-summary">
           <span><b>Total encontrado</b>{resumo.total}</span>
           <span><b>A vencer</b>{resumo.aVencer}</span>
           <span className={resumo.vencidos ? 'has-warning' : ''}><b>Vencidos</b>{resumo.vencidos}</span>
@@ -342,7 +343,7 @@ export default function ControleImpostosPage({
         </div>
 
         <FilterCard className="tax-control-filter-card" description="Refine por período, unidade, situação e classificação.">
-        <FilterGrid className="accounts-recurring-controls tax-control-controls">
+        <FilterGrid className="tax-control-controls">
           <select value={campoPeriodo} onChange={(event) => setCampoPeriodo(event.target.value)} aria-label="Base do período dos impostos">
             <option value="data_vencimento">Vencimento</option>
             <option value="competencia">Competência</option>
@@ -357,14 +358,14 @@ export default function ControleImpostosPage({
           <button type="button" aria-expanded={maisFiltros} onClick={() => setMaisFiltros((aberto) => !aberto)}>Mais filtros</button>
         </FilterGrid>
         {maisFiltros ? <FilterGrid secondary className="tax-control-controls tax-control-secondary-filters">
-          <div className="accounts-status-tabs accounts-recurring-tabs tax-control-tabs" role="tablist" aria-label="Filtro de impostos">
+          <div className="tax-control-tabs" role="tablist" aria-label="Filtro de impostos">
             {FILTROS_IMPOSTOS.map(([valor, label]) => (
               <button
                 key={valor}
                 type="button"
                 role="tab"
                 aria-selected={filtro === valor}
-                className={`accounts-status-tab ${filtro === valor ? 'is-active' : ''}`}
+                className={filtro === valor ? 'is-active' : ''}
                 onClick={() => setFiltro(valor)}
               >
                 {label}
@@ -372,7 +373,7 @@ export default function ControleImpostosPage({
             ))}
           </div>
           <input
-            className="accounts-recurring-search tax-control-search"
+            className="tax-control-search"
             type="search"
             placeholder="Buscar por imposto, descrição, filial, centro ou competência"
             value={busca}

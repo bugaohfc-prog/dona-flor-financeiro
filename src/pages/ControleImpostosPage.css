@@ -1,0 +1,294 @@
+.tax-control-page,
+.tax-control-page * {
+  box-sizing: border-box;
+}
+
+.tax-control-page {
+  width: 100%;
+  min-width: 0;
+  max-width: 1280px;
+  display: grid;
+  gap: 14px;
+  margin: 0 auto;
+  padding-bottom: 96px;
+}
+
+.tax-control-section {
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--df-color-border, #e2e8f0);
+  border-radius: var(--df-radius-card, 12px);
+  background: var(--df-color-surface, #fff);
+  box-shadow: var(--df-shadow-card, 0 12px 28px rgba(15, 23, 42, .08));
+}
+
+.tax-control-guidance {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid rgba(20, 184, 166, .18);
+  border-radius: var(--df-radius-card, 12px);
+  background: var(--df-color-brand-soft, #f0fdfa);
+  color: var(--df-color-brand, #0f766e);
+  font-size: .75rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.tax-control-guidance span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tax-control-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.tax-control-summary > span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid rgba(15, 118, 110, .12);
+  border-radius: var(--df-radius-card, 12px);
+  background: var(--df-color-page, #f8fafc);
+  color: var(--df-color-text, #0f172a);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.tax-control-summary b {
+  color: var(--df-color-muted, #64748b);
+  font-size: .68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.tax-control-summary .has-warning {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.tax-control-summary .has-info {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+  color: #075985;
+}
+
+.tax-control-controls {
+  align-items: stretch;
+}
+
+.tax-control-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tax-control-tabs button {
+  min-height: 36px;
+  border: 1px solid var(--df-color-border, #e2e8f0);
+  border-radius: var(--df-radius-control, 10px);
+  padding: 7px 11px;
+  background: var(--df-color-surface, #fff);
+  color: var(--df-color-muted, #64748b);
+  font-size: .82rem;
+}
+
+.tax-control-tabs button.is-active {
+  border-color: var(--df-color-brand, #0f766e);
+  background: var(--df-color-brand-soft, #f0fdfa);
+  color: var(--df-color-brand, #0f766e);
+}
+
+.tax-control-search {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  margin: 0;
+  border: 1px solid var(--df-color-border, #e2e8f0);
+  border-radius: var(--df-radius-control, 10px);
+  padding: 0 12px;
+  background: var(--df-color-surface, #fff);
+  color: var(--df-color-text, #0f172a);
+  font-size: .8125rem;
+  font-weight: 700;
+}
+
+.tax-control-list {
+  display: grid;
+  gap: 10px;
+}
+
+.tax-control-card {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(15, 118, 110, .13);
+  border-left: 4px solid #14b8a6;
+  border-radius: 14px;
+  background: var(--df-color-surface, #fff);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, .06);
+}
+
+.tax-control-card.is-vencido {
+  border-left-color: #f59e0b;
+}
+
+.tax-control-card.is-pago {
+  border-left-color: #16a34a;
+}
+
+.tax-control-card-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.tax-control-card-main h2 {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--df-color-text, #0f172a);
+  font-size: .9375rem;
+  font-weight: 950;
+  line-height: 1.25;
+}
+
+.tax-control-card-main strong {
+  color: var(--df-color-brand, #0f766e);
+  font-size: 1rem;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.tax-control-type,
+.tax-control-review-badge,
+.tax-control-meta span {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.tax-control-type {
+  border: 1px solid #ccfbf1;
+  padding: 4px 8px;
+  background: #f0fdfa;
+  color: #0f766e;
+  text-transform: uppercase;
+}
+
+.tax-control-review-badge {
+  margin-left: 6px;
+  border: 1px solid #fed7aa;
+  padding: 4px 8px;
+  background: #fff7ed;
+  color: #9a3412;
+  line-height: 1.15;
+  vertical-align: top;
+}
+
+.tax-control-meta {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tax-control-meta span {
+  min-width: 0;
+  border: 1px solid var(--df-color-border, #e2e8f0);
+  padding: 5px 8px;
+  background: var(--df-color-page, #f8fafc);
+  color: #475569;
+  font-weight: 800;
+}
+
+.tax-control-status.is-vencido {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.tax-control-status.is-aberto {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.tax-control-status.is-pago {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.tax-control-actions {
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tax-control-actions button {
+  min-height: 34px;
+  border: 1px solid var(--df-color-border, #e2e8f0);
+  border-radius: 999px;
+  padding: 0 12px;
+  background: var(--df-color-surface, #fff);
+  color: var(--df-color-text, #0f172a);
+  font-size: .75rem;
+  font-weight: 850;
+}
+
+.tax-control-actions button:hover,
+.tax-control-actions button:focus-visible {
+  border-color: #14b8a6;
+  color: var(--df-color-brand, #0f766e);
+  outline: none;
+}
+
+.tax-control-empty {
+  width: 100%;
+}
+
+@media (max-width: 700px) {
+  .tax-control-page,
+  .tax-control-section,
+  .tax-control-card {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .tax-control-section {
+    padding: 12px;
+  }
+
+  .tax-control-summary,
+  .tax-control-card-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tax-control-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tax-control-tabs button,
+  .tax-control-actions button {
+    width: 100%;
+  }
+
+  .tax-control-actions {
+    justify-content: stretch;
+  }
+}

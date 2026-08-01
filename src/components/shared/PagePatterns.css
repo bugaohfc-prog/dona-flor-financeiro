@@ -137,7 +137,7 @@ button:disabled,
 .df-section-card-header p { margin: 4px 0 0; color: var(--df-muted); }
 
 .df-filter-grid,
-:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .tax-control-controls) {
+:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros) {
   display: grid;
   width: 100%;
   min-width: 0;
@@ -153,21 +153,21 @@ button:disabled,
 }
 
 .df-filter-grid label,
-:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .tax-control-controls) label {
+:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros) label {
   display: grid;
   min-width: 0;
   gap: 5px;
 }
 
 .df-filter-grid label > span,
-:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .tax-control-controls) label > span {
+:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros) label > span {
   color: #475569;
   font-size: .75rem;
   font-weight: 850;
 }
 
 .df-filter-grid :is(input:not([type='checkbox']):not([type='radio']), select, textarea),
-:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .tax-control-controls) :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros) :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -181,7 +181,7 @@ button:disabled,
 }
 
 .df-filter-grid label:has(> :is(input[type='checkbox'], input[type='radio'], [role='switch'])),
-:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .tax-control-controls) label:has(> :is(input[type='checkbox'], input[type='radio'], [role='switch'])) {
+:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros) label:has(> :is(input[type='checkbox'], input[type='radio'], [role='switch'])) {
   display: inline-flex;
   min-height: var(--df-control-height);
   align-items: center;
@@ -191,7 +191,7 @@ button:disabled,
 }
 
 .df-filter-grid :is(input[type='checkbox'], input[type='radio']),
-:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .tax-control-controls) :is(input[type='checkbox'], input[type='radio']) {
+:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros) :is(input[type='checkbox'], input[type='radio']) {
   box-sizing: border-box;
   flex: 0 0 22px;
   width: 22px;
@@ -254,7 +254,7 @@ button:disabled,
 .df-page-state.is-error { border-color: #fecaca; background: var(--df-danger-soft); }
 
 .app-frame-content .empty-state-card,
-.app-frame-content :is(.recurring-coverage-state, .funcionario-exames-empty, .ferias-empty-state) {
+.app-frame-content :is(.funcionario-exames-empty, .ferias-empty-state) {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -266,7 +266,7 @@ button:disabled,
   color: var(--df-text);
 }
 
-.app-frame-content :is(.recurring-coverage-state.is-error, [role='alert'].empty-state-card) {
+.app-frame-content [role='alert'].empty-state-card {
   border-color: #fecaca;
   background: var(--df-danger-soft);
 }
@@ -318,7 +318,7 @@ button:disabled,
   .df-section-card { padding: 14px; border-radius: 16px; }
   .df-section-card-header { display: grid; }
   .df-filter-grid,
-  :is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .tax-control-controls) {
+  :is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros) {
     grid-template-columns: minmax(0, 1fr);
   }
   .df-data-region-hint { display: block; }

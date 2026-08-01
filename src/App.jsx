@@ -4163,7 +4163,6 @@ export default function App() {
     if (telaAtual === 'contas') {
       return (
       <LazyContasPage
-        styles={styles}
         busca={busca}
         setBusca={alterarBuscaContas}
         mostrarFiltros={mostrarFiltros}
@@ -4251,10 +4250,9 @@ export default function App() {
 
   if (telaAtual === 'recorrencias') {
     return (
-        <LazyRecorrenciasFinanceirasPage
+      <LazyRecorrenciasFinanceirasPage
           empresaId={empresaId}
           empresaNome={empresaAtiva?.nome || empresaId}
-          styles={styles}
           centros={centros}
           filiais={filiais}
           formatarValor={formatarValor}
@@ -4332,7 +4330,6 @@ export default function App() {
   if (telaAtual === 'notas') {
     return (
       <LazyNotasPage
-        styles={styles}
         navegarPara={navegarPara}
         notas={notas}
         notasFiltradas={notasFiltradas}

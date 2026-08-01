@@ -78,6 +78,7 @@
 
 .df-page-kicker,
 :is(.accounts-page-header-copy, .admin-page-hero, .master-page-hero, .billing-page-heading, .fluxo-caixa-hero, .receitas-hero, .funcionarios-hero-copy, .ferias-hero-copy, .folha-page-intro) span:first-child {
+  color: #ccfbf1 !important;
   font-size: .75rem;
   font-weight: 900;
   letter-spacing: .09em;
@@ -196,8 +197,8 @@ button:disabled,
   font-weight: 850;
 }
 
-.df-filter-grid :is(input, select, textarea),
-:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .receitas-filtros, .tax-control-controls) :is(input, select, textarea) {
+.df-filter-grid :is(input:not([type='checkbox']):not([type='radio']), select, textarea),
+:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .receitas-filtros, .tax-control-controls) :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -208,6 +209,33 @@ button:disabled,
   background: var(--df-surface);
   color: var(--df-text);
   font: inherit;
+}
+
+.df-filter-grid label:has(> :is(input[type='checkbox'], input[type='radio'], [role='switch'])),
+:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .receitas-filtros, .tax-control-controls) label:has(> :is(input[type='checkbox'], input[type='radio'], [role='switch'])) {
+  display: inline-flex;
+  min-height: var(--df-control-height);
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.df-filter-grid :is(input[type='checkbox'], input[type='radio']),
+:is(.advanced-filters, .audit-toolbar, .fluxo-caixa-filtros, .receitas-filtros, .tax-control-controls) :is(input[type='checkbox'], input[type='radio']) {
+  box-sizing: border-box;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--df-primary-700);
+}
+
+:is(.importacao-page > header, .master-page-hero, .ferias-page-hero) :is(.master-kicker, .ferias-kicker, .importacao-hero-copy > span:first-child) {
+  color: #ccfbf1 !important;
 }
 
 .df-export-menu { position: relative; min-width: 140px; }

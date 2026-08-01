@@ -4171,6 +4171,7 @@ export default function App() {
         exportarExcel={exportarExcel}
         podeEditarFinanceiro={podeEditarFinanceiro()}
         podeExportarDados={podeExportarDados()}
+        abrirNovaConta={abrirNovaConta}
         filtroStatus={filtroStatus}
         setFiltroStatus={setFiltroStatus}
         filtroHorizonte={filtroHorizonte}

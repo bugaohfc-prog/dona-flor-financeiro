@@ -2343,7 +2343,7 @@ button.dashboard-priorities-indicator:hover {
   color: var(--dashboard-text);
   font-size: clamp(18px, 2vw, 22px);
   line-height: 1.05;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 
 .dashboard-home-kpi small {
@@ -2845,7 +2845,7 @@ button.dashboard-priorities-indicator:hover {
   }
 
   .dashboard-home-kpi strong {
-    font-size: 18px;
+    font-size: clamp(15px, 4.5vw, 18px);
   }
 
   .dashboard-home-kpi {
@@ -2897,7 +2897,15 @@ button.dashboard-priorities-indicator:hover {
   }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 420px) {
+  .dashboard-home-kpi-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-home-kpi:last-child {
+    grid-column: auto;
+  }
+
   .dashboard-home-people-widget .dashboard-home-people-grid {
     grid-template-columns: 1fr;
   }

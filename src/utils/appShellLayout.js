@@ -29,7 +29,6 @@ export const ROTAS_COM_ACOES_FLUTUANTES = Object.freeze([
   'dashboard',
   'agenda',
   'notas',
-  'contas',
 ])
 
 export function resolverLayoutAppShell(tela) {

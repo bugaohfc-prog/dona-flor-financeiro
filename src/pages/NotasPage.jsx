@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import PageHero from '../components/shared/PageHero.jsx'
+import { PageHeader } from '../components/shared/PagePatterns.jsx'
 
 const OPCOES_ORDENACAO_NOTAS = [
   { valor: 'prioridade', label: 'Prioridade' },
@@ -122,11 +122,11 @@ export default function NotasPage({
 
   return (
     <>
-      <PageHero
-        kicker="Opera&#231;&#227;o"
+      <PageHeader
+        kicker="Operação"
         title="Notas"
-        description="Acompanhamento de pend&#234;ncias, lembretes e observa&#231;&#245;es operacionais."
-        className="page-title-actions notes-page-title notes-redesign-header"
+        description="Acompanhamento de pendências, lembretes e observações operacionais."
+        className="notes-page-hero"
         actionsClassName="page-actions-row"
         actions={(
           <>

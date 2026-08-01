@@ -177,7 +177,7 @@ test('ações flutuantes permanecem disponíveis sem camada bloqueante', () => {
 })
 
 test('FAB aparece somente nas rotas operacionais com ação contextual clara', () => {
-  assert.deepEqual(ROTAS_COM_ACOES_FLUTUANTES, ['dashboard', 'agenda', 'notas', 'contas'])
+  assert.deepEqual(ROTAS_COM_ACOES_FLUTUANTES, ['dashboard', 'agenda', 'notas'])
   for (const telaAtual of ROTAS_COM_ACOES_FLUTUANTES) {
     assert.deepEqual(resolverAcoesFlutuantesAppShell({ telaAtual }), {
       bloqueioInteracaoAtivo: false,
@@ -185,7 +185,7 @@ test('FAB aparece somente nas rotas operacionais com ação contextual clara', (
     })
   }
 
-  for (const telaAtual of ['relatorios-contas', 'relatorios', 'controle-impostos', 'configuracoes', 'usuarios', 'fluxo-caixa']) {
+  for (const telaAtual of ['contas', 'relatorios-contas', 'relatorios', 'controle-impostos', 'configuracoes', 'usuarios', 'fluxo-caixa']) {
     assert.deepEqual(resolverAcoesFlutuantesAppShell({ telaAtual }), {
       bloqueioInteracaoAtivo: false,
       mostrarFab: false,
@@ -246,7 +246,7 @@ test('toast e navegação comum não fazem parte das condições bloqueantes', (
   assert.deepEqual(
     resolverAcoesFlutuantesAppShell({
       toast: { mensagem: 'Informação' },
-      telaAtual: 'contas',
+      telaAtual: 'notas',
       acessoNegado: true,
     }),
     {

@@ -196,7 +196,7 @@ export default function ContasPage({
   listarPagamentosParciaisConta,
   estornarPagamentoParcial,
   baixarContaQuitadaPorParciais,
-  navegarPara, telaRetorno = '', onVoltarOrigem, podeEditarFinanceiro = true, podeExportarDados = true,
+  navegarPara, telaRetorno = '', onVoltarOrigem, podeEditarFinanceiro = true, podeExportarDados = true, abrirNovaConta,
   periodoPagas, setPeriodoPagas, anoPagas, setAnoPagas, dataInicialPagas, setDataInicialPagas, dataFinalPagas, setDataFinalPagas, loadingConsultaContas = false, haMaisContasConsulta = false, carregarMaisContas, modoBuscaGlobal = false
 }) {
   const [ordenacaoContas, setOrdenacaoContas] = useState('vencimento_asc')
@@ -907,6 +907,9 @@ export default function ContasPage({
             <button style={styles.btnCinza} onClick={onVoltarOrigem}>Voltar ao Controle de Impostos</button>
           )}
           <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>Voltar ao Painel</button>
+          {podeEditarFinanceiro && abrirNovaConta ? (
+            <button type="button" style={styles.btnSalvar} onClick={abrirNovaConta}>Nova conta</button>
+          ) : null}
           {podeExportarDados ? <ExportMenu
             disabled={loading || loadingConsultaContas || contasFiltradas.length === 0}
             options={[

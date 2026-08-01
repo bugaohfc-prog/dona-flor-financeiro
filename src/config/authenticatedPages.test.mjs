@@ -21,7 +21,12 @@ test('inventário classifica páginas e registra apenas exportações existentes
 })
 
 test('shell carrega os tokens compartilhados para todas as páginas autenticadas', () => {
-  const source = fs.readFileSync(`${root}/src/components/shell/AppShell.jsx`, 'utf8')
-  assert.match(source, /shared\/PagePatterns\.css/)
-  assert.match(source, /app-frame-content/)
+  const appSource = fs.readFileSync(`${root}/src/App.jsx`, 'utf8')
+  const shellSource = fs.readFileSync(`${root}/src/components/shell/AppShell.jsx`, 'utf8')
+  const compartilhados = appSource.indexOf("import './components/shared/PagePatterns.css'")
+  const dominio = appSource.indexOf("import './styles.css'")
+
+  assert.ok(compartilhados >= 0)
+  assert.ok(dominio > compartilhados)
+  assert.match(shellSource, /app-frame-content/)
 })

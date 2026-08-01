@@ -6,7 +6,6 @@ import AppFrameStyles from './AppFrameStyles.jsx'
 import DesktopRefinementStyles from './DesktopRefinementStyles.jsx'
 import MobileFinalStyles from './MobileFinalStyles.jsx'
 import MobileUxPatchStyles from './MobileUxPatchStyles.jsx'
-import '../shared/PagePatterns.css'
 
 export default function AppShell({
   empresaId,

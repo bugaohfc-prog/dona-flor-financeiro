@@ -64,6 +64,9 @@ import {
   montarPayloadAuditoriaVinculoManual
 } from './utils/recorrenciaAcoesControladas.js'
 import { clearChunkReloadAttempt } from './utils/chunkRecovery.js'
+import './styles/tokens.css'
+import './styles/base.css'
+import './components/shared/PagePatterns.css'
 import './styles.css'
 import styles from './styles/appStyles.js'
 import menuSections, { MODULOS_TOPBAR, resolverContextoModulo } from './config/menuSections.js'

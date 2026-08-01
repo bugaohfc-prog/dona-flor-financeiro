@@ -1,0 +1,57 @@
+:root {
+  /* Identidade compartilhada */
+  --df-primary-900: #052e2b;
+  --df-primary-700: #0f766e;
+  --df-primary-500: #14b8a6;
+  --df-primary-100: #ccfbf1;
+  --df-primary-50: #f0fdfa;
+  --df-color-brand: #0f766e;
+  --df-color-brand-soft: #f0fdfa;
+
+  /* Superficies e texto */
+  --df-page-bg: #f4faf8;
+  --df-surface: #ffffff;
+  --df-surface-soft: #f8fafc;
+  --df-text: #0f172a;
+  --df-muted: #64748b;
+  --df-border: #e2e8f0;
+  --df-color-surface: #ffffff;
+  --df-color-page: #f8fafc;
+  --df-color-text: #0f172a;
+  --df-color-muted: #64748b;
+  --df-color-border: #e2e8f0;
+
+  /* Estados */
+  --df-danger: #b91c1c;
+  --df-danger-soft: #fff1f2;
+  --df-warning: #b45309;
+  --df-warning-soft: #fffbeb;
+  --df-success: #15803d;
+  --df-info: #2563eb;
+  --df-color-success: #15803d;
+  --df-color-warning: #92400e;
+  --df-color-danger: #b91c1c;
+
+  /* Ritmo e controles */
+  --df-space-1: 4px;
+  --df-space-2: 8px;
+  --df-space-3: 12px;
+  --df-space-4: 16px;
+  --df-space-5: 20px;
+  --df-space-6: 24px;
+  --df-space-control: 40px;
+  --df-control-height: 42px;
+
+  /* Forma e elevacao: valores efetivos do bundle anterior */
+  --df-radius-control: 12px;
+  --df-radius-card: 20px;
+  --df-radius-section: 22px;
+  --df-radius-pill: 999px;
+  --df-shadow-soft: 0 8px 20px rgba(15, 23, 42, .04);
+  --df-shadow-card: 0 14px 34px rgba(15, 23, 42, .055);
+  --df-focus: 0 0 0 3px rgba(20, 184, 166, .28);
+
+  /* Tipografia de indicadores */
+  --df-kpi-value: 24px;
+  --df-kpi-compact: 20px;
+}

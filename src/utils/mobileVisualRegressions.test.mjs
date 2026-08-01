@@ -90,6 +90,7 @@ test('valores monetários do Dashboard não quebram e usam uma coluna até 420px
 test('kickers dos cabeçalhos escuros têm contraste explícito e escopo restrito', () => {
   const css = read('src/components/shared/PagePatterns.css')
   assert.match(css, /\.df-page-kicker,[\s\S]*?color: #ccfbf1 !important;/)
-  assert.match(css, /\.importacao-page > header[\s\S]*?\.ferias-kicker[\s\S]*?color: #ccfbf1 !important;/)
+  assert.match(css, /\.importacao-page > header[\s\S]*?\.master-kicker[\s\S]*?color: #ccfbf1 !important;/)
+  assert.doesNotMatch(css, /\.ferias-(?:kicker|page|hero)/)
   assert.doesNotMatch(css, /(?:^|\n)span\s*\{[^}]*color: #ccfbf1/)
 })

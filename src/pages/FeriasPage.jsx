@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useFuncionarios } from '../hooks/useFuncionarios'
 import { useFuncionariosFerias } from '../hooks/useFuncionariosFerias'
+import { PageHeader, PageState } from '../components/shared/PagePatterns.jsx'
 import { mensagemSeguraErro } from '../utils/session'
+import './FeriasPage.css'
 
 const FORMULARIO_CICLO_INICIAL = {
   dias_direito: '30',
@@ -249,13 +251,8 @@ function sugerirProximoCicloFerias(funcionario, ciclos = []) {
   }
 }
 
-function EmptyState({ titulo, descricao }) {
-  return (
-    <div className="ferias-empty-state">
-      <strong>{titulo}</strong>
-      <p>{descricao}</p>
-    </div>
-  )
+function EmptyState({ titulo, descricao, type = 'empty' }) {
+  return <PageState type={type} title={titulo} description={descricao} className="ferias-empty-state" />
 }
 
 function SectionHeader({ titulo, descricao, resumo, aberto, onToggle, acao }) {
@@ -303,7 +300,6 @@ function periodoConsomeSaldo(periodo) {
 }
 
 export default function FeriasPage({
-  styles,
   empresaId,
   empresaNome,
   mostrarAviso,
@@ -795,312 +791,14 @@ export default function FeriasPage({
 
   return (
     <div className="ferias-page">
-      <style>{`
-        .ferias-page { display: grid; gap: 18px; }
-        .ferias-page-grid {
-          display: grid;
-          grid-template-columns: minmax(220px, .68fr) minmax(0, 1.55fr);
-          gap: 16px;
-          align-items: start;
-        }
-        .ferias-main-column {
-          display: grid;
-          gap: 16px;
-          min-width: 0;
-        }
-        .ferias-card {
-          border: 1px solid rgba(15, 23, 42, .08);
-          border-radius: 16px;
-          background: #ffffff;
-          padding: 14px;
-          box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
-          min-width: 0;
-        }
-        .ferias-card.is-compact {
-          padding: 12px;
-        }
-        .ferias-card h2,
-        .ferias-card h3 {
-          margin: 0 0 6px;
-          color: #0f172a;
-        }
-        .ferias-section-header {
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          align-items: flex-start;
-        }
-        .ferias-section-toggle {
-          border: 0;
-          background: transparent;
-          padding: 0;
-          margin: 0;
-          display: inline-flex;
-          align-items: flex-start;
-          gap: 10px;
-          color: #0f172a;
-          text-align: left;
-          cursor: pointer;
-          min-width: 0;
-        }
-        .ferias-section-toggle > span:first-child {
-          width: 24px;
-          height: 24px;
-          border-radius: 999px;
-          display: inline-grid;
-          place-items: center;
-          background: #f1f5f9;
-          color: #0f766e;
-          font-size: 18px;
-          font-weight: 900;
-          line-height: 1;
-          flex: 0 0 auto;
-        }
-        .ferias-section-toggle strong {
-          display: block;
-          color: #0f172a;
-          font-size: 16px;
-          line-height: 1.2;
-        }
-        .ferias-section-toggle small,
-        .ferias-section-toggle em {
-          display: block;
-          color: #64748b;
-          font-size: 12px;
-          font-style: normal;
-          font-weight: 600;
-          line-height: 1.35;
-          margin-top: 3px;
-        }
-        .ferias-card p {
-          margin: 0;
-          color: #64748b;
-          font-size: 13px;
-          line-height: 1.45;
-        }
-        .ferias-form-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 12px;
-          margin-top: 14px;
-        }
-        .ferias-form-grid label,
-        .ferias-form-row label {
-          display: grid;
-          gap: 6px;
-          color: #475569;
-          font-size: 12px;
-          font-weight: 900;
-        }
-        .ferias-form-grid .span-2 { grid-column: 1 / -1; }
-        .ferias-form-actions {
-          display: flex;
-          justify-content: flex-end;
-          gap: 10px;
-          margin-top: 14px;
-          flex-wrap: wrap;
-        }
-        .ferias-form-row {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr);
-          gap: 12px;
-          margin-top: 14px;
-        }
-        .ferias-cycle-list,
-        .ferias-period-list {
-          display: grid;
-          gap: 10px;
-          margin-top: 14px;
-        }
-        .ferias-cycle-card,
-        .ferias-period-card {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
-          gap: 12px;
-          align-items: center;
-          border: 1px solid rgba(15, 23, 42, .08);
-          border-radius: 16px;
-          background: #f8fafc;
-          padding: 12px;
-        }
-        .ferias-cycle-card.selected {
-          border-color: rgba(13, 148, 136, .44);
-          background: #f0fdfa;
-        }
-        .ferias-cycle-card.archived,
-        .ferias-period-card.archived {
-          opacity: .78;
-          background: #f1f5f9;
-        }
-        .ferias-cycle-main,
-        .ferias-period-main {
-          display: grid;
-          gap: 5px;
-          min-width: 0;
-        }
-        .ferias-cycle-main strong,
-        .ferias-period-main strong {
-          color: #0f172a;
-          font-size: 14px;
-        }
-        .ferias-cycle-main small,
-        .ferias-period-main small {
-          color: #64748b;
-          line-height: 1.35;
-        }
-        .ferias-actions {
-          display: flex;
-          justify-content: flex-end;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-        .ferias-selected-pill {
-          width: fit-content;
-          border-radius: 999px;
-          padding: 6px 9px;
-          background: #ccfbf1;
-          color: #115e59;
-          font-size: 11px;
-          font-weight: 900;
-          text-transform: uppercase;
-        }
-        .ferias-actions button,
-        .ferias-form-actions button {
-          min-height: 34px !important;
-          padding: 8px 11px !important;
-          margin: 0 !important;
-        }
-        .ferias-status {
-          width: fit-content;
-          border-radius: 999px;
-          padding: 4px 8px;
-          background: #ecfdf5;
-          color: #0f766e;
-          font-size: 11px;
-          font-weight: 900;
-          text-transform: uppercase;
-        }
-        .ferias-status.archived {
-          background: #fee2e2;
-          color: #b91c1c;
-        }
-        .ferias-summary-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-          gap: 10px;
-          margin-top: 14px;
-        }
-        .ferias-summary-box {
-          border: 1px solid rgba(15, 23, 42, .08);
-          border-radius: 15px;
-          background: #f8fafc;
-          padding: 12px;
-          display: grid;
-          gap: 4px;
-        }
-        .ferias-summary-box span {
-          color: #64748b;
-          font-size: 11px;
-          font-weight: 900;
-          text-transform: uppercase;
-          letter-spacing: .04em;
-        }
-        .ferias-summary-box strong {
-          color: #0f172a;
-          font-size: 18px;
-        }
-        .ferias-empty-state {
-          border: 1px dashed rgba(15, 23, 42, .16);
-          border-radius: 16px;
-          background: #f8fafc;
-          padding: 14px;
-          color: #64748b;
-          margin-top: 12px;
-        }
-        .ferias-empty-state strong {
-          display: block;
-          color: #0f172a;
-          margin-bottom: 4px;
-        }
-        .ferias-switch {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          color: #475569;
-          font-size: 13px;
-          font-weight: 800;
-        }
-        .ferias-preview {
-          border: 1px solid rgba(13, 148, 136, .18);
-          border-radius: 16px;
-          background: #f0fdfa;
-          color: #115e59;
-          padding: 12px;
-          font-size: 13px;
-          line-height: 1.45;
-          margin-top: 12px;
-        }
-        .ferias-warning {
-          border: 1px solid rgba(245, 158, 11, .26);
-          border-radius: 16px;
-          background: #fffbeb;
-          color: #92400e;
-          padding: 12px;
-          font-size: 13px;
-          line-height: 1.45;
-          margin-top: 12px;
-        }
-        .ferias-calculated-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-          gap: 10px;
-          margin-top: 14px;
-        }
-        .ferias-calculated-field {
-          border: 1px solid rgba(15, 23, 42, .08);
-          border-radius: 15px;
-          background: #f8fafc;
-          padding: 12px;
-          display: grid;
-          gap: 4px;
-        }
-        .ferias-calculated-field span {
-          color: #64748b;
-          font-size: 11px;
-          font-weight: 900;
-          text-transform: uppercase;
-          letter-spacing: .04em;
-        }
-        .ferias-calculated-field strong {
-          color: #0f172a;
-          font-size: 15px;
-        }
-        @media (max-width: 980px) {
-          .ferias-page-grid,
-          .ferias-main-column,
-          .ferias-form-grid,
-          .ferias-summary-grid,
-          .ferias-calculated-grid,
-          .ferias-cycle-card,
-          .ferias-period-card {
-            grid-template-columns: 1fr;
-          }
-          .ferias-actions,
-          .ferias-form-actions {
-            justify-content: flex-start;
-          }
-        }
-      `}</style>
-
-      <div className="ferias-page-hero">
-        <div className="ferias-hero-copy">
-          <span className="ferias-kicker">Gestao de Pessoas</span>
-          <h1>Ferias</h1>
-          <p>Consulte periodos aquisitivos, limites de gozo e saldo por colaborador.</p>
-          <small>Empresa ativa: <strong>{empresaNome || 'Empresa nao identificada'}</strong></small>
-        </div>
-        <button className="ferias-btn ferias-btn-secondary" type="button" onClick={voltarPainel}>Voltar ao painel</button>
-      </div>
+      <PageHeader
+        kicker="Gestão de Pessoas"
+        title="Férias"
+        description="Consulte períodos aquisitivos, limites de gozo e saldo por colaborador."
+        meta={<>Empresa ativa: <strong>{empresaNome || 'Empresa não identificada'}</strong></>}
+        className="ferias-page-hero"
+        actions={<button className="ferias-btn ferias-btn-secondary" type="button" onClick={voltarPainel}>Voltar ao painel</button>}
+      />
 
       {!empresaId ? (
         <section className="ferias-card">
@@ -1122,19 +820,19 @@ export default function FeriasPage({
 
             {secoesAbertas.funcionario && (
               <>
-                <p style={{ marginTop: 10 }}>CPF e observacoes sensiveis nao aparecem nesta tela.</p>
+                <p className="ferias-note">CPF e observacoes sensiveis nao aparecem nesta tela.</p>
 
                 {loadingFuncionarios ? (
-                  <p style={{ ...styles.textoNota, marginTop: 12 }}>Carregando colaboradores...</p>
+                  <PageState type="loading" title="Carregando colaboradores…" description="Consultando a equipe da empresa ativa." />
                 ) : erroFuncionarios ? (
-                  <EmptyState titulo="Nao foi possivel carregar" descricao={erroFuncionarios} />
+                  <EmptyState type="error" titulo="Nao foi possivel carregar" descricao={erroFuncionarios} />
                 ) : (
                   <>
                     <div className="ferias-employee-picker">
                       <label className="ferias-employee-search">
                         Buscar colaborador
                         <input
-                          style={styles.input}
+                          className="ferias-input"
                           type="search"
                           value={buscaFuncionario}
                           onChange={(event) => {
@@ -1280,7 +978,7 @@ export default function FeriasPage({
                     <label>
                       Dias de direito
                       <input
-                        style={styles.input}
+                        className="ferias-input"
                         type="number"
                         min="1"
                         max="30"
@@ -1292,7 +990,7 @@ export default function FeriasPage({
                     <label className="span-2">
                       Status inicial
                       <select
-                        style={styles.input}
+                        className="ferias-input"
                         value={formularioCiclo.status}
                         onChange={(event) => atualizarFormularioCiclo('status', event.target.value)}
                       >
@@ -1351,9 +1049,9 @@ export default function FeriasPage({
                 {secoesAbertas.ciclos && (
                   <>
                 {loadingCiclos ? (
-                  <p style={{ ...styles.textoNota, marginTop: 12 }}>Carregando periodos...</p>
+                  <PageState type="loading" title="Carregando períodos…" description="Consultando os períodos aquisitivos do colaborador." />
                 ) : erro ? (
-                  <EmptyState titulo="Nao foi possivel carregar ferias" descricao={erro} />
+                  <EmptyState type="error" titulo="Nao foi possivel carregar ferias" descricao={erro} />
                 ) : ciclosVisiveis.length === 0 ? (
                   <EmptyState
                     titulo={ciclos.length > 0 ? 'Nenhum periodo visivel' : 'Nenhum periodo aquisitivo cadastrado'}
@@ -1504,7 +1202,7 @@ export default function FeriasPage({
                 <label>
                   Dias de direito
                   <input
-                    style={styles.input}
+                    className="ferias-input"
                     type="number"
                     min="1"
                     max="30"
@@ -1516,7 +1214,7 @@ export default function FeriasPage({
                 <label className="span-2">
                   Status
                   <select
-                    style={styles.input}
+                    className="ferias-input"
                     value={formularioEdicaoCiclo.status}
                     onChange={(event) => atualizarFormularioEdicaoCiclo('status', event.target.value)}
                   >
@@ -1585,7 +1283,7 @@ export default function FeriasPage({
               <label>
                 Data de inicio
                 <input
-                  style={styles.input}
+                  className="ferias-input"
                   type="date"
                   value={formularioPeriodo.dataInicio}
                   onChange={(event) => atualizarFormularioPeriodo('dataInicio', event.target.value)}
@@ -1596,7 +1294,7 @@ export default function FeriasPage({
               <label>
                 Quantidade de dias
                 <input
-                  style={styles.input}
+                  className="ferias-input"
                   type="number"
                   min="1"
                   max={saldoSelecionado ?? 30}
@@ -1609,7 +1307,7 @@ export default function FeriasPage({
               <label className="span-2">
                 Status
                 <select
-                  style={styles.input}
+                  className="ferias-input"
                   value={formularioPeriodo.status}
                   onChange={(event) => atualizarFormularioPeriodo('status', event.target.value)}
                   disabled={novaParcelaBloqueada}
@@ -1687,7 +1385,7 @@ export default function FeriasPage({
 
           {secoesAbertas.parcelas && (
           loadingPeriodos ? (
-            <p style={{ ...styles.textoNota, marginTop: 12 }}>Carregando periodos de gozo...</p>
+            <PageState type="loading" title="Carregando períodos de gozo…" description="Consultando os lançamentos do período selecionado." />
           ) : periodosVisiveis.length === 0 ? (
             <EmptyState
               titulo={periodos.length > 0 ? 'Nenhum gozo visivel' : 'Nenhum periodo de gozo lancado'}
@@ -1730,7 +1428,7 @@ export default function FeriasPage({
                             <label>
                               Data de início
                               <input
-                                style={styles.input}
+                                className="ferias-input"
                                 type="date"
                                 value={formularioEdicaoPeriodo.dataInicio}
                                 onChange={(event) => atualizarFormularioEdicaoPeriodo('dataInicio', event.target.value)}
@@ -1740,7 +1438,7 @@ export default function FeriasPage({
                             <label>
                               Quantidade de dias
                               <input
-                                style={styles.input}
+                                className="ferias-input"
                                 type="number"
                                 min="1"
                                 max={saldoDisponivelEdicao || 1}
@@ -1752,7 +1450,7 @@ export default function FeriasPage({
                             <label className="span-2">
                               Status
                               <select
-                                style={styles.input}
+                                className="ferias-input"
                                 value={formularioEdicaoPeriodo.status}
                                 onChange={(event) => atualizarFormularioEdicaoPeriodo('status', event.target.value)}
                               >

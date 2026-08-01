@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useFuncionariosExamesPeriodicos } from '../hooks/useFuncionariosExamesPeriodicos'
 import { useFuncionarios } from '../hooks/useFuncionarios'
+import { FilterCard, FilterGrid, KpiCard, KpiGrid, PageHeader, PageState } from '../components/shared/PagePatterns.jsx'
 import { mensagemSeguraErro } from '../utils/session'
+import './FuncionariosPage.css'
 
 const FORMULARIO_INICIAL = {
   nome: '',
@@ -128,7 +130,6 @@ function montarPayloadFormulario(formulario) {
 }
 
 export default function FuncionariosPage({
-  styles,
   empresaId,
   empresaNome,
   filiais = [],
@@ -443,37 +444,30 @@ export default function FuncionariosPage({
 
   return (
     <div className="funcionarios-page">
-      <div className="funcionarios-page-hero">
-        <div className="funcionarios-hero-copy">
-          <span className="funcionarios-kicker">Gestão de Pessoas</span>
-          <h1>Funcionários</h1>
-          <p>Cadastro operacional da equipe, vínculos e exames periódicos.</p>
-          <small>Empresa ativa: <strong>{empresaNome || 'Empresa não identificada'}</strong></small>
-        </div>
-        <div className="funcionarios-hero-actions">
+      <PageHeader
+        kicker="Gestão de Pessoas"
+        title="Funcionários"
+        description="Cadastro operacional da equipe, vínculos e exames periódicos."
+        meta={<>Empresa ativa: <strong>{empresaNome || 'Empresa não identificada'}</strong></>}
+        className="funcionarios-page-hero"
+        actionsClassName="funcionarios-hero-actions"
+        actions={<>
           <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={voltarPainel}>← Painel</button>
           {podeEditar && (
             <button className="funcionarios-btn funcionarios-btn-primary" type="button" disabled={!empresaId} onClick={abrirNovoFuncionario}>
               Novo funcionário
             </button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       <section className="funcionarios-panel">
-        <div className="funcionarios-section-header">
-          <div>
-            <span className="funcionarios-kicker">Equipe</span>
-            <h2>Equipe cadastrada</h2>
-            <p>Leitura rápida da equipe, sem expor CPF, documentos, salário ou dados clínicos.</p>
-          </div>
-        </div>
-
-        <div className="funcionarios-control-card">
+        <FilterCard className="funcionarios-filters" description="Busque a equipe sem expor CPF, documentos, salário ou dados clínicos.">
+        <FilterGrid className="funcionarios-control-card">
           <label className="funcionarios-field funcionarios-field-search">
             <span>Busca</span>
             <input
-              style={styles.input}
+              className="funcionarios-input"
               value={busca}
               onChange={(event) => {
                 setBusca(event.target.value)
@@ -486,7 +480,7 @@ export default function FuncionariosPage({
           <label className="funcionarios-field">
             <span>Status</span>
             <select
-              style={styles.input}
+              className="funcionarios-input"
               value={statusFiltro}
               onChange={(event) => {
                 setStatusFiltro(event.target.value)
@@ -513,50 +507,24 @@ export default function FuncionariosPage({
             <span className="funcionarios-switch-indicator" aria-hidden="true" />
             <span>Mostrar arquivados</span>
           </label>
-        </div>
+        </FilterGrid>
+        </FilterCard>
 
-        <div className="funcionarios-summary" aria-label="Resumo da equipe">
-          <div className="funcionarios-summary-card">
-            <small>Equipe ativa</small>
-            <strong>{resumoEquipe.ativos}</strong>
-          </div>
-          <div className="funcionarios-summary-card">
-            <small>Afastados</small>
-            <strong>{resumoEquipe.afastados}</strong>
-          </div>
-          <div className="funcionarios-summary-card">
-            <small>Aniversariantes</small>
-            <strong>{resumoEquipe.aniversariantes}</strong>
-          </div>
-          <div className="funcionarios-summary-card">
-            <small>Inativos</small>
-            <strong>{resumoEquipe.inativos}</strong>
-          </div>
-        </div>
+        <KpiGrid className="funcionarios-summary" aria-label="Resumo da equipe">
+          <KpiCard label="Equipe ativa" value={resumoEquipe.ativos} tone="success" />
+          <KpiCard label="Afastados" value={resumoEquipe.afastados} tone="warning" />
+          <KpiCard label="Aniversariantes" value={resumoEquipe.aniversariantes} />
+          <KpiCard label="Inativos" value={resumoEquipe.inativos} />
+        </KpiGrid>
 
         {!empresaId ? (
-          <div className="empty-state-card">
-            <div className="empty-state-icon">👥</div>
-            <strong>Empresa ativa necessária</strong>
-            <p>Selecione uma empresa para carregar os funcionários.</p>
-          </div>
+          <PageState title="Empresa ativa necessária" description="Selecione uma empresa para carregar os funcionários." />
         ) : loading ? (
-          <p style={styles.textoNota}>Carregando funcionários...</p>
+          <PageState type="loading" title="Carregando funcionários…" description="Consultando a equipe da empresa ativa." />
         ) : erro ? (
-          <div className="empty-state-card">
-            <div className="empty-state-icon">!</div>
-            <strong>Não foi possível carregar</strong>
-            <p>{erro}</p>
-            <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={() => carregarFuncionarios()}>
-              Tentar novamente
-            </button>
-          </div>
+          <PageState type="error" title="Não foi possível carregar" description={erro} actionLabel="Tentar novamente" onAction={() => carregarFuncionarios()} />
         ) : funcionariosFiltrados.length === 0 ? (
-          <div className="empty-state-card">
-            <div className="empty-state-icon">👥</div>
-            <strong>Nenhum funcionário encontrado</strong>
-            <p>{podeEditar ? 'Cadastre o primeiro colaborador desta empresa.' : 'Não há colaboradores disponíveis para esta empresa.'}</p>
-          </div>
+          <PageState title="Nenhum funcionário encontrado" description={podeEditar ? 'Cadastre o primeiro colaborador desta empresa.' : 'Não há colaboradores disponíveis para esta empresa.'} />
         ) : (
           <>
           <div className="funcionarios-results-strip">
@@ -625,11 +593,11 @@ export default function FuncionariosPage({
 
       {modalAberto && (
         <div className="funcionario-modal-backdrop" role="presentation" onClick={fecharFormulario}>
-          <form className="funcionario-modal" onSubmit={salvarFormulario} onClick={(event) => event.stopPropagation()}>
+          <form className="funcionario-modal" role="dialog" aria-modal="true" aria-labelledby="funcionario-modal-title" onSubmit={salvarFormulario} onClick={(event) => event.stopPropagation()}>
             <div className="funcionario-modal-header">
               <div>
                 <span className="funcionarios-kicker">{funcionarioEditando ? 'Editar cadastro' : 'Novo cadastro'}</span>
-                <h2>{funcionarioEditando ? 'Editar funcionário' : 'Novo funcionário'}</h2>
+                <h2 id="funcionario-modal-title">{funcionarioEditando ? 'Editar funcionário' : 'Novo funcionário'}</h2>
                 <p>Preencha somente dados operacionais necessários para organizar a equipe.</p>
               </div>
               <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharFormulario}>Fechar</button>
@@ -647,7 +615,7 @@ export default function FuncionariosPage({
                 <label>
                   Nome completo
                   <input
-                    style={styles.input}
+                    className="funcionarios-input"
                     value={formulario.nome}
                     onChange={(event) => atualizarCampo('nome', event.target.value)}
                     onBlur={() => normalizarCampoCapitalizado('nome')}
@@ -659,7 +627,7 @@ export default function FuncionariosPage({
                 <label>
                   Cargo ou função
                   <input
-                    style={styles.input}
+                    className="funcionarios-input"
                     value={formulario.cargo}
                     onChange={(event) => atualizarCampo('cargo', event.target.value)}
                     onBlur={() => normalizarCampoCapitalizado('cargo')}
@@ -669,7 +637,7 @@ export default function FuncionariosPage({
                 <label>
                   Telefone
                   <input
-                    style={styles.input}
+                    className="funcionarios-input"
                     value={formulario.telefone}
                     onChange={(event) => atualizarCampo('telefone', event.target.value)}
                     inputMode="tel"
@@ -679,7 +647,7 @@ export default function FuncionariosPage({
                 <label>
                   E-mail
                   <input
-                    style={styles.input}
+                    className="funcionarios-input"
                     value={formulario.email}
                     onChange={(event) => atualizarCampo('email', event.target.value)}
                     type="email"
@@ -689,14 +657,14 @@ export default function FuncionariosPage({
                 <label>
                   CPF (opcional)
                   <input
-                    style={styles.input}
+                    className="funcionarios-input"
                     value={formulario.cpf}
                     onChange={(event) => atualizarCampo('cpf', event.target.value)}
                     inputMode="numeric"
                     maxLength={11}
                     placeholder="Somente números"
                   />
-                  <small style={styles.textoAjuda}>Não aparece na listagem de funcionários.</small>
+                  <small className="funcionarios-help">Não aparece na listagem de funcionários.</small>
                 </label>
               </div>
             </section>
@@ -714,7 +682,7 @@ export default function FuncionariosPage({
                   <label>
                     Status operacional
                     <select
-                      style={styles.input}
+                      className="funcionarios-input"
                       value={formulario.status}
                       onChange={(event) => atualizarCampo('status', event.target.value)}
                     >
@@ -726,7 +694,7 @@ export default function FuncionariosPage({
                   <label>
                     Filial
                     <select
-                      style={styles.input}
+                      className="funcionarios-input"
                       value={formulario.filial_id}
                       onChange={(event) => atualizarCampo('filial_id', event.target.value)}
                     >
@@ -753,17 +721,17 @@ export default function FuncionariosPage({
                   <label>
                     Data de nascimento
                     <input
-                      style={styles.input}
+                      className="funcionarios-input"
                       value={formulario.data_nascimento}
                       onChange={(event) => atualizarCampo('data_nascimento', event.target.value)}
                       type="date"
                     />
-                    <small style={styles.textoAjuda}>Usada apenas para contagem de aniversariantes.</small>
+                    <small className="funcionarios-help">Usada apenas para contagem de aniversariantes.</small>
                   </label>
                   <label>
                     Data de admissão
                     <input
-                      style={styles.input}
+                      className="funcionarios-input"
                       value={formulario.data_admissao}
                       onChange={(event) => atualizarCampo('data_admissao', event.target.value)}
                       type="date"
@@ -772,12 +740,12 @@ export default function FuncionariosPage({
                   <label>
                     Data do exame admissional
                     <input
-                      style={styles.input}
+                      className="funcionarios-input"
                       value={formulario.data_exame_admissional}
                       onChange={(event) => atualizarCampo('data_exame_admissional', event.target.value)}
                       type="date"
                     />
-                    <small style={styles.textoAjuda}>Controle de periodicidade; salve somente a data, sem laudos ou resultados.</small>
+                    <small className="funcionarios-help">Controle de periodicidade; salve somente a data, sem laudos ou resultados.</small>
                   </label>
                 </div>
               )}
@@ -796,12 +764,12 @@ export default function FuncionariosPage({
                   <label className="span-2">
                     Observações
                     <textarea
-                      style={{ ...styles.input, minHeight: 90, resize: 'vertical' }}
+                      className="funcionarios-input"
                       value={formulario.observacoes}
                       onChange={(event) => atualizarCampo('observacoes', event.target.value)}
                       placeholder="Ex.: informação administrativa interna. Não inserir dados médicos ou documentos."
                     />
-                    <small style={styles.textoAjuda}>
+                    <small className="funcionarios-help">
                       Use apenas observações administrativas. Não registre laudos, diagnósticos,
                       resultados de exames, documentos ou informações clínicas.
                     </small>
@@ -850,7 +818,7 @@ export default function FuncionariosPage({
                     <label>
                       Data do exame periódico
                       <input
-                        style={styles.input}
+                        className="funcionarios-input"
                         value={dataExamePeriodico}
                         onChange={(event) => setDataExamePeriodico(event.target.value)}
                         type="date"
@@ -878,7 +846,7 @@ export default function FuncionariosPage({
                   </div>
 
                   {loadingExames ? (
-                    <p style={styles.textoNota}>Carregando exames periódicos...</p>
+                    <p className="funcionarios-note">Carregando exames periódicos...</p>
                   ) : erroExames ? (
                     <div className="funcionario-exames-empty">
                       <strong>Não foi possível carregar os exames.</strong>
@@ -899,7 +867,7 @@ export default function FuncionariosPage({
                             {exameEditandoId === exame.id ? (
                               <div className="funcionario-exame-edit">
                                 <input
-                                  style={styles.input}
+                                  className="funcionarios-input"
                                   value={dataExameEditando}
                                   onChange={(event) => setDataExameEditando(event.target.value)}
                                   type="date"

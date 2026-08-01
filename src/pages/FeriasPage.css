@@ -1,0 +1,185 @@
+.ferias-page,
+.ferias-page *,
+.ferias-page *::before,
+.ferias-page *::after { box-sizing: border-box; }
+
+.ferias-page {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 1280px;
+  gap: var(--df-space-4);
+  margin: 0 auto;
+  padding-bottom: 48px;
+  color: var(--df-text);
+}
+.ferias-page > *,
+.ferias-page section,
+.ferias-page section > * { min-width: 0; max-width: 100%; }
+.ferias-page-hero { max-width: 1280px; }
+.ferias-kicker { color: var(--df-primary-700); font-size: .75rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.ferias-page h2,
+.ferias-page h3 { color: var(--df-text); }
+
+.ferias-btn,
+.ferias-inline-action,
+.ferias-section-toggle {
+  display: inline-flex;
+  min-height: var(--df-control-height);
+  align-items: center;
+  justify-content: center;
+  padding: 9px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--df-radius-pill);
+  background: var(--df-surface);
+  color: var(--df-text);
+  font: inherit;
+  font-weight: 850;
+  text-align: center;
+  cursor: pointer;
+}
+.ferias-btn:focus-visible,
+.ferias-inline-action:focus-visible,
+.ferias-section-toggle:focus-visible,
+.ferias-input:focus-visible { outline: none; box-shadow: var(--df-focus); }
+.ferias-btn:disabled { opacity: .55; cursor: not-allowed; }
+.ferias-btn-primary { border-color: var(--df-primary-700); background: var(--df-primary-700); color: #fff; }
+.ferias-btn-secondary { background: var(--df-surface); color: #334155; }
+.ferias-btn-danger { border-color: #fecdd3; background: #fff1f2; color: #be123c; }
+.ferias-inline-action { border-color: #99f6e4; background: var(--df-primary-50); color: var(--df-primary-700); }
+
+.ferias-page-grid { display: grid; min-width: 0; grid-template-columns: minmax(220px, .68fr) minmax(0, 1.55fr); align-items: start; gap: var(--df-space-4); }
+.ferias-main-column { display: grid; min-width: 0; gap: var(--df-space-4); }
+.ferias-card { min-width: 0; padding: 16px; border: 1px solid var(--df-border); border-radius: var(--df-radius-card); background: var(--df-surface); box-shadow: var(--df-shadow-card); }
+.ferias-card.is-compact { padding: 14px; }
+.ferias-card h2,
+.ferias-card h3 { margin: 0 0 6px; }
+.ferias-card p { margin: 0; color: var(--df-muted); font-size: .82rem; line-height: 1.45; }
+.ferias-note { margin-top: 10px; }
+.ferias-loading { margin-top: 12px; color: var(--df-muted); }
+
+.ferias-section-header { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: var(--df-space-3); }
+.ferias-section-title { display: grid; min-width: 0; gap: 3px; }
+.ferias-section-title strong { overflow-wrap: anywhere; }
+.ferias-section-title small,
+.ferias-section-title em { color: var(--df-muted); font-size: .75rem; font-style: normal; line-height: 1.35; }
+.ferias-section-actions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.ferias-section-toggle { width: 34px; min-width: 34px; height: 34px; min-height: 34px; flex: 0 0 34px; padding: 0; color: var(--df-primary-700); }
+
+.ferias-input {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--df-control-height);
+  padding: 9px 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--df-radius-control);
+  background: var(--df-surface);
+  color: var(--df-text);
+  font: inherit;
+}
+.ferias-form-grid { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--df-space-3); margin-top: 14px; }
+.ferias-form-grid label,
+.ferias-employee-search { display: grid; min-width: 0; gap: 6px; color: #475569; font-size: .75rem; font-weight: 850; }
+.ferias-form-grid .span-2 { grid-column: 1 / -1; }
+.ferias-form-actions,
+.ferias-actions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.ferias-actions { margin-top: 0; }
+
+.ferias-switch { position: relative; display: inline-flex; min-height: var(--df-control-height); align-items: center; gap: 8px; padding: 6px 11px 6px 7px; border: 1px solid #cbd5e1; border-radius: var(--df-radius-pill); background: var(--df-surface); color: #475569; font-size: .78rem; font-weight: 800; cursor: pointer; }
+.ferias-switch input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.ferias-switch-indicator { position: relative; width: 32px; height: 20px; flex: 0 0 32px; border-radius: var(--df-radius-pill); background: #cbd5e1; }
+.ferias-switch-indicator::after { content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.2); transition: transform .18s ease; }
+.ferias-switch:has(input:checked) { border-color: #5eead4; background: var(--df-primary-50); color: var(--df-primary-700); }
+.ferias-switch:has(input:checked) .ferias-switch-indicator { background: var(--df-primary-700); }
+.ferias-switch:has(input:checked) .ferias-switch-indicator::after { transform: translateX(12px); }
+.ferias-switch:has(input:disabled) { opacity: .55; cursor: not-allowed; }
+.ferias-switch:has(input:focus-visible) { box-shadow: var(--df-focus); }
+
+.ferias-employee-picker { display: grid; min-width: 0; gap: 10px; margin-top: 12px; }
+.ferias-employee-list { display: grid; min-width: 0; max-height: 460px; gap: 8px; overflow-y: auto; }
+.ferias-employee-option { display: grid; width: 100%; min-width: 0; gap: 3px; padding: 10px; border: 1px solid var(--df-border); border-radius: var(--df-radius-control); background: var(--df-surface); color: #334155; font: inherit; text-align: left; cursor: pointer; }
+.ferias-employee-option.selected { border-color: #5eead4; background: var(--df-primary-50); }
+.ferias-employee-option span { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 8px; }
+.ferias-employee-option strong,
+.ferias-employee-option small { overflow-wrap: anywhere; }
+.ferias-employee-option small,
+.ferias-employee-option em { color: var(--df-muted); font-size: .75rem; font-style: normal; }
+.ferias-employee-option em { width: fit-content; padding: 3px 7px; border-radius: var(--df-radius-pill); background: #f1f5f9; }
+
+.ferias-cycle-list,
+.ferias-period-list { display: grid; min-width: 0; gap: 10px; margin-top: 14px; }
+.ferias-cycle-card,
+.ferias-period-card { position: relative; display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--df-space-3); overflow: hidden; padding: 12px; border: 1px solid var(--df-border); border-radius: 16px; background: var(--df-surface-soft); box-shadow: var(--df-shadow-soft); }
+.ferias-cycle-card::before,
+.ferias-period-card::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--df-primary-500); }
+.ferias-cycle-card.selected { border-color: #5eead4; background: var(--df-primary-50); }
+.ferias-cycle-card.selected::before { background: var(--df-primary-700); }
+.ferias-cycle-card.archived,
+.ferias-period-card.archived { opacity: .78; background: #f1f5f9; }
+.ferias-cycle-card.archived::before,
+.ferias-period-card.archived::before { background: #94a3b8; }
+.ferias-cycle-card.is-overdue::before { background: #dc2626; }
+.ferias-cycle-card.is-due-soon::before { background: #f59e0b; }
+.ferias-cycle-main,
+.ferias-period-main { display: grid; min-width: 0; gap: 5px; }
+.ferias-cycle-main small,
+.ferias-period-main small { color: var(--df-muted); line-height: 1.35; overflow-wrap: anywhere; }
+.ferias-cycle-title-row { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.ferias-cycle-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.ferias-cycle-metrics span { display: grid; min-width: 0; gap: 2px; padding: 8px; border: 1px solid var(--df-border); border-radius: 10px; background: rgba(248,250,252,.88); }
+.ferias-cycle-metrics small { color: var(--df-muted); }
+.ferias-cycle-alert,
+.ferias-status,
+.ferias-selected-pill { width: fit-content; max-width: 100%; padding: 4px 8px; border-radius: var(--df-radius-pill); font-size: .68rem; font-style: normal; font-weight: 900; text-transform: uppercase; }
+.ferias-status { border: 1px solid #a7f3d0; background: #ecfdf5; color: #047857; }
+.ferias-status.archived { border-color: #fecdd3; background: #fee2e2; color: #b91c1c; }
+.ferias-selected-pill { background: #ccfbf1; color: #115e59; }
+.ferias-cycle-alert.is-overdue { background: #fef2f2; color: #b91c1c; }
+.ferias-cycle-alert.is-due-soon { background: #fffbeb; color: #92400e; }
+.ferias-cycle-alert.is-on-track { background: #ecfdf5; color: #047857; }
+.ferias-cycle-results { display: flex; min-width: 0; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding: 10px; border: 1px solid var(--df-border); border-radius: var(--df-radius-control); background: var(--df-surface-soft); color: var(--df-muted); }
+.ferias-cycle-results strong { color: var(--df-primary-700); white-space: nowrap; }
+.ferias-cycle-more { margin-top: 10px; }
+
+.ferias-summary-grid,
+.ferias-calculated-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 14px; }
+.ferias-summary-box,
+.ferias-calculated-field { display: grid; min-width: 0; gap: 4px; padding: 12px; border: 1px solid var(--df-border); border-radius: 15px; background: var(--df-surface-soft); box-shadow: var(--df-shadow-soft); }
+.ferias-summary-box span,
+.ferias-calculated-field span { color: var(--df-muted); font-size: .68rem; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+.ferias-summary-box strong,
+.ferias-calculated-field strong { overflow-wrap: anywhere; }
+.ferias-preview,
+.ferias-warning,
+.ferias-empty-state { min-width: 0; margin-top: 12px; padding: 12px; border: 1px solid var(--df-border); border-radius: 16px; line-height: 1.45; overflow-wrap: anywhere; }
+.ferias-preview { border-color: #99f6e4; background: var(--df-primary-50); color: #115e59; }
+.ferias-warning { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+.ferias-empty-state { border-style: dashed; background: var(--df-surface-soft); color: var(--df-muted); }
+.ferias-empty-state strong { display: block; margin-bottom: 4px; color: var(--df-text); }
+
+@media (max-width: 980px) {
+  .ferias-page-grid,
+  .ferias-main-column,
+  .ferias-cycle-card,
+  .ferias-period-card { grid-template-columns: minmax(0, 1fr); }
+  .ferias-actions { justify-content: flex-start; }
+}
+
+@media (max-width: 560px) {
+  .ferias-page { gap: var(--df-space-3); padding-bottom: 80px; }
+  .ferias-card { padding: 12px; border-radius: 16px; }
+  .ferias-section-header { display: grid; }
+  .ferias-section-actions { width: 100%; justify-content: space-between; }
+  .ferias-form-grid,
+  .ferias-summary-grid,
+  .ferias-calculated-grid,
+  .ferias-cycle-metrics { grid-template-columns: minmax(0, 1fr); }
+  .ferias-form-grid .span-2 { grid-column: auto; }
+  .ferias-form-actions,
+  .ferias-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .ferias-btn,
+  .ferias-inline-action { width: 100%; }
+  .ferias-employee-option span,
+  .ferias-cycle-title-row { grid-template-columns: minmax(0, 1fr); }
+  .ferias-employee-option span { display: grid; }
+}

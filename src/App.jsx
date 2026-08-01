@@ -4360,7 +4360,6 @@ export default function App() {
   if (telaAtual === 'funcionarios') {
     return (
       <LazyFuncionariosPage
-        styles={styles}
         empresaId={empresaId}
         empresaNome={empresaAtiva?.nome || nomeEmpresa}
         filiais={filiais}
@@ -4407,7 +4406,6 @@ export default function App() {
   if (telaAtual === 'ferias') {
     return (
       <LazyFeriasPage
-        styles={styles}
         empresaId={empresaId}
         empresaNome={empresaAtiva?.nome || nomeEmpresa}
         mostrarAviso={mostrarAviso}

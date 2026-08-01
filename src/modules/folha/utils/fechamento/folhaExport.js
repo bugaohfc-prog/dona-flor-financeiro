@@ -7,6 +7,7 @@ import {
   quantidadeHorasFolha,
   resolverValorLancamentoFolha
 } from './folhaDomain.js'
+import { formatarData } from './folhaFormatters.js'
 
 function texto(valor) {
   return String(valor ?? '').trim()
@@ -64,6 +65,11 @@ function obterOuCriarGrupo(mapa, contexto, lancamento) {
       he100: 0,
       faltas: 0,
       datasFaltas: new Set(),
+      detalhesHoras: {
+        hora_extra_50: [],
+        hora_extra_60: [],
+        hora_extra_100: []
+      },
       observacoes: new Set()
     })
   }
@@ -99,6 +105,11 @@ function consolidarFolha(params = {}) {
     if (lancamento.categoria === 'hora_extra_50') grupo.he50 += quantidadeHorasFolha(lancamento, contexto.itensAtivos)
     if (lancamento.categoria === 'hora_extra_60') grupo.he60 += quantidadeHorasFolha(lancamento, contexto.itensAtivos)
     if (lancamento.categoria === 'hora_extra_100') grupo.he100 += quantidadeHorasFolha(lancamento, contexto.itensAtivos)
+    if (grupo.detalhesHoras[lancamento.categoria]) {
+      itens.filter((item) => item.data_referencia).forEach((item) => {
+        grupo.detalhesHoras[lancamento.categoria].push(`${formatarData(item.data_referencia)} — ${horasFolhaParaTexto(item.quantidade)}`)
+      })
+    }
     if (lancamento.categoria === 'falta_injustificada') {
       grupo.faltas += quantidadeFaltasFolha(lancamento, contexto.itensAtivos)
       const datas = itens.length > 0 ? itens.map((item) => item.data_referencia) : [lancamento.data_referencia]
@@ -109,12 +120,22 @@ function consolidarFolha(params = {}) {
   }
 
   return Array.from(mapa.values())
-    .map((grupo) => ({
-      ...grupo,
-      totalCompras: Math.round(grupo.compras.reduce((total, valor) => total + valor, 0) * 100) / 100,
-      datasFaltas: Array.from(grupo.datasFaltas).sort(),
-      observacoes: Array.from(grupo.observacoes)
-    }))
+    .map((grupo) => {
+      const rotulosHoras = [
+        ['hora_extra_50', 'HE 50%'],
+        ['hora_extra_60', 'HE 60%'],
+        ['hora_extra_100', 'HE 100%']
+      ]
+      for (const [categoria, rotulo] of rotulosHoras) {
+        if (grupo.detalhesHoras[categoria].length > 0) grupo.observacoes.add(`${rotulo}: ${grupo.detalhesHoras[categoria].join('; ')}`)
+      }
+      return {
+        ...grupo,
+        totalCompras: Math.round(grupo.compras.reduce((total, valor) => total + valor, 0) * 100) / 100,
+        datasFaltas: Array.from(grupo.datasFaltas).sort(),
+        observacoes: Array.from(grupo.observacoes)
+      }
+    })
     .sort((a, b) => ordenarTexto(a.filial, b.filial) || ordenarTexto(a.colaboradora, b.colaboradora) || ordenarTexto(a.funcionarioId, b.funcionarioId))
 }
 
@@ -125,6 +146,17 @@ function agruparPorFilial(linhas) {
     mapa.get(linha.filialId).linhas.push(linha)
   }
   return Array.from(mapa.values()).sort((a, b) => ordenarTexto(a.filial, b.filial) || ordenarTexto(a.filialId, b.filialId))
+}
+
+function nomeColuna(indice) {
+  let nome = ''
+  let atual = indice
+  while (atual > 0) {
+    const resto = (atual - 1) % 26
+    nome = String.fromCharCode(65 + resto) + nome
+    atual = Math.floor((atual - 1) / 26)
+  }
+  return nome
 }
 
 export function montarControleComprasFolha(params = {}) {
@@ -147,15 +179,25 @@ export function montarControleComprasFolha(params = {}) {
     [`Competência: ${texto(params.competencia)}`],
     []
   ]
+  const rowKinds = ['title', 'subtitle', 'spacer']
+  const ultimaColuna = nomeColuna(headers.length)
+  const merges = [`A1:${ultimaColuna}1`, `A2:${ultimaColuna}2`]
 
   for (const bloco of blocos) {
+    const linhaFilial = rows.length + 1
     rows.push([bloco.filial], headers)
-    bloco.linhas.forEach((linha) => rows.push([
-      linha.colaboradora,
-      ...Array.from({ length: maximoCompras }, (_, indice) => linha.compras[indice] ?? ''),
-      linha.total
-    ]))
+    rowKinds.push('section', 'header')
+    merges.push(`A${linhaFilial}:${ultimaColuna}${linhaFilial}`)
+    bloco.linhas.forEach((linha, indiceLinha) => {
+      rows.push([
+        linha.colaboradora,
+        ...Array.from({ length: maximoCompras }, (_, indice) => linha.compras[indice] ?? ''),
+        linha.total
+      ])
+      rowKinds.push(indiceLinha % 2 === 0 ? 'data' : 'data-alt')
+    })
     rows.push([])
+    rowKinds.push('spacer')
   }
 
   return Object.freeze({
@@ -171,7 +213,14 @@ export function montarControleComprasFolha(params = {}) {
       rows,
       landscape: true,
       fitToWidth: 1,
-      currencyColumns: Array.from({ length: maximoCompras + 1 }, (_, indice) => indice + 1)
+      currencyColumns: Array.from({ length: maximoCompras + 1 }, (_, indice) => indice + 1),
+      emphasisColumns: [headers.length - 1],
+      columnWidths: [32, ...Array.from({ length: maximoCompras }, () => 15), 16],
+      rowKinds,
+      merges,
+      hideGridLines: true,
+      printArea: `$A$1:$${ultimaColuna}$${rows.length}`,
+      pageMargins: { left: 0.2, right: 0.2, top: 0.35, bottom: 0.35, header: 0.15, footer: 0.15 }
     }
   })
 }
@@ -202,22 +251,32 @@ export function montarFechamentoFolhaContabilidade(params = {}) {
     [`Competência: ${texto(params.competencia)}`],
     []
   ]
+  const rowKinds = ['title', 'subtitle', 'spacer']
+  const ultimaColuna = nomeColuna(headers.length)
+  const merges = [`A1:${ultimaColuna}1`, `A2:${ultimaColuna}2`]
 
   for (const bloco of blocos) {
+    const linhaFilial = rows.length + 1
     rows.push([bloco.filial], headers)
-    bloco.linhas.forEach((linha) => rows.push([
-      linha.colaborador,
-      linha.compras,
-      linha.planoSaude,
-      linha.premiacao,
-      linha.he50,
-      linha.he60,
-      linha.he100,
-      linha.faltas,
-      linha.datasFaltas.join(', '),
-      linha.observacoes.join(' | ')
-    ]))
+    rowKinds.push('section', 'header')
+    merges.push(`A${linhaFilial}:${ultimaColuna}${linhaFilial}`)
+    bloco.linhas.forEach((linha, indiceLinha) => {
+      rows.push([
+        linha.colaborador,
+        linha.compras,
+        linha.planoSaude,
+        linha.premiacao,
+        linha.he50,
+        linha.he60,
+        linha.he100,
+        linha.faltas,
+        linha.datasFaltas.map(formatarData).join(', '),
+        linha.observacoes.join(' | ')
+      ])
+      rowKinds.push(indiceLinha % 2 === 0 ? 'data' : 'data-alt')
+    })
     rows.push([])
+    rowKinds.push('spacer')
   }
 
   return Object.freeze({
@@ -226,7 +285,20 @@ export function montarFechamentoFolhaContabilidade(params = {}) {
     arquivo: `fechamento-folha-contabilidade-${texto(params.competencia) || 'folha'}.xlsx`,
     aba: 'Fechamento de Folha',
     blocos,
-    sheet: { name: 'Fechamento de Folha', rows, landscape: true, fitToWidth: 1, currencyColumns: [1, 2, 3] }
+    sheet: {
+      name: 'Fechamento de Folha',
+      rows,
+      landscape: true,
+      fitToWidth: 1,
+      currencyColumns: [1, 2, 3],
+      columnWidths: [30, 15, 15, 15, 11, 11, 11, 9, 28, 58],
+      wrapColumns: [8, 9],
+      rowKinds,
+      merges,
+      hideGridLines: true,
+      printArea: `$A$1:$${ultimaColuna}$${rows.length}`,
+      pageMargins: { left: 0.2, right: 0.2, top: 0.35, bottom: 0.35, header: 0.15, footer: 0.15 }
+    }
   })
 }
 

@@ -2,12 +2,26 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import {
+  ajustarDatasFaltasFolha,
   calcularPremiacaoFolha,
+  CATEGORIAS_OPERACIONAIS_FOLHA,
+  dataPertenceCompetenciaFolha,
+  formatarMoedaEntradaFolha,
   horasFolhaParaPersistencia,
   horasFolhaParaTexto,
+  mascararHorasFolha,
+  mensagemDataCompetenciaFolha,
+  obterLimitesCompetenciaFolha,
+  ordenarItensFolha,
+  parseMoedaEntradaFolha,
   planejarInclusaoCompraFolha,
+  planejarSincronizacaoFaltasFolha,
+  quantidadeFaltasFolha,
+  quantidadeHorasFolha,
   resolverValorLancamentoFolha,
-  totalItensFinanceirosFolha
+  totalItensFinanceirosFolha,
+  validarDatasFaltasFolha,
+  validarHorasFolha
 } from './folhaDomain.js'
 import {
   montarControleComprasFolha,
@@ -36,10 +50,11 @@ const lancamentos = [
   { id: 'ignorado', empresa_id: 'emp-1', competencia_id: 'comp-1', funcionario_id: 'func-1', filial_id: 'filial-1', natureza: 'desconto', categoria: 'compras_vales', valor: 999, arquivado: true }
 ]
 const itensLancamentos = [
-  { id: 'c1', lancamento_id: 'compras-1', funcionario_id: 'func-1', categoria: 'compras_vales', valor: 40, arquivado: false },
-  { id: 'c2', lancamento_id: 'compras-1', funcionario_id: 'func-1', categoria: 'compras_vales', valor: 60, arquivado: false },
+  { id: 'c1', lancamento_id: 'compras-1', funcionario_id: 'func-1', categoria: 'compras_vales', valor: 40, criado_em: '2026-07-01T10:00:00Z', arquivado: false },
+  { id: 'c2', lancamento_id: 'compras-1', funcionario_id: 'func-1', categoria: 'compras_vales', valor: 60, criado_em: '2026-07-01T11:00:00Z', arquivado: false },
   { id: 'c3', lancamento_id: 'compras-1', funcionario_id: 'func-1', categoria: 'compras_vales', valor: 500, arquivado: true },
-  { id: 'he50', lancamento_id: 'he50-1', funcionario_id: 'func-1', categoria: 'hora_extra_50', quantidade: 4 + 20 / 60, valor: 0, arquivado: false },
+  { id: 'he50-a', lancamento_id: 'he50-1', funcionario_id: 'func-1', categoria: 'hora_extra_50', data_referencia: '2026-07-05', quantidade: 2 + 20 / 60, valor: 0, criado_em: '2026-07-05T10:00:00Z', arquivado: false },
+  { id: 'he50-b', lancamento_id: 'he50-1', funcionario_id: 'func-1', categoria: 'hora_extra_50', data_referencia: '2026-07-18', quantidade: 2, valor: 0, criado_em: '2026-07-18T10:00:00Z', arquivado: false },
   { id: 'he60', lancamento_id: 'he60-1', funcionario_id: 'func-1', categoria: 'hora_extra_60', quantidade: 5.5, valor: 0, arquivado: false },
   { id: 'he100', lancamento_id: 'he100-1', funcionario_id: 'func-1', categoria: 'hora_extra_100', quantidade: 4 + 28 / 60, valor: 0, arquivado: false },
   { id: 'f1', lancamento_id: 'falta-1', funcionario_id: 'func-1', categoria: 'falta_injustificada', quantidade: 1, data_referencia: '2026-07-02', valor: 0, arquivado: false },
@@ -55,6 +70,78 @@ test('transição do lançamento legado preserva primeira compra antes da nova',
   assert.deepEqual(plano.map((item) => item.valor), [40, 60])
   assert.equal(totalItensFinanceirosFolha(plano), 100)
   assert.equal(resolverValorLancamentoFolha({ ...pai, valor: 100 }, plano.map((item, index) => ({ ...item, id: `${index}`, lancamento_id: 'pai' }))), 100)
+})
+
+test('compras preservam created_at ascendente, desempate por id e legado como Compra 1', () => {
+  const itens = ordenarItensFolha([
+    { id: 'b', valor: 50, created_at: '2026-07-10T11:00:00Z' },
+    { id: 'c', valor: 25, created_at: '2026-07-10T11:00:00Z' },
+    { id: 'a', valor: 100, created_at: '2026-07-10T10:00:00Z' },
+    { id: 'legado', valor: 30, origem_item: 'transicao_lancamento_legado', created_at: '2026-07-11T10:00:00Z' }
+  ])
+  assert.deepEqual(itens.map((item) => item.id), ['legado', 'a', 'b', 'c'])
+  assert.deepEqual(ordenarItensFolha(itens.slice(1, 3)).map((item) => item.valor), [100, 50])
+  assert.equal(totalItensFinanceirosFolha([{ valor: 100 }, { valor: 50 }]), 150)
+})
+
+test('máscara monetária pt-BR aceita digitação, colagem e valor persistido', () => {
+  assert.equal(formatarMoedaEntradaFolha(40), 'R$ 40,00')
+  assert.equal(formatarMoedaEntradaFolha('1.250,50'), 'R$ 1.250,50')
+  assert.equal(formatarMoedaEntradaFolha('10000,00'), 'R$ 10.000,00')
+  assert.equal(parseMoedaEntradaFolha('1.250,50'), 1250.5)
+  assert.equal(parseMoedaEntradaFolha('1250,50'), 1250.5)
+  assert.equal(parseMoedaEntradaFolha('R$ 40,00'), 40)
+})
+
+test('máscara HH:MM usa teclado numérico sem limitar horas a 23', () => {
+  assert.equal(mascararHorasFolha('0'), '0')
+  assert.equal(mascararHorasFolha('04'), '04:')
+  assert.equal(mascararHorasFolha('042'), '04:2')
+  assert.equal(mascararHorasFolha('0420'), '04:20')
+  assert.equal(mascararHorasFolha('0530'), '05:30')
+  assert.equal(mascararHorasFolha('04', { apagando: true }), '04')
+  assert.equal(mascararHorasFolha(''), '')
+  assert.equal(validarHorasFolha('12:60'), false)
+  assert.equal(validarHorasFolha('25:30'), true)
+})
+
+test('competência define limites e bloqueia datas de outro mês ou ano', () => {
+  assert.deepEqual(obterLimitesCompetenciaFolha('2026-07'), { primeiroDia: '2026-07-01', ultimoDia: '2026-07-31' })
+  assert.equal(dataPertenceCompetenciaFolha('2026-07-01', '2026-07'), true)
+  assert.equal(dataPertenceCompetenciaFolha('2026-07-31', '2026-07'), true)
+  assert.equal(dataPertenceCompetenciaFolha('2026-06-30', '2026-07'), false)
+  assert.equal(dataPertenceCompetenciaFolha('2026-08-01', '2026-07'), false)
+  assert.equal(dataPertenceCompetenciaFolha('2025-07-10', '2026-07'), false)
+  assert.equal(mensagemDataCompetenciaFolha('2026-07'), 'A data deve pertencer à competência 07/2026.')
+})
+
+test('faltas derivam campos e quantidade exclusivamente das ocorrências ativas', () => {
+  assert.deepEqual(ajustarDatasFaltasFolha([], 1), [''])
+  assert.deepEqual(ajustarDatasFaltasFolha(['2026-07-10'], 2), ['2026-07-10', ''])
+  assert.equal(validarDatasFaltasFolha(['', '2026-07-21'], '2026-07').codigo, 'DATAS_OBRIGATORIAS')
+  assert.equal(validarDatasFaltasFolha(['2026-07-10', '2026-07-10'], '2026-07').codigo, 'DATAS_DUPLICADAS')
+  assert.equal(validarDatasFaltasFolha(['2026-07-10', '2026-08-01'], '2026-07').codigo, 'DATA_FORA_COMPETENCIA')
+  assert.equal(validarDatasFaltasFolha(['2026-07-10', '2026-07-21'], '2026-07').valido, true)
+  const pai = { id: 'faltas', quantidade: 99 }
+  const itens = [{ lancamento_id: 'faltas', quantidade: 1 }, { lancamento_id: 'faltas', quantidade: 1, arquivado: true }]
+  assert.equal(quantidadeFaltasFolha(pai, itens), 1)
+  assert.equal(quantidadeFaltasFolha(pai, itens.map((item) => ({ ...item, arquivado: false }))), 2)
+  const plano = planejarSincronizacaoFaltasFolha([
+    { id: 'f1', data_referencia: '2026-07-10', criado_em: '2026-07-01T10:00:00Z' },
+    { id: 'f2', data_referencia: '2026-07-21', criado_em: '2026-07-01T11:00:00Z' }
+  ], ['2026-07-10'])
+  assert.deepEqual(plano.criar, [])
+  assert.deepEqual(plano.manter.map((item) => item.id), ['f1'])
+  assert.deepEqual(plano.arquivar.map((item) => item.id), ['f2'])
+})
+
+test('horas com data somam ocorrências ativas e preservam retorno HH:MM', () => {
+  const pai = { id: 'he' }
+  const itens = [
+    { lancamento_id: 'he', data_referencia: '2026-07-05', quantidade: horasFolhaParaPersistencia('02:20') },
+    { lancamento_id: 'he', data_referencia: '2026-07-18', quantidade: horasFolhaParaPersistencia('02:00') }
+  ]
+  assert.equal(horasFolhaParaTexto(quantidadeHorasFolha(pai, itens)), '04:20')
 })
 
 test('item arquivado sai do total e reativado volta', () => {
@@ -85,6 +172,21 @@ test('controle de compras usa uma aba, blocos por ID e compras dinâmicas', () =
   assert.deepEqual(modelo.sheet.currencyColumns, [1, 2, 3])
 })
 
+test('controle de compras mantém R$ 100 como Compra 1 e R$ 50 como Compra 2', () => {
+  const modelo = montarControleComprasFolha({
+    ...params,
+    lancamentos: [lancamentos[0]],
+    funcionarios: [funcionarios[0]],
+    filiais: [filiais[0]],
+    itensLancamentos: [
+      { id: 'compra-2', lancamento_id: 'compras-1', valor: 50, criado_em: '2026-07-10T11:00:00Z', arquivado: false },
+      { id: 'compra-1', lancamento_id: 'compras-1', valor: 100, criado_em: '2026-07-10T10:00:00Z', arquivado: false }
+    ]
+  })
+  assert.deepEqual(modelo.blocos[0].linhas[0].compras, [100, 50])
+  assert.equal(modelo.blocos[0].linhas[0].total, 150)
+})
+
 test('fechamento contábil consolida valores, horas, faltas e observações sem duplicar', () => {
   const modelo = montarFechamentoFolhaContabilidade(params)
   assert.equal(modelo.aba, 'Fechamento de Folha')
@@ -98,7 +200,8 @@ test('fechamento contábil consolida valores, horas, faltas e observações sem 
   assert.equal(linha.he100, '04:28')
   assert.equal(linha.faltas, 3)
   assert.deepEqual(linha.datasFaltas, ['2026-07-02', '2026-07-03'])
-  assert.deepEqual(linha.observacoes, ['SMOKE-FOLHA CONTABILIDADE'])
+  assert.equal(linha.observacoes.includes('SMOKE-FOLHA CONTABILIDADE'), true)
+  assert.equal(linha.observacoes.includes('HE 50%: 05/07/2026 — 02:20; 18/07/2026 — 02:00'), true)
   assert.deepEqual(modelo.sheet.currencyColumns, [1, 2, 3])
   const controle = montarControleComprasFolha(params)
   assert.equal(linha.compras, controle.blocos[0].linhas[0].total)
@@ -113,17 +216,33 @@ test('workbooks Excel são arquivos únicos, monetários e ajustados em paisagem
     assert.match(conteudo, /orientation="landscape"/)
     assert.match(conteudo, /fitToWidth="1"/)
     assert.match(conteudo, /numFmtId="164"/)
+    assert.match(conteudo, /<mergeCells/)
+    assert.match(conteudo, /showGridLines="0"/)
+    assert.match(conteudo, /<pageMargins/)
+    assert.match(conteudo, /style="thin"/)
     assert.equal(modelo.arquivo.endsWith('.xlsx'), true)
   }
+  const fechamento = montarFechamentoFolhaContabilidade(params)
+  assert.equal(fechamento.sheet.rows.flat().includes('02/07/2026, 03/07/2026'), true)
+  assert.equal(fechamento.sheet.name, 'Fechamento de Folha')
+  assert.equal(montarControleComprasFolha(params).sheet.name, 'Controle de Compras')
+})
+
+test('seletor expõe apenas categorias operacionais e nunca categorias técnicas', () => {
+  assert.equal(CATEGORIAS_OPERACIONAIS_FOLHA.includes('falta_injustificada'), true)
+  assert.equal(CATEGORIAS_OPERACIONAIS_FOLHA.includes('data_falta'), false)
+  assert.equal(CATEGORIAS_OPERACIONAIS_FOLHA.includes('status_conferencia'), false)
+  assert.equal(CATEGORIAS_OPERACIONAIS_FOLHA.includes('origem_lancamento'), false)
 })
 
 test('arquitetura da Folha não usa styles globais nem DOM responsivo duplicado', async () => {
-  const [app, pagina, css, patterns, global] = await Promise.all([
+  const [app, pagina, css, patterns, global, service] = await Promise.all([
     readFile(new URL('../../../../App.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../../../../pages/FechamentoFolhaPage.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../../../../pages/FechamentoFolhaPage.css', import.meta.url), 'utf8'),
     readFile(new URL('../../../../components/shared/PagePatterns.css', import.meta.url), 'utf8'),
-    readFile(new URL('../../../../styles.css', import.meta.url), 'utf8')
+    readFile(new URL('../../../../styles.css', import.meta.url), 'utf8'),
+    readFile(new URL('../../../../services/folhaService.js', import.meta.url), 'utf8')
   ])
   assert.doesNotMatch(app, /<LazyFechamentoFolhaPage[\s\S]{0,120}styles=/)
   assert.match(pagina, /import '\.\/FechamentoFolhaPage\.css'/)
@@ -135,4 +254,9 @@ test('arquitetura da Folha não usa styles globais nem DOM responsivo duplicado'
   assert.match(css, /@media \(max-width: 560px\)/)
   assert.match(pagina, /competenciaLancamentosCarregadaId === competenciaSelecionadaId/)
   assert.match(pagina, /salvandoCompraRapida/)
+  assert.doesNotMatch(pagina, /title="[1-5]\. /)
+  assert.doesNotMatch(pagina, /data_falta|status_conferencia|origem_lancamento/)
+  assert.match(pagina, /inputMode="decimal"/)
+  assert.match(pagina, /inputMode="numeric"/)
+  assert.match(service, /\.order\('criado_em', \{ ascending: true \}\)\s*\.order\('id', \{ ascending: true \}\)/)
 })

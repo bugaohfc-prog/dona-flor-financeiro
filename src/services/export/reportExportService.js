@@ -202,18 +202,30 @@ export function createXlsxBlob(sheets) {
     rows: Array.isArray(sheet.rows) ? sheet.rows : [],
     landscape: sheet.landscape === true,
     fitToWidth: Number.isFinite(Number(sheet.fitToWidth)) ? Number(sheet.fitToWidth) : null,
-    currencyColumns: Array.isArray(sheet.currencyColumns) ? sheet.currencyColumns : []
+    currencyColumns: Array.isArray(sheet.currencyColumns) ? sheet.currencyColumns : [],
+    columnWidths: Array.isArray(sheet.columnWidths) ? sheet.columnWidths : [],
+    rowKinds: Array.isArray(sheet.rowKinds) ? sheet.rowKinds : [],
+    merges: Array.isArray(sheet.merges) ? sheet.merges : [],
+    emphasisColumns: Array.isArray(sheet.emphasisColumns) ? sheet.emphasisColumns : [],
+    wrapColumns: Array.isArray(sheet.wrapColumns) ? sheet.wrapColumns : [],
+    pageMargins: sheet.pageMargins || null,
+    printArea: sheet.printArea || null,
+    hideGridLines: sheet.hideGridLines === true
   }))
 
   if (safeSheets.length === 0) {
     safeSheets.push({ name: 'Relatório', rows: [['Sem dados para exportar']] })
   }
 
+  const definedNames = safeSheets.map((sheet, index) => sheet.printArea
+    ? `<definedName name="_xlnm.Print_Area" localSheetId="${index}">'${escapeXml(sheet.name.replaceAll("'", "''"))}'!${escapeXml(sheet.printArea)}</definedName>`
+    : '').filter(Boolean).join('')
   const workbookXml = xml(`
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheets>
     ${safeSheets.map((sheet, index) => `<sheet name="${escapeXml(sheet.name)}" sheetId="${index + 1}" r:id="rId${index + 1}"/>`).join('')}
   </sheets>
+  ${definedNames ? `<definedNames>${definedNames}</definedNames>` : ''}
 </workbook>`)
 
   const workbookRels = xml(`
@@ -239,11 +251,31 @@ export function createXlsxBlob(sheets) {
   const stylesXml = xml(`
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   <numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;R$&quot; #,##0.00"/></numFmts>
-  <fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>
-  <fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEFF6FF"/><bgColor indexed="64"/></patternFill></fill></fills>
-  <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+  <fonts count="6"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="16"/><name val="Arial"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Arial"/></font><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><name val="Arial"/></font></fonts>
+  <fills count="7"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEFF6FF"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF134E4A"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0F766E"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF0FDFA"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFCCFBF1"/><bgColor indexed="64"/></patternFill></fill></fills>
+  <borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFCBD5E1"/></left><right style="thin"><color rgb="FFCBD5E1"/></right><top style="thin"><color rgb="FFCBD5E1"/></top><bottom style="thin"><color rgb="FFCBD5E1"/></bottom><diagonal/></border></borders>
   <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-  <cellXfs count="6"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="164" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1"/><xf numFmtId="1" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="1" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1"/></cellXfs>
+  <cellXfs count="19">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
+    <xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+    <xf numFmtId="164" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1"/>
+    <xf numFmtId="1" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+    <xf numFmtId="1" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1"/>
+    <xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="5" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+    <xf numFmtId="164" fontId="4" fillId="0" borderId="1" xfId="0" applyFont="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="1" fontId="4" fillId="0" borderId="1" xfId="0" applyFont="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+    <xf numFmtId="164" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="1" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="164" fontId="5" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+  </cellXfs>
 </styleSheet>`)
 
   const files = [
@@ -453,32 +485,66 @@ function finiteNumber(value) {
 function createWorksheetXml(rows, options = {}) {
   const colCount = rows.reduce((max, row) => Math.max(max, row?.length || 0), 0)
   const widths = Array.from({ length: colCount }, (_, index) => {
-    const width = Math.min(Math.max(...rows.map((row) => String(row?.[index] ?? '').length), 10) + 2, 38)
+    const configured = Number(options.columnWidths?.[index])
+    const width = Number.isFinite(configured)
+      ? configured
+      : Math.min(Math.max(...rows.map((row) => String(row?.[index] ?? '').length), 10) + 2, 38)
     return `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`
   }).join('')
 
   const xmlRows = rows.map((row, rowIndex) => {
-    const cells = (row || []).map((value, colIndex) => createCellXml(value, colIndex, rowIndex, rows[0]?.[colIndex], options)).join('')
-    return `<row r="${rowIndex + 1}">${cells}</row>`
+    const rowKind = options.rowKinds?.[rowIndex] || ''
+    const values = rowKind && rowKind !== 'spacer'
+      ? Array.from({ length: colCount }, (_, index) => row?.[index] ?? '')
+      : (row || [])
+    const cells = values.map((value, colIndex) => createCellXml(value, colIndex, rowIndex, rows[0]?.[colIndex], options)).join('')
+    const height = { title: 28, subtitle: 22, section: 22, header: 28, data: 22, 'data-alt': 22 }[rowKind]
+    return `<row r="${rowIndex + 1}"${height ? ` ht="${height}" customHeight="1"` : ''}>${cells}</row>`
   }).join('')
+  const merges = (options.merges || []).map((ref) => `<mergeCell ref="${escapeXml(ref)}"/>`).join('')
+  const margins = {
+    left: 0.25,
+    right: 0.25,
+    top: 0.45,
+    bottom: 0.45,
+    header: 0.2,
+    footer: 0.2,
+    ...(options.pageMargins || {})
+  }
 
   return xml(`
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   ${options.fitToWidth != null ? '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>' : ''}
+  ${options.hideGridLines ? '<sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews>' : ''}
   <cols>${widths}</cols>
   <sheetData>${xmlRows}</sheetData>
+  ${merges ? `<mergeCells count="${options.merges.length}">${merges}</mergeCells>` : ''}
   ${options.landscape ? '<printOptions horizontalCentered="1"/>' : ''}
-  ${options.landscape || options.fitToWidth != null ? `<pageSetup orientation="${options.landscape ? 'landscape' : 'portrait'}"${options.fitToWidth != null ? ` fitToWidth="${options.fitToWidth}" fitToHeight="0"` : ''}/>` : ''}
+  <pageMargins left="${margins.left}" right="${margins.right}" top="${margins.top}" bottom="${margins.bottom}" header="${margins.header}" footer="${margins.footer}"/>
+  ${options.landscape || options.fitToWidth != null ? `<pageSetup paperSize="9" orientation="${options.landscape ? 'landscape' : 'portrait'}"${options.fitToWidth != null ? ` fitToWidth="${options.fitToWidth}" fitToHeight="0"` : ''}/>` : ''}
 </worksheet>`)
 }
 
 function createCellXml(value, colIndex, rowIndex, headerValue, options = {}) {
   const ref = `${colName(colIndex)}${rowIndex + 1}`
+  const rowKind = options.rowKinds?.[rowIndex] || ''
   const isHeader = rowIndex === 0
   const isNumber = typeof value === 'number' && Number.isFinite(value)
   const moeda = options.currencyColumns?.includes(colIndex)
     || /r\$|valor|previsto|realizado|pago|pendente|vencido|encargo|desconto|saldo|falta|receita|despesa|custo/i.test(String(headerValue || ''))
-  const style = isHeader ? (isNumber ? (moeda ? 3 : 5) : 1) : (isNumber ? (moeda ? 2 : 4) : 0)
+  const alternate = rowKind === 'data-alt'
+  let style
+  if (rowKind === 'title') style = 6
+  else if (rowKind === 'subtitle') style = 7
+  else if (rowKind === 'section') style = 8
+  else if (rowKind === 'header') style = 9
+  else if (rowKind === 'data' || alternate) {
+    if (isNumber && options.emphasisColumns?.includes(colIndex)) style = 16
+    else if (options.wrapColumns?.includes(colIndex)) style = alternate ? 18 : 17
+    else if (isNumber && moeda) style = alternate ? 14 : 11
+    else if (isNumber) style = alternate ? 15 : 12
+    else style = alternate ? 13 : 10
+  } else style = isHeader ? (isNumber ? (moeda ? 3 : 5) : 1) : (isNumber ? (moeda ? 2 : 4) : 0)
 
   if (isNumber) {
     return `<c r="${ref}" s="${style}"><v>${value}</v></c>`

@@ -862,8 +862,8 @@ export async function listarItensLancamentosFolha({
 
   let query = selecionarPorEmpresa(supabase, TABELA_FOLHA_LANCAMENTO_ITENS, empresa, LANCAMENTO_ITEM_SELECT)
     .eq('competencia_id', competencia)
-    .order('data_referencia', { ascending: false, nullsFirst: false })
-    .order('criado_em', { ascending: false })
+    .order('criado_em', { ascending: true })
+    .order('id', { ascending: true })
 
   if (lancamentoId) {
     query = query.eq('lancamento_id', validarLancamentoId(lancamentoId))

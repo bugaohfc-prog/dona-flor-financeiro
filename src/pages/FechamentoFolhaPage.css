@@ -86,6 +86,12 @@
   font-weight: 800;
 }
 
+.folha-field > small {
+  color: var(--df-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .folha-field input,
 .folha-field select,
 .folha-field textarea {
@@ -166,6 +172,7 @@
 
 .folha-lancamento-form,
 .folha-compras-lista,
+.folha-ocorrencias-lista,
 .folha-colaboradores-lista,
 .folha-lancamentos-lista {
   display: grid;
@@ -182,6 +189,7 @@
 .folha-list-heading,
 .folha-colaborador-card > header,
 .folha-compra-item,
+.folha-ocorrencia-item,
 .folha-lancamento-row {
   display: flex;
   align-items: center;
@@ -202,6 +210,7 @@
 }
 
 .folha-compra-item,
+.folha-ocorrencia-item,
 .folha-lancamento-row {
   border: 1px solid var(--df-border);
   border-radius: var(--df-radius-control);
@@ -210,6 +219,7 @@
 }
 
 .folha-compra-item.is-archived,
+.folha-ocorrencia-item.is-archived,
 .folha-lancamento-row.is-archived {
   background: var(--df-page);
   opacity: .72;
@@ -287,6 +297,23 @@
   white-space: nowrap;
 }
 
+.folha-ocorrencia-grid,
+.folha-faltas-datas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--df-space-2);
+}
+
+.folha-ocorrencia-grid,
+.folha-faltas-fields {
+  grid-column: 1 / -1;
+}
+
+.folha-faltas-fields {
+  display: grid;
+  gap: var(--df-space-3);
+}
+
 @media (max-width: 900px) {
   .folha-competencia-layout,
   .folha-context-grid,
@@ -321,6 +348,8 @@
   .folha-competencia-layout,
   .folha-context-grid,
   .folha-category-fields,
+  .folha-ocorrencia-grid,
+  .folha-faltas-datas,
   .folha-inline-form,
   .folha-compra-rapida,
   .folha-lancamento-row {
@@ -339,6 +368,7 @@
 
   .folha-competencia-ativa,
   .folha-compra-item,
+  .folha-ocorrencia-item,
   .folha-detalhe-row,
   .folha-colaborador-card > header,
   .folha-list-heading {

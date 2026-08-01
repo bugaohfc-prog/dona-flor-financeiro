@@ -3,17 +3,28 @@ import { useFolha } from '../hooks/useFolha'
 import { useFuncionarios } from '../hooks/useFuncionarios'
 import FolhaExportacoes from '../modules/folha/components/fechamento/FolhaExportacoes'
 import {
+  ajustarDatasFaltasFolha,
   calcularPremiacaoFolha,
+  CATEGORIAS_OPERACIONAIS_FOLHA,
   categoriaFolhaEhHora,
   categoriaFolhaUsaItens,
+  dataPertenceCompetenciaFolha,
+  formatarMoedaEntradaFolha,
   horasFolhaParaPersistencia,
   horasFolhaParaTexto,
   itensAtivosDoLancamento,
+  mascararHorasFolha,
+  mensagemDataCompetenciaFolha,
   numeroFolha,
+  obterLimitesCompetenciaFolha,
+  ordenarItensFolha,
+  parseMoedaEntradaFolha,
   planejarInclusaoCompraFolha,
+  planejarSincronizacaoFaltasFolha,
   quantidadeFaltasFolha,
   quantidadeHorasFolha,
-  resolverValorLancamentoFolha
+  resolverValorLancamentoFolha,
+  validarDatasFaltasFolha
 } from '../modules/folha/utils/fechamento/folhaDomain'
 import {
   exportarConsolidadoContabil,
@@ -23,7 +34,6 @@ import { formatarData, formatarMoeda } from '../modules/folha/utils/fechamento/f
 import {
   CATEGORIAS_CREDITO_FOLHA,
   CATEGORIAS_DESCONTO_FOLHA,
-  CATEGORIAS_INFORMATIVO_FOLHA,
   STATUS_COMPETENCIA_FOLHA
 } from '../services/folhaService'
 import {
@@ -42,14 +52,11 @@ const LABELS_CATEGORIA = {
   hora_extra_50: 'Hora extra 50%',
   hora_extra_60: 'Hora extra 60%',
   hora_extra_100: 'Hora extra 100%',
-  falta_injustificada: 'Falta',
+  falta_injustificada: 'Faltas',
   observacao_administrativa: 'Observação administrativa',
   outro_credito: 'Outro crédito',
   pensao_alimenticia: 'Pensão alimentícia',
-  outro_desconto: 'Outro desconto',
-  data_falta: 'Data da falta',
-  status_conferencia: 'Status de conferência',
-  origem_lancamento: 'Origem do lançamento'
+  outro_desconto: 'Outro desconto'
 }
 
 const LABELS_STATUS = {
@@ -61,12 +68,6 @@ const LABELS_STATUS = {
   arquivada: 'Arquivada'
 }
 
-const CATEGORIAS = [
-  ...CATEGORIAS_DESCONTO_FOLHA,
-  ...CATEGORIAS_CREDITO_FOLHA,
-  ...CATEGORIAS_INFORMATIVO_FOLHA
-]
-
 const FORM_LANCAMENTO_INICIAL = Object.freeze({
   categoria: 'compras_vales',
   valor: '',
@@ -75,8 +76,29 @@ const FORM_LANCAMENTO_INICIAL = Object.freeze({
   vendas: '',
   percentual: '',
   horas: '',
-  dataFalta: ''
+  dataHora: '',
+  quantidadeFaltas: '1',
+  datasFaltas: Object.freeze([''])
 })
+
+function criarFormLancamento(categoria = 'compras_vales') {
+  return { ...FORM_LANCAMENTO_INICIAL, categoria, datasFaltas: [''] }
+}
+
+function MoedaInputFolha({ value, onChange, inputRef, ...props }) {
+  return (
+    <input
+      {...props}
+      ref={inputRef}
+      type="text"
+      inputMode="decimal"
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      onBlur={(event) => onChange(formatarMoedaEntradaFolha(event.target.value))}
+      onFocus={(event) => event.currentTarget.select()}
+    />
+  )
+}
 
 function naturezaCategoria(categoria) {
   if (CATEGORIAS_CREDITO_FOLHA.includes(categoria)) return 'credito'
@@ -127,13 +149,16 @@ export default function FechamentoFolhaPage({
   const [competenciaSelecionadaId, setCompetenciaSelecionadaId] = useState('')
   const [novaCompetencia, setNovaCompetencia] = useState('')
   const [funcionarioSelecionadoId, setFuncionarioSelecionadoId] = useState('')
-  const [form, setForm] = useState({ ...FORM_LANCAMENTO_INICIAL })
+  const [form, setForm] = useState(() => criarFormLancamento())
   const [mostrarArquivados, setMostrarArquivados] = useState(false)
   const [itemEditandoId, setItemEditandoId] = useState('')
   const [mensagem, setMensagem] = useState('')
   const [erroLocal, setErroLocal] = useState('')
   const [salvandoCompraRapida, setSalvandoCompraRapida] = useState(false)
+  const [salvandoOcorrencia, setSalvandoOcorrencia] = useState(false)
   const compraInputRef = useRef(null)
+  const horaDataInputRef = useRef(null)
+  const faltaDataInputRef = useRef(null)
 
   const {
     competencias,
@@ -180,6 +205,7 @@ export default function FechamentoFolhaPage({
   const funcionariosPorId = useMemo(() => new Map((funcionarios || []).map((item) => [item.id, item])), [funcionarios])
   const filiaisPorId = useMemo(() => new Map((filiais || []).map((item) => [item.id, item])), [filiais])
   const competenciaSelecionada = competencias.find((item) => item.id === competenciaSelecionadaId) || null
+  const limitesCompetencia = obterLimitesCompetenciaFolha(competenciaSelecionada?.competencia)
   const funcionarioSelecionado = funcionariosPorId.get(funcionarioSelecionadoId) || null
   const lancamentosFuncionario = lancamentos.filter((item) => item.funcionario_id === funcionarioSelecionadoId)
   const resumoAtual = useMemo(
@@ -199,9 +225,24 @@ export default function FechamentoFolhaPage({
   )
   const parametrosExportacao = { empresaId, empresaNome, competencia: competenciaSelecionada?.competencia, competenciaId: competenciaSelecionadaId, lancamentos, itensLancamentos, funcionarios, filiais }
 
+  function montarFormularioCategoria(categoria, funcionarioId = funcionarioSelecionadoId, adicionar = false) {
+    const formulario = criarFormLancamento(categoria)
+    if (categoria !== 'falta_injustificada') return formulario
+    const lancamento = localizarLancamentoAtivo(lancamentos, funcionarioId, categoria)
+    const datasAtivas = lancamento
+      ? itensAtivosDoLancamento(itensLancamentos, lancamento.id).map((item) => item.data_referencia || '')
+      : []
+    if (adicionar || datasAtivas.length === 0) datasAtivas.push('')
+    return {
+      ...formulario,
+      quantidadeFaltas: String(datasAtivas.length),
+      datasFaltas: datasAtivas
+    }
+  }
+
   useEffect(() => {
     setFuncionarioSelecionadoId('')
-    setForm({ ...FORM_LANCAMENTO_INICIAL })
+    setForm(criarFormLancamento())
     setItemEditandoId('')
     setMensagem('')
     setErroLocal('')
@@ -216,7 +257,7 @@ export default function FechamentoFolhaPage({
   function selecionarFuncionario(id) {
     limparFeedback()
     setFuncionarioSelecionadoId(id)
-    setForm({ ...FORM_LANCAMENTO_INICIAL })
+    setForm(criarFormLancamento())
     setItemEditandoId('')
   }
 
@@ -255,7 +296,7 @@ export default function FechamentoFolhaPage({
     event.preventDefault()
     if (salvandoCompraRapida) return
     limparFeedback()
-    const valor = numeroFolha(form.valor)
+    const valor = parseMoedaEntradaFolha(form.valor)
     if (!funcionarioSelecionadoId) return setErroLocal('Selecione uma colaboradora.')
     if (valor <= 0) return setErroLocal('Informe um valor de compra maior que zero.')
 
@@ -286,6 +327,24 @@ export default function FechamentoFolhaPage({
     }
   }
 
+  function alterarQuantidadeFaltas(valor) {
+    const quantidade = Math.max(1, Math.min(31, Number.parseInt(valor || '1', 10) || 1))
+    if (quantidade < form.datasFaltas.length && form.datasFaltas.slice(quantidade).some(Boolean)) {
+      const confirmou = window.confirm('Reduzir a quantidade removerá as últimas datas ainda não salvas. Deseja continuar?')
+      if (!confirmou) return
+    }
+    setForm((atual) => ({
+      ...atual,
+      quantidadeFaltas: String(quantidade),
+      datasFaltas: ajustarDatasFaltasFolha(atual.datasFaltas, quantidade)
+    }))
+  }
+
+  function alterarHoras(event) {
+    const apagando = event.nativeEvent?.inputType?.startsWith('delete')
+    setForm((atual) => ({ ...atual, horas: mascararHorasFolha(event.target.value, { apagando }) }))
+  }
+
   async function salvarCategoria(event) {
     event.preventDefault()
     limparFeedback()
@@ -297,32 +356,85 @@ export default function FechamentoFolhaPage({
     if (categoriaFolhaEhHora(categoria)) {
       const quantidade = horasFolhaParaPersistencia(form.horas)
       if (quantidade === null || quantidade <= 0) return setErroLocal('Informe as horas no formato HH:MM.')
+      if (!dataPertenceCompetenciaFolha(form.dataHora, competenciaSelecionada?.competencia)) {
+        return setErroLocal(mensagemDataCompetenciaFolha(competenciaSelecionada?.competencia))
+      }
+      setSalvandoOcorrencia(true)
       const paiResposta = await obterOuCriarLancamento(categoria)
-      if (paiResposta.error) return setErroLocal(paiResposta.error.message)
+      if (paiResposta.error) {
+        setSalvandoOcorrencia(false)
+        return setErroLocal(paiResposta.error.message)
+      }
       const percentual = Number(categoria.split('_').at(-1))
       const item = itensLancamentos.find((registro) => registro.id === itemEditandoId)
       const resposta = item
-        ? await atualizarItemLancamento(item, { quantidade, percentual, valor: 0, descricao: form.descricao || null })
-        : await criarItemLancamento(paiResposta.data, { quantidade, percentual, valor: 0, descricao: form.descricao || null })
+        ? await atualizarItemLancamento(item, { data_referencia: form.dataHora, quantidade, percentual, valor: 0, descricao: form.descricao || null })
+        : await criarItemLancamento(paiResposta.data, { data_referencia: form.dataHora, quantidade, percentual, valor: 0, descricao: form.descricao || null })
+      setSalvandoOcorrencia(false)
       if (resposta.error) return setErroLocal(resposta.error.message)
+      setItemEditandoId('')
+      setForm((atual) => ({ ...criarFormLancamento(atual.categoria), dataHora: '', horas: '' }))
+      setMensagem('Hora extra salva e total atualizado.')
+      window.setTimeout(() => horaDataInputRef.current?.focus(), 0)
+      return
     } else if (categoria === 'falta_injustificada') {
-      if (!form.dataFalta) return setErroLocal('Informe a data da falta.')
-      const paiResposta = await obterOuCriarLancamento(categoria, { data_referencia: form.dataFalta })
-      if (paiResposta.error) return setErroLocal(paiResposta.error.message)
       const item = itensLancamentos.find((registro) => registro.id === itemEditandoId)
-      const resposta = item
-        ? await atualizarItemLancamento(item, { data_referencia: form.dataFalta, quantidade: 1, valor: 0, descricao: form.descricao || null })
-        : await criarItemLancamento(paiResposta.data, { data_referencia: form.dataFalta, quantidade: 1, valor: 0, descricao: form.descricao || null })
-      if (resposta.error) return setErroLocal(resposta.error.message)
+      const quantidadeSolicitada = item ? 1 : Number.parseInt(form.quantidadeFaltas, 10)
+      const datas = form.datasFaltas.slice(0, quantidadeSolicitada)
+      if (!Number.isInteger(quantidadeSolicitada) || quantidadeSolicitada < 1 || datas.length !== quantidadeSolicitada) {
+        return setErroLocal('A quantidade de faltas deve corresponder à quantidade de datas.')
+      }
+      const lancamentoExistente = localizarLancamentoAtivo(lancamentos, funcionarioSelecionadoId, categoria)
+      const itensPersistidos = itensAtivosDoLancamento(itensLancamentos, lancamentoExistente?.id)
+      const datasPersistidas = itensPersistidos.filter((registro) => registro.id !== itemEditandoId).map((registro) => registro.data_referencia).filter(Boolean)
+      const validacao = validarDatasFaltasFolha(item ? [...datasPersistidas, ...datas] : datas, competenciaSelecionada?.competencia)
+      if (!validacao.valido) return setErroLocal(validacao.mensagem)
+
+      setSalvandoOcorrencia(true)
+      const paiResposta = await obterOuCriarLancamento(categoria, { data_referencia: datas[0] })
+      if (paiResposta.error) {
+        setSalvandoOcorrencia(false)
+        return setErroLocal(paiResposta.error.message)
+      }
+      let datasFinais = datas
+      if (item) {
+        const resposta = await atualizarItemLancamento(item, { data_referencia: datas[0], quantidade: 1, valor: 0, descricao: form.descricao || null })
+        setSalvandoOcorrencia(false)
+        if (resposta.error) return setErroLocal(resposta.error.message)
+        datasFinais = itensPersistidos.map((registro) => registro.id === item.id ? datas[0] : registro.data_referencia)
+      } else {
+        const plano = planejarSincronizacaoFaltasFolha(itensPersistidos, datas)
+        for (let indice = 0; indice < plano.criar.length; indice += 1) {
+          const resposta = await criarItemLancamento(paiResposta.data, { data_referencia: plano.criar[indice], quantidade: 1, valor: 0, descricao: form.descricao || null })
+          if (resposta.error) {
+            setSalvandoOcorrencia(false)
+            return setErroLocal(resposta.error.message)
+          }
+        }
+        for (const registro of plano.arquivar) {
+          const resposta = await arquivarItemLancamento(registro)
+          if (resposta.error) {
+            setSalvandoOcorrencia(false)
+            return setErroLocal(resposta.error.message)
+          }
+        }
+        setSalvandoOcorrencia(false)
+      }
+      setItemEditandoId('')
+      setForm((atual) => ({ ...criarFormLancamento(atual.categoria), quantidadeFaltas: String(datasFinais.length), datasFaltas: datasFinais }))
+      setMensagem(`${datas.length} falta(s) salva(s) e total atualizado.`)
+      window.setTimeout(() => faltaDataInputRef.current?.focus(), 0)
+      return
     } else {
-      let valor = numeroFolha(form.valor)
+      let valor = parseMoedaEntradaFolha(form.valor)
       let quantidade = null
       let percentual = null
       if (categoria === 'premiacao') {
-        if (numeroFolha(form.vendas) <= 0 || numeroFolha(form.percentual) <= 0) return setErroLocal('Informe vendas e percentual da premiação.')
+        const percentualPremiacao = Number(String(form.percentual).replace(',', '.'))
+        if (parseMoedaEntradaFolha(form.vendas) <= 0 || !Number.isFinite(percentualPremiacao) || percentualPremiacao <= 0) return setErroLocal('Informe vendas e percentual da premiação.')
         valor = premiacaoCalculada
-        quantidade = numeroFolha(form.vendas)
-        percentual = numeroFolha(form.percentual)
+        quantidade = parseMoedaEntradaFolha(form.vendas)
+        percentual = percentualPremiacao
       } else if (naturezaCategoria(categoria) !== 'informativo' && valor <= 0) {
         return setErroLocal('Informe um valor maior que zero.')
       }
@@ -344,13 +456,13 @@ export default function FechamentoFolhaPage({
     }
 
     setItemEditandoId('')
-    setForm((atual) => ({ ...FORM_LANCAMENTO_INICIAL, categoria: atual.categoria }))
+    setForm((atual) => criarFormLancamento(atual.categoria))
     setMensagem('Lançamento salvo com sucesso.')
   }
 
   function editarCompra(item) {
     setItemEditandoId(item.id)
-    setForm((atual) => ({ ...atual, categoria: 'compras_vales', valor: String(item.valor ?? ''), descricao: item.descricao || '' }))
+    setForm((atual) => ({ ...atual, categoria: 'compras_vales', valor: formatarMoedaEntradaFolha(item.valor), descricao: item.descricao || '' }))
     window.setTimeout(() => compraInputRef.current?.focus(), 0)
   }
 
@@ -363,11 +475,13 @@ export default function FechamentoFolhaPage({
     selecionarFuncionario(lancamento.funcionario_id)
     setItemEditandoId(item.id)
     setForm({
-      ...FORM_LANCAMENTO_INICIAL,
+      ...criarFormLancamento(lancamento.categoria),
       categoria: lancamento.categoria,
       descricao: item.descricao || '',
       horas: categoriaFolhaEhHora(lancamento.categoria) ? horasFolhaParaTexto(item.quantidade) : '',
-      dataFalta: lancamento.categoria === 'falta_injustificada' ? item.data_referencia || '' : ''
+      dataHora: categoriaFolhaEhHora(lancamento.categoria) ? item.data_referencia || '' : '',
+      quantidadeFaltas: '1',
+      datasFaltas: lancamento.categoria === 'falta_injustificada' ? [item.data_referencia || ''] : ['']
     })
     document.getElementById('folha-lancamento-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
@@ -396,22 +510,23 @@ export default function FechamentoFolhaPage({
 
   function carregarLancamentoNoFormulario(lancamento) {
     setForm({
-      ...FORM_LANCAMENTO_INICIAL,
+      ...criarFormLancamento(lancamento.categoria),
       categoria: lancamento.categoria,
-      valor: lancamento.valor ?? '',
+      valor: lancamento.valor == null ? '' : formatarMoedaEntradaFolha(lancamento.valor),
       descricao: lancamento.descricao || '',
       observacao: lancamento.observacao_administrativa || '',
-      vendas: lancamento.categoria === 'premiacao' ? lancamento.quantidade ?? '' : '',
+      vendas: lancamento.categoria === 'premiacao' && lancamento.quantidade != null ? formatarMoedaEntradaFolha(lancamento.quantidade) : '',
       percentual: lancamento.categoria === 'premiacao' ? lancamento.percentual ?? '' : '',
       horas: categoriaFolhaEhHora(lancamento.categoria) ? horasFolhaParaTexto(lancamento.quantidade) : '',
-      dataFalta: lancamento.categoria === 'falta_injustificada' ? lancamento.data_referencia || '' : ''
+      dataHora: categoriaFolhaEhHora(lancamento.categoria) ? lancamento.data_referencia || '' : '',
+      datasFaltas: lancamento.categoria === 'falta_injustificada' ? [lancamento.data_referencia || ''] : ['']
     })
     document.getElementById('folha-lancamento-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   function prepararNovoItem(lancamento) {
     selecionarFuncionario(lancamento.funcionario_id)
-    setForm({ ...FORM_LANCAMENTO_INICIAL, categoria: lancamento.categoria })
+    setForm(montarFormularioCategoria(lancamento.categoria, lancamento.funcionario_id, true))
     document.getElementById('folha-lancamento-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
@@ -423,10 +538,14 @@ export default function FechamentoFolhaPage({
   const comprasAtuais = lancamentosFuncionario
     .filter((item) => item.categoria === 'compras_vales' && !item.arquivado)
     .flatMap((lancamento) => {
-      const itens = itensLancamentos.filter((item) => item.lancamento_id === lancamento.id && (mostrarArquivados || !item.arquivado))
+      const itens = ordenarItensFolha(itensLancamentos.filter((item) => item.lancamento_id === lancamento.id && (mostrarArquivados || !item.arquivado)))
       if (itens.length > 0) return itens
       return numeroFolha(lancamento.valor) > 0 ? [{ id: `legado-${lancamento.id}`, lancamento_id: lancamento.id, valor: lancamento.valor, descricao: lancamento.descricao || 'Compra 1', legado: true }] : []
     })
+  const lancamentoCategoriaAtual = localizarLancamentoAtivo(lancamentos, funcionarioSelecionadoId, form.categoria)
+  const ocorrenciasAtuais = lancamentoCategoriaAtual
+    ? ordenarItensFolha(itensLancamentos.filter((item) => item.lancamento_id === lancamentoCategoriaAtual.id && (mostrarArquivados || !item.arquivado)))
+    : []
 
   return (
     <div className="folha-page">
@@ -441,7 +560,7 @@ export default function FechamentoFolhaPage({
       {mensagemErro ? <PageState type="error" title="Não foi possível concluir a operação" description={String(mensagemErro)} actionLabel="Tentar novamente" onAction={tentarNovamente} /> : null}
       {mensagem ? <div className="folha-feedback" role="status">{mensagem}</div> : null}
 
-      <SectionCard title="1. Competência" description="Selecione o mês de trabalho ou crie uma nova competência.">
+      <SectionCard title="Competência" description="Selecione o mês de trabalho ou crie uma nova competência.">
         <div className="folha-competencia-layout">
           <label className="folha-field">
             <span>Competência ativa</span>
@@ -466,36 +585,36 @@ export default function FechamentoFolhaPage({
         ) : null}
       </SectionCard>
 
-      <SectionCard title="2. Colaboradora e categoria" description="A filial acompanha o cadastro da colaboradora; a troca limpa o formulário anterior.">
+      <SectionCard title="Colaboradora e categoria" description="A filial acompanha o cadastro da colaboradora; a troca limpa o formulário anterior.">
         {!competenciaSelecionada ? <PageState title="Selecione uma competência" description="Os lançamentos só ficam disponíveis dentro de uma competência." /> : loadingFuncionarios ? <PageState type="loading" title="Carregando colaboradoras…" /> : funcionariosAtivos.length === 0 ? <PageState title="Nenhuma colaboradora ativa" description="Cadastre ou reative uma colaboradora para lançar a folha." /> : (
           <div className="folha-context-grid">
             <label className="folha-field"><span>Colaboradora</span><select value={funcionarioSelecionadoId} onChange={(event) => selecionarFuncionario(event.target.value)}><option value="">Selecione</option>{funcionariosAtivos.map((funcionario) => <option key={funcionario.id} value={funcionario.id}>{funcionario.nome}</option>)}</select></label>
             <div className="folha-colaborador-meta"><span>Filial</span><strong>{funcionarioSelecionado ? nomeFilial(filiaisPorId, funcionarioSelecionado.filial_id) : 'Selecione uma colaboradora'}</strong></div>
-            <label className="folha-field"><span>Categoria</span><select value={form.categoria} onChange={(event) => { setForm({ ...FORM_LANCAMENTO_INICIAL, categoria: event.target.value }); setItemEditandoId('') }} disabled={!funcionarioSelecionado}><option value="compras_vales">Compras internas / vales</option>{CATEGORIAS.filter((categoria) => categoria !== 'compras_vales').map((categoria) => <option key={categoria} value={categoria}>{LABELS_CATEGORIA[categoria] || categoria}</option>)}</select></label>
+            <label className="folha-field"><span>Categoria</span><select value={form.categoria} onChange={(event) => { setForm(montarFormularioCategoria(event.target.value)); setItemEditandoId('') }} disabled={!funcionarioSelecionado}>{CATEGORIAS_OPERACIONAIS_FOLHA.map((categoria) => <option key={categoria} value={categoria}>{LABELS_CATEGORIA[categoria]}</option>)}</select></label>
           </div>
         )}
       </SectionCard>
 
       {funcionarioSelecionado && competenciaSelecionada ? (
         <>
-          <SectionCard id="folha-lancamento-form" title="3. Lançamento" description={LABELS_CATEGORIA[form.categoria] || form.categoria}>
+          <SectionCard id="folha-lancamento-form" title="Lançamento" description={LABELS_CATEGORIA[form.categoria] || form.categoria}>
             <form className="folha-lancamento-form" onSubmit={salvarCategoria}>
               {form.categoria === 'compras_vales' ? (
                 <div className="folha-compra-rapida">
-                  <label className="folha-field"><span>Valor da compra</span><input ref={compraInputRef} type="number" min="0.01" step="0.01" value={form.valor} onChange={(event) => setForm((atual) => ({ ...atual, valor: event.target.value }))} placeholder="0,00" disabled={!podeEditar || salvando} required /></label>
+                  <label className="folha-field"><span>Valor da compra</span><MoedaInputFolha inputRef={compraInputRef} value={form.valor} onChange={(valor) => setForm((atual) => ({ ...atual, valor }))} placeholder="R$ 0,00" disabled={!podeEditar || salvando} required /></label>
                   <label className="folha-field folha-compra-descricao"><span>Descrição curta (opcional)</span><input value={form.descricao} onChange={(event) => setForm((atual) => ({ ...atual, descricao: event.target.value }))} disabled={!podeEditar || salvando} /></label>
                   <button type="submit" className="folha-btn folha-btn-add" aria-label={itemEditandoId ? 'Salvar compra editada' : 'Adicionar compra'} disabled={!podeEditar || salvando || salvandoCompraRapida}>{salvando || salvandoCompraRapida ? '…' : itemEditandoId ? 'Salvar' : '+'}</button>
                   {itemEditandoId ? <button type="button" className="folha-btn folha-btn-secondary" onClick={() => { setItemEditandoId(''); setForm((atual) => ({ ...atual, valor: '', descricao: '' })) }}>Cancelar</button> : null}
                 </div>
               ) : (
                 <div className="folha-category-fields">
-                   {form.categoria === 'premiacao' ? <><label className="folha-field"><span>Vendas da colaboradora</span><input type="number" min="0" step="0.01" value={form.vendas} onChange={(event) => setForm((atual) => ({ ...atual, vendas: event.target.value }))} disabled={!podeEditar || salvando} required /></label><label className="folha-field"><span>Percentual da premiação</span><input type="number" min="0" step="0.01" value={form.percentual} onChange={(event) => setForm((atual) => ({ ...atual, percentual: event.target.value }))} disabled={!podeEditar || salvando} required /></label><label className="folha-field"><span>Premiação calculada</span><input value={formatarMoeda(premiacaoCalculada)} readOnly disabled /></label></> : null}
-                   {categoriaFolhaEhHora(form.categoria) ? <label className="folha-field"><span>Horas (HH:MM)</span><input inputMode="numeric" pattern="\d+:[0-5]\d" value={form.horas} onChange={(event) => setForm((atual) => ({ ...atual, horas: event.target.value }))} placeholder="04:20" disabled={!podeEditar || salvando} required /></label> : null}
-                   {form.categoria === 'falta_injustificada' ? <label className="folha-field"><span>Data da falta</span><input type="date" value={form.dataFalta} onChange={(event) => setForm((atual) => ({ ...atual, dataFalta: event.target.value }))} disabled={!podeEditar || salvando} required /></label> : null}
-                   {!categoriaFolhaUsaItens(form.categoria) && form.categoria !== 'premiacao' && naturezaCategoria(form.categoria) !== 'informativo' ? <label className="folha-field"><span>Valor</span><input type="number" min="0.01" step="0.01" value={form.valor} onChange={(event) => setForm((atual) => ({ ...atual, valor: event.target.value }))} disabled={!podeEditar || salvando} required /></label> : null}
+                   {form.categoria === 'premiacao' ? <><label className="folha-field"><span>Vendas da colaboradora</span><MoedaInputFolha value={form.vendas} onChange={(vendas) => setForm((atual) => ({ ...atual, vendas }))} placeholder="R$ 0,00" disabled={!podeEditar || salvando} required /></label><label className="folha-field"><span>Percentual da premiação</span><input type="text" inputMode="decimal" value={form.percentual} onChange={(event) => setForm((atual) => ({ ...atual, percentual: event.target.value.replace(/[^\d,.-]/g, '') }))} placeholder="0,00" disabled={!podeEditar || salvando} required /></label><label className="folha-field"><span>Premiação calculada</span><input value={formatarMoeda(premiacaoCalculada)} readOnly disabled /></label></> : null}
+                   {categoriaFolhaEhHora(form.categoria) ? <div className="folha-ocorrencia-grid"><label className="folha-field"><span>Data</span><input ref={horaDataInputRef} type="date" min={limitesCompetencia?.primeiroDia} max={limitesCompetencia?.ultimoDia} value={form.dataHora} onChange={(event) => setForm((atual) => ({ ...atual, dataHora: event.target.value }))} disabled={!podeEditar || salvando || salvandoOcorrencia} required /></label><label className="folha-field"><span>Horas (HH:MM)</span><input inputMode="numeric" value={form.horas} onChange={alterarHoras} placeholder="00:00" disabled={!podeEditar || salvando || salvandoOcorrencia} required /></label></div> : null}
+                   {form.categoria === 'falta_injustificada' ? <div className="folha-faltas-fields"><label className="folha-field"><span>Quantidade de faltas</span><input type="number" inputMode="numeric" min="1" max="31" value={form.quantidadeFaltas} onChange={(event) => alterarQuantidadeFaltas(event.target.value)} disabled={!podeEditar || salvando || salvandoOcorrencia || Boolean(itemEditandoId)} required /><small>Ao reduzir, são preservadas as primeiras datas na ordem em que foram lançadas.</small></label><div className="folha-faltas-datas">{form.datasFaltas.map((data, indice) => <label className="folha-field" key={`falta-${indice}`}><span>Data da falta {indice + 1}</span><input ref={indice === 0 ? faltaDataInputRef : null} type="date" min={limitesCompetencia?.primeiroDia} max={limitesCompetencia?.ultimoDia} value={data} onChange={(event) => setForm((atual) => ({ ...atual, datasFaltas: atual.datasFaltas.map((item, posicao) => posicao === indice ? event.target.value : item) }))} disabled={!podeEditar || salvando || salvandoOcorrencia} required /></label>)}</div></div> : null}
+                   {!categoriaFolhaUsaItens(form.categoria) && form.categoria !== 'premiacao' && naturezaCategoria(form.categoria) !== 'informativo' ? <label className="folha-field"><span>Valor</span><MoedaInputFolha value={form.valor} onChange={(valor) => setForm((atual) => ({ ...atual, valor }))} placeholder="R$ 0,00" disabled={!podeEditar || salvando} required /></label> : null}
                    {['outro_credito', 'outro_desconto'].includes(form.categoria) ? <label className="folha-field"><span>Descrição</span><input value={form.descricao} onChange={(event) => setForm((atual) => ({ ...atual, descricao: event.target.value }))} disabled={!podeEditar || salvando} required /></label> : null}
                    {naturezaCategoria(form.categoria) === 'informativo' || form.categoria === 'plano_saude' || form.categoria === 'premiacao' ? <label className="folha-field folha-field-wide"><span>Observação (opcional)</span><input value={form.observacao} onChange={(event) => setForm((atual) => ({ ...atual, observacao: event.target.value }))} placeholder="Sem dados sensíveis" disabled={!podeEditar || salvando} /></label> : null}
-                  <button type="submit" className="folha-btn folha-btn-primary" disabled={!podeEditar || salvando}>{salvando ? 'Salvando…' : 'Salvar lançamento'}</button>
+                   <button type="submit" className={categoriaFolhaUsaItens(form.categoria) ? 'folha-btn folha-btn-add' : 'folha-btn folha-btn-primary'} aria-label={itemEditandoId ? 'Salvar ocorrência editada' : 'Adicionar ocorrência'} disabled={!podeEditar || salvando || salvandoOcorrencia}>{salvando || salvandoOcorrencia ? '…' : categoriaFolhaUsaItens(form.categoria) ? (itemEditandoId ? 'Salvar' : '+') : 'Salvar lançamento'}</button>
                 </div>
               )}
             </form>
@@ -511,18 +630,32 @@ export default function FechamentoFolhaPage({
                 ))}
               </div>
             ) : null}
+            {categoriaFolhaEhHora(form.categoria) || form.categoria === 'falta_injustificada' ? (
+              <div className="folha-ocorrencias-lista">
+                <div className="folha-list-heading">
+                  <strong>{categoriaFolhaEhHora(form.categoria) ? 'Horas salvas' : 'Faltas salvas'}</strong>
+                  <span>{categoriaFolhaEhHora(form.categoria) ? `Total: ${horasFolhaParaTexto(quantidadeHorasFolha(lancamentoCategoriaAtual, itensLancamentos))}` : `Total: ${quantidadeFaltasFolha(lancamentoCategoriaAtual, itensLancamentos)}`}</span>
+                </div>
+                {ocorrenciasAtuais.length === 0 ? <PageState title="Nenhuma ocorrência salva" description="Preencha os campos e use + para começar." /> : ocorrenciasAtuais.map((item) => (
+                  <article className={`folha-ocorrencia-item ${item.arquivado ? 'is-archived' : ''}`} key={item.id}>
+                    <span>{formatarData(item.data_referencia)}{categoriaFolhaEhHora(form.categoria) ? ` · ${horasFolhaParaTexto(item.quantidade)}` : ''}</span>
+                    <div className="folha-row-actions"><button type="button" className="folha-btn folha-btn-quiet" onClick={() => editarItemDetalhado(lancamentoCategoriaAtual, item)} disabled={!podeEditar || salvando || item.arquivado}>Editar</button><button type="button" className="folha-btn folha-btn-danger" onClick={() => alternarItem(item)} disabled={!podeEditar || salvando}>{item.arquivado ? 'Reativar' : 'Arquivar'}</button></div>
+                  </article>
+                ))}
+              </div>
+            ) : null}
           </SectionCard>
 
-          <SectionCard title="4. Resumo da colaboradora" description={`${funcionarioSelecionado.nome} · ${nomeFilial(filiaisPorId, funcionarioSelecionado.filial_id)}`}>
+          <SectionCard title="Resumo da colaboradora" description={`${funcionarioSelecionado.nome} · ${nomeFilial(filiaisPorId, funcionarioSelecionado.filial_id)}`}>
             <KpiGrid className="folha-kpis"><KpiCard label="Créditos" value={formatarMoeda(resumoAtual.creditos)} /><KpiCard label="Descontos" value={formatarMoeda(resumoAtual.descontos)} /><KpiCard label="Compras" value={formatarMoeda(resumoAtual.compras)} /><KpiCard label="Horas extras" value={horasFolhaParaTexto(resumoAtual.horas)} /><KpiCard label="Faltas" value={resumoAtual.faltas} /><KpiCard label="Conferidos" value={`${resumoAtual.conferidos}/${resumoAtual.lancamentos}`} /></KpiGrid>
           </SectionCard>
         </>
       ) : null}
 
       <SectionCard
-        title="5. Conferência e exportação"
+        title="Conferência e exportação"
         description="O mesmo conjunto ativo alimenta os totais da tela e os dois arquivos Excel."
-        actions={<FolhaExportacoes desabilitado={!dadosCompletos || salvando || salvandoCompraRapida || lancamentos.length === 0} onExportarCompras={() => exportarControleCompras(parametrosExportacao)} onExportarContabilidade={() => exportarConsolidadoContabil(parametrosExportacao)} />}
+        actions={<FolhaExportacoes desabilitado={!dadosCompletos || salvando || salvandoCompraRapida || salvandoOcorrencia || lancamentos.length === 0} onExportarCompras={() => exportarControleCompras(parametrosExportacao)} onExportarContabilidade={() => exportarConsolidadoContabil(parametrosExportacao)} />}
       >
         {!competenciaSelecionada ? <PageState title="Sem competência selecionada" /> : loadingLancamentos || loadingItensLancamentos ? <PageState type="loading" title="Carregando lançamentos…" /> : lancamentos.length === 0 ? <PageState title="Nenhum lançamento nesta competência" description="Selecione uma colaboradora e registre a primeira categoria." /> : (
           <div className="folha-colaboradores-lista">
@@ -534,7 +667,7 @@ export default function FechamentoFolhaPage({
                   <header><div><strong>{funcionario.nome}</strong><span>{nomeFilial(filiaisPorId, funcionario.filial_id)}</span></div><button type="button" className="folha-btn folha-btn-secondary" onClick={() => selecionarFuncionario(funcionario.id)}>Lançar / editar</button></header>
                   <div className="folha-lancamentos-lista">
                     {registros.map((lancamento) => {
-                      const detalhes = itensLancamentos.filter((item) => item.lancamento_id === lancamento.id && (mostrarArquivados || !item.arquivado))
+                      const detalhes = ordenarItensFolha(itensLancamentos.filter((item) => item.lancamento_id === lancamento.id && (mostrarArquivados || !item.arquivado)))
                       return (
                         <div className={`folha-lancamento-row ${lancamento.arquivado ? 'is-archived' : ''}`} key={lancamento.id}>
                           <div><strong>{LABELS_CATEGORIA[lancamento.categoria] || lancamento.categoria}</strong><span>{descricaoLancamento(lancamento, itensLancamentos)}</span></div>
@@ -544,7 +677,7 @@ export default function FechamentoFolhaPage({
                             <div className="folha-detalhes-lista">
                               {detalhes.map((item, indice) => (
                                 <div className={`folha-detalhe-row ${item.arquivado ? 'is-archived' : ''}`} key={item.id}>
-                                  <span>{lancamento.categoria === 'compras_vales' ? `Compra ${indice + 1}: ${formatarMoeda(item.valor)}` : categoriaFolhaEhHora(lancamento.categoria) ? horasFolhaParaTexto(item.quantidade) : lancamento.categoria === 'falta_injustificada' ? formatarData(item.data_referencia) : item.descricao || 'Item'}</span>
+                                  <span>{lancamento.categoria === 'compras_vales' ? `Compra ${indice + 1}: ${formatarMoeda(item.valor)}` : categoriaFolhaEhHora(lancamento.categoria) ? `${formatarData(item.data_referencia)} · ${horasFolhaParaTexto(item.quantidade)}` : lancamento.categoria === 'falta_injustificada' ? formatarData(item.data_referencia) : item.descricao || 'Item'}</span>
                                    <div className="folha-row-actions"><button type="button" className="folha-btn folha-btn-quiet" onClick={() => lancamento.categoria === 'compras_vales' ? editarCompraDaColaboradora(funcionario.id, item) : editarItemDetalhado(lancamento, item)} disabled={!podeEditar || salvando || item.arquivado || lancamento.arquivado}>Editar</button><button type="button" className="folha-btn folha-btn-danger" onClick={() => alternarItem(item)} disabled={!podeEditar || salvando || lancamento.arquivado}>{item.arquivado ? 'Reativar' : 'Arquivar'}</button></div>
                                 </div>
                               ))}

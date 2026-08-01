@@ -64,6 +64,11 @@ test('contrato responsivo impede overflow da página e confina tabelas', () => {
   assert.doesNotMatch(mobile, /(?:^|[;{])\s*width:\s*\d+px/)
 })
 
+test('padrões compartilhados não conhecem classes internas de Contas, Notas ou Receitas', () => {
+  const css = read('src/components/shared/PagePatterns.css')
+  assert.doesNotMatch(css, /\.(?:accounts|notes|receitas)-/)
+})
+
 test('cabeçalhos padronizados cobrem páginas gerenciais, operacionais e administrativas', () => {
   const representatives = [
     'src/pages/AnaliseFinanceiraPage.jsx',

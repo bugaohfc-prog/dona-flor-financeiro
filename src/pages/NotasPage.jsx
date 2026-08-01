@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { PageHeader } from '../components/shared/PagePatterns.jsx'
+import './NotasPage.css'
 
 const OPCOES_ORDENACAO_NOTAS = [
   { valor: 'prioridade', label: 'Prioridade' },
@@ -26,7 +27,7 @@ function EmptyState({ icon, title, description }) {
 }
 
 export default function NotasPage({
-  styles, navegarPara, notas = [], notasFiltradas, agendaFocusTarget, onAgendaFocusHandled, notasPendentes, notasCriticas, notasUrgentes,
+  navegarPara, notas = [], notasFiltradas, agendaFocusTarget, onAgendaFocusHandled, notasPendentes, notasCriticas, notasUrgentes,
   buscaNota, setBuscaNota, formatarData, alternarNotaConcluida, abrirEdicaoNota,
   abrirConfirmacao, excluirNota, abrirNovaNota, filtroFilial, setFiltroFilial, filiais, podeEditarFinanceiro = true
 }) {
@@ -130,17 +131,17 @@ export default function NotasPage({
         actionsClassName="page-actions-row"
         actions={(
           <>
-            <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>Voltar ao Painel</button>
-            {podeEditarFinanceiro && <button className="note-create-button" style={styles.btnSalvar} onClick={abrirNovaNota}>Nova nota</button>}
+            <button type="button" className="notes-header-action" onClick={() => navegarPara('dashboard')}>Voltar ao Painel</button>
+            {podeEditarFinanceiro && <button type="button" className="notes-header-action is-primary note-create-button" onClick={abrirNovaNota}>Nova nota</button>}
           </>
         )}
       />
 
-      <section style={styles.cardConfiguracao} className="notes-page-section notes-redesign-section">
+      <section className="notes-page-section">
         <div className="notes-page-header">
           <div>
-            <h2 style={styles.subtitulo}>{tituloAbaNotas}</h2>
-            <p style={styles.textoNota}>{notasOrdenadas.length} nota(s) na aba • {notasAbertasFiltradas.length} aberta(s) • {notasConcluidasFiltradas.length} concluída(s)</p>
+            <h2>{tituloAbaNotas}</h2>
+            <p>{notasOrdenadas.length} nota(s) na aba • {notasAbertasFiltradas.length} aberta(s) • {notasConcluidasFiltradas.length} concluída(s)</p>
           </div>
           <div className="notes-page-stats">
             <span className="note-stat note-stat-pendente">{notasPendentes.length} pendente(s)</span>
@@ -165,20 +166,19 @@ export default function NotasPage({
             ))}
           </div>
 
-          <select className="notes-branch-filter" style={styles.input} value={filtroFilial} onChange={(e) => setFiltroFilial(e.target.value)}>
+          <select className="notes-branch-filter" value={filtroFilial} onChange={(e) => setFiltroFilial(e.target.value)}>
             <option value="">Todas as filiais</option>
             {(filiais || []).map((filial) => (<option key={filial.id} value={filial.id}>{filial.nome}</option>))}
           </select>
           <input
             className="notes-search-input"
-            style={styles.input}
             placeholder="Buscar por título, conteúdo ou prioridade..."
             value={buscaNota}
             onChange={(e) => setBuscaNota(e.target.value)}
           />
           <label className="notes-sort-control">
             <span>Ordenar por</span>
-            <select style={styles.input} value={ordenacaoNotas} onChange={(e) => setOrdenacaoNotas(e.target.value)}>
+            <select value={ordenacaoNotas} onChange={(e) => setOrdenacaoNotas(e.target.value)}>
               {OPCOES_ORDENACAO_NOTAS.map((opcao) => (
                 <option key={opcao.valor} value={opcao.valor}>{opcao.label}</option>
               ))}
@@ -208,12 +208,11 @@ export default function NotasPage({
                 key={nota.id}
                 ref={destacadaPelaAgenda ? notaDestacadaRef : null}
                 className={`note-card-action note-card-${prioridade} ${destacadaPelaAgenda ? 'note-card-agenda-focus' : ''} ${nota.concluida && abaStatusNotas === 'todas' ? 'note-card-completed-muted' : ''}`}
-                style={{ ...styles.cardNotaAcao, ...(prioridade === 'critico' ? styles.cardNotaCritico : prioridade === 'urgente' ? styles.cardNotaUrgente : styles.cardNotaNormal), opacity: nota.concluida && abaStatusNotas === 'todas' ? 0.68 : 1 }}
               >
-                <div style={styles.cardTopo}>
-                  <strong style={{ textDecoration: nota.concluida && abaStatusNotas === 'todas' ? 'line-through' : 'none' }}>{nota.titulo}</strong>
+                <div className="note-card-header">
+                  <strong className="note-card-title">{nota.titulo}</strong>
                   <div className="note-card-badges">
-                    <span className={`note-priority-badge note-priority-${prioridade}`} style={{ ...styles.badgePrioridade, ...(prioridade === 'critico' ? styles.badgeCritico : prioridade === 'urgente' ? styles.badgeUrgente : styles.badgeNormal) }}>
+                    <span className={`note-priority-badge note-priority-${prioridade}`}>
                       {prioridade === 'critico' ? 'Crítico' : prioridade === 'urgente' ? 'Urgente' : 'Normal'}
                     </span>
                     <span className={`note-status-badge ${nota.concluida ? 'note-status-done' : 'note-status-open'}`}>
@@ -228,9 +227,9 @@ export default function NotasPage({
 
                 {podeEditarFinanceiro && (
                 <div className="notes-card-actions">
-                  <button className="note-action-primary" style={styles.btnPago} onClick={() => alternarNotaConcluida(nota)}>{nota.concluida ? 'Reabrir' : 'Concluir'}</button>
-                  <button className="note-action-secondary" style={styles.btnEditar} onClick={() => abrirEdicaoNota(nota)}>Editar</button>
-                  <button className="note-action-danger" style={styles.btnExcluir} onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>Excluir</button>
+                  <button type="button" className="note-action-primary" onClick={() => alternarNotaConcluida(nota)}>{nota.concluida ? 'Reabrir' : 'Concluir'}</button>
+                  <button type="button" className="note-action-secondary" onClick={() => abrirEdicaoNota(nota)}>Editar</button>
+                  <button type="button" className="note-action-danger" onClick={() => abrirConfirmacao({ titulo: 'Mover nota para lixeira', mensagem: `Deseja mover a nota ${nota.titulo} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirNota(nota.id) })}>Excluir</button>
                 </div>
                 )}
               </div>

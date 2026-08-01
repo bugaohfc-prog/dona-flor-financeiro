@@ -1,0 +1,213 @@
+.receitas-page {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 1280px;
+  gap: 16px;
+  margin: 0 auto;
+}
+
+.receitas-panel,
+.receitas-error {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--df-border);
+  border-radius: 12px;
+  background: var(--df-surface);
+}
+
+.receitas-section-title {
+  margin-bottom: 12px;
+}
+
+.receitas-section-title h2 {
+  margin: 4px 0;
+  color: var(--df-text);
+}
+
+.receitas-section-title p {
+  margin: 0;
+  color: var(--df-muted);
+}
+
+.receitas-form-actions,
+.receitas-row-actions {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.receitas-filtros {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.receitas-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: end;
+  gap: 10px;
+}
+
+.receitas-filtros label,
+.receitas-form label {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.receitas-form label.wide {
+  grid-column: 1 / -1;
+}
+
+.receitas-filtros :is(input, select),
+.receitas-form :is(input, select, textarea) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: var(--df-surface);
+  font: inherit;
+}
+
+.receitas-form textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.receitas-btn,
+.receitas-row-actions button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.receitas-btn.primary {
+  border-color: var(--df-primary-700);
+  background: var(--df-primary-700);
+  color: var(--df-surface);
+}
+
+.receitas-btn.secondary,
+.receitas-row-actions button {
+  background: var(--df-surface-soft);
+  color: var(--df-text);
+}
+
+.receitas-btn:disabled,
+.receitas-row-actions button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.receitas-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.receitas-card {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid var(--df-border);
+  border-radius: 12px;
+  background: var(--df-surface);
+}
+
+.receitas-card span,
+.receitas-card small {
+  color: var(--df-muted);
+}
+
+.receitas-card strong {
+  color: var(--df-text);
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
+.receitas-error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.receitas-table-region {
+  width: 100%;
+  min-width: 0;
+}
+
+.receitas-table-region .df-data-region-scroll {
+  border: 1px solid var(--df-border);
+  border-radius: 10px;
+}
+
+.receitas-table {
+  width: 100%;
+  min-width: 880px;
+  border-collapse: collapse;
+}
+
+.receitas-table th,
+.receitas-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--df-border);
+  text-align: left;
+}
+
+.receitas-table th {
+  background: var(--df-surface-soft);
+  color: #334155;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.receitas-table td:nth-child(6) {
+  font-weight: 900;
+  text-align: right;
+}
+
+.receitas-empty {
+  padding: 12px;
+  border: 1px solid var(--df-border);
+  border-radius: 10px;
+  background: var(--df-surface);
+}
+
+@media (max-width: 900px) {
+  .receitas-filtros,
+  .receitas-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .receitas-summary,
+  .receitas-filtros,
+  .receitas-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .receitas-form-actions,
+  .receitas-form-actions > *,
+  .receitas-filtros,
+  .receitas-form,
+  .receitas-btn,
+  .receitas-filtros label,
+  .receitas-form label {
+    width: 100%;
+    min-width: 0;
+  }
+}

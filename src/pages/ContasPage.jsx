@@ -50,48 +50,6 @@ const OPCOES_HORIZONTE_CONTAS = [
   { valor: 'todos', label: 'Todos' }
 ]
 
-const ACCOUNT_ACTIONS_STYLE = {
-  marginTop: 10,
-  gap: 6,
-  alignItems: 'center'
-}
-
-const ACCOUNT_PRIMARY_ACTION_STYLE = {
-  minHeight: 30,
-  minWidth: 64,
-  padding: '6px 10px',
-  borderRadius: 999,
-  fontSize: 12,
-  boxShadow: 'none'
-}
-
-const ACCOUNT_SECONDARY_ACTION_STYLE = {
-  minHeight: 28,
-  minWidth: 0,
-  padding: '5px 8px',
-  borderRadius: 999,
-  fontSize: 12,
-  background: '#ffffff',
-  color: '#475569',
-  border: '1px solid #cbd5e1',
-  boxShadow: 'none'
-}
-
-const ACCOUNT_DANGER_ACTION_STYLE = {
-  ...ACCOUNT_SECONDARY_ACTION_STYLE,
-  color: '#991b1b',
-  border: '1px solid #fecaca',
-  background: '#fffafa',
-  opacity: 0.78
-}
-
-const ACCOUNT_HIDE_ACTION_STYLE = {
-  ...ACCOUNT_SECONDARY_ACTION_STYLE,
-  color: '#0f766e',
-  border: '1px solid #99f6e4',
-  background: '#ecfdf5'
-}
-
 function obterTimestampVencimento(conta, fallback) {
   const valor = String(conta?.data_vencimento || '').trim()
   const partesDataBanco = valor.match(/^(\d{4})-(\d{2})-(\d{2})/)
@@ -187,7 +145,7 @@ function EmptyState({ icon, title, description, actionLabel, onAction }) {
   )
 }
 export default function ContasPage({
-  styles, busca, setBusca, mostrarFiltros, setMostrarFiltros, limparFiltros, imprimirPDF, exportarCSV, exportarExcel,
+  busca, setBusca, mostrarFiltros, setMostrarFiltros, limparFiltros, imprimirPDF, exportarCSV, exportarExcel,
   filtroStatus, setFiltroStatus, filtroHorizonte, setFiltroHorizonte, centros, filtroCentro, setFiltroCentro, filiais, filtroFilial, setFiltroFilial, filtroMes, setFiltroMes,
   dataInicial, setDataInicial, dataFinal, setDataFinal, limitarDataInput, contas = [], contasFiltradas, contaFocusTarget, onContaFocusHandled, onContaForaDoFiltro, total, formatarValor,
   loading, mostrarContas, setMostrarContas, estaVencida, formatarData, formatarTipoRecorrencia,
@@ -429,17 +387,8 @@ export default function ContasPage({
         ref={destacadaPorFoco ? contaDestacadaRef : null}
         className={`print-card account-card-desktop ${destacadaPorFoco ? 'account-card-agenda-focus' : ''} ${exibirBaixaReal ? 'account-card-payment-real' : ''} ${oculta ? 'account-card-hidden' : ''} ${vencida ? 'account-card-vencida' : conta.status === 'pago' ? 'account-card-paga' : 'account-card-pendente'}`}
         key={conta.id}
-        style={{
-          ...styles.cardConta,
-          background:
-            conta.status === 'pago'
-              ? '#d4edda'
-              : vencida
-                ? '#ffb3b3'
-                : '#fff3cd'
-        }}
       >
-        <div style={styles.cardTopo} className="account-card-head">
+        <div className="account-card-head">
           <div className="account-title-wrap">
             <strong>{conta.descricao}</strong>
             {recorrente && (
@@ -475,7 +424,7 @@ export default function ContasPage({
           </div>
         )}
 
-        <div style={styles.cardInfo} className="account-meta-line">
+        <div className="account-meta-line">
           <div className="account-meta-main">
             <span className="account-date-badge">📅 {formatarData(conta.data_vencimento)}</span>
             <span>{conta.df_filiais?.nome || 'Sem filial'}</span>
@@ -539,17 +488,17 @@ export default function ContasPage({
         )}
 
         {podeEditarFinanceiro && !excluida && (
-          <div className={`account-actions ${conta.status === 'pago' ? 'account-actions-paid' : ''} ${(podeRegistrarPagamentoParcial || podeGerenciarPagamentosParciais) ? 'account-actions-with-partial' : ''}`} style={{ ...styles.acoes, ...ACCOUNT_ACTIONS_STYLE }}>
+          <div className={`account-actions ${conta.status === 'pago' ? 'account-actions-paid' : ''} ${(podeRegistrarPagamentoParcial || podeGerenciarPagamentosParciais) ? 'account-actions-with-partial' : ''}`}>
           {conta.status !== 'pago' ? (
-            <button className="account-action-button account-action-primary" style={{ ...styles.btnPago, ...ACCOUNT_PRIMARY_ACTION_STYLE }} onClick={() => abrirBaixaConta(conta)}>
+            <button type="button" className="account-action-button account-action-primary" onClick={() => abrirBaixaConta(conta)}>
               Baixar
             </button>
           ) : (
             <>
-              <button className="account-action-button account-action-secondary" style={{ ...styles.btnVoltar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirConfirmacao({ titulo: 'Estornar baixa desta conta?', mensagem: `A conta ${conta.descricao} deixará de constar como paga e os dados do pagamento serão removidos. A conta não será excluída e continuará com descrição, vencimento, valor, filial, centro e recorrência intactos.`, textoConfirmar: 'Estornar baixa', tipo: 'aviso', acao: () => voltarParaPendente(conta.id) })}>
+              <button type="button" className="account-action-button account-action-secondary" onClick={() => abrirConfirmacao({ titulo: 'Estornar baixa desta conta?', mensagem: `A conta ${conta.descricao} deixará de constar como paga e os dados do pagamento serão removidos. A conta não será excluída e continuará com descrição, vencimento, valor, filial, centro e recorrência intactos.`, textoConfirmar: 'Estornar baixa', tipo: 'aviso', acao: () => voltarParaPendente(conta.id) })}>
                 Estornar
               </button>
-              <button className="account-action-button account-action-secondary" style={{ ...styles.btnEditar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirCorrecaoPagamento(conta)}>
+              <button type="button" className="account-action-button account-action-secondary" onClick={() => abrirCorrecaoPagamento(conta)}>
                 Corrigir
               </button>
             </>
@@ -558,7 +507,6 @@ export default function ContasPage({
           {(podeRegistrarPagamentoParcial || podeGerenciarPagamentosParciais) && (
             <button
               className="account-action-button account-action-partial"
-              style={ACCOUNT_SECONDARY_ACTION_STYLE}
               onClick={() => setContaEmPagamentoParcial(conta)}
               title={podeGerenciarPagamentosParciais ? 'Ver pagamentos parciais' : 'Registrar pagamento parcial'}
             >
@@ -566,21 +514,21 @@ export default function ContasPage({
             </button>
           )}
 
-          <button className="account-action-button account-action-secondary" style={{ ...styles.btnEditar, ...ACCOUNT_SECONDARY_ACTION_STYLE }} onClick={() => abrirEdicaoConta(conta)}>
+          <button type="button" className="account-action-button account-action-secondary" onClick={() => abrirEdicaoConta(conta)}>
             Editar
           </button>
 
           {oculta ? (
-            <button className="account-action-button account-action-restore" style={ACCOUNT_HIDE_ACTION_STYLE} onClick={() => abrirConfirmacao({ titulo: 'Reexibir conta', mensagem: `Deseja reexibir a conta ${conta.descricao} na visão principal?`, textoConfirmar: 'Reexibir', tipo: 'aviso', acao: () => reexibirConta(conta.id) })}>
+            <button type="button" className="account-action-button account-action-restore" onClick={() => abrirConfirmacao({ titulo: 'Reexibir conta', mensagem: `Deseja reexibir a conta ${conta.descricao} na visão principal?`, textoConfirmar: 'Reexibir', tipo: 'aviso', acao: () => reexibirConta(conta.id) })}>
               Reexibir
             </button>
           ) : (
-            <button className="account-action-button account-action-hide" style={ACCOUNT_HIDE_ACTION_STYLE} onClick={() => abrirConfirmacao({ titulo: 'Ocultar conta', mensagem: `Ocultar esta conta da visão principal? A conta ${conta.descricao} não será excluída e poderá ser reexibida depois.`, textoConfirmar: 'Ocultar', tipo: 'aviso', acao: () => ocultarConta(conta.id) })}>
+            <button type="button" className="account-action-button account-action-hide" onClick={() => abrirConfirmacao({ titulo: 'Ocultar conta', mensagem: `Ocultar esta conta da visão principal? A conta ${conta.descricao} não será excluída e poderá ser reexibida depois.`, textoConfirmar: 'Ocultar', tipo: 'aviso', acao: () => ocultarConta(conta.id) })}>
               Ocultar
             </button>
           )}
 
-          <button className="account-action-button account-action-danger" style={{ ...styles.btnExcluir, ...ACCOUNT_DANGER_ACTION_STYLE }} onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
+          <button type="button" className="account-action-button account-action-danger" onClick={() => abrirConfirmacao({ titulo: 'Mover para lixeira', mensagem: `Deseja mover a conta ${conta.descricao} para a lixeira? Ela ficará em quarentena por 60 dias.`, textoConfirmar: 'Mover', tipo: 'perigo', acao: () => excluirConta(conta.id) })}>
             Excluir
           </button>
           </div>
@@ -592,25 +540,7 @@ export default function ContasPage({
   function renderListaContasConteudo() {
     return (
       <>
-      <FilterCard className="no-print filters-desktop accounts-control-panel" style={styles.filtrosBox} description="Busque no histórico ou refine a visão operacional sem alterar os dados.">
-        <div className="accounts-search-row">
-          <input
-            className="accounts-search-input"
-            style={styles.input}
-            placeholder="Buscar por conta, valor, data, centro, observação ou status..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-          />
-        </div>
-        <div className="accounts-filter-actions">
-          <button className="filter-toggle-button" onClick={() => setMostrarFiltros(!mostrarFiltros)}>
-            {mostrarFiltros ? 'Ocultar filtros' : 'Mais filtros'}
-          </button>
-
-          <button className="accounts-clear-button" style={styles.btnCinza} onClick={limparFiltros}>Limpar</button>
-
-        </div>
-
+      <FilterCard className="no-print filters-desktop accounts-control-panel" description="Busque no histórico ou refine a visão operacional sem alterar os dados.">
         {modoBuscaGlobal ? (
           <div className="accounts-status-tabs" role="tablist" aria-label="Filtro dos resultados em todo o histórico">
             {ABAS_STATUS_BUSCA.map((aba) => (
@@ -701,36 +631,55 @@ export default function ContasPage({
             )}
           </div>
         )}
-        <label className="accounts-sort-control accounts-sort-control-main">
-          <span>Ordenar por</span>
-          <select style={styles.input} value={ordenacaoContas} onChange={(e) => setOrdenacaoContas(e.target.value)}>
-            {OPCOES_ORDENACAO_CONTAS.map((opcao) => (
-              <option key={opcao.valor} value={opcao.valor}>{opcao.label}</option>
-            ))}
-          </select>
-        </label>
+
+        <div className="accounts-search-row">
+          <input
+            className="accounts-search-input"
+            placeholder="Buscar por conta, valor, data, centro, observação ou status..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
+        </div>
+
+        <div className="accounts-filter-controls">
+          <div className="accounts-filter-actions">
+            <button type="button" className="filter-toggle-button" onClick={() => setMostrarFiltros(!mostrarFiltros)}>
+              {mostrarFiltros ? 'Ocultar filtros' : 'Mais filtros'}
+            </button>
+            <button type="button" className="accounts-clear-button" onClick={limparFiltros}>Limpar</button>
+          </div>
+
+          <label className="accounts-sort-control accounts-sort-control-main">
+            <span>Ordenar por</span>
+            <select value={ordenacaoContas} onChange={(e) => setOrdenacaoContas(e.target.value)}>
+              {OPCOES_ORDENACAO_CONTAS.map((opcao) => (
+                <option key={opcao.valor} value={opcao.valor}>{opcao.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
 
         {mostrarFiltros && (
           <div className="advanced-filters">
-            <select style={styles.input} value={filtroFilial} onChange={(e) => setFiltroFilial(e.target.value)}>
+            <select aria-label="Filial" value={filtroFilial} onChange={(e) => setFiltroFilial(e.target.value)}>
               <option value="">Todas as filiais</option>
               {(filiais || []).map((filial) => (<option key={filial.id} value={filial.id}>{filial.nome}</option>))}
             </select>
 
-            <select style={styles.input} value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)}>
+            <select aria-label="Centro de custo" value={filtroCentro} onChange={(e) => setFiltroCentro(e.target.value)}>
               <option value="">Todos os centros</option>
               {centros.map((centro) => (<option key={centro.id} value={centro.id}>{centro.nome}</option>))}
             </select>
 
-            <input style={styles.input} type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
+            <input aria-label="Mês" type="month" value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} />
 
-            <input style={styles.input} type="date" value={dataInicial} onChange={(e) => setDataInicial(limitarDataInput(e.target.value))} />
-            <input style={styles.input} type="date" value={dataFinal} onChange={(e) => setDataFinal(limitarDataInput(e.target.value))} />
+            <input aria-label="Data inicial" type="date" value={dataInicial} onChange={(e) => setDataInicial(limitarDataInput(e.target.value))} />
+            <input aria-label="Data final" type="date" value={dataFinal} onChange={(e) => setDataFinal(limitarDataInput(e.target.value))} />
           </div>
         )}
       </FilterCard>
 
-      <section className="result-summary accounts-result-summary" style={styles.resumoFiltro}>
+      <section className="result-summary accounts-result-summary">
         <div className="accounts-result-heading">
           <strong>Resultado filtrado</strong>
           <small>{contasFiltradas.length} conta(s)</small>
@@ -751,7 +700,7 @@ export default function ContasPage({
         </small>
       </section>
 
-      <section className="content-block accounts-list-section" style={styles.bloco}>
+      <section className="content-block accounts-list-section">
         {loading && <AccountListSkeleton items={3} />}
 
         <div className="accounts-list-header">
@@ -904,11 +853,11 @@ export default function ContasPage({
         actions={(
           <>
           {telaRetorno === 'controle-impostos' && (
-            <button style={styles.btnCinza} onClick={onVoltarOrigem}>Voltar ao Controle de Impostos</button>
+            <button type="button" className="accounts-header-action" onClick={onVoltarOrigem}>Voltar ao Controle de Impostos</button>
           )}
-          <button style={styles.btnCinza} onClick={() => navegarPara('dashboard')}>Voltar ao Painel</button>
+          <button type="button" className="accounts-header-action" onClick={() => navegarPara('dashboard')}>Voltar ao Painel</button>
           {podeEditarFinanceiro && abrirNovaConta ? (
-            <button type="button" style={styles.btnSalvar} onClick={abrirNovaConta}>Nova conta</button>
+            <button type="button" className="accounts-header-action is-primary" onClick={abrirNovaConta}>Nova conta</button>
           ) : null}
           {podeExportarDados ? <ExportMenu
             disabled={loading || loadingConsultaContas || contasFiltradas.length === 0}

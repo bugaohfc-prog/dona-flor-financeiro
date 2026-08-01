@@ -1,7 +1,6 @@
 import { ExportMenu } from '../../../../components/shared/PagePatterns.jsx'
 
 export default function FolhaExportacoes({
-  styles,
   desabilitado,
   onExportarCompras,
   onExportarContabilidade
@@ -10,8 +9,8 @@ export default function FolhaExportacoes({
     <ExportMenu
       disabled={desabilitado}
       options={[
-        { id: 'compras', label: 'Controle de compras', onSelect: onExportarCompras },
-        { id: 'contabilidade', label: 'Consolidado contábil', onSelect: onExportarContabilidade },
+        { id: 'compras', label: 'Controle de Compras — Conferência (.xlsx)', onSelect: onExportarCompras },
+        { id: 'contabilidade', label: 'Fechamento de Folha — Contabilidade (.xlsx)', onSelect: onExportarContabilidade }
       ]}
     />
   )

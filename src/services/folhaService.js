@@ -930,6 +930,18 @@ export async function arquivarItemLancamentoFolha({ supabase, empresaId, id }) {
     .single()
 }
 
+export async function reativarItemLancamentoFolha({ supabase, empresaId, id }) {
+  const empresa = validarEmpresaId(empresaId)
+  const itemId = validarLancamentoId(id)
+
+  return atualizarPorEmpresa(supabase, TABELA_FOLHA_LANCAMENTO_ITENS, itemId, empresa, {
+    arquivado: false,
+    arquivado_em: null
+  })
+    .select(LANCAMENTO_ITEM_SELECT)
+    .single()
+}
+
 export async function atualizarLancamentoFolha({ supabase, empresaId, id, dados }) {
   const empresa = validarEmpresaId(empresaId)
   const lancamentoId = validarLancamentoId(id)

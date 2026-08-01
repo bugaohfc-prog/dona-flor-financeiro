@@ -199,7 +199,10 @@ function printWithHiddenIframe(html, onError) {
 export function createXlsxBlob(sheets) {
   const safeSheets = (Array.isArray(sheets) ? sheets : []).map((sheet) => ({
     name: sanitizeSheetName(sheet.name),
-    rows: Array.isArray(sheet.rows) ? sheet.rows : []
+    rows: Array.isArray(sheet.rows) ? sheet.rows : [],
+    landscape: sheet.landscape === true,
+    fitToWidth: Number.isFinite(Number(sheet.fitToWidth)) ? Number(sheet.fitToWidth) : null,
+    currencyColumns: Array.isArray(sheet.currencyColumns) ? sheet.currencyColumns : []
   }))
 
   if (safeSheets.length === 0) {
@@ -249,7 +252,7 @@ export function createXlsxBlob(sheets) {
     { path: 'xl/workbook.xml', content: workbookXml },
     { path: 'xl/_rels/workbook.xml.rels', content: workbookRels },
     { path: 'xl/styles.xml', content: stylesXml },
-    ...safeSheets.map((sheet, index) => ({ path: `xl/worksheets/sheet${index + 1}.xml`, content: createWorksheetXml(sheet.rows) }))
+    ...safeSheets.map((sheet, index) => ({ path: `xl/worksheets/sheet${index + 1}.xml`, content: createWorksheetXml(sheet.rows, sheet) }))
   ]
 
   return new Blob([zipStore(files)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
@@ -447,7 +450,7 @@ function finiteNumber(value) {
   return Number.isFinite(number) ? Math.round((number + Number.EPSILON) * 100) / 100 : 0
 }
 
-function createWorksheetXml(rows) {
+function createWorksheetXml(rows, options = {}) {
   const colCount = rows.reduce((max, row) => Math.max(max, row?.length || 0), 0)
   const widths = Array.from({ length: colCount }, (_, index) => {
     const width = Math.min(Math.max(...rows.map((row) => String(row?.[index] ?? '').length), 10) + 2, 38)
@@ -455,22 +458,26 @@ function createWorksheetXml(rows) {
   }).join('')
 
   const xmlRows = rows.map((row, rowIndex) => {
-    const cells = (row || []).map((value, colIndex) => createCellXml(value, colIndex, rowIndex, rows[0]?.[colIndex])).join('')
+    const cells = (row || []).map((value, colIndex) => createCellXml(value, colIndex, rowIndex, rows[0]?.[colIndex], options)).join('')
     return `<row r="${rowIndex + 1}">${cells}</row>`
   }).join('')
 
   return xml(`
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  ${options.fitToWidth != null ? '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>' : ''}
   <cols>${widths}</cols>
   <sheetData>${xmlRows}</sheetData>
+  ${options.landscape ? '<printOptions horizontalCentered="1"/>' : ''}
+  ${options.landscape || options.fitToWidth != null ? `<pageSetup orientation="${options.landscape ? 'landscape' : 'portrait'}"${options.fitToWidth != null ? ` fitToWidth="${options.fitToWidth}" fitToHeight="0"` : ''}/>` : ''}
 </worksheet>`)
 }
 
-function createCellXml(value, colIndex, rowIndex, headerValue) {
+function createCellXml(value, colIndex, rowIndex, headerValue, options = {}) {
   const ref = `${colName(colIndex)}${rowIndex + 1}`
   const isHeader = rowIndex === 0
   const isNumber = typeof value === 'number' && Number.isFinite(value)
-  const moeda = /r\$|valor|previsto|realizado|pago|pendente|vencido|encargo|desconto|saldo|falta|receita|despesa|custo/i.test(String(headerValue || ''))
+  const moeda = options.currencyColumns?.includes(colIndex)
+    || /r\$|valor|previsto|realizado|pago|pendente|vencido|encargo|desconto|saldo|falta|receita|despesa|custo/i.test(String(headerValue || ''))
   const style = isHeader ? (isNumber ? (moeda ? 3 : 5) : 1) : (isNumber ? (moeda ? 2 : 4) : 0)
 
   if (isNumber) {

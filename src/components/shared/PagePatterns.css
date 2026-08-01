@@ -23,7 +23,7 @@
 }
 
 .df-page-header,
-:is(.admin-page-hero, .master-page-hero, .billing-page-header, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) {
+:is(.admin-page-hero, .master-page-hero, .billing-page-header, .importacao-page > header, .trash-page > header, .onboarding-page-hero) {
   box-sizing: border-box;
   display: flex;
   width: 100%;
@@ -42,12 +42,12 @@
 }
 
 .df-page-header-copy,
-:is(.billing-page-heading, .folha-page-intro) > div:first-child {
+.billing-page-heading > div:first-child {
   min-width: 0;
 }
 
 .df-page-kicker,
-:is(.admin-page-hero, .master-page-hero, .billing-page-heading, .folha-page-intro) span:first-child {
+:is(.admin-page-hero, .master-page-hero, .billing-page-heading) span:first-child {
   color: #ccfbf1 !important;
   font-size: .75rem;
   font-weight: 900;
@@ -56,7 +56,7 @@
 }
 
 .df-page-header h1,
-:is(.admin-page-hero, .master-page-hero, .billing-page-header, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) h1 {
+:is(.admin-page-hero, .master-page-hero, .billing-page-header, .importacao-page > header, .trash-page > header, .onboarding-page-hero) h1 {
   margin: 5px 0;
   color: inherit !important;
   font-size: clamp(1.75rem, 4vw, 2.65rem) !important;
@@ -66,8 +66,8 @@
 
 .df-page-header p,
 .df-page-header small,
-:is(.admin-page-hero, .master-page-hero, .billing-page-header, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) p,
-:is(.admin-page-hero, .master-page-hero, .billing-page-header, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) small {
+:is(.admin-page-hero, .master-page-hero, .billing-page-header, .importacao-page > header, .trash-page > header, .onboarding-page-hero) p,
+:is(.admin-page-hero, .master-page-hero, .billing-page-header, .importacao-page > header, .trash-page > header, .onboarding-page-hero) small {
   margin: 4px 0;
   color: #d1fae5 !important;
   line-height: 1.45;
@@ -324,7 +324,7 @@ button.df-kpi-card:focus-visible { outline: none; box-shadow: var(--df-focus); }
   border-radius: 999px;
 }
 
-:is(.app-frame-content, .app-frame-content > *, .admin-page, .billing-page, .folha-page, .importacao-page, .trash-page, .page-section) {
+:is(.app-frame-content, .app-frame-content > *, .admin-page, .billing-page, .importacao-page, .trash-page, .page-section) {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -341,7 +341,7 @@ button.df-kpi-card:focus-visible { outline: none; box-shadow: var(--df-focus); }
 
 @media (max-width: 640px) {
   .df-page-header,
-  :is(.admin-page-hero, .master-page-hero, .billing-page-header, .folha-page-hero, .importacao-page > header, .trash-page > header, .onboarding-page-hero) {
+  :is(.admin-page-hero, .master-page-hero, .billing-page-header, .importacao-page > header, .trash-page > header, .onboarding-page-hero) {
     display: grid;
     gap: var(--df-space-4);
     padding: 18px;

@@ -4418,7 +4418,6 @@ export default function App() {
   if (telaAtual === 'fechamento-folha') {
     return (
       <LazyFechamentoFolhaPage
-        styles={styles}
         empresaId={empresaId}
         empresaNome={empresaAtiva?.nome || nomeEmpresa}
         podeEditar={podeAcessarGestaoPessoas()}

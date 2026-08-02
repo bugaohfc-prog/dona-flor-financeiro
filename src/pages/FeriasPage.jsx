@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFuncionarios } from '../hooks/useFuncionarios'
 import { useFuncionariosFerias } from '../hooks/useFuncionariosFerias'
 import { PageHeader, PageState } from '../components/shared/PagePatterns.jsx'
@@ -304,6 +304,7 @@ export default function FeriasPage({
   empresaNome,
   mostrarAviso,
   podeEditar = false,
+  contextoNavegacao = null,
   voltarPainel
 }) {
   const [funcionarioSelecionadoId, setFuncionarioSelecionadoId] = useState('')
@@ -326,6 +327,7 @@ export default function FeriasPage({
     novaParcela: false,
     parcelas: true
   })
+  const contextoAplicadoRef = useRef('')
 
   const {
     funcionarios,
@@ -490,6 +492,7 @@ export default function FeriasPage({
   }), [calcularFimFerias, calcularRetornoTrabalho, formularioPeriodo])
 
   useEffect(() => {
+    contextoAplicadoRef.current = ''
     setFuncionarioSelecionadoId('')
     setCicloSelecionadoId('')
     setIncluirArquivados(false)
@@ -509,6 +512,30 @@ export default function FeriasPage({
     })
     limparErro?.()
   }, [empresaId])
+
+  useEffect(() => {
+    const funcionarioId = String(contextoNavegacao?.funcionarioId || '')
+    if (!funcionarioId || contextoAplicadoRef.current === funcionarioId || loadingFuncionarios) return
+    if (!funcionariosOrdenados.some((item) => String(item?.id || '') === funcionarioId)) return
+    contextoAplicadoRef.current = funcionarioId
+    setFuncionarioSelecionadoId(funcionarioId)
+    setBuscaFuncionario('')
+    setMostrarTodosFuncionarios(true)
+  }, [contextoNavegacao, funcionariosOrdenados, loadingFuncionarios])
+
+  useEffect(() => {
+    const cicloId = String(contextoNavegacao?.cicloId || '')
+    if (cicloId && ciclosVisiveis.some((ciclo) => String(ciclo?.id || '') === cicloId)) {
+      setCicloSelecionadoId(cicloId)
+    }
+  }, [ciclosVisiveis, contextoNavegacao])
+
+  useEffect(() => {
+    const periodoId = String(contextoNavegacao?.periodoId || '')
+    if (!periodoId || loadingPeriodos || !periodosVisiveis.some((periodo) => String(periodo?.id || '') === periodoId)) return
+    setSecoesAbertas((atual) => ({ ...atual, parcelas: true }))
+    globalThis.document?.getElementById(`ferias-periodo-${periodoId}`)?.scrollIntoView?.({ block: 'center' })
+  }, [contextoNavegacao, loadingPeriodos, periodosVisiveis])
 
   useEffect(() => {
     if (!funcionarioSelecionadoId) {
@@ -1411,7 +1438,7 @@ export default function FeriasPage({
                   quantidadeEdicao > saldoDisponivelEdicao
 
                 return (
-                  <article key={periodo.id} className={`ferias-period-card ${periodo.arquivado ? 'archived' : ''}`}>
+                  <article id={`ferias-periodo-${periodo.id}`} key={periodo.id} className={`ferias-period-card ${periodo.arquivado ? 'archived' : ''}`}>
                     <div className="ferias-period-main">
                       {!editandoPeriodo ? (
                         <>

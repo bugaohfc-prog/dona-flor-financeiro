@@ -12,7 +12,8 @@ export default function DashboardRoute({
   onAtualizarContasCentral,
   onAtualizarNotasCentral,
   navegarParaOrigemAgenda,
-  onAbrirContasPlanejamento
+  onAbrirContasPlanejamento,
+  podeAcessarPessoas
 }) {
   return (
     <>
@@ -33,6 +34,7 @@ export default function DashboardRoute({
         onAtualizarNotasCentral={onAtualizarNotasCentral}
         navegarParaOrigemAgenda={navegarParaOrigemAgenda}
         onAbrirContasPlanejamento={onAbrirContasPlanejamento}
+        podeAcessarPessoas={podeAcessarPessoas}
       />
     </>
   )

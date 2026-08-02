@@ -9,6 +9,14 @@ const CONTADORES = Object.freeze([
   ['pessoas', 'Pessoas']
 ])
 
+const ROTULOS_FONTES_PESSOAS = Object.freeze({
+  funcionarios: 'funcionários',
+  ciclosFerias: 'ciclos de férias',
+  periodosFerias: 'períodos de férias',
+  exames: 'exames periódicos',
+  folha: 'Folha'
+})
+
 export function ResumoOperacionalDashboard({
   empresaId,
   carregando,
@@ -21,6 +29,9 @@ export function ResumoOperacionalDashboard({
 }) {
   const resumo = dados?.resumoDashboard || { contadores: {}, prioridades: [], possuiDados: false }
   const prioridades = resumo.prioridades || []
+  const fontesIndisponiveis = erroParcial && typeof erroParcial === 'object'
+    ? Object.keys(erroParcial).filter((fonte) => erroParcial[fonte]).map((fonte) => ROTULOS_FONTES_PESSOAS[fonte] || fonte)
+    : []
 
   return (
     <section className="resumo-operacional-dashboard" aria-labelledby="resumo-operacional-dashboard-titulo">
@@ -32,7 +43,7 @@ export function ResumoOperacionalDashboard({
         </div>
         <div className="resumo-operacional-dashboard-acoes">
           <button type="button" className="dashboard-home-action dashboard-home-action-secondary resumo-operacional-dashboard-acao-atualizar" onClick={onAtualizar} disabled={!empresaId || dados?.atualizando}>
-            {dados?.atualizando ? 'Atualizando…' : 'Atualizar contas e notas'}
+            {dados?.atualizando ? 'Atualizando…' : 'Atualizar painel'}
           </button>
           <button type="button" className="dashboard-home-action dashboard-home-action-primary resumo-operacional-dashboard-acao-agenda" onClick={onAbrirAgenda}>
             Abrir Agenda
@@ -43,7 +54,9 @@ export function ResumoOperacionalDashboard({
       {!empresaId && <p className="resumo-operacional-dashboard-estado" role="status">Selecione uma empresa para visualizar o resumo.</p>}
       {empresaId && carregando && <p className="resumo-operacional-dashboard-estado" role="status">Carregando resumo operacional…</p>}
       {empresaId && !carregando && erroParcial && (
-        <p className="resumo-operacional-dashboard-alerta" role="alert">Parte das informações está indisponível. Os demais dados continuam visíveis.</p>
+        <p className="resumo-operacional-dashboard-alerta" role="alert">
+          Parte das informações está indisponível{fontesIndisponiveis.length ? ` (${fontesIndisponiveis.join(', ')})` : ''}. Os demais dados continuam visíveis.
+        </p>
       )}
 
       {empresaId && !carregando && (

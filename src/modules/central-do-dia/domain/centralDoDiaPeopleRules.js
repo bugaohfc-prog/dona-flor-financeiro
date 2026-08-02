@@ -4,6 +4,7 @@ import {
   normalizarDataISO
 } from './centralDoDiaRules.js'
 import { calcularProximoPeriodico } from '../../../services/funcionariosExamesPeriodicosRules.js'
+import { calcularSaldoDiasFerias } from '../../../services/funcionariosFeriasRules.js'
 
 const STATUS_FOLHA_AGENDA = new Set(['aberta', 'em_conferencia', 'pendente'])
 
@@ -14,18 +15,6 @@ function texto(valor) {
 function funcionarioAtivo(funcionario, filialId = '') {
   if (!funcionario || funcionario.arquivado || texto(funcionario.status).toLowerCase() !== 'ativo') return false
   return !filialId || texto(funcionario.filial_id) === texto(filialId)
-}
-
-function somarDiasISO(dataISO, quantidade) {
-  const data = normalizarDataISO(dataISO)
-  if (!data || !Number.isInteger(quantidade)) return null
-  const [ano, mes, dia] = data.split('-').map(Number)
-  const resultado = new Date(Date.UTC(ano, mes - 1, dia + quantidade))
-  return [
-    resultado.getUTCFullYear(),
-    String(resultado.getUTCMonth() + 1).padStart(2, '0'),
-    String(resultado.getUTCDate()).padStart(2, '0')
-  ].join('-')
 }
 
 function criarOcorrenciaAniversario(dataNascimento, dataBaseISO) {
@@ -46,6 +35,17 @@ function descricaoPessoa(rotulo, funcionario) {
   return funcionario?.cargo ? `${rotulo} • ${texto(funcionario.cargo)}` : rotulo
 }
 
+function referenciaPessoa(tipo, id, funcionarioId, extras = {}) {
+  return { tipo, id, funcionarioId: funcionarioId || null, ...extras }
+}
+
+function dadosPessoa(funcionario) {
+  return {
+    filialId: texto(funcionario?.filial_id) || null,
+    funcionarioId: texto(funcionario?.id) || null
+  }
+}
+
 export function normalizarAniversariosAgenda(funcionarios = [], { dataBaseISO, filialId = '' } = {}) {
   return (funcionarios || []).filter((funcionario) => funcionarioAtivo(funcionario, filialId)).map((funcionario) => {
     const dataReferencia = criarOcorrenciaAniversario(funcionario.data_nascimento, dataBaseISO)
@@ -63,38 +63,10 @@ export function normalizarAniversariosAgenda(funcionarios = [], { dataBaseISO, f
       severidade: 'info',
       status: dias === 0 ? 'vence_hoje' : 'informativo',
       proximaAcao: 'Abrir o acompanhamento de pessoas',
-      destino: 'relatorios-pessoas',
-      referenciaOrigem: { tipo: 'aniversario_funcionario', id: funcionario.id },
-      origemOperacional: 'pessoas'
-    })
-  }).filter(Boolean)
-}
-
-export function normalizarFeriasAgenda(periodos = [], funcionarios = [], { dataBaseISO, filialId = '' } = {}) {
-  const funcionariosPorId = new Map((funcionarios || []).map((funcionario) => [texto(funcionario?.id), funcionario]))
-  return (periodos || []).map((periodo) => {
-    const funcionario = funcionariosPorId.get(texto(periodo?.funcionario_id))
-    const dataReferencia = normalizarDataISO(periodo?.data_inicio)
-    const dias = diferencaDiasCalendario(dataReferencia, dataBaseISO)
-    if (
-      !periodo?.id || periodo.arquivado || texto(periodo.status).toLowerCase() !== 'agendada' ||
-      !funcionarioAtivo(funcionario, filialId) || !dataReferencia || dias === null || dias < 0 || dias > 30
-    ) return null
-
-    return criarItemCentral({
-      id: `pessoas:ferias:${periodo.id}`,
-      tipo: 'ferias',
-      modulo: 'Gestão de Pessoas',
-      titulo: texto(funcionario.nome) || 'Colaborador',
-      descricao: descricaoPessoa(dias === 0 ? 'Férias iniciam hoje' : `Férias iniciam em ${dias} dia(s)`, funcionario),
-      dataReferencia,
-      dias,
-      severidade: dias <= 7 ? 'warning' : 'info',
-      status: dias === 0 ? 'vence_hoje' : 'pendente',
-      proximaAcao: 'Conferir o período de férias',
-      destino: 'ferias',
-      referenciaOrigem: { tipo: 'periodo_ferias', id: periodo.id },
-      origemOperacional: 'pessoas'
+      destino: 'funcionarios',
+      referenciaOrigem: referenciaPessoa('aniversario_funcionario', funcionario.id, funcionario.id),
+      origemOperacional: 'pessoas',
+      ...dadosPessoa(funcionario)
     })
   }).filter(Boolean)
 }
@@ -132,9 +104,12 @@ export function normalizarExamesAgenda(exames = [], funcionarios = [], { dataBas
       status: atrasado ? 'vencido' : dias === 0 ? 'vence_hoje' : 'pendente',
       inconsistencia: atrasado,
       proximaAcao: 'Abrir o acompanhamento de pessoas',
-      destino: 'relatorios-pessoas',
-      referenciaOrigem: { tipo: 'exame_periodico_previsto', id: funcionario.id },
-      origemOperacional: 'pessoas'
+      destino: 'funcionarios',
+      referenciaOrigem: referenciaPessoa('exame_periodico_previsto', funcionario.id, funcionario.id, {
+        exameId: ultimo?.id || null
+      }),
+      origemOperacional: 'pessoas',
+      ...dadosPessoa(funcionario)
     })
   }).filter(Boolean)
 }
@@ -171,15 +146,134 @@ export function normalizarCompetenciasFolhaAgenda(competencias = [], { dataBaseI
       inconsistencia: dias < 0,
       proximaAcao: 'Conferir a competência da folha',
       destino: 'fechamento-folha',
-      referenciaOrigem: { tipo: 'competencia_folha', id: competencia.id },
+      referenciaOrigem: {
+        tipo: 'competencia_folha',
+        id: competencia.id,
+        competenciaId: competencia.id,
+        competencia: competencia.competencia
+      },
       origemOperacional: 'pessoas'
     })
   }).filter(Boolean)
 }
 
-export function normalizarPessoasDetalhadasAgenda({
+function periodosAtivosPorCiclo(periodos = []) {
+  return (periodos || []).reduce((mapa, periodo) => {
+    if (!periodo?.ciclo_ferias_id || periodo.arquivado || texto(periodo.status).toLowerCase() === 'cancelada') return mapa
+    const chave = texto(periodo.ciclo_ferias_id)
+    if (!mapa.has(chave)) mapa.set(chave, [])
+    mapa.get(chave).push(periodo)
+    return mapa
+  }, new Map())
+}
+
+export function normalizarLimitesFeriasAgenda(
+  ciclos = [],
+  periodos = [],
   funcionarios = [],
-  ferias = [],
+  { dataBaseISO, filialId = '' } = {}
+) {
+  const funcionariosPorId = new Map((funcionarios || []).map((funcionario) => [texto(funcionario?.id), funcionario]))
+  const periodosPorCiclo = periodosAtivosPorCiclo(periodos)
+
+  return (ciclos || []).map((ciclo) => {
+    const funcionario = funcionariosPorId.get(texto(ciclo?.funcionario_id))
+    const status = texto(ciclo?.status).toLowerCase()
+    if (!ciclo?.id || ciclo.arquivado || ['cancelada', 'concluida'].includes(status) || !funcionarioAtivo(funcionario, filialId)) return null
+
+    let saldo
+    try {
+      saldo = calcularSaldoDiasFerias({
+        diasDireito: Number(ciclo.dias_direito) || 30,
+        periodosAtivos: periodosPorCiclo.get(texto(ciclo.id)) || []
+      })
+    } catch {
+      return null
+    }
+
+    const dataReferencia = normalizarDataISO(ciclo.data_limite_gozo)
+    const dias = diferencaDiasCalendario(dataReferencia, dataBaseISO)
+    if (saldo <= 0 || !dataReferencia || dias === null || dias > 90) return null
+
+    const vencido = dias < 0
+    const hoje = dias === 0
+    const urgente = dias <= 30
+    const descricaoPrazo = vencido
+      ? `Limite de férias vencido há ${Math.abs(dias)} dia(s)`
+      : hoje
+        ? 'Limite de férias vence hoje'
+        : `Limite de férias em ${dias} dia(s)`
+
+    return criarItemCentral({
+      id: `pessoas:ferias:limite:${ciclo.id}`,
+      tipo: 'ferias_limite',
+      modulo: 'Gestão de Pessoas',
+      titulo: texto(funcionario.nome) || 'Colaborador',
+      descricao: descricaoPessoa(`${descricaoPrazo} • ${saldo} dia(s) pendente(s)`, funcionario),
+      dataReferencia,
+      dias,
+      severidade: vencido ? 'critical' : urgente ? 'warning' : 'info',
+      status: vencido ? 'vencido' : hoje ? 'vence_hoje' : urgente ? 'pendente' : 'planejamento',
+      inconsistencia: vencido,
+      proximaAcao: vencido ? 'Regularizar o saldo de férias' : 'Planejar o saldo de férias',
+      destino: 'ferias',
+      referenciaOrigem: referenciaPessoa('ciclo_ferias_limite', ciclo.id, funcionario.id, {
+        cicloId: ciclo.id
+      }),
+      origemOperacional: 'pessoas',
+      ...dadosPessoa(funcionario)
+    })
+  }).filter(Boolean)
+}
+
+function criarMarcoFerias({ periodo, funcionario, tipo, dataReferencia, dataBaseISO, rotulo, acao }) {
+  const data = normalizarDataISO(dataReferencia)
+  const dias = diferencaDiasCalendario(data, dataBaseISO)
+  if (!data || dias === null || dias < 0 || dias > 90) return null
+
+  return criarItemCentral({
+    id: `pessoas:ferias:${tipo}:${periodo.id}`,
+    tipo: `ferias_${tipo}`,
+    modulo: 'Gestão de Pessoas',
+    titulo: texto(funcionario.nome) || 'Colaborador',
+    descricao: descricaoPessoa(dias === 0 ? `${rotulo} hoje` : `${rotulo} em ${dias} dia(s)`, funcionario),
+    dataReferencia: data,
+    dias,
+    severidade: dias <= 7 ? 'warning' : 'info',
+    status: dias === 0 ? 'vence_hoje' : 'pendente',
+    proximaAcao: acao,
+    destino: 'ferias',
+    referenciaOrigem: referenciaPessoa(`periodo_ferias_${tipo}`, periodo.id, funcionario.id, {
+      periodoId: periodo.id,
+      cicloId: periodo.ciclo_ferias_id || null
+    }),
+    origemOperacional: 'pessoas',
+    ...dadosPessoa(funcionario)
+  })
+}
+
+export function normalizarMarcosFeriasAgenda(periodos = [], funcionarios = [], { dataBaseISO, filialId = '' } = {}) {
+  const funcionariosPorId = new Map((funcionarios || []).map((funcionario) => [texto(funcionario?.id), funcionario]))
+
+  return (periodos || []).flatMap((periodo) => {
+    const funcionario = funcionariosPorId.get(texto(periodo?.funcionario_id))
+    if (
+      !periodo?.id || periodo.arquivado || texto(periodo.status).toLowerCase() !== 'agendada' ||
+      !funcionarioAtivo(funcionario, filialId)
+    ) return []
+
+    return [
+      criarMarcoFerias({ periodo, funcionario, tipo: 'inicio', dataReferencia: periodo.data_inicio, dataBaseISO, rotulo: 'Férias iniciam', acao: 'Conferir o início das férias' }),
+      criarMarcoFerias({ periodo, funcionario, tipo: 'fim', dataReferencia: periodo.data_fim_calculada, dataBaseISO, rotulo: 'Último dia de férias', acao: 'Conferir o encerramento das férias' }),
+      criarMarcoFerias({ periodo, funcionario, tipo: 'retorno', dataReferencia: periodo.data_retorno_trabalho, dataBaseISO, rotulo: 'Retorno ao trabalho', acao: 'Acompanhar o retorno ao trabalho' })
+    ].filter(Boolean)
+  })
+}
+
+export function projetarEventosPessoas({
+  funcionarios = [],
+  ciclosFerias = [],
+  periodosFerias = [],
   exames = [],
   competenciasFolha = [],
   dataBaseISO,
@@ -187,12 +281,23 @@ export function normalizarPessoasDetalhadasAgenda({
 } = {}) {
   return [
     ...normalizarAniversariosAgenda(funcionarios, { dataBaseISO, filialId }),
-    ...normalizarFeriasAgenda(ferias, funcionarios, { dataBaseISO, filialId }),
+    ...normalizarLimitesFeriasAgenda(ciclosFerias, periodosFerias, funcionarios, { dataBaseISO, filialId }),
+    ...normalizarMarcosFeriasAgenda(periodosFerias, funcionarios, { dataBaseISO, filialId }),
     ...normalizarExamesAgenda(exames, funcionarios, { dataBaseISO, filialId }),
     ...normalizarCompetenciasFolhaAgenda(competenciasFolha, { dataBaseISO, filialId })
   ]
 }
 
-export function calcularFimJanelaAgenda(dataBaseISO) {
-  return somarDiasISO(dataBaseISO, 30)
+export function criarDestinoContextualEventoPessoas(item, origem = '') {
+  if (item?.origemOperacional !== 'pessoas' || !item?.destino) return null
+  return {
+    tela: item.destino,
+    opcoes: {
+      origem: texto(origem) || null,
+      contexto: {
+        ...(item.referenciaOrigem || {}),
+        telaRetorno: texto(origem) || null
+      }
+    }
+  }
 }

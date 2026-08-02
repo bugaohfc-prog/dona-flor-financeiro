@@ -4,6 +4,12 @@ import {
   selecionarPorEmpresa
 } from './supabaseQueryService'
 import { assertEmpresaId } from './tenantService'
+import {
+  calcularSaldoDiasFerias,
+  periodoFeriasConsomeSaldo
+} from './funcionariosFeriasRules.js'
+
+export { calcularSaldoDiasFerias } from './funcionariosFeriasRules.js'
 
 const TABELA_FERIAS_CICLOS = 'df_funcionarios_ferias_ciclos'
 const TABELA_FERIAS_PERIODOS = 'df_funcionarios_ferias_periodos'
@@ -135,10 +141,6 @@ function normalizarNumeroParcela(valor) {
   return numero
 }
 
-function periodoConsomeSaldo(periodo) {
-  return periodo && !periodo.arquivado && periodo.status !== 'cancelada'
-}
-
 function obterDataHojeISO() {
   const hoje = new Date()
   return [
@@ -158,18 +160,6 @@ export function calcularRetornoTrabalho(dataInicio, quantidadeDias) {
   return somarDias(calcularFimFerias(dataInicio, quantidadeDias), 1)
 }
 
-export function calcularSaldoDiasFerias({ diasDireito = 30, periodosAtivos = [] } = {}) {
-  const direito = normalizarInteiroPositivo(diasDireito, 'Dias de direito deve ser maior que zero.')
-  const diasUsados = (periodosAtivos || [])
-    .filter(periodoConsomeSaldo)
-    .reduce((total, periodo) => total + normalizarInteiroPositivo(
-      periodo.quantidade_dias,
-      'Quantidade de dias do periodo deve ser maior que zero.'
-    ), 0)
-
-  return Math.max(direito - diasUsados, 0)
-}
-
 export function calcularStatusCicloFerias({
   diasDireito = 30,
   periodosAtivos = [],
@@ -178,7 +168,7 @@ export function calcularStatusCicloFerias({
   const saldo = calcularSaldoDiasFerias({ diasDireito, periodosAtivos })
   if (saldo <= 0) return 'concluida'
 
-  const periodosQueConsomemSaldo = (periodosAtivos || []).filter(periodoConsomeSaldo)
+  const periodosQueConsomemSaldo = (periodosAtivos || []).filter(periodoFeriasConsomeSaldo)
   if (dataLimiteGozo && normalizarDataObrigatoria(dataLimiteGozo) < obterDataHojeISO()) return 'vencida'
   if (periodosQueConsomemSaldo.some((periodo) => periodo.status === 'agendada')) return 'agendada'
   if (periodosQueConsomemSaldo.length > 0) return 'parcial'
@@ -286,7 +276,7 @@ async function carregarPeriodosAtivosDoCiclo({ supabase, empresaId, cicloId, fun
   })
 
   if (error) throw error
-  return (data || []).filter(periodoConsomeSaldo)
+  return (data || []).filter(periodoFeriasConsomeSaldo)
 }
 
 function validarSaldoParaPeriodo({ ciclo, periodosAtivos, quantidadeDias, status, periodoIgnoradoId }) {
@@ -313,7 +303,7 @@ function obterCampo(entrada, nomeSnake, nomeCamel, valorPadrao) {
 
 function calcularProximaParcela(periodosAtivos = []) {
   const maiorParcela = (periodosAtivos || [])
-    .filter(periodoConsomeSaldo)
+    .filter(periodoFeriasConsomeSaldo)
     .reduce((maior, periodo) => Math.max(maior, Number(periodo.numero_parcela) || 0), 0)
   return normalizarNumeroParcela(maiorParcela + 1)
 }

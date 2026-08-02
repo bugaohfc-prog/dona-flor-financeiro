@@ -150,6 +150,7 @@ export default function FechamentoFolhaPage({
   empresaNome,
   podeEditar = true,
   voltarPainel,
+  contextoNavegacao = null,
   filiais = []
 }) {
   const [competenciaSelecionadaId, setCompetenciaSelecionadaId] = useState('')
@@ -230,6 +231,14 @@ export default function FechamentoFolhaPage({
     && !mensagemErro
   )
   const parametrosExportacao = { empresaId, empresaNome, competencia: competenciaSelecionada?.competencia, competenciaId: competenciaSelecionadaId, lancamentos, itensLancamentos, funcionarios, filiais }
+
+  useEffect(() => {
+    const competenciaId = String(contextoNavegacao?.competenciaId || contextoNavegacao?.id || '')
+    if (!competenciaId || loadingCompetencias) return
+    if (competencias.some((item) => String(item?.id || '') === competenciaId)) {
+      setCompetenciaSelecionadaId(competenciaId)
+    }
+  }, [competencias, contextoNavegacao, loadingCompetencias])
 
   function montarFormularioCategoria(categoria, funcionarioId = funcionarioSelecionadoId, adicionar = false) {
     const formulario = criarFormLancamento(categoria)

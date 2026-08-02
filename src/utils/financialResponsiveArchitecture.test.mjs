@@ -82,5 +82,5 @@ test('cadeia do Dashboard remove somente totais financeiros legados sem tocar no
 
   assert.doesNotMatch(rota, /\b(?:total|pago|pendente|vencido)=\{/)
   assert.doesNotMatch(dashboard, /loadingHistoricoFinanceiro|historicoFinanceiroCarregado|erroHistoricoFinanceiro|onRetryHistoricoFinanceiro/)
-  assert.match(dashboard, /carregando=\{loading\}/)
+  assert.match(dashboard, /carregando=\{loading \|\| \(fontePessoas\.carregando && !fontePessoas\.carregado\)\}/)
 })

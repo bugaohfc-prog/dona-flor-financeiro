@@ -192,7 +192,16 @@ test('legado preserva seis atividades recentes', () => {
 })
 
 test('modelo-base respeita permissao de Pessoas e separa atividade', () => {
-  const fontes = { dataBaseISO: hoje, alertasPessoas: [{ id: 'ferias', tipo: 'ferias', titulo: 'Ferias', prioridade: 'alta' }], atividade: [{ id: 'evento', acao: 'financeiro.conta.criada', criado_em: hoje }], podeAcessarAuditoria: true }
+  const fontes = {
+    dataBaseISO: hoje,
+    itensPessoasDetalhados: [{
+      ...item({ id: 'pessoas:ferias:periodo-1', origem: 'pessoas', tipoOrigem: 'periodo_ferias_inicio' }),
+      origemOperacional: 'pessoas',
+      referenciaOrigem: { tipo: 'periodo_ferias_inicio', id: 'periodo-1' }
+    }],
+    atividade: [{ id: 'evento', acao: 'financeiro.conta.criada', criado_em: hoje }],
+    podeAcessarAuditoria: true
+  }
   assert.equal(montarBaseOperacional({ ...fontes, podeAcessarPessoas: false }).itensOperacionais.length, 0)
   const base = montarBaseOperacional({ ...fontes, podeAcessarPessoas: true })
   assert.equal(base.itensOperacionais.length, 1)

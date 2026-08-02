@@ -93,6 +93,24 @@ test('máscara monetária pt-BR aceita digitação, colagem e valor persistido',
   assert.equal(parseMoedaEntradaFolha('R$ 40,00'), 40)
 })
 
+test('entrada monetária da Folha aplica a máscara durante a digitação', async () => {
+  const pagina = await readFile(new URL('../../../../pages/FechamentoFolhaPage.jsx', import.meta.url), 'utf8')
+  const mascararDigitacao = (valor) => {
+    const digitos = String(valor ?? '').replace(/\D/g, '')
+    return digitos ? formatarMoedaEntradaFolha(Number(digitos) / 100) : ''
+  }
+
+  assert.equal(mascararDigitacao('4000'), 'R$ 40,00')
+  assert.equal(mascararDigitacao('1.250,50'), 'R$ 1.250,50')
+  assert.equal(mascararDigitacao('1250,50'), 'R$ 1.250,50')
+  assert.equal(mascararDigitacao('1000000'), 'R$ 10.000,00')
+  assert.equal(mascararDigitacao('R$ 40,0'), 'R$ 4,00')
+  assert.equal(mascararDigitacao(''), '')
+  assert.equal(parseMoedaEntradaFolha(mascararDigitacao('4000')), 40)
+  assert.match(pagina, /onChange=\{\(event\) => onChange\(mascararMoedaFolhaDuranteDigitacao\(event\.target\.value\)\)\}/)
+  assert.match(pagina, /inputMode="decimal"/)
+})
+
 test('máscara HH:MM usa teclado numérico sem limitar horas a 23', () => {
   assert.equal(mascararHorasFolha('0'), '0')
   assert.equal(mascararHorasFolha('04'), '04:')

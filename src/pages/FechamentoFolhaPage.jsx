@@ -85,6 +85,12 @@ function criarFormLancamento(categoria = 'compras_vales') {
   return { ...FORM_LANCAMENTO_INICIAL, categoria, datasFaltas: [''] }
 }
 
+function mascararMoedaFolhaDuranteDigitacao(valor) {
+  const digitos = String(valor ?? '').replace(/\D/g, '')
+  if (!digitos) return ''
+  return formatarMoedaEntradaFolha(Number(digitos) / 100)
+}
+
 function MoedaInputFolha({ value, onChange, inputRef, ...props }) {
   return (
     <input
@@ -93,7 +99,7 @@ function MoedaInputFolha({ value, onChange, inputRef, ...props }) {
       type="text"
       inputMode="decimal"
       value={value}
-      onChange={(event) => onChange(event.target.value)}
+      onChange={(event) => onChange(mascararMoedaFolhaDuranteDigitacao(event.target.value))}
       onBlur={(event) => onChange(formatarMoedaEntradaFolha(event.target.value))}
       onFocus={(event) => event.currentTarget.select()}
     />

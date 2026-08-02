@@ -4,7 +4,10 @@ import {
   normalizarDataISO
 } from './centralDoDiaRules.js'
 import { calcularProximoPeriodico } from '../../../services/funcionariosExamesPeriodicosRules.js'
-import { calcularSaldoDiasFerias } from '../../../services/funcionariosFeriasRules.js'
+import {
+  derivarStatusPeriodoFerias,
+  resumirCicloFerias
+} from '../../../services/funcionariosFeriasRules.js'
 
 const STATUS_FOLHA_AGENDA = new Set(['aberta', 'em_conferencia', 'pendente'])
 
@@ -178,14 +181,14 @@ export function normalizarLimitesFeriasAgenda(
 
   return (ciclos || []).map((ciclo) => {
     const funcionario = funcionariosPorId.get(texto(ciclo?.funcionario_id))
-    const status = texto(ciclo?.status).toLowerCase()
-    if (!ciclo?.id || ciclo.arquivado || ['cancelada', 'concluida'].includes(status) || !funcionarioAtivo(funcionario, filialId)) return null
+    if (!ciclo?.id || !funcionarioAtivo(funcionario, filialId)) return null
 
-    let saldo
+    let resumo
     try {
-      saldo = calcularSaldoDiasFerias({
-        diasDireito: Number(ciclo.dias_direito) || 30,
-        periodosAtivos: periodosPorCiclo.get(texto(ciclo.id)) || []
+      resumo = resumirCicloFerias({
+        ciclo,
+        periodos: periodosPorCiclo.get(texto(ciclo.id)) || [],
+        dataReferencia: dataBaseISO
       })
     } catch {
       return null
@@ -193,7 +196,11 @@ export function normalizarLimitesFeriasAgenda(
 
     const dataReferencia = normalizarDataISO(ciclo.data_limite_gozo)
     const dias = diferencaDiasCalendario(dataReferencia, dataBaseISO)
-    if (saldo <= 0 || !dataReferencia || dias === null || dias > 90) return null
+    if (
+      resumo.saldoAindaNaoGozado <= 0 ||
+      ['arquivada', 'cancelada', 'concluida'].includes(resumo.statusOperacional) ||
+      !dataReferencia || dias === null || dias > 90
+    ) return null
 
     const vencido = dias < 0
     const hoje = dias === 0
@@ -209,13 +216,15 @@ export function normalizarLimitesFeriasAgenda(
       tipo: 'ferias_limite',
       modulo: 'Gestão de Pessoas',
       titulo: texto(funcionario.nome) || 'Colaborador',
-      descricao: descricaoPessoa(`${descricaoPrazo} • ${saldo} dia(s) pendente(s)`, funcionario),
+      descricao: descricaoPessoa(`${descricaoPrazo} • ${resumo.saldoAindaNaoGozado} dia(s) ainda não gozado(s) • ${resumo.saldoLivreParaProgramar} dia(s) livre(s)`, funcionario),
       dataReferencia,
       dias,
       severidade: vencido ? 'critical' : urgente ? 'warning' : 'info',
       status: vencido ? 'vencido' : hoje ? 'vence_hoje' : urgente ? 'pendente' : 'planejamento',
       inconsistencia: vencido,
-      proximaAcao: vencido ? 'Regularizar o saldo de férias' : 'Planejar o saldo de férias',
+      proximaAcao: resumo.saldoLivreParaProgramar <= 0
+        ? 'Acompanhar as férias já programadas'
+        : vencido ? 'Regularizar o saldo de férias' : 'Planejar o saldo de férias',
       destino: 'ferias',
       referenciaOrigem: referenciaPessoa('ciclo_ferias_limite', ciclo.id, funcionario.id, {
         cicloId: ciclo.id
@@ -257,10 +266,8 @@ export function normalizarMarcosFeriasAgenda(periodos = [], funcionarios = [], {
 
   return (periodos || []).flatMap((periodo) => {
     const funcionario = funcionariosPorId.get(texto(periodo?.funcionario_id))
-    if (
-      !periodo?.id || periodo.arquivado || texto(periodo.status).toLowerCase() !== 'agendada' ||
-      !funcionarioAtivo(funcionario, filialId)
-    ) return []
+    const statusOperacional = derivarStatusPeriodoFerias(periodo, dataBaseISO)
+    if (!periodo?.id || !funcionarioAtivo(funcionario, filialId) || ['cancelada', 'arquivada', 'gozada'].includes(statusOperacional)) return []
 
     return [
       criarMarcoFerias({ periodo, funcionario, tipo: 'inicio', dataReferencia: periodo.data_inicio, dataBaseISO, rotulo: 'Férias iniciam', acao: 'Conferir o início das férias' }),

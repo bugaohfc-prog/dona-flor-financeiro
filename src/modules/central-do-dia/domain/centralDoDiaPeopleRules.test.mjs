@@ -216,7 +216,7 @@ test('ciclo vencido gera uma unica acao com saldo pendente e contexto estavel', 
   assert.equal(evento.id, 'pessoas:ferias:limite:ciclo-vencido')
   assert.equal(evento.status, 'vencido')
   assert.equal(evento.severidade, 'critical')
-  assert.match(evento.descricao, /20 dia\(s\) pendente\(s\)/)
+  assert.match(evento.descricao, /20 dia\(s\) ainda não gozado\(s\)/)
   assert.deepEqual(evento.referenciaOrigem, {
     tipo: 'ciclo_ferias_limite', id: ciclo.id, funcionarioId: funcionario.id, cicloId: ciclo.id
   })
@@ -235,14 +235,16 @@ test('limite de ferias distingue urgencia em trinta dias e planejamento em noven
   ])
 })
 
-test('saldo zerado e ciclo arquivado ou concluido nao geram pendencia', () => {
+test('saldo zerado e ciclo arquivado nao geram pendencia, mas cache concluido divergente nao oculta saldo', () => {
   const ciclos = [
     { id: 'zerado', funcionario_id: funcionario.id, data_limite_gozo: '2026-07-10', dias_direito: 10, status: 'parcial' },
     { id: 'arquivado', funcionario_id: funcionario.id, data_limite_gozo: '2026-07-10', dias_direito: 30, status: 'pendente', arquivado: true },
     { id: 'concluido', funcionario_id: funcionario.id, data_limite_gozo: '2026-07-10', dias_direito: 30, status: 'concluida' }
   ]
   const periodos = [{ id: 'gozo', ciclo_ferias_id: 'zerado', quantidade_dias: 10, status: 'concluida' }]
-  assert.deepEqual(normalizarLimitesFeriasAgenda(ciclos, periodos, [funcionario], { dataBaseISO: hoje }), [])
+  const eventos = normalizarLimitesFeriasAgenda(ciclos, periodos, [funcionario], { dataBaseISO: hoje })
+  assert.deepEqual(eventos.map((item) => item.referenciaOrigem.id), ['concluido'])
+  assert.match(eventos[0].descricao, /30 dia\(s\) ainda não gozado\(s\)/)
 })
 
 test('projeta inicio, ultimo dia e retorno com o mesmo periodo e referencias distintas', () => {

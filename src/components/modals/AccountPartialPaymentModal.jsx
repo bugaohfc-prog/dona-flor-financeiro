@@ -19,7 +19,6 @@ function normalizarValor(valor) {
 }
 
 export default function AccountPartialPaymentModal({
-  styles,
   conta,
   formatarValor,
   limitarDataInput,
@@ -158,10 +157,10 @@ export default function AccountPartialPaymentModal({
   if (!conta) return null
 
   return (
-    <div className="account-modal-backdrop" style={styles.overlay} onClick={ocupado ? undefined : onClose}>
+    <div className="account-modal-backdrop" onClick={ocupado ? undefined : onClose}>
       <div
         className="account-modal-card account-payment-modal-card account-partial-modal-card"
-        style={{ ...styles.modal, maxWidth: 500 }}
+        style={{ maxWidth: 500 }}
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -204,7 +203,6 @@ export default function AccountPartialPaymentModal({
                   <span>Valor pago</span>
                   <input
                     id="valor-pagamento-parcial"
-                    style={styles.inputModal}
                     inputMode="decimal"
                     value={valorPago}
                     onChange={(event) => {
@@ -220,7 +218,6 @@ export default function AccountPartialPaymentModal({
                   <span>Data do pagamento</span>
                   <input
                     id="data-pagamento-parcial"
-                    style={styles.inputModal}
                     type="date"
                     value={dataPagamento}
                     onChange={(event) => {
@@ -234,7 +231,6 @@ export default function AccountPartialPaymentModal({
                   <span>Observação</span>
                   <textarea
                     id="observacao-pagamento-parcial"
-                    style={{ ...styles.textareaModal, minHeight: 82 }}
                     value={observacao}
                     onChange={(event) => setObservacao(event.target.value)}
                     placeholder="Comentário opcional..."
@@ -307,7 +303,6 @@ export default function AccountPartialPaymentModal({
           {podeRegistrarNovo && (
             <button
               className="account-modal-save"
-              style={styles.btnSalvar}
               type="button"
               onClick={confirmarPagamento}
               disabled={ocupado}
@@ -317,7 +312,6 @@ export default function AccountPartialPaymentModal({
           )}
           <button
             className="account-modal-cancel"
-            style={styles.btnCancelar}
             type="button"
             onClick={onClose}
             disabled={ocupado}

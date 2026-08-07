@@ -873,7 +873,6 @@ export default function ContasPage({
       {renderListaContasConteudo()}
       {contaEmBaixa && (
         <AccountPaymentModal
-          styles={styles}
           conta={contaEmBaixa}
           formatarValor={formatarValor}
           formatarData={formatarData}
@@ -885,7 +884,6 @@ export default function ContasPage({
       )}
       {contaEmPagamentoParcial && (
         <AccountPartialPaymentModal
-          styles={styles}
           conta={contaEmPagamentoParcial}
           formatarValor={formatarValor}
           limitarDataInput={limitarDataInput}

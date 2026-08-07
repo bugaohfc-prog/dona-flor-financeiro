@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { criarControleBaixaConta } from './accountPaymentModalLogic.js'
 
 function dataAtualBanco() {
   const hoje = new Date()
@@ -24,7 +25,6 @@ function formatarValorInput(valor) {
 }
 
 export default function AccountPaymentModal({
-  styles,
   conta,
   formatarValor,
   formatarData,
@@ -39,7 +39,10 @@ export default function AccountPaymentModal({
   const [valorPago, setValorPago] = useState(formatarValorInput(valorPagamentoInicial))
   const [dataPagamento, setDataPagamento] = useState(corrigindoPagamento && conta?.data_pagamento ? conta.data_pagamento : dataAtualBanco())
   const [observacaoPagamento, setObservacaoPagamento] = useState(corrigindoPagamento ? conta?.observacao_pagamento || '' : '')
+  const [erro, setErro] = useState('')
   const [salvando, setSalvando] = useState(false)
+  const controleBaixaRef = useRef(null)
+  if (!controleBaixaRef.current) controleBaixaRef.current = criarControleBaixaConta()
 
   const previa = useMemo(() => {
     const pago = normalizarValor(valorPago)
@@ -57,32 +60,49 @@ export default function AccountPaymentModal({
   }, [formatarValor, valorPago, valorPrevisto])
 
   async function confirmarBaixa() {
-    if (salvando) return
+    if (salvando || controleBaixaRef.current.estaEmAndamento()) return
 
     const valorNumerico = normalizarValor(valorPago)
-    if (!valorNumerico || valorNumerico < 0 || !dataPagamento) return
+    if (!valorNumerico || valorNumerico < 0) {
+      setErro('Informe um valor pago maior que zero.')
+      return
+    }
+    if (!dataPagamento) {
+      setErro('Informe uma data de pagamento válida.')
+      return
+    }
 
     if (corrigindoPagamento) {
       const confirmou = window.confirm('Salvar correção desta baixa?\n\nA conta continuará marcada como paga, apenas os dados do pagamento serão atualizados.')
       if (!confirmou) return
     }
 
-    setSalvando(true)
-    const sucesso = await onConfirm({
+    const payload = {
       valor_pago: valorNumerico,
       data_pagamento: dataPagamento,
       observacao_pagamento: observacaoPagamento.trim() || null
-    })
+    }
+
+    setErro('')
+    setSalvando(true)
+    const resultado = await controleBaixaRef.current.executar(onConfirm, payload)
     setSalvando(false)
 
-    if (sucesso) onClose()
+    if (resultado.sucesso) {
+      onClose()
+      return
+    }
+
+    if (!resultado.ignorado) {
+      setErro('Não foi possível concluir a baixa. Revise os dados e tente novamente.')
+    }
   }
 
   if (!conta) return null
 
   return (
-    <div className="account-modal-backdrop" style={styles.overlay} onClick={onClose}>
-      <div className="account-modal-card account-payment-modal-card" style={{ ...styles.modal, maxWidth: 460 }} onClick={(event) => event.stopPropagation()}>
+    <div className="account-modal-backdrop" onClick={salvando ? undefined : onClose}>
+      <div className="account-modal-card account-payment-modal-card" style={{ maxWidth: 460 }} onClick={(event) => event.stopPropagation()}>
         <header className="account-modal-header">
           <span>Financeiro</span>
           <h3>{corrigindoPagamento ? 'Corrigir pagamento' : 'Baixar pagamento'}</h3>
@@ -123,10 +143,12 @@ export default function AccountPaymentModal({
                 <span>Valor pago</span>
                 <input
                   id="valor-pago-conta"
-                  style={styles.inputModal}
                   inputMode="decimal"
                   value={valorPago}
-                  onChange={(event) => setValorPago(event.target.value)}
+                  onChange={(event) => {
+                    setValorPago(event.target.value)
+                    setErro('')
+                  }}
                   placeholder="Ex: 105,40"
                 />
               </label>
@@ -135,10 +157,12 @@ export default function AccountPaymentModal({
                 <span>Data de pagamento</span>
                 <input
                   id="data-pagamento-conta"
-                  style={styles.inputModal}
                   type="date"
                   value={dataPagamento}
-                  onChange={(event) => setDataPagamento(limitarDataInput(event.target.value))}
+                  onChange={(event) => {
+                    setDataPagamento(limitarDataInput(event.target.value))
+                    setErro('')
+                  }}
                 />
               </label>
 
@@ -146,9 +170,11 @@ export default function AccountPaymentModal({
                 <span>Observação de pagamento</span>
                 <textarea
                   id="observacao-pagamento-conta"
-                  style={{ ...styles.textareaModal, minHeight: 82 }}
                   value={observacaoPagamento}
-                  onChange={(event) => setObservacaoPagamento(event.target.value)}
+                  onChange={(event) => {
+                    setObservacaoPagamento(event.target.value)
+                    setErro('')
+                  }}
                   placeholder="Comentário opcional da baixa..."
                 />
               </label>
@@ -158,13 +184,14 @@ export default function AccountPaymentModal({
           <div className={`account-payment-preview account-payment-preview-${previa.tipo}`}>
             {previa.texto}
           </div>
+          {erro && <div className="account-partial-payment-error" role="alert">{erro}</div>}
         </div>
 
         <footer className="account-modal-actions">
-          <button className="account-modal-save" style={styles.btnSalvar} type="button" onClick={confirmarBaixa} disabled={salvando}>
+          <button className="account-modal-save" type="button" onClick={confirmarBaixa} disabled={salvando}>
             {salvando ? 'Salvando...' : corrigindoPagamento ? 'Salvar correção' : 'Confirmar baixa'}
           </button>
-          <button className="account-modal-cancel" style={styles.btnCancelar} type="button" onClick={onClose} disabled={salvando}>
+          <button className="account-modal-cancel" type="button" onClick={onClose} disabled={salvando}>
             Cancelar
           </button>
         </footer>

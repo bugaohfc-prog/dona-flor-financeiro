@@ -2556,9 +2556,20 @@
 
 /* Contas - modais premium */
 .account-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 6000;
+  display: flex;
   align-items: center !important;
   justify-content: center !important;
+  width: 100%;
+  min-height: 100%;
   padding: 18px !important;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+  background: rgba(15, 23, 42, .56);
+  overscroll-behavior: contain;
 }
 
 .account-modal-card {
@@ -2613,6 +2624,7 @@
   width: min(100%, 720px) !important;
   max-width: 720px !important;
   max-height: min(88vh, 760px);
+  box-sizing: border-box;
   padding: 0 !important;
   overflow: hidden;
   border: 1px solid var(--account-modal-brand-border-soft);
@@ -3236,7 +3248,7 @@
 @media (max-width: 640px) {
   .account-modal-backdrop {
     align-items: flex-end !important;
-    padding: 10px !important;
+    padding: 10px 10px max(10px, env(safe-area-inset-bottom)) !important;
   }
 
   .account-modal-card,

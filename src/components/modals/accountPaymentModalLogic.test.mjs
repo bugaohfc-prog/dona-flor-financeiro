@@ -15,6 +15,25 @@ function ler(caminho) {
   return readFileSync(new URL(caminho, import.meta.url), 'utf8')
 }
 
+function declaracoesCss(css, seletor) {
+  const seletorEscapado = seletor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const bloco = css.match(new RegExp(`${seletorEscapado}\\s*\\{([^}]+)\\}`))?.[1] || ''
+
+  return Object.fromEntries(
+    bloco
+      .split(';')
+      .map((declaracao) => declaracao.trim())
+      .filter(Boolean)
+      .map((declaracao) => {
+        const separador = declaracao.indexOf(':')
+        return [
+          declaracao.slice(0, separador).trim(),
+          declaracao.slice(separador + 1).trim().replace(/\s*!important$/, '')
+        ]
+      })
+  )
+}
+
 function criarSupabaseAtualizacao(resposta = { data: null, error: null }) {
   const chamadas = []
   const query = {
@@ -89,6 +108,35 @@ test('abrir modal de baixa renderiza sem depender do contrato styles removido', 
   } finally {
     await vite.close()
   }
+})
+
+test('backdrop e card preservam o contrato estrutural de modal sobre o shell', () => {
+  const css = ler('../../styles.css')
+  const backdrop = declaracoesCss(css, '.account-modal-backdrop')
+  const card = declaracoesCss(css, '.account-modal-card')
+  const corpo = declaracoesCss(css, '.account-modal-body')
+  const inicioMobile = css.indexOf('@media (max-width: 640px)', css.indexOf('.account-modal-card'))
+  const backdropMobile = declaracoesCss(css.slice(inicioMobile), '.account-modal-backdrop')
+
+  assert.equal(backdrop.position, 'fixed')
+  assert.equal(backdrop.inset, '0')
+  assert.equal(backdrop.display, 'flex')
+  assert.equal(backdrop['align-items'], 'center')
+  assert.equal(backdrop['justify-content'], 'center')
+  assert.ok(Number(backdrop['z-index']) > 5001)
+  assert.match(backdrop.background, /^rgba\(/)
+  assert.equal(backdrop['overflow-x'], 'hidden')
+  assert.equal(backdrop['overflow-y'], 'auto')
+  assert.equal(backdrop['box-sizing'], 'border-box')
+
+  assert.match(card.width, /^min\(100%,/)
+  assert.match(card['max-height'], /vh/)
+  assert.ok(card.background)
+  assert.ok(card['box-shadow'])
+  assert.equal(card['box-sizing'], 'border-box')
+  assert.equal(corpo.overflow, 'auto')
+  assert.equal(backdropMobile['align-items'], 'flex-end')
+  assert.match(backdropMobile.padding, /safe-area-inset-bottom/)
 })
 
 test('controle da baixa aceita somente uma confirmacao simultanea', async () => {

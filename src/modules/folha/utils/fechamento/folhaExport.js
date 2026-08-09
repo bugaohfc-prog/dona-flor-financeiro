@@ -7,7 +7,7 @@ import {
   quantidadeHorasFolha,
   resolverValorLancamentoFolha
 } from './folhaDomain.js'
-import { formatarData } from './folhaFormatters.js'
+import { formatarData, formatarMoeda } from './folhaFormatters.js'
 
 function texto(valor) {
   return String(valor ?? '').trim()
@@ -29,9 +29,10 @@ function criarContexto(params = {}) {
 function resolverFilial(contexto, lancamento) {
   const funcionario = contexto.funcionariosPorId.get(lancamento.funcionario_id)
   const filialId = lancamento.filial_id || funcionario?.filial_id || '__sem_filial'
+  const filial = contexto.filiaisPorId.get(filialId)
   return {
     id: filialId,
-    nome: contexto.filiaisPorId.get(filialId)?.nome || (filialId === '__sem_filial' ? 'Sem filial' : 'Filial não identificada')
+    nome: filial?.razao_social || filial?.nome || (filialId === '__sem_filial' ? 'Sem filial' : 'Filial não identificada')
   }
 }
 
@@ -86,7 +87,10 @@ function comprasDoLancamento(contexto, lancamento) {
 
 function observacoesLancamento(contexto, lancamento) {
   const itens = itensAtivosDoLancamento(contexto.itensAtivos, lancamento.id)
-  return [lancamento.observacao_administrativa, lancamento.descricao, ...itens.flatMap((item) => [item.observacao_administrativa, item.descricao])]
+  const descricaoLancamento = lancamento.categoria === 'outro_desconto'
+    ? `Outro desconto: ${texto(lancamento.descricao) || 'Sem descrição'} — ${formatarMoeda(resolverValorLancamentoFolha(lancamento, contexto.itensAtivos))}`
+    : lancamento.descricao
+  return [lancamento.observacao_administrativa, descricaoLancamento, ...itens.flatMap((item) => [item.observacao_administrativa, item.descricao])]
     .map(texto)
     .filter(Boolean)
 }

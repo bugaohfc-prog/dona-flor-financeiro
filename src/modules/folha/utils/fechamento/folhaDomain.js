@@ -1,4 +1,10 @@
 const CATEGORIAS_HORAS = new Set(['hora_extra_50', 'hora_extra_60', 'hora_extra_100'])
+const CATEGORIAS_REPETIVEIS_POR_LANCAMENTO = new Set([
+  'plano_saude',
+  'outro_credito',
+  'outro_desconto',
+  'observacao_administrativa'
+])
 
 export const CATEGORIAS_OPERACIONAIS_FOLHA = Object.freeze([
   'compras_vales',
@@ -200,6 +206,44 @@ export function planejarInclusaoCompraFolha({ lancamento, itens = [], novaCompra
   return Object.freeze(criacoes.map((item) => Object.freeze(item)))
 }
 
+export function planejarInclusaoPremiacaoFolha({ lancamento, itens = [], novaPremiacao }) {
+  const itensDoLancamento = itens.filter((item) => item?.lancamento_id === lancamento?.id)
+  const valorLegado = numeroFolha(lancamento?.valor)
+  const criacoes = []
+
+  if (itensDoLancamento.length === 0 && valorLegado > 0) {
+    const valorBaseLegado = numeroFolha(lancamento?.quantidade)
+    const percentualLegado = numeroFolha(lancamento?.percentual)
+    const valorCalculado = calcularPremiacaoFolha(valorBaseLegado, percentualLegado)
+
+    if (valorBaseLegado <= 0 || percentualLegado <= 0 || Math.abs(valorCalculado - valorLegado) > 0.01) {
+      return Object.freeze({
+        erro: 'A premiação legada não possui base e percentual confiáveis para preservar a ocorrência original.',
+        criacoes: Object.freeze([])
+      })
+    }
+
+    criacoes.push({
+      valor_base: valorBaseLegado,
+      percentual: percentualLegado,
+      valor: valorLegado,
+      observacao_administrativa: lancamento?.observacao_administrativa || null,
+      origem_item: 'transicao_lancamento_legado'
+    })
+  }
+
+  const valorBase = numeroFolha(novaPremiacao?.valor_base)
+  const percentual = numeroFolha(novaPremiacao?.percentual)
+  criacoes.push({
+    valor_base: valorBase,
+    percentual,
+    valor: calcularPremiacaoFolha(valorBase, percentual),
+    observacao_administrativa: String(novaPremiacao?.observacao_administrativa || '').trim() || null
+  })
+
+  return Object.freeze({ erro: null, criacoes: Object.freeze(criacoes.map((item) => Object.freeze(item))) })
+}
+
 export function resolverValorLancamentoFolha(lancamento, itens = []) {
   const ativos = itensAtivosDoLancamento(itens, lancamento?.id)
   if (ativos.length > 0) return totalItensFinanceirosFolha(ativos)
@@ -219,9 +263,26 @@ export function quantidadeHorasFolha(lancamento, itens = []) {
 }
 
 export function categoriaFolhaUsaItens(categoria) {
-  return categoria === 'compras_vales' || categoria === 'falta_injustificada' || CATEGORIAS_HORAS.has(categoria)
+  return categoria === 'compras_vales' || categoria === 'falta_injustificada' || categoria === 'premiacao' || CATEGORIAS_HORAS.has(categoria)
 }
 
 export function categoriaFolhaEhHora(categoria) {
   return CATEGORIAS_HORAS.has(categoria)
+}
+
+export function categoriaFolhaEhRepetivelPorLancamento(categoria) {
+  return CATEGORIAS_REPETIVEIS_POR_LANCAMENTO.has(categoria)
+}
+
+export function localizarLancamentoParaSalvarFolha({ lancamentos = [], funcionarioId, categoria, lancamentoEditandoId }) {
+  const ativosDaCategoria = lancamentos.filter((item) => (
+    !item?.arquivado
+    && item?.funcionario_id === funcionarioId
+    && item?.categoria === categoria
+  ))
+  if (lancamentoEditandoId) {
+    return ativosDaCategoria.find((item) => item.id === lancamentoEditandoId) || null
+  }
+  if (categoriaFolhaEhRepetivelPorLancamento(categoria)) return null
+  return ativosDaCategoria[0] || null
 }

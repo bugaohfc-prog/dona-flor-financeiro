@@ -5,16 +5,20 @@ import {
   ajustarDatasFaltasFolha,
   calcularPremiacaoFolha,
   CATEGORIAS_OPERACIONAIS_FOLHA,
+  categoriaFolhaEhRepetivelPorLancamento,
+  categoriaFolhaUsaItens,
   dataPertenceCompetenciaFolha,
   formatarMoedaEntradaFolha,
   horasFolhaParaPersistencia,
   horasFolhaParaTexto,
+  localizarLancamentoParaSalvarFolha,
   mascararHorasFolha,
   mensagemDataCompetenciaFolha,
   obterLimitesCompetenciaFolha,
   ordenarItensFolha,
   parseMoedaEntradaFolha,
   planejarInclusaoCompraFolha,
+  planejarInclusaoPremiacaoFolha,
   planejarSincronizacaoFaltasFolha,
   quantidadeFaltasFolha,
   quantidadeHorasFolha,
@@ -34,7 +38,7 @@ const funcionarios = [
   { id: 'func-2', nome: 'SMOKE-FOLHA', filial_id: 'filial-2' }
 ]
 const filiais = [
-  { id: 'filial-1', nome: 'Matriz' },
+  { id: 'filial-1', nome: 'Matriz', razao_social: 'Dona Flor Matriz Ltda.' },
   { id: 'filial-2', nome: 'Matriz' }
 ]
 const lancamentos = [
@@ -172,6 +176,78 @@ test('premiação usa somente vendas vezes percentual', () => {
   assert.equal(calcularPremiacaoFolha(10000, 2), 200)
 })
 
+test('premiação detalhada preserva legado e soma novas ocorrências sem substituir', () => {
+  const pai = { id: 'premio', quantidade: 10000, percentual: 2, valor: 200 }
+  const plano = planejarInclusaoPremiacaoFolha({
+    lancamento: pai,
+    itens: [],
+    novaPremiacao: { valor_base: 5000, percentual: 3, observacao_administrativa: 'Meta adicional' }
+  })
+  assert.equal(plano.erro, null)
+  assert.deepEqual(plano.criacoes.map((item) => item.valor), [200, 150])
+  const persistidos = plano.criacoes.map((item, indice) => ({ ...item, id: `premio-${indice}`, lancamento_id: pai.id, arquivado: false }))
+  assert.equal(resolverValorLancamentoFolha(pai, persistidos), 350)
+  assert.equal(persistidos[0].origem_item, 'transicao_lancamento_legado')
+
+  const proxima = planejarInclusaoPremiacaoFolha({
+    lancamento: { ...pai, valor: 350 },
+    itens: persistidos,
+    novaPremiacao: { valor_base: 1000, percentual: 1 }
+  })
+  assert.deepEqual(proxima.criacoes.map((item) => item.valor), [10])
+})
+
+test('premiação legada incompleta mantém fallback e bloqueia transição inventada', () => {
+  const pai = { id: 'premio-incompleto', quantidade: null, percentual: null, valor: 200 }
+  const plano = planejarInclusaoPremiacaoFolha({
+    lancamento: pai,
+    itens: [],
+    novaPremiacao: { valor_base: 5000, percentual: 3 }
+  })
+  assert.match(plano.erro, /não possui base e percentual confiáveis/)
+  assert.deepEqual(plano.criacoes, [])
+  assert.equal(resolverValorLancamentoFolha(pai, []), 200)
+})
+
+test('arquivamento e reativação de uma premiação recalculam somente itens ativos', () => {
+  const pai = { id: 'premio', valor: 350 }
+  const itens = [
+    { id: 'p1', lancamento_id: pai.id, valor: 200, arquivado: false },
+    { id: 'p2', lancamento_id: pai.id, valor: 150, arquivado: true }
+  ]
+  assert.equal(resolverValorLancamentoFolha(pai, itens), 200)
+  assert.equal(resolverValorLancamentoFolha(pai, itens.map((item) => ({ ...item, arquivado: false }))), 350)
+})
+
+test('contrato diferencia itens detalhados e categorias repetíveis por lançamento', () => {
+  assert.equal(categoriaFolhaUsaItens('premiacao'), true)
+  assert.equal(categoriaFolhaUsaItens('compras_vales'), true)
+  assert.equal(categoriaFolhaEhRepetivelPorLancamento('plano_saude'), true)
+  assert.equal(categoriaFolhaEhRepetivelPorLancamento('outro_desconto'), true)
+  assert.equal(categoriaFolhaEhRepetivelPorLancamento('outro_credito'), true)
+  assert.equal(categoriaFolhaEhRepetivelPorLancamento('observacao_administrativa'), true)
+  assert.equal(categoriaFolhaEhRepetivelPorLancamento('pensao_alimenticia'), false)
+})
+
+test('nova categoria repetível cria ocorrência e edição altera somente o ID escolhido', () => {
+  const existentes = [
+    { id: 'desconto-40', funcionario_id: 'func-1', categoria: 'outro_desconto', valor: 40, arquivado: false },
+    { id: 'desconto-25', funcionario_id: 'func-1', categoria: 'outro_desconto', valor: 25, arquivado: false }
+  ]
+  assert.equal(localizarLancamentoParaSalvarFolha({
+    lancamentos: existentes,
+    funcionarioId: 'func-1',
+    categoria: 'outro_desconto'
+  }), null)
+  assert.equal(localizarLancamentoParaSalvarFolha({
+    lancamentos: existentes,
+    funcionarioId: 'func-1',
+    categoria: 'outro_desconto',
+    lancamentoEditandoId: 'desconto-25'
+  })?.id, 'desconto-25')
+  assert.equal(existentes[0].valor, 40)
+})
+
 test('horas fazem ida e volta sem perda nos casos do smoke', () => {
   for (const hora of ['04:20', '05:30', '04:28']) {
     assert.equal(horasFolhaParaTexto(horasFolhaParaPersistencia(hora)), hora)
@@ -182,6 +258,7 @@ test('controle de compras usa uma aba, blocos por ID e compras dinâmicas', () =
   const modelo = montarControleComprasFolha(params)
   assert.equal(modelo.aba, 'Controle de Compras')
   assert.equal(modelo.blocos.length, 2)
+  assert.equal(modelo.blocos[0].filial, 'Dona Flor Matriz Ltda.')
   assert.equal(modelo.maximoCompras, 2)
   assert.deepEqual(modelo.blocos[0].linhas[0].compras, [40, 60])
   assert.equal(modelo.blocos[0].linhas[0].total, 100)
@@ -209,6 +286,7 @@ test('fechamento contábil consolida valores, horas, faltas e observações sem 
   const modelo = montarFechamentoFolhaContabilidade(params)
   assert.equal(modelo.aba, 'Fechamento de Folha')
   assert.equal(modelo.blocos.length, 2)
+  assert.equal(modelo.blocos[0].filial, 'Dona Flor Matriz Ltda.')
   const linha = modelo.blocos[0].linhas[0]
   assert.equal(linha.compras, 100)
   assert.equal(linha.planoSaude, 45.67)
@@ -223,6 +301,39 @@ test('fechamento contábil consolida valores, horas, faltas e observações sem 
   assert.deepEqual(modelo.sheet.currencyColumns, [1, 2, 3])
   const controle = montarControleComprasFolha(params)
   assert.equal(linha.compras, controle.blocos[0].linhas[0].total)
+})
+
+test('fechamento soma premiações e planos repetidos e identifica todos os outros descontos', () => {
+  const lancamentosRepetidos = [
+    { ...lancamentos[0], valor: 100 },
+    { ...lancamentos[2], valor: 350 },
+    { ...lancamentos[1], id: 'plano-1', valor: 45.67 },
+    { ...lancamentos[1], id: 'plano-2', valor: 54.33 },
+    { id: 'desconto-1', funcionario_id: 'func-1', filial_id: 'filial-1', categoria: 'outro_desconto', natureza: 'desconto', descricao: 'Adiantamento', valor: 40, arquivado: false },
+    { id: 'desconto-2', funcionario_id: 'func-1', filial_id: 'filial-1', categoria: 'outro_desconto', natureza: 'desconto', descricao: 'Ajuste uniforme', valor: 25, arquivado: false },
+    { id: 'desconto-arquivado', funcionario_id: 'func-1', filial_id: 'filial-1', categoria: 'outro_desconto', natureza: 'desconto', descricao: 'Não exportar', valor: 999, arquivado: true }
+  ]
+  const itensRepetidos = [
+    { id: 'compra-1', lancamento_id: 'compras-1', categoria: 'compras_vales', valor: 40, arquivado: false },
+    { id: 'compra-2', lancamento_id: 'compras-1', categoria: 'compras_vales', valor: 60, arquivado: false },
+    { id: 'premio-1', lancamento_id: 'premio-1', categoria: 'premiacao', valor_base: 10000, percentual: 2, valor: 200, arquivado: false },
+    { id: 'premio-2', lancamento_id: 'premio-1', categoria: 'premiacao', valor_base: 5000, percentual: 3, valor: 150, arquivado: false },
+    { id: 'premio-arquivado', lancamento_id: 'premio-1', categoria: 'premiacao', valor_base: 1000, percentual: 10, valor: 100, arquivado: true }
+  ]
+  const modelo = montarFechamentoFolhaContabilidade({
+    ...params,
+    funcionarios: [funcionarios[0]],
+    filiais: [filiais[0]],
+    lancamentos: lancamentosRepetidos,
+    itensLancamentos: itensRepetidos
+  })
+  const linha = modelo.blocos[0].linhas[0]
+  assert.equal(linha.compras, 100)
+  assert.equal(linha.premiacao, 350)
+  assert.equal(linha.planoSaude, 100)
+  assert.equal(linha.observacoes.includes('Outro desconto: Adiantamento — R$ 40,00'), true)
+  assert.equal(linha.observacoes.includes('Outro desconto: Ajuste uniforme — R$ 25,00'), true)
+  assert.equal(linha.observacoes.some((item) => item.includes('Não exportar')), false)
 })
 
 test('workbooks Excel são arquivos únicos, monetários e ajustados em paisagem', async () => {
@@ -272,6 +383,9 @@ test('arquitetura da Folha não usa styles globais nem DOM responsivo duplicado'
   assert.match(css, /@media \(max-width: 560px\)/)
   assert.match(pagina, /competenciaLancamentosCarregadaId === competenciaSelecionadaId/)
   assert.match(pagina, /salvandoCompraRapida/)
+  assert.match(pagina, /planejarInclusaoPremiacaoFolha/)
+  assert.match(pagina, /lancamentoEditandoId/)
+  assert.match(pagina, /localizarLancamentoParaSalvarFolha/)
   assert.doesNotMatch(pagina, /title="[1-5]\. /)
   assert.doesNotMatch(pagina, /data_falta|status_conferencia|origem_lancamento/)
   assert.match(pagina, /inputMode="decimal"/)

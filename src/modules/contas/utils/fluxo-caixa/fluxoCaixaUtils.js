@@ -35,6 +35,29 @@ export function normalizarValor(valor) {
   return Math.round((numero + Number.EPSILON) * 100) / 100
 }
 
+export function normalizarNomeFluxo(valor) {
+  return String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+export function ehNomeControlePessoalFluxo(valor) {
+  return ['pessoal', 'pessoais'].includes(normalizarNomeFluxo(valor))
+}
+
+export function filtrarFiliaisElegiveisFluxo(filiais = []) {
+  return (filiais || []).filter((filial) => !ehNomeControlePessoalFluxo(filial?.nome))
+}
+
+export function ehMovimentoControlePessoalFluxo({ filialNome, centroCustoNome, centro } = {}) {
+  return ehNomeControlePessoalFluxo(filialNome) ||
+    ehNomeControlePessoalFluxo(centroCustoNome || centro)
+}
+
 export function formatarMoedaFluxo(valor) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -183,6 +206,9 @@ export function montarMovimentosFluxoCaixa({
     .filter((receita) => !filtrarAno || obterAnoDataFluxo(receita.data_receita) === anoNumero)
     .filter((receita) => normalizarValor(receita.valor) > 0)
     .filter((receita) => !filialId || (receita.filial_id || '') === filialId)
+    .filter((receita) => !ehMovimentoControlePessoalFluxo({
+      filialNome: filiaisPorId.get(receita.filial_id || '')?.nome || receita.df_filiais?.nome
+    }))
     .map((receita) => ({
       id: receita.id,
       origem: 'receita',
@@ -216,6 +242,11 @@ export function montarMovimentosFluxoCaixa({
       const conta = contasPorId.get(pagamento.conta_id) || {}
       const filialContaId = conta.filial_id || ''
       if (filialId && filialContaId !== filialId) return null
+      if (ehMovimentoControlePessoalFluxo({
+        filialNome: filiaisPorId.get(filialContaId)?.nome || conta.df_filiais?.nome,
+        centroCustoNome: conta.df_centros_custo?.nome,
+        centro: conta.centro
+      })) return null
 
       const dataConta = resolverDataConta(conta)
       const dataConsiderada = pagamento.data_pagamento || dataConta.data
@@ -252,6 +283,11 @@ export function montarMovimentosFluxoCaixa({
   const movimentosContasPagas = (contasPagas || [])
     .filter((conta) => statusContaPaga(conta?.status))
     .filter((conta) => !filialId || (conta.filial_id || '') === filialId)
+    .filter((conta) => !ehMovimentoControlePessoalFluxo({
+      filialNome: filiaisPorId.get(conta.filial_id || '')?.nome || conta.df_filiais?.nome,
+      centroCustoNome: conta.df_centros_custo?.nome,
+      centro: conta.centro
+    }))
     .flatMap((conta) => {
       const pagamentosConta = pagamentosAtivos.filter((pagamento) => pagamento.conta_id === conta.id)
       const situacao = reconciliarSituacaoConta(conta, pagamentosConta)
@@ -470,10 +506,17 @@ export function montarAbaModeloFluxoCaixa({
 }
 
 export function agregarMovimentosPorFilial(movimentos = [], filiais = []) {
-  const filiaisPorId = new Map((filiais || []).map((filial) => [filial.id, filial]))
+  const filiaisElegiveis = filtrarFiliaisElegiveisFluxo(filiais)
+  const filiaisPorId = new Map(filiaisElegiveis.map((filial) => [filial.id, filial]))
   const grupos = new Map()
 
-  ;(movimentos || []).forEach((movimento) => {
+  ;(movimentos || [])
+    .filter((movimento) => !ehMovimentoControlePessoalFluxo({
+      filialNome: filiaisPorId.get(movimento.filial_id || '')?.nome || movimento.filial_nome,
+      centroCustoNome: movimento.centro_custo_nome,
+      centro: movimento.centro
+    }))
+    .forEach((movimento) => {
     const chave = movimento.filial_id || 'sem-filial'
     if (!grupos.has(chave)) {
       const filial = filiaisPorId.get(chave)
@@ -485,7 +528,7 @@ export function agregarMovimentosPorFilial(movimentos = [], filiais = []) {
       })
     }
     grupos.get(chave).movimentos.push(movimento)
-  })
+    })
 
   return Array.from(grupos.values())
     .sort((a, b) => a.filialNome.localeCompare(b.filialNome, 'pt-BR'))

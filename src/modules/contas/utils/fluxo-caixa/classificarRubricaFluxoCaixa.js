@@ -37,6 +37,7 @@ export const RUBRICAS_SAIDA_FLUXO_CAIXA = RUBRICAS_FLUXO_CAIXA.filter(
 const CENTROS_DIRETOS = new Map([
   ['mercadoria', RUBRICA_FORNECEDORES_COMPRAS],
   ['rh', RUBRICA_FOLHA_PAGAMENTO],
+  ['pro labore', RUBRICA_PRO_LABORE],
   ['ocupacao', RUBRICA_ALUGUEL],
   ['utilidades', RUBRICA_UTILIDADES],
   ['administrativo', RUBRICA_OUTRAS_OPERACIONAIS],
@@ -53,7 +54,7 @@ const RUBRICA_CENTRO_SUGERIDO = new Map([
   [RUBRICA_IMPOSTOS_VENDAS, 'Impostos e Taxas'],
   [RUBRICA_ALUGUEL, 'Ocupação'],
   [RUBRICA_UTILIDADES, 'Utilidades'],
-  [RUBRICA_PRO_LABORE, 'Pessoais'],
+  [RUBRICA_PRO_LABORE, 'Pró-labore'],
   [RUBRICA_IMPOSTOS_PARCELADOS, 'Impostos e Taxas'],
   [RUBRICA_OUTRAS_OPERACIONAIS, 'Administrativo'],
   [RUBRICA_OUTRAS_NAO_OPERACIONAIS, 'Pessoais'],
@@ -143,6 +144,10 @@ export function classificarRubricaFluxoCaixa(movimento = {}) {
   const centro = normalizarTexto(movimento.centro_custo_nome || movimento.centro)
   const filial = normalizarTexto(movimento.filial_nome)
 
+  if (CENTROS_DIRETOS.has(centro)) {
+    return completarClassificacao({ rubrica: CENTROS_DIRETOS.get(centro), confianca: 'alta', criterio: 'centro_custo' })
+  }
+
   if (possuiTermo(textoBusca, termos.parcelados)) {
     return completarClassificacao({ rubrica: RUBRICA_IMPOSTOS_PARCELADOS, confianca: 'alta', criterio: 'descricao' })
   }
@@ -157,15 +162,11 @@ export function classificarRubricaFluxoCaixa(movimento = {}) {
     return completarClassificacao({ rubrica: RUBRICA_IMPOSTOS_VENDAS, confianca: 'baixa', criterio: 'centro_custo' })
   }
 
-  if (centro === 'pessoais' || filial === 'pessoal') {
+  if (['pessoal', 'pessoais'].includes(centro) || ['pessoal', 'pessoais'].includes(filial)) {
     if (possuiTermo(textoBusca, termos.proLabore)) {
       return completarClassificacao({ rubrica: RUBRICA_PRO_LABORE, confianca: 'alta', criterio: 'descricao' })
     }
     return completarClassificacao({ rubrica: RUBRICA_OUTRAS_NAO_OPERACIONAIS, confianca: 'alta', criterio: centro === 'pessoais' ? 'centro_custo' : 'filial' })
-  }
-
-  if (CENTROS_DIRETOS.has(centro)) {
-    return completarClassificacao({ rubrica: CENTROS_DIRETOS.get(centro), confianca: 'alta', criterio: 'centro_custo' })
   }
 
   const porTermos = classificarPorTermos(textoBusca, 'descricao')

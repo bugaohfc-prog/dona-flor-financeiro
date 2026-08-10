@@ -7,6 +7,7 @@ import {
   agregarSaidasPorRubrica,
   anoAtual,
   calcularDiagnosticoRubricas,
+  filtrarFiliaisElegiveisFluxo,
   montarMovimentosFluxoCaixa
 } from '../../utils/fluxo-caixa/fluxoCaixaUtils.js'
 
@@ -54,8 +55,9 @@ export function useFluxoCaixaV1({ empresaId }) {
     }
   }, [])
 
-  const filiais = dadosOrigem?.filiais || []
-  const filiaisPorId = useMemo(() => new Map(filiais.map((filial) => [filial.id, filial])), [filiais])
+  const todasFiliais = dadosOrigem?.filiais || []
+  const filiais = useMemo(() => filtrarFiliaisElegiveisFluxo(todasFiliais), [todasFiliais])
+  const filiaisPorId = useMemo(() => new Map(todasFiliais.map((filial) => [filial.id, filial])), [todasFiliais])
 
   const movimentos = useMemo(() => {
     if (!dadosOrigem) return []

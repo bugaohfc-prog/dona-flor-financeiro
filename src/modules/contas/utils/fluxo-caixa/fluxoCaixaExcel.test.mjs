@@ -7,13 +7,19 @@ import {
   agregarFluxoCaixaMensal,
   agregarMovimentosPorFilial,
   agregarSaidasPorRubrica,
+  filtrarFiliaisElegiveisFluxo,
   montarAbaModeloFluxoCaixa,
   montarMovimentosFluxoCaixa
 } from './fluxoCaixaUtils.js'
 import {
+  RUBRICA_ALUGUEL,
   RUBRICA_FATURAMENTO_BRUTO,
+  RUBRICA_FOLHA_PAGAMENTO,
+  RUBRICA_IMPOSTOS_FOLHA,
+  RUBRICA_PRO_LABORE,
   RUBRICA_TOTAL_GERAL,
-  RUBRICAS_SAIDA_FLUXO_CAIXA
+  RUBRICAS_SAIDA_FLUXO_CAIXA,
+  classificarRubricaFluxoCaixa
 } from './classificarRubricaFluxoCaixa.js'
 import {
   createFluxoCaixaWorksheetXml,
@@ -137,4 +143,88 @@ test('pagamento parcial e residual quitado não são duplicados no modelo', () =
   assert.equal(modelo.despesas.length + 2, 14)
   assert.equal(RUBRICA_FATURAMENTO_BRUTO, 'FATURAMENTO BRUTO')
   assert.equal(RUBRICA_TOTAL_GERAL, 'TOTAL GERAL')
+})
+
+test('CC empresarial confiável prevalece sobre observações e filial', () => {
+  assert.equal(classificarRubricaFluxoCaixa({
+    descricao: 'Hindeburg', centro_custo_nome: 'RH', filial_nome: 'Qualquer filial empresarial'
+  }).rubrica, RUBRICA_FOLHA_PAGAMENTO)
+  assert.equal(classificarRubricaFluxoCaixa({
+    descricao: 'Pro-labore Joanna', centro_custo_nome: 'Pró-labore', filial_nome: 'Dona Flor Andradina'
+  }).rubrica, RUBRICA_PRO_LABORE)
+  assert.equal(classificarRubricaFluxoCaixa({
+    descricao: 'Aluguel Loja Matriz Andradina - sem IRRF',
+    observacao: 'INSS/IRRF conforme contrato', centro_custo_nome: 'Ocupação'
+  }).rubrica, RUBRICA_ALUGUEL)
+  assert.equal(classificarRubricaFluxoCaixa({
+    descricao: 'FGTS competência mensal', centro_custo_nome: 'Impostos e Taxas'
+  }).rubrica, RUBRICA_IMPOSTOS_FOLHA)
+})
+
+test('filial Pessoais e CC Pessoais são excluídos antes de formar movimentos', () => {
+  const filiaisPorId = new Map([
+    ['empresa', { nome: 'Matriz' }],
+    ['pessoal', { nome: 'Pessoais' }]
+  ])
+  const contaFilialPessoal = {
+    id: 'conta-filial-pessoal', status: 'pago', valor: 120, valor_pago: 130,
+    juros_multa: 10, data_pagamento: '2026-07-10', filial_id: 'pessoal',
+    descricao: 'Conta particular', df_centros_custo: { nome: 'RH' }
+  }
+  const contaCentroPessoal = {
+    id: 'conta-centro-pessoal', status: 'pago', valor: 80, valor_pago: 80,
+    data_pagamento: '2026-07-11', filial_id: 'empresa', descricao: 'Despesa pessoal',
+    df_centros_custo: { nome: 'Pessoal' }
+  }
+  const movimentos = montarMovimentosFluxoCaixa({
+    contasPagas: [contaFilialPessoal, contaCentroPessoal],
+    pagamentosParciais: [
+      { id: 'parcial-pessoal', conta_id: contaFilialPessoal.id, valor_pago: 20, data_pagamento: '2026-07-05' }
+    ],
+    receitas: [
+      { id: 'receita-pessoal', status: 'ativo', valor: 500, data_receita: '2026-07-01', filial_id: 'pessoal' }
+    ],
+    contasPorId: new Map([
+      [contaFilialPessoal.id, contaFilialPessoal],
+      [contaCentroPessoal.id, contaCentroPessoal]
+    ]),
+    filiaisPorId,
+    ano: 2026
+  })
+
+  assert.deepEqual(movimentos, [])
+})
+
+test('seletor, grupos e consolidado recebem somente dados empresariais', () => {
+  const filiais = [
+    { id: 'empresa', nome: 'Matriz' },
+    { id: 'pessoal', nome: 'Pessoais' }
+  ]
+  assert.deepEqual(filtrarFiliaisElegiveisFluxo(filiais).map((filial) => filial.id), ['empresa'])
+
+  const contaEmpresa = {
+    id: 'conta-empresa', status: 'pago', valor: 100, valor_pago: 100,
+    data_pagamento: '2026-07-12', filial_id: 'empresa', descricao: 'Fornecedor',
+    df_centros_custo: { nome: 'Mercadoria' }
+  }
+  const movimentos = montarMovimentosFluxoCaixa({
+    contasPagas: [contaEmpresa],
+    receitas: [
+      { id: 'receita-empresa', status: 'ativo', valor: 300, data_receita: '2026-07-01', filial_id: 'empresa' },
+      { id: 'receita-pessoal', status: 'ativo', valor: 900, data_receita: '2026-07-01', filial_id: 'pessoal' }
+    ],
+    contasPorId: new Map([[contaEmpresa.id, contaEmpresa]]),
+    filiaisPorId: new Map(filiais.map((filial) => [filial.id, filial])),
+    ano: 2026
+  })
+  const resultado = agregarFluxoCaixaMensal(movimentos)
+  const grupos = agregarMovimentosPorFilial([
+    ...movimentos,
+    { id: 'defesa-pessoal', tipo: 'saida', mes: 7, valor: 999, filial_id: 'pessoal', filial_nome: 'Pessoais' }
+  ], filiais)
+
+  assert.equal(resultado.totais.entradas, 300)
+  assert.equal(resultado.totais.saidas, 100)
+  assert.equal(resultado.totais.saldo, 200)
+  assert.deepEqual(grupos.map((grupo) => grupo.filialId), ['empresa'])
 })

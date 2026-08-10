@@ -94,19 +94,25 @@ function possuiTermo(texto, lista) {
   })
 }
 
-function obterTextoBusca(movimento = {}) {
+function obterTextoPrimario(movimento = {}) {
   return [
     movimento.descricao,
     movimento.fornecedor,
     movimento.categoria,
+    movimento.imposto_tipo,
+    movimento.tipo,
+    movimento.forma_pagamento
+  ].filter(Boolean).join(' ')
+}
+
+function obterTextoBusca(movimento = {}) {
+  return [
+    obterTextoPrimario(movimento),
     movimento.observacao,
     movimento.observacao_pagamento,
-    movimento.tipo,
-    movimento.forma_pagamento,
     movimento.filial_nome,
     movimento.centro_custo_nome,
-    movimento.centro,
-    movimento.imposto_tipo
+    movimento.centro
   ].filter(Boolean).join(' ')
 }
 
@@ -140,20 +146,21 @@ export function classificarRubricaFluxoCaixa(movimento = {}) {
     })
   }
 
+  const textoPrimario = obterTextoPrimario(movimento)
   const textoBusca = obterTextoBusca(movimento)
   const centro = normalizarTexto(movimento.centro_custo_nome || movimento.centro)
   const filial = normalizarTexto(movimento.filial_nome)
 
-  if (CENTROS_DIRETOS.has(centro)) {
-    return completarClassificacao({ rubrica: CENTROS_DIRETOS.get(centro), confianca: 'alta', criterio: 'centro_custo' })
-  }
-
-  if (possuiTermo(textoBusca, termos.parcelados)) {
+  if (possuiTermo(textoPrimario, termos.parcelados)) {
     return completarClassificacao({ rubrica: RUBRICA_IMPOSTOS_PARCELADOS, confianca: 'alta', criterio: 'descricao' })
   }
 
-  if (possuiTermo(textoBusca, termos.impostosFolha)) {
+  if (possuiTermo(textoPrimario, termos.impostosFolha)) {
     return completarClassificacao({ rubrica: RUBRICA_IMPOSTOS_FOLHA, confianca: 'alta', criterio: 'descricao' })
+  }
+
+  if (CENTROS_DIRETOS.has(centro)) {
+    return completarClassificacao({ rubrica: CENTROS_DIRETOS.get(centro), confianca: 'alta', criterio: 'centro_custo' })
   }
 
   if (centro === 'impostos e taxas') {

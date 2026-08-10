@@ -16,6 +16,7 @@ import {
   RUBRICA_FATURAMENTO_BRUTO,
   RUBRICA_FOLHA_PAGAMENTO,
   RUBRICA_IMPOSTOS_FOLHA,
+  RUBRICA_IMPOSTOS_PARCELADOS,
   RUBRICA_PRO_LABORE,
   RUBRICA_TOTAL_GERAL,
   RUBRICAS_SAIDA_FLUXO_CAIXA,
@@ -145,7 +146,19 @@ test('pagamento parcial e residual quitado não são duplicados no modelo', () =
   assert.equal(RUBRICA_TOTAL_GERAL, 'TOTAL GERAL')
 })
 
-test('CC empresarial confiável prevalece sobre observações e filial', () => {
+test('exceções fiscais da descrição prevalecem sobre RH, sem deixar observações sobrepor CC', () => {
+  assert.equal(classificarRubricaFluxoCaixa({
+    descricao: 'FGTS competência mensal', centro_custo_nome: 'RH'
+  }).rubrica, RUBRICA_IMPOSTOS_FOLHA)
+  assert.equal(classificarRubricaFluxoCaixa({
+    descricao: 'INSS competência mensal', centro_custo_nome: 'RH'
+  }).rubrica, RUBRICA_IMPOSTOS_FOLHA)
+  assert.equal(classificarRubricaFluxoCaixa({
+    descricao: 'INSS Parcelamento 2026', centro_custo_nome: 'RH'
+  }).rubrica, RUBRICA_IMPOSTOS_PARCELADOS)
+  assert.equal(classificarRubricaFluxoCaixa({
+    descricao: 'Salário mensal', centro_custo_nome: 'RH'
+  }).rubrica, RUBRICA_FOLHA_PAGAMENTO)
   assert.equal(classificarRubricaFluxoCaixa({
     descricao: 'Hindeburg', centro_custo_nome: 'RH', filial_nome: 'Qualquer filial empresarial'
   }).rubrica, RUBRICA_FOLHA_PAGAMENTO)
@@ -156,9 +169,6 @@ test('CC empresarial confiável prevalece sobre observações e filial', () => {
     descricao: 'Aluguel Loja Matriz Andradina - sem IRRF',
     observacao: 'INSS/IRRF conforme contrato', centro_custo_nome: 'Ocupação'
   }).rubrica, RUBRICA_ALUGUEL)
-  assert.equal(classificarRubricaFluxoCaixa({
-    descricao: 'FGTS competência mensal', centro_custo_nome: 'Impostos e Taxas'
-  }).rubrica, RUBRICA_IMPOSTOS_FOLHA)
 })
 
 test('filial Pessoais e CC Pessoais são excluídos antes de formar movimentos', () => {

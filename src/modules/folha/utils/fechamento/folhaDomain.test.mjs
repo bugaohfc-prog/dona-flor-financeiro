@@ -134,6 +134,9 @@ test('competência define limites e bloqueia datas de outro mês ou ano', () => 
   assert.equal(dataPertenceCompetenciaFolha('2026-06-30', '2026-07'), false)
   assert.equal(dataPertenceCompetenciaFolha('2026-08-01', '2026-07'), false)
   assert.equal(dataPertenceCompetenciaFolha('2025-07-10', '2026-07'), false)
+  assert.deepEqual(obterLimitesCompetenciaFolha('2028-02'), { primeiroDia: '2028-02-01', ultimoDia: '2028-02-29' })
+  assert.equal(dataPertenceCompetenciaFolha('2028-02-29', '2028-02'), true)
+  assert.equal(dataPertenceCompetenciaFolha('2028-03-01', '2028-02'), false)
   assert.equal(mensagemDataCompetenciaFolha('2026-07'), 'A data deve pertencer à competência 07/2026.')
 })
 
@@ -301,6 +304,28 @@ test('fechamento contábil consolida valores, horas, faltas e observações sem 
   assert.deepEqual(modelo.sheet.currencyColumns, [1, 2, 3])
   const controle = montarControleComprasFolha(params)
   assert.equal(linha.compras, controle.blocos[0].linhas[0].total)
+})
+
+test('fechamento contábil bloqueia falta ativa fora da competência sem considerar item arquivado', () => {
+  assert.throws(
+    () => montarFechamentoFolhaContabilidade({
+      ...params,
+      itensLancamentos: [
+        ...itensLancamentos.filter((item) => item.categoria !== 'falta_injustificada'),
+        { id: 'falta-fora', lancamento_id: 'falta-1', funcionario_id: 'func-1', categoria: 'falta_injustificada', quantidade: 1, data_referencia: '2026-08-01', valor: 0, arquivado: false }
+      ]
+    }),
+    /a falta de 01\/08\/2026 não pertence à competência 2026-07/
+  )
+
+  const modelo = montarFechamentoFolhaContabilidade({
+    ...params,
+    itensLancamentos: [
+      ...itensLancamentos,
+      { id: 'falta-fora-arquivada', lancamento_id: 'falta-1', funcionario_id: 'func-1', categoria: 'falta_injustificada', quantidade: 1, data_referencia: '2026-08-01', valor: 0, arquivado: true }
+    ]
+  })
+  assert.deepEqual(modelo.blocos[0].linhas[0].datasFaltas, ['2026-07-02', '2026-07-03'])
 })
 
 test('fechamento soma premiações e planos repetidos e identifica todos os outros descontos', () => {

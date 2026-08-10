@@ -1,5 +1,6 @@
 import { createXlsxBlob, downloadBlob } from '../../../../services/export/reportExportService.js'
 import {
+  dataPertenceCompetenciaFolha,
   horasFolhaParaTexto,
   itensAtivosDoLancamento,
   numeroFolha,
@@ -24,6 +25,28 @@ function criarContexto(params = {}) {
   const lancamentosAtivos = (params.lancamentos || []).filter((item) => !item?.arquivado)
 
   return { funcionariosPorId, filiaisPorId, itensAtivos, lancamentosAtivos }
+}
+
+function validarFaltasDaCompetencia(params, contexto) {
+  const competencia = texto(params.competencia)
+
+  for (const lancamento of contexto.lancamentosAtivos) {
+    if (lancamento.categoria !== 'falta_injustificada') continue
+
+    const itens = itensAtivosDoLancamento(contexto.itensAtivos, lancamento.id)
+    const datas = itens.length > 0
+      ? itens.map((item) => item.data_referencia)
+      : [lancamento.data_referencia]
+    const dataInconsistente = datas
+      .map(texto)
+      .find((data) => data && !dataPertenceCompetenciaFolha(data, competencia))
+
+    if (dataInconsistente) {
+      throw new Error(
+        `Inconsistência de dados: a falta de ${formatarData(dataInconsistente)} não pertence à competência ${competencia}. Reconcilie o lançamento antes de exportar.`
+      )
+    }
+  }
 }
 
 function resolverFilial(contexto, lancamento) {
@@ -230,6 +253,8 @@ export function montarControleComprasFolha(params = {}) {
 }
 
 export function montarFechamentoFolhaContabilidade(params = {}) {
+  const contexto = criarContexto(params)
+  validarFaltasDaCompetencia(params, contexto)
   const headers = ['Colaborador', 'Compras', 'Plano de saúde', 'Premiação', 'HE 50%', 'HE 60%', 'HE 100%', 'Faltas', 'Datas das faltas', 'Observações']
   const consolidados = consolidarFolha(params)
   const blocos = agruparPorFilial(consolidados).map((bloco) => ({

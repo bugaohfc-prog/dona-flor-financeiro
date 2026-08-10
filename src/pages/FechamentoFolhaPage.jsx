@@ -280,6 +280,15 @@ export default function FechamentoFolhaPage({
     if (competenciaSelecionadaId) await carregarLancamentos({ empresaId, competenciaId: competenciaSelecionadaId })
   }
 
+  function exportarFechamentoContabilidade() {
+    limparFeedback()
+    try {
+      exportarConsolidadoContabil(parametrosExportacao)
+    } catch (error) {
+      setErroLocal(error instanceof Error ? error.message : 'Não foi possível exportar o fechamento da Folha.')
+    }
+  }
+
   async function salvarCompetencia(event) {
     event.preventDefault()
     limparFeedback()
@@ -722,7 +731,7 @@ export default function FechamentoFolhaPage({
       <SectionCard
         title="Conferência e exportação"
         description="O mesmo conjunto ativo alimenta os totais da tela e os dois arquivos Excel."
-        actions={<FolhaExportacoes desabilitado={!dadosCompletos || salvando || salvandoCompraRapida || salvandoOcorrencia || lancamentos.length === 0} onExportarCompras={() => exportarControleCompras(parametrosExportacao)} onExportarContabilidade={() => exportarConsolidadoContabil(parametrosExportacao)} />}
+        actions={<FolhaExportacoes desabilitado={!dadosCompletos || salvando || salvandoCompraRapida || salvandoOcorrencia || lancamentos.length === 0} onExportarCompras={() => exportarControleCompras(parametrosExportacao)} onExportarContabilidade={exportarFechamentoContabilidade} />}
       >
         {!competenciaSelecionada ? <PageState title="Sem competência selecionada" /> : loadingLancamentos || loadingItensLancamentos ? <PageState type="loading" title="Carregando lançamentos…" /> : lancamentos.length === 0 ? <PageState title="Nenhum lançamento nesta competência" description="Selecione uma colaboradora e registre a primeira categoria." /> : (
           <div className="folha-colaboradores-lista">

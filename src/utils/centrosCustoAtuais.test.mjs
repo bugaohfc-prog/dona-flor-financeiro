@@ -18,7 +18,15 @@ test('sugestões de novas contas usam os centros atuais', () => {
   )
   assert.equal(
     classificarRubricaFluxoCaixa({ descricao: 'FGTS competência mensal' }).centroCustoSugerido,
-    CENTROS_CUSTO_ATUAIS.TRIBUTOS_TAXAS
+    CENTROS_CUSTO_ATUAIS.ENCARGOS_TRABALHISTAS
+  )
+  assert.equal(
+    classificarRubricaFluxoCaixa({ descricao: 'Simples Nacional' }).centroCustoSugerido,
+    CENTROS_CUSTO_ATUAIS.TRIBUTOS_VENDAS
+  )
+  assert.equal(
+    classificarRubricaFluxoCaixa({ descricao: 'INSS Parcelamento' }).centroCustoSugerido,
+    CENTROS_CUSTO_ATUAIS.PARCELAMENTOS_TRIBUTARIOS
   )
 })
 
@@ -46,7 +54,7 @@ test('aliases antigos continuam classificando histórico sem virar sugestão', (
 
   assert.equal(folha.centroCustoSugerido, CENTROS_CUSTO_ATUAIS.FOLHA_BENEFICIOS)
   assert.equal(compras.centroCustoSugerido, CENTROS_CUSTO_ATUAIS.MERCADORIAS_COMPRAS)
-  assert.equal(impostos.centroCustoSugerido, CENTROS_CUSTO_ATUAIS.TRIBUTOS_TAXAS)
+  assert.equal(impostos.centroCustoSugerido, CENTROS_CUSTO_ATUAIS.TRIBUTOS_VENDAS)
 })
 
 test('onboarding cria Administrativo e fluxos atuais não sugerem nomes antigos', async () => {

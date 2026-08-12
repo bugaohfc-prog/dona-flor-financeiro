@@ -3,6 +3,7 @@ import ContasContextualGuard from '../components/feedback/ContasContextualGuard.
 import { useRelatorioFinanceiro } from '../hooks/useRelatorioFinanceiro.js'
 import { podeExportarRelatorio } from '../utils/relatoriosFinanceiros.js'
 import { impostoPertenceAoFiltro, obterSaldoExibidoImposto, obterStatusOperacionalImposto } from '../utils/consumidoresFinanceiros.js'
+import { ehCentroTributosTaxas } from '../utils/centrosCustoAtuais.js'
 import { exportCsv } from '../services/export/reportExportService.js'
 import { ExportMenu, FilterCard, FilterGrid, PageHeader } from '../components/shared/PagePatterns.jsx'
 import './ControleImpostosPage.css'
@@ -79,7 +80,7 @@ function classificarImposto(conta, centros) {
     return { tipo: 'inss', label: 'INSS', prioridade: 3, origem: 'estimada' }
   }
 
-  if (centroNormalizado === 'impostos e taxas') {
+  if (ehCentroTributosTaxas(centroNormalizado)) {
     return { tipo: 'outros', label: 'Outros impostos', prioridade: 4, origem: 'estimada' }
   }
 

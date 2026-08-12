@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { converterValor } from '../utils/format'
 import { mensagemSeguraErro } from '../utils/session'
+import { CENTROS_CUSTO_ATUAIS } from '../utils/centrosCustoAtuais.js'
 
 function hojeISO() {
   return new Date().toISOString().slice(0, 10)
@@ -41,7 +42,7 @@ export default function OnboardingPage({
 }) {
   const [salvando, setSalvando] = useState(false)
   const [nomeFilial, setNomeFilial] = useState('Loja Centro')
-  const [nomeCentro, setNomeCentro] = useState('Operacional')
+  const [nomeCentro, setNomeCentro] = useState(CENTROS_CUSTO_ATUAIS.ADMINISTRATIVO)
   const [contaDescricao, setContaDescricao] = useState('Primeira conta')
   const [contaValor, setContaValor] = useState('100,00')
   const [contaData, setContaData] = useState(hojeISO())
@@ -217,7 +218,7 @@ export default function OnboardingPage({
         >
           <label className="onboarding-field">
             <span>Nome do centro de custo</span>
-            <input style={styles.input} value={nomeCentro} onChange={(e) => setNomeCentro(e.target.value)} placeholder="Ex: Operacional" />
+            <input style={styles.input} value={nomeCentro} onChange={(e) => setNomeCentro(e.target.value)} placeholder={`Ex: ${CENTROS_CUSTO_ATUAIS.ADMINISTRATIVO}`} />
           </label>
           <button style={styles.btnSalvar} disabled={salvando} onClick={criarPrimeiroCentro}>{salvando ? 'Criando...' : 'Criar centro de custo'}</button>
         </StepCard>

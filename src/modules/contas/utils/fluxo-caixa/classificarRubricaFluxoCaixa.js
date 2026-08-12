@@ -1,3 +1,5 @@
+import { CENTROS_CUSTO_ATUAIS } from '../../../../utils/centrosCustoAtuais.js'
+
 export const RUBRICA_FATURAMENTO_BRUTO = 'FATURAMENTO BRUTO'
 export const RUBRICA_FORNECEDORES_COMPRAS = 'DESEMBOLSO COM FORNECEDORES/COMPRAS'
 export const RUBRICA_FOLHA_PAGAMENTO = 'FOLHA DE PAGAMENTO'
@@ -35,6 +37,13 @@ export const RUBRICAS_SAIDA_FLUXO_CAIXA = RUBRICAS_FLUXO_CAIXA.filter(
 )
 
 const CENTROS_DIRETOS = new Map([
+  ['mercadorias e compras', RUBRICA_FORNECEDORES_COMPRAS],
+  ['folha e beneficios', RUBRICA_FOLHA_PAGAMENTO],
+  ['encargos trabalhistas', RUBRICA_IMPOSTOS_FOLHA],
+  ['tributos sobre vendas', RUBRICA_IMPOSTOS_VENDAS],
+  ['parcelamentos tributarios', RUBRICA_IMPOSTOS_PARCELADOS],
+  ['marketing e comercial', RUBRICA_OUTRAS_OPERACIONAIS],
+  ['sistemas e tecnologia', RUBRICA_OUTRAS_OPERACIONAIS],
   ['mercadoria', RUBRICA_FORNECEDORES_COMPRAS],
   ['rh', RUBRICA_FOLHA_PAGAMENTO],
   ['pro labore', RUBRICA_PRO_LABORE],
@@ -48,16 +57,16 @@ const CENTROS_DIRETOS = new Map([
 ])
 
 const RUBRICA_CENTRO_SUGERIDO = new Map([
-  [RUBRICA_FORNECEDORES_COMPRAS, 'Mercadoria'],
-  [RUBRICA_FOLHA_PAGAMENTO, 'RH'],
-  [RUBRICA_IMPOSTOS_FOLHA, 'Impostos e Taxas'],
-  [RUBRICA_IMPOSTOS_VENDAS, 'Impostos e Taxas'],
-  [RUBRICA_ALUGUEL, 'Ocupação'],
-  [RUBRICA_UTILIDADES, 'Utilidades'],
-  [RUBRICA_PRO_LABORE, 'Pró-labore'],
-  [RUBRICA_IMPOSTOS_PARCELADOS, 'Impostos e Taxas'],
-  [RUBRICA_OUTRAS_OPERACIONAIS, 'Administrativo'],
-  [RUBRICA_OUTRAS_NAO_OPERACIONAIS, 'Pessoais'],
+  [RUBRICA_FORNECEDORES_COMPRAS, CENTROS_CUSTO_ATUAIS.MERCADORIAS_COMPRAS],
+  [RUBRICA_FOLHA_PAGAMENTO, CENTROS_CUSTO_ATUAIS.FOLHA_BENEFICIOS],
+  [RUBRICA_IMPOSTOS_FOLHA, CENTROS_CUSTO_ATUAIS.TRIBUTOS_TAXAS],
+  [RUBRICA_IMPOSTOS_VENDAS, CENTROS_CUSTO_ATUAIS.TRIBUTOS_TAXAS],
+  [RUBRICA_ALUGUEL, CENTROS_CUSTO_ATUAIS.OCUPACAO],
+  [RUBRICA_UTILIDADES, CENTROS_CUSTO_ATUAIS.UTILIDADES],
+  [RUBRICA_PRO_LABORE, CENTROS_CUSTO_ATUAIS.PRO_LABORE],
+  [RUBRICA_IMPOSTOS_PARCELADOS, CENTROS_CUSTO_ATUAIS.TRIBUTOS_TAXAS],
+  [RUBRICA_OUTRAS_OPERACIONAIS, CENTROS_CUSTO_ATUAIS.ADMINISTRATIVO],
+  [RUBRICA_OUTRAS_NAO_OPERACIONAIS, CENTROS_CUSTO_ATUAIS.PESSOAIS],
   [RUBRICA_JUROS, 'Bancos e Financiamentos'],
   [RUBRICA_BANCOS_PRINCIPAL, 'Bancos e Financiamentos']
 ])
@@ -163,7 +172,7 @@ export function classificarRubricaFluxoCaixa(movimento = {}) {
     return completarClassificacao({ rubrica: CENTROS_DIRETOS.get(centro), confianca: 'alta', criterio: 'centro_custo' })
   }
 
-  if (centro === 'impostos e taxas') {
+  if (centro === 'tributos e taxas' || centro === 'impostos e taxas') {
     const porTermos = classificarPorTermos(textoBusca, 'descricao')
     if (porTermos) return completarClassificacao(porTermos)
     return completarClassificacao({ rubrica: RUBRICA_IMPOSTOS_VENDAS, confianca: 'baixa', criterio: 'centro_custo' })

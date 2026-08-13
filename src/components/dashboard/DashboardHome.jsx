@@ -1,5 +1,5 @@
 import ContasContextualGuard from '../feedback/ContasContextualGuard.jsx'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext.jsx'
 import { useRelatorioFinanceiro } from '../../hooks/useRelatorioFinanceiro.js'
 import {
@@ -8,13 +8,13 @@ import {
   resumirDashboardFinanceiro,
   resumirProximos90Dashboard
 } from '../../utils/consumidoresFinanceiros.js'
-import { useResumoGestaoPessoasPainel } from '../../hooks/useResumoGestaoPessoasPainel.js'
 import { ResumoOperacionalDashboard } from '../../modules/central-do-dia/components/dashboard/ResumoOperacionalDashboard.jsx'
 import { useCentralDoDia } from '../../modules/central-do-dia/hooks/useCentralDoDia.js'
+import { useEventosPessoas } from '../../modules/central-do-dia/hooks/useEventosPessoas.js'
+import { criarDestinoContextualEventoPessoas } from '../../modules/central-do-dia/domain/centralDoDiaPeopleRules.js'
 import PrioridadesFinanceirasPanel from './PrioridadesFinanceirasPanel.jsx'
 import { KpiCard, KpiGrid } from '../shared/PagePatterns.jsx'
 import './DashboardHome.css'
-
 function DashboardAction({ children, variant = 'primary', className = '', ...props }) {
   return (
     <button className={`dashboard-finance-action dashboard-finance-action-${variant} ${className}`} type="button" {...props}>
@@ -68,16 +68,15 @@ export default function DashboardHome({
   onAtualizarContasCentral,
   onAtualizarNotasCentral,
   navegarParaOrigemAgenda,
-  onAbrirContasPlanejamento
+  onAbrirContasPlanejamento,
+  podeAcessarPessoas = false
 }) {
-  const { empresaId, perfilEmpresaAtiva } = useApp()
+  const { empresaId } = useApp()
   const [mostrarResumoFinanceiro, setMostrarResumoFinanceiro] = useState(true)
   const [filtroFilialDashboard, setFiltroFilialDashboard] = useState('')
   const [filtroCentroDashboard, setFiltroCentroDashboard] = useState('')
   const filialSelecionada = (filiais || []).find((filial) => filial.id === filtroFilialDashboard)
   const centroSelecionado = (centros || []).find((centro) => centro.id === filtroCentroDashboard)
-  const perfilUsuario = String(perfilEmpresaAtiva || '').trim().toLowerCase()
-  const podeAcessarGestaoPessoas = ['admin', 'master'].includes(perfilUsuario)
   useEffect(() => {
     setFiltroFilialDashboard('')
     setFiltroCentroDashboard('')
@@ -124,27 +123,29 @@ export default function DashboardHome({
     () => resumirProximos90Dashboard(resumoDashboard.faixas),
     [resumoDashboard.faixas]
   )
-  const {
-    erro: erroResumoPessoas,
-    podeVisualizar: podeVisualizarResumoPessoas,
-    alertas: alertasPessoas
-  } = useResumoGestaoPessoasPainel({
+  const fontePessoas = useEventosPessoas({
     empresaId,
-    perfilUsuario,
-    podeAcessarGestaoPessoas
+    filialId: filtroFilialDashboard,
+    podeAcessarPessoas,
+    dataBaseISO: hoje
   })
+  const atualizarPessoas = useCallback(
+    () => fontePessoas.atualizar({ silencioso: true }),
+    [fontePessoas.atualizar]
+  )
   const dadosCentral = useCentralDoDia({
     empresaId,
     filialId: filtroFilialDashboard,
     contas: contasCentral,
     notas: notasCentral,
-    alertasPessoas,
-    erroPessoas: erroResumoPessoas,
-    podeAcessarPessoas: podeVisualizarResumoPessoas,
+    itensPessoasDetalhados: fontePessoas.eventos,
+    erroPessoas: fontePessoas.fontesComErro.length ? fontePessoas.erros : null,
+    podeAcessarPessoas,
     podeAcessarAuditoria: false,
     modoCompacto: true,
     onAtualizarContas: onAtualizarContasCentral,
-    onAtualizarNotas: onAtualizarNotasCentral
+    onAtualizarNotas: onAtualizarNotasCentral,
+    onAtualizarPessoas: atualizarPessoas
   })
 
   function abrirOrigemResumo(item) {
@@ -155,6 +156,11 @@ export default function DashboardHome({
     }
     if (referencia?.tipo === 'nota' && referencia.id && typeof navegarParaOrigemAgenda === 'function') {
       navegarParaOrigemAgenda('nota', referencia.id)
+      return
+    }
+    if (item?.origemOperacional === 'pessoas' && item?.destino) {
+      const destino = criarDestinoContextualEventoPessoas(item, 'dashboard')
+      navegarPara(destino.tela, destino.opcoes)
       return
     }
     if (item?.destino) navegarPara(item.destino)
@@ -232,7 +238,7 @@ export default function DashboardHome({
 
       <ResumoOperacionalDashboard
         empresaId={empresaId}
-        carregando={loading}
+        carregando={loading || (fontePessoas.carregando && !fontePessoas.carregado)}
         erroParcial={dadosCentral.erroPessoas}
         formatarValor={formatarValor}
         dados={dadosCentral}

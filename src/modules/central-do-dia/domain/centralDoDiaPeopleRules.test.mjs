@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
-  calcularFimJanelaAgenda,
+  criarDestinoContextualEventoPessoas,
   normalizarAniversariosAgenda,
   normalizarCompetenciasFolhaAgenda,
   normalizarExamesAgenda,
-  normalizarFeriasAgenda,
-  normalizarPessoasDetalhadasAgenda,
-  obterUltimosExamesPorFuncionario
+  normalizarLimitesFeriasAgenda,
+  normalizarMarcosFeriasAgenda,
+  obterUltimosExamesPorFuncionario,
+  projetarEventosPessoas
 } from './centralDoDiaPeopleRules.js'
 import { montarBaseOperacional } from './centralDoDiaRules.js'
-import { resumirAgendaOperacional, selecionarAgendaPorOrigem } from './centralDoDiaSelectors.js'
-
+import { resumirAgendaOperacional, selecionarAgendaPorOrigem, selecionarResumoDashboard } from './centralDoDiaSelectors.js'
 const hoje = '2026-07-15'
 const funcionario = {
   id: 'func-1',
@@ -58,14 +58,10 @@ test('exclui funcionario inativo, arquivado ou de outra filial dos aniversarios'
   assert.equal(normalizarAniversariosAgenda([funcionario], { dataBaseISO: hoje, filialId: 'filial-1' }).length, 1)
 })
 
-test('janela de ferias usa trinta dias corridos inclusive', () => {
-  assert.equal(calcularFimJanelaAgenda('2026-07-15'), '2026-08-14')
-})
-
 test('normaliza ferias agendadas e filtra pela filial do funcionario', () => {
   const periodo = { id: 'ferias-1', funcionario_id: funcionario.id, data_inicio: '2026-07-25', status: 'agendada', arquivado: false }
-  assert.equal(normalizarFeriasAgenda([periodo], [funcionario], { dataBaseISO: hoje, filialId: 'filial-1' }).length, 1)
-  assert.equal(normalizarFeriasAgenda([periodo], [funcionario], { dataBaseISO: hoje, filialId: 'filial-2' }).length, 0)
+  assert.equal(normalizarMarcosFeriasAgenda([periodo], [funcionario], { dataBaseISO: hoje, filialId: 'filial-1' }).length, 1)
+  assert.equal(normalizarMarcosFeriasAgenda([periodo], [funcionario], { dataBaseISO: hoje, filialId: 'filial-2' }).length, 0)
 })
 
 test('exclui ferias arquivadas, canceladas e fora da janela', () => {
@@ -73,9 +69,9 @@ test('exclui ferias arquivadas, canceladas e fora da janela', () => {
   const periodos = [
     { ...base, id: 'arquivada', status: 'agendada', arquivado: true },
     { ...base, id: 'cancelada', status: 'cancelada', arquivado: false },
-    { ...base, id: 'fora', status: 'agendada', arquivado: false, data_inicio: '2026-08-20' }
+    { ...base, id: 'fora', status: 'agendada', arquivado: false, data_inicio: '2026-10-20' }
   ]
-  assert.deepEqual(normalizarFeriasAgenda(periodos, [funcionario], { dataBaseISO: hoje }), [])
+  assert.deepEqual(normalizarMarcosFeriasAgenda(periodos, [funcionario], { dataBaseISO: hoje }), [])
 })
 
 test('seleciona o ultimo exame por funcionario em lote', () => {
@@ -142,7 +138,7 @@ test('descarta datas invalidas com seguranca', () => {
 })
 
 test('itens detalhados passam pela deduplicacao oficial', () => {
-  const itens = normalizarPessoasDetalhadasAgenda({ funcionarios: [funcionario], dataBaseISO: hoje })
+  const itens = projetarEventosPessoas({ funcionarios: [funcionario], dataBaseISO: hoje })
   const duplicado = { ...itens[0], id: 'duplicado' }
   const base = montarBaseOperacional({ itensPessoasDetalhados: [...itens, duplicado], podeAcessarPessoas: true, dataBaseISO: hoje })
   assert.equal(base.itensOperacionais.length, 2)
@@ -150,12 +146,12 @@ test('itens detalhados passam pela deduplicacao oficial', () => {
 })
 
 test('itens detalhados nao entram sem permissao de Pessoas', () => {
-  const itens = normalizarPessoasDetalhadasAgenda({ funcionarios: [funcionario], dataBaseISO: hoje })
+  const itens = projetarEventosPessoas({ funcionarios: [funcionario], dataBaseISO: hoje })
   assert.equal(montarBaseOperacional({ itensPessoasDetalhados: itens, podeAcessarPessoas: false }).itensOperacionais.length, 0)
 })
 
 test('filtra agenda por origem e recalcula contadores sem duplicar itens', () => {
-  const pessoas = normalizarPessoasDetalhadasAgenda({ funcionarios: [funcionario], dataBaseISO: hoje })
+  const pessoas = projetarEventosPessoas({ funcionarios: [funcionario], dataBaseISO: hoje })
   const base = montarBaseOperacional({
     contas: [{ id: 'conta', descricao: 'Conta', status: 'pendente', data_vencimento: hoje }],
     itensPessoasDetalhados: pessoas,
@@ -203,4 +199,130 @@ test('atividade de Auditoria permanece ausente da agenda operacional', () => {
   })
   assert.equal(base.atividadeRecente.length, 1)
   assert.equal(selecionarAgendaPorOrigem(base, 'todos').totalItens, 0)
+})
+
+test('ciclo vencido gera uma unica acao com saldo pendente e contexto estavel', () => {
+  const ciclo = {
+    id: 'ciclo-vencido', funcionario_id: funcionario.id, data_limite_gozo: '2026-07-10',
+    dias_direito: 30, status: 'parcial', arquivado: false
+  }
+  const periodos = [{
+    id: 'gozo-1', ciclo_ferias_id: ciclo.id, funcionario_id: funcionario.id,
+    quantidade_dias: 10, status: 'concluida', arquivado: false
+  }]
+  const [evento] = normalizarLimitesFeriasAgenda([ciclo], periodos, [funcionario], { dataBaseISO: hoje })
+
+  assert.equal(evento.id, 'pessoas:ferias:limite:ciclo-vencido')
+  assert.equal(evento.status, 'vencido')
+  assert.equal(evento.severidade, 'critical')
+  assert.match(evento.descricao, /20 dia\(s\) ainda não gozado\(s\)/)
+  assert.deepEqual(evento.referenciaOrigem, {
+    tipo: 'ciclo_ferias_limite', id: ciclo.id, funcionarioId: funcionario.id, cicloId: ciclo.id
+  })
+})
+
+test('limite de ferias distingue urgencia em trinta dias e planejamento em noventa', () => {
+  const ciclos = [
+    { id: 'urgente', funcionario_id: funcionario.id, data_limite_gozo: '2026-08-10', dias_direito: 30, status: 'pendente' },
+    { id: 'planejamento', funcionario_id: funcionario.id, data_limite_gozo: '2026-09-10', dias_direito: 30, status: 'pendente' },
+    { id: 'fora', funcionario_id: funcionario.id, data_limite_gozo: '2026-11-01', dias_direito: 30, status: 'pendente' }
+  ]
+  const eventos = normalizarLimitesFeriasAgenda(ciclos, [], [funcionario], { dataBaseISO: hoje })
+  assert.deepEqual(eventos.map((item) => [item.referenciaOrigem.id, item.status]), [
+    ['urgente', 'pendente'],
+    ['planejamento', 'planejamento']
+  ])
+})
+
+test('saldo zerado e ciclo arquivado nao geram pendencia, mas cache concluido divergente nao oculta saldo', () => {
+  const ciclos = [
+    { id: 'zerado', funcionario_id: funcionario.id, data_limite_gozo: '2026-07-10', dias_direito: 10, status: 'parcial' },
+    { id: 'arquivado', funcionario_id: funcionario.id, data_limite_gozo: '2026-07-10', dias_direito: 30, status: 'pendente', arquivado: true },
+    { id: 'concluido', funcionario_id: funcionario.id, data_limite_gozo: '2026-07-10', dias_direito: 30, status: 'concluida' }
+  ]
+  const periodos = [{ id: 'gozo', ciclo_ferias_id: 'zerado', quantidade_dias: 10, status: 'concluida' }]
+  const eventos = normalizarLimitesFeriasAgenda(ciclos, periodos, [funcionario], { dataBaseISO: hoje })
+  assert.deepEqual(eventos.map((item) => item.referenciaOrigem.id), ['concluido'])
+  assert.match(eventos[0].descricao, /30 dia\(s\) ainda não gozado\(s\)/)
+})
+
+test('projeta inicio, ultimo dia e retorno com o mesmo periodo e referencias distintas', () => {
+  const periodo = {
+    id: 'periodo-1', ciclo_ferias_id: 'ciclo-1', funcionario_id: funcionario.id,
+    data_inicio: '2026-07-20', data_fim_calculada: '2026-07-24',
+    data_retorno_trabalho: '2026-07-25', status: 'agendada', arquivado: false
+  }
+  const eventos = normalizarMarcosFeriasAgenda([periodo], [funcionario], { dataBaseISO: hoje })
+  assert.deepEqual(eventos.map((item) => item.tipo), ['ferias_inicio', 'ferias_fim', 'ferias_retorno'])
+  assert.equal(new Set(eventos.map((item) => `${item.referenciaOrigem.tipo}:${item.referenciaOrigem.id}`)).size, 3)
+  assert.ok(eventos.every((item) => item.referenciaOrigem.periodoId === periodo.id))
+})
+
+test('periodo cancelado, arquivado ou concluido nao gera marco operacional', () => {
+  const base = {
+    ciclo_ferias_id: 'ciclo', funcionario_id: funcionario.id,
+    data_inicio: '2026-07-20', data_fim_calculada: '2026-07-24', data_retorno_trabalho: '2026-07-25'
+  }
+  const periodos = [
+    { ...base, id: 'cancelado', status: 'cancelada' },
+    { ...base, id: 'arquivado', status: 'agendada', arquivado: true },
+    { ...base, id: 'concluido', status: 'concluida' }
+  ]
+  assert.deepEqual(normalizarMarcosFeriasAgenda(periodos, [funcionario], { dataBaseISO: hoje }), [])
+})
+
+test('projecao canonica alimenta Agenda e Dashboard com o mesmo objeto de evento', () => {
+  const eventos = projetarEventosPessoas({ funcionarios: [funcionario], dataBaseISO: hoje })
+  const base = montarBaseOperacional({ itensPessoasDetalhados: eventos, podeAcessarPessoas: true, dataBaseISO: hoje })
+  const agenda = selecionarAgendaPorOrigem(base, 'pessoas')
+  const dashboard = selecionarResumoDashboard(base)
+  const aniversarioAgenda = agenda.secoes.hoje.find((item) => item.tipo === 'aniversario')
+  const aniversarioDashboard = dashboard.prioridades.find((item) => item.tipo === 'aniversario')
+
+  assert.equal(aniversarioAgenda, aniversarioDashboard)
+  assert.equal(aniversarioAgenda.destino, 'funcionarios')
+  assert.equal(aniversarioAgenda.referenciaOrigem.funcionarioId, funcionario.id)
+})
+
+test('projecao aplica filial sem alterar eventos empresariais da Folha', () => {
+  const outro = { ...funcionario, id: 'func-2', filial_id: 'filial-2' }
+  const eventos = projetarEventosPessoas({
+    funcionarios: [funcionario, outro],
+    competenciasFolha: [{ id: 'folha', competencia: '2026-07', status: 'aberta' }],
+    dataBaseISO: hoje,
+    filialId: 'filial-1'
+  })
+  assert.ok(eventos.some((item) => item.referenciaOrigem.funcionarioId === funcionario.id))
+  assert.equal(eventos.some((item) => item.referenciaOrigem.funcionarioId === outro.id), false)
+  assert.ok(eventos.some((item) => item.referenciaOrigem.competenciaId === 'folha'))
+})
+
+test('ultimo exame ativo define previsao e preserva contexto do exame e funcionario', () => {
+  const exames = [
+    { id: 'ativo', funcionario_id: funcionario.id, data_exame: '2025-07-10', arquivado: false },
+    { id: 'arquivado', funcionario_id: funcionario.id, data_exame: '2026-07-10', arquivado: true }
+  ]
+  const [evento] = normalizarExamesAgenda(exames, [funcionario], { dataBaseISO: hoje })
+  assert.equal(evento.dataReferencia, '2026-07-10')
+  assert.equal(evento.referenciaOrigem.exameId, 'ativo')
+  assert.equal(evento.referenciaOrigem.funcionarioId, funcionario.id)
+})
+
+test('navegacao contextual preserva funcionario, ciclo, periodo e origem', () => {
+  const evento = projetarEventosPessoas({
+    funcionarios: [funcionario],
+    periodosFerias: [{
+      id: 'periodo', ciclo_ferias_id: 'ciclo', funcionario_id: funcionario.id,
+      data_inicio: '2026-07-20', data_fim_calculada: '2026-07-24',
+      data_retorno_trabalho: '2026-07-25', status: 'agendada'
+    }],
+    dataBaseISO: hoje
+  }).find((item) => item.tipo === 'ferias_inicio')
+  const destino = criarDestinoContextualEventoPessoas(evento, 'agenda')
+
+  assert.equal(destino.tela, 'ferias')
+  assert.deepEqual(destino.opcoes.contexto, {
+    tipo: 'periodo_ferias_inicio', id: 'periodo', funcionarioId: funcionario.id,
+    periodoId: 'periodo', cicloId: 'ciclo', telaRetorno: 'agenda'
+  })
 })

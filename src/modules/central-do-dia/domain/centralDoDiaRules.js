@@ -1,5 +1,4 @@
 const DIA_MS = 86400000
-
 const PESO_SEVERIDADE = Object.freeze({
   critical: 3,
   critica: 3,
@@ -23,8 +22,6 @@ const ROTULOS_MODULO = Object.freeze({
   usuarios: 'Usuários',
   sistema: 'Sistema'
 })
-
-const TIPOS_PESSOAS_ACIONAVEIS = new Set(['folha', 'ferias', 'exames'])
 
 function normalizarTexto(valor) {
   return String(valor || '').trim().toLowerCase()
@@ -163,6 +160,8 @@ export function criarItemCentral(dados = {}) {
     proximaAcao: dados.proximaAcao || 'Abrir o módulo de origem',
     destino: dados.destino || null,
     referenciaOrigem: dados.referenciaOrigem || null,
+    filialId: dados.filialId || null,
+    funcionarioId: dados.funcionarioId || null,
     ator: dados.ator || null,
     origemOperacional: dados.origemOperacional || null
   }
@@ -231,28 +230,6 @@ export function normalizarNotasCentral(notas = [], { dataBaseISO, filialId } = {
         origemOperacional: 'notas'
       })
     })
-    .filter(Boolean)
-}
-
-export function normalizarAlertasPessoasCentral(alertas = [], permitido = true) {
-  if (!permitido) return []
-
-  return (alertas || [])
-    .filter((alerta) => alerta?.id && alerta?.titulo && TIPOS_PESSOAS_ACIONAVEIS.has(alerta.tipo))
-    .map((alerta) => criarItemCentral({
-      id: `pessoas:${alerta.id}`,
-      tipo: alerta.tipo,
-      modulo: 'Gestão de Pessoas',
-      titulo: alerta.titulo,
-      descricao: alerta.descricao,
-      severidade: alerta.prioridade === 'alta' ? 'warning' : 'info',
-      status: alerta.prioridade === 'alta' ? 'atencao' : 'informativo',
-      inconsistencia: alerta.prioridade === 'alta',
-      proximaAcao: 'Abrir o acompanhamento de pessoas',
-      destino: alerta.rotaDestino || null,
-      referenciaOrigem: { tipo: alerta.tipo, id: alerta.id },
-      origemOperacional: 'pessoas'
-    }))
     .filter(Boolean)
 }
 
@@ -341,7 +318,6 @@ export function deduplicarItensOperacionais(itens = []) {
 export function montarBaseOperacional({
   contas = [],
   notas = [],
-  alertasPessoas = [],
   itensPessoasDetalhados = [],
   atividade = [],
   dataBaseISO = hojeLocalISO(),
@@ -352,7 +328,6 @@ export function montarBaseOperacional({
   const itensOperacionais = deduplicarItensOperacionais([
     ...normalizarContasCentral(contas, { dataBaseISO, filialId }),
     ...normalizarNotasCentral(notas, { dataBaseISO, filialId }),
-    ...normalizarAlertasPessoasCentral(alertasPessoas, podeAcessarPessoas),
     ...(podeAcessarPessoas ? (itensPessoasDetalhados || []).filter((item) => (
       item?.origemOperacional === 'pessoas' &&
       item?.referenciaOrigem?.tipo &&

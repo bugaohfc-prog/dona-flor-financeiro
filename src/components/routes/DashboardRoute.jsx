@@ -1,5 +1,4 @@
 import DashboardPage from '../../pages/DashboardPage.jsx'
-
 export default function DashboardRoute({
   nomeUsuario,
   formatarValor,
@@ -12,7 +11,8 @@ export default function DashboardRoute({
   onAtualizarContasCentral,
   onAtualizarNotasCentral,
   navegarParaOrigemAgenda,
-  onAbrirContasPlanejamento
+  onAbrirContasPlanejamento,
+  podeAcessarPessoas
 }) {
   return (
     <>
@@ -33,6 +33,7 @@ export default function DashboardRoute({
         onAtualizarNotasCentral={onAtualizarNotasCentral}
         navegarParaOrigemAgenda={navegarParaOrigemAgenda}
         onAbrirContasPlanejamento={onAbrirContasPlanejamento}
+        podeAcessarPessoas={podeAcessarPessoas}
       />
     </>
   )

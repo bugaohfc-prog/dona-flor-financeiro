@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFuncionariosExamesPeriodicos } from '../hooks/useFuncionariosExamesPeriodicos'
 import { useFuncionarios } from '../hooks/useFuncionarios'
 import { FilterCard, FilterGrid, KpiCard, KpiGrid, PageHeader, PageState } from '../components/shared/PagePatterns.jsx'
 import { mensagemSeguraErro } from '../utils/session'
 import './FuncionariosPage.css'
-
 const FORMULARIO_INICIAL = {
   nome: '',
   cargo: '',
@@ -135,6 +134,7 @@ export default function FuncionariosPage({
   filiais = [],
   mostrarAviso,
   podeEditar = false,
+  contextoNavegacao = null,
   voltarPainel
 }) {
   const [busca, setBusca] = useState('')
@@ -149,6 +149,7 @@ export default function FuncionariosPage({
   const [dataExameEditando, setDataExameEditando] = useState('')
   const [mostrarTodosFuncionarios, setMostrarTodosFuncionarios] = useState(false)
   const [modalSecoesAbertas, setModalSecoesAbertas] = useState(MODAL_SECOES_INICIAIS)
+  const contextoAplicadoRef = useRef('')
 
   const {
     funcionarios,
@@ -245,6 +246,7 @@ export default function FuncionariosPage({
       : ''
 
   useEffect(() => {
+    contextoAplicadoRef.current = ''
     setModalAberto(false)
     setFuncionarioEditando(null)
     setFormulario(FORMULARIO_INICIAL)
@@ -300,6 +302,15 @@ export default function FuncionariosPage({
     setModalSecoesAbertas(MODAL_SECOES_INICIAIS)
     setModalAberto(true)
   }
+
+  useEffect(() => {
+    const funcionarioId = String(contextoNavegacao?.funcionarioId || contextoNavegacao?.id || '')
+    if (!funcionarioId || contextoAplicadoRef.current === funcionarioId || loading || !podeEditar) return
+    const funcionario = (funcionarios || []).find((item) => String(item?.id || '') === funcionarioId)
+    if (!funcionario) return
+    contextoAplicadoRef.current = funcionarioId
+    abrirEdicaoFuncionario(funcionario)
+  }, [contextoNavegacao, funcionarios, loading, podeEditar])
 
   function fecharFormulario() {
     setModalAberto(false)

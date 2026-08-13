@@ -411,6 +411,8 @@ test('arquitetura da Folha não usa styles globais nem DOM responsivo duplicado'
   assert.match(pagina, /planejarInclusaoPremiacaoFolha/)
   assert.match(pagina, /lancamentoEditandoId/)
   assert.match(pagina, /localizarLancamentoParaSalvarFolha/)
+  assert.match(pagina, /contextoNavegacao\?\.competenciaId/)
+  assert.match(pagina, /setCompetenciaSelecionadaId\(competenciaId\)/)
   assert.doesNotMatch(pagina, /title="[1-5]\. /)
   assert.doesNotMatch(pagina, /data_falta|status_conferencia|origem_lancamento/)
   assert.match(pagina, /inputMode="decimal"/)

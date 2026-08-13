@@ -4,19 +4,20 @@ import { mensagemSeguraErro } from '../../../utils/session.js'
 import { montarBaseOperacional } from '../domain/centralDoDiaRules.js'
 import { deveCarregarAtividadeCentral, selecionarCentralLegada, selecionarResumoDashboard } from '../domain/centralDoDiaSelectors.js'
 import { listarAtividadeRecenteCentral } from '../services/centralDoDiaService.js'
-
+import { executarAtualizacaoCentral } from '../services/centralDoDiaRefresh.js'
 export function useCentralDoDia({
   empresaId,
   filialId,
   contas,
   notas,
-  alertasPessoas,
+  itensPessoasDetalhados,
   erroPessoas,
   podeAcessarPessoas,
   podeAcessarAuditoria,
   modoCompacto = false,
   onAtualizarContas,
-  onAtualizarNotas
+  onAtualizarNotas,
+  onAtualizarPessoas
 } = {}) {
   const [atividade, setAtividade] = useState([])
   const [carregandoAtividade, setCarregandoAtividade] = useState(false)
@@ -88,28 +89,26 @@ export function useCentralDoDia({
     setAtualizando(true)
 
     try {
-      const tarefas = []
-      if (typeof onAtualizarContas === 'function') tarefas.push(Promise.resolve().then(onAtualizarContas))
-      if (typeof onAtualizarNotas === 'function') tarefas.push(Promise.resolve().then(onAtualizarNotas))
+      const tarefas = [onAtualizarContas, onAtualizarNotas, onAtualizarPessoas]
       if (deveCarregarAtividadeCentral({ empresaId, podeAcessarAuditoria, modoCompacto })) {
-        tarefas.push(carregarAtividade({ silencioso: true }))
+        tarefas.push(() => carregarAtividade({ silencioso: true }))
       }
-      await Promise.allSettled(tarefas)
+      await executarAtualizacaoCentral(tarefas)
     } finally {
       atualizandoRef.current = false
       if (montadoRef.current) setAtualizando(false)
     }
-  }, [empresaId, onAtualizarContas, onAtualizarNotas, podeAcessarAuditoria, modoCompacto, carregarAtividade])
+  }, [empresaId, onAtualizarContas, onAtualizarNotas, onAtualizarPessoas, podeAcessarAuditoria, modoCompacto, carregarAtividade])
 
   const base = useMemo(() => montarBaseOperacional({
     contas,
     notas,
-    alertasPessoas,
+    itensPessoasDetalhados,
     atividade: modoCompacto ? [] : atividade,
     filialId,
     podeAcessarPessoas,
     podeAcessarAuditoria: podeAcessarAuditoria && !modoCompacto
-  }), [contas, notas, alertasPessoas, atividade, filialId, podeAcessarPessoas, podeAcessarAuditoria, modoCompacto])
+  }), [contas, notas, itensPessoasDetalhados, atividade, filialId, podeAcessarPessoas, podeAcessarAuditoria, modoCompacto])
 
   const central = useMemo(() => selecionarCentralLegada(base), [base])
   const resumoDashboard = useMemo(() => selecionarResumoDashboard(base), [base])

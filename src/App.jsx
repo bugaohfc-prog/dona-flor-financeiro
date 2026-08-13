@@ -4365,6 +4365,7 @@ export default function App() {
         filiais={filiais}
         mostrarAviso={mostrarAviso}
         podeEditar={podeAcessarGestaoPessoas()}
+        contextoNavegacao={contextoNavegacao}
         voltarPainel={() => navegarPara('dashboard')}
       />
     )
@@ -4410,6 +4411,7 @@ export default function App() {
         empresaNome={empresaAtiva?.nome || nomeEmpresa}
         mostrarAviso={mostrarAviso}
         podeEditar={podeAcessarGestaoPessoas()}
+        contextoNavegacao={contextoNavegacao}
         voltarPainel={() => navegarPara('dashboard')}
       />
     )
@@ -4421,6 +4423,7 @@ export default function App() {
         empresaId={empresaId}
         empresaNome={empresaAtiva?.nome || nomeEmpresa}
         podeEditar={podeAcessarGestaoPessoas()}
+        contextoNavegacao={contextoNavegacao}
         voltarPainel={() => navegarPara('dashboard')}
         filiais={filiais}
       />
@@ -4692,7 +4695,8 @@ export default function App() {
             onAtualizarContasCentral: atualizarFontesContasDashboard,
             onAtualizarNotasCentral: () => buscarNotas(empresaId),
             navegarParaOrigemAgenda,
-            onAbrirContasPlanejamento: abrirContasComPlanejamento
+            onAbrirContasPlanejamento: abrirContasComPlanejamento,
+            podeAcessarPessoas: podeAcessarGestaoPessoas()
           }}
         />
       )

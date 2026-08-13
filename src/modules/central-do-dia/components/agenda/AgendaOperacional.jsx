@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import AccountPaymentModal from '../../../../components/modals/AccountPaymentModal.jsx'
 import PageHero from '../../../../components/shared/PageHero.jsx'
 import { useAgendaOperacional } from '../../hooks/useAgendaOperacional.js'
+import { criarDestinoContextualEventoPessoas } from '../../domain/centralDoDiaPeopleRules.js'
 import AgendaOperacionalSection from './AgendaOperacionalSection.jsx'
 import './AgendaOperacional.css'
-
 const FILTROS_ORIGEM = [
   { id: 'todos', rotulo: 'Todos' },
   { id: 'financeiro', rotulo: 'Financeiro' },
@@ -25,7 +25,8 @@ const SECOES = [
 function mensagemFonte(fonte, erro) {
   const rotulos = {
     funcionarios: 'Funcionários',
-    ferias: 'Férias',
+    ciclosFerias: 'Ciclos de férias',
+    periodosFerias: 'Períodos de férias',
     exames: 'Exames periódicos',
     folha: 'Fechamento de Folha'
   }
@@ -100,6 +101,11 @@ export default function AgendaOperacional({
     }
     if (item?.destino === 'notas' && referencia?.tipo === 'nota' && referencia.id) {
       navegarParaOrigemAgenda('nota', referencia.id)
+      return
+    }
+    if (item?.origemOperacional === 'pessoas' && item?.destino) {
+      const destino = criarDestinoContextualEventoPessoas(item, 'agenda')
+      navegarPara(destino.tela, destino.opcoes)
       return
     }
     if (item?.destino) navegarPara(item.destino)

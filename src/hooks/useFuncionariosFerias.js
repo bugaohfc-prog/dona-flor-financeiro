@@ -3,6 +3,7 @@ import { supabase as supabasePadrao } from '../lib/supabase'
 import {
   arquivarCicloFerias as arquivarCicloFeriasService,
   arquivarPeriodoFerias as arquivarPeriodoFeriasService,
+  cancelarPeriodoFerias as cancelarPeriodoFeriasService,
   atualizarCicloFerias as atualizarCicloFeriasService,
   atualizarPeriodoFerias as atualizarPeriodoFeriasService,
   calcularFimFerias,
@@ -19,7 +20,6 @@ import {
   reativarPeriodoFerias as reativarPeriodoFeriasService
 } from '../services/funcionariosFeriasService'
 import { mensagemSeguraErro } from '../utils/session'
-
 function normalizarId(valor) {
   return String(valor || '').trim()
 }
@@ -359,11 +359,8 @@ export function useFuncionariosFerias(opcoes = {}) {
       supabase,
       empresaId: empresa,
       cicloId: ciclo,
-      funcionarioId: funcionario,
       dataInicio: dados.dataInicio ?? dados.data_inicio,
-      quantidadeDias: dados.quantidadeDias ?? dados.quantidade_dias,
-      numeroParcela: dados.numeroParcela ?? dados.numero_parcela,
-      status: dados.status
+      quantidadeDias: dados.quantidadeDias ?? dados.quantidade_dias
     }), { recarregarPeriodos: true, cicloId: ciclo })
   }, [cicloAtual, definirErro, executarComEmpresaAtiva, funcionarioAtual, supabase])
 
@@ -381,6 +378,14 @@ export function useFuncionariosFerias(opcoes = {}) {
       supabase,
       empresaId: empresa,
       periodoId: periodoIdArquivamento
+    }), { recarregarPeriodos: true })
+  }, [executarComEmpresaAtiva, supabase])
+
+  const cancelarPeriodoFerias = useCallback(async (periodoIdCancelamento) => {
+    return executarComEmpresaAtiva((empresa) => cancelarPeriodoFeriasService({
+      supabase,
+      empresaId: empresa,
+      periodoId: periodoIdCancelamento
     }), { recarregarPeriodos: true })
   }, [executarComEmpresaAtiva, supabase])
 
@@ -413,6 +418,7 @@ export function useFuncionariosFerias(opcoes = {}) {
     obterPeriodoFeriasPorId,
     criarPeriodoFerias,
     atualizarPeriodoFerias,
+    cancelarPeriodoFerias,
     arquivarPeriodoFerias,
     reativarPeriodoFerias,
     calcularFimFerias,

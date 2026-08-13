@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
-
 const ler = (caminho) => readFile(new URL(caminho, import.meta.url), 'utf8')
 
 test('KpiCard preserva semântica estática e interativa acessível', async () => {
@@ -82,5 +81,5 @@ test('cadeia do Dashboard remove somente totais financeiros legados sem tocar no
 
   assert.doesNotMatch(rota, /\b(?:total|pago|pendente|vencido)=\{/)
   assert.doesNotMatch(dashboard, /loadingHistoricoFinanceiro|historicoFinanceiroCarregado|erroHistoricoFinanceiro|onRetryHistoricoFinanceiro/)
-  assert.match(dashboard, /carregando=\{loading\}/)
+  assert.match(dashboard, /carregando=\{loading \|\| \(fontePessoas\.carregando && !fontePessoas\.carregado\)\}/)
 })

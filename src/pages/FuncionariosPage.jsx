@@ -3,6 +3,13 @@ import { useFuncionariosExamesPeriodicos } from '../hooks/useFuncionariosExamesP
 import { useFuncionarios } from '../hooks/useFuncionarios'
 import { FilterCard, FilterGrid, KpiCard, KpiGrid, PageHeader, PageState } from '../components/shared/PagePatterns.jsx'
 import { mensagemSeguraErro } from '../utils/session'
+import {
+  admissaoFoiAlterada,
+  impactoAdmissaoCorresponde,
+  mensagemErroAdmissao,
+  motivoAdmissaoValido,
+  separarAdmissaoDoPayload
+} from '../modules/funcionarios/domain/admissaoFuncionarioRules'
 import './FuncionariosPage.css'
 const FORMULARIO_INICIAL = {
   nome: '',
@@ -149,6 +156,8 @@ export default function FuncionariosPage({
   const [dataExameEditando, setDataExameEditando] = useState('')
   const [mostrarTodosFuncionarios, setMostrarTodosFuncionarios] = useState(false)
   const [modalSecoesAbertas, setModalSecoesAbertas] = useState(MODAL_SECOES_INICIAIS)
+  const [impactoAdmissao, setImpactoAdmissao] = useState(null)
+  const [motivoAdmissao, setMotivoAdmissao] = useState('')
   const contextoAplicadoRef = useRef('')
 
   const {
@@ -158,6 +167,7 @@ export default function FuncionariosPage({
     erro,
     criarFuncionario,
     atualizarFuncionario,
+    alterarAdmissaoFuncionario,
     arquivarFuncionario,
     reativarFuncionario,
     obterFuncionarioPorId,
@@ -250,6 +260,8 @@ export default function FuncionariosPage({
     setModalAberto(false)
     setFuncionarioEditando(null)
     setFormulario(FORMULARIO_INICIAL)
+    setImpactoAdmissao(null)
+    setMotivoAdmissao('')
     setMostrarExamesArquivados(false)
     limparFormularioExamePeriodico()
     limparErro?.()
@@ -257,6 +269,10 @@ export default function FuncionariosPage({
   }, [empresaId])
 
   function atualizarCampo(campo, valor) {
+    if (campo === 'data_admissao') {
+      setImpactoAdmissao(null)
+      setMotivoAdmissao('')
+    }
     setFormulario((atual) => ({
       ...atual,
       [campo]: campo === 'cpf' ? apenasDigitos(valor).slice(0, 11) : valor
@@ -277,6 +293,8 @@ export default function FuncionariosPage({
     limparErroExames?.()
     setFuncionarioEditando(null)
     setFormulario(FORMULARIO_INICIAL)
+    setImpactoAdmissao(null)
+    setMotivoAdmissao('')
     setMostrarExamesArquivados(false)
     limparFormularioExamePeriodico()
     setModalSecoesAbertas(MODAL_SECOES_INICIAIS)
@@ -297,6 +315,8 @@ export default function FuncionariosPage({
     const funcionarioDetalhado = resposta?.data || funcionario
     setFuncionarioEditando(funcionarioDetalhado)
     setFormulario(montarFormulario(funcionarioDetalhado))
+    setImpactoAdmissao(null)
+    setMotivoAdmissao('')
     setMostrarExamesArquivados(false)
     limparFormularioExamePeriodico()
     setModalSecoesAbertas(MODAL_SECOES_INICIAIS)
@@ -316,6 +336,8 @@ export default function FuncionariosPage({
     setModalAberto(false)
     setFuncionarioEditando(null)
     setFormulario(FORMULARIO_INICIAL)
+    setImpactoAdmissao(null)
+    setMotivoAdmissao('')
     setMostrarExamesArquivados(false)
     limparFormularioExamePeriodico()
     limparErroExames?.()
@@ -345,16 +367,81 @@ export default function FuncionariosPage({
     }
 
     const payload = montarPayloadFormulario(formulario)
-    const resposta = funcionarioEditando?.id
-      ? await atualizarFuncionario(funcionarioEditando.id, payload)
-      : await criarFuncionario(payload)
+    let resposta
+
+    if (!funcionarioEditando?.id) {
+      resposta = await criarFuncionario(payload)
+    } else {
+      const alterouAdmissao = admissaoFoiAlterada(funcionarioEditando, payload.data_admissao)
+      const { dataAdmissao, demaisCampos } = separarAdmissaoDoPayload(payload)
+
+      if (alterouAdmissao && funcionarioEditando.status !== payload.status) {
+        setModalSecoesAbertas((atual) => ({ ...atual, vinculo: true, datas: true }))
+        mostrarAviso?.('Salve primeiro a alteração de status e depois altere a data de admissão.', 'erro')
+        return
+      }
+
+      if (alterouAdmissao && !impactoAdmissaoCorresponde(impactoAdmissao, dataAdmissao)) {
+        const preflight = await alterarAdmissaoFuncionario(funcionarioEditando.id, {
+          novaDataAdmissao: dataAdmissao,
+          somentePreflight: true
+        })
+
+        if (preflight?.error) {
+          const fallback = mensagemSeguraErro(preflight.error, 'Não foi possível validar a alteração da admissão.')
+          mostrarAviso?.(mensagemErroAdmissao(preflight.error, fallback), 'erro')
+          return
+        }
+
+        setImpactoAdmissao(preflight?.data || null)
+        setModalSecoesAbertas((atual) => ({ ...atual, datas: true }))
+        mostrarAviso?.('Revise o impacto da admissão e salve novamente para confirmar.', 'info')
+        return
+      }
+
+      if (alterouAdmissao && impactoAdmissao?.motivo_obrigatorio && !motivoAdmissaoValido(motivoAdmissao)) {
+        mostrarAviso?.('Informe um motivo com pelo menos 5 caracteres para preservar os ciclos existentes.', 'erro')
+        return
+      }
+
+      let resultadoAdmissao = null
+      if (alterouAdmissao) {
+        resposta = await alterarAdmissaoFuncionario(funcionarioEditando.id, {
+          novaDataAdmissao: dataAdmissao,
+          confirmarCiclosPreservados: Boolean(impactoAdmissao?.requer_confirmacao),
+          motivo: motivoAdmissao
+        })
+
+        if (resposta?.error) {
+          const fallback = mensagemSeguraErro(resposta.error, 'Não foi possível alterar a data de admissão.')
+          mostrarAviso?.(mensagemErroAdmissao(resposta.error, fallback), 'erro')
+          return
+        }
+        resultadoAdmissao = resposta?.data || null
+        if (resultadoAdmissao?.requer_confirmacao && !resultadoAdmissao?.aplicado) {
+          setImpactoAdmissao(resultadoAdmissao)
+          mostrarAviso?.('Os ciclos foram alterados desde a validação. Revise o impacto e confirme novamente.', 'info')
+          return
+        }
+      }
+
+      resposta = await atualizarFuncionario(funcionarioEditando.id, demaisCampos)
+      if (!resposta?.error && resultadoAdmissao?.ciclo_criado_id) {
+        resposta.cicloCriadoId = resultadoAdmissao.ciclo_criado_id
+      }
+    }
 
     if (resposta?.error) {
       mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível salvar o funcionário.'), 'erro')
       return
     }
 
-    mostrarAviso?.(funcionarioEditando?.id ? 'Funcionário atualizado.' : 'Funcionário cadastrado.', 'sucesso')
+    mostrarAviso?.(
+      resposta?.cicloCriadoId
+        ? 'Funcionário atualizado e primeiro ciclo de férias criado.'
+        : funcionarioEditando?.id ? 'Funcionário atualizado.' : 'Funcionário cadastrado.',
+      'sucesso'
+    )
     fecharFormulario()
   }
 
@@ -748,6 +835,33 @@ export default function FuncionariosPage({
                       type="date"
                     />
                   </label>
+                  {funcionarioEditando?.id && admissaoFoiAlterada(funcionarioEditando, formulario.data_admissao) && (
+                    <div className="funcionarios-admissao-impacto span-2" role="status">
+                      {!impactoAdmissao && (
+                        <p>A alteração será validada pelo servidor antes de salvar.</p>
+                      )}
+                      {impactoAdmissao?.criara_primeiro_ciclo && (
+                        <p>Este funcionário ainda não possui ciclos. O primeiro período aquisitivo será criado automaticamente.</p>
+                      )}
+                      {impactoAdmissao?.ciclos_preservados && (
+                        <>
+                          <p>
+                            {impactoAdmissao.ciclos_existentes} ciclo(s) existente(s) serão preservados sem mudança de datas, saldos ou limites.
+                          </p>
+                          <label>
+                            Motivo da alteração
+                            <textarea
+                              className="funcionarios-input"
+                              value={motivoAdmissao}
+                              onChange={(event) => setMotivoAdmissao(event.target.value)}
+                              placeholder="Explique por que a data de admissão precisa ser alterada."
+                              required
+                            />
+                          </label>
+                        </>
+                      )}
+                    </div>
+                  )}
                   <label>
                     Data do exame admissional
                     <input

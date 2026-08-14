@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase as supabasePadrao } from '../lib/supabase'
 import {
+  alterarAdmissaoFuncionarioControlada as alterarAdmissaoFuncionarioControladaService,
   arquivarFuncionario as arquivarFuncionarioService,
   atualizarFuncionario as atualizarFuncionarioService,
   criarFuncionario as criarFuncionarioService,
@@ -187,6 +188,19 @@ export function useFuncionarios(opcoes = {}) {
     }).then((resultado) => auditarResultadoFuncionario(supabase, resultado, empresa, 'rh.funcionario.atualizado', funcionarioId, { campos: Object.keys(dados || {}) })))
   }, [executarComEmpresaAtiva, supabase])
 
+  const alterarAdmissaoFuncionario = useCallback(async (funcionarioId, dados = {}) => {
+    return executarComEmpresaAtiva((empresa) => alterarAdmissaoFuncionarioControladaService({
+      supabase,
+      empresaId: empresa,
+      funcionarioId,
+      novaDataAdmissao: dados.novaDataAdmissao,
+      somentePreflight: dados.somentePreflight,
+      confirmarCiclosPreservados: dados.confirmarCiclosPreservados,
+      motivo: dados.motivo,
+      correlationId: dados.correlationId
+    }), { recarregar: !dados.somentePreflight })
+  }, [executarComEmpresaAtiva, supabase])
+
   const arquivarFuncionario = useCallback(async (funcionarioId) => {
     return executarComEmpresaAtiva((empresa) => arquivarFuncionarioService({
       supabase,
@@ -214,6 +228,7 @@ export function useFuncionarios(opcoes = {}) {
     obterFuncionarioPorId,
     criarFuncionario,
     atualizarFuncionario,
+    alterarAdmissaoFuncionario,
     arquivarFuncionario,
     reativarFuncionario,
     limparErro: () => definirErro(null)

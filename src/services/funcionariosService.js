@@ -2,8 +2,8 @@ import {
   atualizarPorEmpresa,
   inserirComEmpresa,
   selecionarPorEmpresa
-} from './supabaseQueryService'
-import { assertEmpresaId } from './tenantService'
+} from './supabaseQueryService.js'
+import { assertEmpresaId } from './tenantService.js'
 
 const TABELA_FUNCIONARIOS = 'df_funcionarios'
 const FUNCIONARIO_LIST_SELECT = [
@@ -97,6 +97,10 @@ function garantirPayloadSemEmpresa(dados = {}) {
 function montarPayloadFuncionario(dados = {}, opcoes = {}) {
   const entrada = dados && typeof dados === 'object' ? dados : {}
   garantirPayloadSemEmpresa(entrada)
+
+  if (!opcoes.criacao && Object.prototype.hasOwnProperty.call(entrada, 'data_admissao')) {
+    throw new Error('A data de admissao deve ser alterada pela operacao controlada.')
+  }
 
   const payload = {}
 
@@ -198,6 +202,31 @@ export async function atualizarFuncionario({ supabase, empresaId, funcionarioId,
   return atualizarPorEmpresa(supabase, TABELA_FUNCIONARIOS, id, empresaId, payload)
     .select(FUNCIONARIO_LIST_SELECT)
     .single()
+}
+
+export async function alterarAdmissaoFuncionarioControlada({
+  supabase,
+  empresaId,
+  funcionarioId,
+  novaDataAdmissao,
+  somentePreflight = false,
+  confirmarCiclosPreservados = false,
+  motivo = null,
+  correlationId = null
+}) {
+  assertEmpresaId(empresaId)
+  const id = validarFuncionarioId(funcionarioId)
+  const dataAdmissao = normalizarData(novaDataAdmissao)
+
+  return supabase.rpc('alterar_admissao_funcionario_controlado', {
+    p_empresa_id: empresaId,
+    p_funcionario_id: id,
+    p_nova_data_admissao: dataAdmissao,
+    p_somente_preflight: Boolean(somentePreflight),
+    p_confirmar_ciclos_preservados: Boolean(confirmarCiclosPreservados),
+    p_motivo: normalizarTexto(motivo),
+    p_correlation_id: normalizarTexto(correlationId)
+  })
 }
 
 export async function arquivarFuncionario({ supabase, empresaId, funcionarioId }) {

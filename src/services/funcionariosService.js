@@ -98,7 +98,7 @@ function montarPayloadFuncionario(dados = {}, opcoes = {}) {
   const entrada = dados && typeof dados === 'object' ? dados : {}
   garantirPayloadSemEmpresa(entrada)
 
-  if (!opcoes.criacao && Object.prototype.hasOwnProperty.call(entrada, 'data_admissao')) {
+  if (Object.prototype.hasOwnProperty.call(entrada, 'data_admissao')) {
     throw new Error('A data de admissao deve ser alterada pela operacao controlada.')
   }
 
@@ -128,10 +128,6 @@ function montarPayloadFuncionario(dados = {}, opcoes = {}) {
 
   if (Object.prototype.hasOwnProperty.call(entrada, 'data_nascimento')) {
     payload.data_nascimento = normalizarData(entrada.data_nascimento)
-  }
-
-  if (Object.prototype.hasOwnProperty.call(entrada, 'data_admissao')) {
-    payload.data_admissao = normalizarData(entrada.data_admissao)
   }
 
   if (Object.prototype.hasOwnProperty.call(entrada, 'data_exame_admissional')) {
@@ -183,15 +179,48 @@ export async function obterFuncionarioPorId({ supabase, empresaId, funcionarioId
 export async function criarFuncionario({ supabase, empresaId, dados }) {
   assertEmpresaId(empresaId)
 
+  const entrada = dados && typeof dados === 'object' ? dados : {}
+  const dataAdmissao = normalizarData(entrada.data_admissao)
+  const { data_admissao: _dataAdmissaoRemovida, ...dadosSemAdmissao } = entrada
+
   const payload = {
-    ...montarPayloadFuncionario(dados, { criacao: true }),
+    ...montarPayloadFuncionario(dadosSemAdmissao, { criacao: true }),
     empresa_id: empresaId,
     arquivado: false,
     arquivado_em: null
   }
 
-  return inserirComEmpresa(supabase, TABELA_FUNCIONARIOS, payload, { select: FUNCIONARIO_LIST_SELECT })
+  const resultadoCriacao = await inserirComEmpresa(supabase, TABELA_FUNCIONARIOS, payload, { select: FUNCIONARIO_LIST_SELECT })
     .single()
+
+  if (resultadoCriacao?.error || !dataAdmissao) return resultadoCriacao
+
+  const funcionarioCriado = resultadoCriacao?.data || null
+  const resultadoAdmissao = await alterarAdmissaoFuncionarioControlada({
+    supabase,
+    empresaId,
+    funcionarioId: funcionarioCriado?.id,
+    novaDataAdmissao: dataAdmissao
+  })
+
+  if (resultadoAdmissao?.error) {
+    return {
+      data: funcionarioCriado,
+      error: resultadoAdmissao.error,
+      parcial: true,
+      admissaoPendente: true
+    }
+  }
+
+  return {
+    data: {
+      ...funcionarioCriado,
+      data_admissao: dataAdmissao
+    },
+    error: null,
+    cicloCriadoId: resultadoAdmissao?.data?.ciclo_criado_id || null,
+    resultadoAdmissao: resultadoAdmissao?.data || null
+  }
 }
 
 export async function atualizarFuncionario({ supabase, empresaId, funcionarioId, dados }) {

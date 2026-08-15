@@ -432,6 +432,15 @@ export default function FuncionariosPage({
     }
 
     if (resposta?.error) {
+      if (resposta?.parcial && resposta?.data?.id) {
+        const fallback = mensagemSeguraErro(resposta.error, 'A admissão ficou pendente.')
+        fecharFormulario()
+        mostrarAviso?.(
+          `Funcionário criado, mas a admissão e o ciclo não foram aplicados. Edite o cadastro para concluir. ${mensagemErroAdmissao(resposta.error, fallback)}`,
+          'erro'
+        )
+        return
+      }
       mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível salvar o funcionário.'), 'erro')
       return
     }

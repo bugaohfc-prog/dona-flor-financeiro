@@ -6,6 +6,7 @@ const MIGRATION = 'supabase/migrations/20260814214555_adicionar_admissao_transac
 const sql = fs.readFileSync(MIGRATION, 'utf8')
 const funcionariosPage = fs.readFileSync('src/pages/FuncionariosPage.jsx', 'utf8')
 const feriasPage = fs.readFileSync('src/pages/FeriasPage.jsx', 'utf8')
+const funcionariosService = fs.readFileSync('src/services/funcionariosService.js', 'utf8')
 
 test('RPC 2B-1 é transacional, autorizada e bloqueia 29/02', () => {
   assert.match(sql, /create or replace function public\.alterar_admissao_funcionario_controlado/)
@@ -42,4 +43,11 @@ test('UI faz preflight, exige motivo e preserva criação manual sem duplicaçã
   assert.match(funcionariosPage, /primeiro período aquisitivo será criado automaticamente/)
   assert.match(feriasPage, /cicloDuplicadoSugerido/)
   assert.match(feriasPage, /disabled=\{[\s\S]*salvando[\s\S]*cicloDuplicadoSugerido[\s\S]*\}/)
+})
+
+test('cadastro inicial não grava admissão diretamente e explicita falha parcial', () => {
+  assert.match(funcionariosService, /data_admissao: _dataAdmissaoRemovida/)
+  assert.match(funcionariosService, /alterarAdmissaoFuncionarioControlada\(\{[\s\S]*funcionarioId: funcionarioCriado\?\.id/)
+  assert.match(funcionariosService, /parcial: true[\s\S]*admissaoPendente: true/)
+  assert.match(funcionariosPage, /Funcionário criado, mas a admissão e o ciclo não foram aplicados/)
 })

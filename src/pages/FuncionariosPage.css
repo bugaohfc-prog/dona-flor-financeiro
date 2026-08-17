@@ -176,6 +176,31 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
 .funcionarios-admissao-impacto { display: grid; gap: 8px; padding: 10px; border: 1px solid #fbbf24; border-radius: var(--df-radius-control); background: #fffbeb; color: #92400e; }
 .funcionarios-admissao-impacto p { margin: 0; line-height: 1.45; }
 .funcionarios-admissao-impacto label { color: #78350f; }
+.funcionario-desligamento-modal { width: min(760px, 100%); }
+.funcionario-desligamento-alerta {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #fbbf24;
+  border-radius: var(--df-radius-control);
+  background: #fffbeb;
+  color: #92400e;
+  line-height: 1.45;
+}
+.funcionario-desligamento-historico { display: grid; gap: 8px; padding: 0 12px 12px; }
+.funcionario-desligamento-item {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--df-border);
+  border-radius: var(--df-radius-control);
+  background: var(--df-surface);
+  overflow-wrap: anywhere;
+}
+.funcionario-desligamento-item > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.funcionario-desligamento-item small,
+.funcionario-desligamento-item span { color: var(--df-muted); font-size: .78rem; line-height: 1.4; }
 .funcionario-exames-section { display: grid; min-width: 0; gap: 10px; padding: 0 12px 12px; }
 .funcionario-exames-header { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .funcionario-exames-header p { margin: 0; color: var(--df-muted); }

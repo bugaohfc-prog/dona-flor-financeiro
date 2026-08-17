@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFuncionariosExamesPeriodicos } from '../hooks/useFuncionariosExamesPeriodicos'
 import { useFuncionarios } from '../hooks/useFuncionarios'
+import { useFuncionariosDesligamentos } from '../hooks/useFuncionariosDesligamentos'
 import { FilterCard, FilterGrid, KpiCard, KpiGrid, PageHeader, PageState } from '../components/shared/PagePatterns.jsx'
 import { mensagemSeguraErro } from '../utils/session'
 import {
@@ -40,6 +41,12 @@ const MODAL_SECOES_INICIAIS = {
 }
 
 const LIMITE_FUNCIONARIOS_INICIAL = 8
+const FORMULARIO_DESLIGAMENTO_INICIAL = {
+  motivo: '',
+  dataEfetiva: '',
+  observacoes: '',
+  motivoCancelamento: ''
+}
 
 const CONECTIVOS_NOME_CARGO = new Set(['de', 'da', 'do', 'das', 'dos', 'e'])
 
@@ -158,6 +165,9 @@ export default function FuncionariosPage({
   const [modalSecoesAbertas, setModalSecoesAbertas] = useState(MODAL_SECOES_INICIAIS)
   const [impactoAdmissao, setImpactoAdmissao] = useState(null)
   const [motivoAdmissao, setMotivoAdmissao] = useState('')
+  const [modalDesligamentoAberto, setModalDesligamentoAberto] = useState(false)
+  const [funcionarioDesligamento, setFuncionarioDesligamento] = useState(null)
+  const [formularioDesligamento, setFormularioDesligamento] = useState(FORMULARIO_DESLIGAMENTO_INICIAL)
   const contextoAplicadoRef = useRef('')
 
   const {
@@ -177,6 +187,17 @@ export default function FuncionariosPage({
     empresaId,
     incluirArquivados
   })
+
+  const {
+    desligamentos,
+    loading: loadingDesligamentos,
+    salvando: salvandoDesligamento,
+    erro: erroDesligamentos,
+    carregar: carregarDesligamentos,
+    abrir: abrirDesligamento,
+    atualizar: atualizarDesligamento,
+    cancelar: cancelarDesligamento
+  } = useFuncionariosDesligamentos({ empresaId })
 
   const {
     exames,
@@ -200,6 +221,21 @@ export default function FuncionariosPage({
   const filiaisPorId = useMemo(() => {
     return Object.fromEntries((filiais || []).map((filial) => [filial.id, filial.nome || 'Filial']))
   }, [filiais])
+
+  const desligamentosPorFuncionario = useMemo(() => {
+    const mapa = new Map()
+    for (const desligamento of desligamentos || []) {
+      const lista = mapa.get(desligamento.funcionario_id) || []
+      lista.push(desligamento)
+      mapa.set(desligamento.funcionario_id, lista)
+    }
+    return mapa
+  }, [desligamentos])
+
+  const historicoDesligamentoSelecionado = funcionarioDesligamento?.id
+    ? desligamentosPorFuncionario.get(funcionarioDesligamento.id) || []
+    : []
+  const desligamentoAbertoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'ABERTO') || null
 
   const funcionariosFiltrados = useMemo(() => {
     const termo = normalizarTextoBusca(busca)
@@ -481,6 +517,70 @@ export default function FuncionariosPage({
     )
   }
 
+  function abrirModalDesligamento(funcionario) {
+    if (!funcionario?.id || funcionario.arquivado || funcionario.status === 'desligado' || !podeEditar) return
+    const aberto = (desligamentosPorFuncionario.get(funcionario.id) || []).find((item) => item.estado === 'ABERTO')
+    setFuncionarioDesligamento(funcionario)
+    setFormularioDesligamento(aberto ? {
+      motivo: aberto.motivo || '',
+      dataEfetiva: aberto.data_efetiva || '',
+      observacoes: aberto.observacoes || '',
+      motivoCancelamento: ''
+    } : FORMULARIO_DESLIGAMENTO_INICIAL)
+    setModalDesligamentoAberto(true)
+  }
+
+  function fecharModalDesligamento() {
+    if (salvandoDesligamento) return
+    setModalDesligamentoAberto(false)
+    setFuncionarioDesligamento(null)
+    setFormularioDesligamento(FORMULARIO_DESLIGAMENTO_INICIAL)
+  }
+
+  function atualizarCampoDesligamento(campo, valor) {
+    setFormularioDesligamento((atual) => ({ ...atual, [campo]: valor }))
+  }
+
+  async function salvarWorkflowDesligamento(event) {
+    event.preventDefault()
+    if (!funcionarioDesligamento?.id || salvandoDesligamento) return
+    const dados = {
+      motivo: formularioDesligamento.motivo,
+      dataEfetiva: formularioDesligamento.dataEfetiva,
+      observacoes: formularioDesligamento.observacoes
+    }
+    const resposta = desligamentoAbertoSelecionado
+      ? await atualizarDesligamento(desligamentoAbertoSelecionado.id, dados)
+      : await abrirDesligamento(funcionarioDesligamento.id, dados)
+
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível salvar o processo de desligamento.'), 'erro')
+      return
+    }
+    mostrarAviso?.(
+      desligamentoAbertoSelecionado ? 'Processo de desligamento atualizado.' : 'Processo de desligamento iniciado sem alterar o status da colaboradora.',
+      'sucesso'
+    )
+  }
+
+  async function cancelarWorkflowDesligamento() {
+    if (!desligamentoAbertoSelecionado?.id || salvandoDesligamento) return
+    if (String(formularioDesligamento.motivoCancelamento || '').trim().length < 3) {
+      mostrarAviso?.('Informe o motivo do cancelamento.', 'erro')
+      return
+    }
+    const resposta = await cancelarDesligamento(
+      desligamentoAbertoSelecionado.id,
+      formularioDesligamento.motivoCancelamento
+    )
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível cancelar o processo.'), 'erro')
+      return
+    }
+    setFormularioDesligamento(FORMULARIO_DESLIGAMENTO_INICIAL)
+    mostrarAviso?.('Processo cancelado. O status funcional permaneceu inalterado.', 'sucesso')
+  }
+
   async function adicionarExamePeriodico() {
     if (!empresaId || !funcionarioEditando?.id || !podeEditar || salvandoExames) return
 
@@ -670,6 +770,18 @@ export default function FuncionariosPage({
                         <button className="funcionarios-btn funcionarios-btn-secondary" type="button" disabled={salvando} onClick={() => abrirEdicaoFuncionario(funcionario)}>
                           Editar
                         </button>
+                        {!funcionario.arquivado && funcionario.status !== 'desligado' && (
+                          <button
+                            className="funcionarios-btn funcionarios-btn-secondary"
+                            type="button"
+                            disabled={salvando || loadingDesligamentos}
+                            onClick={() => abrirModalDesligamento(funcionario)}
+                          >
+                            {(desligamentosPorFuncionario.get(funcionario.id) || []).some((item) => item.estado === 'ABERTO')
+                              ? 'Ver desligamento'
+                              : 'Iniciar desligamento'}
+                          </button>
+                        )}
                         <button
                           className={`funcionarios-btn ${funcionario.arquivado ? 'funcionarios-btn-primary' : 'funcionarios-btn-danger'}`}
                           type="button"
@@ -697,6 +809,106 @@ export default function FuncionariosPage({
           </>
         )}
       </section>
+
+      {modalDesligamentoAberto && funcionarioDesligamento && (
+        <div className="funcionario-modal-backdrop" role="presentation" onClick={fecharModalDesligamento}>
+          <form className="funcionario-modal funcionario-desligamento-modal" role="dialog" aria-modal="true" aria-labelledby="desligamento-modal-title" onSubmit={salvarWorkflowDesligamento} onClick={(event) => event.stopPropagation()}>
+            <div className="funcionario-modal-header">
+              <div>
+                <span className="funcionarios-kicker">Desligamento 2A</span>
+                <h2 id="desligamento-modal-title">Processo de desligamento</h2>
+                <p>{funcionarioDesligamento.nome || 'Colaboradora selecionada'}</p>
+              </div>
+              <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharModalDesligamento} disabled={salvandoDesligamento}>Fechar</button>
+            </div>
+
+            <div className="funcionario-desligamento-alerta" role="status">
+              <strong>Processo em andamento — colaborador ainda não foi desligado.</strong>
+              <span>Abertura, edição e cancelamento preservam status, arquivamento, Férias, Folha e Exames.</span>
+            </div>
+
+            {erroDesligamentos && (
+              <div className="funcionario-exames-empty">
+                <strong>Não foi possível carregar o histórico.</strong>
+                <p>{erroDesligamentos}</p>
+                <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={carregarDesligamentos}>Tentar novamente</button>
+              </div>
+            )}
+
+            <section className="funcionario-modal-section">
+              <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
+                <span>
+                  <strong>{desligamentoAbertoSelecionado ? 'Editar processo aberto' : 'Iniciar processo'}</strong>
+                  <small>O último dia é pretendido e não conclui o desligamento.</small>
+                </span>
+                <b>{desligamentoAbertoSelecionado ? 'AB' : '+'}</b>
+              </div>
+              <div className="funcionario-form-grid">
+                <label className="span-2">
+                  Motivo
+                  <textarea className="funcionarios-input" value={formularioDesligamento.motivo} onChange={(event) => atualizarCampoDesligamento('motivo', event.target.value)} required />
+                </label>
+                <label>
+                  Último dia pretendido
+                  <input className="funcionarios-input" type="date" value={formularioDesligamento.dataEfetiva} onChange={(event) => atualizarCampoDesligamento('dataEfetiva', event.target.value)} required />
+                </label>
+                <label>
+                  Estado
+                  <input className="funcionarios-input" value={desligamentoAbertoSelecionado?.estado || 'NOVO'} disabled />
+                </label>
+                <label className="span-2">
+                  Observações
+                  <textarea className="funcionarios-input" value={formularioDesligamento.observacoes} onChange={(event) => atualizarCampoDesligamento('observacoes', event.target.value)} />
+                </label>
+              </div>
+            </section>
+
+            {desligamentoAbertoSelecionado && (
+              <section className="funcionario-modal-section">
+                <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
+                  <span><strong>Cancelar processo</strong><small>O cancelamento fica no histórico e não altera o status funcional.</small></span>
+                  <b>×</b>
+                </div>
+                <div className="funcionario-form-grid">
+                  <label className="span-2">
+                    Motivo do cancelamento
+                    <textarea className="funcionarios-input" value={formularioDesligamento.motivoCancelamento} onChange={(event) => atualizarCampoDesligamento('motivoCancelamento', event.target.value)} />
+                  </label>
+                  <button className="funcionarios-btn funcionarios-btn-danger" type="button" disabled={salvandoDesligamento} onClick={cancelarWorkflowDesligamento}>Cancelar processo</button>
+                </div>
+              </section>
+            )}
+
+            <section className="funcionario-modal-section">
+              <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
+                <span><strong>Histórico</strong><small>Processos abertos e cancelados desta colaboradora.</small></span>
+                <b>{historicoDesligamentoSelecionado.length}</b>
+              </div>
+              <div className="funcionario-desligamento-historico">
+                {loadingDesligamentos ? (
+                  <p className="funcionarios-note">Carregando histórico...</p>
+                ) : historicoDesligamentoSelecionado.length === 0 ? (
+                  <div className="funcionario-exames-empty">Nenhum processo anterior.</div>
+                ) : historicoDesligamentoSelecionado.map((item) => (
+                  <article key={item.id} className="funcionario-desligamento-item">
+                    <div><strong>{item.estado}</strong><small>Aberto em {formatarDataCurta(item.aberto_em)}</small></div>
+                    <span>Último dia pretendido: {formatarDataCurta(item.data_efetiva)}</span>
+                    <span>Motivo: {item.motivo}</span>
+                    {item.estado === 'CANCELADO' && <span>Cancelamento: {item.motivo_cancelamento}</span>}
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <div className="funcionario-modal-actions">
+              <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharModalDesligamento} disabled={salvandoDesligamento}>Fechar</button>
+              <button className="funcionarios-btn funcionarios-btn-primary" type="submit" disabled={salvandoDesligamento || !formularioDesligamento.motivo || !formularioDesligamento.dataEfetiva}>
+                {salvandoDesligamento ? 'Salvando...' : desligamentoAbertoSelecionado ? 'Salvar processo' : 'Iniciar processo'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {modalAberto && (
         <div className="funcionario-modal-backdrop" role="presentation" onClick={fecharFormulario}>
@@ -795,7 +1007,9 @@ export default function FuncionariosPage({
                     >
                       <option value="ativo">Ativo</option>
                       <option value="afastado">Afastado</option>
-                      <option value="desligado">Desligado</option>
+                      {funcionarioEditando?.status === 'desligado' && (
+                        <option value="desligado">Desligado (legado)</option>
+                      )}
                     </select>
                   </label>
                   <label>

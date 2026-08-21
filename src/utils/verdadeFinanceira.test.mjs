@@ -258,10 +258,12 @@ test('campos canônicos consumidos por Impostos e Copilot permanecem coerentes',
   assert.equal(registro.status_relatorio, verdade.statusFinanceiro)
 
   const impostos = readFileSync(new URL('../pages/ControleImpostosPage.jsx', import.meta.url), 'utf8')
+  const impostosExportacao = readFileSync(new URL('../services/export/controleImpostosExportService.js', import.meta.url), 'utf8')
+  const contratoImpostos = `${impostos}\n${impostosExportacao}`
   const copilot = readFileSync(new URL('../services/ai/copilotEngine.js', import.meta.url), 'utf8')
-  assert.match(impostos, /valor_previsto_relatorio/)
-  assert.match(impostos, /valor_pago_atual_relatorio/)
-  assert.match(impostos, /saldo_restante_relatorio/)
+  assert.match(contratoImpostos, /valor_previsto_relatorio/)
+  assert.match(contratoImpostos, /valor_pago_atual_relatorio/)
+  assert.match(contratoImpostos, /saldo_restante_relatorio/)
   assert.match(copilot, /valor_previsto_relatorio/)
   assert.match(copilot, /valor_pago_atual_relatorio/)
   assert.match(copilot, /saldo_restante_relatorio/)

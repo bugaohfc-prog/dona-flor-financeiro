@@ -48,8 +48,8 @@ test('exportação fica indisponível sem dados válidos ou durante carregamento
     read('src/pages/AuditoriaPage.jsx'),
   ].join('\n')
   assert.match(sources, /controller\.carregado && !controller\.carregando && !controller\.erro/)
-  assert.match(sources, /loading \|\| loadingConsultaContas \|\| contasFiltradas\.length === 0/)
-  assert.match(sources, /disabled=\{!exportacaoDisponivel\}/)
+  assert.match(sources, /loading \|\| loadingConsultaContas \|\| exportando \|\| contasFiltradas\.length === 0/)
+  assert.match(sources, /disabled=\{!exportacaoDisponivel \|\| exportando\}/)
   assert.match(sources, /disabled=\{!dadosDisponiveis \|\| !possuiMovimentos\}/)
   assert.match(sources, /disabled=\{!eventos\.length \|\| estado !== 'pronto'\}/)
 })

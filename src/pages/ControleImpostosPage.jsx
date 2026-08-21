@@ -1,10 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import ContasContextualGuard from '../components/feedback/ContasContextualGuard.jsx'
 import { useRelatorioFinanceiro } from '../hooks/useRelatorioFinanceiro.js'
 import { podeExportarRelatorio } from '../utils/relatoriosFinanceiros.js'
 import { impostoPertenceAoFiltro, obterSaldoExibidoImposto, obterStatusOperacionalImposto } from '../utils/consumidoresFinanceiros.js'
-import { ehCentroTributosTaxas } from '../utils/centrosCustoAtuais.js'
-import { exportCsv } from '../services/export/reportExportService.js'
+import {
+  criarModeloExportacaoControleImpostos,
+  criarNomeArquivoControleImpostos,
+  exportarControleImpostosCsv,
+  exportarControleImpostosPdf
+} from '../services/export/controleImpostosExportService.js'
 import { ExportMenu, FilterCard, FilterGrid, PageHeader } from '../components/shared/PagePatterns.jsx'
 import './ControleImpostosPage.css'
 
@@ -49,68 +53,25 @@ function obterFilial(conta, filiais) {
   return (filiais || []).find((filial) => filial.id === conta?.filial_id) || conta?.df_filiais || null
 }
 
-function classificarImposto(conta, centros) {
+function classificarImposto(conta) {
   const tipoFiscal = String(conta?.imposto_tipo || '').trim()
   if (tipoFiscal === 'simples_nacional') {
-    return { tipo: 'simples', label: 'Simples Nacional', prioridade: 1, origem: 'informada' }
+    return { tipo: 'simples', label: 'Simples Nacional', prioridade: 1, origem: 'estruturada' }
   }
   if (tipoFiscal === 'fgts') {
-    return { tipo: 'fgts', label: 'FGTS', prioridade: 2, origem: 'informada' }
+    return { tipo: 'fgts', label: 'FGTS', prioridade: 2, origem: 'estruturada' }
   }
   if (tipoFiscal === 'inss') {
-    return { tipo: 'inss', label: 'INSS', prioridade: 3, origem: 'informada' }
+    return { tipo: 'inss', label: 'INSS', prioridade: 3, origem: 'estruturada' }
   }
   if (tipoFiscal === 'outro') {
-    return { tipo: 'outros', label: 'Outro imposto', prioridade: 4, origem: 'informada' }
+    return { tipo: 'outros', label: 'Outro imposto', prioridade: 4, origem: 'estruturada' }
   }
-
-  const descricaoNormalizada = normalizarTexto(conta?.descricao)
-  const centro = obterCentro(conta, centros)
-  const centroNormalizado = normalizarTexto(centro?.nome)
-
-  if (descricaoNormalizada.includes('simples')) {
-    return { tipo: 'simples', label: 'Simples Nacional', prioridade: 1, origem: 'estimada' }
-  }
-
-  if (descricaoNormalizada.includes('fgts')) {
-    return { tipo: 'fgts', label: 'FGTS', prioridade: 2, origem: 'estimada' }
-  }
-
-  if (descricaoNormalizada.includes('inss')) {
-    return { tipo: 'inss', label: 'INSS', prioridade: 3, origem: 'estimada' }
-  }
-
-  if (ehCentroTributosTaxas(centroNormalizado)) {
-    return { tipo: 'outros', label: 'Outros impostos', prioridade: 4, origem: 'estimada' }
-  }
-
   return null
 }
 
 function obterDataVencimento(conta) {
   return conta?.data_vencimento || conta?.vencimento || ''
-}
-
-function dataEstaVencida(conta) {
-  if (String(conta?.status || '').toLowerCase() === 'pago') return false
-  const dataVencimento = obterDataVencimento(conta)
-  if (!dataVencimento) return false
-
-  const hoje = new Date()
-  const hojeLocal = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())
-  const vencimento = new Date(`${dataVencimento}T00:00:00`)
-  return vencimento < hojeLocal
-}
-
-function obterCompetenciaEstimada(conta) {
-  const data = obterDataVencimento(conta)
-  if (!data) return 'Sem data'
-
-  const [ano, mes] = String(data).split('-')
-  const indiceMes = Number(mes) - 1
-  if (!ano || indiceMes < 0 || indiceMes > 11) return 'Sem data'
-
-  return `${MESES[indiceMes]}/${ano}`
 }
 
 function obterCompetenciaFiscal(conta) {
@@ -120,14 +81,14 @@ function obterCompetenciaFiscal(conta) {
     if (ano && indiceMes >= 0 && indiceMes <= 11) {
       return {
         label: `${MESES[indiceMes]}/${ano}`,
-        origem: 'informada'
+        origem: 'estruturada'
       }
     }
   }
 
   return {
-    label: obterCompetenciaEstimada(conta),
-    origem: 'estimada'
+    label: 'Sem competência',
+    origem: 'ausente'
   }
 }
 
@@ -200,6 +161,9 @@ export default function ControleImpostosPage({
   const [campoPeriodo, setCampoPeriodo] = useState('data_vencimento')
   const [filialId, setFilialId] = useState('')
   const [incluirOcultas, setIncluirOcultas] = useState(false)
+  const [erroExportacao, setErroExportacao] = useState('')
+  const [exportando, setExportando] = useState(false)
+  const exportacaoEmAndamentoRef = useRef(false)
   const criterios = useMemo(() => ({
     base: 'vencimento', dataInicial, dataFinal, campoPeriodo, status: 'todas', filialId,
     centroCustoId: '', origem: 'todas', incluirOcultas, busca: ''
@@ -212,7 +176,7 @@ export default function ControleImpostosPage({
     return (contas || [])
       .filter((conta) => conta && conta.excluido !== true)
       .map((conta) => {
-        const classificacao = classificarImposto(conta, centros)
+        const classificacao = classificarImposto(conta)
         if (!classificacao) return null
 
         const centro = obterCentro(conta, centros)
@@ -294,17 +258,40 @@ export default function ControleImpostosPage({
     }
   }, [impostosEncontrados])
 
-  function exportarImpostos() {
-    if (!exportacaoDisponivel) return
-    exportCsv({
-      filename: `controle-impostos-${dataInicial}-${dataFinal}.csv`,
-      headers: ['Imposto', 'Descrição', 'Competência', 'Vencimento', 'Previsto', 'Pago', 'Saldo', 'Status', 'Filial', 'Centro'],
-      rows: impostosEncontrados.map((conta) => [
-        conta.impostoLabel, conta.descricao, conta.competenciaFiscal, obterDataVencimento(conta),
-        conta.valor_previsto_relatorio, conta.valor_pago_atual_relatorio, conta.saldo_restante_relatorio,
-        conta.status_relatorio, conta.filialNome, conta.centroNome
-      ])
+  function obterModeloExportacao() {
+    const filtroLabel = FILTROS_IMPOSTOS.find(([valor]) => valor === filtro)?.[1] || 'Todos'
+    const filialNome = (filiais || []).find((filial) => filial.id === filialId)?.nome || 'Todas as filiais'
+    return criarModeloExportacaoControleImpostos({
+      registros: impostosEncontrados,
+      filtros: {
+        dataInicial,
+        dataFinal,
+        campoPeriodoLabel: campoPeriodo === 'competencia' ? 'Competência' : 'Vencimento',
+        filialNome,
+        filtroLabel,
+        busca,
+        incluirOcultas
+      }
     })
+  }
+
+  async function executarExportacao(formato) {
+    if (!exportacaoDisponivel || exportacaoEmAndamentoRef.current) return
+    exportacaoEmAndamentoRef.current = true
+    setErroExportacao('')
+    setExportando(true)
+    try {
+      await Promise.resolve()
+      const modelo = obterModeloExportacao()
+      const filename = criarNomeArquivoControleImpostos({ dataInicial, dataFinal, extensao: formato })
+      if (formato === 'pdf') exportarControleImpostosPdf({ modelo, filename })
+      else exportarControleImpostosCsv({ modelo, filename })
+    } catch (error) {
+      setErroExportacao(error?.message || 'Não foi possível gerar a exportação.')
+    } finally {
+      exportacaoEmAndamentoRef.current = false
+      setExportando(false)
+    }
   }
 
   return (
@@ -317,7 +304,13 @@ export default function ControleImpostosPage({
         actionsClassName="page-actions-row"
         actions={(
           <>
-          <ExportMenu disabled={!exportacaoDisponivel} options={[{ id: 'csv', label: 'CSV', onSelect: exportarImpostos }]} />
+          <ExportMenu
+            disabled={!exportacaoDisponivel || exportando}
+            options={[
+              { id: 'csv', label: 'Exportar CSV', onSelect: () => executarExportacao('csv') },
+              { id: 'pdf', label: 'PDF Executivo', onSelect: () => executarExportacao('pdf') }
+            ]}
+          />
           <button type="button" onClick={() => navegarPara?.('contas')}>
             Ver contas
           </button>
@@ -407,9 +400,9 @@ export default function ControleImpostosPage({
                 <div className="tax-control-meta">
                   <span>Vencimento: {obterDataVencimento(conta) ? formatarData(obterDataVencimento(conta)) : '-'}</span>
                   <span>
-                    {conta.competenciaOrigem === 'informada' ? 'Competência informada' : 'Competência estimada'}: {conta.competenciaFiscal}
+                    {conta.competenciaOrigem === 'estruturada' ? 'Competência informada' : 'Competência não informada'}: {conta.competenciaFiscal}
                   </span>
-                  {conta.impostoOrigem === 'informada' && <span>Classificação informada</span>}
+                  {conta.impostoOrigem === 'estruturada' && <span>Classificação estruturada</span>}
                   <span>Filial: {conta.filialNome}</span>
                   <span>Centro: {conta.centroNome}</span>
                   <span className={`tax-control-status is-${conta.statusOperacional}`}>
@@ -431,6 +424,7 @@ export default function ControleImpostosPage({
           </div>
         )}
         </ContasContextualGuard>
+        {erroExportacao ? <p className="tax-control-export-error" role="alert">{erroExportacao}</p> : null}
         {!exportacaoDisponivel && <small>Exportação disponível somente após a consulta completa do período.</small>}
       </section>
     </main>

@@ -73,5 +73,6 @@ test('onboarding cria Administrativo e fluxos atuais não sugerem nomes antigos'
   assert.doesNotMatch(onboarding, /['"]Operacional['"]/);
   assert.doesNotMatch(mapaSugestoes, /['"](?:RH|Mercadoria|Impostos e Taxas)['"]/);
   assert.doesNotMatch(contaModal, /['"](?:RH|Mercadoria|Impostos e Taxas)['"]/)
-  assert.match(impostos, /ehCentroTributosTaxas/)
+  assert.match(impostos, /imposto_tipo/)
+  assert.doesNotMatch(impostos, /ehCentroTributosTaxas/)
 })

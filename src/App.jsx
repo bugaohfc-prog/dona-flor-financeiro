@@ -2937,58 +2937,54 @@ export default function App() {
   // =========================
   // BLOCO 10 — EXPORTAÇÕES
   // =========================
-  function exportarCSV() {
+  function criarModeloAtualContas(criarModeloExportacaoContas) {
+    const statusLabel = {
+      pendentes: 'Em aberto', vencidas: 'Vencidas', futuras: 'Futuras', pagas: 'Pagas',
+      ocultas: 'Ocultas', excluidas: 'Excluídas', todas: 'Todos'
+    }[filtroStatus] || filtroStatus
+    const horizonteLabel = {
+      '30_dias': '30 dias', '90_dias': '90 dias', '6_meses': '6 meses', '12_meses': '12 meses', todos: 'Todos'
+    }[filtroHorizonte] || filtroHorizonte
+    return criarModeloExportacaoContas({
+      registros: contasFiltradas,
+      filtros: {
+        dataInicial,
+        dataFinal,
+        horizonteLabel,
+        statusLabel,
+        filialNome: filiais.find((filial) => filial.id === filtroFilial)?.nome || 'Todas as filiais',
+        centroNome: centros.find((centro) => centro.id === filtroCentro)?.nome || 'Todos',
+        mesLabel: filtroMes || '',
+        busca
+      }
+    })
+  }
+
+  async function exportarCSV() {
     if (!podeExportarDados()) {
       bloquearAcaoSemPermissao()
       return
     }
 
-    const formatarNumeroCsv = (valor) => Number(valor || 0).toFixed(2).replace('.', ',')
-    const cabecalho = [
-      'Descricao',
-      'Valor previsto',
-      'Valor pago',
-      'Encargos',
-      'Desconto',
-      'Data pagamento',
-      'Observacao pagamento',
-      'Vencimento',
-      'Status',
-      'Filial',
-      'Centro'
-    ]
-    const linhas = contasFiltradas.map((conta) => {
-      const valorPrevisto = Number(conta.valor || 0)
-      const valorPago = conta.status === 'pago' ? Number(conta.valor_pago ?? conta.valor ?? 0) : ''
-
-      return [
-        conta.descricao || '',
-        formatarNumeroCsv(valorPrevisto),
-        valorPago === '' ? '' : formatarNumeroCsv(valorPago),
-        formatarNumeroCsv(conta.juros_multa || 0),
-        formatarNumeroCsv(conta.desconto || 0),
-        conta.data_pagamento ? formatarData(conta.data_pagamento) : '',
-        conta.observacao_pagamento || '',
-        formatarData(conta.data_vencimento),
-        estaVencida(conta.data_vencimento, conta.status) ? 'vencido' : conta.status,
-        conta.df_filiais?.nome || '',
-        conta.df_centros_custo?.nome || ''
-      ]
+    const { criarModeloExportacaoContas, criarNomeArquivoContas, exportarContasCsv } = await import('./services/export/contasExportService.js')
+    const modelo = criarModeloAtualContas(criarModeloExportacaoContas)
+    exportarContasCsv({
+      modelo,
+      filename: criarNomeArquivoContas({ dataInicial, dataFinal, extensao: 'csv' })
     })
+  }
 
-    const csv = [cabecalho, ...linhas]
-      .map((linha) => linha.map((campo) => `"${String(campo).replaceAll('"', '""')}"`).join(';'))
-      .join('\n')
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-
-    link.href = url
-    link.download = 'relatorio-contas.csv'
-    link.click()
-
-    URL.revokeObjectURL(url)
+  async function exportarPdfExecutivoContas() {
+    if (!podeExportarDados()) {
+      bloquearAcaoSemPermissao()
+      return
+    }
+    const { criarModeloExportacaoContas, criarNomeArquivoContas, exportarContasPdf } = await import('./services/export/contasExportService.js')
+    const modelo = criarModeloAtualContas(criarModeloExportacaoContas)
+    exportarContasPdf({
+      modelo,
+      filename: criarNomeArquivoContas({ dataInicial, dataFinal, extensao: 'pdf' })
+    })
   }
 
   function exportarExcel() {
@@ -4168,7 +4164,7 @@ export default function App() {
         mostrarFiltros={mostrarFiltros}
         setMostrarFiltros={setMostrarFiltros}
         limparFiltros={limparFiltros}
-        imprimirPDF={imprimirPDF}
+        imprimirPDF={exportarPdfExecutivoContas}
         exportarCSV={exportarCSV}
         exportarExcel={exportarExcel}
         podeEditarFinanceiro={podeEditarFinanceiro()}

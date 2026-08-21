@@ -261,6 +261,17 @@
   width: 100%;
 }
 
+.tax-control-export-error {
+  margin: 0;
+  border: 1px solid #fecaca;
+  border-radius: var(--df-radius-control, 10px);
+  padding: 10px 12px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: .8125rem;
+  font-weight: 800;
+}
+
 @media (max-width: 700px) {
   .tax-control-page,
   .tax-control-section,

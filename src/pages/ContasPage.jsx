@@ -163,6 +163,9 @@ export default function ContasPage({
   const [modoPagamento, setModoPagamento] = useState('baixa')
   const [contaDestacadaId, setContaDestacadaId] = useState('')
   const [expansaoContas, setExpansaoContas] = useState({ anos: {}, meses: {} })
+  const [exportando, setExportando] = useState(false)
+  const [erroExportacao, setErroExportacao] = useState('')
+  const exportacaoEmAndamentoRef = useRef(false)
   const contaDestacadaRef = useRef(null)
   const avisoContaForaDoFiltroRef = useRef(null)
   const empresaVisualRef = useRef('')
@@ -222,6 +225,22 @@ export default function ContasPage({
   )
   const mostrarEncargosResultado = resumoResultadoFiltrado.encargos > 0
   const mostrarDescontosResultado = resumoResultadoFiltrado.descontos > 0
+
+  async function executarExportacao(acao) {
+    if (exportacaoEmAndamentoRef.current || typeof acao !== 'function') return
+    exportacaoEmAndamentoRef.current = true
+    setExportando(true)
+    setErroExportacao('')
+    try {
+      await Promise.resolve()
+      await acao()
+    } catch (error) {
+      setErroExportacao(error?.message || 'Não foi possível gerar a exportação.')
+    } finally {
+      exportacaoEmAndamentoRef.current = false
+      setExportando(false)
+    }
+  }
 
   async function confirmarBaixaConta(payload) {
     if (!contaEmBaixa?.id) return false
@@ -860,16 +879,17 @@ export default function ContasPage({
             <button type="button" className="accounts-header-action is-primary" onClick={abrirNovaConta}>Nova conta</button>
           ) : null}
           {podeExportarDados ? <ExportMenu
-            disabled={loading || loadingConsultaContas || contasFiltradas.length === 0}
+            disabled={loading || loadingConsultaContas || exportando || contasFiltradas.length === 0}
             options={[
-              { id: 'pdf', label: 'PDF', onSelect: imprimirPDF },
-              { id: 'excel', label: 'Excel', onSelect: exportarExcel },
-              { id: 'csv', label: 'CSV', onSelect: exportarCSV },
+              { id: 'pdf', label: 'PDF Executivo', onSelect: () => executarExportacao(imprimirPDF) },
+              { id: 'excel', label: 'Excel', onSelect: () => executarExportacao(exportarExcel) },
+              { id: 'csv', label: 'CSV', onSelect: () => executarExportacao(exportarCSV) },
             ]}
           /> : null}
           </>
         )}
       />
+      {erroExportacao ? <p className="accounts-export-error" role="alert">{erroExportacao}</p> : null}
       {renderListaContasConteudo()}
       {contaEmBaixa && (
         <AccountPaymentModal

@@ -45,9 +45,9 @@ test('UI faz preflight, exige motivo e preserva criação manual sem duplicaçã
   assert.match(feriasPage, /disabled=\{[\s\S]*salvando[\s\S]*cicloDuplicadoSugerido[\s\S]*\}/)
 })
 
-test('cadastro inicial não grava admissão diretamente e explicita falha parcial', () => {
-  assert.match(funcionariosService, /data_admissao: _dataAdmissaoRemovida/)
-  assert.match(funcionariosService, /alterarAdmissaoFuncionarioControlada\(\{[\s\S]*funcionarioId: funcionarioCriado\?\.id/)
-  assert.match(funcionariosService, /parcial: true[\s\S]*admissaoPendente: true/)
-  assert.match(funcionariosPage, /Funcionário criado, mas a admissão e o ciclo não foram aplicados/)
+test('cadastro inicial delega pessoa, vínculo e admissão à mesma transação', () => {
+  assert.match(funcionariosService, /rpc\('criar_funcionario_com_pessoa_controlado'/)
+  assert.match(funcionariosService, /data_admissao: normalizarData\(entrada\.data_admissao\)/)
+  assert.doesNotMatch(funcionariosService, /parcial: true|admissaoPendente: true/)
+  assert.doesNotMatch(funcionariosPage, /Funcionário criado, mas a admissão e o ciclo não foram aplicados/)
 })

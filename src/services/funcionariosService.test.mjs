@@ -66,73 +66,92 @@ test('service envia preflight e confirmação somente à RPC controlada', async 
 })
 
 function criarSupabaseDeCadastro({ erroRpc = null } = {}) {
-  const chamadas = { inserts: [], rpcs: [] }
-  const funcionario = { id: FUNCIONARIO_ID, nome: 'Fixture 2B1', status: 'ativo', data_admissao: null }
+  const chamadas = { rpcs: [] }
+  const funcionario = {
+    id: FUNCIONARIO_ID,
+    pessoa_id: '33333333-3333-4333-8333-333333333333',
+    nome: 'Fixture 2C1',
+    status: 'ativo',
+    data_admissao: '2026-08-14',
+    ciclo_criado_id: '44444444-4444-4444-8444-444444444444'
+  }
   const supabase = {
-    from(tabela) {
-      assert.equal(tabela, 'df_funcionarios')
-      return {
-        insert(payloads) {
-          chamadas.inserts.push(payloads)
-          return {
-            select() {
-              return {
-                single: async () => ({ data: funcionario, error: null })
-              }
-            }
-          }
-        }
-      }
-    },
     async rpc(nome, parametros) {
       chamadas.rpcs.push({ nome, parametros })
       if (erroRpc) return { data: null, error: erroRpc }
-      return { data: { ciclo_criado_id: '33333333-3333-4333-8333-333333333333' }, error: null }
+      return { data: funcionario, error: null }
     }
   }
   return { supabase, chamadas }
 }
 
-test('cadastro inicial retira admissão do INSERT e usa a mesma RPC para criar um ciclo', async () => {
+test('cadastro cria pessoa e vínculo na RPC transacional com a admissão no mesmo payload', async () => {
   const { supabase, chamadas } = criarSupabaseDeCadastro()
   const resultado = await criarFuncionario({
     supabase,
     empresaId: EMPRESA_ID,
-    dados: { nome: 'Fixture 2B1', status: 'ativo', data_admissao: '2026-08-14' }
+    dados: { nome: 'Fixture 2C1', status: 'ativo', data_admissao: '2026-08-14' }
   })
 
-  assert.equal(Object.hasOwn(chamadas.inserts[0][0], 'data_admissao'), false)
   assert.equal(chamadas.rpcs.length, 1)
-  assert.equal(chamadas.rpcs[0].nome, 'alterar_admissao_funcionario_controlado')
-  assert.equal(chamadas.rpcs[0].parametros.p_funcionario_id, FUNCIONARIO_ID)
-  assert.equal(resultado.cicloCriadoId, '33333333-3333-4333-8333-333333333333')
+  assert.equal(chamadas.rpcs[0].nome, 'criar_funcionario_com_pessoa_controlado')
+  assert.equal(chamadas.rpcs[0].parametros.p_empresa_id, EMPRESA_ID)
+  assert.equal(chamadas.rpcs[0].parametros.p_dados.data_admissao, '2026-08-14')
+  assert.equal(resultado.data.pessoa_id, '33333333-3333-4333-8333-333333333333')
+  assert.equal(resultado.cicloCriadoId, '44444444-4444-4444-8444-444444444444')
 })
 
-test('cadastro sem admissão não chama RPC nem cria caminho direto de data', async () => {
+test('cadastro sem admissão envia null e continua atômico na mesma RPC', async () => {
   const { supabase, chamadas } = criarSupabaseDeCadastro()
   const resultado = await criarFuncionario({
     supabase,
     empresaId: EMPRESA_ID,
-    dados: { nome: 'Fixture 2B1', status: 'ativo' }
+    dados: { nome: 'Fixture 2C1', status: 'ativo' }
   })
 
   assert.equal(resultado.error, null)
-  assert.equal(chamadas.rpcs.length, 0)
-  assert.equal(Object.hasOwn(chamadas.inserts[0][0], 'data_admissao'), false)
+  assert.equal(chamadas.rpcs.length, 1)
+  assert.equal(chamadas.rpcs[0].parametros.p_dados.data_admissao, null)
 })
 
-test('falha controlada como 29/02 preserva e informa explicitamente o cadastro parcial', async () => {
+test('falha da RPC não expõe cadastro parcial ao cliente', async () => {
   const erro = new Error('ADMISSAO_29FEV_REQUER_DECISAO')
   const { supabase, chamadas } = criarSupabaseDeCadastro({ erroRpc: erro })
   const resultado = await criarFuncionario({
     supabase,
     empresaId: EMPRESA_ID,
-    dados: { nome: 'Fixture 2B1', status: 'ativo', data_admissao: '2024-02-29' }
+    dados: { nome: 'Fixture 2C1', status: 'ativo', data_admissao: '2024-02-29' }
   })
 
   assert.equal(chamadas.rpcs.length, 1)
   assert.equal(resultado.error, erro)
-  assert.equal(resultado.parcial, true)
-  assert.equal(resultado.admissaoPendente, true)
-  assert.equal(resultado.data.id, FUNCIONARIO_ID)
+  assert.equal(resultado.data, null)
+  assert.equal(Object.hasOwn(resultado, 'parcial'), false)
+})
+
+test('edição separa a RPC controlada de pessoa e vínculo', async () => {
+  const chamadas = []
+  const supabase = {
+    async rpc(nome, parametros) {
+      chamadas.push({ nome, parametros })
+      return { data: { id: FUNCIONARIO_ID, pessoa_id: '33333333-3333-4333-8333-333333333333' }, error: null }
+    }
+  }
+
+  await atualizarFuncionario({
+    supabase,
+    empresaId: EMPRESA_ID,
+    funcionarioId: FUNCIONARIO_ID,
+    dados: { nome: 'Nome Atualizado', cargo: 'Cargo Atualizado' }
+  })
+
+  assert.deepEqual(chamadas, [{
+    nome: 'atualizar_funcionario_pessoa_vinculo_controlado',
+    parametros: {
+      p_empresa_id: EMPRESA_ID,
+      p_funcionario_id: FUNCIONARIO_ID,
+      p_dados: { nome: 'Nome Atualizado', cargo: 'Cargo Atualizado' },
+      p_correlation_id: null
+    }
+  }])
 })

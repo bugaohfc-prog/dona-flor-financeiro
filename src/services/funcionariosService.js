@@ -1,14 +1,11 @@
-import {
-  atualizarPorEmpresa,
-  inserirComEmpresa,
-  selecionarPorEmpresa
-} from './supabaseQueryService.js'
+import { atualizarPorEmpresa, selecionarPorEmpresa } from './supabaseQueryService.js'
 import { assertEmpresaId } from './tenantService.js'
 
 const TABELA_FUNCIONARIOS = 'df_funcionarios'
 const FUNCIONARIO_LIST_SELECT = [
   'id',
   'empresa_id',
+  'pessoa_id',
   'filial_id',
   'nome',
   'cargo',
@@ -23,6 +20,7 @@ const FUNCIONARIO_LIST_SELECT = [
 const FUNCIONARIO_DETAIL_SELECT = [
   'id',
   'empresa_id',
+  'pessoa_id',
   'filial_id',
   'nome',
   'cpf',
@@ -180,46 +178,23 @@ export async function criarFuncionario({ supabase, empresaId, dados }) {
   assertEmpresaId(empresaId)
 
   const entrada = dados && typeof dados === 'object' ? dados : {}
-  const dataAdmissao = normalizarData(entrada.data_admissao)
-  const { data_admissao: _dataAdmissaoRemovida, ...dadosSemAdmissao } = entrada
-
   const payload = {
-    ...montarPayloadFuncionario(dadosSemAdmissao, { criacao: true }),
-    empresa_id: empresaId,
-    arquivado: false,
-    arquivado_em: null
+    ...montarPayloadFuncionario(
+      Object.fromEntries(Object.entries(entrada).filter(([chave]) => chave !== 'data_admissao')),
+      { criacao: true }
+    ),
+    data_admissao: normalizarData(entrada.data_admissao)
   }
 
-  const resultadoCriacao = await inserirComEmpresa(supabase, TABELA_FUNCIONARIOS, payload, { select: FUNCIONARIO_LIST_SELECT })
-    .single()
-
-  if (resultadoCriacao?.error || !dataAdmissao) return resultadoCriacao
-
-  const funcionarioCriado = resultadoCriacao?.data || null
-  const resultadoAdmissao = await alterarAdmissaoFuncionarioControlada({
-    supabase,
-    empresaId,
-    funcionarioId: funcionarioCriado?.id,
-    novaDataAdmissao: dataAdmissao
+  const resultado = await supabase.rpc('criar_funcionario_com_pessoa_controlado', {
+    p_empresa_id: empresaId,
+    p_dados: payload,
+    p_correlation_id: null
   })
 
-  if (resultadoAdmissao?.error) {
-    return {
-      data: funcionarioCriado,
-      error: resultadoAdmissao.error,
-      parcial: true,
-      admissaoPendente: true
-    }
-  }
-
   return {
-    data: {
-      ...funcionarioCriado,
-      data_admissao: dataAdmissao
-    },
-    error: null,
-    cicloCriadoId: resultadoAdmissao?.data?.ciclo_criado_id || null,
-    resultadoAdmissao: resultadoAdmissao?.data || null
+    ...resultado,
+    cicloCriadoId: resultado?.data?.ciclo_criado_id || null
   }
 }
 
@@ -228,9 +203,12 @@ export async function atualizarFuncionario({ supabase, empresaId, funcionarioId,
   const id = validarFuncionarioId(funcionarioId)
   const payload = montarPayloadFuncionario(dados)
 
-  return atualizarPorEmpresa(supabase, TABELA_FUNCIONARIOS, id, empresaId, payload)
-    .select(FUNCIONARIO_LIST_SELECT)
-    .single()
+  return supabase.rpc('atualizar_funcionario_pessoa_vinculo_controlado', {
+    p_empresa_id: empresaId,
+    p_funcionario_id: id,
+    p_dados: payload,
+    p_correlation_id: null
+  })
 }
 
 export async function alterarAdmissaoFuncionarioControlada({

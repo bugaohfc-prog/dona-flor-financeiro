@@ -147,7 +147,7 @@ export function useFuncionarios(opcoes = {}) {
 
       if (resposta?.error) {
         definirErro(resposta.error)
-        return resposta?.parcial ? resposta : respostaErro(resposta.error)
+        return respostaErro(resposta.error)
       }
 
       if (opcoesExecucao.recarregar !== false) {
@@ -178,17 +178,9 @@ export function useFuncionarios(opcoes = {}) {
         empresaId: empresa,
         dados
       })
-      const id = Array.isArray(resultado?.data) ? resultado.data[0]?.id : resultado?.data?.id
-
-      if (id) {
-        await auditarResultadoFuncionario(supabase, { data: resultado.data, error: null }, empresa, 'rh.funcionario.criado', id, { campos: Object.keys(dados || {}) })
-      }
-      if (resultado?.parcial) {
-        await carregarFuncionarios({ empresaId: empresa, silencioso: true })
-      }
       return resultado
     })
-  }, [carregarFuncionarios, executarComEmpresaAtiva, supabase])
+  }, [executarComEmpresaAtiva, supabase])
 
   const atualizarFuncionario = useCallback(async (funcionarioId, dados) => {
     return executarComEmpresaAtiva((empresa) => atualizarFuncionarioService({
@@ -196,7 +188,7 @@ export function useFuncionarios(opcoes = {}) {
       empresaId: empresa,
       funcionarioId,
       dados
-    }).then((resultado) => auditarResultadoFuncionario(supabase, resultado, empresa, 'rh.funcionario.atualizado', funcionarioId, { campos: Object.keys(dados || {}) })))
+    }))
   }, [executarComEmpresaAtiva, supabase])
 
   const alterarAdmissaoFuncionario = useCallback(async (funcionarioId, dados = {}) => {

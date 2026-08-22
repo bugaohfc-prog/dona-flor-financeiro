@@ -168,6 +168,7 @@ export default function FuncionariosPage({
   const [modalDesligamentoAberto, setModalDesligamentoAberto] = useState(false)
   const [funcionarioDesligamento, setFuncionarioDesligamento] = useState(null)
   const [formularioDesligamento, setFormularioDesligamento] = useState(FORMULARIO_DESLIGAMENTO_INICIAL)
+  const [confirmacaoConclusaoAberta, setConfirmacaoConclusaoAberta] = useState(false)
   const contextoAplicadoRef = useRef('')
 
   const {
@@ -196,7 +197,8 @@ export default function FuncionariosPage({
     carregar: carregarDesligamentos,
     abrir: abrirDesligamento,
     atualizar: atualizarDesligamento,
-    cancelar: cancelarDesligamento
+    cancelar: cancelarDesligamento,
+    concluir: concluirDesligamento
   } = useFuncionariosDesligamentos({ empresaId })
 
   const {
@@ -236,6 +238,7 @@ export default function FuncionariosPage({
     ? desligamentosPorFuncionario.get(funcionarioDesligamento.id) || []
     : []
   const desligamentoAbertoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'ABERTO') || null
+  const desligamentoConcluidoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'CONCLUIDO') || null
 
   const funcionariosFiltrados = useMemo(() => {
     const termo = normalizarTextoBusca(busca)
@@ -518,8 +521,10 @@ export default function FuncionariosPage({
   }
 
   function abrirModalDesligamento(funcionario) {
-    if (!funcionario?.id || funcionario.arquivado || funcionario.status === 'desligado' || !podeEditar) return
-    const aberto = (desligamentosPorFuncionario.get(funcionario.id) || []).find((item) => item.estado === 'ABERTO')
+    const historico = desligamentosPorFuncionario.get(funcionario?.id) || []
+    if (!funcionario?.id || funcionario.arquivado || !podeEditar) return
+    if (funcionario.status === 'desligado' && historico.length === 0) return
+    const aberto = historico.find((item) => item.estado === 'ABERTO')
     setFuncionarioDesligamento(funcionario)
     setFormularioDesligamento(aberto ? {
       motivo: aberto.motivo || '',
@@ -532,6 +537,7 @@ export default function FuncionariosPage({
 
   function fecharModalDesligamento() {
     if (salvandoDesligamento) return
+    setConfirmacaoConclusaoAberta(false)
     setModalDesligamentoAberto(false)
     setFuncionarioDesligamento(null)
     setFormularioDesligamento(FORMULARIO_DESLIGAMENTO_INICIAL)
@@ -579,6 +585,19 @@ export default function FuncionariosPage({
     }
     setFormularioDesligamento(FORMULARIO_DESLIGAMENTO_INICIAL)
     mostrarAviso?.('Processo cancelado. O status funcional permaneceu inalterado.', 'sucesso')
+  }
+
+  async function concluirWorkflowDesligamento() {
+    if (!desligamentoAbertoSelecionado?.id || salvandoDesligamento) return
+    const resposta = await concluirDesligamento(desligamentoAbertoSelecionado.id)
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível concluir o desligamento.'), 'erro')
+      return
+    }
+    await carregarFuncionarios()
+    setFuncionarioDesligamento((atual) => atual ? { ...atual, status: 'desligado', arquivado: false } : atual)
+    setConfirmacaoConclusaoAberta(false)
+    mostrarAviso?.('Desligamento concluído. O cadastro permanece disponível e não foi arquivado.', 'sucesso')
   }
 
   async function adicionarExamePeriodico() {
@@ -770,14 +789,16 @@ export default function FuncionariosPage({
                         <button className="funcionarios-btn funcionarios-btn-secondary" type="button" disabled={salvando} onClick={() => abrirEdicaoFuncionario(funcionario)}>
                           Editar
                         </button>
-                        {!funcionario.arquivado && funcionario.status !== 'desligado' && (
+                        {!funcionario.arquivado && (funcionario.status !== 'desligado' || (desligamentosPorFuncionario.get(funcionario.id) || []).length > 0) && (
                           <button
                             className="funcionarios-btn funcionarios-btn-secondary"
                             type="button"
                             disabled={salvando || loadingDesligamentos}
                             onClick={() => abrirModalDesligamento(funcionario)}
                           >
-                            {(desligamentosPorFuncionario.get(funcionario.id) || []).some((item) => item.estado === 'ABERTO')
+                            {funcionario.status === 'desligado'
+                              ? 'Ver histórico'
+                              : (desligamentosPorFuncionario.get(funcionario.id) || []).some((item) => item.estado === 'ABERTO')
                               ? 'Ver desligamento'
                               : 'Iniciar desligamento'}
                           </button>
@@ -815,16 +836,30 @@ export default function FuncionariosPage({
           <form className="funcionario-modal funcionario-desligamento-modal" role="dialog" aria-modal="true" aria-labelledby="desligamento-modal-title" onSubmit={salvarWorkflowDesligamento} onClick={(event) => event.stopPropagation()}>
             <div className="funcionario-modal-header">
               <div>
-                <span className="funcionarios-kicker">Desligamento 2A</span>
+                <span className="funcionarios-kicker">Desligamento 2B</span>
                 <h2 id="desligamento-modal-title">Processo de desligamento</h2>
                 <p>{funcionarioDesligamento.nome || 'Colaboradora selecionada'}</p>
               </div>
               <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharModalDesligamento} disabled={salvandoDesligamento}>Fechar</button>
             </div>
 
-            <div className="funcionario-desligamento-alerta" role="status">
-              <strong>Processo em andamento — colaborador ainda não foi desligado.</strong>
-              <span>Abertura, edição e cancelamento preservam status, arquivamento, Férias, Folha e Exames.</span>
+            <div className={`funcionario-desligamento-alerta ${desligamentoConcluidoSelecionado ? 'is-concluido' : ''}`} role="status">
+              {desligamentoConcluidoSelecionado ? (
+                <>
+                  <strong>Desligamento concluído — status funcional desligado.</strong>
+                  <span>O cadastro não foi arquivado. Férias, Folha, Exames e o histórico permanecem preservados.</span>
+                </>
+              ) : desligamentoAbertoSelecionado ? (
+                <>
+                  <strong>Processo em andamento — colaborador ainda não foi desligado.</strong>
+                  <span>Somente a conclusão confirmada altera o status funcional. Editar ou cancelar preserva os dados.</span>
+                </>
+              ) : (
+                <>
+                  <strong>Nenhum processo aberto.</strong>
+                  <span>Iniciar o processo não altera status, arquivamento, Férias, Folha ou Exames.</span>
+                </>
+              )}
             </div>
 
             {erroDesligamentos && (
@@ -835,7 +870,7 @@ export default function FuncionariosPage({
               </div>
             )}
 
-            <section className="funcionario-modal-section">
+            {funcionarioDesligamento.status !== 'desligado' && !desligamentoConcluidoSelecionado && <section className="funcionario-modal-section">
               <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
                 <span>
                   <strong>{desligamentoAbertoSelecionado ? 'Editar processo aberto' : 'Iniciar processo'}</strong>
@@ -861,7 +896,20 @@ export default function FuncionariosPage({
                   <textarea className="funcionarios-input" value={formularioDesligamento.observacoes} onChange={(event) => atualizarCampoDesligamento('observacoes', event.target.value)} />
                 </label>
               </div>
-            </section>
+            </section>}
+
+            {desligamentoAbertoSelecionado && (
+              <section className="funcionario-modal-section funcionario-desligamento-conclusao">
+                <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
+                  <span><strong>Concluir desligamento</strong><small>Altera o status funcional para desligado sem arquivar o cadastro.</small></span>
+                  <b>✓</b>
+                </div>
+                <div className="funcionario-form-grid">
+                  <p className="funcionarios-note span-2">Use a confirmação final para revisar colaborador, data efetiva e motivo antes de concluir.</p>
+                  <button className="funcionarios-btn funcionarios-btn-danger" type="button" disabled={salvandoDesligamento} onClick={() => setConfirmacaoConclusaoAberta(true)}>Concluir desligamento</button>
+                </div>
+              </section>
+            )}
 
             {desligamentoAbertoSelecionado && (
               <section className="funcionario-modal-section">
@@ -881,7 +929,7 @@ export default function FuncionariosPage({
 
             <section className="funcionario-modal-section">
               <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
-                <span><strong>Histórico</strong><small>Processos abertos e cancelados desta colaboradora.</small></span>
+                <span><strong>Histórico</strong><small>Processos abertos, cancelados e concluídos desta colaboradora.</small></span>
                 <b>{historicoDesligamentoSelecionado.length}</b>
               </div>
               <div className="funcionario-desligamento-historico">
@@ -895,6 +943,7 @@ export default function FuncionariosPage({
                     <span>Último dia pretendido: {formatarDataCurta(item.data_efetiva)}</span>
                     <span>Motivo: {item.motivo}</span>
                     {item.estado === 'CANCELADO' && <span>Cancelamento: {item.motivo_cancelamento}</span>}
+                    {item.estado === 'CONCLUIDO' && <span>Concluído em: {formatarDataCurta(item.concluido_em)}</span>}
                   </article>
                 ))}
               </div>
@@ -902,11 +951,39 @@ export default function FuncionariosPage({
 
             <div className="funcionario-modal-actions">
               <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharModalDesligamento} disabled={salvandoDesligamento}>Fechar</button>
-              <button className="funcionarios-btn funcionarios-btn-primary" type="submit" disabled={salvandoDesligamento || !formularioDesligamento.motivo || !formularioDesligamento.dataEfetiva}>
-                {salvandoDesligamento ? 'Salvando...' : desligamentoAbertoSelecionado ? 'Salvar processo' : 'Iniciar processo'}
-              </button>
+              {funcionarioDesligamento.status !== 'desligado' && !desligamentoConcluidoSelecionado && (
+                <button className="funcionarios-btn funcionarios-btn-primary" type="submit" disabled={salvandoDesligamento || !formularioDesligamento.motivo || !formularioDesligamento.dataEfetiva}>
+                  {salvandoDesligamento ? 'Salvando...' : desligamentoAbertoSelecionado ? 'Salvar processo' : 'Iniciar processo'}
+                </button>
+              )}
             </div>
           </form>
+        </div>
+      )}
+
+      {confirmacaoConclusaoAberta && desligamentoAbertoSelecionado && funcionarioDesligamento && (
+        <div className="funcionario-modal-backdrop funcionario-confirmacao-backdrop" role="presentation" onClick={() => !salvandoDesligamento && setConfirmacaoConclusaoAberta(false)}>
+          <div className="funcionario-modal funcionario-confirmacao-modal" role="alertdialog" aria-modal="true" aria-labelledby="conclusao-desligamento-title" onClick={(event) => event.stopPropagation()}>
+            <div className="funcionario-modal-header">
+              <div>
+                <span className="funcionarios-kicker">Confirmação obrigatória</span>
+                <h2 id="conclusao-desligamento-title">Concluir desligamento</h2>
+              </div>
+            </div>
+            <dl className="funcionario-confirmacao-resumo">
+              <div><dt>Colaborador</dt><dd>{funcionarioDesligamento.nome || 'Não informado'}</dd></div>
+              <div><dt>Data efetiva</dt><dd>{formatarDataCurta(desligamentoAbertoSelecionado.data_efetiva)}</dd></div>
+              <div><dt>Motivo</dt><dd>{desligamentoAbertoSelecionado.motivo}</dd></div>
+            </dl>
+            <div className="funcionario-desligamento-alerta" role="note">
+              <strong>O status funcional passará para desligado.</strong>
+              <span>O cadastro NÃO será arquivado. Histórico de Férias, Folha e Exames será preservado.</span>
+            </div>
+            <div className="funcionario-modal-actions">
+              <button className="funcionarios-btn funcionarios-btn-secondary" type="button" disabled={salvandoDesligamento} onClick={() => setConfirmacaoConclusaoAberta(false)}>Voltar</button>
+              <button className="funcionarios-btn funcionarios-btn-danger" type="button" disabled={salvandoDesligamento} onClick={concluirWorkflowDesligamento}>{salvandoDesligamento ? 'Concluindo...' : 'Confirmar conclusão'}</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1004,6 +1081,7 @@ export default function FuncionariosPage({
                       className="funcionarios-input"
                       value={formulario.status}
                       onChange={(event) => atualizarCampo('status', event.target.value)}
+                      disabled={funcionarioEditando?.status === 'desligado'}
                     >
                       <option value="ativo">Ativo</option>
                       <option value="afastado">Afastado</option>
@@ -1011,6 +1089,7 @@ export default function FuncionariosPage({
                         <option value="desligado">Desligado (legado)</option>
                       )}
                     </select>
+                    {funcionarioEditando?.status === 'desligado' && <small className="funcionarios-help">Readmissão ou correção posterior exige fluxo específico e não faz parte deste lote.</small>}
                   </label>
                   <label>
                     Filial

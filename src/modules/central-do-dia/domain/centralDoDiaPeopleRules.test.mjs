@@ -284,6 +284,20 @@ test('projecao canonica alimenta Agenda e Dashboard com o mesmo objeto de evento
   assert.equal(aniversarioAgenda.referenciaOrigem.funcionarioId, funcionario.id)
 })
 
+test('desligado deixa de gerar eventos pessoais futuros sem ocultar obrigação empresarial da Folha', () => {
+  const desligado = { ...funcionario, status: 'desligado' }
+  const eventos = projetarEventosPessoas({
+    funcionarios: [desligado],
+    ciclosFerias: [{ id: 'ciclo', funcionario_id: desligado.id, data_limite_gozo: '2026-07-20', dias_direito: 30, status: 'pendente' }],
+    periodosFerias: [{ id: 'periodo', ciclo_ferias_id: 'ciclo', funcionario_id: desligado.id, data_inicio: '2026-07-20', status: 'agendada' }],
+    exames: [{ id: 'exame', funcionario_id: desligado.id, data_exame: '2025-07-10', arquivado: false }],
+    competenciasFolha: [{ id: 'folha', competencia: '2026-07', status: 'aberta', arquivado: false }],
+    dataBaseISO: hoje
+  })
+
+  assert.deepEqual(eventos.map((item) => item.tipo), ['folha'])
+})
+
 test('projecao aplica filial sem alterar eventos empresariais da Folha', () => {
   const outro = { ...funcionario, id: 'func-2', filial_id: 'filial-2' }
   const eventos = projetarEventosPessoas({

@@ -4,6 +4,7 @@ import {
   abrirDesligamentoFuncionario as abrirService,
   atualizarDesligamentoFuncionario as atualizarService,
   cancelarDesligamentoFuncionario as cancelarService,
+  concluirDesligamentoFuncionario as concluirService,
   listarDesligamentosFuncionario
 } from '../services/funcionariosDesligamentosService'
 import { mensagemSeguraErro } from '../utils/session'
@@ -90,6 +91,10 @@ export function useFuncionariosDesligamentos({ empresaId, autoCarregar = true, s
     supabase, empresaId: empresaAtual, desligamentoId, motivoCancelamento
   })), [empresaAtual, executar, supabase])
 
+  const concluir = useCallback((desligamentoId) => executar(() => concluirService({
+    supabase, empresaId: empresaAtual, desligamentoId
+  })), [empresaAtual, executar, supabase])
+
   return {
     desligamentos,
     loading,
@@ -98,6 +103,7 @@ export function useFuncionariosDesligamentos({ empresaId, autoCarregar = true, s
     carregar,
     abrir,
     atualizar,
-    cancelar
+    cancelar,
+    concluir
   }
 }

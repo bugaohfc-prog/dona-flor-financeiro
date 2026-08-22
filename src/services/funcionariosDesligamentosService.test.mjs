@@ -4,7 +4,8 @@ import assert from 'node:assert/strict'
 import {
   abrirDesligamentoFuncionario,
   atualizarDesligamentoFuncionario,
-  cancelarDesligamentoFuncionario
+  cancelarDesligamentoFuncionario,
+  concluirDesligamentoFuncionario
 } from './funcionariosDesligamentosService.js'
 
 const EMPRESA_ID = '11111111-1111-4111-8111-111111111111'
@@ -75,4 +76,22 @@ test('campos obrigatórios falham antes de consultar o banco', async () => {
     dados: { motivo: '', dataEfetiva: '' }
   }), /motivo/i)
   assert.equal(chamadas.length, 0)
+})
+
+test('conclusão usa exclusivamente a RPC transacional 2B', async () => {
+  const { supabase, chamadas } = criarSupabase()
+  await concluirDesligamentoFuncionario({
+    supabase,
+    empresaId: EMPRESA_ID,
+    desligamentoId: WORKFLOW_ID
+  })
+
+  assert.deepEqual(chamadas, [{
+    nome: 'concluir_desligamento_funcionario_controlado',
+    parametros: {
+      p_empresa_id: EMPRESA_ID,
+      p_desligamento_id: WORKFLOW_ID,
+      p_correlation_id: null
+    }
+  }])
 })

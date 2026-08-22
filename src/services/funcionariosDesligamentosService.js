@@ -16,6 +16,8 @@ const SELECT_WORKFLOW = [
   'cancelado_por',
   'cancelado_em',
   'motivo_cancelamento',
+  'concluido_por',
+  'concluido_em',
   'correlation_id'
 ].join(', ')
 
@@ -84,6 +86,15 @@ export function cancelarDesligamentoFuncionario({ supabase, empresaId, desligame
     p_empresa_id: empresaId,
     p_desligamento_id: idObrigatorio(desligamentoId, 'Processo de desligamento não identificado.'),
     p_motivo_cancelamento: motivoObrigatorio(motivoCancelamento, 'Informe o motivo do cancelamento.'),
+    p_correlation_id: texto(correlationId)
+  })
+}
+
+export function concluirDesligamentoFuncionario({ supabase, empresaId, desligamentoId, correlationId = null }) {
+  assertEmpresaId(empresaId)
+  return supabase.rpc('concluir_desligamento_funcionario_controlado', {
+    p_empresa_id: empresaId,
+    p_desligamento_id: idObrigatorio(desligamentoId, 'Processo de desligamento não identificado.'),
     p_correlation_id: texto(correlationId)
   })
 }

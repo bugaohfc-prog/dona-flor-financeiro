@@ -78,7 +78,7 @@ test('ações cadastrais e de férias continuam conectadas aos hooks reais', () 
   const ferias = read('src/pages/FeriasPage.jsx')
 
   assert.match(funcionarios, /useFuncionarios\(/)
-  assert.match(funcionarios, /useFuncionariosExamesPeriodicos\(/)
+  assert.match(funcionarios, /useFuncionariosExamesOcupacionais\(/)
   assert.match(funcionarios, /criarFuncionario/)
   assert.match(funcionarios, /arquivarFuncionario/)
   assert.match(funcionarios, /reativarFuncionario/)

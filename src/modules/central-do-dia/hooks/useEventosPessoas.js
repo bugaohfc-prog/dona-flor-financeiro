@@ -19,7 +19,7 @@ const MENSAGENS_FONTES = Object.freeze({
   funcionarios: 'Não foi possível carregar funcionários.',
   ciclosFerias: 'Não foi possível carregar ciclos de férias.',
   periodosFerias: 'Não foi possível carregar períodos de férias.',
-  exames: 'Não foi possível carregar exames periódicos.',
+  exames: 'Não foi possível carregar exames ocupacionais.',
   folha: 'Não foi possível carregar competências da folha.'
 })
 

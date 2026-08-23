@@ -27,7 +27,7 @@ function mensagemFonte(fonte, erro) {
     funcionarios: 'Funcionários',
     ciclosFerias: 'Ciclos de férias',
     periodosFerias: 'Períodos de férias',
-    exames: 'Exames periódicos',
+    exames: 'Exames ocupacionais',
     folha: 'Fechamento de Folha'
   }
   return `${rotulos[fonte] || fonte}: ${erro}`

@@ -1,5 +1,5 @@
 import { listarCompetenciasFolhaAgenda } from '../../../services/folhaService.js'
-import { listarExamesPeriodicosAgenda } from '../../../services/funcionariosExamesPeriodicosService.js'
+import { listarExamesOcupacionaisEmpresa } from '../../../services/funcionariosExamesOcupacionaisService.js'
 import {
   listarTodosCiclosFerias,
   listarTodosPeriodosFerias
@@ -12,7 +12,7 @@ const CONSULTAS_PADRAO = Object.freeze({
   funcionarios: ({ supabase, empresaId }) => listarFuncionarios({ supabase, empresaId }),
   ciclosFerias: ({ supabase, empresaId }) => listarTodosCiclosFerias({ supabase, empresaId }),
   periodosFerias: ({ supabase, empresaId }) => listarTodosPeriodosFerias({ supabase, empresaId }),
-  exames: ({ supabase, empresaId }) => listarExamesPeriodicosAgenda({ supabase, empresaId }),
+  exames: ({ supabase, empresaId }) => listarExamesOcupacionaisEmpresa({ supabase, empresaId }),
   folha: ({ supabase, empresaId }) => listarCompetenciasFolhaAgenda({ supabase, empresaId })
 })
 

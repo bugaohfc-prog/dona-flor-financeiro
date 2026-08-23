@@ -7,7 +7,6 @@ import {
   normalizarExamesAgenda,
   normalizarLimitesFeriasAgenda,
   normalizarMarcosFeriasAgenda,
-  obterUltimosExamesPorFuncionario,
   projetarEventosPessoas
 } from './centralDoDiaPeopleRules.js'
 import { montarBaseOperacional } from './centralDoDiaRules.js'
@@ -87,34 +86,31 @@ test('exclui ferias arquivadas, canceladas e fora da janela', () => {
   assert.deepEqual(normalizarMarcosFeriasAgenda(periodos, [funcionario], { dataBaseISO: hoje }), [])
 })
 
-test('seleciona o ultimo exame por funcionario em lote', () => {
-  const mapa = obterUltimosExamesPorFuncionario([
-    { id: 'antigo', funcionario_id: funcionario.id, data_exame: '2024-07-10', arquivado: false },
-    { id: 'novo', funcionario_id: funcionario.id, data_exame: '2025-07-10', arquivado: false },
-    { id: 'arquivado', funcionario_id: funcionario.id, data_exame: '2026-07-10', arquivado: true }
-  ])
-  assert.equal(mapa.get(funcionario.id).id, 'novo')
-})
-
-test('normaliza exame atrasado e exame futuro em ate trinta dias', () => {
-  const atrasado = { ...funcionario, id: 'atrasado', data_exame_admissional: '2025-07-01' }
-  const futuro = { ...funcionario, id: 'futuro', data_exame_admissional: '2025-08-01' }
-  const itens = normalizarExamesAgenda([], [atrasado, futuro], { dataBaseISO: hoje })
+test('projeta somente exames pendentes com data prevista registrada', () => {
+  const exames = [
+    { id: 'atrasado', funcionario_id: funcionario.id, tipo: 'PERIODICO', estado: 'PENDENTE', data_prevista: '2026-07-01' },
+    { id: 'futuro', funcionario_id: funcionario.id, tipo: 'ADMISSIONAL', estado: 'PENDENTE', data_prevista: '2026-08-01' },
+    { id: 'realizado', funcionario_id: funcionario.id, tipo: 'PERIODICO', estado: 'REALIZADO', data_realizada: '2026-07-10' },
+    { id: 'cancelado', funcionario_id: funcionario.id, tipo: 'PERIODICO', estado: 'CANCELADO', data_prevista: '2026-07-20' }
+  ]
+  const itens = normalizarExamesAgenda(exames, [funcionario], { dataBaseISO: hoje })
   assert.deepEqual(itens.map((item) => item.referenciaOrigem.id), ['atrasado', 'futuro'])
   assert.equal(itens[0].inconsistencia, true)
   assert.equal(itens[1].dias, 17)
 })
 
-test('exclui exame fora de trinta dias, sem base oficial e de outra filial', () => {
-  const distante = { ...funcionario, id: 'distante', data_exame_admissional: '2025-10-01' }
-  const semBase = { ...funcionario, id: 'sem-base', data_exame_admissional: null }
-  assert.deepEqual(normalizarExamesAgenda([], [distante, semBase], { dataBaseISO: hoje }), [])
-  assert.deepEqual(normalizarExamesAgenda([], [funcionario], { dataBaseISO: hoje, filialId: 'filial-2' }), [])
+test('exclui exame fora de trinta dias, sem data prevista e de outra filial', () => {
+  const exames = [
+    { id: 'distante', funcionario_id: funcionario.id, tipo: 'PERIODICO', estado: 'PENDENTE', data_prevista: '2026-10-01' },
+    { id: 'sem-data', funcionario_id: funcionario.id, tipo: 'PERIODICO', estado: 'PENDENTE' }
+  ]
+  assert.deepEqual(normalizarExamesAgenda(exames, [funcionario], { dataBaseISO: hoje }), [])
+  assert.deepEqual(normalizarExamesAgenda(exames, [funcionario], { dataBaseISO: hoje, filialId: 'filial-2' }), [])
 })
 
 test('item de exame nao contem resultado, laudo, diagnostico ou CID', () => {
   const [item] = normalizarExamesAgenda([
-    { funcionario_id: funcionario.id, data_exame: '2025-07-10', resultado: 'restrito', cid: 'restrito', laudo: 'restrito' }
+    { id: 'exame', funcionario_id: funcionario.id, tipo: 'PERIODICO', estado: 'PENDENTE', data_prevista: '2026-07-20', resultado: 'restrito', cid: 'restrito', laudo: 'restrito' }
   ], [funcionario], { dataBaseISO: hoje })
   for (const proibido of ['resultado', 'laudo', 'diagnostico', 'cid']) {
     assert.equal(Object.prototype.hasOwnProperty.call(item, proibido), false)
@@ -144,9 +140,9 @@ test('preserva competencia de escopo da empresa quando ha filial selecionada', (
 })
 
 test('descarta datas invalidas com seguranca', () => {
-  const funcionarioInvalido = { ...funcionario, data_nascimento: '2026-02-30', data_exame_admissional: 'invalida' }
+  const funcionarioInvalido = { ...funcionario, data_nascimento: '2026-02-30' }
   assert.deepEqual(normalizarAniversariosAgenda([funcionarioInvalido], { dataBaseISO: hoje }), [])
-  assert.deepEqual(normalizarExamesAgenda([], [funcionarioInvalido], { dataBaseISO: hoje }), [])
+  assert.deepEqual(normalizarExamesAgenda([{ id: 'x', funcionario_id: funcionario.id, tipo: 'PERIODICO', estado: 'PENDENTE', data_prevista: 'invalida' }], [funcionarioInvalido], { dataBaseISO: hoje }), [])
   assert.deepEqual(normalizarCompetenciasFolhaAgenda([{ id: 'x', competencia: '2026-13', status: 'aberta' }], { dataBaseISO: hoje }), [])
 })
 
@@ -154,7 +150,7 @@ test('itens detalhados passam pela deduplicacao oficial', () => {
   const itens = projetarEventosPessoas({ funcionarios: [funcionario], dataBaseISO: hoje })
   const duplicado = { ...itens[0], id: 'duplicado' }
   const base = montarBaseOperacional({ itensPessoasDetalhados: [...itens, duplicado], podeAcessarPessoas: true, dataBaseISO: hoje })
-  assert.equal(base.itensOperacionais.length, 2)
+  assert.equal(base.itensOperacionais.length, itens.length)
   assert.equal(base.itensOperacionais.filter((item) => item.tipo === 'aniversario').length, 1)
 })
 
@@ -303,7 +299,7 @@ test('desligado deixa de gerar eventos pessoais futuros sem ocultar obrigação 
     funcionarios: [desligado],
     ciclosFerias: [{ id: 'ciclo', funcionario_id: desligado.id, data_limite_gozo: '2026-07-20', dias_direito: 30, status: 'pendente' }],
     periodosFerias: [{ id: 'periodo', ciclo_ferias_id: 'ciclo', funcionario_id: desligado.id, data_inicio: '2026-07-20', status: 'agendada' }],
-    exames: [{ id: 'exame', funcionario_id: desligado.id, data_exame: '2025-07-10', arquivado: false }],
+    exames: [{ id: 'exame', funcionario_id: desligado.id, tipo: 'PERIODICO', estado: 'PENDENTE', data_prevista: '2026-07-20', arquivado: false }],
     competenciasFolha: [{ id: 'folha', competencia: '2026-07', status: 'aberta', arquivado: false }],
     dataBaseISO: hoje
   })
@@ -324,15 +320,24 @@ test('projecao aplica filial sem alterar eventos empresariais da Folha', () => {
   assert.ok(eventos.some((item) => item.referenciaOrigem.competenciaId === 'folha'))
 })
 
-test('ultimo exame ativo define previsao e preserva contexto do exame e funcionario', () => {
+test('pendencia registrada preserva contexto do exame e funcionario sem calculo anual', () => {
   const exames = [
-    { id: 'ativo', funcionario_id: funcionario.id, data_exame: '2025-07-10', arquivado: false },
-    { id: 'arquivado', funcionario_id: funcionario.id, data_exame: '2026-07-10', arquivado: true }
+    { id: 'ativo', funcionario_id: funcionario.id, tipo: 'PERIODICO', estado: 'PENDENTE', data_prevista: '2026-07-20', arquivado: false },
+    { id: 'arquivado', funcionario_id: funcionario.id, tipo: 'PERIODICO', estado: 'PENDENTE', data_prevista: '2026-07-18', arquivado: true }
   ]
   const [evento] = normalizarExamesAgenda(exames, [funcionario], { dataBaseISO: hoje })
-  assert.equal(evento.dataReferencia, '2026-07-10')
+  assert.equal(evento.dataReferencia, '2026-07-20')
   assert.equal(evento.referenciaOrigem.exameId, 'ativo')
   assert.equal(evento.referenciaOrigem.funcionarioId, funcionario.id)
+})
+
+test('desligado mantém somente demissional pendente explicitamente registrado', () => {
+  const desligado = { ...funcionario, status: 'desligado' }
+  const exames = [
+    { id: 'periodico', funcionario_id: desligado.id, tipo: 'PERIODICO', estado: 'PENDENTE', data_prevista: '2026-07-20' },
+    { id: 'demissional', funcionario_id: desligado.id, tipo: 'DEMISSIONAL', estado: 'PENDENTE', data_prevista: '2026-07-20' }
+  ]
+  assert.deepEqual(normalizarExamesAgenda(exames, [desligado], { dataBaseISO: hoje }).map((item) => item.referenciaOrigem.id), ['demissional'])
 })
 
 test('navegacao contextual preserva funcionario, ciclo, periodo e origem', () => {

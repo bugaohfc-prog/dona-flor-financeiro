@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useFuncionariosExamesPeriodicos } from '../hooks/useFuncionariosExamesPeriodicos'
+import { useFuncionariosExamesOcupacionais } from '../hooks/useFuncionariosExamesOcupacionais'
 import { useFuncionarios } from '../hooks/useFuncionarios'
 import { useFuncionariosDesligamentos } from '../hooks/useFuncionariosDesligamentos'
 import { FilterCard, FilterGrid, KpiCard, KpiGrid, PageHeader, PageState } from '../components/shared/PagePatterns.jsx'
@@ -20,7 +20,6 @@ const FORMULARIO_INICIAL = {
   cpf: '',
   data_nascimento: '',
   data_admissao: '',
-  data_exame_admissional: '',
   status: 'ativo',
   filial_id: '',
   observacoes: ''
@@ -30,6 +29,25 @@ const STATUS_LABELS = {
   ativo: 'Ativo',
   afastado: 'Afastado',
   desligado: 'Desligado'
+}
+
+const EXAME_TIPO_LABELS = {
+  ADMISSIONAL: 'Admissional',
+  PERIODICO: 'Periódico',
+  DEMISSIONAL: 'Demissional'
+}
+
+const EXAME_ESTADO_LABELS = {
+  PENDENTE: 'Pendente',
+  REALIZADO: 'Realizado',
+  CANCELADO: 'Cancelado'
+}
+
+const FORMULARIO_EXAME_INICIAL = {
+  tipo: 'PERIODICO',
+  estado: 'REALIZADO',
+  dataPrevista: '',
+  dataRealizada: ''
 }
 
 const MODAL_SECOES_INICIAIS = {
@@ -58,7 +76,6 @@ const FORMULARIO_READMISSAO_INICIAL = {
   novaDataAdmissao: '',
   filialId: '',
   cargo: '',
-  dataExameAdmissional: '',
   confirmouHistorico: false
 }
 
@@ -98,6 +115,22 @@ function formatarDataCurta(data) {
   } catch {
     return 'Não informada'
   }
+}
+
+function montarDadosExame(formularioExame) {
+  const estado = formularioExame.estado
+  return {
+    tipo: formularioExame.tipo,
+    estado,
+    dataPrevista: estado === 'PENDENTE' ? formularioExame.dataPrevista : null,
+    dataRealizada: estado === 'REALIZADO' ? formularioExame.dataRealizada : null
+  }
+}
+
+function formularioExameValido(formularioExame) {
+  if (formularioExame.estado === 'PENDENTE') return Boolean(formularioExame.dataPrevista)
+  if (formularioExame.estado === 'REALIZADO') return Boolean(formularioExame.dataRealizada)
+  return formularioExame.estado === 'CANCELADO'
 }
 
 function obterIniciais(nome) {
@@ -153,7 +186,6 @@ function montarFormulario(funcionario) {
     cpf: funcionario.cpf || '',
     data_nascimento: funcionario.data_nascimento || '',
     data_admissao: funcionario.data_admissao || '',
-    data_exame_admissional: funcionario.data_exame_admissional || '',
     status: funcionario.status || 'ativo',
     filial_id: funcionario.filial_id || '',
     observacoes: funcionario.observacoes || ''
@@ -169,7 +201,6 @@ function montarPayloadFormulario(formulario) {
     cpf: apenasDigitos(formulario.cpf),
     data_nascimento: formulario.data_nascimento,
     data_admissao: formulario.data_admissao,
-    data_exame_admissional: formulario.data_exame_admissional,
     status: formulario.status,
     filial_id: formulario.filial_id,
     observacoes: formulario.observacoes
@@ -192,9 +223,9 @@ export default function FuncionariosPage({
   const [funcionarioEditando, setFuncionarioEditando] = useState(null)
   const [formulario, setFormulario] = useState(FORMULARIO_INICIAL)
   const [mostrarExamesArquivados, setMostrarExamesArquivados] = useState(false)
-  const [dataExamePeriodico, setDataExamePeriodico] = useState('')
+  const [formularioNovoExame, setFormularioNovoExame] = useState(FORMULARIO_EXAME_INICIAL)
   const [exameEditandoId, setExameEditandoId] = useState('')
-  const [dataExameEditando, setDataExameEditando] = useState('')
+  const [formularioExameEditando, setFormularioExameEditando] = useState(FORMULARIO_EXAME_INICIAL)
   const [mostrarTodosFuncionarios, setMostrarTodosFuncionarios] = useState(false)
   const [modalSecoesAbertas, setModalSecoesAbertas] = useState(MODAL_SECOES_INICIAIS)
   const [impactoAdmissao, setImpactoAdmissao] = useState(null)
@@ -249,14 +280,12 @@ export default function FuncionariosPage({
     loading: loadingExames,
     salvando: salvandoExames,
     erro: erroExames,
-    criarExamePeriodico,
-    atualizarExamePeriodico,
-    arquivarExamePeriodico,
-    reativarExamePeriodico,
-    carregarExamesPeriodicos,
-    calcularProximoPeriodico,
+    registrar: registrarExameOcupacional,
+    atualizar: atualizarExameOcupacional,
+    arquivar: arquivarExameOcupacional,
+    carregar: carregarExamesOcupacionais,
     limparErro: limparErroExames
-  } = useFuncionariosExamesPeriodicos({
+  } = useFuncionariosExamesOcupacionais({
     empresaId,
     funcionarioId: funcionarioEditando?.id,
     incluirArquivados: mostrarExamesArquivados,
@@ -353,22 +382,6 @@ export default function FuncionariosPage({
       aniversariantes: pessoasAniversariantes.size
     }
   }, [funcionarios])
-
-  const examesAtivos = useMemo(() => {
-    return (exames || [])
-      .filter((exame) => !exame.arquivado)
-      .sort((a, b) => String(b.data_exame || '').localeCompare(String(a.data_exame || '')))
-  }, [exames])
-
-  const dataBaseProximoPeriodico = examesAtivos[0]?.data_exame || formulario.data_exame_admissional
-  const proximoPeriodicoPrevisto = dataBaseProximoPeriodico
-    ? calcularProximoPeriodico(dataBaseProximoPeriodico)
-    : null
-  const origemProximoPeriodico = examesAtivos[0]?.data_exame
-    ? 'último exame periódico registrado'
-    : formulario.data_exame_admissional
-      ? 'exame admissional'
-      : ''
 
   useEffect(() => {
     contextoAplicadoRef.current = ''
@@ -490,7 +503,7 @@ export default function FuncionariosPage({
       novaDataAdmissao: formularioReadmissao.novaDataAdmissao,
       filialId: formularioReadmissao.filialId,
       cargo: formularioReadmissao.cargo,
-      dataExameAdmissional: formularioReadmissao.dataExameAdmissional,
+      dataExameAdmissional: null,
       correlationId: requestKeyReadmissao
     })
 
@@ -531,9 +544,9 @@ export default function FuncionariosPage({
   }
 
   function limparFormularioExamePeriodico() {
-    setDataExamePeriodico('')
+    setFormularioNovoExame(FORMULARIO_EXAME_INICIAL)
     setExameEditandoId('')
-    setDataExameEditando('')
+    setFormularioExameEditando(FORMULARIO_EXAME_INICIAL)
   }
 
   async function salvarFormulario(event) {
@@ -769,72 +782,79 @@ export default function FuncionariosPage({
     setFormularioCorrecao(FORMULARIO_CORRECAO_INICIAL)
   }
 
-  async function adicionarExamePeriodico() {
+  async function adicionarExameOcupacional() {
     if (!empresaId || !funcionarioEditando?.id || !podeEditar || salvandoExames) return
 
-    if (!dataExamePeriodico) {
-      mostrarAviso?.('Informe a data do exame periódico.', 'erro')
+    if (!formularioExameValido(formularioNovoExame)) {
+      mostrarAviso?.(formularioNovoExame.estado === 'PENDENTE'
+        ? 'Informe a data prevista do exame.'
+        : 'Informe a data realizada do exame.', 'erro')
       return
     }
 
-    const resposta = await criarExamePeriodico(dataExamePeriodico, {
-      funcionarioId: funcionarioEditando.id
+    const resposta = await registrarExameOcupacional({
+      funcionarioId: funcionarioEditando.id,
+      ...montarDadosExame(formularioNovoExame)
     })
 
     if (resposta?.error) {
-      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível salvar o exame periódico.'), 'erro')
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível salvar o exame ocupacional.'), 'erro')
       return
     }
 
-    setDataExamePeriodico('')
-    mostrarAviso?.('Exame periódico registrado.', 'sucesso')
+    setFormularioNovoExame(FORMULARIO_EXAME_INICIAL)
+    mostrarAviso?.('Exame ocupacional registrado.', 'sucesso')
   }
 
   function iniciarEdicaoExame(exame) {
-    if (!exame?.id || !podeEditar) return
+    if (!exame?.id || !podeEditar || exame.origem === 'LEGADO' || exame.arquivado) return
     limparErroExames?.()
     setExameEditandoId(exame.id)
-    setDataExameEditando(exame.data_exame || '')
+    setFormularioExameEditando({
+      tipo: exame.tipo,
+      estado: exame.estado,
+      dataPrevista: exame.data_prevista || '',
+      dataRealizada: exame.data_realizada || ''
+    })
   }
 
   function cancelarEdicaoExame() {
     setExameEditandoId('')
-    setDataExameEditando('')
+    setFormularioExameEditando(FORMULARIO_EXAME_INICIAL)
   }
 
   async function salvarEdicaoExame(exame) {
     if (!exame?.id || !empresaId || !podeEditar || salvandoExames) return
 
-    if (!dataExameEditando) {
-      mostrarAviso?.('Informe a data do exame periódico.', 'erro')
+    if (!formularioExameValido(formularioExameEditando)) {
+      mostrarAviso?.(formularioExameEditando.estado === 'PENDENTE'
+        ? 'Informe a data prevista do exame.'
+        : 'Informe a data realizada do exame.', 'erro')
       return
     }
 
-    const resposta = await atualizarExamePeriodico(exame.id, dataExameEditando)
+    const resposta = await atualizarExameOcupacional(exame.id, montarDadosExame(formularioExameEditando))
 
     if (resposta?.error) {
-      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível atualizar o exame periódico.'), 'erro')
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível atualizar o exame ocupacional.'), 'erro')
       return
     }
 
     cancelarEdicaoExame()
-    mostrarAviso?.('Exame periódico atualizado.', 'sucesso')
+    mostrarAviso?.('Exame ocupacional atualizado.', 'sucesso')
   }
 
-  async function alternarArquivamentoExame(exame) {
-    if (!exame?.id || !empresaId || !podeEditar || salvandoExames) return
-
-    const resposta = exame.arquivado
-      ? await reativarExamePeriodico(exame.id)
-      : await arquivarExamePeriodico(exame.id)
+  async function arquivarExame(exame) {
+    if (!exame?.id || !empresaId || !podeEditar || salvandoExames || exame.origem === 'LEGADO' || exame.arquivado) return
+    const resposta = await arquivarExameOcupacional(exame.id)
 
     if (resposta?.error) {
-      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível atualizar o exame periódico.'), 'erro')
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível arquivar o exame ocupacional.'), 'erro')
       return
     }
 
     if (exameEditandoId === exame.id) cancelarEdicaoExame()
-    mostrarAviso?.(exame.arquivado ? 'Exame periódico reativado.' : 'Exame periódico arquivado.', 'sucesso')
+    mostrarAviso?.('Exame ocupacional arquivado.', 'sucesso')
   }
 
   return (
@@ -842,7 +862,7 @@ export default function FuncionariosPage({
       <PageHeader
         kicker="Gestão de Pessoas"
         title="Funcionários"
-        description="Cadastro operacional da equipe, vínculos e exames periódicos."
+        description="Cadastro operacional da equipe, vínculos e exames ocupacionais."
         meta={<>Empresa ativa: <strong>{empresaNome || 'Empresa não identificada'}</strong></>}
         className="funcionarios-page-hero"
         actionsClassName="funcionarios-hero-actions"
@@ -1202,10 +1222,9 @@ export default function FuncionariosPage({
                 Cargo ou função
                 <input className="funcionarios-input" value={formularioReadmissao.cargo} onChange={(event) => setFormularioReadmissao((atual) => ({ ...atual, cargo: event.target.value }))} onBlur={() => setFormularioReadmissao((atual) => ({ ...atual, cargo: normalizarCapitalizacao(atual.cargo) }))} />
               </label>
-              <label>
-                Exame admissional
-                <input className="funcionarios-input" type="date" value={formularioReadmissao.dataExameAdmissional} onChange={(event) => setFormularioReadmissao((atual) => ({ ...atual, dataExameAdmissional: event.target.value }))} />
-              </label>
+              <div className="funcionario-exames-empty">
+                O exame admissional deve ser registrado na seção de exames ocupacionais após a criação do novo vínculo.
+              </div>
             </div>
 
             <label className="funcionario-readmissao-confirmacao">
@@ -1439,7 +1458,7 @@ export default function FuncionariosPage({
               <button className="funcionario-modal-section-toggle" type="button" onClick={() => alternarSecaoModal('datas')}>
                 <span>
                   <strong>Datas</strong>
-                  <small>Aniversário, admissão e exame admissional</small>
+                  <small>Aniversário e admissão do vínculo</small>
                 </span>
                 <b>{modalSecoesAbertas.datas ? '−' : '+'}</b>
               </button>
@@ -1491,16 +1510,6 @@ export default function FuncionariosPage({
                       )}
                     </div>
                   )}
-                  <label>
-                    Data do exame admissional
-                    <input
-                      className="funcionarios-input"
-                      value={formulario.data_exame_admissional}
-                      onChange={(event) => atualizarCampo('data_exame_admissional', event.target.value)}
-                      type="date"
-                    />
-                    <small className="funcionarios-help">Controle de periodicidade; salve somente a data, sem laudos ou resultados.</small>
-                  </label>
                 </div>
               )}
             </section>
@@ -1535,8 +1544,8 @@ export default function FuncionariosPage({
             <section className="funcionario-modal-section">
               <button className="funcionario-modal-section-toggle" type="button" onClick={() => alternarSecaoModal('exames')}>
                 <span>
-                  <strong>Exames periódicos</strong>
-                  <small>Controle visual de datas, sem laudos ou resultados</small>
+                  <strong>Exames ocupacionais</strong>
+                  <small>Admissional, periódico e demissional, sem conteúdo clínico</small>
                 </span>
                 <b>{modalSecoesAbertas.exames ? '−' : '+'}</b>
               </button>
@@ -1544,7 +1553,7 @@ export default function FuncionariosPage({
               {modalSecoesAbertas.exames && (
                 <div className="funcionario-exames-section">
                   <div className="funcionario-exames-header">
-                    <p>Registre somente as datas dos exames periódicos realizados. Não registre laudos, resultados, documentos ou informações clínicas.</p>
+                    <p>Registre somente tipo, estado e datas operacionais. Não registre laudos, resultados, documentos ou informações clínicas.</p>
                     {funcionarioEditando?.id && (
                       <label className={`funcionarios-switch ${mostrarExamesArquivados ? 'ativo' : ''}`}>
                         <input
@@ -1564,54 +1573,78 @@ export default function FuncionariosPage({
 
                   {!funcionarioEditando?.id ? (
                     <div className="funcionario-exames-empty">
-                      Salve o funcionário antes de registrar exames periódicos.
+                      Salve o funcionário antes de registrar exames ocupacionais.
                     </div>
                   ) : (
                     <>
-                  <div className="funcionario-exames-add">
+                  <div className="funcionario-exames-add funcionario-exames-add-ocupacional">
                     <label>
-                      Data do exame periódico
-                      <input
+                      Tipo
+                      <select
                         className="funcionarios-input"
-                        value={dataExamePeriodico}
-                        onChange={(event) => setDataExamePeriodico(event.target.value)}
-                        type="date"
+                        value={formularioNovoExame.tipo}
+                        onChange={(event) => setFormularioNovoExame((atual) => ({ ...atual, tipo: event.target.value }))}
                         disabled={salvandoExames}
-                      />
+                      >
+                        <option value="ADMISSIONAL">Admissional</option>
+                        <option value="PERIODICO">Periódico</option>
+                      </select>
                     </label>
+                    <label>
+                      Estado
+                      <select
+                        className="funcionarios-input"
+                        value={formularioNovoExame.estado}
+                        onChange={(event) => setFormularioNovoExame((atual) => ({
+                          ...atual,
+                          estado: event.target.value,
+                          dataPrevista: '',
+                          dataRealizada: ''
+                        }))}
+                        disabled={salvandoExames}
+                      >
+                        <option value="REALIZADO">Realizado</option>
+                        <option value="PENDENTE">Pendente</option>
+                      </select>
+                    </label>
+                    {formularioNovoExame.estado === 'PENDENTE' ? (
+                      <label>
+                        Data prevista
+                        <input className="funcionarios-input" type="date" value={formularioNovoExame.dataPrevista} onChange={(event) => setFormularioNovoExame((atual) => ({ ...atual, dataPrevista: event.target.value }))} disabled={salvandoExames} />
+                      </label>
+                    ) : (
+                      <label>
+                        Data realizada
+                        <input className="funcionarios-input" type="date" value={formularioNovoExame.dataRealizada} onChange={(event) => setFormularioNovoExame((atual) => ({ ...atual, dataRealizada: event.target.value }))} disabled={salvandoExames} />
+                      </label>
+                    )}
                     <button
                       className="funcionarios-btn funcionarios-btn-primary"
                       type="button"
-                      disabled={salvandoExames || !dataExamePeriodico}
-                      onClick={adicionarExamePeriodico}
+                      disabled={salvandoExames || !formularioExameValido(formularioNovoExame)}
+                      onClick={adicionarExameOcupacional}
                     >
                       Adicionar exame
                     </button>
                   </div>
 
                   <div className="funcionario-exames-empty">
-                    <strong>Próximo periódico previsto: {proximoPeriodicoPrevisto ? formatarDataCurta(proximoPeriodicoPrevisto) : 'Não informado'}</strong>
-                    <br />
-                    <span>
-                      {origemProximoPeriodico
-                        ? `Cálculo visual baseado no ${origemProximoPeriodico}. Este valor não é salvo no banco.`
-                        : 'Informe o exame admissional ou registre um periódico para calcular a previsão.'}
-                    </span>
+                    A Agenda considera somente exames pendentes com data prevista registrada. Nenhuma periodicidade é calculada automaticamente.
                   </div>
 
                   {loadingExames ? (
-                    <p className="funcionarios-note">Carregando exames periódicos...</p>
+                    <p className="funcionarios-note">Carregando exames ocupacionais...</p>
                   ) : erroExames ? (
                     <div className="funcionario-exames-empty">
                       <strong>Não foi possível carregar os exames.</strong>
                       <p>{erroExames}</p>
-                      <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={() => carregarExamesPeriodicos()}>
+                      <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={() => carregarExamesOcupacionais()}>
                         Tentar novamente
                       </button>
                     </div>
                   ) : exames.length === 0 ? (
                     <div className="funcionario-exames-empty">
-                      Nenhum exame periódico registrado para este funcionário.
+                      Nenhum exame ocupacional registrado para este funcionário.
                     </div>
                   ) : (
                     <div className="funcionario-exames-list">
@@ -1620,17 +1653,21 @@ export default function FuncionariosPage({
                           <div className="funcionario-exame-main">
                             {exameEditandoId === exame.id ? (
                               <div className="funcionario-exame-edit">
-                                <input
-                                  className="funcionarios-input"
-                                  value={dataExameEditando}
-                                  onChange={(event) => setDataExameEditando(event.target.value)}
-                                  type="date"
-                                  disabled={salvandoExames}
-                                />
+                                <select className="funcionarios-input" value={formularioExameEditando.estado} onChange={(event) => setFormularioExameEditando((atual) => ({ ...atual, estado: event.target.value, dataPrevista: '', dataRealizada: '' }))} disabled={salvandoExames}>
+                                  <option value="REALIZADO">Realizado</option>
+                                  <option value="PENDENTE">Pendente</option>
+                                  <option value="CANCELADO">Cancelado</option>
+                                </select>
+                                {formularioExameEditando.estado === 'PENDENTE' && (
+                                  <input className="funcionarios-input" aria-label="Data prevista" value={formularioExameEditando.dataPrevista} onChange={(event) => setFormularioExameEditando((atual) => ({ ...atual, dataPrevista: event.target.value }))} type="date" disabled={salvandoExames} />
+                                )}
+                                {formularioExameEditando.estado === 'REALIZADO' && (
+                                  <input className="funcionarios-input" aria-label="Data realizada" value={formularioExameEditando.dataRealizada} onChange={(event) => setFormularioExameEditando((atual) => ({ ...atual, dataRealizada: event.target.value }))} type="date" disabled={salvandoExames} />
+                                )}
                                 <button
                                   className="funcionarios-btn funcionarios-btn-primary"
                                   type="button"
-                                  disabled={salvandoExames || !dataExameEditando}
+                                  disabled={salvandoExames || !formularioExameValido(formularioExameEditando)}
                                   onClick={() => salvarEdicaoExame(exame)}
                                 >
                                   Salvar
@@ -1641,16 +1678,23 @@ export default function FuncionariosPage({
                               </div>
                             ) : (
                               <>
-                                <strong>{formatarDataCurta(exame.data_exame)}</strong>
-                                <small>Data do exame periódico realizado.</small>
+                                <strong>{EXAME_TIPO_LABELS[exame.tipo] || 'Exame ocupacional'}</strong>
+                                <small>
+                                  {exame.estado === 'PENDENTE'
+                                    ? `Previsto para ${formatarDataCurta(exame.data_prevista)}`
+                                    : exame.estado === 'REALIZADO'
+                                      ? `Realizado em ${formatarDataCurta(exame.data_realizada)}`
+                                      : 'Registro cancelado'}
+                                </small>
+                                {exame.origem === 'LEGADO' && <small>Histórico preservado em modo somente leitura.</small>}
                               </>
                             )}
-                            <span className={`funcionario-exame-status ${exame.arquivado ? 'arquivado' : ''}`}>
-                              {exame.arquivado ? 'Arquivado' : 'Ativo'}
+                            <span className={`funcionario-exame-status ${String(exame.estado || '').toLowerCase()} ${exame.arquivado ? 'arquivado' : ''}`}>
+                              {exame.arquivado ? 'Arquivado' : EXAME_ESTADO_LABELS[exame.estado] || 'Não informado'}
                             </span>
                           </div>
                           <div className="funcionario-exame-actions">
-                            {exameEditandoId !== exame.id && (
+                            {exameEditandoId !== exame.id && exame.origem !== 'LEGADO' && !exame.arquivado && (
                               <button
                                 className="funcionarios-btn funcionarios-btn-secondary"
                                 type="button"
@@ -1660,14 +1704,11 @@ export default function FuncionariosPage({
                                 Editar
                               </button>
                             )}
-                            <button
-                              className={`funcionarios-btn ${exame.arquivado ? 'funcionarios-btn-primary' : 'funcionarios-btn-danger'}`}
-                              type="button"
-                              disabled={salvandoExames}
-                              onClick={() => alternarArquivamentoExame(exame)}
-                            >
-                              {exame.arquivado ? 'Reativar' : 'Arquivar'}
-                            </button>
+                            {exame.origem !== 'LEGADO' && !exame.arquivado && (
+                              <button className="funcionarios-btn funcionarios-btn-danger" type="button" disabled={salvandoExames} onClick={() => arquivarExame(exame)}>
+                                Arquivar
+                              </button>
+                            )}
                           </div>
                         </article>
                       ))}

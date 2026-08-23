@@ -3,7 +3,6 @@ import {
   diferencaDiasCalendario,
   normalizarDataISO
 } from './centralDoDiaRules.js'
-import { calcularProximoPeriodico } from '../../../services/funcionariosExamesPeriodicosRules.js'
 import {
   derivarStatusPeriodoFerias,
   resumirCicloFerias
@@ -83,33 +82,35 @@ export function normalizarAniversariosAgenda(funcionarios = [], { dataBaseISO, f
   }).filter(Boolean)
 }
 
-export function obterUltimosExamesPorFuncionario(exames = []) {
-  return (exames || []).reduce((mapa, exame) => {
-    const funcionarioId = texto(exame?.funcionario_id)
-    const dataExame = normalizarDataISO(exame?.data_exame)
-    if (!funcionarioId || !dataExame || exame.arquivado) return mapa
-    const atual = mapa.get(funcionarioId)
-    if (!atual || dataExame > atual.data_exame) mapa.set(funcionarioId, { ...exame, data_exame: dataExame })
-    return mapa
-  }, new Map())
-}
-
 export function normalizarExamesAgenda(exames = [], funcionarios = [], { dataBaseISO, filialId = '' } = {}) {
-  const ultimos = obterUltimosExamesPorFuncionario(exames)
-  return (funcionarios || []).filter((funcionario) => funcionarioAtivo(funcionario, filialId)).map((funcionario) => {
-    const ultimo = ultimos.get(texto(funcionario.id))
-    const dataBaseExame = ultimo?.data_exame || normalizarDataISO(funcionario.data_exame_admissional)
-    const dataReferencia = calcularProximoPeriodico(dataBaseExame)
+  const funcionariosPorId = new Map((funcionarios || []).map((funcionario) => [texto(funcionario?.id), funcionario]))
+  return (exames || []).map((exame) => {
+    const funcionario = funcionariosPorId.get(texto(exame?.funcionario_id))
+    const tipo = texto(exame?.tipo).toUpperCase()
+    const estado = texto(exame?.estado).toUpperCase()
+    const dataReferencia = normalizarDataISO(exame?.data_prevista)
+    const desligado = texto(funcionario?.status).toLowerCase() === 'desligado'
+
+    if (!exame?.id || !funcionario || exame.arquivado || estado !== 'PENDENTE' || !dataReferencia) return null
+    if (funcionario.arquivado || (filialId && texto(funcionario.filial_id) !== texto(filialId))) return null
+    if (desligado && tipo !== 'DEMISSIONAL') return null
+    if (!desligado && !funcionarioAtivo(funcionario, filialId)) return null
+
     const dias = diferencaDiasCalendario(dataReferencia, dataBaseISO)
     if (!dataReferencia || dias === null || dias > 30) return null
 
     const atrasado = dias < 0
+    const tipoHumano = tipo === 'ADMISSIONAL' ? 'admissional' : tipo === 'DEMISSIONAL' ? 'demissional' : 'periódico'
     return criarItemCentral({
-      id: `pessoas:exame:${funcionario.id}`,
+      id: `pessoas:exame:${exame.id}`,
       tipo: 'exame',
       modulo: 'Gestão de Pessoas',
       titulo: texto(funcionario.nome) || 'Colaborador',
-      descricao: descricaoPessoa(atrasado ? `Exame periódico atrasado há ${Math.abs(dias)} dia(s)` : dias === 0 ? 'Exame periódico previsto para hoje' : `Exame periódico em ${dias} dia(s)`, funcionario),
+      descricao: descricaoPessoa(atrasado
+        ? `Exame ${tipoHumano} atrasado há ${Math.abs(dias)} dia(s)`
+        : dias === 0
+          ? `Exame ${tipoHumano} previsto para hoje`
+          : `Exame ${tipoHumano} em ${dias} dia(s)`, funcionario),
       dataReferencia,
       dias,
       severidade: atrasado ? 'critical' : dias <= 7 ? 'warning' : 'info',
@@ -117,8 +118,9 @@ export function normalizarExamesAgenda(exames = [], funcionarios = [], { dataBas
       inconsistencia: atrasado,
       proximaAcao: 'Abrir o acompanhamento de pessoas',
       destino: 'funcionarios',
-      referenciaOrigem: referenciaPessoa('exame_periodico_previsto', funcionario.id, funcionario.id, {
-        exameId: ultimo?.id || null
+      referenciaOrigem: referenciaPessoa('exame_ocupacional_pendente', exame.id, funcionario.id, {
+        exameId: exame.id,
+        exameTipo: tipo
       }),
       origemOperacional: 'pessoas',
       ...dadosPessoa(funcionario)

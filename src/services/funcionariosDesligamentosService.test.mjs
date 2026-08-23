@@ -5,7 +5,9 @@ import {
   abrirDesligamentoFuncionario,
   atualizarDesligamentoFuncionario,
   cancelarDesligamentoFuncionario,
-  concluirDesligamentoFuncionario
+  concluirDesligamentoFuncionario,
+  retificarDesligamentoConcluido,
+  reverterDesligamentoConcluidoPorErro
 } from './funcionariosDesligamentosService.js'
 
 const EMPRESA_ID = '11111111-1111-4111-8111-111111111111'
@@ -94,4 +96,34 @@ test('conclusão usa exclusivamente a RPC transacional 2B', async () => {
       p_correlation_id: null
     }
   }])
+})
+
+test('retificação envia estado efetivo completo para a RPC append-only', async () => {
+  const { supabase, chamadas } = criarSupabase()
+  await retificarDesligamentoConcluido({
+    supabase, empresaId: EMPRESA_ID, desligamentoId: WORKFLOW_ID,
+    dados: { dataEfetiva: '2026-09-02', motivo: 'Motivo corrigido', observacoes: 'Nota corrigida', motivoCorrecao: 'Erro administrativo' }
+  })
+  assert.deepEqual(chamadas[0], {
+    nome: 'retificar_desligamento_concluido_controlado',
+    parametros: {
+      p_empresa_id: EMPRESA_ID, p_desligamento_id: WORKFLOW_ID,
+      p_data_efetiva: '2026-09-02', p_motivo: 'Motivo corrigido',
+      p_observacoes: 'Nota corrigida', p_motivo_correcao: 'Erro administrativo',
+      p_correlation_id: null
+    }
+  })
+})
+
+test('reversão por erro usa autoridade distinta e exige justificativa', async () => {
+  const { supabase, chamadas } = criarSupabase()
+  await reverterDesligamentoConcluidoPorErro({
+    supabase, empresaId: EMPRESA_ID, desligamentoId: WORKFLOW_ID,
+    motivoReversao: 'Conclusão realizada por engano'
+  })
+  assert.equal(chamadas[0].nome, 'reverter_desligamento_concluido_por_erro_controlado')
+  assert.equal(chamadas[0].parametros.p_motivo_reversao, 'Conclusão realizada por engano')
+  assert.throws(() => reverterDesligamentoConcluidoPorErro({
+    supabase, empresaId: EMPRESA_ID, desligamentoId: WORKFLOW_ID, motivoReversao: ''
+  }), /motivo/i)
 })

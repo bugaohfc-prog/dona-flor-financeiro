@@ -1,7 +1,8 @@
 import { selecionarPorEmpresa } from './supabaseQueryService.js'
 import { assertEmpresaId } from './tenantService.js'
 
-const TABELA = 'df_funcionarios_desligamentos'
+const TABELA = 'df_funcionarios_desligamentos_efetivos'
+const TABELA_CORRECOES = 'df_funcionarios_desligamentos_correcoes'
 const SELECT_WORKFLOW = [
   'id',
   'empresa_id',
@@ -18,7 +19,24 @@ const SELECT_WORKFLOW = [
   'motivo_cancelamento',
   'concluido_por',
   'concluido_em',
-  'correlation_id'
+  'correlation_id',
+  'status_anterior',
+  'data_efetiva_efetiva',
+  'motivo_efetivo',
+  'observacoes_efetivas',
+  'efeito_revertido',
+  'status_funcional_efetivo',
+  'ultima_correcao_id',
+  'ultima_correcao_tipo',
+  'ultima_correcao_motivo',
+  'ultima_correcao_em'
+].join(', ')
+
+const SELECT_CORRECAO = [
+  'id', 'empresa_id', 'desligamento_id', 'funcionario_id', 'tipo', 'motivo_correcao',
+  'data_efetiva_antes', 'data_efetiva_depois', 'motivo_antes', 'motivo_depois',
+  'observacoes_antes', 'observacoes_depois', 'status_antes', 'status_depois',
+  'ator_id', 'correlation_id', 'criado_em'
 ].join(', ')
 
 function texto(valor) {
@@ -54,6 +72,12 @@ export function listarDesligamentosFuncionario({ supabase, empresaId, funcionari
   }
 
   return query
+}
+
+export function listarCorrecoesDesligamentos({ supabase, empresaId }) {
+  assertEmpresaId(empresaId)
+  return selecionarPorEmpresa(supabase, TABELA_CORRECOES, empresaId, SELECT_CORRECAO)
+    .order('criado_em', { ascending: true })
 }
 
 export function abrirDesligamentoFuncionario({ supabase, empresaId, funcionarioId, dados = {} }) {
@@ -95,6 +119,29 @@ export function concluirDesligamentoFuncionario({ supabase, empresaId, desligame
   return supabase.rpc('concluir_desligamento_funcionario_controlado', {
     p_empresa_id: empresaId,
     p_desligamento_id: idObrigatorio(desligamentoId, 'Processo de desligamento não identificado.'),
+    p_correlation_id: texto(correlationId)
+  })
+}
+
+export function retificarDesligamentoConcluido({ supabase, empresaId, desligamentoId, dados = {} }) {
+  assertEmpresaId(empresaId)
+  return supabase.rpc('retificar_desligamento_concluido_controlado', {
+    p_empresa_id: empresaId,
+    p_desligamento_id: idObrigatorio(desligamentoId, 'Processo de desligamento não identificado.'),
+    p_data_efetiva: dataObrigatoria(dados.dataEfetiva),
+    p_motivo: motivoObrigatorio(dados.motivo),
+    p_observacoes: texto(dados.observacoes),
+    p_motivo_correcao: motivoObrigatorio(dados.motivoCorrecao, 'Informe o motivo da correção.'),
+    p_correlation_id: texto(dados.correlationId)
+  })
+}
+
+export function reverterDesligamentoConcluidoPorErro({ supabase, empresaId, desligamentoId, motivoReversao, correlationId = null }) {
+  assertEmpresaId(empresaId)
+  return supabase.rpc('reverter_desligamento_concluido_por_erro_controlado', {
+    p_empresa_id: empresaId,
+    p_desligamento_id: idObrigatorio(desligamentoId, 'Processo de desligamento não identificado.'),
+    p_motivo_reversao: motivoObrigatorio(motivoReversao, 'Informe o motivo da reversão por erro.'),
     p_correlation_id: texto(correlationId)
   })
 }

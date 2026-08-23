@@ -47,6 +47,13 @@ const FORMULARIO_DESLIGAMENTO_INICIAL = {
   observacoes: '',
   motivoCancelamento: ''
 }
+const FORMULARIO_CORRECAO_INICIAL = {
+  tipo: '',
+  dataEfetiva: '',
+  motivo: '',
+  observacoes: '',
+  motivoCorrecao: ''
+}
 
 const CONECTIVOS_NOME_CARGO = new Set(['de', 'da', 'do', 'das', 'dos', 'e'])
 
@@ -169,6 +176,7 @@ export default function FuncionariosPage({
   const [funcionarioDesligamento, setFuncionarioDesligamento] = useState(null)
   const [formularioDesligamento, setFormularioDesligamento] = useState(FORMULARIO_DESLIGAMENTO_INICIAL)
   const [confirmacaoConclusaoAberta, setConfirmacaoConclusaoAberta] = useState(false)
+  const [formularioCorrecao, setFormularioCorrecao] = useState(FORMULARIO_CORRECAO_INICIAL)
   const contextoAplicadoRef = useRef('')
 
   const {
@@ -191,6 +199,7 @@ export default function FuncionariosPage({
 
   const {
     desligamentos,
+    correcoes,
     loading: loadingDesligamentos,
     salvando: salvandoDesligamento,
     erro: erroDesligamentos,
@@ -198,7 +207,9 @@ export default function FuncionariosPage({
     abrir: abrirDesligamento,
     atualizar: atualizarDesligamento,
     cancelar: cancelarDesligamento,
-    concluir: concluirDesligamento
+    concluir: concluirDesligamento,
+    retificar: retificarDesligamento,
+    reverterPorErro: reverterDesligamentoPorErro
   } = useFuncionariosDesligamentos({ empresaId })
 
   const {
@@ -239,6 +250,16 @@ export default function FuncionariosPage({
     : []
   const desligamentoAbertoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'ABERTO') || null
   const desligamentoConcluidoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'CONCLUIDO') || null
+  const desligamentoConcluidoEfetivoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'CONCLUIDO' && !item.efeito_revertido) || null
+  const correcoesPorDesligamento = useMemo(() => {
+    const mapa = new Map()
+    for (const correcao of correcoes || []) {
+      const lista = mapa.get(correcao.desligamento_id) || []
+      lista.push(correcao)
+      mapa.set(correcao.desligamento_id, lista)
+    }
+    return mapa
+  }, [correcoes])
 
   const funcionariosFiltrados = useMemo(() => {
     const termo = normalizarTextoBusca(busca)
@@ -529,6 +550,7 @@ export default function FuncionariosPage({
   function fecharModalDesligamento() {
     if (salvandoDesligamento) return
     setConfirmacaoConclusaoAberta(false)
+    setFormularioCorrecao(FORMULARIO_CORRECAO_INICIAL)
     setModalDesligamentoAberto(false)
     setFuncionarioDesligamento(null)
     setFormularioDesligamento(FORMULARIO_DESLIGAMENTO_INICIAL)
@@ -589,6 +611,42 @@ export default function FuncionariosPage({
     setFuncionarioDesligamento((atual) => atual ? { ...atual, status: 'desligado', arquivado: false } : atual)
     setConfirmacaoConclusaoAberta(false)
     mostrarAviso?.('Desligamento concluído. O cadastro permanece disponível e não foi arquivado.', 'sucesso')
+  }
+
+  function abrirRetificacao() {
+    if (!desligamentoConcluidoEfetivoSelecionado) return
+    setFormularioCorrecao({
+      tipo: 'RETIFICACAO',
+      dataEfetiva: desligamentoConcluidoEfetivoSelecionado.data_efetiva_efetiva || desligamentoConcluidoEfetivoSelecionado.data_efetiva || '',
+      motivo: desligamentoConcluidoEfetivoSelecionado.motivo_efetivo || desligamentoConcluidoEfetivoSelecionado.motivo || '',
+      observacoes: desligamentoConcluidoEfetivoSelecionado.observacoes_efetivas || '',
+      motivoCorrecao: ''
+    })
+  }
+
+  function abrirReversaoPorErro() {
+    if (!desligamentoConcluidoEfetivoSelecionado) return
+    setFormularioCorrecao({ ...FORMULARIO_CORRECAO_INICIAL, tipo: 'REVERSAO_ERRO' })
+  }
+
+  async function salvarCorrecaoDesligamento(event) {
+    event.preventDefault()
+    if (!desligamentoConcluidoEfetivoSelecionado?.id || salvandoDesligamento) return
+    const resposta = formularioCorrecao.tipo === 'RETIFICACAO'
+      ? await retificarDesligamento(desligamentoConcluidoEfetivoSelecionado.id, formularioCorrecao)
+      : await reverterDesligamentoPorErro(desligamentoConcluidoEfetivoSelecionado.id, formularioCorrecao.motivoCorrecao)
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível registrar a correção.'), 'erro')
+      return
+    }
+    if (formularioCorrecao.tipo === 'REVERSAO_ERRO') {
+      await carregarFuncionarios()
+      setFuncionarioDesligamento((atual) => atual ? { ...atual, status: resposta.data?.status_funcional || 'ativo' } : atual)
+      mostrarAviso?.('Conclusão revertida por erro. O workflow original foi preservado.', 'sucesso')
+    } else {
+      mostrarAviso?.('Retificação registrada sem reativar o vínculo.', 'sucesso')
+    }
+    setFormularioCorrecao(FORMULARIO_CORRECAO_INICIAL)
   }
 
   async function adicionarExamePeriodico() {
@@ -835,10 +893,15 @@ export default function FuncionariosPage({
             </div>
 
             <div className={`funcionario-desligamento-alerta ${desligamentoConcluidoSelecionado ? 'is-concluido' : ''}`} role="status">
-              {desligamentoConcluidoSelecionado ? (
+              {desligamentoConcluidoEfetivoSelecionado ? (
                 <>
                   <strong>Desligamento concluído — status funcional desligado.</strong>
                   <span>O cadastro não foi arquivado. Férias, Folha, Exames e o histórico permanecem preservados.</span>
+                </>
+              ) : desligamentoConcluidoSelecionado?.efeito_revertido ? (
+                <>
+                  <strong>Conclusão revertida por erro — evento original preservado.</strong>
+                  <span>Esta reversão não representa readmissão. Um desligamento futuro deve usar um novo processo.</span>
                 </>
               ) : desligamentoAbertoSelecionado ? (
                 <>
@@ -861,7 +924,7 @@ export default function FuncionariosPage({
               </div>
             )}
 
-            {funcionarioDesligamento.status !== 'desligado' && !desligamentoConcluidoSelecionado && <section className="funcionario-modal-section">
+            {funcionarioDesligamento.status !== 'desligado' && !desligamentoConcluidoEfetivoSelecionado && <section className="funcionario-modal-section">
               <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
                 <span>
                   <strong>{desligamentoAbertoSelecionado ? 'Editar processo aberto' : 'Iniciar processo'}</strong>
@@ -902,6 +965,20 @@ export default function FuncionariosPage({
               </section>
             )}
 
+            {desligamentoConcluidoEfetivoSelecionado && (
+              <section className="funcionario-modal-section funcionario-desligamento-correcao">
+                <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
+                  <span><strong>Correção administrativa</strong><small>O evento CONCLUIDO original nunca é sobrescrito.</small></span>
+                  <b>!</b>
+                </div>
+                <div className="funcionario-correcao-actions">
+                  <button className="funcionarios-btn funcionarios-btn-secondary" type="button" disabled={salvandoDesligamento} onClick={abrirRetificacao}>Retificar</button>
+                  <button className="funcionarios-btn funcionarios-btn-danger" type="button" disabled={salvandoDesligamento || !desligamentoConcluidoEfetivoSelecionado.status_anterior} onClick={abrirReversaoPorErro}>Reverter conclusão por erro</button>
+                  {!desligamentoConcluidoEfetivoSelecionado.status_anterior && <small>A reversão está bloqueada porque o estado funcional anterior não pôde ser comprovado.</small>}
+                </div>
+              </section>
+            )}
+
             {desligamentoAbertoSelecionado && (
               <section className="funcionario-modal-section">
                 <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
@@ -935,6 +1012,15 @@ export default function FuncionariosPage({
                     <span>Motivo: {item.motivo}</span>
                     {item.estado === 'CANCELADO' && <span>Cancelamento: {item.motivo_cancelamento}</span>}
                     {item.estado === 'CONCLUIDO' && <span>Concluído em: {formatarDataCurta(item.concluido_em)}</span>}
+                    {item.estado === 'CONCLUIDO' && <span>Estado efetivo: {item.efeito_revertido ? `revertido para ${STATUS_LABELS[item.status_funcional_efetivo] || item.status_funcional_efetivo}` : `desligado em ${formatarDataCurta(item.data_efetiva_efetiva)}`}</span>}
+                    {(correcoesPorDesligamento.get(item.id) || []).map((correcao) => (
+                      <div key={correcao.id} className="funcionario-desligamento-correcao-item">
+                        <strong>{correcao.tipo === 'RETIFICACAO' ? 'Retificação' : 'Reversão por erro'}</strong>
+                        <small>{formatarDataCurta(correcao.criado_em)}</small>
+                        <span>{correcao.motivo_correcao}</span>
+                        {correcao.tipo === 'RETIFICACAO' && <span>Data efetiva: {formatarDataCurta(correcao.data_efetiva_antes)} → {formatarDataCurta(correcao.data_efetiva_depois)}</span>}
+                      </div>
+                    ))}
                   </article>
                 ))}
               </div>
@@ -942,7 +1028,7 @@ export default function FuncionariosPage({
 
             <div className="funcionario-modal-actions">
               <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharModalDesligamento} disabled={salvandoDesligamento}>Fechar</button>
-              {funcionarioDesligamento.status !== 'desligado' && !desligamentoConcluidoSelecionado && (
+              {funcionarioDesligamento.status !== 'desligado' && !desligamentoConcluidoEfetivoSelecionado && (
                 <button className="funcionarios-btn funcionarios-btn-primary" type="submit" disabled={salvandoDesligamento || !formularioDesligamento.motivo || !formularioDesligamento.dataEfetiva}>
                   {salvandoDesligamento ? 'Salvando...' : desligamentoAbertoSelecionado ? 'Salvar processo' : 'Iniciar processo'}
                 </button>
@@ -975,6 +1061,42 @@ export default function FuncionariosPage({
               <button className="funcionarios-btn funcionarios-btn-danger" type="button" disabled={salvandoDesligamento} onClick={concluirWorkflowDesligamento}>{salvandoDesligamento ? 'Concluindo...' : 'Confirmar conclusão'}</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {formularioCorrecao.tipo && desligamentoConcluidoEfetivoSelecionado && funcionarioDesligamento && (
+        <div className="funcionario-modal-backdrop funcionario-confirmacao-backdrop" role="presentation" onClick={() => !salvandoDesligamento && setFormularioCorrecao(FORMULARIO_CORRECAO_INICIAL)}>
+          <form className="funcionario-modal funcionario-confirmacao-modal" role="dialog" aria-modal="true" aria-labelledby="correcao-desligamento-title" onSubmit={salvarCorrecaoDesligamento} onClick={(event) => event.stopPropagation()}>
+            <div className="funcionario-modal-header">
+              <div>
+                <span className="funcionarios-kicker">Correção append-only</span>
+                <h2 id="correcao-desligamento-title">{formularioCorrecao.tipo === 'RETIFICACAO' ? 'Retificar desligamento' : 'Reverter conclusão por erro'}</h2>
+                <p>{funcionarioDesligamento.nome || 'Colaboradora selecionada'}</p>
+              </div>
+            </div>
+            {formularioCorrecao.tipo === 'RETIFICACAO' ? (
+              <div className="funcionario-form-grid funcionario-correcao-form">
+                <label>Data efetiva<input className="funcionarios-input" type="date" value={formularioCorrecao.dataEfetiva} onChange={(event) => setFormularioCorrecao((atual) => ({ ...atual, dataEfetiva: event.target.value }))} required /></label>
+                <label className="span-2">Motivo do desligamento<textarea className="funcionarios-input" value={formularioCorrecao.motivo} onChange={(event) => setFormularioCorrecao((atual) => ({ ...atual, motivo: event.target.value }))} required /></label>
+                <label className="span-2">Observações<textarea className="funcionarios-input" value={formularioCorrecao.observacoes} onChange={(event) => setFormularioCorrecao((atual) => ({ ...atual, observacoes: event.target.value }))} /></label>
+                <label className="span-2">Motivo da correção<textarea className="funcionarios-input" value={formularioCorrecao.motivoCorrecao} onChange={(event) => setFormularioCorrecao((atual) => ({ ...atual, motivoCorrecao: event.target.value }))} required /></label>
+              </div>
+            ) : (
+              <>
+                <div className="funcionario-desligamento-alerta" role="note">
+                  <strong>Esta ação informa que o desligamento foi concluído por engano.</strong>
+                  <span>Ela restaura o estado anterior comprovado ({STATUS_LABELS[desligamentoConcluidoEfetivoSelecionado.status_anterior] || desligamentoConcluidoEfetivoSelecionado.status_anterior}) e não representa readmissão.</span>
+                </div>
+                <div className="funcionario-form-grid funcionario-correcao-form">
+                  <label className="span-2">Motivo obrigatório da reversão<textarea className="funcionarios-input" value={formularioCorrecao.motivoCorrecao} onChange={(event) => setFormularioCorrecao((atual) => ({ ...atual, motivoCorrecao: event.target.value }))} required /></label>
+                </div>
+              </>
+            )}
+            <div className="funcionario-modal-actions">
+              <button className="funcionarios-btn funcionarios-btn-secondary" type="button" disabled={salvandoDesligamento} onClick={() => setFormularioCorrecao(FORMULARIO_CORRECAO_INICIAL)}>Voltar</button>
+              <button className={`funcionarios-btn ${formularioCorrecao.tipo === 'REVERSAO_ERRO' ? 'funcionarios-btn-danger' : 'funcionarios-btn-primary'}`} type="submit" disabled={salvandoDesligamento || formularioCorrecao.motivoCorrecao.trim().length < 3}>{salvandoDesligamento ? 'Registrando...' : formularioCorrecao.tipo === 'RETIFICACAO' ? 'Registrar retificação' : 'Confirmar reversão por erro'}</button>
+            </div>
+          </form>
         </div>
       )}
 

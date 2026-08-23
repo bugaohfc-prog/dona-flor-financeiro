@@ -5,7 +5,10 @@ import {
   atualizarDesligamentoFuncionario as atualizarService,
   cancelarDesligamentoFuncionario as cancelarService,
   concluirDesligamentoFuncionario as concluirService,
-  listarDesligamentosFuncionario
+  listarDesligamentosFuncionario,
+  listarCorrecoesDesligamentos,
+  retificarDesligamentoConcluido as retificarService,
+  reverterDesligamentoConcluidoPorErro as reverterService
 } from '../services/funcionariosDesligamentosService'
 import { mensagemSeguraErro } from '../utils/session'
 
@@ -16,6 +19,7 @@ function normalizarId(valor) {
 export function useFuncionariosDesligamentos({ empresaId, autoCarregar = true, supabase = supabasePadrao } = {}) {
   const empresaAtual = useMemo(() => normalizarId(empresaId), [empresaId])
   const [desligamentos, setDesligamentos] = useState([])
+  const [correcoes, setCorrecoes] = useState([])
   const [loading, setLoading] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState(null)
@@ -25,6 +29,7 @@ export function useFuncionariosDesligamentos({ empresaId, autoCarregar = true, s
     const carga = ++cargaRef.current
     if (!empresaAtual) {
       setDesligamentos([])
+      setCorrecoes([])
       setErro(null)
       return { data: [], error: null }
     }
@@ -32,14 +37,21 @@ export function useFuncionariosDesligamentos({ empresaId, autoCarregar = true, s
     setLoading(true)
     setErro(null)
     try {
-      const { data, error } = await listarDesligamentosFuncionario({ supabase, empresaId: empresaAtual })
+      const [respostaDesligamentos, respostaCorrecoes] = await Promise.all([
+        listarDesligamentosFuncionario({ supabase, empresaId: empresaAtual }),
+        listarCorrecoesDesligamentos({ supabase, empresaId: empresaAtual })
+      ])
+      const { data, error } = respostaDesligamentos
+      const erroCarga = error || respostaCorrecoes.error
       if (carga !== cargaRef.current) return { data: null, error: null, ignorado: true }
-      if (error) {
+      if (erroCarga) {
         setDesligamentos([])
-        setErro(mensagemSeguraErro(error))
-        return { data: null, error }
+        setCorrecoes([])
+        setErro(mensagemSeguraErro(erroCarga))
+        return { data: null, error: erroCarga }
       }
       setDesligamentos(data || [])
+      setCorrecoes(respostaCorrecoes.data || [])
       return { data: data || [], error: null }
     } catch (error) {
       if (carga === cargaRef.current) {
@@ -55,6 +67,7 @@ export function useFuncionariosDesligamentos({ empresaId, autoCarregar = true, s
   useEffect(() => {
     cargaRef.current += 1
     setDesligamentos([])
+    setCorrecoes([])
     setErro(null)
     if (autoCarregar && empresaAtual) carregar()
   }, [autoCarregar, carregar, empresaAtual])
@@ -95,8 +108,17 @@ export function useFuncionariosDesligamentos({ empresaId, autoCarregar = true, s
     supabase, empresaId: empresaAtual, desligamentoId
   })), [empresaAtual, executar, supabase])
 
+  const retificar = useCallback((desligamentoId, dados) => executar(() => retificarService({
+    supabase, empresaId: empresaAtual, desligamentoId, dados
+  })), [empresaAtual, executar, supabase])
+
+  const reverterPorErro = useCallback((desligamentoId, motivoReversao) => executar(() => reverterService({
+    supabase, empresaId: empresaAtual, desligamentoId, motivoReversao
+  })), [empresaAtual, executar, supabase])
+
   return {
     desligamentos,
+    correcoes,
     loading,
     salvando,
     erro,
@@ -104,6 +126,8 @@ export function useFuncionariosDesligamentos({ empresaId, autoCarregar = true, s
     abrir,
     atualizar,
     cancelar,
-    concluir
+    concluir,
+    retificar,
+    reverterPorErro
   }
 }

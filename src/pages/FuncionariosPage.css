@@ -209,6 +209,11 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
 .funcionario-desligamento-item > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .funcionario-desligamento-item small,
 .funcionario-desligamento-item span { color: var(--df-muted); font-size: .78rem; line-height: 1.4; }
+.funcionario-correcao-actions { display: flex; min-width: 0; flex-wrap: wrap; gap: 10px; padding: 0 12px 12px; }
+.funcionario-correcao-actions small { width: 100%; color: var(--df-muted); }
+.funcionario-desligamento-item .funcionario-desligamento-correcao-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; margin-top: 5px; padding: 8px; border-left: 3px solid #f59e0b; border-radius: 8px; background: #fffbeb; }
+.funcionario-desligamento-correcao-item span { grid-column: 1 / -1; }
+.funcionario-correcao-form { padding-top: 4px; }
 .funcionario-exames-section { display: grid; min-width: 0; gap: 10px; padding: 0 12px 12px; }
 .funcionario-exames-header { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .funcionario-exames-header p { margin: 0; color: var(--df-muted); }
@@ -248,5 +253,6 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
   .funcionario-modal-header { top: -12px; display: grid; padding-top: 2px; }
   .funcionario-exames-header { display: grid; }
   .funcionario-modal-actions { bottom: -12px; }
+  .funcionario-correcao-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
   .funcionario-confirmacao-resumo > div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
 }

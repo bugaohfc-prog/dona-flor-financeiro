@@ -4,7 +4,8 @@ import assert from 'node:assert/strict'
 import {
   alterarAdmissaoFuncionarioControlada,
   atualizarFuncionario,
-  criarFuncionario
+  criarFuncionario,
+  readmitirPessoaControlada
 } from './funcionariosService.js'
 
 const EMPRESA_ID = '11111111-1111-4111-8111-111111111111'
@@ -154,4 +155,62 @@ test('edição separa a RPC controlada de pessoa e vínculo', async () => {
       p_correlation_id: null
     }
   }])
+})
+
+test('readmissão envia uma única operação idempotente para a RPC controlada', async () => {
+  const chamadas = []
+  const supabase = {
+    async rpc(nome, parametros) {
+      chamadas.push({ nome, parametros })
+      return { data: { novo_funcionario_id: 'novo-vinculo', ciclo_criado_id: 'novo-ciclo' }, error: null }
+    }
+  }
+
+  const resultado = await readmitirPessoaControlada({
+    supabase,
+    empresaId: EMPRESA_ID,
+    vinculoAnteriorId: FUNCIONARIO_ID,
+    requestKey: 'readmissao-2c4-123456789',
+    novaDataAdmissao: '2026-09-01',
+    filialId: '33333333-3333-4333-8333-333333333333',
+    cargo: 'Atendimento',
+    dataExameAdmissional: '2026-08-31',
+    correlationId: 'corr-readmissao-2c4'
+  })
+
+  assert.deepEqual(chamadas, [{
+    nome: 'readmitir_pessoa_controlado',
+    parametros: {
+      p_empresa_id: EMPRESA_ID,
+      p_vinculo_anterior_id: FUNCIONARIO_ID,
+      p_request_key: 'readmissao-2c4-123456789',
+      p_nova_data_admissao: '2026-09-01',
+      p_filial_id: '33333333-3333-4333-8333-333333333333',
+      p_cargo: 'Atendimento',
+      p_data_exame_admissional: '2026-08-31',
+      p_correlation_id: 'corr-readmissao-2c4'
+    }
+  }])
+  assert.equal(resultado.cicloCriadoId, 'novo-ciclo')
+})
+
+test('readmissão rejeita chave curta e admissão ausente antes de consultar o banco', async () => {
+  let consultouBanco = false
+  const supabase = { rpc() { consultouBanco = true } }
+
+  await assert.rejects(readmitirPessoaControlada({
+    supabase,
+    empresaId: EMPRESA_ID,
+    vinculoAnteriorId: FUNCIONARIO_ID,
+    requestKey: 'curta',
+    novaDataAdmissao: '2026-09-01'
+  }), /Chave de seguranca/)
+  await assert.rejects(readmitirPessoaControlada({
+    supabase,
+    empresaId: EMPRESA_ID,
+    vinculoAnteriorId: FUNCIONARIO_ID,
+    requestKey: 'readmissao-2c4-123456789',
+    novaDataAdmissao: ''
+  }), /nova data de admissao/)
+  assert.equal(consultouBanco, false)
 })

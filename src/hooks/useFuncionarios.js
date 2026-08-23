@@ -7,6 +7,7 @@ import {
   criarFuncionario as criarFuncionarioService,
   listarFuncionarios,
   obterFuncionarioPorId as obterFuncionarioPorIdService,
+  readmitirPessoaControlada as readmitirPessoaControladaService,
   reativarFuncionario as reativarFuncionarioService
 } from '../services/funcionariosService'
 import { mensagemSeguraErro } from '../utils/session'
@@ -204,6 +205,20 @@ export function useFuncionarios(opcoes = {}) {
     }), { recarregar: !dados.somentePreflight })
   }, [executarComEmpresaAtiva, supabase])
 
+  const readmitirPessoa = useCallback(async (funcionarioId, dados = {}) => {
+    return executarComEmpresaAtiva((empresa) => readmitirPessoaControladaService({
+      supabase,
+      empresaId: empresa,
+      vinculoAnteriorId: funcionarioId,
+      requestKey: dados.requestKey,
+      novaDataAdmissao: dados.novaDataAdmissao,
+      filialId: dados.filialId,
+      cargo: dados.cargo,
+      dataExameAdmissional: dados.dataExameAdmissional,
+      correlationId: dados.correlationId
+    }))
+  }, [executarComEmpresaAtiva, supabase])
+
   const arquivarFuncionario = useCallback(async (funcionarioId) => {
     return executarComEmpresaAtiva((empresa) => arquivarFuncionarioService({
       supabase,
@@ -232,6 +247,7 @@ export function useFuncionarios(opcoes = {}) {
     criarFuncionario,
     atualizarFuncionario,
     alterarAdmissaoFuncionario,
+    readmitirPessoa,
     arquivarFuncionario,
     reativarFuncionario,
     limparErro: () => definirErro(null)

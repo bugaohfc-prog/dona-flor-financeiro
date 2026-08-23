@@ -6,6 +6,7 @@ const FUNCIONARIO_LIST_SELECT = [
   'id',
   'empresa_id',
   'pessoa_id',
+  'readmissao_origem_funcionario_id',
   'filial_id',
   'nome',
   'cargo',
@@ -21,6 +22,7 @@ const FUNCIONARIO_DETAIL_SELECT = [
   'id',
   'empresa_id',
   'pessoa_id',
+  'readmissao_origem_funcionario_id',
   'filial_id',
   'nome',
   'cpf',
@@ -234,6 +236,46 @@ export async function alterarAdmissaoFuncionarioControlada({
     p_motivo: normalizarTexto(motivo),
     p_correlation_id: normalizarTexto(correlationId)
   })
+}
+
+export async function readmitirPessoaControlada({
+  supabase,
+  empresaId,
+  vinculoAnteriorId,
+  requestKey,
+  novaDataAdmissao,
+  filialId = null,
+  cargo = null,
+  dataExameAdmissional = null,
+  correlationId = null
+}) {
+  assertEmpresaId(empresaId)
+  const vinculoId = validarFuncionarioId(vinculoAnteriorId)
+  const chave = String(requestKey || '').trim()
+  const dataAdmissao = normalizarData(novaDataAdmissao)
+
+  if (chave.length < 16 || chave.length > 200) {
+    throw new Error('Chave de seguranca da readmissao invalida.')
+  }
+  if (!dataAdmissao) {
+    throw new Error('Informe a nova data de admissao.')
+  }
+
+  const resultado = await supabase.rpc('readmitir_pessoa_controlado', {
+    p_empresa_id: empresaId,
+    p_vinculo_anterior_id: vinculoId,
+    p_request_key: chave,
+    p_nova_data_admissao: dataAdmissao,
+    p_filial_id: normalizarTexto(filialId),
+    p_cargo: normalizarTexto(cargo),
+    p_data_exame_admissional: normalizarData(dataExameAdmissional),
+    p_correlation_id: normalizarTexto(correlationId)
+  })
+
+  return {
+    ...resultado,
+    cicloCriadoId: resultado?.data?.ciclo_criado_id || null
+  }
 }
 
 export async function arquivarFuncionario({ supabase, empresaId, funcionarioId }) {

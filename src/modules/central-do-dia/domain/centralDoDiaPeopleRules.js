@@ -48,14 +48,24 @@ function dadosPessoa(funcionario) {
   }
 }
 
+function vinculosAtivosUnicosPorPessoa(funcionarios = [], filialId = '') {
+  const porPessoa = new Map()
+  for (const funcionario of funcionarios || []) {
+    if (!funcionarioAtivo(funcionario, filialId)) continue
+    const pessoaId = texto(funcionario.pessoa_id) || texto(funcionario.id)
+    if (!porPessoa.has(pessoaId)) porPessoa.set(pessoaId, funcionario)
+  }
+  return [...porPessoa.entries()]
+}
+
 export function normalizarAniversariosAgenda(funcionarios = [], { dataBaseISO, filialId = '' } = {}) {
-  return (funcionarios || []).filter((funcionario) => funcionarioAtivo(funcionario, filialId)).map((funcionario) => {
+  return vinculosAtivosUnicosPorPessoa(funcionarios, filialId).map(([pessoaId, funcionario]) => {
     const dataReferencia = criarOcorrenciaAniversario(funcionario.data_nascimento, dataBaseISO)
     const dias = diferencaDiasCalendario(dataReferencia, dataBaseISO)
     if (!dataReferencia || dias === null || dias < 0 || dias > 30) return null
 
     return criarItemCentral({
-      id: `pessoas:aniversario:${funcionario.id}`,
+      id: `pessoas:aniversario:${pessoaId}`,
       tipo: 'aniversario',
       modulo: 'Gestão de Pessoas',
       titulo: texto(funcionario.nome) || 'Colaborador',
@@ -66,7 +76,7 @@ export function normalizarAniversariosAgenda(funcionarios = [], { dataBaseISO, f
       status: dias === 0 ? 'vence_hoje' : 'informativo',
       proximaAcao: 'Abrir o acompanhamento de pessoas',
       destino: 'funcionarios',
-      referenciaOrigem: referenciaPessoa('aniversario_funcionario', funcionario.id, funcionario.id),
+      referenciaOrigem: referenciaPessoa('aniversario_pessoa', pessoaId, funcionario.id, { pessoaId }),
       origemOperacional: 'pessoas',
       ...dadosPessoa(funcionario)
     })

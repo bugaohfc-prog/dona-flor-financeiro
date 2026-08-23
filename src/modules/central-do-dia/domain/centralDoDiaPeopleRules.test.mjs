@@ -31,6 +31,19 @@ test('normaliza aniversario de hoje sem expor a data de nascimento', () => {
   assert.equal(JSON.stringify(item).includes('1990-07-15'), false)
 })
 
+test('aniversario pertence a pessoa e nao duplica entre vinculos', () => {
+  const anterior = { ...funcionario, id: 'vinculo-anterior', pessoa_id: 'pessoa-1', status: 'desligado' }
+  const atual = { ...funcionario, id: 'vinculo-atual', pessoa_id: 'pessoa-1' }
+  const duplicadoInconsistente = { ...funcionario, id: 'vinculo-duplicado', pessoa_id: 'pessoa-1' }
+  const itens = normalizarAniversariosAgenda([anterior, atual, duplicadoInconsistente], { dataBaseISO: hoje })
+
+  assert.equal(itens.length, 1)
+  assert.equal(itens[0].id, 'pessoas:aniversario:pessoa-1')
+  assert.deepEqual(itens[0].referenciaOrigem, {
+    tipo: 'aniversario_pessoa', id: 'pessoa-1', funcionarioId: 'vinculo-atual', pessoaId: 'pessoa-1'
+  })
+})
+
 test('inclui aniversario futuro em ate trinta dias e exclui o posterior', () => {
   const dentro = { ...funcionario, id: 'dentro', data_nascimento: '1990-08-10' }
   const fora = { ...funcionario, id: 'fora', data_nascimento: '1990-09-01' }

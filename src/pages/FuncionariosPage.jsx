@@ -54,6 +54,13 @@ const FORMULARIO_CORRECAO_INICIAL = {
   observacoes: '',
   motivoCorrecao: ''
 }
+const FORMULARIO_READMISSAO_INICIAL = {
+  novaDataAdmissao: '',
+  filialId: '',
+  cargo: '',
+  dataExameAdmissional: '',
+  confirmouHistorico: false
+}
 
 const CONECTIVOS_NOME_CARGO = new Set(['de', 'da', 'do', 'das', 'dos', 'e'])
 
@@ -113,6 +120,26 @@ function fazAniversarioNoMes(data, dataReferencia = new Date()) {
 
   const mes = Number(partes[1])
   return mes === dataReferencia.getMonth() + 1
+}
+
+function criarChaveReadmissao() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID()
+  return `readmissao-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+function mensagemErroReadmissao(erro) {
+  const mensagem = String(erro?.message || erro || '')
+  const conhecidas = [
+    ['NOVA_ADMISSAO_DEVE_SER_POSTERIOR_AO_DESLIGAMENTO', 'A nova admissão deve ser posterior à data efetiva do desligamento.'],
+    ['PESSOA_JA_POSSUI_VINCULO_FUNCIONAL', 'Esta pessoa já possui um vínculo ativo ou afastado.'],
+    ['DESLIGAMENTO_EFETIVO_NAO_ENCONTRADO', 'O vínculo anterior não possui desligamento efetivo vigente.'],
+    ['VINCULO_ANTERIOR_NAO_DESLIGADO', 'O vínculo anterior precisa estar desligado.'],
+    ['PESSOA_ARQUIVADA', 'A pessoa está arquivada e não pode ser readmitida.'],
+    ['ADMISSAO_29FEV_REQUER_DECISAO', 'Admissão em 29/02 exige uma decisão específica antes de continuar.'],
+    ['SEM_PERMISSAO', 'Você não tem permissão para concluir esta readmissão.']
+  ]
+  return conhecidas.find(([codigo]) => mensagem.includes(codigo))?.[1]
+    || mensagemSeguraErro(erro, 'Não foi possível concluir a readmissão.')
 }
 
 function montarFormulario(funcionario) {
@@ -177,6 +204,10 @@ export default function FuncionariosPage({
   const [formularioDesligamento, setFormularioDesligamento] = useState(FORMULARIO_DESLIGAMENTO_INICIAL)
   const [confirmacaoConclusaoAberta, setConfirmacaoConclusaoAberta] = useState(false)
   const [formularioCorrecao, setFormularioCorrecao] = useState(FORMULARIO_CORRECAO_INICIAL)
+  const [modalReadmissaoAberto, setModalReadmissaoAberto] = useState(false)
+  const [funcionarioReadmissao, setFuncionarioReadmissao] = useState(null)
+  const [formularioReadmissao, setFormularioReadmissao] = useState(FORMULARIO_READMISSAO_INICIAL)
+  const [requestKeyReadmissao, setRequestKeyReadmissao] = useState('')
   const contextoAplicadoRef = useRef('')
 
   const {
@@ -187,6 +218,7 @@ export default function FuncionariosPage({
     criarFuncionario,
     atualizarFuncionario,
     alterarAdmissaoFuncionario,
+    readmitirPessoa,
     arquivarFuncionario,
     reativarFuncionario,
     obterFuncionarioPorId,
@@ -261,6 +293,25 @@ export default function FuncionariosPage({
     return mapa
   }, [correcoes])
 
+  const vinculosPorPessoa = useMemo(() => {
+    const mapa = new Map()
+    for (const funcionario of funcionarios || []) {
+      const pessoaId = String(funcionario?.pessoa_id || '')
+      if (!pessoaId) continue
+      const lista = mapa.get(pessoaId) || []
+      lista.push(funcionario)
+      mapa.set(pessoaId, lista)
+    }
+    for (const lista of mapa.values()) {
+      lista.sort((a, b) => String(b.data_admissao || '').localeCompare(String(a.data_admissao || '')) || String(b.id).localeCompare(String(a.id)))
+    }
+    return mapa
+  }, [funcionarios])
+
+  const vinculosPessoaSelecionada = funcionarioEditando?.pessoa_id
+    ? vinculosPorPessoa.get(String(funcionarioEditando.pessoa_id)) || []
+    : []
+
   const funcionariosFiltrados = useMemo(() => {
     const termo = normalizarTextoBusca(busca)
 
@@ -289,13 +340,17 @@ export default function FuncionariosPage({
     const ativos = lista.filter((funcionario) => !funcionario.arquivado && (funcionario.status || 'ativo') === 'ativo')
     const afastados = lista.filter((funcionario) => !funcionario.arquivado && funcionario.status === 'afastado')
     const inativos = lista.filter((funcionario) => funcionario.arquivado || funcionario.status === 'desligado')
-    const aniversariantes = lista.filter((funcionario) => !funcionario.arquivado && fazAniversarioNoMes(funcionario.data_nascimento))
+    const pessoasAniversariantes = new Set(
+      lista
+        .filter((funcionario) => !funcionario.arquivado && funcionario.status === 'ativo' && fazAniversarioNoMes(funcionario.data_nascimento))
+        .map((funcionario) => funcionario.pessoa_id || funcionario.id)
+    )
 
     return {
       ativos: ativos.length,
       afastados: afastados.length,
       inativos: inativos.length,
-      aniversariantes: aniversariantes.length
+      aniversariantes: pessoasAniversariantes.size
     }
   }, [funcionarios])
 
@@ -323,6 +378,10 @@ export default function FuncionariosPage({
     setImpactoAdmissao(null)
     setMotivoAdmissao('')
     setMostrarExamesArquivados(false)
+    setModalReadmissaoAberto(false)
+    setFuncionarioReadmissao(null)
+    setFormularioReadmissao(FORMULARIO_READMISSAO_INICIAL)
+    setRequestKeyReadmissao('')
     limparFormularioExamePeriodico()
     limparErro?.()
     limparErroExames?.()
@@ -381,6 +440,67 @@ export default function FuncionariosPage({
     limparFormularioExamePeriodico()
     setModalSecoesAbertas(MODAL_SECOES_INICIAIS)
     setModalAberto(true)
+  }
+
+  function desligamentoEfetivoDoVinculo(funcionarioId) {
+    return (desligamentosPorFuncionario.get(funcionarioId) || [])
+      .find((item) => item.estado === 'CONCLUIDO' && !item.efeito_revertido) || null
+  }
+
+  function pessoaPossuiVinculoFuncional(funcionario) {
+    return (vinculosPorPessoa.get(String(funcionario?.pessoa_id || '')) || []).some((vinculo) => (
+      !vinculo.arquivado && ['ativo', 'afastado'].includes(vinculo.status)
+    ))
+  }
+
+  function abrirReadmissao(funcionario) {
+    if (!funcionario?.id || !podeEditar || funcionario.status !== 'desligado') return
+    if (!desligamentoEfetivoDoVinculo(funcionario.id)) {
+      mostrarAviso?.('Este vínculo não possui desligamento efetivo vigente para readmissão.', 'erro')
+      return
+    }
+    if (pessoaPossuiVinculoFuncional(funcionario)) {
+      mostrarAviso?.('Esta pessoa já possui um vínculo funcional ativo ou afastado.', 'erro')
+      return
+    }
+    setFuncionarioReadmissao(funcionario)
+    setFormularioReadmissao(FORMULARIO_READMISSAO_INICIAL)
+    setRequestKeyReadmissao(criarChaveReadmissao())
+    setModalReadmissaoAberto(true)
+  }
+
+  function fecharReadmissao({ forcar = false } = {}) {
+    if (salvando && !forcar) return
+    setModalReadmissaoAberto(false)
+    setFuncionarioReadmissao(null)
+    setFormularioReadmissao(FORMULARIO_READMISSAO_INICIAL)
+    setRequestKeyReadmissao('')
+  }
+
+  async function confirmarReadmissao(event) {
+    event.preventDefault()
+    if (!funcionarioReadmissao?.id || salvando || !formularioReadmissao.confirmouHistorico) return
+    if (!formularioReadmissao.novaDataAdmissao) {
+      mostrarAviso?.('Informe a nova data de admissão.', 'erro')
+      return
+    }
+
+    const resposta = await readmitirPessoa(funcionarioReadmissao.id, {
+      requestKey: requestKeyReadmissao,
+      novaDataAdmissao: formularioReadmissao.novaDataAdmissao,
+      filialId: formularioReadmissao.filialId,
+      cargo: formularioReadmissao.cargo,
+      dataExameAdmissional: formularioReadmissao.dataExameAdmissional,
+      correlationId: requestKeyReadmissao
+    })
+
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemErroReadmissao(resposta.error), 'erro')
+      return
+    }
+
+    mostrarAviso?.('Readmissão concluída com novo vínculo. O histórico anterior foi preservado.', 'sucesso')
+    fecharReadmissao({ forcar: true })
   }
 
   useEffect(() => {
@@ -852,6 +972,17 @@ export default function FuncionariosPage({
                               : 'Iniciar desligamento'}
                           </button>
                         )}
+                        {!funcionario.arquivado && funcionario.status === 'desligado' && desligamentoEfetivoDoVinculo(funcionario.id) && (
+                          <button
+                            className="funcionarios-btn funcionarios-btn-primary"
+                            type="button"
+                            disabled={salvando || pessoaPossuiVinculoFuncional(funcionario)}
+                            onClick={() => abrirReadmissao(funcionario)}
+                            title={pessoaPossuiVinculoFuncional(funcionario) ? 'A pessoa já possui outro vínculo funcional.' : 'Criar novo vínculo para esta pessoa.'}
+                          >
+                            {pessoaPossuiVinculoFuncional(funcionario) ? 'Novo vínculo ativo' : 'Readmitir'}
+                          </button>
+                        )}
                         <button
                           className={`funcionarios-btn ${funcionario.arquivado ? 'funcionarios-btn-primary' : 'funcionarios-btn-danger'}`}
                           type="button"
@@ -1038,6 +1169,60 @@ export default function FuncionariosPage({
         </div>
       )}
 
+      {modalReadmissaoAberto && funcionarioReadmissao && (
+        <div className="funcionario-modal-backdrop" role="presentation" onClick={fecharReadmissao}>
+          <form className="funcionario-modal funcionario-readmissao-modal" role="dialog" aria-modal="true" aria-labelledby="readmissao-modal-title" onSubmit={confirmarReadmissao} onClick={(event) => event.stopPropagation()}>
+            <div className="funcionario-modal-header">
+              <div>
+                <span className="funcionarios-kicker">Readmissão 2C-4</span>
+                <h2 id="readmissao-modal-title">Criar novo vínculo</h2>
+                <p>{funcionarioReadmissao.nome || 'Pessoa selecionada'}</p>
+              </div>
+              <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharReadmissao} disabled={salvando}>Fechar</button>
+            </div>
+
+            <div className="funcionario-readmissao-aviso" role="status">
+              <strong>Será criado um novo vínculo.</strong>
+              <span>O vínculo anterior continuará desligado e seu histórico de Férias, Folha, Exames e Desligamento permanecerá intacto.</span>
+            </div>
+
+            <div className="funcionario-form-grid">
+              <label>
+                Nova data de admissão
+                <input className="funcionarios-input" type="date" required value={formularioReadmissao.novaDataAdmissao} onChange={(event) => setFormularioReadmissao((atual) => ({ ...atual, novaDataAdmissao: event.target.value }))} />
+              </label>
+              <label>
+                Filial
+                <select className="funcionarios-input" value={formularioReadmissao.filialId} onChange={(event) => setFormularioReadmissao((atual) => ({ ...atual, filialId: event.target.value }))}>
+                  <option value="">Sem filial</option>
+                  {(filiais || []).map((filial) => <option key={filial.id} value={filial.id}>{filial.nome || 'Filial'}</option>)}
+                </select>
+              </label>
+              <label>
+                Cargo ou função
+                <input className="funcionarios-input" value={formularioReadmissao.cargo} onChange={(event) => setFormularioReadmissao((atual) => ({ ...atual, cargo: event.target.value }))} onBlur={() => setFormularioReadmissao((atual) => ({ ...atual, cargo: normalizarCapitalizacao(atual.cargo) }))} />
+              </label>
+              <label>
+                Exame admissional
+                <input className="funcionarios-input" type="date" value={formularioReadmissao.dataExameAdmissional} onChange={(event) => setFormularioReadmissao((atual) => ({ ...atual, dataExameAdmissional: event.target.value }))} />
+              </label>
+            </div>
+
+            <label className="funcionario-readmissao-confirmacao">
+              <input type="checkbox" checked={formularioReadmissao.confirmouHistorico} onChange={(event) => setFormularioReadmissao((atual) => ({ ...atual, confirmouHistorico: event.target.checked }))} />
+              <span>Confirmo que é uma nova contratação e que o vínculo anterior não deve ser reativado.</span>
+            </label>
+
+            <div className="funcionario-modal-actions">
+              <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharReadmissao} disabled={salvando}>Cancelar</button>
+              <button className="funcionarios-btn funcionarios-btn-primary" type="submit" disabled={salvando || !formularioReadmissao.confirmouHistorico || !formularioReadmissao.novaDataAdmissao}>
+                {salvando ? 'Criando vínculo...' : 'Confirmar readmissão'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {confirmacaoConclusaoAberta && desligamentoAbertoSelecionado && funcionarioDesligamento && (
         <div className="funcionario-modal-backdrop funcionario-confirmacao-backdrop" role="presentation" onClick={() => !salvandoDesligamento && setConfirmacaoConclusaoAberta(false)}>
           <div className="funcionario-modal funcionario-confirmacao-modal" role="alertdialog" aria-modal="true" aria-labelledby="conclusao-desligamento-title" onClick={(event) => event.stopPropagation()}>
@@ -1178,6 +1363,35 @@ export default function FuncionariosPage({
               </div>
             </section>
 
+            {funcionarioEditando?.id && vinculosPessoaSelecionada.length > 0 && (
+              <section className="funcionario-modal-section">
+                <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
+                  <span>
+                    <strong>Histórico de vínculos</strong>
+                    <small>{vinculosPessoaSelecionada.length} vínculo(s) desta pessoa</small>
+                  </span>
+                  <b>H</b>
+                </div>
+                <div className="funcionario-vinculos-lista">
+                  {vinculosPessoaSelecionada.map((vinculo) => {
+                    const desligamento = desligamentoEfetivoDoVinculo(vinculo.id)
+                    return (
+                      <article key={vinculo.id} className="funcionario-vinculo-row">
+                        <div>
+                          <strong>{vinculo.id === funcionarioEditando.id ? 'Vínculo selecionado' : 'Vínculo histórico'}</strong>
+                          <small>Admissão: {formatarDataCurta(vinculo.data_admissao)} • {filiaisPorId[vinculo.filial_id] || 'Sem filial'}</small>
+                        </div>
+                        <div>
+                          <span className={`funcionario-status ${vinculo.arquivado ? 'arquivado' : vinculo.status}`}>{vinculo.arquivado ? 'Arquivado' : STATUS_LABELS[vinculo.status] || vinculo.status}</span>
+                          {desligamento && <small>Desligamento: {formatarDataCurta(desligamento.data_efetiva_efetiva)}</small>}
+                        </div>
+                      </article>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
             <section className="funcionario-modal-section">
               <button className="funcionario-modal-section-toggle" type="button" onClick={() => alternarSecaoModal('vinculo')}>
                 <span>
@@ -1202,7 +1416,7 @@ export default function FuncionariosPage({
                         <option value="desligado">Desligado (legado)</option>
                       )}
                     </select>
-                    {funcionarioEditando?.status === 'desligado' && <small className="funcionarios-help">Readmissão ou correção posterior exige fluxo específico e não faz parte deste lote.</small>}
+                    {funcionarioEditando?.status === 'desligado' && <small className="funcionarios-help">Este vínculo é histórico. Use a ação Readmitir para criar um novo vínculo sem alterar este cadastro.</small>}
                   </label>
                   <label>
                     Filial

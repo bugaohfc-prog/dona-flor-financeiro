@@ -9,6 +9,7 @@ import {
   categoriaFolhaUsaItens,
   dataPertenceCompetenciaFolha,
   formatarMoedaEntradaFolha,
+  funcionarioSelecionavelParaNovaFolha,
   horasFolhaParaPersistencia,
   horasFolhaParaTexto,
   localizarLancamentoParaSalvarFolha,
@@ -23,6 +24,7 @@ import {
   quantidadeFaltasFolha,
   quantidadeHorasFolha,
   resolverValorLancamentoFolha,
+  resolverIdentidadeHistoricaFolha,
   totalItensFinanceirosFolha,
   validarDatasFaltasFolha,
   validarHorasFolha
@@ -74,6 +76,62 @@ test('transição do lançamento legado preserva primeira compra antes da nova',
   assert.deepEqual(plano.map((item) => item.valor), [40, 60])
   assert.equal(totalItensFinanceirosFolha(plano), 100)
   assert.equal(resolverValorLancamentoFolha({ ...pai, valor: 100 }, plano.map((item, index) => ({ ...item, id: `${index}`, lancamento_id: 'pai' }))), 100)
+})
+
+test('snapshot histórico prevalece sobre cadastro atual e fallback cobre legado sem snapshot', () => {
+  const filiaisPorId = new Map(filiais.map((item) => [item.id, item]))
+  const atual = { id: 'func-1', pessoa_id: 'pessoa-nova', nome: 'Nome atual', filial_id: 'filial-2', cargo: 'Cargo novo', data_admissao: '2026-08-01' }
+  const historico = resolverIdentidadeHistoricaFolha({
+    funcionario_id: 'func-1',
+    pessoa_id_snapshot: 'pessoa-antiga',
+    funcionario_nome_snapshot: 'Nome histórico',
+    filial_id_snapshot: 'filial-1',
+    filial_nome_snapshot: 'Filial histórica',
+    cargo_snapshot: 'Cargo antigo',
+    data_admissao_snapshot: '2020-01-02',
+    snapshot_origem: 'capturado_criacao_v1'
+  }, atual, filiaisPorId)
+
+  assert.deepEqual(historico, {
+    funcionarioId: 'func-1',
+    pessoaId: 'pessoa-antiga',
+    nome: 'Nome histórico',
+    filialId: 'filial-1',
+    filialNome: 'Filial histórica',
+    cargo: 'Cargo antigo',
+    dataAdmissao: '2020-01-02',
+    origemSnapshot: 'capturado_criacao_v1'
+  })
+
+  const legado = resolverIdentidadeHistoricaFolha({ funcionario_id: 'func-1' }, atual, filiaisPorId)
+  assert.equal(legado.nome, 'Nome atual')
+  assert.equal(legado.filialNome, 'Matriz')
+  assert.equal(legado.origemSnapshot, 'fallback_legado')
+})
+
+test('desligado permanece histórico mas não é selecionável para nova Folha', () => {
+  assert.equal(funcionarioSelecionavelParaNovaFolha({ status: 'ativo', arquivado: false }), true)
+  assert.equal(funcionarioSelecionavelParaNovaFolha({ status: 'afastado', arquivado: false }), true)
+  assert.equal(funcionarioSelecionavelParaNovaFolha({ status: 'desligado', arquivado: false }), false)
+  assert.equal(funcionarioSelecionavelParaNovaFolha({ status: 'ativo', arquivado: true }), false)
+})
+
+test('exportação usa nome e filial snapshotados sem contaminar valores', () => {
+  const modelo = montarFechamentoFolhaContabilidade({
+    ...params,
+    funcionarios: [{ ...funcionarios[0], nome: 'Nome atual', filial_id: 'filial-2' }],
+    lancamentos: [{
+      ...lancamentos[1],
+      funcionario_nome_snapshot: 'Nome histórico',
+      filial_id_snapshot: 'filial-1',
+      filial_nome_snapshot: 'Filial histórica',
+      snapshot_origem: 'capturado_criacao_v1'
+    }],
+    itensLancamentos: []
+  })
+  assert.equal(modelo.blocos[0].filial, 'Filial histórica')
+  assert.equal(modelo.blocos[0].linhas[0].colaborador, 'Nome histórico')
+  assert.equal(modelo.blocos[0].linhas[0].planoSaude, 45.67)
 })
 
 test('compras preservam created_at ascendente, desempate por id e legado como Compra 1', () => {

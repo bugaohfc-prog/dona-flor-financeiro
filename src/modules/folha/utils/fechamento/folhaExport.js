@@ -6,6 +6,7 @@ import {
   numeroFolha,
   quantidadeFaltasFolha,
   quantidadeHorasFolha,
+  resolverIdentidadeHistoricaFolha,
   resolverValorLancamentoFolha
 } from './folhaDomain.js'
 import { formatarData, formatarMoeda } from './folhaFormatters.js'
@@ -51,18 +52,22 @@ function validarFaltasDaCompetencia(params, contexto) {
 
 function resolverFilial(contexto, lancamento) {
   const funcionario = contexto.funcionariosPorId.get(lancamento.funcionario_id)
-  const filialId = lancamento.filial_id || funcionario?.filial_id || '__sem_filial'
-  const filial = contexto.filiaisPorId.get(filialId)
+  const identidade = resolverIdentidadeHistoricaFolha(lancamento, funcionario, contexto.filiaisPorId)
   return {
-    id: filialId,
-    nome: filial?.razao_social || filial?.nome || (filialId === '__sem_filial' ? 'Sem filial' : 'Filial não identificada')
+    id: identidade.filialId || '__sem_filial',
+    nome: identidade.filialNome
   }
 }
 
 function resolverFuncionario(contexto, lancamento) {
+  const identidade = resolverIdentidadeHistoricaFolha(
+    lancamento,
+    contexto.funcionariosPorId.get(lancamento.funcionario_id),
+    contexto.filiaisPorId
+  )
   return {
     id: lancamento.funcionario_id || '__sem_funcionario',
-    nome: contexto.funcionariosPorId.get(lancamento.funcionario_id)?.nome || 'Colaborador não identificado'
+    nome: identidade.nome
   }
 }
 

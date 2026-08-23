@@ -10,6 +10,7 @@ import {
   categoriaFolhaUsaItens,
   dataPertenceCompetenciaFolha,
   formatarMoedaEntradaFolha,
+  funcionarioSelecionavelParaNovaFolha,
   horasFolhaParaPersistencia,
   horasFolhaParaTexto,
   itensAtivosDoLancamento,
@@ -26,6 +27,7 @@ import {
   quantidadeFaltasFolha,
   quantidadeHorasFolha,
   resolverValorLancamentoFolha,
+  resolverIdentidadeHistoricaFolha,
   validarDatasFaltasFolha
 } from '../modules/folha/utils/fechamento/folhaDomain'
 import {
@@ -211,14 +213,29 @@ export default function FechamentoFolhaPage({
     autoCarregar: Boolean(empresaId)
   })
 
-  const funcionariosAtivos = useMemo(() => [...(funcionarios || [])]
-    .filter((item) => !item.arquivado)
-    .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR')), [funcionarios])
+  const funcionariosHistoricosAtuais = useMemo(() => [...(funcionarios || [])]
+    .filter((item) => !item.arquivado), [funcionarios])
+  const funcionariosSelecionaveis = useMemo(() => [...funcionariosHistoricosAtuais]
+    .filter(funcionarioSelecionavelParaNovaFolha)
+    .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR')), [funcionariosHistoricosAtuais])
   const funcionariosPorId = useMemo(() => new Map((funcionarios || []).map((item) => [item.id, item])), [funcionarios])
   const filiaisPorId = useMemo(() => new Map((filiais || []).map((item) => [item.id, item])), [filiais])
   const competenciaSelecionada = competencias.find((item) => item.id === competenciaSelecionadaId) || null
   const limitesCompetencia = obterLimitesCompetenciaFolha(competenciaSelecionada?.competencia)
   const funcionarioSelecionado = funcionariosPorId.get(funcionarioSelecionadoId) || null
+  const podeEditarFuncionarioSelecionado = podeEditar && funcionarioSelecionavelParaNovaFolha(funcionarioSelecionado)
+  const funcionariosHistoricos = useMemo(() => {
+    const mapa = new Map()
+    for (const lancamento of lancamentos) {
+      if (mapa.has(lancamento.funcionario_id)) continue
+      const funcionario = funcionariosPorId.get(lancamento.funcionario_id) || null
+      mapa.set(lancamento.funcionario_id, {
+        ...resolverIdentidadeHistoricaFolha(lancamento, funcionario, filiaisPorId),
+        funcionario
+      })
+    }
+    return Array.from(mapa.values()).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+  }, [filiaisPorId, funcionariosPorId, lancamentos])
   const lancamentosFuncionario = lancamentos.filter((item) => item.funcionario_id === funcionarioSelecionadoId)
   const resumoAtual = useMemo(
     () => resumoFuncionario(lancamentos, itensLancamentos, funcionarioSelecionadoId),
@@ -670,9 +687,9 @@ export default function FechamentoFolhaPage({
       </SectionCard>
 
       <SectionCard title="Colaboradora e categoria" description="A filial acompanha o cadastro da colaboradora; a troca limpa o formulário anterior.">
-        {!competenciaSelecionada ? <PageState title="Selecione uma competência" description="Os lançamentos só ficam disponíveis dentro de uma competência." /> : loadingFuncionarios ? <PageState type="loading" title="Carregando colaboradoras…" /> : funcionariosAtivos.length === 0 ? <PageState title="Nenhuma colaboradora ativa" description="Cadastre ou reative uma colaboradora para lançar a folha." /> : (
+        {!competenciaSelecionada ? <PageState title="Selecione uma competência" description="Os lançamentos só ficam disponíveis dentro de uma competência." /> : loadingFuncionarios ? <PageState type="loading" title="Carregando colaboradoras…" /> : funcionariosSelecionaveis.length === 0 ? <PageState title="Nenhuma colaboradora disponível" description="Cadastre ou reative uma colaboradora para lançar a folha." /> : (
           <div className="folha-context-grid">
-            <label className="folha-field"><span>Colaboradora</span><select value={funcionarioSelecionadoId} onChange={(event) => selecionarFuncionario(event.target.value)}><option value="">Selecione</option>{funcionariosAtivos.map((funcionario) => <option key={funcionario.id} value={funcionario.id}>{funcionario.nome}</option>)}</select></label>
+            <label className="folha-field"><span>Colaboradora</span><select value={funcionarioSelecionadoId} onChange={(event) => selecionarFuncionario(event.target.value)}><option value="">Selecione</option>{funcionariosSelecionaveis.map((funcionario) => <option key={funcionario.id} value={funcionario.id}>{funcionario.nome}</option>)}</select></label>
             <div className="folha-colaborador-meta"><span>Filial</span><strong>{funcionarioSelecionado ? nomeFilial(filiaisPorId, funcionarioSelecionado.filial_id) : 'Selecione uma colaboradora'}</strong></div>
             <label className="folha-field"><span>Categoria</span><select value={form.categoria} onChange={(event) => { setForm(montarFormularioCategoria(event.target.value)); setItemEditandoId(''); setLancamentoEditandoId('') }} disabled={!funcionarioSelecionado}>{CATEGORIAS_OPERACIONAIS_FOLHA.map((categoria) => <option key={categoria} value={categoria}>{LABELS_CATEGORIA[categoria]}</option>)}</select></label>
           </div>
@@ -685,7 +702,7 @@ export default function FechamentoFolhaPage({
             <form className="folha-lancamento-form" onSubmit={salvarCategoria}>
               {form.categoria === 'compras_vales' ? (
                 <div className="folha-compra-rapida">
-                  <label className="folha-field"><span>Valor da compra</span><MoedaInputFolha inputRef={compraInputRef} value={form.valor} onChange={(valor) => setForm((atual) => ({ ...atual, valor }))} placeholder="R$ 0,00" disabled={!podeEditar || salvando} required /></label>
+                  <label className="folha-field"><span>Valor da compra</span><MoedaInputFolha inputRef={compraInputRef} value={form.valor} onChange={(valor) => setForm((atual) => ({ ...atual, valor }))} placeholder="R$ 0,00" disabled={!podeEditarFuncionarioSelecionado || salvando} required /></label>
                   <label className="folha-field folha-compra-descricao"><span>Descrição curta (opcional)</span><input value={form.descricao} onChange={(event) => setForm((atual) => ({ ...atual, descricao: event.target.value }))} disabled={!podeEditar || salvando} /></label>
                   <button type="submit" className="folha-btn folha-btn-add" aria-label={itemEditandoId ? 'Salvar compra editada' : 'Adicionar compra'} disabled={!podeEditar || salvando || salvandoCompraRapida}>{salvando || salvandoCompraRapida ? '…' : itemEditandoId ? 'Salvar' : '+'}</button>
                   {itemEditandoId ? <button type="button" className="folha-btn folha-btn-secondary" onClick={() => { setItemEditandoId(''); setForm((atual) => ({ ...atual, valor: '', descricao: '' })) }}>Cancelar</button> : null}
@@ -744,12 +761,14 @@ export default function FechamentoFolhaPage({
       >
         {!competenciaSelecionada ? <PageState title="Sem competência selecionada" /> : loadingLancamentos || loadingItensLancamentos ? <PageState type="loading" title="Carregando lançamentos…" /> : lancamentos.length === 0 ? <PageState title="Nenhum lançamento nesta competência" description="Selecione uma colaboradora e registre a primeira categoria." /> : (
           <div className="folha-colaboradores-lista">
-            {funcionariosAtivos.map((funcionario) => {
-              const registros = lancamentos.filter((item) => item.funcionario_id === funcionario.id && (mostrarArquivados || !item.arquivado))
-              if (!registros.length) return null
-              return (
-                <article className="folha-colaborador-card" key={funcionario.id}>
-                  <header><div><strong>{funcionario.nome}</strong><span>{nomeFilial(filiaisPorId, funcionario.filial_id)}</span></div><button type="button" className="folha-btn folha-btn-secondary" onClick={() => selecionarFuncionario(funcionario.id)}>Lançar / editar</button></header>
+             {funcionariosHistoricos.map((historico) => {
+               const funcionario = historico.funcionario
+               const registros = lancamentos.filter((item) => item.funcionario_id === historico.funcionarioId && (mostrarArquivados || !item.arquivado))
+               if (!registros.length) return null
+               const podeEditarRegistro = podeEditar && funcionarioSelecionavelParaNovaFolha(funcionario)
+               return (
+                 <article className="folha-colaborador-card" key={historico.funcionarioId}>
+                   <header><div><strong>{historico.nome}</strong><span>{historico.filialNome}</span></div><button type="button" className="folha-btn folha-btn-secondary" onClick={() => selecionarFuncionario(historico.funcionarioId)} disabled={!podeEditarRegistro}>{podeEditarRegistro ? 'Lançar / editar' : 'Somente histórico'}</button></header>
                   <div className="folha-lancamentos-lista">
                     {registros.map((lancamento) => {
                       const detalhes = ordenarItensFolha(itensLancamentos.filter((item) => item.lancamento_id === lancamento.id && (mostrarArquivados || !item.arquivado)))
@@ -757,13 +776,13 @@ export default function FechamentoFolhaPage({
                         <div className={`folha-lancamento-row ${lancamento.arquivado ? 'is-archived' : ''}`} key={lancamento.id}>
                           <div><strong>{LABELS_CATEGORIA[lancamento.categoria] || lancamento.categoria}</strong><span>{descricaoLancamento(lancamento, itensLancamentos)}</span></div>
                           <strong className="folha-lancamento-valor">{['falta_injustificada', 'hora_extra_50', 'hora_extra_60', 'hora_extra_100', 'observacao_administrativa'].includes(lancamento.categoria) ? 'Descritivo' : formatarMoeda(resolverValorLancamentoFolha(lancamento, itensLancamentos))}</strong>
-                          <div className="folha-row-actions"><button type="button" className="folha-btn folha-btn-quiet" onClick={() => alternarConferencia(lancamento)} disabled={!podeEditar || salvando || lancamento.arquivado}>{lancamento.conferido ? 'Reabrir' : 'Conferir'}</button><button type="button" className="folha-btn folha-btn-quiet" onClick={() => categoriaFolhaUsaItens(lancamento.categoria) ? prepararNovoItem(lancamento) : editarLancamentoPai(lancamento)} disabled={lancamento.arquivado}>{categoriaFolhaUsaItens(lancamento.categoria) ? 'Adicionar' : 'Editar'}</button><button type="button" className="folha-btn folha-btn-danger" onClick={() => alternarLancamento(lancamento)} disabled={!podeEditar || salvando}>{lancamento.arquivado ? 'Reativar' : 'Arquivar'}</button></div>
+                          <div className="folha-row-actions"><button type="button" className="folha-btn folha-btn-quiet" onClick={() => alternarConferencia(lancamento)} disabled={!podeEditarRegistro || salvando || lancamento.arquivado}>{lancamento.conferido ? 'Reabrir' : 'Conferir'}</button><button type="button" className="folha-btn folha-btn-quiet" onClick={() => categoriaFolhaUsaItens(lancamento.categoria) ? prepararNovoItem(lancamento) : editarLancamentoPai(lancamento)} disabled={!podeEditarRegistro || lancamento.arquivado}>{categoriaFolhaUsaItens(lancamento.categoria) ? 'Adicionar' : 'Editar'}</button><button type="button" className="folha-btn folha-btn-danger" onClick={() => alternarLancamento(lancamento)} disabled={!podeEditarRegistro || salvando}>{lancamento.arquivado ? 'Reativar' : 'Arquivar'}</button></div>
                           {detalhes.length > 0 ? (
                             <div className="folha-detalhes-lista">
                               {detalhes.map((item, indice) => (
                                 <div className={`folha-detalhe-row ${item.arquivado ? 'is-archived' : ''}`} key={item.id}>
                                   <span>{lancamento.categoria === 'compras_vales' ? `Compra ${indice + 1}: ${formatarMoeda(item.valor)}` : lancamento.categoria === 'premiacao' ? `Premiação ${indice + 1}: ${formatarMoeda(item.valor_base)} × ${numeroFolha(item.percentual)}% = ${formatarMoeda(item.valor)}` : categoriaFolhaEhHora(lancamento.categoria) ? `${formatarData(item.data_referencia)} · ${horasFolhaParaTexto(item.quantidade)}` : lancamento.categoria === 'falta_injustificada' ? formatarData(item.data_referencia) : item.descricao || 'Item'}</span>
-                                   <div className="folha-row-actions"><button type="button" className="folha-btn folha-btn-quiet" onClick={() => lancamento.categoria === 'compras_vales' ? editarCompraDaColaboradora(funcionario.id, item) : editarItemDetalhado(lancamento, item)} disabled={!podeEditar || salvando || item.arquivado || lancamento.arquivado}>Editar</button><button type="button" className="folha-btn folha-btn-danger" onClick={() => alternarItem(item)} disabled={!podeEditar || salvando || lancamento.arquivado}>{item.arquivado ? 'Reativar' : 'Arquivar'}</button></div>
+                                   <div className="folha-row-actions"><button type="button" className="folha-btn folha-btn-quiet" onClick={() => lancamento.categoria === 'compras_vales' ? editarCompraDaColaboradora(historico.funcionarioId, item) : editarItemDetalhado(lancamento, item)} disabled={!podeEditarRegistro || salvando || item.arquivado || lancamento.arquivado}>Editar</button><button type="button" className="folha-btn folha-btn-danger" onClick={() => alternarItem(item)} disabled={!podeEditarRegistro || salvando || lancamento.arquivado}>{item.arquivado ? 'Reativar' : 'Arquivar'}</button></div>
                                 </div>
                               ))}
                             </div>

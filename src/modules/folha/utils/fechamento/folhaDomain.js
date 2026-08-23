@@ -20,6 +20,31 @@ export const CATEGORIAS_OPERACIONAIS_FOLHA = Object.freeze([
   'observacao_administrativa'
 ])
 
+export function funcionarioSelecionavelParaNovaFolha(funcionario) {
+  return Boolean(funcionario && !funcionario.arquivado && String(funcionario.status || '').toLowerCase() !== 'desligado')
+}
+
+export function resolverIdentidadeHistoricaFolha(lancamento, funcionario, filiaisPorId = new Map()) {
+  const filialId = lancamento?.filial_id_snapshot || lancamento?.filial_id || funcionario?.filial_id || null
+  const filialAtual = filialId ? filiaisPorId.get(filialId) : null
+
+  return Object.freeze({
+    funcionarioId: lancamento?.funcionario_id || funcionario?.id || null,
+    pessoaId: lancamento?.pessoa_id_snapshot || funcionario?.pessoa_id || null,
+    nome: String(lancamento?.funcionario_nome_snapshot || funcionario?.nome || '').trim() || 'Colaborador não identificado',
+    filialId,
+    filialNome: String(
+      lancamento?.filial_nome_snapshot
+      || filialAtual?.razao_social
+      || filialAtual?.nome
+      || (filialId ? 'Filial não identificada' : 'Sem filial cadastrada')
+    ).trim(),
+    cargo: String(lancamento?.cargo_snapshot || funcionario?.cargo || '').trim() || null,
+    dataAdmissao: lancamento?.data_admissao_snapshot || funcionario?.data_admissao || null,
+    origemSnapshot: lancamento?.snapshot_origem || 'fallback_legado'
+  })
+}
+
 function textoComparavel(valor) {
   return String(valor ?? '').trim()
 }

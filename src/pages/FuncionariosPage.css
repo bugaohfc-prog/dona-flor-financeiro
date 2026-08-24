@@ -257,6 +257,7 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
 .funcionario-exames-header p { margin: 0; color: var(--df-muted); }
 .funcionario-exames-add { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
 .funcionario-exames-add-ocupacional { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; }
+.funcionario-exame-tipo-fixo { display: flex; align-items: center; min-height: 38px; background: #f8fafc; }
 .funcionario-exames-list { display: grid; min-width: 0; gap: 8px; }
 .funcionario-exame-row { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--df-border); border-radius: var(--df-radius-control); background: var(--df-surface); }
 .funcionario-exame-main { display: grid; min-width: 0; gap: 4px; }

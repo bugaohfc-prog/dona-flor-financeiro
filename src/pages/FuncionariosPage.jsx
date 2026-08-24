@@ -11,6 +11,12 @@ import {
   motivoAdmissaoValido,
   separarAdmissaoDoPayload
 } from '../modules/funcionarios/domain/admissaoFuncionarioRules'
+import {
+  FORMULARIO_DEMISSIONAL_INICIAL,
+  mensagemErroExameDemissional,
+  podeRegistrarExameDemissional,
+  possuiDemissionalPendenteAtivo
+} from '../modules/funcionarios/domain/exameDemissionalRules'
 import './FuncionariosPage.css'
 const FORMULARIO_INICIAL = {
   nome: '',
@@ -321,6 +327,14 @@ export default function FuncionariosPage({
     }
     return mapa
   }, [correcoes])
+  const desligamentoEfetivoFuncionarioEditando = funcionarioEditando?.id
+    ? desligamentoEfetivoDoVinculo(funcionarioEditando.id)
+    : null
+  const podeRegistrarDemissional = podeRegistrarExameDemissional(
+    funcionarioEditando,
+    desligamentoEfetivoFuncionarioEditando
+  )
+  const demissionalPendenteAtivo = possuiDemissionalPendenteAtivo(exames)
 
   const vinculosPorPessoa = useMemo(() => {
     const mapa = new Map()
@@ -544,7 +558,11 @@ export default function FuncionariosPage({
   }
 
   function limparFormularioExamePeriodico() {
-    setFormularioNovoExame(FORMULARIO_EXAME_INICIAL)
+    setFormularioNovoExame(
+      podeRegistrarExameDemissional(funcionarioDetalhado, desligamentoEfetivoDoVinculo(funcionarioDetalhado.id))
+        ? FORMULARIO_DEMISSIONAL_INICIAL
+        : FORMULARIO_EXAME_INICIAL
+    )
     setExameEditandoId('')
     setFormularioExameEditando(FORMULARIO_EXAME_INICIAL)
   }
@@ -785,6 +803,19 @@ export default function FuncionariosPage({
   async function adicionarExameOcupacional() {
     if (!empresaId || !funcionarioEditando?.id || !podeEditar || salvandoExames) return
 
+    if (formularioNovoExame.tipo === 'DEMISSIONAL' && !podeRegistrarDemissional) {
+      mostrarAviso?.('O exame demissional só pode ser registrado para um vínculo efetivamente desligado.', 'erro')
+      return
+    }
+    if (
+      formularioNovoExame.tipo === 'DEMISSIONAL'
+      && formularioNovoExame.estado === 'PENDENTE'
+      && demissionalPendenteAtivo
+    ) {
+      mostrarAviso?.('Já existe um exame demissional pendente ativo para este vínculo.', 'erro')
+      return
+    }
+
     if (!formularioExameValido(formularioNovoExame)) {
       mostrarAviso?.(formularioNovoExame.estado === 'PENDENTE'
         ? 'Informe a data prevista do exame.'
@@ -798,11 +829,12 @@ export default function FuncionariosPage({
     })
 
     if (resposta?.error) {
-      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível salvar o exame ocupacional.'), 'erro')
+      const fallback = mensagemSeguraErro(resposta.error, 'Não foi possível salvar o exame ocupacional.')
+      mostrarAviso?.(mensagemErroExameDemissional(resposta.error, fallback), 'erro')
       return
     }
 
-    setFormularioNovoExame(FORMULARIO_EXAME_INICIAL)
+    setFormularioNovoExame(podeRegistrarDemissional ? FORMULARIO_DEMISSIONAL_INICIAL : FORMULARIO_EXAME_INICIAL)
     mostrarAviso?.('Exame ocupacional registrado.', 'sucesso')
   }
 
@@ -836,7 +868,8 @@ export default function FuncionariosPage({
     const resposta = await atualizarExameOcupacional(exame.id, montarDadosExame(formularioExameEditando))
 
     if (resposta?.error) {
-      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível atualizar o exame ocupacional.'), 'erro')
+      const fallback = mensagemSeguraErro(resposta.error, 'Não foi possível atualizar o exame ocupacional.')
+      mostrarAviso?.(mensagemErroExameDemissional(resposta.error, fallback), 'erro')
       return
     }
 
@@ -1577,18 +1610,27 @@ export default function FuncionariosPage({
                     </div>
                   ) : (
                     <>
+                  {funcionarioEditando.status === 'desligado' && !podeRegistrarDemissional ? (
+                    <div className="funcionario-exames-empty">
+                      Este vínculo não possui um desligamento efetivo vigente. O histórico de exames permanece disponível, sem nova ação demissional.
+                    </div>
+                  ) : (
                   <div className="funcionario-exames-add funcionario-exames-add-ocupacional">
                     <label>
                       Tipo
-                      <select
-                        className="funcionarios-input"
-                        value={formularioNovoExame.tipo}
-                        onChange={(event) => setFormularioNovoExame((atual) => ({ ...atual, tipo: event.target.value }))}
-                        disabled={salvandoExames}
-                      >
-                        <option value="ADMISSIONAL">Admissional</option>
-                        <option value="PERIODICO">Periódico</option>
-                      </select>
+                      {podeRegistrarDemissional ? (
+                        <span className="funcionarios-input funcionario-exame-tipo-fixo">Demissional</span>
+                      ) : (
+                        <select
+                          className="funcionarios-input"
+                          value={formularioNovoExame.tipo}
+                          onChange={(event) => setFormularioNovoExame((atual) => ({ ...atual, tipo: event.target.value }))}
+                          disabled={salvandoExames}
+                        >
+                          <option value="ADMISSIONAL">Admissional</option>
+                          <option value="PERIODICO">Periódico</option>
+                        </select>
+                      )}
                     </label>
                     <label>
                       Estado
@@ -1621,12 +1663,23 @@ export default function FuncionariosPage({
                     <button
                       className="funcionarios-btn funcionarios-btn-primary"
                       type="button"
-                      disabled={salvandoExames || !formularioExameValido(formularioNovoExame)}
+                      disabled={
+                        salvandoExames
+                        || !formularioExameValido(formularioNovoExame)
+                        || (podeRegistrarDemissional && formularioNovoExame.estado === 'PENDENTE' && demissionalPendenteAtivo)
+                      }
                       onClick={adicionarExameOcupacional}
                     >
-                      Adicionar exame
+                      {podeRegistrarDemissional ? 'Registrar exame demissional' : 'Adicionar exame'}
                     </button>
                   </div>
+                  )}
+
+                  {podeRegistrarDemissional && demissionalPendenteAtivo && (
+                    <div className="funcionario-exames-empty">
+                      Já existe um exame demissional pendente ativo. Atualize o registro existente antes de criar outro pendente.
+                    </div>
+                  )}
 
                   <div className="funcionario-exames-empty">
                     A Agenda considera somente exames pendentes com data prevista registrada. Nenhuma periodicidade é calculada automaticamente.

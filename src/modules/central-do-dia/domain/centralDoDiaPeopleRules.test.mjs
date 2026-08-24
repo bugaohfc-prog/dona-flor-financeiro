@@ -340,6 +340,15 @@ test('desligado mantém somente demissional pendente explicitamente registrado',
   assert.deepEqual(normalizarExamesAgenda(exames, [desligado], { dataBaseISO: hoje }).map((item) => item.referenciaOrigem.id), ['demissional'])
 })
 
+test('demissional realizado ou cancelado deixa de ser pendência operacional', () => {
+  const desligado = { ...funcionario, status: 'desligado' }
+  const exames = [
+    { id: 'realizado', funcionario_id: desligado.id, tipo: 'DEMISSIONAL', estado: 'REALIZADO', data_realizada: '2026-07-18' },
+    { id: 'cancelado', funcionario_id: desligado.id, tipo: 'DEMISSIONAL', estado: 'CANCELADO', data_prevista: '2026-07-20' }
+  ]
+  assert.deepEqual(normalizarExamesAgenda(exames, [desligado], { dataBaseISO: hoje }), [])
+})
+
 test('navegacao contextual preserva funcionario, ciclo, periodo e origem', () => {
   const evento = projetarEventosPessoas({
     funcionarios: [funcionario],

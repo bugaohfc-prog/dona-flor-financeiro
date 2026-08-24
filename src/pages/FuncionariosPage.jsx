@@ -464,7 +464,7 @@ export default function FuncionariosPage({
     setImpactoAdmissao(null)
     setMotivoAdmissao('')
     setMostrarExamesArquivados(false)
-    limparFormularioExamePeriodico()
+    limparFormularioExamePeriodico(funcionarioDetalhado)
     setModalSecoesAbertas(MODAL_SECOES_INICIAIS)
     setModalAberto(true)
   }
@@ -557,9 +557,12 @@ export default function FuncionariosPage({
     }))
   }
 
-  function limparFormularioExamePeriodico() {
+  function limparFormularioExamePeriodico(funcionario = null) {
     setFormularioNovoExame(
-      podeRegistrarExameDemissional(funcionarioDetalhado, desligamentoEfetivoDoVinculo(funcionarioDetalhado.id))
+      podeRegistrarExameDemissional(
+        funcionario,
+        funcionario?.id ? desligamentoEfetivoDoVinculo(funcionario.id) : null
+      )
         ? FORMULARIO_DEMISSIONAL_INICIAL
         : FORMULARIO_EXAME_INICIAL
     )

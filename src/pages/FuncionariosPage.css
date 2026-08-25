@@ -252,6 +252,23 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
 .funcionario-desligamento-item .funcionario-desligamento-correcao-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; margin-top: 5px; padding: 8px; border-left: 3px solid #f59e0b; border-radius: 8px; background: #fffbeb; }
 .funcionario-desligamento-correcao-item span { grid-column: 1 / -1; }
 .funcionario-correcao-form { padding-top: 4px; }
+.funcionario-checklist-content { display: grid; min-width: 0; gap: 10px; padding: 0 12px 12px; }
+.funcionario-checklist-historico { padding: 10px 12px; border: 1px solid #fbbf24; border-radius: var(--df-radius-control); background: #fffbeb; color: #92400e; font-size: .78rem; font-weight: 750; line-height: 1.45; }
+.funcionario-checklist-add,
+.funcionario-checklist-fields { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.funcionario-checklist-add label,
+.funcionario-checklist-fields label { display: grid; min-width: 0; gap: 6px; color: #475569; font-size: .75rem; font-weight: 850; }
+.funcionario-checklist-add .span-2,
+.funcionario-checklist-fields .span-2 { grid-column: 1 / -1; }
+.funcionario-checklist-add > button { justify-self: start; }
+.funcionario-checklist-list { display: grid; min-width: 0; gap: 8px; }
+.funcionario-checklist-item { display: grid; min-width: 0; gap: 10px; padding: 10px; border: 1px solid var(--df-border); border-radius: var(--df-radius-control); background: var(--df-surface); }
+.funcionario-checklist-item-header { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 10px; }
+.funcionario-checklist-item-header strong { min-width: 0; overflow-wrap: anywhere; }
+.funcionario-checklist-item > button { justify-self: start; }
+.funcionario-checklist-item > small { color: var(--df-muted); }
+.funcionario-exame-status.concluido { background: #ecfdf5; color: #047857; }
+.funcionario-exame-status.nao_aplicavel { background: #f1f5f9; color: #475569; }
 .funcionario-exames-section { display: grid; min-width: 0; gap: 10px; padding: 0 12px 12px; }
 .funcionario-exames-header { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .funcionario-exames-header p { margin: 0; color: var(--df-muted); }
@@ -281,11 +298,16 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
   .funcionarios-control-card,
   .funcionarios-summary,
   .funcionario-form-grid,
+  .funcionario-checklist-add,
+  .funcionario-checklist-fields,
   .funcionario-exames-add,
   .funcionario-exame-row,
   .funcionario-exame-edit { grid-template-columns: minmax(0, 1fr); }
   .funcionarios-switch { grid-column: auto; width: 100%; justify-content: space-between; }
   .funcionario-form-grid .span-2 { grid-column: auto; }
+  .funcionario-checklist-add .span-2,
+  .funcionario-checklist-fields .span-2 { grid-column: auto; }
+  .funcionario-checklist-item-header { align-items: flex-start; flex-direction: column; }
   .funcionario-actions,
   .funcionario-exame-actions,
   .funcionario-modal-actions { display: grid; grid-template-columns: minmax(0, 1fr); }

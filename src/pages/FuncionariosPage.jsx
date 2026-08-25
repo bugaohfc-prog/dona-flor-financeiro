@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFuncionariosExamesOcupacionais } from '../hooks/useFuncionariosExamesOcupacionais'
 import { useFuncionarios } from '../hooks/useFuncionarios'
+import { useFuncionariosChecklistDesligamento } from '../hooks/useFuncionariosChecklistDesligamento'
 import { useFuncionariosDesligamentos } from '../hooks/useFuncionariosDesligamentos'
 import { FilterCard, FilterGrid, KpiCard, KpiGrid, PageHeader, PageState } from '../components/shared/PagePatterns.jsx'
 import { mensagemSeguraErro } from '../utils/session'
@@ -77,6 +78,16 @@ const FORMULARIO_CORRECAO_INICIAL = {
   motivo: '',
   observacoes: '',
   motivoCorrecao: ''
+}
+const FORMULARIO_CHECKLIST_INICIAL = {
+  catalogoItemId: '',
+  dataPrevista: '',
+  observacaoAdministrativa: ''
+}
+const CHECKLIST_ESTADO_LABELS = {
+  PENDENTE: 'Pendente',
+  CONCLUIDO: 'Concluído',
+  NAO_APLICAVEL: 'Não aplicável'
 }
 const FORMULARIO_READMISSAO_INICIAL = {
   novaDataAdmissao: '',
@@ -241,6 +252,9 @@ export default function FuncionariosPage({
   const [formularioDesligamento, setFormularioDesligamento] = useState(FORMULARIO_DESLIGAMENTO_INICIAL)
   const [confirmacaoConclusaoAberta, setConfirmacaoConclusaoAberta] = useState(false)
   const [formularioCorrecao, setFormularioCorrecao] = useState(FORMULARIO_CORRECAO_INICIAL)
+  const [checklistAberto, setChecklistAberto] = useState(false)
+  const [formularioChecklist, setFormularioChecklist] = useState(FORMULARIO_CHECKLIST_INICIAL)
+  const [formulariosItensChecklist, setFormulariosItensChecklist] = useState({})
   const [modalReadmissaoAberto, setModalReadmissaoAberto] = useState(false)
   const [funcionarioReadmissao, setFuncionarioReadmissao] = useState(null)
   const [formularioReadmissao, setFormularioReadmissao] = useState(FORMULARIO_READMISSAO_INICIAL)
@@ -318,6 +332,7 @@ export default function FuncionariosPage({
   const desligamentoAbertoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'ABERTO') || null
   const desligamentoConcluidoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'CONCLUIDO') || null
   const desligamentoConcluidoEfetivoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'CONCLUIDO' && !item.efeito_revertido) || null
+  const desligamentoChecklistSelecionado = desligamentoConcluidoEfetivoSelecionado || desligamentoConcluidoSelecionado
   const correcoesPorDesligamento = useMemo(() => {
     const mapa = new Map()
     for (const correcao of correcoes || []) {
@@ -327,6 +342,29 @@ export default function FuncionariosPage({
     }
     return mapa
   }, [correcoes])
+  const {
+    catalogo: catalogoChecklist,
+    itens: itensChecklist,
+    loading: loadingChecklist,
+    salvando: salvandoChecklist,
+    erro: erroChecklist,
+    carregar: carregarChecklist,
+    criar: criarItemChecklist,
+    atualizar: atualizarItemChecklist,
+    alterarEstado: alterarEstadoItemChecklist
+  } = useFuncionariosChecklistDesligamento({
+    empresaId,
+    desligamentoId: desligamentoChecklistSelecionado?.id,
+    autoCarregar: modalDesligamentoAberto && Boolean(desligamentoChecklistSelecionado?.id)
+  })
+  const codigosChecklistAdicionados = useMemo(
+    () => new Set((itensChecklist || []).map((item) => item.item_codigo)),
+    [itensChecklist]
+  )
+  const catalogoChecklistDisponivel = useMemo(
+    () => (catalogoChecklist || []).filter((item) => !codigosChecklistAdicionados.has(item.codigo)),
+    [catalogoChecklist, codigosChecklistAdicionados]
+  )
   const desligamentoEfetivoFuncionarioEditando = funcionarioEditando?.id
     ? desligamentoEfetivoDoVinculo(funcionarioEditando.id)
     : null
@@ -335,6 +373,13 @@ export default function FuncionariosPage({
     desligamentoEfetivoFuncionarioEditando
   )
   const demissionalPendenteAtivo = possuiDemissionalPendenteAtivo(exames)
+
+  useEffect(() => {
+    setFormulariosItensChecklist(Object.fromEntries((itensChecklist || []).map((item) => [item.id, {
+      dataPrevista: item.data_prevista || '',
+      observacaoAdministrativa: item.observacao_administrativa || ''
+    }])))
+  }, [itensChecklist])
 
   const vinculosPorPessoa = useMemo(() => {
     const mapa = new Map()
@@ -409,6 +454,9 @@ export default function FuncionariosPage({
     setFuncionarioReadmissao(null)
     setFormularioReadmissao(FORMULARIO_READMISSAO_INICIAL)
     setRequestKeyReadmissao('')
+    setChecklistAberto(false)
+    setFormularioChecklist(FORMULARIO_CHECKLIST_INICIAL)
+    setFormulariosItensChecklist({})
     limparFormularioExamePeriodico()
     limparErro?.()
     limparErroExames?.()
@@ -698,6 +746,9 @@ export default function FuncionariosPage({
       observacoes: aberto.observacoes || '',
       motivoCancelamento: ''
     } : FORMULARIO_DESLIGAMENTO_INICIAL)
+    setChecklistAberto(false)
+    setFormularioChecklist(FORMULARIO_CHECKLIST_INICIAL)
+    setFormulariosItensChecklist({})
     setModalDesligamentoAberto(true)
   }
 
@@ -705,6 +756,9 @@ export default function FuncionariosPage({
     if (salvandoDesligamento) return
     setConfirmacaoConclusaoAberta(false)
     setFormularioCorrecao(FORMULARIO_CORRECAO_INICIAL)
+    setChecklistAberto(false)
+    setFormularioChecklist(FORMULARIO_CHECKLIST_INICIAL)
+    setFormulariosItensChecklist({})
     setModalDesligamentoAberto(false)
     setFuncionarioDesligamento(null)
     setFormularioDesligamento(FORMULARIO_DESLIGAMENTO_INICIAL)
@@ -801,6 +855,50 @@ export default function FuncionariosPage({
       mostrarAviso?.('Retificação registrada sem reativar o vínculo.', 'sucesso')
     }
     setFormularioCorrecao(FORMULARIO_CORRECAO_INICIAL)
+  }
+
+  async function adicionarItemChecklistAdministrativo() {
+    if (!desligamentoConcluidoEfetivoSelecionado?.id || !formularioChecklist.catalogoItemId || salvandoChecklist) return
+    const resposta = await criarItemChecklist({
+      catalogoItemId: formularioChecklist.catalogoItemId,
+      dataPrevista: formularioChecklist.dataPrevista,
+      observacaoAdministrativa: formularioChecklist.observacaoAdministrativa
+    })
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível adicionar o item ao checklist.'), 'erro')
+      return
+    }
+    setFormularioChecklist(FORMULARIO_CHECKLIST_INICIAL)
+    mostrarAviso?.('Item adicionado ao checklist administrativo.', 'sucesso')
+  }
+
+  function atualizarFormularioItemChecklist(itemId, campo, valor) {
+    setFormulariosItensChecklist((atual) => ({
+      ...atual,
+      [itemId]: { ...(atual[itemId] || {}), [campo]: valor }
+    }))
+  }
+
+  async function salvarDetalhesItemChecklist(item) {
+    if (!item?.id || salvandoChecklist || !desligamentoConcluidoEfetivoSelecionado) return
+    const dados = formulariosItensChecklist[item.id] || {}
+    const resposta = await atualizarItemChecklist(item.id, dados)
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível atualizar o item.'), 'erro')
+      return
+    }
+    mostrarAviso?.('Detalhes do checklist atualizados.', 'sucesso')
+  }
+
+  async function mudarEstadoItemChecklist(item, estado) {
+    if (!item?.id || salvandoChecklist || !desligamentoConcluidoEfetivoSelecionado) return
+    const resposta = await alterarEstadoItemChecklist(item.id, estado)
+    if (resposta?.error) {
+      await carregarChecklist()
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível alterar o estado do item.'), 'erro')
+      return
+    }
+    mostrarAviso?.('Estado do checklist atualizado.', 'sucesso')
   }
 
   async function adicionarExameOcupacional() {
@@ -1163,6 +1261,162 @@ export default function FuncionariosPage({
                   <button className="funcionarios-btn funcionarios-btn-danger" type="button" disabled={salvandoDesligamento || !desligamentoConcluidoEfetivoSelecionado.status_anterior} onClick={abrirReversaoPorErro}>Reverter conclusão por erro</button>
                   {!desligamentoConcluidoEfetivoSelecionado.status_anterior && <small>A reversão está bloqueada porque o estado funcional anterior não pôde ser comprovado.</small>}
                 </div>
+              </section>
+            )}
+
+            {desligamentoChecklistSelecionado && (
+              <section className="funcionario-modal-section funcionario-checklist-section">
+                <button
+                  className="funcionario-modal-section-toggle"
+                  type="button"
+                  aria-expanded={checklistAberto}
+                  onClick={() => setChecklistAberto((atual) => !atual)}
+                >
+                  <span>
+                    <strong>Checklist administrativo</strong>
+                    <small>{desligamentoChecklistSelecionado.efeito_revertido
+                      ? 'Histórico preservado; a conclusão foi revertida por erro.'
+                      : 'Tarefas administrativas configuradas pela empresa.'}</small>
+                  </span>
+                  <b>{checklistAberto ? '−' : itensChecklist.length}</b>
+                </button>
+
+                {checklistAberto && (
+                  <div className="funcionario-checklist-content">
+                    {erroChecklist && (
+                      <div className="funcionario-exames-empty">
+                        <strong>Não foi possível carregar o checklist.</strong>
+                        <p>{erroChecklist}</p>
+                        <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={carregarChecklist}>Tentar novamente</button>
+                      </div>
+                    )}
+
+                    {loadingChecklist ? (
+                      <p className="funcionarios-note">Carregando checklist administrativo...</p>
+                    ) : (
+                      <>
+                        {desligamentoChecklistSelecionado.efeito_revertido && (
+                          <div className="funcionario-checklist-historico" role="status">
+                            Este checklist é somente histórico. Novos itens e alterações estão bloqueados após a reversão.
+                          </div>
+                        )}
+
+                        {!desligamentoChecklistSelecionado.efeito_revertido && podeEditar && (
+                          catalogoChecklist.length === 0 ? (
+                            <div className="funcionario-exames-empty">Nenhum item de checklist configurado.</div>
+                          ) : catalogoChecklistDisponivel.length === 0 ? (
+                            <div className="funcionario-exames-empty">Todos os itens configurados já foram adicionados.</div>
+                          ) : (
+                            <div className="funcionario-checklist-add">
+                              <label>
+                                Item configurado
+                                <select
+                                  className="funcionarios-input"
+                                  value={formularioChecklist.catalogoItemId}
+                                  onChange={(event) => setFormularioChecklist((atual) => ({ ...atual, catalogoItemId: event.target.value }))}
+                                >
+                                  <option value="">Selecione</option>
+                                  {catalogoChecklistDisponivel.map((item) => <option key={item.id} value={item.id}>{item.titulo}</option>)}
+                                </select>
+                              </label>
+                              <label>
+                                Data prevista (opcional)
+                                <input
+                                  className="funcionarios-input"
+                                  type="date"
+                                  value={formularioChecklist.dataPrevista}
+                                  onChange={(event) => setFormularioChecklist((atual) => ({ ...atual, dataPrevista: event.target.value }))}
+                                />
+                              </label>
+                              <label className="span-2">
+                                Observação administrativa
+                                <textarea
+                                  className="funcionarios-input"
+                                  maxLength={500}
+                                  value={formularioChecklist.observacaoAdministrativa}
+                                  onChange={(event) => setFormularioChecklist((atual) => ({ ...atual, observacaoAdministrativa: event.target.value }))}
+                                />
+                              </label>
+                              <button
+                                className="funcionarios-btn funcionarios-btn-primary"
+                                type="button"
+                                disabled={salvandoChecklist || !formularioChecklist.catalogoItemId}
+                                onClick={adicionarItemChecklistAdministrativo}
+                              >
+                                {salvandoChecklist ? 'Salvando...' : 'Adicionar item'}
+                              </button>
+                            </div>
+                          )
+                        )}
+
+                        {itensChecklist.length === 0 ? (
+                          <div className="funcionario-exames-empty">Nenhum item registrado neste desligamento.</div>
+                        ) : (
+                          <div className="funcionario-checklist-list">
+                            {itensChecklist.map((item) => {
+                              const formularioItem = formulariosItensChecklist[item.id] || {}
+                              const somenteHistorico = desligamentoChecklistSelecionado.efeito_revertido || !podeEditar
+                              return (
+                                <article key={item.id} className="funcionario-checklist-item">
+                                  <div className="funcionario-checklist-item-header">
+                                    <strong>{item.titulo_snapshot}</strong>
+                                    <span className={`funcionario-exame-status ${String(item.estado || '').toLowerCase()}`}>
+                                      {CHECKLIST_ESTADO_LABELS[item.estado] || item.estado}
+                                    </span>
+                                  </div>
+                                  <div className="funcionario-checklist-fields">
+                                    <label>
+                                      Estado
+                                      <select
+                                        className="funcionarios-input"
+                                        value={item.estado}
+                                        disabled={somenteHistorico || salvandoChecklist}
+                                        onChange={(event) => mudarEstadoItemChecklist(item, event.target.value)}
+                                      >
+                                        {Object.entries(CHECKLIST_ESTADO_LABELS).map(([valor, rotulo]) => <option key={valor} value={valor}>{rotulo}</option>)}
+                                      </select>
+                                    </label>
+                                    <label>
+                                      Data prevista (opcional)
+                                      <input
+                                        className="funcionarios-input"
+                                        type="date"
+                                        value={formularioItem.dataPrevista || ''}
+                                        disabled={somenteHistorico || salvandoChecklist}
+                                        onChange={(event) => atualizarFormularioItemChecklist(item.id, 'dataPrevista', event.target.value)}
+                                      />
+                                    </label>
+                                    <label className="span-2">
+                                      Observação administrativa
+                                      <textarea
+                                        className="funcionarios-input"
+                                        maxLength={500}
+                                        value={formularioItem.observacaoAdministrativa || ''}
+                                        disabled={somenteHistorico || salvandoChecklist}
+                                        onChange={(event) => atualizarFormularioItemChecklist(item.id, 'observacaoAdministrativa', event.target.value)}
+                                      />
+                                    </label>
+                                  </div>
+                                  {!somenteHistorico && (
+                                    <button
+                                      className="funcionarios-btn funcionarios-btn-secondary"
+                                      type="button"
+                                      disabled={salvandoChecklist}
+                                      onClick={() => salvarDetalhesItemChecklist(item)}
+                                    >
+                                      Salvar detalhes
+                                    </button>
+                                  )}
+                                  {item.estado === 'CONCLUIDO' && <small>Concluído em {formatarDataCurta(item.concluido_em)}</small>}
+                                </article>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
               </section>
             )}
 

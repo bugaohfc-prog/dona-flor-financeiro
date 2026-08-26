@@ -4361,6 +4361,7 @@ export default function App() {
         filiais={filiais}
         mostrarAviso={mostrarAviso}
         podeEditar={podeAcessarGestaoPessoas()}
+        podeGerenciarCatalogoChecklist={podeAdministrarUsuarios()}
         contextoNavegacao={contextoNavegacao}
         voltarPainel={() => navegarPara('dashboard')}
       />

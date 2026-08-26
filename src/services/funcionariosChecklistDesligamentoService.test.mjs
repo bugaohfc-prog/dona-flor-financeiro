@@ -2,9 +2,12 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import {
+  alterarAtividadeItemCatalogoChecklistDesligamento,
   alterarEstadoItemChecklistDesligamento,
   atualizarItemChecklistDesligamento,
+  criarItemCatalogoChecklistDesligamento,
   criarItemChecklistDesligamento,
+  editarTituloItemCatalogoChecklistDesligamento,
   listarCatalogoChecklistDesligamento,
   listarItensChecklistDesligamento
 } from './funcionariosChecklistDesligamentoService.js'
@@ -100,5 +103,28 @@ test('validação local bloqueia estado inválido e observação longa', () => {
     supabase, empresaId: EMPRESA_ID, itemId: ITEM_ID,
     dados: { observacaoAdministrativa: 'x'.repeat(501) }
   }), /500 caracteres/i)
+  assert.equal(chamadas.length, 0)
+})
+
+test('gestão do catálogo usa somente RPCs administrativas controladas', async () => {
+  const { supabase, chamadas } = criarSupabase()
+  await criarItemCatalogoChecklistDesligamento({ supabase, empresaId: EMPRESA_ID, titulo: '  Conferência   interna  ' })
+  await editarTituloItemCatalogoChecklistDesligamento({ supabase, empresaId: EMPRESA_ID, catalogoItemId: CATALOGO_ID, titulo: 'Conferência final' })
+  await alterarAtividadeItemCatalogoChecklistDesligamento({ supabase, empresaId: EMPRESA_ID, catalogoItemId: CATALOGO_ID, ativo: false })
+
+  assert.deepEqual(chamadas.filter((item) => item.tipo === 'rpc').map((item) => item.nome), [
+    'criar_item_catalogo_checklist_desligamento_controlado',
+    'editar_titulo_item_catalogo_checklist_desligamento_controlado',
+    'alterar_atividade_item_catalogo_checklist_desligamento_controlado'
+  ])
+  assert.equal(chamadas[0].parametros.p_titulo, 'Conferência interna')
+  assert.equal(chamadas[2].parametros.p_ativo, false)
+  assert.equal(chamadas.some((item) => ['insert', 'update', 'delete'].includes(item.tipo)), false)
+})
+
+test('gestão do catálogo valida título e atividade antes da rede', () => {
+  const { supabase, chamadas } = criarSupabase()
+  assert.throws(() => criarItemCatalogoChecklistDesligamento({ supabase, empresaId: EMPRESA_ID, titulo: 'x' }), /3 e 160/)
+  assert.throws(() => alterarAtividadeItemCatalogoChecklistDesligamento({ supabase, empresaId: EMPRESA_ID, catalogoItemId: CATALOGO_ID, ativo: 'false' }), /inválido/i)
   assert.equal(chamadas.length, 0)
 })

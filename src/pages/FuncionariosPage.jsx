@@ -4,6 +4,7 @@ import { useFuncionarios } from '../hooks/useFuncionarios'
 import { useFuncionariosChecklistDesligamento } from '../hooks/useFuncionariosChecklistDesligamento'
 import { useFuncionariosDesligamentos } from '../hooks/useFuncionariosDesligamentos'
 import { FilterCard, FilterGrid, KpiCard, KpiGrid, PageHeader, PageState } from '../components/shared/PagePatterns.jsx'
+import { FuncionariosChecklistCatalogo } from '../components/funcionarios/FuncionariosChecklistCatalogo.jsx'
 import { mensagemSeguraErro } from '../utils/session'
 import {
   admissaoFoiAlterada,
@@ -230,6 +231,7 @@ export default function FuncionariosPage({
   filiais = [],
   mostrarAviso,
   podeEditar = false,
+  podeGerenciarCatalogoChecklist = false,
   contextoNavegacao = null,
   voltarPainel
 }) {
@@ -1008,6 +1010,12 @@ export default function FuncionariosPage({
             </button>
           )}
         </>}
+      />
+
+      <FuncionariosChecklistCatalogo
+        empresaId={empresaId}
+        podeGerenciar={podeGerenciarCatalogoChecklist}
+        mostrarAviso={mostrarAviso}
       />
 
       <section className="funcionarios-panel">

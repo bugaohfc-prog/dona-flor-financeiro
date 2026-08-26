@@ -267,6 +267,19 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
 .funcionario-checklist-item-header strong { min-width: 0; overflow-wrap: anywhere; }
 .funcionario-checklist-item > button { justify-self: start; }
 .funcionario-checklist-item > small { color: var(--df-muted); }
+.funcionario-catalogo-panel { gap: 14px; }
+.funcionario-catalogo-header h2 { margin: 3px 0 4px; color: var(--df-text); font-size: clamp(1.05rem, 2vw, 1.3rem); }
+.funcionario-catalogo-header p { margin: 0; color: var(--df-muted); line-height: 1.45; }
+.funcionario-catalogo-criar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+.funcionario-catalogo-criar label,
+.funcionario-catalogo-edicao { display: grid; min-width: 0; gap: 6px; color: #475569; font-size: .75rem; font-weight: 850; }
+.funcionario-catalogo-lista { display: grid; gap: 8px; }
+.funcionario-catalogo-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--df-border); border-radius: var(--df-radius-control); background: var(--df-surface); }
+.funcionario-catalogo-item.is-inativo { background: var(--df-surface-soft); }
+.funcionario-catalogo-identidade { display: flex; min-width: 0; align-items: center; gap: 8px; flex-wrap: wrap; }
+.funcionario-catalogo-identidade strong { min-width: 0; overflow-wrap: anywhere; }
+.funcionario-catalogo-acoes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.funcionario-catalogo-error { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border: 1px solid #fecaca; border-radius: var(--df-radius-control); background: #fff7f7; color: #991b1b; }
 .funcionario-exame-status.concluido { background: #ecfdf5; color: #047857; }
 .funcionario-exame-status.nao_aplicavel { background: #f1f5f9; color: #475569; }
 .funcionario-exames-section { display: grid; min-width: 0; gap: 10px; padding: 0 12px 12px; }
@@ -321,4 +334,8 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
   .funcionario-confirmacao-resumo > div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .funcionario-vinculo-row { grid-template-columns: minmax(0, 1fr); }
   .funcionario-readmissao-confirmacao { align-items: flex-start; }
+  .funcionario-catalogo-criar,
+  .funcionario-catalogo-item { grid-template-columns: minmax(0, 1fr); }
+  .funcionario-catalogo-acoes,
+  .funcionario-catalogo-error { display: grid; grid-template-columns: minmax(0, 1fr); }
 }

@@ -37,12 +37,50 @@ function observacaoOpcional(valor) {
   return observacao
 }
 
+function tituloCatalogoObrigatorio(valor) {
+  const titulo = texto(valor).replace(/\s+/g, ' ')
+  if (titulo.length < 3 || titulo.length > 160) {
+    throw new Error('O título deve ter entre 3 e 160 caracteres.')
+  }
+  return titulo
+}
+
 export function listarCatalogoChecklistDesligamento({ supabase, empresaId, somenteAtivos = true }) {
   const empresa = assertEmpresaId(texto(empresaId))
   let query = selecionarPorEmpresa(supabase, TABELA_CATALOGO, empresa, CHECKLIST_CATALOGO_SELECT)
     .order('titulo', { ascending: true })
   if (somenteAtivos) query = query.eq('ativo', true)
   return query
+}
+
+export function criarItemCatalogoChecklistDesligamento({ supabase, empresaId, titulo, correlationId = null }) {
+  const empresa = assertEmpresaId(texto(empresaId))
+  return supabase.rpc('criar_item_catalogo_checklist_desligamento_controlado', {
+    p_empresa_id: empresa,
+    p_titulo: tituloCatalogoObrigatorio(titulo),
+    p_correlation_id: texto(correlationId) || null
+  })
+}
+
+export function editarTituloItemCatalogoChecklistDesligamento({ supabase, empresaId, catalogoItemId, titulo, correlationId = null }) {
+  const empresa = assertEmpresaId(texto(empresaId))
+  return supabase.rpc('editar_titulo_item_catalogo_checklist_desligamento_controlado', {
+    p_empresa_id: empresa,
+    p_catalogo_item_id: idObrigatorio(catalogoItemId, 'Item do catálogo não identificado.'),
+    p_titulo: tituloCatalogoObrigatorio(titulo),
+    p_correlation_id: texto(correlationId) || null
+  })
+}
+
+export function alterarAtividadeItemCatalogoChecklistDesligamento({ supabase, empresaId, catalogoItemId, ativo, correlationId = null }) {
+  const empresa = assertEmpresaId(texto(empresaId))
+  if (typeof ativo !== 'boolean') throw new Error('Estado do item do catálogo inválido.')
+  return supabase.rpc('alterar_atividade_item_catalogo_checklist_desligamento_controlado', {
+    p_empresa_id: empresa,
+    p_catalogo_item_id: idObrigatorio(catalogoItemId, 'Item do catálogo não identificado.'),
+    p_ativo: ativo,
+    p_correlation_id: texto(correlationId) || null
+  })
 }
 
 export function listarItensChecklistDesligamento({ supabase, empresaId, desligamentoId }) {

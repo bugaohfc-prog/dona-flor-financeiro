@@ -1367,7 +1367,10 @@ export default function FuncionariosPage({
                               return (
                                 <article key={item.id} className="funcionario-checklist-item">
                                   <div className="funcionario-checklist-item-header">
-                                    <strong>{item.titulo_snapshot}</strong>
+                                    <div className="funcionario-checklist-item-identidade">
+                                      <strong>{item.titulo_snapshot}</strong>
+                                      {item.descricao_snapshot && <p className="funcionario-checklist-descricao">{item.descricao_snapshot}</p>}
+                                    </div>
                                     <span className={`funcionario-exame-status ${String(item.estado || '').toLowerCase()}`}>
                                       {CHECKLIST_ESTADO_LABELS[item.estado] || item.estado}
                                     </span>

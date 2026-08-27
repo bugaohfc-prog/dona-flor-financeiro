@@ -22,7 +22,7 @@ test('criação gera código interno estável e não semeia catálogo', () => {
 })
 
 test('edição altera somente catálogo e preserva snapshot histórico', () => {
-  const editar = migration.match(/create or replace function public\.editar_titulo_item_catalogo[\s\S]*?end;\n\$\$;/)?.[0] || ''
+  const editar = migration.match(/create or replace function public\.editar_titulo_item_catalogo[\s\S]*?end;\r?\n\$\$;/)?.[0] || ''
   assert.match(editar, /set titulo = v_titulo/)
   assert.doesNotMatch(editar, /df_funcionarios_desligamentos_checklist\s/)
   assert.doesNotMatch(editar, /titulo_snapshot/)

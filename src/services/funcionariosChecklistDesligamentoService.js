@@ -6,12 +6,12 @@ const TABELA_ITENS = 'df_funcionarios_desligamentos_checklist'
 const ESTADOS = new Set(['PENDENTE', 'CONCLUIDO', 'NAO_APLICAVEL'])
 
 export const CHECKLIST_CATALOGO_SELECT = [
-  'id', 'empresa_id', 'codigo', 'titulo', 'ativo', 'criado_em', 'atualizado_em'
+  'id', 'empresa_id', 'codigo', 'titulo', 'descricao_operacional', 'ativo', 'criado_em', 'atualizado_em'
 ].join(', ')
 
 export const CHECKLIST_ITEM_SELECT = [
   'id', 'empresa_id', 'desligamento_id', 'funcionario_id', 'catalogo_item_id',
-  'item_codigo', 'titulo_snapshot', 'estado', 'data_prevista', 'concluido_em',
+  'item_codigo', 'titulo_snapshot', 'descricao_snapshot', 'estado', 'data_prevista', 'concluido_em',
   'concluido_por', 'observacao_administrativa', 'correlation_id', 'criado_em', 'atualizado_em'
 ].join(', ')
 
@@ -45,6 +45,14 @@ function tituloCatalogoObrigatorio(valor) {
   return titulo
 }
 
+function descricaoOperacionalOpcional(valor) {
+  const descricao = texto(valor) || null
+  if (descricao && descricao.length > 500) {
+    throw new Error('A descrição operacional deve ter no máximo 500 caracteres.')
+  }
+  return descricao
+}
+
 export function listarCatalogoChecklistDesligamento({ supabase, empresaId, somenteAtivos = true }) {
   const empresa = assertEmpresaId(texto(empresaId))
   let query = selecionarPorEmpresa(supabase, TABELA_CATALOGO, empresa, CHECKLIST_CATALOGO_SELECT)
@@ -53,21 +61,23 @@ export function listarCatalogoChecklistDesligamento({ supabase, empresaId, somen
   return query
 }
 
-export function criarItemCatalogoChecklistDesligamento({ supabase, empresaId, titulo, correlationId = null }) {
+export function criarItemCatalogoChecklistDesligamento({ supabase, empresaId, titulo, descricaoOperacional = null, correlationId = null }) {
   const empresa = assertEmpresaId(texto(empresaId))
   return supabase.rpc('criar_item_catalogo_checklist_desligamento_controlado', {
     p_empresa_id: empresa,
     p_titulo: tituloCatalogoObrigatorio(titulo),
+    p_descricao_operacional: descricaoOperacionalOpcional(descricaoOperacional),
     p_correlation_id: texto(correlationId) || null
   })
 }
 
-export function editarTituloItemCatalogoChecklistDesligamento({ supabase, empresaId, catalogoItemId, titulo, correlationId = null }) {
+export function editarItemCatalogoChecklistDesligamento({ supabase, empresaId, catalogoItemId, titulo, descricaoOperacional = null, correlationId = null }) {
   const empresa = assertEmpresaId(texto(empresaId))
   return supabase.rpc('editar_titulo_item_catalogo_checklist_desligamento_controlado', {
     p_empresa_id: empresa,
     p_catalogo_item_id: idObrigatorio(catalogoItemId, 'Item do catálogo não identificado.'),
     p_titulo: tituloCatalogoObrigatorio(titulo),
+    p_descricao_operacional: descricaoOperacionalOpcional(descricaoOperacional),
     p_correlation_id: texto(correlationId) || null
   })
 }

@@ -7,7 +7,7 @@ import {
   atualizarItemChecklistDesligamento,
   criarItemCatalogoChecklistDesligamento,
   criarItemChecklistDesligamento,
-  editarTituloItemCatalogoChecklistDesligamento,
+  editarItemCatalogoChecklistDesligamento,
   listarCatalogoChecklistDesligamento,
   listarItensChecklistDesligamento
 } from './funcionariosChecklistDesligamentoService.js'
@@ -108,8 +108,8 @@ test('validação local bloqueia estado inválido e observação longa', () => {
 
 test('gestão do catálogo usa somente RPCs administrativas controladas', async () => {
   const { supabase, chamadas } = criarSupabase()
-  await criarItemCatalogoChecklistDesligamento({ supabase, empresaId: EMPRESA_ID, titulo: '  Conferência   interna  ' })
-  await editarTituloItemCatalogoChecklistDesligamento({ supabase, empresaId: EMPRESA_ID, catalogoItemId: CATALOGO_ID, titulo: 'Conferência final' })
+  await criarItemCatalogoChecklistDesligamento({ supabase, empresaId: EMPRESA_ID, titulo: '  Conferência   interna  ', descricaoOperacional: '  Conferir antes do envio.  ' })
+  await editarItemCatalogoChecklistDesligamento({ supabase, empresaId: EMPRESA_ID, catalogoItemId: CATALOGO_ID, titulo: 'Conferência final', descricaoOperacional: '' })
   await alterarAtividadeItemCatalogoChecklistDesligamento({ supabase, empresaId: EMPRESA_ID, catalogoItemId: CATALOGO_ID, ativo: false })
 
   assert.deepEqual(chamadas.filter((item) => item.tipo === 'rpc').map((item) => item.nome), [
@@ -118,6 +118,8 @@ test('gestão do catálogo usa somente RPCs administrativas controladas', async 
     'alterar_atividade_item_catalogo_checklist_desligamento_controla'
   ])
   assert.equal(chamadas[0].parametros.p_titulo, 'Conferência interna')
+  assert.equal(chamadas[0].parametros.p_descricao_operacional, 'Conferir antes do envio.')
+  assert.equal(chamadas[1].parametros.p_descricao_operacional, null)
   assert.equal(chamadas[2].parametros.p_ativo, false)
   assert.equal(chamadas.some((item) => ['insert', 'update', 'delete'].includes(item.tipo)), false)
 })
@@ -125,6 +127,7 @@ test('gestão do catálogo usa somente RPCs administrativas controladas', async 
 test('gestão do catálogo valida título e atividade antes da rede', () => {
   const { supabase, chamadas } = criarSupabase()
   assert.throws(() => criarItemCatalogoChecklistDesligamento({ supabase, empresaId: EMPRESA_ID, titulo: 'x' }), /3 e 160/)
+  assert.throws(() => criarItemCatalogoChecklistDesligamento({ supabase, empresaId: EMPRESA_ID, titulo: 'Item válido', descricaoOperacional: 'x'.repeat(501) }), /500 caracteres/)
   assert.throws(() => alterarAtividadeItemCatalogoChecklistDesligamento({ supabase, empresaId: EMPRESA_ID, catalogoItemId: CATALOGO_ID, ativo: 'false' }), /inválido/i)
   assert.equal(chamadas.length, 0)
 })

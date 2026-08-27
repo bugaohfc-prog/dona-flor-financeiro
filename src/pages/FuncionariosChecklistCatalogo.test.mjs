@@ -13,15 +13,23 @@ test('catálogo aparece apenas com autorização administrativa existente', () =
   assert.match(componente, /if \(!podeGerenciar\) return null/)
 })
 
-test('UI cobre loading, erro, vazio, criação, edição e atividade', () => {
+test('UI cobre loading, erro, vazio, criação, descrição, edição e atividade', () => {
   assert.match(componente, /Itens do checklist de desligamento/)
   assert.match(componente, /Carregando itens configurados/)
   assert.match(hook, /Não foi possível carregar os itens/)
   assert.match(componente, /Nenhum item configurado\./)
   assert.match(componente, /Criar item/)
-  assert.match(componente, /Editar título/)
+  assert.match(componente, /Descrição operacional \(opcional\)/)
+  assert.match(componente, /descricao_operacional/)
+  assert.match(componente, /Salvar alterações/)
   assert.match(componente, /Inativar/)
   assert.match(componente, /Reativar/)
+})
+
+test('checklist instanciado exibe a descrição histórica sem substituir o título', () => {
+  assert.match(pagina, /item\.titulo_snapshot/)
+  assert.match(pagina, /item\.descricao_snapshot/)
+  assert.match(pagina, /funcionario-checklist-descricao/)
 })
 
 test('UI não exibe código nem IDs técnicos', () => {

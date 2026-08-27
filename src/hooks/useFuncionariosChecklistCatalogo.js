@@ -3,7 +3,7 @@ import { supabase as supabasePadrao } from '../lib/supabase'
 import {
   alterarAtividadeItemCatalogoChecklistDesligamento,
   criarItemCatalogoChecklistDesligamento,
-  editarTituloItemCatalogoChecklistDesligamento,
+  editarItemCatalogoChecklistDesligamento,
   listarCatalogoChecklistDesligamento
 } from '../services/funcionariosChecklistDesligamentoService'
 import { mensagemSeguraErro } from '../utils/session'
@@ -80,8 +80,8 @@ export function useFuncionariosChecklistCatalogo({ empresaId, habilitado = false
     salvando,
     erro,
     carregar,
-    criar: (titulo) => executar(() => criarItemCatalogoChecklistDesligamento({ supabase, empresaId: empresaAtual, titulo })),
-    editarTitulo: (catalogoItemId, titulo) => executar(() => editarTituloItemCatalogoChecklistDesligamento({ supabase, empresaId: empresaAtual, catalogoItemId, titulo })),
+    criar: ({ titulo, descricaoOperacional }) => executar(() => criarItemCatalogoChecklistDesligamento({ supabase, empresaId: empresaAtual, titulo, descricaoOperacional })),
+    editar: (catalogoItemId, { titulo, descricaoOperacional }) => executar(() => editarItemCatalogoChecklistDesligamento({ supabase, empresaId: empresaAtual, catalogoItemId, titulo, descricaoOperacional })),
     alterarAtividade: (catalogoItemId, ativo) => executar(() => alterarAtividadeItemCatalogoChecklistDesligamento({ supabase, empresaId: empresaAtual, catalogoItemId, ativo }))
   }
 }

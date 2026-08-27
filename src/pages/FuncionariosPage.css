@@ -265,19 +265,25 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
 .funcionario-checklist-item { display: grid; min-width: 0; gap: 10px; padding: 10px; border: 1px solid var(--df-border); border-radius: var(--df-radius-control); background: var(--df-surface); }
 .funcionario-checklist-item-header { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 10px; }
 .funcionario-checklist-item-header strong { min-width: 0; overflow-wrap: anywhere; }
+.funcionario-checklist-item-identidade { display: grid; min-width: 0; gap: 3px; }
+.funcionario-checklist-descricao { margin: 0; color: var(--df-muted); font-size: .75rem; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
 .funcionario-checklist-item > button { justify-self: start; }
 .funcionario-checklist-item > small { color: var(--df-muted); }
 .funcionario-catalogo-panel { gap: 14px; }
 .funcionario-catalogo-header h2 { margin: 3px 0 4px; color: var(--df-text); font-size: clamp(1.05rem, 2vw, 1.3rem); }
 .funcionario-catalogo-header p { margin: 0; color: var(--df-muted); line-height: 1.45; }
 .funcionario-catalogo-criar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+.funcionario-catalogo-criar .span-2 { grid-column: 1 / -1; }
 .funcionario-catalogo-criar label,
-.funcionario-catalogo-edicao { display: grid; min-width: 0; gap: 6px; color: #475569; font-size: .75rem; font-weight: 850; }
+.funcionario-catalogo-edicao,
+.funcionario-catalogo-edicao label { display: grid; min-width: 0; gap: 6px; color: #475569; font-size: .75rem; font-weight: 850; }
 .funcionario-catalogo-lista { display: grid; gap: 8px; }
 .funcionario-catalogo-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--df-border); border-radius: var(--df-radius-control); background: var(--df-surface); }
 .funcionario-catalogo-item.is-inativo { background: var(--df-surface-soft); }
-.funcionario-catalogo-identidade { display: flex; min-width: 0; align-items: center; gap: 8px; flex-wrap: wrap; }
+.funcionario-catalogo-identidade { display: flex; min-width: 0; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
+.funcionario-catalogo-identidade > div { display: grid; min-width: 0; flex: 1; gap: 3px; }
 .funcionario-catalogo-identidade strong { min-width: 0; overflow-wrap: anywhere; }
+.funcionario-catalogo-identidade p { margin: 0; color: var(--df-muted); font-size: .75rem; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
 .funcionario-catalogo-acoes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .funcionario-catalogo-error { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border: 1px solid #fecaca; border-radius: var(--df-radius-control); background: #fff7f7; color: #991b1b; }
 .funcionario-exame-status.concluido { background: #ecfdf5; color: #047857; }

@@ -75,7 +75,8 @@ export function editarTituloItemCatalogoChecklistDesligamento({ supabase, empres
 export function alterarAtividadeItemCatalogoChecklistDesligamento({ supabase, empresaId, catalogoItemId, ativo, correlationId = null }) {
   const empresa = assertEmpresaId(texto(empresaId))
   if (typeof ativo !== 'boolean') throw new Error('Estado do item do catálogo inválido.')
-  return supabase.rpc('alterar_atividade_item_catalogo_checklist_desligamento_controlado', {
+  // PostgreSQL limita identificadores a 63 bytes e materializa esta RPC com o nome truncado abaixo.
+  return supabase.rpc('alterar_atividade_item_catalogo_checklist_desligamento_controla', {
     p_empresa_id: empresa,
     p_catalogo_item_id: idObrigatorio(catalogoItemId, 'Item do catálogo não identificado.'),
     p_ativo: ativo,

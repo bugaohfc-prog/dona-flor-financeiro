@@ -115,7 +115,7 @@ test('gestão do catálogo usa somente RPCs administrativas controladas', async 
   assert.deepEqual(chamadas.filter((item) => item.tipo === 'rpc').map((item) => item.nome), [
     'criar_item_catalogo_checklist_desligamento_controlado',
     'editar_titulo_item_catalogo_checklist_desligamento_controlado',
-    'alterar_atividade_item_catalogo_checklist_desligamento_controlado'
+    'alterar_atividade_item_catalogo_checklist_desligamento_controla'
   ])
   assert.equal(chamadas[0].parametros.p_titulo, 'Conferência interna')
   assert.equal(chamadas[2].parametros.p_ativo, false)

@@ -6,6 +6,10 @@ const migration = fs.readFileSync(
   'supabase/migrations/20260827191837_adicionar_descricao_operacional_checklist_2c6d.sql',
   'utf8'
 )
+const correcaoAuditoria = fs.readFileSync(
+  'supabase/migrations/20260827194901_corrigir_acao_auditoria_snapshot_checklist_2c6d.sql',
+  'utf8'
+)
 
 function funcao(nome) {
   return migration.match(new RegExp(`create(?: or replace)? function public\\.${nome}[\\s\\S]*?end;\\n\\$\\$;`))?.[0] || ''
@@ -58,4 +62,12 @@ test('descrição não introduz DELETE nem regra obrigatória automática', () =
   assert.doesNotMatch(migration, /descricao_(?:operacional|snapshot)\s+text\s+not null/i)
   assert.doesNotMatch(migration, /data_prevista[^\n]*interval/i)
   assert.match(migration, /descricao_operacional text null/)
+})
+
+test('roll-forward preserva snapshot e restaura a ação de auditoria válida', () => {
+  assert.match(correcaoAuditoria, /descricao_snapshot/)
+  assert.match(correcaoAuditoria, /rh\.checklist_item\.criado/)
+  assert.match(correcaoAuditoria, /rh\.desligamento\.checklist_item\.criado/)
+  assert.match(correcaoAuditoria, /execute replace/)
+  assert.doesNotMatch(correcaoAuditoria, /update public\.|delete from public\./i)
 })

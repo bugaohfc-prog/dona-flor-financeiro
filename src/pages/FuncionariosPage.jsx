@@ -367,6 +367,10 @@ export default function FuncionariosPage({
     () => (catalogoChecklist || []).filter((item) => !codigosChecklistAdicionados.has(item.codigo)),
     [catalogoChecklist, codigosChecklistAdicionados]
   )
+  const catalogoChecklistSelecionado = useMemo(
+    () => catalogoChecklistDisponivel.find((item) => item.id === formularioChecklist.catalogoItemId) || null,
+    [catalogoChecklistDisponivel, formularioChecklist.catalogoItemId]
+  )
   const desligamentoEfetivoFuncionarioEditando = funcionarioEditando?.id
     ? desligamentoEfetivoDoVinculo(funcionarioEditando.id)
     : null
@@ -1326,6 +1330,11 @@ export default function FuncionariosPage({
                                   <option value="">Selecione</option>
                                   {catalogoChecklistDisponivel.map((item) => <option key={item.id} value={item.id}>{item.titulo}</option>)}
                                 </select>
+                                {catalogoChecklistSelecionado?.descricao_operacional && (
+                                  <p className="funcionario-checklist-descricao">
+                                    {catalogoChecklistSelecionado.descricao_operacional}
+                                  </p>
+                                )}
                               </label>
                               <label>
                                 Data prevista (opcional)

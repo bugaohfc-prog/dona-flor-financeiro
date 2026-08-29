@@ -12,7 +12,7 @@ const correcaoAuditoria = fs.readFileSync(
 )
 
 function funcao(nome) {
-  return migration.match(new RegExp(`create(?: or replace)? function public\\.${nome}[\\s\\S]*?end;\\n\\$\\$;`))?.[0] || ''
+  return migration.match(new RegExp(`create(?: or replace)? function public\\.${nome}[\\s\\S]*?end;\\r?\\n\\$\\$;`))?.[0] || ''
 }
 
 test('descrições são opcionais, limitadas e não recebem backfill', () => {

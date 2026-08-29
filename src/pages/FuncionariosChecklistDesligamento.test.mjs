@@ -15,11 +15,22 @@ test('UI exibe seção recolhível com loading, erro e catálogo vazio', () => {
 
 test('UI usa catálogo e três estados sem expor IDs técnicos', () => {
   assert.match(pagina, /catalogoChecklistDisponivel\.map/)
+  assert.match(pagina, /catalogoChecklistSelecionado\?\.descricao_operacional/)
+  assert.match(pagina, /catalogoChecklistSelecionado\.descricao_operacional/)
   assert.match(pagina, /CHECKLIST_ESTADO_LABELS/)
   assert.match(pagina, /PENDENTE: 'Pendente'/)
   assert.match(pagina, /CONCLUIDO: 'Concluído'/)
   assert.match(pagina, /NAO_APLICAVEL: 'Não aplicável'/)
   assert.doesNotMatch(pagina, />\{item\.id\}</)
+})
+
+test('UI preserva snapshots e detalhes administrativos no uso real', () => {
+  assert.match(pagina, /item\.titulo_snapshot/)
+  assert.match(pagina, /item\.descricao_snapshot/)
+  assert.match(pagina, /Data prevista \(opcional\)/)
+  assert.match(pagina, /Observação administrativa/)
+  assert.match(pagina, /salvarDetalhesItemChecklist/)
+  assert.match(pagina, /mudarEstadoItemChecklist/)
 })
 
 test('workflow revertido mantém histórico e bloqueia controles operacionais', () => {

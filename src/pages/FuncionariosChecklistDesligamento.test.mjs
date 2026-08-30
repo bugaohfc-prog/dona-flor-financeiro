@@ -36,5 +36,26 @@ test('UI preserva snapshots e detalhes administrativos no uso real', () => {
 test('workflow revertido mantém histórico e bloqueia controles operacionais', () => {
   assert.match(pagina, /Este checklist é somente histórico/)
   assert.match(pagina, /desligamentoChecklistSelecionado\.efeito_revertido/)
-  assert.match(pagina, /const somenteHistorico = desligamentoChecklistSelecionado\.efeito_revertido \|\| !podeEditar/)
+  assert.match(pagina, /const somenteHistorico = historicoDesligamentoSomenteLeitura \|\| desligamentoChecklistSelecionado\.efeito_revertido \|\| !podeEditar/)
+})
+
+test('vínculo arquivado com desligamento oferece histórico sem reativação', () => {
+  assert.match(pagina, /funcionario\.arquivado && historicoFuncionario\.length > 0/)
+  assert.match(pagina, /funcionario\.arquivado \|\| funcionario\.status === 'desligado'/)
+  assert.match(pagina, /Vínculo arquivado — histórico somente leitura/)
+  assert.match(pagina, /sem reativar ou alterar este vínculo/)
+})
+
+test('vínculo arquivado sem desligamento não oferece ação inválida', () => {
+  assert.match(pagina, /\(funcionario\.arquivado \|\| funcionario\.status === 'desligado'\) && historico\.length === 0/)
+})
+
+test('modo arquivado bloqueia todas as ações mutáveis do desligamento e checklist', () => {
+  assert.match(pagina, /const historicoDesligamentoSomenteLeitura = Boolean\(funcionarioDesligamento\?\.arquivado\)/)
+  assert.match(pagina, /!historicoDesligamentoSomenteLeitura && desligamentoAbertoSelecionado/)
+  assert.match(pagina, /!historicoDesligamentoSomenteLeitura && desligamentoConcluidoEfetivoSelecionado/)
+  assert.match(pagina, /!historicoDesligamentoSomenteLeitura && !desligamentoChecklistSelecionado\.efeito_revertido/)
+  assert.match(pagina, /const somenteHistorico = historicoDesligamentoSomenteLeitura \|\| desligamentoChecklistSelecionado\.efeito_revertido \|\| !podeEditar/)
+  assert.match(pagina, /historicoDesligamentoSomenteLeitura \|\| salvandoDesligamento/)
+  assert.match(pagina, /historicoDesligamentoSomenteLeitura \|\| salvandoChecklist/)
 })

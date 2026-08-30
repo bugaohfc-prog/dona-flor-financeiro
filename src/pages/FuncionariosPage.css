@@ -226,6 +226,20 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
   line-height: 1.45;
 }
 .funcionario-desligamento-alerta.is-concluido { border-color: #86efac; background: #f0fdf4; color: #166534; }
+
+.funcionario-desligamento-readonly {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--df-radius-control);
+  background: #f8fafc;
+  color: #475569;
+  font-size: .8rem;
+  line-height: 1.4;
+}
+
+.funcionario-desligamento-readonly strong { color: #334155; }
 .funcionario-desligamento-conclusao { border-color: #fecaca; background: #fffafa; }
 .funcionario-confirmacao-backdrop { z-index: 1300; }
 .funcionario-confirmacao-modal { width: min(620px, 100%); }

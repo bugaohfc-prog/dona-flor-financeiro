@@ -331,6 +331,7 @@ export default function FuncionariosPage({
   const historicoDesligamentoSelecionado = funcionarioDesligamento?.id
     ? desligamentosPorFuncionario.get(funcionarioDesligamento.id) || []
     : []
+  const historicoDesligamentoSomenteLeitura = Boolean(funcionarioDesligamento?.arquivado)
   const desligamentoAbertoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'ABERTO') || null
   const desligamentoConcluidoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'CONCLUIDO') || null
   const desligamentoConcluidoEfetivoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'CONCLUIDO' && !item.efeito_revertido) || null
@@ -742,8 +743,8 @@ export default function FuncionariosPage({
 
   function abrirModalDesligamento(funcionario) {
     const historico = desligamentosPorFuncionario.get(funcionario?.id) || []
-    if (!funcionario?.id || funcionario.arquivado || !podeEditar) return
-    if (funcionario.status === 'desligado' && historico.length === 0) return
+    if (!funcionario?.id || !podeEditar) return
+    if ((funcionario.arquivado || funcionario.status === 'desligado') && historico.length === 0) return
     const aberto = historico.find((item) => item.estado === 'ABERTO')
     setFuncionarioDesligamento(funcionario)
     setFormularioDesligamento(aberto ? {
@@ -771,12 +772,13 @@ export default function FuncionariosPage({
   }
 
   function atualizarCampoDesligamento(campo, valor) {
+    if (historicoDesligamentoSomenteLeitura) return
     setFormularioDesligamento((atual) => ({ ...atual, [campo]: valor }))
   }
 
   async function salvarWorkflowDesligamento(event) {
     event.preventDefault()
-    if (!funcionarioDesligamento?.id || salvandoDesligamento) return
+    if (!funcionarioDesligamento?.id || historicoDesligamentoSomenteLeitura || salvandoDesligamento) return
     const dados = {
       motivo: formularioDesligamento.motivo,
       dataEfetiva: formularioDesligamento.dataEfetiva,
@@ -797,7 +799,7 @@ export default function FuncionariosPage({
   }
 
   async function cancelarWorkflowDesligamento() {
-    if (!desligamentoAbertoSelecionado?.id || salvandoDesligamento) return
+    if (!desligamentoAbertoSelecionado?.id || historicoDesligamentoSomenteLeitura || salvandoDesligamento) return
     if (String(formularioDesligamento.motivoCancelamento || '').trim().length < 3) {
       mostrarAviso?.('Informe o motivo do cancelamento.', 'erro')
       return
@@ -815,7 +817,7 @@ export default function FuncionariosPage({
   }
 
   async function concluirWorkflowDesligamento() {
-    if (!desligamentoAbertoSelecionado?.id || salvandoDesligamento) return
+    if (!desligamentoAbertoSelecionado?.id || historicoDesligamentoSomenteLeitura || salvandoDesligamento) return
     const resposta = await concluirDesligamento(desligamentoAbertoSelecionado.id)
     if (resposta?.error) {
       mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível concluir o desligamento.'), 'erro')
@@ -828,7 +830,7 @@ export default function FuncionariosPage({
   }
 
   function abrirRetificacao() {
-    if (!desligamentoConcluidoEfetivoSelecionado) return
+    if (!desligamentoConcluidoEfetivoSelecionado || historicoDesligamentoSomenteLeitura) return
     setFormularioCorrecao({
       tipo: 'RETIFICACAO',
       dataEfetiva: desligamentoConcluidoEfetivoSelecionado.data_efetiva_efetiva || desligamentoConcluidoEfetivoSelecionado.data_efetiva || '',
@@ -839,13 +841,13 @@ export default function FuncionariosPage({
   }
 
   function abrirReversaoPorErro() {
-    if (!desligamentoConcluidoEfetivoSelecionado) return
+    if (!desligamentoConcluidoEfetivoSelecionado || historicoDesligamentoSomenteLeitura) return
     setFormularioCorrecao({ ...FORMULARIO_CORRECAO_INICIAL, tipo: 'REVERSAO_ERRO' })
   }
 
   async function salvarCorrecaoDesligamento(event) {
     event.preventDefault()
-    if (!desligamentoConcluidoEfetivoSelecionado?.id || salvandoDesligamento) return
+    if (!desligamentoConcluidoEfetivoSelecionado?.id || historicoDesligamentoSomenteLeitura || salvandoDesligamento) return
     const resposta = formularioCorrecao.tipo === 'RETIFICACAO'
       ? await retificarDesligamento(desligamentoConcluidoEfetivoSelecionado.id, formularioCorrecao)
       : await reverterDesligamentoPorErro(desligamentoConcluidoEfetivoSelecionado.id, formularioCorrecao.motivoCorrecao)
@@ -864,7 +866,7 @@ export default function FuncionariosPage({
   }
 
   async function adicionarItemChecklistAdministrativo() {
-    if (!desligamentoConcluidoEfetivoSelecionado?.id || !formularioChecklist.catalogoItemId || salvandoChecklist) return
+    if (!desligamentoConcluidoEfetivoSelecionado?.id || historicoDesligamentoSomenteLeitura || !formularioChecklist.catalogoItemId || salvandoChecklist) return
     const resposta = await criarItemChecklist({
       catalogoItemId: formularioChecklist.catalogoItemId,
       dataPrevista: formularioChecklist.dataPrevista,
@@ -879,6 +881,7 @@ export default function FuncionariosPage({
   }
 
   function atualizarFormularioItemChecklist(itemId, campo, valor) {
+    if (historicoDesligamentoSomenteLeitura) return
     setFormulariosItensChecklist((atual) => ({
       ...atual,
       [itemId]: { ...(atual[itemId] || {}), [campo]: valor }
@@ -886,7 +889,7 @@ export default function FuncionariosPage({
   }
 
   async function salvarDetalhesItemChecklist(item) {
-    if (!item?.id || salvandoChecklist || !desligamentoConcluidoEfetivoSelecionado) return
+    if (!item?.id || historicoDesligamentoSomenteLeitura || salvandoChecklist || !desligamentoConcluidoEfetivoSelecionado) return
     const dados = formulariosItensChecklist[item.id] || {}
     const resposta = await atualizarItemChecklist(item.id, dados)
     if (resposta?.error) {
@@ -897,7 +900,7 @@ export default function FuncionariosPage({
   }
 
   async function mudarEstadoItemChecklist(item, estado) {
-    if (!item?.id || salvandoChecklist || !desligamentoConcluidoEfetivoSelecionado) return
+    if (!item?.id || historicoDesligamentoSomenteLeitura || salvandoChecklist || !desligamentoConcluidoEfetivoSelecionado) return
     const resposta = await alterarEstadoItemChecklist(item.id, estado)
     if (resposta?.error) {
       await carregarChecklist()
@@ -1099,6 +1102,7 @@ export default function FuncionariosPage({
             {funcionariosRenderizados.map((funcionario) => {
               const status = funcionario.arquivado ? 'arquivado' : (funcionario.status || 'ativo')
               const filialNome = filiaisPorId[funcionario.filial_id] || 'Sem filial'
+              const historicoFuncionario = desligamentosPorFuncionario.get(funcionario.id) || []
 
               return (
                 <article key={funcionario.id} className={`funcionario-card funcionario-card-${status} ${funcionario.arquivado ? 'arquivado' : ''}`}>
@@ -1124,16 +1128,16 @@ export default function FuncionariosPage({
                         <button className="funcionarios-btn funcionarios-btn-secondary" type="button" disabled={salvando} onClick={() => abrirEdicaoFuncionario(funcionario)}>
                           Editar
                         </button>
-                        {!funcionario.arquivado && (funcionario.status !== 'desligado' || (desligamentosPorFuncionario.get(funcionario.id) || []).length > 0) && (
+                        {((funcionario.arquivado && historicoFuncionario.length > 0) || (!funcionario.arquivado && (funcionario.status !== 'desligado' || historicoFuncionario.length > 0))) && (
                           <button
                             className="funcionarios-btn funcionarios-btn-secondary"
                             type="button"
                             disabled={salvando || loadingDesligamentos}
                             onClick={() => abrirModalDesligamento(funcionario)}
                           >
-                            {funcionario.status === 'desligado'
+                            {funcionario.arquivado || funcionario.status === 'desligado'
                               ? 'Ver histórico'
-                              : (desligamentosPorFuncionario.get(funcionario.id) || []).some((item) => item.estado === 'ABERTO')
+                              : historicoFuncionario.some((item) => item.estado === 'ABERTO')
                               ? 'Ver desligamento'
                               : 'Iniciar desligamento'}
                           </button>
@@ -1189,6 +1193,13 @@ export default function FuncionariosPage({
               <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharModalDesligamento} disabled={salvandoDesligamento}>Fechar</button>
             </div>
 
+            {historicoDesligamentoSomenteLeitura && (
+              <div className="funcionario-desligamento-readonly" role="status">
+                <strong>Vínculo arquivado — histórico somente leitura</strong>
+                <span>Os dados do desligamento e do checklist podem ser consultados sem reativar ou alterar este vínculo.</span>
+              </div>
+            )}
+
             <div className={`funcionario-desligamento-alerta ${desligamentoConcluidoSelecionado ? 'is-concluido' : ''}`} role="status">
               {desligamentoConcluidoEfetivoSelecionado ? (
                 <>
@@ -1221,7 +1232,7 @@ export default function FuncionariosPage({
               </div>
             )}
 
-            {funcionarioDesligamento.status !== 'desligado' && !desligamentoConcluidoEfetivoSelecionado && <section className="funcionario-modal-section">
+            {!historicoDesligamentoSomenteLeitura && funcionarioDesligamento.status !== 'desligado' && !desligamentoConcluidoEfetivoSelecionado && <section className="funcionario-modal-section">
               <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
                 <span>
                   <strong>{desligamentoAbertoSelecionado ? 'Editar processo aberto' : 'Iniciar processo'}</strong>
@@ -1249,7 +1260,7 @@ export default function FuncionariosPage({
               </div>
             </section>}
 
-            {desligamentoAbertoSelecionado && (
+            {!historicoDesligamentoSomenteLeitura && desligamentoAbertoSelecionado && (
               <section className="funcionario-modal-section funcionario-desligamento-conclusao">
                 <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
                   <span><strong>Concluir desligamento</strong><small>Altera o status funcional para desligado sem arquivar o cadastro.</small></span>
@@ -1262,7 +1273,7 @@ export default function FuncionariosPage({
               </section>
             )}
 
-            {desligamentoConcluidoEfetivoSelecionado && (
+            {!historicoDesligamentoSomenteLeitura && desligamentoConcluidoEfetivoSelecionado && (
               <section className="funcionario-modal-section funcionario-desligamento-correcao">
                 <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
                   <span><strong>Correção administrativa</strong><small>O evento CONCLUIDO original nunca é sobrescrito.</small></span>
@@ -1313,7 +1324,7 @@ export default function FuncionariosPage({
                           </div>
                         )}
 
-                        {!desligamentoChecklistSelecionado.efeito_revertido && podeEditar && (
+                        {!historicoDesligamentoSomenteLeitura && !desligamentoChecklistSelecionado.efeito_revertido && podeEditar && (
                           catalogoChecklist.length === 0 ? (
                             <div className="funcionario-exames-empty">Nenhum item de checklist configurado.</div>
                           ) : catalogoChecklistDisponivel.length === 0 ? (
@@ -1372,7 +1383,7 @@ export default function FuncionariosPage({
                           <div className="funcionario-checklist-list">
                             {itensChecklist.map((item) => {
                               const formularioItem = formulariosItensChecklist[item.id] || {}
-                              const somenteHistorico = desligamentoChecklistSelecionado.efeito_revertido || !podeEditar
+                              const somenteHistorico = historicoDesligamentoSomenteLeitura || desligamentoChecklistSelecionado.efeito_revertido || !podeEditar
                               return (
                                 <article key={item.id} className="funcionario-checklist-item">
                                   <div className="funcionario-checklist-item-header">
@@ -1440,7 +1451,7 @@ export default function FuncionariosPage({
               </section>
             )}
 
-            {desligamentoAbertoSelecionado && (
+            {!historicoDesligamentoSomenteLeitura && desligamentoAbertoSelecionado && (
               <section className="funcionario-modal-section">
                 <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
                   <span><strong>Cancelar processo</strong><small>O cancelamento fica no histórico e não altera o status funcional.</small></span>
@@ -1489,7 +1500,7 @@ export default function FuncionariosPage({
 
             <div className="funcionario-modal-actions">
               <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharModalDesligamento} disabled={salvandoDesligamento}>Fechar</button>
-              {funcionarioDesligamento.status !== 'desligado' && !desligamentoConcluidoEfetivoSelecionado && (
+              {!historicoDesligamentoSomenteLeitura && funcionarioDesligamento.status !== 'desligado' && !desligamentoConcluidoEfetivoSelecionado && (
                 <button className="funcionarios-btn funcionarios-btn-primary" type="submit" disabled={salvandoDesligamento || !formularioDesligamento.motivo || !formularioDesligamento.dataEfetiva}>
                   {salvandoDesligamento ? 'Salvando...' : desligamentoAbertoSelecionado ? 'Salvar processo' : 'Iniciar processo'}
                 </button>

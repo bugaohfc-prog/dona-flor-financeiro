@@ -226,6 +226,20 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
   line-height: 1.45;
 }
 .funcionario-desligamento-alerta.is-concluido { border-color: #86efac; background: #f0fdf4; color: #166534; }
+.funcionario-desligamento-etapas { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--df-border); border-radius: 16px; background: var(--df-surface); }
+.funcionario-desligamento-etapas ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.funcionario-desligamento-etapas li { display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 8px; min-width: 0; padding: 9px; border: 1px solid var(--df-border); border-radius: 12px; color: var(--df-muted); background: var(--df-surface-soft); }
+.funcionario-desligamento-etapas li > span { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: #e2e8f0; font-weight: 900; }
+.funcionario-desligamento-etapas li > div { display: grid; min-width: 0; gap: 2px; }
+.funcionario-desligamento-etapas strong { color: inherit; line-height: 1.25; overflow-wrap: anywhere; }
+.funcionario-desligamento-etapas small { line-height: 1.25; }
+.funcionario-desligamento-etapas .is-atual { border-color: #86efac; background: #f0fdf4; color: #166534; }
+.funcionario-desligamento-etapas .is-atual > span,
+.funcionario-desligamento-etapas .is-completa > span { background: var(--df-primary-600); color: #fff; }
+.funcionario-desligamento-etapas .is-completa { border-color: #bbf7d0; color: #166534; }
+.funcionario-desligamento-etapas .is-proxima { border-color: #93c5fd; background: #eff6ff; color: #1d4ed8; }
+.funcionario-desligamento-etapas .is-proxima > span { background: #2563eb; color: #fff; }
+.funcionario-desligamento-etapas p { margin: 0; color: var(--df-text); font-size: .82rem; font-weight: 800; line-height: 1.45; }
 .funcionario-desligamento-conclusao { border-color: #fecaca; background: #fffafa; }
 .funcionario-confirmacao-backdrop { z-index: 1300; }
 .funcionario-confirmacao-modal { width: min(620px, 100%); }
@@ -267,25 +281,10 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
 .funcionario-checklist-item-header strong { min-width: 0; overflow-wrap: anywhere; }
 .funcionario-checklist-item-identidade { display: grid; min-width: 0; gap: 3px; }
 .funcionario-checklist-descricao { margin: 0; color: var(--df-muted); font-size: .75rem; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
+.funcionario-opcional-badge { display: inline-flex; margin-left: 5px; padding: 2px 7px; border-radius: 999px; background: #e2e8f0; color: #475569; font-size: .65rem; font-style: normal; font-weight: 850; vertical-align: middle; }
+.funcionario-modal-section-toggle .funcionario-checklist-resumo { color: var(--df-primary-700); font-weight: 850; }
 .funcionario-checklist-item > button { justify-self: start; }
 .funcionario-checklist-item > small { color: var(--df-muted); }
-.funcionario-catalogo-panel { gap: 14px; }
-.funcionario-catalogo-header h2 { margin: 3px 0 4px; color: var(--df-text); font-size: clamp(1.05rem, 2vw, 1.3rem); }
-.funcionario-catalogo-header p { margin: 0; color: var(--df-muted); line-height: 1.45; }
-.funcionario-catalogo-criar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
-.funcionario-catalogo-criar .span-2 { grid-column: 1 / -1; }
-.funcionario-catalogo-criar label,
-.funcionario-catalogo-edicao,
-.funcionario-catalogo-edicao label { display: grid; min-width: 0; gap: 6px; color: #475569; font-size: .75rem; font-weight: 850; }
-.funcionario-catalogo-lista { display: grid; gap: 8px; }
-.funcionario-catalogo-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--df-border); border-radius: var(--df-radius-control); background: var(--df-surface); }
-.funcionario-catalogo-item.is-inativo { background: var(--df-surface-soft); }
-.funcionario-catalogo-identidade { display: flex; min-width: 0; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
-.funcionario-catalogo-identidade > div { display: grid; min-width: 0; flex: 1; gap: 3px; }
-.funcionario-catalogo-identidade strong { min-width: 0; overflow-wrap: anywhere; }
-.funcionario-catalogo-identidade p { margin: 0; color: var(--df-muted); font-size: .75rem; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
-.funcionario-catalogo-acoes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-.funcionario-catalogo-error { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border: 1px solid #fecaca; border-radius: var(--df-radius-control); background: #fff7f7; color: #991b1b; }
 .funcionario-exame-status.concluido { background: #ecfdf5; color: #047857; }
 .funcionario-exame-status.nao_aplicavel { background: #f1f5f9; color: #475569; }
 .funcionario-exames-section { display: grid; min-width: 0; gap: 10px; padding: 0 12px 12px; }
@@ -324,6 +323,7 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
   .funcionario-exame-edit { grid-template-columns: minmax(0, 1fr); }
   .funcionarios-switch { grid-column: auto; width: 100%; justify-content: space-between; }
   .funcionario-form-grid .span-2 { grid-column: auto; }
+  .funcionario-desligamento-etapas ol { grid-template-columns: minmax(0, 1fr); }
   .funcionario-checklist-add .span-2,
   .funcionario-checklist-fields .span-2 { grid-column: auto; }
   .funcionario-checklist-item-header { align-items: flex-start; flex-direction: column; }
@@ -340,8 +340,4 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
   .funcionario-confirmacao-resumo > div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .funcionario-vinculo-row { grid-template-columns: minmax(0, 1fr); }
   .funcionario-readmissao-confirmacao { align-items: flex-start; }
-  .funcionario-catalogo-criar,
-  .funcionario-catalogo-item { grid-template-columns: minmax(0, 1fr); }
-  .funcionario-catalogo-acoes,
-  .funcionario-catalogo-error { display: grid; grid-template-columns: minmax(0, 1fr); }
 }

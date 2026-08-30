@@ -4,7 +4,6 @@ import { useFuncionarios } from '../hooks/useFuncionarios'
 import { useFuncionariosChecklistDesligamento } from '../hooks/useFuncionariosChecklistDesligamento'
 import { useFuncionariosDesligamentos } from '../hooks/useFuncionariosDesligamentos'
 import { FilterCard, FilterGrid, KpiCard, KpiGrid, PageHeader, PageState } from '../components/shared/PagePatterns.jsx'
-import { FuncionariosChecklistCatalogo } from '../components/funcionarios/FuncionariosChecklistCatalogo.jsx'
 import { mensagemSeguraErro } from '../utils/session'
 import {
   admissaoFoiAlterada,
@@ -89,6 +88,11 @@ const CHECKLIST_ESTADO_LABELS = {
   PENDENTE: 'Pendente',
   CONCLUIDO: 'Concluído',
   NAO_APLICAVEL: 'Não aplicável'
+}
+const DESLIGAMENTO_ESTADO_LABELS = {
+  ABERTO: 'Em andamento',
+  CANCELADO: 'Cancelado',
+  CONCLUIDO: 'Vínculo encerrado'
 }
 const FORMULARIO_READMISSAO_INICIAL = {
   novaDataAdmissao: '',
@@ -231,7 +235,6 @@ export default function FuncionariosPage({
   filiais = [],
   mostrarAviso,
   podeEditar = false,
-  podeGerenciarCatalogoChecklist = false,
   contextoNavegacao = null,
   voltarPainel
 }) {
@@ -371,6 +374,16 @@ export default function FuncionariosPage({
     () => catalogoChecklistDisponivel.find((item) => item.id === formularioChecklist.catalogoItemId) || null,
     [catalogoChecklistDisponivel, formularioChecklist.catalogoItemId]
   )
+  const resumoChecklist = useMemo(() => {
+    const contagens = (itensChecklist || []).reduce((acc, item) => {
+      acc[item.estado] = (acc[item.estado] || 0) + 1
+      return acc
+    }, {})
+    return Object.entries(CHECKLIST_ESTADO_LABELS)
+      .filter(([estado]) => contagens[estado])
+      .map(([estado, rotulo]) => `${contagens[estado]} ${rotulo.toLocaleLowerCase('pt-BR')}`)
+      .join(' • ')
+  }, [itensChecklist])
   const desligamentoEfetivoFuncionarioEditando = funcionarioEditando?.id
     ? desligamentoEfetivoDoVinculo(funcionarioEditando.id)
     : null
@@ -856,7 +869,7 @@ export default function FuncionariosPage({
     if (formularioCorrecao.tipo === 'REVERSAO_ERRO') {
       await carregarFuncionarios()
       setFuncionarioDesligamento((atual) => atual ? { ...atual, status: resposta.data?.status_funcional || 'ativo' } : atual)
-      mostrarAviso?.('Conclusão revertida por erro. O workflow original foi preservado.', 'sucesso')
+      mostrarAviso?.('Conclusão revertida por erro. O registro original foi preservado.', 'sucesso')
     } else {
       mostrarAviso?.('Retificação registrada sem reativar o vínculo.', 'sucesso')
     }
@@ -1014,12 +1027,6 @@ export default function FuncionariosPage({
             </button>
           )}
         </>}
-      />
-
-      <FuncionariosChecklistCatalogo
-        empresaId={empresaId}
-        podeGerenciar={podeGerenciarCatalogoChecklist}
-        mostrarAviso={mostrarAviso}
       />
 
       <section className="funcionarios-panel">
@@ -1182,9 +1189,9 @@ export default function FuncionariosPage({
           <form className="funcionario-modal funcionario-desligamento-modal" role="dialog" aria-modal="true" aria-labelledby="desligamento-modal-title" onSubmit={salvarWorkflowDesligamento} onClick={(event) => event.stopPropagation()}>
             <div className="funcionario-modal-header">
               <div>
-                <span className="funcionarios-kicker">Desligamento 2B</span>
-                <h2 id="desligamento-modal-title">Processo de desligamento</h2>
-                <p>{funcionarioDesligamento.nome || 'Colaboradora selecionada'}</p>
+                <span className="funcionarios-kicker">Gestão do vínculo</span>
+                <h2 id="desligamento-modal-title">Desligamento de {funcionarioDesligamento.nome || 'colaborador'}</h2>
+                <p>Acompanhe a etapa atual e a próxima ação do processo.</p>
               </div>
               <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharModalDesligamento} disabled={salvandoDesligamento}>Fechar</button>
             </div>
@@ -1192,26 +1199,48 @@ export default function FuncionariosPage({
             <div className={`funcionario-desligamento-alerta ${desligamentoConcluidoSelecionado ? 'is-concluido' : ''}`} role="status">
               {desligamentoConcluidoEfetivoSelecionado ? (
                 <>
-                  <strong>Desligamento concluído — status funcional desligado.</strong>
-                  <span>O cadastro não foi arquivado. Férias, Folha, Exames e o histórico permanecem preservados.</span>
+                  <strong>Situação: Vínculo encerrado</strong>
+                  <span>O vínculo foi encerrado. O próximo passo é registrar os dados do acerto.</span>
                 </>
               ) : desligamentoConcluidoSelecionado?.efeito_revertido ? (
                 <>
-                  <strong>Conclusão revertida por erro — evento original preservado.</strong>
+                  <strong>Situação: Conclusão revertida</strong>
                   <span>Esta reversão não representa readmissão. Um desligamento futuro deve usar um novo processo.</span>
                 </>
               ) : desligamentoAbertoSelecionado ? (
                 <>
-                  <strong>Processo em andamento — colaborador ainda não foi desligado.</strong>
-                  <span>Somente a conclusão confirmada altera o status funcional. Editar ou cancelar preserva os dados.</span>
+                  <strong>Situação: Em andamento</strong>
+                  <span>Revise os dados e conclua o vínculo quando estiver correto.</span>
                 </>
               ) : (
                 <>
-                  <strong>Nenhum processo aberto.</strong>
-                  <span>Iniciar o processo não altera status, arquivamento, Férias, Folha ou Exames.</span>
+                  <strong>Situação: Não iniciado</strong>
+                  <span>Informe os dados e inicie o desligamento.</span>
                 </>
               )}
             </div>
+
+            <section className="funcionario-desligamento-etapas" aria-label="Etapas do desligamento">
+              <ol>
+                <li className={desligamentoConcluidoEfetivoSelecionado ? 'is-completa' : 'is-atual'}>
+                  <span>1</span>
+                  <div><strong>Dados do desligamento</strong><small>{desligamentoConcluidoEfetivoSelecionado ? 'Concluída' : 'Etapa atual'}</small></div>
+                </li>
+                <li className={desligamentoConcluidoEfetivoSelecionado ? 'is-proxima' : 'is-futura'}>
+                  <span>2</span>
+                  <div><strong>Acerto</strong><small>{desligamentoConcluidoEfetivoSelecionado ? 'Próxima etapa' : 'Após encerrar o vínculo'}</small></div>
+                </li>
+                <li className="is-futura">
+                  <span>3</span>
+                  <div><strong>Conta do acerto</strong><small>Etapa posterior</small></div>
+                </li>
+              </ol>
+              {!desligamentoConcluidoEfetivoSelecionado && (
+                <p>{desligamentoAbertoSelecionado
+                  ? 'Próxima ação: revise os dados e conclua o vínculo quando estiver correto.'
+                  : 'Próxima ação: informe os dados e inicie o desligamento.'}</p>
+              )}
+            </section>
 
             {erroDesligamentos && (
               <div className="funcionario-exames-empty">
@@ -1224,28 +1253,26 @@ export default function FuncionariosPage({
             {funcionarioDesligamento.status !== 'desligado' && !desligamentoConcluidoEfetivoSelecionado && <section className="funcionario-modal-section">
               <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
                 <span>
-                  <strong>{desligamentoAbertoSelecionado ? 'Editar processo aberto' : 'Iniciar processo'}</strong>
-                  <small>O último dia é pretendido e não conclui o desligamento.</small>
+                  <strong>Dados do desligamento</strong>
+                  <small>Motivo e último dia trabalhado são obrigatórios.</small>
                 </span>
-                <b>{desligamentoAbertoSelecionado ? 'AB' : '+'}</b>
+                <b>{desligamentoAbertoSelecionado ? 'Editar' : '1'}</b>
               </div>
               <div className="funcionario-form-grid">
                 <label className="span-2">
-                  Motivo
+                  Motivo (obrigatório)
                   <textarea className="funcionarios-input" value={formularioDesligamento.motivo} onChange={(event) => atualizarCampoDesligamento('motivo', event.target.value)} required />
                 </label>
                 <label>
-                  Último dia pretendido
+                  Último dia trabalhado (obrigatório)
                   <input className="funcionarios-input" type="date" value={formularioDesligamento.dataEfetiva} onChange={(event) => atualizarCampoDesligamento('dataEfetiva', event.target.value)} required />
                 </label>
-                <label>
-                  Estado
-                  <input className="funcionarios-input" value={desligamentoAbertoSelecionado?.estado || 'NOVO'} disabled />
-                </label>
                 <label className="span-2">
-                  Observações
+                  Observações (opcional)
                   <textarea className="funcionarios-input" value={formularioDesligamento.observacoes} onChange={(event) => atualizarCampoDesligamento('observacoes', event.target.value)} />
                 </label>
+                <p className="funcionarios-note span-2">Iniciar não encerra o vínculo. Você poderá revisar os dados antes da conclusão.</p>
+                <p className="funcionarios-note span-2">O acerto será registrado na próxima etapa do processo.</p>
               </div>
             </section>}
 
@@ -1256,7 +1283,7 @@ export default function FuncionariosPage({
                   <b>✓</b>
                 </div>
                 <div className="funcionario-form-grid">
-                  <p className="funcionarios-note span-2">Use a confirmação final para revisar colaborador, data efetiva e motivo antes de concluir.</p>
+                  <p className="funcionarios-note span-2">Revise o colaborador, o último dia trabalhado e o motivo. Esta ação altera o status do vínculo para desligado.</p>
                   <button className="funcionarios-btn funcionarios-btn-danger" type="button" disabled={salvandoDesligamento} onClick={() => setConfirmacaoConclusaoAberta(true)}>Concluir desligamento</button>
                 </div>
               </section>
@@ -1265,7 +1292,7 @@ export default function FuncionariosPage({
             {desligamentoConcluidoEfetivoSelecionado && (
               <section className="funcionario-modal-section funcionario-desligamento-correcao">
                 <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
-                  <span><strong>Correção administrativa</strong><small>O evento CONCLUIDO original nunca é sobrescrito.</small></span>
+                  <span><strong>Correção administrativa</strong><small>O registro original da conclusão nunca é sobrescrito.</small></span>
                   <b>!</b>
                 </div>
                 <div className="funcionario-correcao-actions">
@@ -1285,12 +1312,13 @@ export default function FuncionariosPage({
                   onClick={() => setChecklistAberto((atual) => !atual)}
                 >
                   <span>
-                    <strong>Checklist administrativo</strong>
+                    <strong>Outras tarefas administrativas <em className="funcionario-opcional-badge">Opcional</em></strong>
                     <small>{desligamentoChecklistSelecionado.efeito_revertido
                       ? 'Histórico preservado; a conclusão foi revertida por erro.'
-                      : 'Tarefas administrativas configuradas pela empresa.'}</small>
+                      : 'Use para acompanhar tarefas internas que não fazem parte das etapas principais do desligamento.'}</small>
+                    {resumoChecklist && <small className="funcionario-checklist-resumo">{resumoChecklist}</small>}
                   </span>
-                  <b>{checklistAberto ? '−' : itensChecklist.length}</b>
+                  <b>{checklistAberto ? '−' : '+'}</b>
                 </button>
 
                 {checklistAberto && (
@@ -1468,18 +1496,18 @@ export default function FuncionariosPage({
                   <div className="funcionario-exames-empty">Nenhum processo anterior.</div>
                 ) : historicoDesligamentoSelecionado.map((item) => (
                   <article key={item.id} className="funcionario-desligamento-item">
-                    <div><strong>{item.estado}</strong><small>Aberto em {formatarDataCurta(item.aberto_em)}</small></div>
-                    <span>Último dia pretendido: {formatarDataCurta(item.data_efetiva)}</span>
+                      <div><strong>{item.efeito_revertido ? 'Conclusão revertida' : (DESLIGAMENTO_ESTADO_LABELS[item.estado] || item.estado)}</strong><small>Iniciado em {formatarDataCurta(item.aberto_em)}</small></div>
+                      <span>Último dia trabalhado: {formatarDataCurta(item.data_efetiva)}</span>
                     <span>Motivo: {item.motivo}</span>
                     {item.estado === 'CANCELADO' && <span>Cancelamento: {item.motivo_cancelamento}</span>}
                     {item.estado === 'CONCLUIDO' && <span>Concluído em: {formatarDataCurta(item.concluido_em)}</span>}
-                    {item.estado === 'CONCLUIDO' && <span>Estado efetivo: {item.efeito_revertido ? `revertido para ${STATUS_LABELS[item.status_funcional_efetivo] || item.status_funcional_efetivo}` : `desligado em ${formatarDataCurta(item.data_efetiva_efetiva)}`}</span>}
+                    {item.estado === 'CONCLUIDO' && <span>Resultado atual: {item.efeito_revertido ? `revertido para ${STATUS_LABELS[item.status_funcional_efetivo] || item.status_funcional_efetivo}` : `desligado em ${formatarDataCurta(item.data_efetiva_efetiva)}`}</span>}
                     {(correcoesPorDesligamento.get(item.id) || []).map((correcao) => (
                       <div key={correcao.id} className="funcionario-desligamento-correcao-item">
                         <strong>{correcao.tipo === 'RETIFICACAO' ? 'Retificação' : 'Reversão por erro'}</strong>
                         <small>{formatarDataCurta(correcao.criado_em)}</small>
                         <span>{correcao.motivo_correcao}</span>
-                        {correcao.tipo === 'RETIFICACAO' && <span>Data efetiva: {formatarDataCurta(correcao.data_efetiva_antes)} → {formatarDataCurta(correcao.data_efetiva_depois)}</span>}
+                        {correcao.tipo === 'RETIFICACAO' && <span>Último dia trabalhado: {formatarDataCurta(correcao.data_efetiva_antes)} → {formatarDataCurta(correcao.data_efetiva_depois)}</span>}
                       </div>
                     ))}
                   </article>
@@ -1491,7 +1519,7 @@ export default function FuncionariosPage({
               <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharModalDesligamento} disabled={salvandoDesligamento}>Fechar</button>
               {funcionarioDesligamento.status !== 'desligado' && !desligamentoConcluidoEfetivoSelecionado && (
                 <button className="funcionarios-btn funcionarios-btn-primary" type="submit" disabled={salvandoDesligamento || !formularioDesligamento.motivo || !formularioDesligamento.dataEfetiva}>
-                  {salvandoDesligamento ? 'Salvando...' : desligamentoAbertoSelecionado ? 'Salvar processo' : 'Iniciar processo'}
+                  {salvandoDesligamento ? 'Salvando...' : desligamentoAbertoSelecionado ? 'Salvar alterações' : 'Iniciar desligamento'}
                 </button>
               )}
             </div>
@@ -1504,7 +1532,7 @@ export default function FuncionariosPage({
           <form className="funcionario-modal funcionario-readmissao-modal" role="dialog" aria-modal="true" aria-labelledby="readmissao-modal-title" onSubmit={confirmarReadmissao} onClick={(event) => event.stopPropagation()}>
             <div className="funcionario-modal-header">
               <div>
-                <span className="funcionarios-kicker">Readmissão 2C-4</span>
+                <span className="funcionarios-kicker">Novo vínculo</span>
                 <h2 id="readmissao-modal-title">Criar novo vínculo</h2>
                 <p>{funcionarioReadmissao.nome || 'Pessoa selecionada'}</p>
               </div>
@@ -1563,7 +1591,7 @@ export default function FuncionariosPage({
             </div>
             <dl className="funcionario-confirmacao-resumo">
               <div><dt>Colaborador</dt><dd>{funcionarioDesligamento.nome || 'Não informado'}</dd></div>
-              <div><dt>Data efetiva</dt><dd>{formatarDataCurta(desligamentoAbertoSelecionado.data_efetiva)}</dd></div>
+              <div><dt>Último dia trabalhado</dt><dd>{formatarDataCurta(desligamentoAbertoSelecionado.data_efetiva)}</dd></div>
               <div><dt>Motivo</dt><dd>{desligamentoAbertoSelecionado.motivo}</dd></div>
             </dl>
             <div className="funcionario-desligamento-alerta" role="note">
@@ -1583,14 +1611,14 @@ export default function FuncionariosPage({
           <form className="funcionario-modal funcionario-confirmacao-modal" role="dialog" aria-modal="true" aria-labelledby="correcao-desligamento-title" onSubmit={salvarCorrecaoDesligamento} onClick={(event) => event.stopPropagation()}>
             <div className="funcionario-modal-header">
               <div>
-                <span className="funcionarios-kicker">Correção append-only</span>
+                <span className="funcionarios-kicker">Correção com histórico preservado</span>
                 <h2 id="correcao-desligamento-title">{formularioCorrecao.tipo === 'RETIFICACAO' ? 'Retificar desligamento' : 'Reverter conclusão por erro'}</h2>
                 <p>{funcionarioDesligamento.nome || 'Colaboradora selecionada'}</p>
               </div>
             </div>
             {formularioCorrecao.tipo === 'RETIFICACAO' ? (
               <div className="funcionario-form-grid funcionario-correcao-form">
-                <label>Data efetiva<input className="funcionarios-input" type="date" value={formularioCorrecao.dataEfetiva} onChange={(event) => setFormularioCorrecao((atual) => ({ ...atual, dataEfetiva: event.target.value }))} required /></label>
+                <label>Último dia trabalhado<input className="funcionarios-input" type="date" value={formularioCorrecao.dataEfetiva} onChange={(event) => setFormularioCorrecao((atual) => ({ ...atual, dataEfetiva: event.target.value }))} required /></label>
                 <label className="span-2">Motivo do desligamento<textarea className="funcionarios-input" value={formularioCorrecao.motivo} onChange={(event) => setFormularioCorrecao((atual) => ({ ...atual, motivo: event.target.value }))} required /></label>
                 <label className="span-2">Observações<textarea className="funcionarios-input" value={formularioCorrecao.observacoes} onChange={(event) => setFormularioCorrecao((atual) => ({ ...atual, observacoes: event.target.value }))} /></label>
                 <label className="span-2">Motivo da correção<textarea className="funcionarios-input" value={formularioCorrecao.motivoCorrecao} onChange={(event) => setFormularioCorrecao((atual) => ({ ...atual, motivoCorrecao: event.target.value }))} required /></label>

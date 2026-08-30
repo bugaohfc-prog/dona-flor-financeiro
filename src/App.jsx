@@ -4361,7 +4361,6 @@ export default function App() {
         filiais={filiais}
         mostrarAviso={mostrarAviso}
         podeEditar={podeAcessarGestaoPessoas()}
-        podeGerenciarCatalogoChecklist={podeAdministrarUsuarios()}
         contextoNavegacao={contextoNavegacao}
         voltarPainel={() => navegarPara('dashboard')}
       />
@@ -4577,6 +4576,9 @@ export default function App() {
           podeEditarConfiguracoes={podeEditarConfiguracoes()}
           podeGerenciarDestinatariosAlertas={podeGerenciarDestinatariosAlertas}
           podeGerenciarCentroCusto={podeGerenciarCentroCusto()}
+          podeGerenciarCatalogoChecklist={podeAdministrarUsuarios()}
+          empresaId={empresaId}
+          mostrarAviso={mostrarAviso}
           navegarPara={navegarPara}
           notificacoesAtivas={notificacoesAtivas}
           setNotificacoesAtivas={setNotificacoesAtivas}

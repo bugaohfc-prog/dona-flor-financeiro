@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useFuncionariosChecklistCatalogo } from '../../hooks/useFuncionariosChecklistCatalogo'
 import { mensagemSeguraErro } from '../../utils/session'
+import './FuncionariosChecklistCatalogo.css'
 
 export function FuncionariosChecklistCatalogo({ empresaId, podeGerenciar = false, mostrarAviso }) {
   const [novoTitulo, setNovoTitulo] = useState('')
@@ -55,12 +56,12 @@ export function FuncionariosChecklistCatalogo({ empresaId, podeGerenciar = false
   }
 
   return (
-    <section className="funcionarios-panel funcionario-catalogo-panel" aria-labelledby="catalogo-checklist-title">
+    <section className="settings-card admin-config-card funcionario-catalogo-panel" aria-labelledby="catalogo-checklist-title">
       <div className="funcionario-catalogo-header">
         <div>
           <span className="funcionarios-kicker">Configuração administrativa</span>
-          <h2 id="catalogo-checklist-title">Itens do checklist de desligamento</h2>
-          <p>Configure opções administrativas da empresa. Nenhum item é obrigatório ou criado automaticamente.</p>
+          <h2 id="catalogo-checklist-title">Outras tarefas administrativas do desligamento</h2>
+          <p>Configure opções internas e opcionais. Nenhum item é obrigatório ou criado automaticamente.</p>
         </div>
       </div>
 
@@ -68,7 +69,7 @@ export function FuncionariosChecklistCatalogo({ empresaId, podeGerenciar = false
         <label>
           <span>Título do item</span>
           <input
-            className="funcionarios-input"
+            className="funcionario-catalogo-input"
             value={novoTitulo}
             onChange={(event) => setNovoTitulo(event.target.value)}
             minLength={3}
@@ -81,7 +82,7 @@ export function FuncionariosChecklistCatalogo({ empresaId, podeGerenciar = false
         <label className="span-2">
           <span>Descrição operacional (opcional)</span>
           <textarea
-            className="funcionarios-input"
+            className="funcionario-catalogo-input"
             value={novaDescricao}
             onChange={(event) => setNovaDescricao(event.target.value)}
             maxLength={500}
@@ -90,20 +91,20 @@ export function FuncionariosChecklistCatalogo({ empresaId, podeGerenciar = false
             disabled={!empresaId || salvando}
           />
         </label>
-        <button className="funcionarios-btn funcionarios-btn-primary" type="submit" disabled={!empresaId || salvando || novoTitulo.trim().length < 3}>
+        <button className="admin-btn admin-btn-primary" type="submit" disabled={!empresaId || salvando || novoTitulo.trim().length < 3}>
           {salvando ? 'Salvando...' : 'Criar item'}
         </button>
       </form>
 
       {loading ? (
-        <div className="funcionario-exames-empty" role="status">Carregando itens configurados...</div>
+        <div className="funcionario-catalogo-empty" role="status">Carregando itens configurados...</div>
       ) : erro ? (
         <div className="funcionario-catalogo-error" role="alert">
           <span>{erro}</span>
-          <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={carregar}>Tentar novamente</button>
+          <button className="admin-btn admin-btn-secondary" type="button" onClick={carregar}>Tentar novamente</button>
         </div>
       ) : itens.length === 0 ? (
-        <div className="funcionario-exames-empty">Nenhum item configurado.</div>
+        <div className="funcionario-catalogo-empty">Nenhum item configurado.</div>
       ) : (
         <div className="funcionario-catalogo-lista">
           {itens.map((item) => (
@@ -112,11 +113,11 @@ export function FuncionariosChecklistCatalogo({ empresaId, podeGerenciar = false
                 <div className="funcionario-catalogo-edicao">
                   <label>
                     <span>Título</span>
-                    <input className="funcionarios-input" value={tituloEditando} onChange={(event) => setTituloEditando(event.target.value)} minLength={3} maxLength={160} disabled={salvando} />
+                    <input className="funcionario-catalogo-input" value={tituloEditando} onChange={(event) => setTituloEditando(event.target.value)} minLength={3} maxLength={160} disabled={salvando} />
                   </label>
                   <label>
                     <span>Descrição operacional (opcional)</span>
-                    <textarea className="funcionarios-input" value={descricaoEditando} onChange={(event) => setDescricaoEditando(event.target.value)} maxLength={500} rows={3} disabled={salvando} />
+                    <textarea className="funcionario-catalogo-input" value={descricaoEditando} onChange={(event) => setDescricaoEditando(event.target.value)} maxLength={500} rows={3} disabled={salvando} />
                   </label>
                 </div>
               ) : (
@@ -125,19 +126,19 @@ export function FuncionariosChecklistCatalogo({ empresaId, podeGerenciar = false
                     <strong>{item.titulo}</strong>
                     {item.descricao_operacional && <p>{item.descricao_operacional}</p>}
                   </div>
-                  <span className={`funcionario-exame-status ${item.ativo ? 'realizado' : 'cancelado'}`}>{item.ativo ? 'Ativo' : 'Inativo'}</span>
+                  <span className={`admin-status-badge ${item.ativo ? 'success' : 'muted'}`}>{item.ativo ? 'Ativo' : 'Inativo'}</span>
                 </div>
               )}
               <div className="funcionario-catalogo-acoes">
                 {itemEditando === item.id ? (
                   <>
-                    <button className="funcionarios-btn funcionarios-btn-primary" type="button" onClick={() => salvarItem(item)} disabled={salvando || tituloEditando.trim().length < 3}>Salvar alterações</button>
-                    <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={() => { setItemEditando(null); setTituloEditando(''); setDescricaoEditando('') }} disabled={salvando}>Cancelar</button>
+                    <button className="admin-btn admin-btn-primary" type="button" onClick={() => salvarItem(item)} disabled={salvando || tituloEditando.trim().length < 3}>Salvar alterações</button>
+                    <button className="admin-btn admin-btn-secondary" type="button" onClick={() => { setItemEditando(null); setTituloEditando(''); setDescricaoEditando('') }} disabled={salvando}>Cancelar</button>
                   </>
                 ) : (
                   <>
-                    <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={() => iniciarEdicao(item)} disabled={salvando}>Editar</button>
-                    <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={() => alternarAtividade(item)} disabled={salvando}>{item.ativo ? 'Inativar' : 'Reativar'}</button>
+                    <button className="admin-btn admin-btn-secondary" type="button" onClick={() => iniciarEdicao(item)} disabled={salvando}>Editar</button>
+                    <button className="admin-btn admin-btn-secondary" type="button" onClick={() => alternarAtividade(item)} disabled={salvando}>{item.ativo ? 'Inativar' : 'Reativar'}</button>
                   </>
                 )}
               </div>

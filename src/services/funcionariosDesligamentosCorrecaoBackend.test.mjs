@@ -77,5 +77,5 @@ test('service e UI separam retificação, reversão e histórico original', () =
   assert.match(page, />Retificar</)
   assert.match(page, /Reverter conclusão por erro/)
   assert.match(page, /não representa readmissão/i)
-  assert.match(page, /evento original preservado/i)
+  assert.match(page, /registro original da conclusão nunca é sobrescrito/i)
 })

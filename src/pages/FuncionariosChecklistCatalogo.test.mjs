@@ -3,18 +3,21 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 const pagina = fs.readFileSync('src/pages/FuncionariosPage.jsx', 'utf8')
+const configuracoes = fs.readFileSync('src/pages/ConfiguracoesPage.jsx', 'utf8')
 const componente = fs.readFileSync('src/components/funcionarios/FuncionariosChecklistCatalogo.jsx', 'utf8')
 const hook = fs.readFileSync('src/hooks/useFuncionariosChecklistCatalogo.js', 'utf8')
 const app = fs.readFileSync('src/App.jsx', 'utf8')
 
 test('catálogo aparece apenas com autorização administrativa existente', () => {
   assert.match(app, /podeGerenciarCatalogoChecklist=\{podeAdministrarUsuarios\(\)\}/)
-  assert.match(pagina, /podeGerenciarCatalogoChecklist = false/)
+  assert.match(configuracoes, /<FuncionariosChecklistCatalogo/)
+  assert.match(configuracoes, /podeGerenciar=\{podeGerenciarCatalogoChecklist\}/)
+  assert.doesNotMatch(pagina, /<FuncionariosChecklistCatalogo/)
   assert.match(componente, /if \(!podeGerenciar\) return null/)
 })
 
 test('UI cobre loading, erro, vazio, criação, descrição, edição e atividade', () => {
-  assert.match(componente, /Itens do checklist de desligamento/)
+  assert.match(componente, /Outras tarefas administrativas do desligamento/)
   assert.match(componente, /Carregando itens configurados/)
   assert.match(hook, /Não foi possível carregar os itens/)
   assert.match(componente, /Nenhum item configurado\./)

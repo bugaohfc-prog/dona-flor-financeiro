@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import HeaderExpansivel from '../components/ui/HeaderExpansivel.jsx'
 import { PageHeader } from '../components/shared/PagePatterns.jsx'
+import { FuncionariosChecklistCatalogo } from '../components/funcionarios/FuncionariosChecklistCatalogo.jsx'
 import { primeiraLetraMaiuscula } from '../utils/format'
 
 export default function ConfiguracoesPage({
@@ -9,6 +10,9 @@ export default function ConfiguracoesPage({
   podeEditarConfiguracoes = false,
   podeGerenciarDestinatariosAlertas = false,
   podeGerenciarCentroCusto = false,
+  podeGerenciarCatalogoChecklist = false,
+  empresaId,
+  mostrarAviso,
   navegarPara,
   notificacoesAtivas,
   setNotificacoesAtivas,
@@ -71,6 +75,12 @@ export default function ConfiguracoesPage({
   return (
     <div className="admin-page settings-admin-page">
       <PageHeader kicker="Administração da empresa" title="Configurações" description="Centralize alertas, dados do negócio, destinatários e parâmetros operacionais." className="admin-page-hero" actions={<button className="admin-btn admin-btn-secondary" onClick={() => navegarPara('dashboard')}>← Painel</button>} />
+
+      <FuncionariosChecklistCatalogo
+        empresaId={empresaId}
+        podeGerenciar={podeGerenciarCatalogoChecklist}
+        mostrarAviso={mostrarAviso}
+      />
 
       <section style={styles.cardConfiguracao} className="settings-card admin-config-card settings-notifications-card">
         <HeaderExpansivel

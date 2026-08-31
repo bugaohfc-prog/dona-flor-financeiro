@@ -12,7 +12,8 @@ const DADOS_VAZIOS = Object.freeze({
   ciclosFerias: [],
   periodosFerias: [],
   exames: [],
-  folha: []
+  folha: [],
+  desligamentos: []
 })
 
 const MENSAGENS_FONTES = Object.freeze({
@@ -20,7 +21,8 @@ const MENSAGENS_FONTES = Object.freeze({
   ciclosFerias: 'Não foi possível carregar ciclos de férias.',
   periodosFerias: 'Não foi possível carregar períodos de férias.',
   exames: 'Não foi possível carregar exames ocupacionais.',
-  folha: 'Não foi possível carregar competências da folha.'
+  folha: 'Não foi possível carregar competências da folha.',
+  desligamentos: 'Não foi possível carregar acertos de desligamentos.'
 })
 
 function normalizarErros(erros = {}) {
@@ -96,6 +98,7 @@ export function useEventosPessoas({
         periodosFerias: dadosAtuais.periodosFerias,
         exames: dadosAtuais.exames,
         competenciasFolha: dadosAtuais.folha,
+        desligamentos: dadosAtuais.desligamentos,
         dataBaseISO,
         filialId
       })

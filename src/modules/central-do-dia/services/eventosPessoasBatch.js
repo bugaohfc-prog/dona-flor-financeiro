@@ -3,7 +3,8 @@ export const FONTES_EVENTOS_PESSOAS = Object.freeze([
   'ciclosFerias',
   'periodosFerias',
   'exames',
-  'folha'
+  'folha',
+  'desligamentos'
 ])
 function normalizarResposta(resposta) {
   if (resposta.status === 'rejected') return { dados: [], erro: resposta.reason }
@@ -27,7 +28,8 @@ export async function executarConsultasEventosPessoas({ consultas, parametros } 
       ciclosFerias: [],
       periodosFerias: [],
       exames: [],
-      folha: []
+      folha: [],
+      desligamentos: []
     },
     erros: {},
     fontesComErro: [],

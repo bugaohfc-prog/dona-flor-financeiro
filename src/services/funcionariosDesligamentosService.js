@@ -10,6 +10,7 @@ const SELECT_WORKFLOW = [
   'estado',
   'motivo',
   'data_efetiva',
+  'data_acerto',
   'observacoes',
   'aberto_por',
   'aberto_em',
@@ -22,6 +23,7 @@ const SELECT_WORKFLOW = [
   'correlation_id',
   'status_anterior',
   'data_efetiva_efetiva',
+  'data_acerto_efetiva',
   'motivo_efetivo',
   'observacoes_efetivas',
   'efeito_revertido',
@@ -34,7 +36,7 @@ const SELECT_WORKFLOW = [
 
 const SELECT_CORRECAO = [
   'id', 'empresa_id', 'desligamento_id', 'funcionario_id', 'tipo', 'motivo_correcao',
-  'data_efetiva_antes', 'data_efetiva_depois', 'motivo_antes', 'motivo_depois',
+  'data_efetiva_antes', 'data_efetiva_depois', 'data_acerto_antes', 'data_acerto_depois', 'motivo_antes', 'motivo_depois',
   'observacoes_antes', 'observacoes_depois', 'status_antes', 'status_depois',
   'ator_id', 'correlation_id', 'criado_em'
 ].join(', ')
@@ -50,10 +52,18 @@ function idObrigatorio(valor, mensagem) {
   return id
 }
 
-function dataObrigatoria(valor) {
+function dataObrigatoria(valor, mensagem) {
   const data = String(valor || '').trim().slice(0, 10)
-  if (!data) throw new Error('Informe o último dia pretendido.')
+  if (!data) throw new Error(mensagem)
   return data
+}
+
+function dataEfetivaObrigatoria(valor) {
+  return dataObrigatoria(valor, 'Informe o último dia trabalhado.')
+}
+
+function dataAcertoObrigatoria(valor) {
+  return dataObrigatoria(valor, 'Informe a data prevista do acerto.')
 }
 
 function motivoObrigatorio(valor, mensagem = 'Informe o motivo do desligamento.') {
@@ -86,7 +96,8 @@ export function abrirDesligamentoFuncionario({ supabase, empresaId, funcionarioI
     p_empresa_id: empresaId,
     p_funcionario_id: idObrigatorio(funcionarioId, 'Funcionário não identificado.'),
     p_motivo: motivoObrigatorio(dados.motivo),
-    p_data_efetiva: dataObrigatoria(dados.dataEfetiva),
+    p_data_efetiva: dataEfetivaObrigatoria(dados.dataEfetiva),
+    p_data_acerto: dataAcertoObrigatoria(dados.dataAcerto),
     p_observacoes: texto(dados.observacoes),
     p_correlation_id: texto(dados.correlationId)
   })
@@ -98,7 +109,8 @@ export function atualizarDesligamentoFuncionario({ supabase, empresaId, desligam
     p_empresa_id: empresaId,
     p_desligamento_id: idObrigatorio(desligamentoId, 'Processo de desligamento não identificado.'),
     p_motivo: motivoObrigatorio(dados.motivo),
-    p_data_efetiva: dataObrigatoria(dados.dataEfetiva),
+    p_data_efetiva: dataEfetivaObrigatoria(dados.dataEfetiva),
+    p_data_acerto: dataAcertoObrigatoria(dados.dataAcerto),
     p_observacoes: texto(dados.observacoes),
     p_correlation_id: texto(dados.correlationId)
   })
@@ -128,7 +140,8 @@ export function retificarDesligamentoConcluido({ supabase, empresaId, desligamen
   return supabase.rpc('retificar_desligamento_concluido_controlado', {
     p_empresa_id: empresaId,
     p_desligamento_id: idObrigatorio(desligamentoId, 'Processo de desligamento não identificado.'),
-    p_data_efetiva: dataObrigatoria(dados.dataEfetiva),
+    p_data_efetiva: dataEfetivaObrigatoria(dados.dataEfetiva),
+    p_data_acerto: dataAcertoObrigatoria(dados.dataAcerto),
     p_motivo: motivoObrigatorio(dados.motivo),
     p_observacoes: texto(dados.observacoes),
     p_motivo_correcao: motivoObrigatorio(dados.motivoCorrecao, 'Informe o motivo da correção.'),

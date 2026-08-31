@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
   criarDestinoContextualEventoPessoas,
   normalizarAniversariosAgenda,
+  normalizarAcertosDesligamentoAgenda,
   normalizarCompetenciasFolhaAgenda,
   normalizarExamesAgenda,
   normalizarLimitesFeriasAgenda,
@@ -347,6 +348,50 @@ test('demissional realizado ou cancelado deixa de ser pendência operacional', (
     { id: 'cancelado', funcionario_id: desligado.id, tipo: 'DEMISSIONAL', estado: 'CANCELADO', data_prevista: '2026-07-20' }
   ]
   assert.deepEqual(normalizarExamesAgenda(exames, [desligado], { dataBaseISO: hoje }), [])
+})
+
+test('acerto aberto gera um unico evento com data efetiva e contexto do desligamento', () => {
+  const desligamentos = [
+    { id: 'desl-1', funcionario_id: funcionario.id, estado: 'ABERTO', data_acerto: '2026-07-18', data_acerto_efetiva: '2026-07-20' }
+  ]
+  const [evento] = normalizarAcertosDesligamentoAgenda(desligamentos, [funcionario], { dataBaseISO: hoje })
+
+  assert.equal(evento.id, 'pessoas:desligamento:acerto:desl-1')
+  assert.equal(evento.dataReferencia, '2026-07-20')
+  assert.equal(evento.tipo, 'acerto_desligamento')
+  assert.equal(evento.destino, 'funcionarios')
+  assert.deepEqual(evento.referenciaOrigem, {
+    tipo: 'acerto_desligamento', id: 'desl-1', funcionarioId: funcionario.id, desligamentoId: 'desl-1'
+  })
+})
+
+test('acerto concluido permanece ativo mesmo com vinculo arquivado', () => {
+  const arquivado = { ...funcionario, status: 'desligado', arquivado: true }
+  const eventos = normalizarAcertosDesligamentoAgenda([
+    { id: 'desl-1', funcionario_id: arquivado.id, estado: 'CONCLUIDO', efeito_revertido: false, data_acerto_efetiva: '2026-07-14' }
+  ], [arquivado], { dataBaseISO: hoje })
+  assert.equal(eventos.length, 1)
+  assert.equal(eventos[0].status, 'vencido')
+})
+
+test('cancelamento reversao ausencia de data e outra filial removem acerto ativo', () => {
+  const desligamentos = [
+    { id: 'cancelado', funcionario_id: funcionario.id, estado: 'CANCELADO', data_acerto_efetiva: '2026-07-20' },
+    { id: 'revertido', funcionario_id: funcionario.id, estado: 'CONCLUIDO', efeito_revertido: true, data_acerto_efetiva: '2026-07-20' },
+    { id: 'sem-data', funcionario_id: funcionario.id, estado: 'ABERTO', data_acerto_efetiva: null },
+    { id: 'outra-filial', funcionario_id: funcionario.id, estado: 'ABERTO', data_acerto_efetiva: '2026-07-20' }
+  ]
+  assert.deepEqual(normalizarAcertosDesligamentoAgenda(desligamentos, [funcionario], {
+    dataBaseISO: hoje, filialId: 'filial-2'
+  }), [])
+})
+
+test('retificacao move a projecao do acerto sem duplicar o evento', () => {
+  const [evento] = normalizarAcertosDesligamentoAgenda([
+    { id: 'desl-1', funcionario_id: funcionario.id, estado: 'CONCLUIDO', efeito_revertido: false, data_acerto: '2026-07-18', data_acerto_efetiva: '2026-07-25' }
+  ], [funcionario], { dataBaseISO: hoje })
+  assert.equal(evento.dataReferencia, '2026-07-25')
+  assert.equal(evento.id, 'pessoas:desligamento:acerto:desl-1')
 })
 
 test('navegacao contextual preserva funcionario, ciclo, periodo e origem', () => {

@@ -4,6 +4,7 @@ import {
   executarConsultasEventosPessoas,
   FONTES_EVENTOS_PESSOAS
 } from './eventosPessoasBatch.js'
+import fs from 'node:fs'
 function criarConsultas({ falhar = '' } = {}) {
   const chamadas = []
   const consultas = Object.fromEntries(FONTES_EVENTOS_PESSOAS.map((fonte) => [
@@ -17,17 +18,17 @@ function criarConsultas({ falhar = '' } = {}) {
   return { consultas, chamadas }
 }
 
-test('carga de Pessoas executa cinco consultas em lote independentemente do volume', async () => {
+test('carga de Pessoas executa seis consultas em lote independentemente do volume', async () => {
   const { consultas, chamadas } = criarConsultas()
   const resultado = await executarConsultasEventosPessoas({ consultas, parametros: { empresaId: 'empresa-1' } })
 
-  assert.equal(resultado.quantidadeConsultas, 5)
-  assert.equal(chamadas.length, 5)
+  assert.equal(resultado.quantidadeConsultas, 6)
+  assert.equal(chamadas.length, 6)
   assert.deepEqual(chamadas.map((item) => item.fonte), FONTES_EVENTOS_PESSOAS)
   assert.ok(chamadas.every((item) => item.empresaId === 'empresa-1'))
 })
 
-test('falha parcial preserva as quatro fontes bem-sucedidas', async () => {
+test('falha parcial preserva as cinco fontes bem-sucedidas', async () => {
   const { consultas } = criarConsultas({ falhar: 'exames' })
   const resultado = await executarConsultasEventosPessoas({ consultas, parametros: { empresaId: 'empresa-1' } })
 
@@ -37,6 +38,7 @@ test('falha parcial preserva as quatro fontes bem-sucedidas', async () => {
   assert.equal(resultado.dados.ciclosFerias.length, 1)
   assert.equal(resultado.dados.periodosFerias.length, 1)
   assert.equal(resultado.dados.folha.length, 1)
+  assert.equal(resultado.dados.desligamentos.length, 1)
 })
 
 test('nova tentativa repete somente o lote constante e pode recuperar a fonte', async () => {
@@ -57,5 +59,10 @@ test('nova tentativa repete somente o lote constante e pode recuperar a fonte', 
 
   assert.deepEqual(primeira.fontesComErro, ['folha'])
   assert.deepEqual(segunda.fontesComErro, [])
-  assert.equal(chamadas, 10)
+  assert.equal(chamadas, 12)
+})
+
+test('consulta inclui vínculos arquivados para não ocultar acertos válidos', () => {
+  const service = fs.readFileSync('src/modules/central-do-dia/services/eventosPessoasService.js', 'utf8')
+  assert.match(service, /listarFuncionarios\(\{ supabase, empresaId, incluirArquivados: true \}\)/)
 })

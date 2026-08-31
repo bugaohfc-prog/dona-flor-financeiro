@@ -171,6 +171,53 @@ export function normalizarCompetenciasFolhaAgenda(competencias = [], { dataBaseI
   }).filter(Boolean)
 }
 
+export function normalizarAcertosDesligamentoAgenda(
+  desligamentos = [],
+  funcionarios = [],
+  { dataBaseISO, filialId = '' } = {}
+) {
+  const funcionariosPorId = new Map((funcionarios || []).map((funcionario) => [texto(funcionario?.id), funcionario]))
+
+  return (desligamentos || []).map((desligamento) => {
+    const funcionario = funcionariosPorId.get(texto(desligamento?.funcionario_id))
+    const estado = texto(desligamento?.estado).toUpperCase()
+    const dataReferencia = normalizarDataISO(desligamento?.data_acerto_efetiva ?? desligamento?.data_acerto)
+    const eventoAtivo = estado === 'ABERTO' || (estado === 'CONCLUIDO' && !desligamento?.efeito_revertido)
+
+    if (!desligamento?.id || !funcionario || !eventoAtivo || !dataReferencia) return null
+    if (filialId && texto(funcionario.filial_id) !== texto(filialId)) return null
+
+    const dias = diferencaDiasCalendario(dataReferencia, dataBaseISO)
+    if (dias === null) return null
+    const atrasado = dias < 0
+    const descricao = atrasado
+      ? `Acerto do desligamento atrasado há ${Math.abs(dias)} dia(s)`
+      : dias === 0
+        ? 'Acerto do desligamento previsto para hoje'
+        : `Acerto do desligamento em ${dias} dia(s)`
+
+    return criarItemCentral({
+      id: `pessoas:desligamento:acerto:${desligamento.id}`,
+      tipo: 'acerto_desligamento',
+      modulo: 'Gestão de Pessoas',
+      titulo: texto(funcionario.nome) || 'Colaborador',
+      descricao: descricaoPessoa(descricao, funcionario),
+      dataReferencia,
+      dias,
+      severidade: atrasado ? 'critical' : dias <= 7 ? 'warning' : 'info',
+      status: atrasado ? 'vencido' : dias === 0 ? 'vence_hoje' : 'pendente',
+      inconsistencia: atrasado,
+      proximaAcao: 'Abrir o desligamento',
+      destino: 'funcionarios',
+      referenciaOrigem: referenciaPessoa('acerto_desligamento', desligamento.id, funcionario.id, {
+        desligamentoId: desligamento.id
+      }),
+      origemOperacional: 'pessoas',
+      ...dadosPessoa(funcionario)
+    })
+  }).filter(Boolean)
+}
+
 function periodosAtivosPorCiclo(periodos = []) {
   return (periodos || []).reduce((mapa, periodo) => {
     if (!periodo?.ciclo_ferias_id || periodo.arquivado || texto(periodo.status).toLowerCase() === 'cancelada') return mapa
@@ -294,6 +341,7 @@ export function projetarEventosPessoas({
   periodosFerias = [],
   exames = [],
   competenciasFolha = [],
+  desligamentos = [],
   dataBaseISO,
   filialId = ''
 } = {}) {
@@ -302,7 +350,8 @@ export function projetarEventosPessoas({
     ...normalizarLimitesFeriasAgenda(ciclosFerias, periodosFerias, funcionarios, { dataBaseISO, filialId }),
     ...normalizarMarcosFeriasAgenda(periodosFerias, funcionarios, { dataBaseISO, filialId }),
     ...normalizarExamesAgenda(exames, funcionarios, { dataBaseISO, filialId }),
-    ...normalizarCompetenciasFolhaAgenda(competenciasFolha, { dataBaseISO, filialId })
+    ...normalizarCompetenciasFolhaAgenda(competenciasFolha, { dataBaseISO, filialId }),
+    ...normalizarAcertosDesligamentoAgenda(desligamentos, funcionarios, { dataBaseISO, filialId })
   ]
 }
 

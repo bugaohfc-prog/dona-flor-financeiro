@@ -69,12 +69,14 @@ const LIMITE_FUNCIONARIOS_INICIAL = 8
 const FORMULARIO_DESLIGAMENTO_INICIAL = {
   motivo: '',
   dataEfetiva: '',
+  dataAcerto: '',
   observacoes: '',
   motivoCancelamento: ''
 }
 const FORMULARIO_CORRECAO_INICIAL = {
   tipo: '',
   dataEfetiva: '',
+  dataAcerto: '',
   motivo: '',
   observacoes: '',
   motivoCorrecao: ''
@@ -137,6 +139,10 @@ function formatarDataCurta(data) {
   } catch {
     return 'Não informada'
   }
+}
+
+function formatarDataAcerto(data) {
+  return data ? formatarDataCurta(data) : 'Não informado'
 }
 
 function montarDadosExame(formularioExame) {
@@ -337,6 +343,8 @@ export default function FuncionariosPage({
   const desligamentoAbertoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'ABERTO') || null
   const desligamentoConcluidoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'CONCLUIDO') || null
   const desligamentoConcluidoEfetivoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'CONCLUIDO' && !item.efeito_revertido) || null
+  const desligamentoOperacionalSelecionado = desligamentoAbertoSelecionado || desligamentoConcluidoEfetivoSelecionado
+  const dataAcertoSelecionada = desligamentoOperacionalSelecionado?.data_acerto_efetiva || desligamentoOperacionalSelecionado?.data_acerto || ''
   const desligamentoChecklistSelecionado = desligamentoConcluidoEfetivoSelecionado || desligamentoConcluidoSelecionado
   const correcoesPorDesligamento = useMemo(() => {
     const mapa = new Map()
@@ -599,12 +607,17 @@ export default function FuncionariosPage({
 
   useEffect(() => {
     const funcionarioId = String(contextoNavegacao?.funcionarioId || contextoNavegacao?.id || '')
-    if (!funcionarioId || contextoAplicadoRef.current === funcionarioId || loading || !podeEditar) return
+    const desligamentoId = String(contextoNavegacao?.desligamentoId || '')
+    const contextoDesligamento = contextoNavegacao?.tipo === 'acerto_desligamento' || Boolean(desligamentoId)
+    const contextoChave = `${contextoNavegacao?.tipo || 'funcionario'}:${funcionarioId}:${desligamentoId}`
+    if (!funcionarioId || contextoAplicadoRef.current === contextoChave || loading || (contextoDesligamento && loadingDesligamentos) || !podeEditar) return
     const funcionario = (funcionarios || []).find((item) => String(item?.id || '') === funcionarioId)
     if (!funcionario) return
-    contextoAplicadoRef.current = funcionarioId
-    abrirEdicaoFuncionario(funcionario)
-  }, [contextoNavegacao, funcionarios, loading, podeEditar])
+    if (contextoDesligamento && !desligamentos.some((item) => String(item?.id || '') === desligamentoId && String(item?.funcionario_id || '') === funcionarioId)) return
+    contextoAplicadoRef.current = contextoChave
+    if (contextoDesligamento) abrirModalDesligamento(funcionario)
+    else abrirEdicaoFuncionario(funcionario)
+  }, [contextoNavegacao, desligamentos, funcionarios, loading, loadingDesligamentos, podeEditar])
 
   function fecharFormulario() {
     setModalAberto(false)
@@ -762,6 +775,7 @@ export default function FuncionariosPage({
     setFormularioDesligamento(aberto ? {
       motivo: aberto.motivo || '',
       dataEfetiva: aberto.data_efetiva || '',
+      dataAcerto: aberto.data_acerto || '',
       observacoes: aberto.observacoes || '',
       motivoCancelamento: ''
     } : FORMULARIO_DESLIGAMENTO_INICIAL)
@@ -793,6 +807,7 @@ export default function FuncionariosPage({
     const dados = {
       motivo: formularioDesligamento.motivo,
       dataEfetiva: formularioDesligamento.dataEfetiva,
+      dataAcerto: formularioDesligamento.dataAcerto,
       observacoes: formularioDesligamento.observacoes
     }
     const resposta = desligamentoAbertoSelecionado
@@ -845,6 +860,7 @@ export default function FuncionariosPage({
     setFormularioCorrecao({
       tipo: 'RETIFICACAO',
       dataEfetiva: desligamentoConcluidoEfetivoSelecionado.data_efetiva_efetiva || desligamentoConcluidoEfetivoSelecionado.data_efetiva || '',
+      dataAcerto: desligamentoConcluidoEfetivoSelecionado.data_acerto_efetiva || desligamentoConcluidoEfetivoSelecionado.data_acerto || '',
       motivo: desligamentoConcluidoEfetivoSelecionado.motivo_efetivo || desligamentoConcluidoEfetivoSelecionado.motivo || '',
       observacoes: desligamentoConcluidoEfetivoSelecionado.observacoes_efetivas || '',
       motivoCorrecao: ''
@@ -1200,7 +1216,7 @@ export default function FuncionariosPage({
               {desligamentoConcluidoEfetivoSelecionado ? (
                 <>
                   <strong>Situação: Vínculo encerrado</strong>
-                  <span>O vínculo foi encerrado. O próximo passo é registrar os dados do acerto.</span>
+                  <span>O vínculo foi encerrado. {dataAcertoSelecionada ? `Acerto previsto para ${formatarDataCurta(dataAcertoSelecionada)}.` : 'Data prevista do acerto: Não informado.'}</span>
                 </>
               ) : desligamentoConcluidoSelecionado?.efeito_revertido ? (
                 <>
@@ -1226,9 +1242,9 @@ export default function FuncionariosPage({
                   <span>1</span>
                   <div><strong>Dados do desligamento</strong><small>{desligamentoConcluidoEfetivoSelecionado ? 'Concluída' : 'Etapa atual'}</small></div>
                 </li>
-                <li className={desligamentoConcluidoEfetivoSelecionado ? 'is-proxima' : 'is-futura'}>
+                <li className={dataAcertoSelecionada ? 'is-proxima' : 'is-futura'}>
                   <span>2</span>
-                  <div><strong>Acerto</strong><small>{desligamentoConcluidoEfetivoSelecionado ? 'Próxima etapa' : 'Após encerrar o vínculo'}</small></div>
+                  <div><strong>Acerto</strong><small>{dataAcertoSelecionada ? `Previsto para ${formatarDataCurta(dataAcertoSelecionada)}` : 'Data não informada'}</small></div>
                 </li>
                 <li className="is-futura">
                   <span>3</span>
@@ -1254,7 +1270,7 @@ export default function FuncionariosPage({
               <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
                 <span>
                   <strong>Dados do desligamento</strong>
-                  <small>Motivo e último dia trabalhado são obrigatórios.</small>
+                  <small>Motivo, último dia trabalhado e data prevista do acerto são obrigatórios.</small>
                 </span>
                 <b>{desligamentoAbertoSelecionado ? 'Editar' : '1'}</b>
               </div>
@@ -1267,14 +1283,26 @@ export default function FuncionariosPage({
                   Último dia trabalhado (obrigatório)
                   <input className="funcionarios-input" type="date" value={formularioDesligamento.dataEfetiva} onChange={(event) => atualizarCampoDesligamento('dataEfetiva', event.target.value)} required />
                 </label>
+                <label>
+                  Data prevista do acerto (obrigatório)
+                  <input className="funcionarios-input" type="date" value={formularioDesligamento.dataAcerto} onChange={(event) => atualizarCampoDesligamento('dataAcerto', event.target.value)} required />
+                </label>
                 <label className="span-2">
                   Observações (opcional)
                   <textarea className="funcionarios-input" value={formularioDesligamento.observacoes} onChange={(event) => atualizarCampoDesligamento('observacoes', event.target.value)} />
                 </label>
-                <p className="funcionarios-note span-2">Iniciar não encerra o vínculo. Você poderá revisar os dados antes da conclusão.</p>
-                <p className="funcionarios-note span-2">O acerto será registrado na próxima etapa do processo.</p>
+                <p className="funcionarios-note span-2">Iniciar registra o processo e não encerra o vínculo. Você poderá revisar os dados antes da conclusão.</p>
+                <p className="funcionarios-note span-2">A data prevista do acerto será acompanhada na Agenda.</p>
               </div>
             </section>}
+
+            {desligamentoOperacionalSelecionado && (
+              <dl className="funcionario-confirmacao-resumo" aria-label="Resumo do desligamento">
+                <div><dt>Último dia trabalhado</dt><dd>{formatarDataCurta(desligamentoOperacionalSelecionado.data_efetiva_efetiva || desligamentoOperacionalSelecionado.data_efetiva)}</dd></div>
+                <div><dt>Data prevista do acerto</dt><dd>{formatarDataAcerto(dataAcertoSelecionada)}</dd></div>
+                <div><dt>Situação atual</dt><dd>{DESLIGAMENTO_ESTADO_LABELS[desligamentoOperacionalSelecionado.estado] || desligamentoOperacionalSelecionado.estado}</dd></div>
+              </dl>
+            )}
 
             {desligamentoAbertoSelecionado && (
               <section className="funcionario-modal-section funcionario-desligamento-conclusao">
@@ -1283,7 +1311,7 @@ export default function FuncionariosPage({
                   <b>✓</b>
                 </div>
                 <div className="funcionario-form-grid">
-                  <p className="funcionarios-note span-2">Revise o colaborador, o último dia trabalhado e o motivo. Esta ação altera o status do vínculo para desligado.</p>
+                  <p className="funcionarios-note span-2">Revise o colaborador, o último dia trabalhado, a data prevista do acerto e o motivo. Esta ação altera o status do vínculo para desligado.</p>
                   <button className="funcionarios-btn funcionarios-btn-danger" type="button" disabled={salvandoDesligamento} onClick={() => setConfirmacaoConclusaoAberta(true)}>Concluir desligamento</button>
                 </div>
               </section>
@@ -1497,7 +1525,8 @@ export default function FuncionariosPage({
                 ) : historicoDesligamentoSelecionado.map((item) => (
                   <article key={item.id} className="funcionario-desligamento-item">
                       <div><strong>{item.efeito_revertido ? 'Conclusão revertida' : (DESLIGAMENTO_ESTADO_LABELS[item.estado] || item.estado)}</strong><small>Iniciado em {formatarDataCurta(item.aberto_em)}</small></div>
-                      <span>Último dia trabalhado: {formatarDataCurta(item.data_efetiva)}</span>
+                    <span>Último dia trabalhado: {formatarDataCurta(item.data_efetiva)}</span>
+                    <span>Data prevista do acerto: {formatarDataAcerto(item.data_acerto_efetiva || item.data_acerto)}</span>
                     <span>Motivo: {item.motivo}</span>
                     {item.estado === 'CANCELADO' && <span>Cancelamento: {item.motivo_cancelamento}</span>}
                     {item.estado === 'CONCLUIDO' && <span>Concluído em: {formatarDataCurta(item.concluido_em)}</span>}
@@ -1508,6 +1537,7 @@ export default function FuncionariosPage({
                         <small>{formatarDataCurta(correcao.criado_em)}</small>
                         <span>{correcao.motivo_correcao}</span>
                         {correcao.tipo === 'RETIFICACAO' && <span>Último dia trabalhado: {formatarDataCurta(correcao.data_efetiva_antes)} → {formatarDataCurta(correcao.data_efetiva_depois)}</span>}
+                        {correcao.tipo === 'RETIFICACAO' && <span>Data prevista do acerto: {formatarDataAcerto(correcao.data_acerto_antes)} → {formatarDataAcerto(correcao.data_acerto_depois)}</span>}
                       </div>
                     ))}
                   </article>
@@ -1518,7 +1548,7 @@ export default function FuncionariosPage({
             <div className="funcionario-modal-actions">
               <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharModalDesligamento} disabled={salvandoDesligamento}>Fechar</button>
               {funcionarioDesligamento.status !== 'desligado' && !desligamentoConcluidoEfetivoSelecionado && (
-                <button className="funcionarios-btn funcionarios-btn-primary" type="submit" disabled={salvandoDesligamento || !formularioDesligamento.motivo || !formularioDesligamento.dataEfetiva}>
+                <button className="funcionarios-btn funcionarios-btn-primary" type="submit" disabled={salvandoDesligamento || !formularioDesligamento.motivo || !formularioDesligamento.dataEfetiva || !formularioDesligamento.dataAcerto}>
                   {salvandoDesligamento ? 'Salvando...' : desligamentoAbertoSelecionado ? 'Salvar alterações' : 'Iniciar desligamento'}
                 </button>
               )}
@@ -1592,6 +1622,7 @@ export default function FuncionariosPage({
             <dl className="funcionario-confirmacao-resumo">
               <div><dt>Colaborador</dt><dd>{funcionarioDesligamento.nome || 'Não informado'}</dd></div>
               <div><dt>Último dia trabalhado</dt><dd>{formatarDataCurta(desligamentoAbertoSelecionado.data_efetiva)}</dd></div>
+              <div><dt>Data prevista do acerto</dt><dd>{formatarDataAcerto(desligamentoAbertoSelecionado.data_acerto)}</dd></div>
               <div><dt>Motivo</dt><dd>{desligamentoAbertoSelecionado.motivo}</dd></div>
             </dl>
             <div className="funcionario-desligamento-alerta" role="note">
@@ -1619,6 +1650,7 @@ export default function FuncionariosPage({
             {formularioCorrecao.tipo === 'RETIFICACAO' ? (
               <div className="funcionario-form-grid funcionario-correcao-form">
                 <label>Último dia trabalhado<input className="funcionarios-input" type="date" value={formularioCorrecao.dataEfetiva} onChange={(event) => setFormularioCorrecao((atual) => ({ ...atual, dataEfetiva: event.target.value }))} required /></label>
+                <label>Data prevista do acerto<input className="funcionarios-input" type="date" value={formularioCorrecao.dataAcerto} onChange={(event) => setFormularioCorrecao((atual) => ({ ...atual, dataAcerto: event.target.value }))} required /></label>
                 <label className="span-2">Motivo do desligamento<textarea className="funcionarios-input" value={formularioCorrecao.motivo} onChange={(event) => setFormularioCorrecao((atual) => ({ ...atual, motivo: event.target.value }))} required /></label>
                 <label className="span-2">Observações<textarea className="funcionarios-input" value={formularioCorrecao.observacoes} onChange={(event) => setFormularioCorrecao((atual) => ({ ...atual, observacoes: event.target.value }))} /></label>
                 <label className="span-2">Motivo da correção<textarea className="funcionarios-input" value={formularioCorrecao.motivoCorrecao} onChange={(event) => setFormularioCorrecao((atual) => ({ ...atual, motivoCorrecao: event.target.value }))} required /></label>

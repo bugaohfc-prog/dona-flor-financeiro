@@ -33,7 +33,7 @@ test('abertura usa exclusivamente a RPC controlada', async () => {
     supabase,
     empresaId: EMPRESA_ID,
     funcionarioId: FUNCIONARIO_ID,
-    dados: { motivo: 'Encerramento solicitado', dataEfetiva: '2026-08-31', observacoes: 'Acompanhar processo' }
+    dados: { motivo: 'Encerramento solicitado', dataEfetiva: '2026-08-31', dataAcerto: '2026-09-05', observacoes: 'Acompanhar processo' }
   })
 
   assert.deepEqual(chamadas, [{
@@ -43,6 +43,7 @@ test('abertura usa exclusivamente a RPC controlada', async () => {
       p_funcionario_id: FUNCIONARIO_ID,
       p_motivo: 'Encerramento solicitado',
       p_data_efetiva: '2026-08-31',
+      p_data_acerto: '2026-09-05',
       p_observacoes: 'Acompanhar processo',
       p_correlation_id: null
     }
@@ -55,7 +56,7 @@ test('edição e cancelamento usam RPCs distintas sem update direto', async () =
     supabase,
     empresaId: EMPRESA_ID,
     desligamentoId: WORKFLOW_ID,
-    dados: { motivo: 'Motivo revisado', dataEfetiva: '2026-09-01' }
+    dados: { motivo: 'Motivo revisado', dataEfetiva: '2026-09-01', dataAcerto: '2026-09-06' }
   })
   await cancelarDesligamentoFuncionario({
     supabase,
@@ -65,6 +66,7 @@ test('edição e cancelamento usam RPCs distintas sem update direto', async () =
   })
 
   assert.equal(chamadas[0].nome, 'atualizar_desligamento_funcionario_controlado')
+  assert.equal(chamadas[0].parametros.p_data_acerto, '2026-09-06')
   assert.equal(chamadas[1].nome, 'cancelar_desligamento_funcionario_controlado')
   assert.equal(chamadas[1].parametros.p_motivo_cancelamento, 'Processo aberto por engano')
 })
@@ -78,6 +80,12 @@ test('campos obrigatórios falham antes de consultar o banco', async () => {
     dados: { motivo: '', dataEfetiva: '' }
   }), /motivo/i)
   assert.equal(chamadas.length, 0)
+  assert.throws(() => abrirDesligamentoFuncionario({
+    supabase,
+    empresaId: EMPRESA_ID,
+    funcionarioId: FUNCIONARIO_ID,
+    dados: { motivo: 'Motivo válido', dataEfetiva: '2026-08-31', dataAcerto: '' }
+  }), /data prevista do acerto/i)
 })
 
 test('conclusão usa exclusivamente a RPC transacional 2B', async () => {
@@ -102,13 +110,13 @@ test('retificação envia estado efetivo completo para a RPC append-only', async
   const { supabase, chamadas } = criarSupabase()
   await retificarDesligamentoConcluido({
     supabase, empresaId: EMPRESA_ID, desligamentoId: WORKFLOW_ID,
-    dados: { dataEfetiva: '2026-09-02', motivo: 'Motivo corrigido', observacoes: 'Nota corrigida', motivoCorrecao: 'Erro administrativo' }
+    dados: { dataEfetiva: '2026-09-02', dataAcerto: '2026-09-08', motivo: 'Motivo corrigido', observacoes: 'Nota corrigida', motivoCorrecao: 'Erro administrativo' }
   })
   assert.deepEqual(chamadas[0], {
     nome: 'retificar_desligamento_concluido_controlado',
     parametros: {
       p_empresa_id: EMPRESA_ID, p_desligamento_id: WORKFLOW_ID,
-      p_data_efetiva: '2026-09-02', p_motivo: 'Motivo corrigido',
+      p_data_efetiva: '2026-09-02', p_data_acerto: '2026-09-08', p_motivo: 'Motivo corrigido',
       p_observacoes: 'Nota corrigida', p_motivo_correcao: 'Erro administrativo',
       p_correlation_id: null
     }

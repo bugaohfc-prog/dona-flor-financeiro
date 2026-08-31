@@ -22,11 +22,14 @@ test('modal apresenta hierarquia funcional e estados amigáveis', () => {
 test('campos e próximas ações explicam o efeito operacional', () => {
   assert.match(pagina, /Motivo \(obrigatório\)/)
   assert.match(pagina, /Último dia trabalhado \(obrigatório\)/)
+  assert.match(pagina, /Data prevista do acerto \(obrigatório\)/)
   assert.match(pagina, /Observações \(opcional\)/)
-  assert.match(pagina, /Iniciar não encerra o vínculo/)
+  assert.match(pagina, /Iniciar registra o processo e não encerra o vínculo/)
+  assert.match(pagina, /data prevista do acerto será acompanhada na Agenda/i)
   assert.match(pagina, /Iniciar desligamento/)
   assert.match(pagina, /Esta ação altera o status do vínculo para desligado/)
-  assert.match(pagina, /O vínculo foi encerrado\. O próximo passo é registrar os dados do acerto/)
+  assert.match(pagina, /Acerto previsto para/)
+  assert.match(pagina, /Data prevista do acerto: Não informado/)
   assert.doesNotMatch(pagina, /Último dia pretendido/)
 })
 
@@ -35,4 +38,10 @@ test('etapas futuras são apenas orientação visual responsiva', () => {
   assert.match(pagina, /className="is-futura"/)
   assert.match(css, /@media \(max-width: 560px\)[\s\S]*funcionario-desligamento-etapas ol/)
   assert.doesNotMatch(pagina, /onClick=.*Conta do acerto/)
+})
+
+test('contexto da Agenda abre o desligamento identificado', () => {
+  assert.match(pagina, /contextoNavegacao\?\.tipo === 'acerto_desligamento'/)
+  assert.match(pagina, /contextoNavegacao\?\.desligamentoId/)
+  assert.match(pagina, /abrirModalDesligamento\(funcionario\)/)
 })

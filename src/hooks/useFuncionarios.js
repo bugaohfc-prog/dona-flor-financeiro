@@ -6,9 +6,11 @@ import {
   atualizarFuncionario as atualizarFuncionarioService,
   criarFuncionario as criarFuncionarioService,
   listarFuncionarios,
+  listarTransferenciasFiliais,
   obterFuncionarioPorId as obterFuncionarioPorIdService,
   readmitirPessoaControlada as readmitirPessoaControladaService,
-  reativarFuncionario as reativarFuncionarioService
+  reativarFuncionario as reativarFuncionarioService,
+  transferirFuncionarioFilialControlada as transferirFuncionarioFilialControladaService
 } from '../services/funcionariosService'
 import { mensagemSeguraErro } from '../utils/session'
 import { registrarEventoAuditoriaSeguro } from '../services/auditoriaService'
@@ -53,6 +55,7 @@ export function useFuncionarios(opcoes = {}) {
 
   const empresaAtual = useMemo(() => normalizarId(empresaId), [empresaId])
   const [funcionarios, setFuncionarios] = useState([])
+  const [transferenciasFiliais, setTransferenciasFiliais] = useState([])
   const [loading, setLoading] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState(null)
@@ -79,11 +82,12 @@ export function useFuncionarios(opcoes = {}) {
     definirErro(null)
 
     try {
-      const { data, error } = await listarFuncionarios({
-        supabase,
-        empresaId: empresa,
-        incluirArquivados
-      })
+      const [resultadoFuncionarios, resultadoTransferencias] = await Promise.all([
+        listarFuncionarios({ supabase, empresaId: empresa, incluirArquivados }),
+        listarTransferenciasFiliais({ supabase, empresaId: empresa })
+      ])
+      const { data, error } = resultadoFuncionarios
+      if (resultadoTransferencias.error) throw resultadoTransferencias.error
 
       if (!montadoRef.current || cargaAtualRef.current !== cargaId) {
         return { data: null, error: null, ignorado: true }
@@ -96,6 +100,7 @@ export function useFuncionarios(opcoes = {}) {
       }
 
       setFuncionarios(data || [])
+      setTransferenciasFiliais(resultadoTransferencias.data || [])
       return { data: data || [], error: null }
     } catch (error) {
       if (montadoRef.current && cargaAtualRef.current === cargaId) {
@@ -121,6 +126,7 @@ export function useFuncionarios(opcoes = {}) {
   useEffect(() => {
     cargaAtualRef.current += 1
     setFuncionarios([])
+    setTransferenciasFiliais([])
     definirErro(null)
 
     if (!empresaAtual) {
@@ -219,6 +225,19 @@ export function useFuncionarios(opcoes = {}) {
     }))
   }, [executarComEmpresaAtiva, supabase])
 
+  const transferirFuncionarioFilial = useCallback(async (funcionarioId, dados = {}) => {
+    return executarComEmpresaAtiva((empresa) => transferirFuncionarioFilialControladaService({
+      supabase,
+      empresaId: empresa,
+      funcionarioId,
+      filialDestinoId: dados.filialDestinoId,
+      dataTransferencia: dados.dataTransferencia,
+      motivo: dados.motivo,
+      observacoes: dados.observacoes,
+      correlationId: dados.correlationId
+    }))
+  }, [executarComEmpresaAtiva, supabase])
+
   const arquivarFuncionario = useCallback(async (funcionarioId) => {
     return executarComEmpresaAtiva((empresa) => arquivarFuncionarioService({
       supabase,
@@ -237,6 +256,7 @@ export function useFuncionarios(opcoes = {}) {
 
   return {
     funcionarios,
+    transferenciasFiliais,
     setFuncionarios,
     loading,
     salvando,
@@ -248,6 +268,7 @@ export function useFuncionarios(opcoes = {}) {
     atualizarFuncionario,
     alterarAdmissaoFuncionario,
     readmitirPessoa,
+    transferirFuncionarioFilial,
     arquivarFuncionario,
     reativarFuncionario,
     limparErro: () => definirErro(null)

@@ -32,6 +32,13 @@ const FORMULARIO_INICIAL = {
   observacoes: ''
 }
 
+const FORMULARIO_TRANSFERENCIA_INICIAL = {
+  filialDestinoId: '',
+  dataTransferencia: '',
+  motivo: '',
+  observacoes: ''
+}
+
 const STATUS_LABELS = {
   ativo: 'Ativo',
   afastado: 'Afastado',
@@ -188,6 +195,28 @@ function criarChaveReadmissao() {
   return `readmissao-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
+function criarCorrelationIdTransferencia() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID()
+  return `transferencia-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+function mensagemErroTransferencia(erro) {
+  const mensagem = String(erro?.message || erro || '')
+  const conhecidas = [
+    ['FILIAL_DESTINO_IGUAL_ORIGEM', 'Escolha uma filial diferente da atual.'],
+    ['FILIAL_DESTINO_INVALIDA', 'A filial de destino não está ativa nesta empresa.'],
+    ['TRANSFERENCIA_DATA_ANTERIOR_ADMISSAO', 'A transferência não pode ser anterior à admissão.'],
+    ['TRANSFERENCIA_DATA_FUTURA', 'A data efetiva não pode estar no futuro.'],
+    ['TRANSFERENCIA_CRONOLOGIA_INVALIDA', 'Já existe uma transferência na mesma data ou depois dela.'],
+    ['TRANSFERENCIA_CONFLITO_DESLIGAMENTO', 'Existe um processo de desligamento em andamento para este vínculo.'],
+    ['FUNCIONARIO_SEM_FILIAL_ORIGEM', 'O vínculo precisa possuir uma filial atual antes da transferência.'],
+    ['FUNCIONARIO_NAO_ELEGIVEL_TRANSFERENCIA', 'Somente vínculos ativos ou afastados podem ser transferidos.'],
+    ['SEM_PERMISSAO', 'Você não tem permissão para transferir este vínculo.']
+  ]
+  return conhecidas.find(([codigo]) => mensagem.includes(codigo))?.[1]
+    || mensagemSeguraErro(erro, 'Não foi possível transferir o funcionário.')
+}
+
 function mensagemErroReadmissao(erro) {
   const mensagem = String(erro?.message || erro || '')
   const conhecidas = [
@@ -270,10 +299,14 @@ export default function FuncionariosPage({
   const [funcionarioReadmissao, setFuncionarioReadmissao] = useState(null)
   const [formularioReadmissao, setFormularioReadmissao] = useState(FORMULARIO_READMISSAO_INICIAL)
   const [requestKeyReadmissao, setRequestKeyReadmissao] = useState('')
+  const [modalTransferenciaAberto, setModalTransferenciaAberto] = useState(false)
+  const [funcionarioTransferencia, setFuncionarioTransferencia] = useState(null)
+  const [formularioTransferencia, setFormularioTransferencia] = useState(FORMULARIO_TRANSFERENCIA_INICIAL)
   const contextoAplicadoRef = useRef('')
 
   const {
     funcionarios,
+    transferenciasFiliais,
     loading,
     salvando,
     erro,
@@ -281,6 +314,7 @@ export default function FuncionariosPage({
     atualizarFuncionario,
     alterarAdmissaoFuncionario,
     readmitirPessoa,
+    transferirFuncionarioFilial,
     arquivarFuncionario,
     reativarFuncionario,
     obterFuncionarioPorId,
@@ -290,6 +324,16 @@ export default function FuncionariosPage({
     empresaId,
     incluirArquivados
   })
+
+  const transferenciasPorFuncionario = useMemo(() => {
+    const mapa = new Map()
+    for (const transferencia of transferenciasFiliais || []) {
+      const lista = mapa.get(transferencia.funcionario_id) || []
+      lista.push(transferencia)
+      mapa.set(transferencia.funcionario_id, lista)
+    }
+    return mapa
+  }, [transferenciasFiliais])
 
   const {
     desligamentos,
@@ -571,6 +615,36 @@ export default function FuncionariosPage({
     setModalReadmissaoAberto(true)
   }
 
+  function abrirTransferencia(funcionario) {
+    if (!funcionario?.id || !podeEditar || funcionario.arquivado || !['ativo', 'afastado'].includes(funcionario.status)) return
+    setFuncionarioTransferencia(funcionario)
+    setFormularioTransferencia(FORMULARIO_TRANSFERENCIA_INICIAL)
+    setModalTransferenciaAberto(true)
+  }
+
+  function fecharTransferencia({ forcar = false } = {}) {
+    if (salvando && !forcar) return
+    setModalTransferenciaAberto(false)
+    setFuncionarioTransferencia(null)
+    setFormularioTransferencia(FORMULARIO_TRANSFERENCIA_INICIAL)
+  }
+
+  async function confirmarTransferencia(event) {
+    event.preventDefault()
+    if (!funcionarioTransferencia?.id || salvando) return
+    const correlationId = criarCorrelationIdTransferencia()
+    const resposta = await transferirFuncionarioFilial(funcionarioTransferencia.id, {
+      ...formularioTransferencia,
+      correlationId
+    })
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemErroTransferencia(resposta.error), 'erro')
+      return
+    }
+    mostrarAviso?.('Transferência registrada. A filial atual e o histórico foram atualizados.', 'sucesso')
+    fecharTransferencia({ forcar: true })
+  }
+
   function fecharReadmissao({ forcar = false } = {}) {
     if (salvando && !forcar) return
     setModalReadmissaoAberto(false)
@@ -668,6 +742,7 @@ export default function FuncionariosPage({
     } else {
       const alterouAdmissao = admissaoFoiAlterada(funcionarioEditando, payload.data_admissao)
       const { dataAdmissao, demaisCampos } = separarAdmissaoDoPayload(payload)
+      delete demaisCampos.filial_id
 
       if (alterouAdmissao && funcionarioEditando.status !== payload.status) {
         setModalSecoesAbertas((atual) => ({ ...atual, vinculo: true, datas: true }))
@@ -1147,6 +1222,11 @@ export default function FuncionariosPage({
                         <button className="funcionarios-btn funcionarios-btn-secondary" type="button" disabled={salvando} onClick={() => abrirEdicaoFuncionario(funcionario)}>
                           Editar
                         </button>
+                        {!funcionario.arquivado && ['ativo', 'afastado'].includes(funcionario.status) && (
+                          <button className="funcionarios-btn funcionarios-btn-secondary" type="button" disabled={salvando} onClick={() => abrirTransferencia(funcionario)}>
+                            Transferir filial
+                          </button>
+                        )}
                         {!funcionario.arquivado && (funcionario.status !== 'desligado' || (desligamentosPorFuncionario.get(funcionario.id) || []).length > 0) && (
                           <button
                             className="funcionarios-btn funcionarios-btn-secondary"
@@ -1610,6 +1690,75 @@ export default function FuncionariosPage({
         </div>
       )}
 
+      {modalTransferenciaAberto && funcionarioTransferencia && (
+        <div className="funcionario-modal-backdrop" role="presentation" onClick={fecharTransferencia}>
+          <form className="funcionario-modal funcionario-transferencia-modal" role="dialog" aria-modal="true" aria-labelledby="transferencia-modal-title" onSubmit={confirmarTransferencia} onClick={(event) => event.stopPropagation()}>
+            <div className="funcionario-modal-header">
+              <div>
+                <span className="funcionarios-kicker">Movimentação interna</span>
+                <h2 id="transferencia-modal-title">Transferir entre filiais</h2>
+                <p>{funcionarioTransferencia.nome || 'Colaborador selecionado'}</p>
+              </div>
+              <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharTransferencia} disabled={salvando}>Fechar</button>
+            </div>
+
+            <dl className="funcionario-confirmacao-resumo">
+              <div><dt>Filial atual</dt><dd>{filiaisPorId[funcionarioTransferencia.filial_id] || 'Sem filial'}</dd></div>
+              <div><dt>Vínculo</dt><dd>O mesmo vínculo e a mesma pessoa serão preservados.</dd></div>
+            </dl>
+
+            <div className="funcionario-form-grid">
+              <label>
+                Filial de destino
+                <select className="funcionarios-input" required value={formularioTransferencia.filialDestinoId} onChange={(event) => setFormularioTransferencia((atual) => ({ ...atual, filialDestinoId: event.target.value }))}>
+                  <option value="">Selecione</option>
+                  {(filiais || []).filter((filial) => filial.id !== funcionarioTransferencia.filial_id && filial.ativo !== false).map((filial) => <option key={filial.id} value={filial.id}>{filial.nome || 'Filial'}</option>)}
+                </select>
+              </label>
+              <label>
+                Data efetiva
+                <input className="funcionarios-input" type="date" required value={formularioTransferencia.dataTransferencia} onChange={(event) => setFormularioTransferencia((atual) => ({ ...atual, dataTransferencia: event.target.value }))} />
+              </label>
+              <label className="span-2">
+                Motivo
+                <input className="funcionarios-input" required maxLength={200} value={formularioTransferencia.motivo} onChange={(event) => setFormularioTransferencia((atual) => ({ ...atual, motivo: event.target.value }))} />
+              </label>
+              <label className="span-2">
+                Observações (opcional)
+                <textarea className="funcionarios-input" maxLength={500} value={formularioTransferencia.observacoes} onChange={(event) => setFormularioTransferencia((atual) => ({ ...atual, observacoes: event.target.value }))} />
+              </label>
+            </div>
+
+            <section className="funcionario-modal-section">
+              <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
+                <span><strong>Histórico de transferências</strong><small>Registros preservados deste vínculo.</small></span>
+                <b>{(transferenciasPorFuncionario.get(funcionarioTransferencia.id) || []).length}</b>
+              </div>
+              <div className="funcionario-transferencia-historico">
+                {(transferenciasPorFuncionario.get(funcionarioTransferencia.id) || []).length === 0 ? (
+                  <div className="funcionario-exames-empty">Nenhuma transferência anterior.</div>
+                ) : (transferenciasPorFuncionario.get(funcionarioTransferencia.id) || []).map((item) => (
+                  <article key={item.id} className="funcionario-desligamento-item">
+                    <strong>{filiaisPorId[item.filial_origem_id] || 'Filial anterior'} → {filiaisPorId[item.filial_destino_id] || 'Filial de destino'}</strong>
+                    <span>Efetiva em {formatarDataCurta(item.data_transferencia)}</span>
+                    <span>Motivo: {item.motivo}</span>
+                    {item.observacoes && <span>{item.observacoes}</span>}
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <p className="funcionarios-note">A transferência atualiza a lotação operacional. Lançamentos históricos da Folha mantêm seus snapshots.</p>
+            <div className="funcionario-modal-actions">
+              <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharTransferencia} disabled={salvando}>Cancelar</button>
+              <button className="funcionarios-btn funcionarios-btn-primary" type="submit" disabled={salvando || !formularioTransferencia.filialDestinoId || !formularioTransferencia.dataTransferencia || !formularioTransferencia.motivo.trim()}>
+                {salvando ? 'Transferindo...' : 'Confirmar transferência'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {confirmacaoConclusaoAberta && desligamentoAbertoSelecionado && funcionarioDesligamento && (
         <div className="funcionario-modal-backdrop funcionario-confirmacao-backdrop" role="presentation" onClick={() => !salvandoDesligamento && setConfirmacaoConclusaoAberta(false)}>
           <div className="funcionario-modal funcionario-confirmacao-modal" role="alertdialog" aria-modal="true" aria-labelledby="conclusao-desligamento-title" onClick={(event) => event.stopPropagation()}>
@@ -1813,12 +1962,14 @@ export default function FuncionariosPage({
                       className="funcionarios-input"
                       value={formulario.filial_id}
                       onChange={(event) => atualizarCampo('filial_id', event.target.value)}
+                      disabled={Boolean(funcionarioEditando?.id)}
                     >
                       <option value="">Sem filial</option>
                       {(filiais || []).map((filial) => (
                         <option key={filial.id} value={filial.id}>{filial.nome || 'Filial'}</option>
                       ))}
                     </select>
+                    {funcionarioEditando?.id && <small className="funcionarios-help">Use “Transferir filial” para preservar a data efetiva e o histórico.</small>}
                   </label>
                 </div>
               )}

@@ -5,7 +5,8 @@ import {
   alterarAdmissaoFuncionarioControlada,
   atualizarFuncionario,
   criarFuncionario,
-  readmitirPessoaControlada
+  readmitirPessoaControlada,
+  transferirFuncionarioFilialControlada
 } from './funcionariosService.js'
 
 const EMPRESA_ID = '11111111-1111-4111-8111-111111111111'
@@ -212,5 +213,50 @@ test('readmissão rejeita chave curta e admissão ausente antes de consultar o b
     requestKey: 'readmissao-2c4-123456789',
     novaDataAdmissao: ''
   }), /nova data de admissao/)
+  assert.equal(consultouBanco, false)
+})
+
+test('transferência envia somente os dados controlados para a RPC transacional', async () => {
+  const chamadas = []
+  const supabase = {
+    async rpc(nome, parametros) {
+      chamadas.push({ nome, parametros })
+      return { data: { funcionario_id: FUNCIONARIO_ID, filial_atual_id: '44444444-4444-4444-8444-444444444444' }, error: null }
+    }
+  }
+
+  await transferirFuncionarioFilialControlada({
+    supabase,
+    empresaId: EMPRESA_ID,
+    funcionarioId: FUNCIONARIO_ID,
+    filialDestinoId: '44444444-4444-4444-8444-444444444444',
+    dataTransferencia: '2026-09-01',
+    motivo: '  Reorganização operacional  ',
+    observacoes: '  Mudança aprovada  ',
+    correlationId: 'corr-transferencia-1'
+  })
+
+  assert.deepEqual(chamadas, [{
+    nome: 'transferir_funcionario_filial_controlado',
+    parametros: {
+      p_empresa_id: EMPRESA_ID,
+      p_funcionario_id: FUNCIONARIO_ID,
+      p_filial_destino_id: '44444444-4444-4444-8444-444444444444',
+      p_data_transferencia: '2026-09-01',
+      p_motivo: 'Reorganização operacional',
+      p_observacoes: 'Mudança aprovada',
+      p_correlation_id: 'corr-transferencia-1'
+    }
+  }])
+})
+
+test('transferência rejeita destino, data ou motivo ausente antes do banco', async () => {
+  let consultouBanco = false
+  const supabase = { rpc() { consultouBanco = true } }
+  const base = { supabase, empresaId: EMPRESA_ID, funcionarioId: FUNCIONARIO_ID, filialDestinoId: 'filial', dataTransferencia: '2026-09-01', motivo: 'Motivo' }
+
+  await assert.rejects(transferirFuncionarioFilialControlada({ ...base, filialDestinoId: '' }), /filial de destino/)
+  await assert.rejects(transferirFuncionarioFilialControlada({ ...base, dataTransferencia: '' }), /data efetiva/)
+  await assert.rejects(transferirFuncionarioFilialControlada({ ...base, motivo: '' }), /motivo/)
   assert.equal(consultouBanco, false)
 })

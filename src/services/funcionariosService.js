@@ -2,6 +2,7 @@ import { atualizarPorEmpresa, selecionarPorEmpresa } from './supabaseQueryServic
 import { assertEmpresaId } from './tenantService.js'
 
 const TABELA_FUNCIONARIOS = 'df_funcionarios'
+const TABELA_TRANSFERENCIAS = 'df_funcionarios_transferencias_filiais'
 const FUNCIONARIO_LIST_SELECT = [
   'id',
   'empresa_id',
@@ -176,6 +177,19 @@ export async function obterFuncionarioPorId({ supabase, empresaId, funcionarioId
     .maybeSingle()
 }
 
+export async function listarTransferenciasFiliais({ supabase, empresaId }) {
+  assertEmpresaId(empresaId)
+
+  return selecionarPorEmpresa(
+    supabase,
+    TABELA_TRANSFERENCIAS,
+    empresaId,
+    'id, empresa_id, funcionario_id, filial_origem_id, filial_destino_id, data_transferencia, motivo, observacoes, criado_em, criado_por, correlation_id'
+  )
+    .order('data_transferencia', { ascending: false })
+    .order('criado_em', { ascending: false })
+}
+
 export async function criarFuncionario({ supabase, empresaId, dados }) {
   assertEmpresaId(empresaId)
 
@@ -210,6 +224,36 @@ export async function atualizarFuncionario({ supabase, empresaId, funcionarioId,
     p_funcionario_id: id,
     p_dados: payload,
     p_correlation_id: null
+  })
+}
+
+export async function transferirFuncionarioFilialControlada({
+  supabase,
+  empresaId,
+  funcionarioId,
+  filialDestinoId,
+  dataTransferencia,
+  motivo,
+  observacoes = null,
+  correlationId = null
+}) {
+  assertEmpresaId(empresaId)
+  const id = validarFuncionarioId(funcionarioId)
+  const filial = normalizarTexto(filialDestinoId)
+  const data = normalizarData(dataTransferencia)
+
+  if (!filial) throw new Error('Informe a filial de destino.')
+  if (!data) throw new Error('Informe a data efetiva da transferencia.')
+  if (!normalizarTexto(motivo)) throw new Error('Informe o motivo da transferencia.')
+
+  return supabase.rpc('transferir_funcionario_filial_controlado', {
+    p_empresa_id: empresaId,
+    p_funcionario_id: id,
+    p_filial_destino_id: filial,
+    p_data_transferencia: data,
+    p_motivo: normalizarTexto(motivo),
+    p_observacoes: normalizarTexto(observacoes),
+    p_correlation_id: normalizarTexto(correlationId)
   })
 }
 

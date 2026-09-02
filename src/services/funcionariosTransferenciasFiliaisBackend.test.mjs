@@ -4,6 +4,10 @@ import test from 'node:test'
 
 const MIGRATION = 'supabase/migrations/20260902000117_criar_transferencias_filiais_lote3.sql'
 const sql = fs.readFileSync(MIGRATION, 'utf8')
+const sqlLotacaoCompetencia = fs.readFileSync(
+  'supabase/migrations/20260902130444_definir_lotacao_folha_competencia_lote3a.sql',
+  'utf8'
+)
 const page = fs.readFileSync('src/pages/FuncionariosPage.jsx', 'utf8')
 const service = fs.readFileSync('src/services/funcionariosService.js', 'utf8')
 
@@ -55,11 +59,11 @@ test('regra temporal resolve origem antes e destino a partir da data efetiva', (
   assert.match(resolver, /data_transferencia > p_data_referencia[\s\S]*order by data_transferencia asc/)
 })
 
-test('Folha preserva snapshots e usa a regra temporal somente quando há data real', () => {
-  const folha = corpoFuncao('df_folha_lancamentos_snapshot_data_2c2')
-  assert.match(folha, /SNAPSHOT_FOLHA_IMUTAVEL/)
-  assert.match(folha, /df_funcionario_filial_na_data_lote3\(new\.empresa_id, new\.funcionario_id, new\.data_referencia\)/)
-  assert.match(folha, /new\.snapshot_origem := 'capturado_criacao_v1'/)
+test('Folha preserva snapshots e usa data real ou fim da competência', () => {
+  assert.match(sqlLotacaoCompetencia, /SNAPSHOT_FOLHA_IMUTAVEL/)
+  assert.match(sqlLotacaoCompetencia, /v_data_lotacao := coalesce\([\s\S]*new\.data_referencia[\s\S]*interval '1 month - 1 day'/)
+  assert.match(sqlLotacaoCompetencia, /df_funcionario_filial_na_data_lote3\([\s\S]*v_data_lotacao/)
+  assert.match(sqlLotacaoCompetencia, /new\.snapshot_origem := 'capturado_criacao_v1'/)
 })
 
 test('UI mostra ação, confirmação e histórico sem expor IDs', () => {

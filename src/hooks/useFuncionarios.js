@@ -9,6 +9,7 @@ import {
   listarTransferenciasFiliais,
   obterFuncionarioPorId as obterFuncionarioPorIdService,
   readmitirPessoaControlada as readmitirPessoaControladaService,
+  retificarTransferenciaFilialControlada as retificarTransferenciaFilialControladaService,
   reativarFuncionario as reativarFuncionarioService,
   transferirFuncionarioFilialControlada as transferirFuncionarioFilialControladaService
 } from '../services/funcionariosService'
@@ -238,6 +239,17 @@ export function useFuncionarios(opcoes = {}) {
     }))
   }, [executarComEmpresaAtiva, supabase])
 
+  const retificarTransferenciaFilial = useCallback(async (transferenciaId, dados = {}) => {
+    return executarComEmpresaAtiva((empresa) => retificarTransferenciaFilialControladaService({
+      supabase,
+      empresaId: empresa,
+      transferenciaId,
+      novaDataTransferencia: dados.novaDataTransferencia,
+      motivo: dados.motivo,
+      correlationId: dados.correlationId
+    }))
+  }, [executarComEmpresaAtiva, supabase])
+
   const arquivarFuncionario = useCallback(async (funcionarioId) => {
     return executarComEmpresaAtiva((empresa) => arquivarFuncionarioService({
       supabase,
@@ -269,6 +281,7 @@ export function useFuncionarios(opcoes = {}) {
     alterarAdmissaoFuncionario,
     readmitirPessoa,
     transferirFuncionarioFilial,
+    retificarTransferenciaFilial,
     arquivarFuncionario,
     reativarFuncionario,
     limparErro: () => definirErro(null)

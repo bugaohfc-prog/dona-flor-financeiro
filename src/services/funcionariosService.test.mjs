@@ -6,6 +6,7 @@ import {
   atualizarFuncionario,
   criarFuncionario,
   readmitirPessoaControlada,
+  retificarTransferenciaFilialControlada,
   transferirFuncionarioFilialControlada
 } from './funcionariosService.js'
 
@@ -258,5 +259,52 @@ test('transferência rejeita destino, data ou motivo ausente antes do banco', as
   await assert.rejects(transferirFuncionarioFilialControlada({ ...base, filialDestinoId: '' }), /filial de destino/)
   await assert.rejects(transferirFuncionarioFilialControlada({ ...base, dataTransferencia: '' }), /data efetiva/)
   await assert.rejects(transferirFuncionarioFilialControlada({ ...base, motivo: '' }), /motivo/)
+  assert.equal(consultouBanco, false)
+})
+
+test('retificação de transferência envia data e motivo somente para a RPC controlada', async () => {
+  const chamadas = []
+  const supabase = {
+    async rpc(nome, parametros) {
+      chamadas.push({ nome, parametros })
+      return { data: { data_transferencia_efetiva: '2026-08-01' }, error: null }
+    }
+  }
+
+  await retificarTransferenciaFilialControlada({
+    supabase,
+    empresaId: EMPRESA_ID,
+    transferenciaId: '55555555-5555-4555-8555-555555555555',
+    novaDataTransferencia: '2026-08-01',
+    motivo: '  Correção da data informada  ',
+    correlationId: 'corr-retificacao-transferencia-1'
+  })
+
+  assert.deepEqual(chamadas, [{
+    nome: 'retificar_transferencia_filial_controlada',
+    parametros: {
+      p_empresa_id: EMPRESA_ID,
+      p_transferencia_id: '55555555-5555-4555-8555-555555555555',
+      p_nova_data_transferencia: '2026-08-01',
+      p_motivo: 'Correção da data informada',
+      p_correlation_id: 'corr-retificacao-transferencia-1'
+    }
+  }])
+})
+
+test('retificação rejeita transferência, data ou motivo ausente antes do banco', async () => {
+  let consultouBanco = false
+  const supabase = { rpc() { consultouBanco = true } }
+  const base = {
+    supabase,
+    empresaId: EMPRESA_ID,
+    transferenciaId: '55555555-5555-4555-8555-555555555555',
+    novaDataTransferencia: '2026-08-01',
+    motivo: 'Correção'
+  }
+
+  await assert.rejects(retificarTransferenciaFilialControlada({ ...base, transferenciaId: '' }), /nao identificada/)
+  await assert.rejects(retificarTransferenciaFilialControlada({ ...base, novaDataTransferencia: '' }), /data efetiva corrigida/)
+  await assert.rejects(retificarTransferenciaFilialControlada({ ...base, motivo: '' }), /motivo da retificacao/)
   assert.equal(consultouBanco, false)
 })

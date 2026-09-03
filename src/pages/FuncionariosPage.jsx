@@ -38,6 +38,10 @@ const FORMULARIO_TRANSFERENCIA_INICIAL = {
   motivo: '',
   observacoes: ''
 }
+const FORMULARIO_RETIFICACAO_TRANSFERENCIA_INICIAL = {
+  novaDataTransferencia: '',
+  motivo: ''
+}
 
 const STATUS_LABELS = {
   ativo: 'Ativo',
@@ -208,6 +212,8 @@ function mensagemErroTransferencia(erro) {
     ['TRANSFERENCIA_DATA_ANTERIOR_ADMISSAO', 'A transferência não pode ser anterior à admissão.'],
     ['TRANSFERENCIA_DATA_FUTURA', 'A data efetiva não pode estar no futuro.'],
     ['TRANSFERENCIA_CRONOLOGIA_INVALIDA', 'Já existe uma transferência na mesma data ou depois dela.'],
+    ['RETIFICACAO_TRANSFERENCIA_CRONOLOGIA_INVALIDA', 'A data corrigida conflita com o histórico de transferências.'],
+    ['RETIFICACAO_TRANSFERENCIA_SEM_ALTERACAO', 'Informe uma data diferente da data efetiva atual.'],
     ['TRANSFERENCIA_CONFLITO_DESLIGAMENTO', 'Existe um processo de desligamento em andamento para este vínculo.'],
     ['FUNCIONARIO_SEM_FILIAL_ORIGEM', 'O vínculo precisa possuir uma filial atual antes da transferência.'],
     ['FUNCIONARIO_NAO_ELEGIVEL_TRANSFERENCIA', 'Somente vínculos ativos ou afastados podem ser transferidos.'],
@@ -302,6 +308,8 @@ export default function FuncionariosPage({
   const [modalTransferenciaAberto, setModalTransferenciaAberto] = useState(false)
   const [funcionarioTransferencia, setFuncionarioTransferencia] = useState(null)
   const [formularioTransferencia, setFormularioTransferencia] = useState(FORMULARIO_TRANSFERENCIA_INICIAL)
+  const [transferenciaRetificacao, setTransferenciaRetificacao] = useState(null)
+  const [formularioRetificacaoTransferencia, setFormularioRetificacaoTransferencia] = useState(FORMULARIO_RETIFICACAO_TRANSFERENCIA_INICIAL)
   const contextoAplicadoRef = useRef('')
 
   const {
@@ -315,6 +323,7 @@ export default function FuncionariosPage({
     alterarAdmissaoFuncionario,
     readmitirPessoa,
     transferirFuncionarioFilial,
+    retificarTransferenciaFilial,
     arquivarFuncionario,
     reativarFuncionario,
     obterFuncionarioPorId,
@@ -643,6 +652,37 @@ export default function FuncionariosPage({
     }
     mostrarAviso?.('Transferência registrada. A filial atual e o histórico foram atualizados.', 'sucesso')
     fecharTransferencia({ forcar: true })
+  }
+
+  function abrirRetificacaoTransferencia(transferencia, funcionario) {
+    if (!transferencia?.id || !funcionario?.id || !podeEditar) return
+    setTransferenciaRetificacao({ ...transferencia, funcionarioNome: funcionario.nome })
+    setFormularioRetificacaoTransferencia({
+      novaDataTransferencia: transferencia.data_transferencia || '',
+      motivo: ''
+    })
+    setModalTransferenciaAberto(false)
+  }
+
+  function fecharRetificacaoTransferencia({ forcar = false } = {}) {
+    if (salvando && !forcar) return
+    setTransferenciaRetificacao(null)
+    setFormularioRetificacaoTransferencia(FORMULARIO_RETIFICACAO_TRANSFERENCIA_INICIAL)
+  }
+
+  async function confirmarRetificacaoTransferencia(event) {
+    event.preventDefault()
+    if (!transferenciaRetificacao?.id || salvando) return
+    const resposta = await retificarTransferenciaFilial(transferenciaRetificacao.id, {
+      ...formularioRetificacaoTransferencia,
+      correlationId: criarCorrelationIdTransferencia()
+    })
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemErroTransferencia(resposta.error), 'erro')
+      return
+    }
+    mostrarAviso?.('Data efetiva retificada. O registro original foi preservado no histórico.', 'sucesso')
+    fecharRetificacaoTransferencia({ forcar: true })
   }
 
   function fecharReadmissao({ forcar = false } = {}) {
@@ -1740,9 +1780,12 @@ export default function FuncionariosPage({
                 ) : (transferenciasPorFuncionario.get(funcionarioTransferencia.id) || []).map((item) => (
                   <article key={item.id} className="funcionario-desligamento-item">
                     <strong>{filiaisPorId[item.filial_origem_id] || 'Filial anterior'} → {filiaisPorId[item.filial_destino_id] || 'Filial de destino'}</strong>
-                    <span>Efetiva em {formatarDataCurta(item.data_transferencia)}</span>
+                    <span>Efetiva em {formatarDataCurta(item.data_transferencia)}{item.retificada ? ' (retificada)' : ''}</span>
+                    {item.retificada && <span>Data originalmente registrada: {formatarDataCurta(item.data_transferencia_original)}</span>}
                     <span>Motivo: {item.motivo}</span>
                     {item.observacoes && <span>{item.observacoes}</span>}
+                    {item.retificada && item.motivo_retificacao && <span>Motivo da retificação: {item.motivo_retificacao}</span>}
+                    {podeEditar && <button className="funcionarios-btn funcionarios-btn-secondary" type="button" disabled={salvando} onClick={() => abrirRetificacaoTransferencia(item, funcionarioTransferencia)}>Retificar data</button>}
                   </article>
                 ))}
               </div>
@@ -1753,6 +1796,47 @@ export default function FuncionariosPage({
               <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharTransferencia} disabled={salvando}>Cancelar</button>
               <button className="funcionarios-btn funcionarios-btn-primary" type="submit" disabled={salvando || !formularioTransferencia.filialDestinoId || !formularioTransferencia.dataTransferencia || !formularioTransferencia.motivo.trim()}>
                 {salvando ? 'Transferindo...' : 'Confirmar transferência'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {transferenciaRetificacao && (
+        <div className="funcionario-modal-backdrop" role="presentation" onClick={fecharRetificacaoTransferencia}>
+          <form className="funcionario-modal funcionario-transferencia-modal" role="dialog" aria-modal="true" aria-labelledby="retificacao-transferencia-modal-title" onSubmit={confirmarRetificacaoTransferencia} onClick={(event) => event.stopPropagation()}>
+            <div className="funcionario-modal-header">
+              <div>
+                <span className="funcionarios-kicker">Correção auditável</span>
+                <h2 id="retificacao-transferencia-modal-title">Retificar data da transferência</h2>
+                <p>{transferenciaRetificacao.funcionarioNome || 'Colaborador selecionado'}</p>
+              </div>
+              <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharRetificacaoTransferencia} disabled={salvando}>Fechar</button>
+            </div>
+
+            <dl className="funcionario-confirmacao-resumo">
+              <div><dt>Filial anterior</dt><dd>{filiaisPorId[transferenciaRetificacao.filial_origem_id] || 'Filial anterior'}</dd></div>
+              <div><dt>Destino</dt><dd>{filiaisPorId[transferenciaRetificacao.filial_destino_id] || 'Filial de destino'}</dd></div>
+              <div><dt>Data efetiva atual</dt><dd>{formatarDataCurta(transferenciaRetificacao.data_transferencia)}</dd></div>
+              <div><dt>Preservação</dt><dd>O registro original e as auditorias permanecerão intactos.</dd></div>
+            </dl>
+
+            <div className="funcionario-form-grid">
+              <label>
+                Data efetiva corrigida
+                <input className="funcionarios-input" type="date" required value={formularioRetificacaoTransferencia.novaDataTransferencia} onChange={(event) => setFormularioRetificacaoTransferencia((atual) => ({ ...atual, novaDataTransferencia: event.target.value }))} />
+              </label>
+              <label className="span-2">
+                Motivo da retificação
+                <textarea className="funcionarios-input" required minLength={3} maxLength={500} value={formularioRetificacaoTransferencia.motivo} onChange={(event) => setFormularioRetificacaoTransferencia((atual) => ({ ...atual, motivo: event.target.value }))} />
+              </label>
+            </div>
+
+            <p className="funcionarios-note">A filial atual e os snapshots históricos da Folha não serão alterados.</p>
+            <div className="funcionario-modal-actions">
+              <button className="funcionarios-btn funcionarios-btn-secondary" type="button" onClick={fecharRetificacaoTransferencia} disabled={salvando}>Cancelar</button>
+              <button className="funcionarios-btn funcionarios-btn-primary" type="submit" disabled={salvando || !formularioRetificacaoTransferencia.novaDataTransferencia || formularioRetificacaoTransferencia.motivo.trim().length < 3}>
+                {salvando ? 'Retificando...' : 'Confirmar retificação'}
               </button>
             </div>
           </form>

@@ -4,6 +4,8 @@ import test from 'node:test'
 
 const MIGRATION = 'supabase/migrations/20260902000117_criar_transferencias_filiais_lote3.sql'
 const sql = fs.readFileSync(MIGRATION, 'utf8')
+const RETIFICACAO_MIGRATION = 'supabase/migrations/20260903011056_retificar_transferencia_filial_controlada.sql'
+const sqlRetificacao = fs.readFileSync(RETIFICACAO_MIGRATION, 'utf8')
 const sqlLotacaoCompetencia = fs.readFileSync(
   'supabase/migrations/20260902130444_definir_lotacao_folha_competencia_lote3a.sql',
   'utf8'
@@ -74,4 +76,39 @@ test('UI mostra ação, confirmação e histórico sem expor IDs', () => {
   assert.match(page, /filiaisPorId\[item\.filial_destino_id\]/)
   assert.doesNotMatch(page, /Transferência ID|Código da transferência/)
   assert.match(service, /rpc\('transferir_funcionario_filial_controlado'/)
+})
+
+test('retificação preserva o registro original em histórico append-only e tenant-safe', () => {
+  assert.match(sqlRetificacao, /create table public\.df_funcionarios_transferencias_filiais_retificacoes/)
+  assert.match(sqlRetificacao, /foreign key \(empresa_id, transferencia_id\)[\s\S]*references public\.df_funcionarios_transferencias_filiais\(empresa_id, id\)/)
+  assert.match(sqlRetificacao, /force row level security/)
+  assert.match(sqlRetificacao, /RETIFICACAO_TRANSFERENCIA_HISTORICO_IMUTAVEL[\s\S]*before update or delete/)
+  assert.doesNotMatch(sqlRetificacao, /update public\.df_funcionarios_transferencias_filiais/)
+  assert.match(sqlRetificacao, /with \(security_invoker = true\)/)
+})
+
+test('RPC de retificação usa lock, valida cronologia e audita atomicamente', () => {
+  const inicio = sqlRetificacao.indexOf('create or replace function public.retificar_transferencia_filial_controlada(')
+  const rpc = sqlRetificacao.slice(inicio)
+  assert.notEqual(inicio, -1)
+  assert.match(rpc, /security definer[\s\S]*set search_path = ''/)
+  assert.match(rpc, /df_funcionarios_pode_escrever/)
+  assert.match(rpc, /pg_advisory_xact_lock/)
+  assert.match(rpc, /for update/)
+  assert.match(rpc, /RETIFICACAO_TRANSFERENCIA_CRONOLOGIA_INVALIDA/)
+  assert.match(rpc, /rh\.funcionario\.filial_transferencia_retificada/)
+  assert.match(rpc, /dados_antes[\s\S]*dados_depois[\s\S]*correlation_id/)
+  assert.match(sqlRetificacao, /revoke all on function public\.retificar_transferencia_filial_controlada[\s\S]*from public, anon, authenticated/)
+  assert.match(sqlRetificacao, /grant execute on function public\.retificar_transferencia_filial_controlada[\s\S]*to authenticated/)
+})
+
+test('projeção temporal e UI usam a data efetiva corrigida sem esconder a original', () => {
+  assert.match(sqlRetificacao, /coalesce\(r\.data_corrigida, t\.data_transferencia\) as data_transferencia/)
+  assert.match(sqlRetificacao, /t\.data_transferencia as data_transferencia_original/)
+  assert.match(sqlRetificacao, /from public\.df_funcionarios_transferencias_filiais_efetivas/)
+  assert.match(service, /df_funcionarios_transferencias_filiais_efetivas/)
+  assert.match(service, /rpc\('retificar_transferencia_filial_controlada'/)
+  assert.match(page, />Retificar data</)
+  assert.match(page, /Data originalmente registrada:/)
+  assert.match(page, /Confirmar retificação/)
 })

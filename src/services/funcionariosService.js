@@ -2,7 +2,7 @@ import { atualizarPorEmpresa, selecionarPorEmpresa } from './supabaseQueryServic
 import { assertEmpresaId } from './tenantService.js'
 
 const TABELA_FUNCIONARIOS = 'df_funcionarios'
-const TABELA_TRANSFERENCIAS = 'df_funcionarios_transferencias_filiais'
+const TABELA_TRANSFERENCIAS = 'df_funcionarios_transferencias_filiais_efetivas'
 const FUNCIONARIO_LIST_SELECT = [
   'id',
   'empresa_id',
@@ -184,7 +184,7 @@ export async function listarTransferenciasFiliais({ supabase, empresaId }) {
     supabase,
     TABELA_TRANSFERENCIAS,
     empresaId,
-    'id, empresa_id, funcionario_id, filial_origem_id, filial_destino_id, data_transferencia, motivo, observacoes, criado_em, criado_por, correlation_id'
+    'id, empresa_id, funcionario_id, filial_origem_id, filial_destino_id, data_transferencia, data_transferencia_original, motivo, observacoes, criado_em, criado_por, correlation_id, retificada, ultima_retificacao_id, motivo_retificacao, retificado_em'
   )
     .order('data_transferencia', { ascending: false })
     .order('criado_em', { ascending: false })
@@ -253,6 +253,32 @@ export async function transferirFuncionarioFilialControlada({
     p_data_transferencia: data,
     p_motivo: normalizarTexto(motivo),
     p_observacoes: normalizarTexto(observacoes),
+    p_correlation_id: normalizarTexto(correlationId)
+  })
+}
+
+export async function retificarTransferenciaFilialControlada({
+  supabase,
+  empresaId,
+  transferenciaId,
+  novaDataTransferencia,
+  motivo,
+  correlationId = null
+}) {
+  assertEmpresaId(empresaId)
+  const id = String(transferenciaId || '').trim()
+  const data = normalizarData(novaDataTransferencia)
+  const motivoNormalizado = normalizarTexto(motivo)
+
+  if (!id) throw new Error('Transferencia nao identificada.')
+  if (!data) throw new Error('Informe a data efetiva corrigida.')
+  if (!motivoNormalizado || motivoNormalizado.length < 3) throw new Error('Informe o motivo da retificacao.')
+
+  return supabase.rpc('retificar_transferencia_filial_controlada', {
+    p_empresa_id: empresaId,
+    p_transferencia_id: id,
+    p_nova_data_transferencia: data,
+    p_motivo: motivoNormalizado,
     p_correlation_id: normalizarTexto(correlationId)
   })
 }

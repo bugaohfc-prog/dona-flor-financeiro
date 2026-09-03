@@ -6,6 +6,8 @@ const MIGRATION = 'supabase/migrations/20260902000117_criar_transferencias_filia
 const sql = fs.readFileSync(MIGRATION, 'utf8')
 const RETIFICACAO_MIGRATION = 'supabase/migrations/20260903011056_retificar_transferencia_filial_controlada.sql'
 const sqlRetificacao = fs.readFileSync(RETIFICACAO_MIGRATION, 'utf8')
+const RLS_MASTER_MIGRATION = 'supabase/migrations/20260903082749_corrigir_leitura_historico_transferencias_master.sql'
+const sqlRlsMaster = fs.readFileSync(RLS_MASTER_MIGRATION, 'utf8')
 const sqlLotacaoCompetencia = fs.readFileSync(
   'supabase/migrations/20260902130444_definir_lotacao_folha_competencia_lote3a.sql',
   'utf8'
@@ -111,4 +113,12 @@ test('projeção temporal e UI usam a data efetiva corrigida sem esconder a orig
   assert.match(page, />Retificar data</)
   assert.match(page, /Data originalmente registrada:/)
   assert.match(page, /Confirmar retificação/)
+})
+
+test('leitura do histórico reutiliza a autoridade canônica e preserva gerente sem ampliar escrita', () => {
+  assert.match(sqlRlsMaster, /on public\.df_funcionarios_transferencias_filiais\s+for select\s+to authenticated\s+using \(\s*public\.df_funcionarios_pode_escrever\(empresa_id\)/i)
+  assert.match(sqlRlsMaster, /public\.df_usuario_tem_perfil_empresa\(empresa_id, array\['gerente'\]\)/i)
+  assert.match(sqlRlsMaster, /on public\.df_funcionarios_transferencias_filiais_retificacoes\s+for select\s+to authenticated\s+using \(\s*public\.df_funcionarios_pode_escrever\(empresa_id\)/i)
+  assert.doesNotMatch(sqlRlsMaster, /\b(?:insert|update|delete)\s+(?:into|public\.)/i)
+  assert.doesNotMatch(sqlRlsMaster, /grant\s+(?:insert|update|delete)/i)
 })

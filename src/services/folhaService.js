@@ -984,4 +984,23 @@ export async function reativarLancamentoFolha({ supabase, empresaId, id }) {
     .single()
 }
 
+export async function retificarOcorrenciaFolha({ supabase, dados = {} }) {
+  const permitidos = ['item_original_id', 'competencia_destino_id', 'data_referencia_corrigida', 'motivo', 'correlation_id']
+  if (Object.keys(dados).some((campo) => !permitidos.includes(campo))) throw new Error('Campo não permitido na retificação histórica.')
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  for (const campo of ['item_original_id', 'competencia_destino_id', 'correlation_id']) {
+    if (!uuid.test(dados[campo] || '')) throw new Error('Identificação inválida para retificação.')
+  }
+  const motivo = String(dados.motivo || '').trim()
+  if (!motivo || motivo.length > 1000) throw new Error('Motivo da retificação obrigatório, até 1000 caracteres.')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dados.data_referencia_corrigida || '')) throw new Error('Data inválida para retificação.')
+  return supabase.rpc('df_retificar_ocorrencia_folha', {
+    p_item_original_id: dados.item_original_id,
+    p_competencia_destino_id: dados.competencia_destino_id,
+    p_data_referencia_corrigida: dados.data_referencia_corrigida,
+    p_motivo: motivo,
+    p_correlation_id: dados.correlation_id
+  })
+}
+
 export const obterResumoFolhaCompetencia = calcularResumoFolhaCompetencia

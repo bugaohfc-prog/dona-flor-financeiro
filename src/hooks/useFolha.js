@@ -12,6 +12,7 @@ import {
   criarItemLancamentoFolha as criarItemLancamentoFolhaService,
   criarLancamentoFolha as criarLancamentoFolhaService,
   listarCompetenciasFolha,
+  retificarOcorrenciaFolha,
   listarItensLancamentosFolha,
   listarLancamentosFolha,
   reativarCompetenciaFolha as reativarCompetenciaFolhaService,
@@ -513,6 +514,11 @@ export function useFolha(opcoes = {}) {
     })
   }, [competenciaAtual, executarComEmpresaAtiva, supabase])
 
+  const retificarOcorrencia = useCallback((dados) => executarComEmpresaAtiva(
+    () => retificarOcorrenciaFolha({ supabase, dados }),
+    { recarregarLancamentos: true }
+  ), [executarComEmpresaAtiva, supabase])
+
   const calcularResumo = useCallback((lista = lancamentos) => {
     return calcularResumoFolhaCompetencia(lista)
   }, [lancamentos])
@@ -548,6 +554,7 @@ export function useFolha(opcoes = {}) {
     arquivarItemLancamento,
     reativarItemLancamento,
     calcularResumo,
+    retificarOcorrencia,
     limparErro: () => definirErro(null),
     limparLancamentos,
     limparItensLancamentos

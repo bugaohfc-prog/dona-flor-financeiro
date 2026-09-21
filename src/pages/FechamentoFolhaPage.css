@@ -390,3 +390,15 @@
     flex: 1 1 120px;
   }
 }
+.folha-retificacao {
+  border: 1px solid var(--border-color, #dce3eb);
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.folha-retificacao .folha-field textarea {
+  width: 100%;
+  min-height: 88px;
+  box-sizing: border-box;
+}

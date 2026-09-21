@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFolha } from '../hooks/useFolha'
 import { useFuncionarios } from '../hooks/useFuncionarios'
 import FolhaExportacoes from '../modules/folha/components/fechamento/FolhaExportacoes'
+import FolhaRetificacao from '../modules/folha/components/fechamento/FolhaRetificacao'
+import { ocorrenciaPermiteRetificacao } from '../modules/folha/utils/fechamento/folhaRetificacao'
 import {
   ajustarDatasFaltasFolha,
   calcularPremiacaoFolha,
@@ -156,6 +158,7 @@ export default function FechamentoFolhaPage({
   const [itemEditandoId, setItemEditandoId] = useState('')
   const [lancamentoEditandoId, setLancamentoEditandoId] = useState('')
   const [mensagem, setMensagem] = useState('')
+  const [retificacao, setRetificacao] = useState(null)
   const [erroLocal, setErroLocal] = useState('')
   const [salvandoCompraRapida, setSalvandoCompraRapida] = useState(false)
   const [salvandoOcorrencia, setSalvandoOcorrencia] = useState(false)
@@ -197,6 +200,9 @@ export default function FechamentoFolhaPage({
     autoCarregarCompetencias: Boolean(empresaId),
     autoCarregarLancamentos: Boolean(empresaId && competenciaSelecionadaId)
   })
+
+  const retificacaoFolha = useFolha({ empresaId, incluirArquivadas: true, autoCarregarCompetencias: Boolean(retificacao), autoCarregarLancamentos: false })
+  useEffect(() => { setRetificacao(null) }, [empresaId, competenciaSelecionadaId])
 
   const { funcionarios, loading: loadingFuncionarios, erro: erroFuncionarios } = useFuncionarios({
     empresaId,
@@ -798,6 +804,12 @@ export default function FechamentoFolhaPage({
         </>
       ) : null}
 
+      {retificacao && podeEditar ? <FolhaRetificacao original={retificacao} destinos={retificacaoFolha.competencias}
+        carregando={retificacaoFolha.loadingCompetencias} erroCarga={retificacaoFolha.erro}
+        salvar={retificacaoFolha.retificarOcorrencia} fechar={async (sucesso) => {
+          setRetificacao(null)
+          if (sucesso) { setMensagem('Retificação histórica concluída.'); await carregarLancamentos() }
+        }} /> : null}
       <SectionCard
         title="Conferência e exportação"
         description="O mesmo conjunto ativo alimenta os totais da tela e os dois arquivos Excel."
@@ -825,6 +837,7 @@ export default function FechamentoFolhaPage({
                             <div className="folha-detalhes-lista">
                               {detalhes.map((item, indice) => (
                                 <div className={`folha-detalhe-row ${item.arquivado ? 'is-archived' : ''}`} key={item.id}>
+                                  {ocorrenciaPermiteRetificacao({ item, lancamento, competencia: competenciaSelecionada, podeEditar }) ? <button type="button" className="folha-btn folha-btn-secondary" onClick={() => setRetificacao({ item, lancamento, competencia: competenciaSelecionada, nome: historico.nome })}>Retificar histórico</button> : null}
                                   <span>{lancamento.categoria === 'compras_vales' ? `Compra ${indice + 1}: ${formatarMoeda(item.valor)}` : lancamento.categoria === 'premiacao' ? `Premiação ${indice + 1}: ${formatarMoeda(item.valor_base)} × ${numeroFolha(item.percentual)}% = ${formatarMoeda(item.valor)}` : categoriaFolhaEhHora(lancamento.categoria) ? `${formatarData(item.data_referencia)} · ${horasFolhaParaTexto(item.quantidade)}` : lancamento.categoria === 'falta_injustificada' ? formatarData(item.data_referencia) : item.descricao || 'Item'}</span>
                                    <div className="folha-row-actions"><button type="button" className="folha-btn folha-btn-quiet" onClick={() => lancamento.categoria === 'compras_vales' ? editarCompraDaColaboradora(historico.funcionarioId, item) : editarItemDetalhado(lancamento, item)} disabled={!podeEditarRegistro || salvando || item.arquivado || lancamento.arquivado}>Editar</button><button type="button" className="folha-btn folha-btn-danger" onClick={() => alternarItem(item)} disabled={!podeEditarRegistro || salvando || lancamento.arquivado}>{item.arquivado ? 'Reativar' : 'Arquivar'}</button></div>
                                 </div>

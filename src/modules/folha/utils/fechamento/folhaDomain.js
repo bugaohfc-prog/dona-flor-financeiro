@@ -210,6 +210,24 @@ export function totalItensFinanceirosFolha(itens = []) {
   return Math.round(itens.filter((item) => !item?.arquivado).reduce((total, item) => total + numeroFolha(item?.valor), 0) * 100) / 100
 }
 
+export function resumirOutrosDescontosFolha(lancamentos = [], funcionarioId, incluirArquivados = false) {
+  const itens = ordenarItensFolha(lancamentos.filter((item) => (
+    item?.categoria === 'outro_desconto'
+    && item?.funcionario_id === funcionarioId
+    && (incluirArquivados || !item?.arquivado)
+  )))
+  const total = Math.round(itens.filter((item) => !item?.arquivado).reduce((soma, item) => soma + numeroFolha(item?.valor), 0) * 100) / 100
+  return Object.freeze({ itens: Object.freeze(itens), total })
+}
+
+export function validarOutroDescontoFolha({ descricao, valor } = {}) {
+  const descricaoNormalizada = String(descricao || '').trim().replace(/\s+/g, ' ')
+  const valorNormalizado = parseMoedaEntradaFolha(valor)
+  if (!descricaoNormalizada) return Object.freeze({ valido: false, mensagem: 'Informe a descrição do desconto.' })
+  if (valorNormalizado <= 0) return Object.freeze({ valido: false, mensagem: 'Informe um valor de desconto maior que zero.' })
+  return Object.freeze({ valido: true, mensagem: '', dados: Object.freeze({ descricao: descricaoNormalizada, valor: valorNormalizado }) })
+}
+
 export function planejarInclusaoCompraFolha({ lancamento, itens = [], novaCompra }) {
   const ativos = itensAtivosDoLancamento(itens, lancamento?.id)
   const valorLegado = numeroFolha(lancamento?.valor)
@@ -285,6 +303,23 @@ export function quantidadeHorasFolha(lancamento, itens = []) {
   const ativos = itensAtivosDoLancamento(itens, lancamento?.id)
   if (ativos.length > 0) return ativos.reduce((total, item) => total + numeroFolha(item?.quantidade), 0)
   return numeroFolha(lancamento?.quantidade)
+}
+
+export function resumirLancamentosFuncionarioFolha(lancamentos = [], itens = [], funcionarioId) {
+  const resumo = lancamentos.filter((item) => !item?.arquivado && item?.funcionario_id === funcionarioId).reduce((totais, lancamento) => {
+    const valor = resolverValorLancamentoFolha(lancamento, itens)
+    if (lancamento.natureza === 'credito') totais.creditos += valor
+    if (lancamento.natureza === 'desconto') totais.descontos += valor
+    if (lancamento.categoria === 'compras_vales') totais.compras += valor
+    if (lancamento.categoria === 'outro_desconto') totais.outrosDescontos += valor
+    if (categoriaFolhaEhHora(lancamento.categoria)) totais.horas += quantidadeHorasFolha(lancamento, itens)
+    if (lancamento.categoria === 'falta_injustificada') totais.faltas += quantidadeFaltasFolha(lancamento, itens)
+    totais.lancamentos += 1
+    totais.conferidos += lancamento.conferido ? 1 : 0
+    return totais
+  }, { creditos: 0, descontos: 0, outrosDescontos: 0, compras: 0, horas: 0, faltas: 0, lancamentos: 0, conferidos: 0 })
+  resumo.saldoInformativo = Math.round((resumo.creditos - resumo.descontos) * 100) / 100
+  return Object.freeze(resumo)
 }
 
 export function categoriaFolhaUsaItens(categoria) {

@@ -88,6 +88,7 @@ function obterOuCriarGrupo(mapa, contexto, lancamento) {
       colaboradora: funcionario.nome,
       compras: [],
       planoSaude: 0,
+      outrosDescontos: 0,
       premiacao: 0,
       he50: 0,
       he60: 0,
@@ -133,6 +134,7 @@ function consolidarFolha(params = {}) {
 
     if (lancamento.categoria === 'compras_vales') grupo.compras.push(...comprasDoLancamento(contexto, lancamento))
     if (lancamento.categoria === 'plano_saude') grupo.planoSaude += numeroFolha(lancamento.valor)
+    if (lancamento.categoria === 'outro_desconto') grupo.outrosDescontos += resolverValorLancamentoFolha(lancamento, contexto.itensAtivos)
     if (lancamento.categoria === 'premiacao') grupo.premiacao += resolverValorLancamentoFolha(lancamento, contexto.itensAtivos)
     if (lancamento.categoria === 'hora_extra_50') grupo.he50 += quantidadeHorasFolha(lancamento, contexto.itensAtivos)
     if (lancamento.categoria === 'hora_extra_60') grupo.he60 += quantidadeHorasFolha(lancamento, contexto.itensAtivos)
@@ -260,7 +262,7 @@ export function montarControleComprasFolha(params = {}) {
 export function montarFechamentoFolhaContabilidade(params = {}) {
   const contexto = criarContexto(params)
   validarFaltasDaCompetencia(params, contexto)
-  const headers = ['Colaborador', 'Compras', 'Plano de saúde', 'Premiação', 'HE 50%', 'HE 60%', 'HE 100%', 'Faltas', 'Datas das faltas', 'Observações']
+  const headers = ['Colaborador', 'Compras', 'Plano de saúde', 'Outros descontos', 'Premiação', 'HE 50%', 'HE 60%', 'HE 100%', 'Faltas', 'Datas das faltas', 'Observações']
   const consolidados = consolidarFolha(params)
   const blocos = agruparPorFilial(consolidados).map((bloco) => ({
     filialId: bloco.filialId,
@@ -271,6 +273,7 @@ export function montarFechamentoFolhaContabilidade(params = {}) {
       colaborador: linha.colaboradora,
       compras: linha.totalCompras,
       planoSaude: Math.round(linha.planoSaude * 100) / 100,
+      outrosDescontos: Math.round(linha.outrosDescontos * 100) / 100,
       premiacao: Math.round(linha.premiacao * 100) / 100,
       he50: horasFolhaParaTexto(linha.he50),
       he60: horasFolhaParaTexto(linha.he60),
@@ -299,6 +302,7 @@ export function montarFechamentoFolhaContabilidade(params = {}) {
         linha.colaborador,
         linha.compras,
         linha.planoSaude,
+        linha.outrosDescontos,
         linha.premiacao,
         linha.he50,
         linha.he60,
@@ -324,9 +328,9 @@ export function montarFechamentoFolhaContabilidade(params = {}) {
       rows,
       landscape: true,
       fitToWidth: 1,
-      currencyColumns: [1, 2, 3],
-      columnWidths: [30, 15, 15, 15, 11, 11, 11, 9, 28, 58],
-      wrapColumns: [8, 9],
+      currencyColumns: [1, 2, 3, 4],
+      columnWidths: [30, 15, 15, 17, 15, 11, 11, 11, 9, 28, 58],
+      wrapColumns: [9, 10],
       rowKinds,
       merges,
       hideGridLines: true,

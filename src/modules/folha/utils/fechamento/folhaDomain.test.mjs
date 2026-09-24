@@ -23,11 +23,14 @@ import {
   planejarSincronizacaoFaltasFolha,
   quantidadeFaltasFolha,
   quantidadeHorasFolha,
+  resumirLancamentosFuncionarioFolha,
+  resumirOutrosDescontosFolha,
   resolverValorLancamentoFolha,
   resolverIdentidadeHistoricaFolha,
   totalItensFinanceirosFolha,
   validarDatasFaltasFolha,
-  validarHorasFolha
+  validarHorasFolha,
+  validarOutroDescontoFolha
 } from './folhaDomain.js'
 import {
   montarControleComprasFolha,
@@ -309,6 +312,43 @@ test('nova categoria repetível cria ocorrência e edição altera somente o ID 
   assert.equal(existentes[0].valor, 40)
 })
 
+test('outros descontos estruturados validam descricao e valor positivo', () => {
+  assert.equal(validarOutroDescontoFolha({ descricao: '', valor: 'R$ 400,00' }).valido, false)
+  assert.equal(validarOutroDescontoFolha({ descricao: 'Poupanca', valor: 'R$ 0,00' }).valido, false)
+  assert.equal(validarOutroDescontoFolha({ descricao: 'Poupanca', valor: -1 }).valido, false)
+  assert.deepEqual(validarOutroDescontoFolha({ descricao: '  Poupanca  mensal ', valor: 'R$ 400,00' }).dados, { descricao: 'Poupanca mensal', valor: 400 })
+})
+
+test('resumo de outros descontos cobre vazio, multiplos e remocao logica', () => {
+  assert.equal(resumirOutrosDescontosFolha([], 'func-1').total, 0)
+  const descontos = [
+    { id: '1', funcionario_id: 'func-1', categoria: 'outro_desconto', descricao: 'Poupanca', valor: 400, arquivado: false },
+    { id: '2', funcionario_id: 'func-1', categoria: 'outro_desconto', descricao: 'Uniforme', valor: 80, arquivado: false },
+    { id: '3', funcionario_id: 'func-1', categoria: 'outro_desconto', descricao: 'Adiantamento', valor: 150, arquivado: false },
+    { id: '4', funcionario_id: 'func-1', categoria: 'outro_desconto', descricao: 'Removido', valor: 999, arquivado: true },
+    { id: '5', funcionario_id: 'func-2', categoria: 'outro_desconto', descricao: 'Outro vinculo', valor: 700, arquivado: false },
+    { id: '6', funcionario_id: 'func-1', categoria: 'observacao_administrativa', observacao_administrativa: 'Outro desconto: R$ 900,00', valor: null, arquivado: false }
+  ]
+  const resumo = resumirOutrosDescontosFolha(descontos, 'func-1')
+  assert.equal(resumo.total, 630)
+  assert.deepEqual(resumo.itens.map((item) => item.descricao), ['Poupanca', 'Uniforme', 'Adiantamento'])
+  const comArquivados = resumirOutrosDescontosFolha(descontos, 'func-1', true)
+  assert.equal(comArquivados.itens.length, 4)
+  assert.equal(comArquivados.total, 630)
+})
+
+test('outros descontos entram exatamente uma vez no total e reduzem o saldo informado', () => {
+  const resumo = resumirLancamentosFuncionarioFolha([
+    { id: 'salario', funcionario_id: 'func-1', natureza: 'credito', categoria: 'outro_credito', valor: 2000, arquivado: false },
+    { id: 'plano', funcionario_id: 'func-1', natureza: 'desconto', categoria: 'plano_saude', valor: 100, arquivado: false },
+    { id: 'compras', funcionario_id: 'func-1', natureza: 'desconto', categoria: 'compras_vales', valor: 200, arquivado: false },
+    { id: 'poupanca', funcionario_id: 'func-1', natureza: 'desconto', categoria: 'outro_desconto', descricao: 'Poupanca', valor: 400, arquivado: false }
+  ], [], 'func-1')
+  assert.equal(resumo.descontos, 700)
+  assert.equal(resumo.outrosDescontos, 400)
+  assert.equal(resumo.saldoInformativo, 1300)
+})
+
 test('horas fazem ida e volta sem perda nos casos do smoke', () => {
   for (const hora of ['04:20', '05:30', '04:28']) {
     assert.equal(horasFolhaParaTexto(horasFolhaParaPersistencia(hora)), hora)
@@ -359,7 +399,8 @@ test('fechamento contábil consolida valores, horas, faltas e observações sem 
   assert.deepEqual(linha.datasFaltas, ['2026-07-02', '2026-07-03'])
   assert.equal(linha.observacoes.includes('SMOKE-FOLHA CONTABILIDADE'), true)
   assert.equal(linha.observacoes.includes('HE 50%: 05/07/2026 — 02:20; 18/07/2026 — 02:00'), true)
-  assert.deepEqual(modelo.sheet.currencyColumns, [1, 2, 3])
+  assert.equal(linha.outrosDescontos, 0)
+  assert.deepEqual(modelo.sheet.currencyColumns, [1, 2, 3, 4])
   const controle = montarControleComprasFolha(params)
   assert.equal(linha.compras, controle.blocos[0].linhas[0].total)
 })
@@ -414,9 +455,32 @@ test('fechamento soma premiações e planos repetidos e identifica todos os outr
   assert.equal(linha.compras, 100)
   assert.equal(linha.premiacao, 350)
   assert.equal(linha.planoSaude, 100)
+  assert.equal(linha.outrosDescontos, 65)
+  assert.equal(modelo.blocos[0].headers.includes('Outros descontos'), true)
   assert.equal(linha.observacoes.includes('Outro desconto: Adiantamento — R$ 40,00'), true)
   assert.equal(linha.observacoes.includes('Outro desconto: Ajuste uniforme — R$ 25,00'), true)
   assert.equal(linha.observacoes.some((item) => item.includes('Não exportar')), false)
+})
+
+test('outros descontos estruturados somam 400 + 80 + 150 uma única vez e preservam detalhes', () => {
+  const modelo = montarFechamentoFolhaContabilidade({
+    ...params,
+    funcionarios: [funcionarios[0]],
+    filiais: [filiais[0]],
+    lancamentos: [
+      { id: 'poupanca', funcionario_id: 'func-1', filial_id: 'filial-1', categoria: 'outro_desconto', natureza: 'desconto', descricao: 'Poupança', valor: 400, arquivado: false },
+      { id: 'uniforme', funcionario_id: 'func-1', filial_id: 'filial-1', categoria: 'outro_desconto', natureza: 'desconto', descricao: 'Uniforme', valor: 80, arquivado: false },
+      { id: 'adiantamento', funcionario_id: 'func-1', filial_id: 'filial-1', categoria: 'outro_desconto', natureza: 'desconto', descricao: 'Adiantamento', valor: 150, arquivado: false },
+      { id: 'observacao-legada', funcionario_id: 'func-1', filial_id: 'filial-1', categoria: 'observacao_administrativa', natureza: 'informativo', valor: null, observacao_administrativa: 'Outro desconto: texto legado R$ 999,00', arquivado: false }
+    ],
+    itensLancamentos: []
+  })
+  const linha = modelo.blocos[0].linhas[0]
+  assert.equal(linha.outrosDescontos, 630)
+  assert.equal(linha.observacoes.includes('Outro desconto: Poupança — R$ 400,00'), true)
+  assert.equal(linha.observacoes.includes('Outro desconto: Uniforme — R$ 80,00'), true)
+  assert.equal(linha.observacoes.includes('Outro desconto: Adiantamento — R$ 150,00'), true)
+  assert.equal(linha.observacoes.includes('Outro desconto: texto legado R$ 999,00'), true)
 })
 
 test('workbooks Excel são arquivos únicos, monetários e ajustados em paisagem', async () => {
@@ -469,6 +533,9 @@ test('arquitetura da Folha não usa styles globais nem DOM responsivo duplicado'
   assert.match(pagina, /planejarInclusaoPremiacaoFolha/)
   assert.match(pagina, /lancamentoEditandoId/)
   assert.match(pagina, /localizarLancamentoParaSalvarFolha/)
+  assert.match(pagina, /Adicionar desconto/)
+  assert.match(pagina, /Nenhum outro desconto/)
+  assert.match(pagina, /salvandoOutroDescontoRef/)
   assert.match(pagina, /contextoNavegacao\?\.competenciaId/)
   assert.match(pagina, /setCompetenciaSelecionadaId\(competenciaId\)/)
   assert.doesNotMatch(pagina, /title="[1-5]\. /)

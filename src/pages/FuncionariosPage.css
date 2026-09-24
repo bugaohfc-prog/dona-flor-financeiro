@@ -241,6 +241,12 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
 .funcionario-desligamento-etapas .is-proxima > span { background: #2563eb; color: #fff; }
 .funcionario-desligamento-etapas p { margin: 0; color: var(--df-text); font-size: .82rem; font-weight: 800; line-height: 1.45; }
 .funcionario-desligamento-conclusao { border-color: #fecaca; background: #fffafa; }
+.funcionario-conta-acerto-conteudo { display: grid; gap: 12px; }
+.funcionario-conta-acerto-atual { display: grid; gap: 3px; padding: 12px; border: 1px solid var(--df-border); border-radius: 12px; background: var(--df-surface-soft); }
+.funcionario-conta-acerto-atual span,
+.funcionario-conta-acerto-atual small { color: var(--df-muted); font-size: .78rem; }
+.funcionario-conta-acerto-linha { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+.funcionario-conta-acerto-linha label { display: grid; gap: 6px; min-width: 0; }
 .funcionario-confirmacao-backdrop { z-index: 1300; }
 .funcionario-confirmacao-modal { width: min(620px, 100%); }
 .funcionario-confirmacao-resumo { display: grid; min-width: 0; gap: 8px; margin: 0; }
@@ -326,6 +332,7 @@ textarea.funcionarios-input { min-height: 90px; resize: vertical; line-height: 1
   .funcionarios-switch { grid-column: auto; width: 100%; justify-content: space-between; }
   .funcionario-form-grid .span-2 { grid-column: auto; }
   .funcionario-desligamento-etapas ol { grid-template-columns: minmax(0, 1fr); }
+  .funcionario-conta-acerto-linha { grid-template-columns: minmax(0, 1fr); }
   .funcionario-checklist-add .span-2,
   .funcionario-checklist-fields .span-2 { grid-column: auto; }
   .funcionario-checklist-item-header { align-items: flex-start; flex-direction: column; }

@@ -33,11 +33,14 @@ test('campos e próximas ações explicam o efeito operacional', () => {
   assert.doesNotMatch(pagina, /Último dia pretendido/)
 })
 
-test('etapas futuras são apenas orientação visual responsiva', () => {
+test('conta do acerto usa o fluxo existente e mantém responsividade', () => {
   assert.match(pagina, /funcionario-desligamento-etapas/)
-  assert.match(pagina, /className="is-futura"/)
+  assert.match(pagina, /contaAcertoVinculada \? 'is-proxima' : 'is-futura'/)
   assert.match(css, /@media \(max-width: 560px\)[\s\S]*funcionario-desligamento-etapas ol/)
-  assert.doesNotMatch(pagina, /onClick=.*Conta do acerto/)
+  assert.match(pagina, /salvarContaPagamentoAcerto/)
+  assert.match(pagina, /Nenhuma conta definida/)
+  assert.match(pagina, /Conta arquivada — vínculo histórico preservado/)
+  assert.match(css, /funcionario-conta-acerto-linha[\s\S]*grid-template-columns/)
 })
 
 test('contexto da Agenda abre o desligamento identificado', () => {

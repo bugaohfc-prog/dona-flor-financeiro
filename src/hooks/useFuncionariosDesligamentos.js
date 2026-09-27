@@ -2,13 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase as supabasePadrao } from '../lib/supabase'
 import {
   abrirDesligamentoFuncionario as abrirService,
+  alterarAtividadeContaPagamentoDesligamento as alterarAtividadeContaService,
   atualizarDesligamentoFuncionario as atualizarService,
   cancelarDesligamentoFuncionario as cancelarService,
   concluirDesligamentoFuncionario as concluirService,
+  criarContaPagamentoDesligamento as criarContaPagamentoService,
+  listarContasPagamentoDesligamento,
   listarDesligamentosFuncionario,
   listarCorrecoesDesligamentos,
   retificarDesligamentoConcluido as retificarService,
-  reverterDesligamentoConcluidoPorErro as reverterService
+  reverterDesligamentoConcluidoPorErro as reverterService,
+  vincularContaPagamentoDesligamento as vincularContaPagamentoService
 } from '../services/funcionariosDesligamentosService'
 import { mensagemSeguraErro } from '../utils/session'
 
@@ -20,6 +24,7 @@ export function useFuncionariosDesligamentos({ empresaId, autoCarregar = true, s
   const empresaAtual = useMemo(() => normalizarId(empresaId), [empresaId])
   const [desligamentos, setDesligamentos] = useState([])
   const [correcoes, setCorrecoes] = useState([])
+  const [contasPagamento, setContasPagamento] = useState([])
   const [loading, setLoading] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState(null)
@@ -30,6 +35,7 @@ export function useFuncionariosDesligamentos({ empresaId, autoCarregar = true, s
     if (!empresaAtual) {
       setDesligamentos([])
       setCorrecoes([])
+      setContasPagamento([])
       setErro(null)
       return { data: [], error: null }
     }
@@ -37,21 +43,24 @@ export function useFuncionariosDesligamentos({ empresaId, autoCarregar = true, s
     setLoading(true)
     setErro(null)
     try {
-      const [respostaDesligamentos, respostaCorrecoes] = await Promise.all([
+      const [respostaDesligamentos, respostaCorrecoes, respostaContas] = await Promise.all([
         listarDesligamentosFuncionario({ supabase, empresaId: empresaAtual }),
-        listarCorrecoesDesligamentos({ supabase, empresaId: empresaAtual })
+        listarCorrecoesDesligamentos({ supabase, empresaId: empresaAtual }),
+        listarContasPagamentoDesligamento({ supabase, empresaId: empresaAtual })
       ])
       const { data, error } = respostaDesligamentos
-      const erroCarga = error || respostaCorrecoes.error
+      const erroCarga = error || respostaCorrecoes.error || respostaContas.error
       if (carga !== cargaRef.current) return { data: null, error: null, ignorado: true }
       if (erroCarga) {
         setDesligamentos([])
         setCorrecoes([])
+        setContasPagamento([])
         setErro(mensagemSeguraErro(erroCarga))
         return { data: null, error: erroCarga }
       }
       setDesligamentos(data || [])
       setCorrecoes(respostaCorrecoes.data || [])
+      setContasPagamento(respostaContas.data || [])
       return { data: data || [], error: null }
     } catch (error) {
       if (carga === cargaRef.current) {
@@ -68,6 +77,7 @@ export function useFuncionariosDesligamentos({ empresaId, autoCarregar = true, s
     cargaRef.current += 1
     setDesligamentos([])
     setCorrecoes([])
+    setContasPagamento([])
     setErro(null)
     if (autoCarregar && empresaAtual) carregar()
   }, [autoCarregar, carregar, empresaAtual])
@@ -116,9 +126,22 @@ export function useFuncionariosDesligamentos({ empresaId, autoCarregar = true, s
     supabase, empresaId: empresaAtual, desligamentoId, motivoReversao
   })), [empresaAtual, executar, supabase])
 
+  const criarContaPagamento = useCallback((nome) => executar(() => criarContaPagamentoService({
+    supabase, empresaId: empresaAtual, nome
+  })), [empresaAtual, executar, supabase])
+
+  const alterarAtividadeContaPagamento = useCallback((contaPagamentoId, ativo) => executar(() => alterarAtividadeContaService({
+    supabase, empresaId: empresaAtual, contaPagamentoId, ativo
+  })), [empresaAtual, executar, supabase])
+
+  const vincularContaPagamento = useCallback((desligamentoId, contaPagamentoId) => executar(() => vincularContaPagamentoService({
+    supabase, empresaId: empresaAtual, desligamentoId, contaPagamentoId
+  })), [empresaAtual, executar, supabase])
+
   return {
     desligamentos,
     correcoes,
+    contasPagamento,
     loading,
     salvando,
     erro,
@@ -128,6 +151,9 @@ export function useFuncionariosDesligamentos({ empresaId, autoCarregar = true, s
     cancelar,
     concluir,
     retificar,
-    reverterPorErro
+    reverterPorErro,
+    criarContaPagamento,
+    alterarAtividadeContaPagamento,
+    vincularContaPagamento
   }
 }

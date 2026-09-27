@@ -3,6 +3,7 @@ import { assertEmpresaId } from './tenantService.js'
 
 const TABELA = 'df_funcionarios_desligamentos_efetivos'
 const TABELA_CORRECOES = 'df_funcionarios_desligamentos_correcoes'
+const TABELA_CONTAS_PAGAMENTO = 'df_contas_pagamento'
 const SELECT_WORKFLOW = [
   'id',
   'empresa_id',
@@ -11,6 +12,7 @@ const SELECT_WORKFLOW = [
   'motivo',
   'data_efetiva',
   'data_acerto',
+  'conta_pagamento_id',
   'observacoes',
   'aberto_por',
   'aberto_em',
@@ -32,6 +34,10 @@ const SELECT_WORKFLOW = [
   'ultima_correcao_tipo',
   'ultima_correcao_motivo',
   'ultima_correcao_em'
+].join(', ')
+
+const SELECT_CONTAS_PAGAMENTO = [
+  'id', 'empresa_id', 'nome', 'ativo', 'criado_em', 'atualizado_em', 'arquivado_em'
 ].join(', ')
 
 const SELECT_CORRECAO = [
@@ -88,6 +94,41 @@ export function listarCorrecoesDesligamentos({ supabase, empresaId }) {
   assertEmpresaId(empresaId)
   return selecionarPorEmpresa(supabase, TABELA_CORRECOES, empresaId, SELECT_CORRECAO)
     .order('criado_em', { ascending: true })
+}
+
+export function listarContasPagamentoDesligamento({ supabase, empresaId }) {
+  assertEmpresaId(empresaId)
+  return selecionarPorEmpresa(supabase, TABELA_CONTAS_PAGAMENTO, empresaId, SELECT_CONTAS_PAGAMENTO)
+    .order('nome', { ascending: true })
+}
+
+export function criarContaPagamentoDesligamento({ supabase, empresaId, nome, correlationId = null }) {
+  assertEmpresaId(empresaId)
+  return supabase.rpc('criar_conta_pagamento_desligamento_controlado', {
+    p_empresa_id: empresaId,
+    p_nome: motivoObrigatorio(nome, 'Informe o nome da conta de pagamento.'),
+    p_correlation_id: texto(correlationId)
+  })
+}
+
+export function alterarAtividadeContaPagamentoDesligamento({ supabase, empresaId, contaPagamentoId, ativo, correlationId = null }) {
+  assertEmpresaId(empresaId)
+  return supabase.rpc('alterar_atividade_conta_pagamento_desligamento_controlado', {
+    p_empresa_id: empresaId,
+    p_conta_pagamento_id: idObrigatorio(contaPagamentoId, 'Conta de pagamento não identificada.'),
+    p_ativo: ativo === true,
+    p_correlation_id: texto(correlationId)
+  })
+}
+
+export function vincularContaPagamentoDesligamento({ supabase, empresaId, desligamentoId, contaPagamentoId = null, correlationId = null }) {
+  assertEmpresaId(empresaId)
+  return supabase.rpc('vincular_conta_pagamento_desligamento_controlado', {
+    p_empresa_id: empresaId,
+    p_desligamento_id: idObrigatorio(desligamentoId, 'Processo de desligamento não identificado.'),
+    p_conta_pagamento_id: contaPagamentoId ? idObrigatorio(contaPagamentoId, 'Conta de pagamento não identificada.') : null,
+    p_correlation_id: texto(correlationId)
+  })
 }
 
 export function abrirDesligamentoFuncionario({ supabase, empresaId, funcionarioId, dados = {} }) {

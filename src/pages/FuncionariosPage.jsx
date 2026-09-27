@@ -84,6 +84,10 @@ const FORMULARIO_DESLIGAMENTO_INICIAL = {
   observacoes: '',
   motivoCancelamento: ''
 }
+const FORMULARIO_CONTA_ACERTO_INICIAL = {
+  contaPagamentoId: '',
+  novaContaNome: ''
+}
 const FORMULARIO_CORRECAO_INICIAL = {
   tipo: '',
   dataEfetiva: '',
@@ -296,6 +300,7 @@ export default function FuncionariosPage({
   const [modalDesligamentoAberto, setModalDesligamentoAberto] = useState(false)
   const [funcionarioDesligamento, setFuncionarioDesligamento] = useState(null)
   const [formularioDesligamento, setFormularioDesligamento] = useState(FORMULARIO_DESLIGAMENTO_INICIAL)
+  const [formularioContaAcerto, setFormularioContaAcerto] = useState(FORMULARIO_CONTA_ACERTO_INICIAL)
   const [confirmacaoConclusaoAberta, setConfirmacaoConclusaoAberta] = useState(false)
   const [formularioCorrecao, setFormularioCorrecao] = useState(FORMULARIO_CORRECAO_INICIAL)
   const [checklistAberto, setChecklistAberto] = useState(false)
@@ -347,6 +352,7 @@ export default function FuncionariosPage({
   const {
     desligamentos,
     correcoes,
+    contasPagamento,
     loading: loadingDesligamentos,
     salvando: salvandoDesligamento,
     erro: erroDesligamentos,
@@ -356,7 +362,10 @@ export default function FuncionariosPage({
     cancelar: cancelarDesligamento,
     concluir: concluirDesligamento,
     retificar: retificarDesligamento,
-    reverterPorErro: reverterDesligamentoPorErro
+    reverterPorErro: reverterDesligamentoPorErro,
+    criarContaPagamento,
+    alterarAtividadeContaPagamento,
+    vincularContaPagamento
   } = useFuncionariosDesligamentos({ empresaId })
 
   const {
@@ -398,6 +407,17 @@ export default function FuncionariosPage({
   const desligamentoConcluidoEfetivoSelecionado = historicoDesligamentoSelecionado.find((item) => item.estado === 'CONCLUIDO' && !item.efeito_revertido) || null
   const desligamentoOperacionalSelecionado = desligamentoAbertoSelecionado || desligamentoConcluidoEfetivoSelecionado
   const dataAcertoSelecionada = desligamentoOperacionalSelecionado?.data_acerto_efetiva || desligamentoOperacionalSelecionado?.data_acerto || ''
+  const contasPagamentoPorId = useMemo(
+    () => new Map((contasPagamento || []).map((conta) => [conta.id, conta])),
+    [contasPagamento]
+  )
+  const contasPagamentoAtivas = useMemo(
+    () => (contasPagamento || []).filter((conta) => conta.ativo),
+    [contasPagamento]
+  )
+  const contaAcertoVinculada = desligamentoOperacionalSelecionado?.conta_pagamento_id
+    ? contasPagamentoPorId.get(desligamentoOperacionalSelecionado.conta_pagamento_id) || null
+    : null
   const desligamentoChecklistSelecionado = desligamentoConcluidoEfetivoSelecionado || desligamentoConcluidoSelecionado
   const correcoesPorDesligamento = useMemo(() => {
     const mapa = new Map()
@@ -460,6 +480,13 @@ export default function FuncionariosPage({
       observacaoAdministrativa: item.observacao_administrativa || ''
     }])))
   }, [itensChecklist])
+
+  useEffect(() => {
+    setFormularioContaAcerto((atual) => ({
+      ...atual,
+      contaPagamentoId: desligamentoOperacionalSelecionado?.conta_pagamento_id || ''
+    }))
+  }, [desligamentoOperacionalSelecionado?.id, desligamentoOperacionalSelecionado?.conta_pagamento_id])
 
   const vinculosPorPessoa = useMemo(() => {
     const mapa = new Map()
@@ -536,6 +563,7 @@ export default function FuncionariosPage({
     setRequestKeyReadmissao('')
     setChecklistAberto(false)
     setFormularioChecklist(FORMULARIO_CHECKLIST_INICIAL)
+    setFormularioContaAcerto(FORMULARIO_CONTA_ACERTO_INICIAL)
     setFormulariosItensChecklist({})
     limparFormularioExamePeriodico()
     limparErro?.()
@@ -896,6 +924,10 @@ export default function FuncionariosPage({
     } : FORMULARIO_DESLIGAMENTO_INICIAL)
     setChecklistAberto(false)
     setFormularioChecklist(FORMULARIO_CHECKLIST_INICIAL)
+    setFormularioContaAcerto({
+      contaPagamentoId: aberto?.conta_pagamento_id || '',
+      novaContaNome: ''
+    })
     setFormulariosItensChecklist({})
     setModalDesligamentoAberto(true)
   }
@@ -906,6 +938,7 @@ export default function FuncionariosPage({
     setFormularioCorrecao(FORMULARIO_CORRECAO_INICIAL)
     setChecklistAberto(false)
     setFormularioChecklist(FORMULARIO_CHECKLIST_INICIAL)
+    setFormularioContaAcerto(FORMULARIO_CONTA_ACERTO_INICIAL)
     setFormulariosItensChecklist({})
     setModalDesligamentoAberto(false)
     setFuncionarioDesligamento(null)
@@ -968,6 +1001,43 @@ export default function FuncionariosPage({
     setFuncionarioDesligamento((atual) => atual ? { ...atual, status: 'desligado', arquivado: false } : atual)
     setConfirmacaoConclusaoAberta(false)
     mostrarAviso?.('Desligamento concluído. O cadastro permanece disponível e não foi arquivado.', 'sucesso')
+  }
+
+  async function cadastrarContaPagamentoAcerto() {
+    const nome = String(formularioContaAcerto.novaContaNome || '').trim()
+    if (!nome || salvandoDesligamento) return
+    const resposta = await criarContaPagamento(nome)
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível cadastrar a conta de pagamento.'), 'erro')
+      return
+    }
+    setFormularioContaAcerto({
+      contaPagamentoId: resposta.data?.id || '',
+      novaContaNome: ''
+    })
+    mostrarAviso?.('Conta de pagamento cadastrada e disponível para seleção.', 'sucesso')
+  }
+
+  async function salvarContaPagamentoAcerto() {
+    if (!desligamentoAbertoSelecionado?.id || salvandoDesligamento) return
+    const contaPagamentoId = formularioContaAcerto.contaPagamentoId || null
+    const resposta = await vincularContaPagamento(desligamentoAbertoSelecionado.id, contaPagamentoId)
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível vincular a conta ao acerto.'), 'erro')
+      return
+    }
+    mostrarAviso?.(contaPagamentoId ? 'Conta vinculada ao acerto.' : 'Conta removida do acerto.', 'sucesso')
+  }
+
+  async function arquivarContaPagamentoAcerto(conta) {
+    if (!conta?.id || !conta.ativo || salvandoDesligamento) return
+    if (!window.confirm(`Arquivar a conta ${conta.nome}? Os desligamentos já vinculados manterão o histórico.`)) return
+    const resposta = await alterarAtividadeContaPagamento(conta.id, false)
+    if (resposta?.error) {
+      mostrarAviso?.(mensagemSeguraErro(resposta.error, 'Não foi possível arquivar a conta de pagamento.'), 'erro')
+      return
+    }
+    mostrarAviso?.('Conta arquivada. Vínculos históricos foram preservados.', 'sucesso')
   }
 
   function abrirRetificacao() {
@@ -1366,9 +1436,9 @@ export default function FuncionariosPage({
                   <span>2</span>
                   <div><strong>Acerto</strong><small>{dataAcertoSelecionada ? `Previsto para ${formatarDataCurta(dataAcertoSelecionada)}` : 'Data não informada'}</small></div>
                 </li>
-                <li className="is-futura">
+                <li className={contaAcertoVinculada ? 'is-proxima' : 'is-futura'}>
                   <span>3</span>
-                  <div><strong>Conta do acerto</strong><small>Etapa posterior</small></div>
+                  <div><strong>Conta do acerto</strong><small>{contaAcertoVinculada?.nome || 'Não definida'}</small></div>
                 </li>
               </ol>
               {!desligamentoConcluidoEfetivoSelecionado && (
@@ -1422,6 +1492,78 @@ export default function FuncionariosPage({
                 <div><dt>Data prevista do acerto</dt><dd>{formatarDataAcerto(dataAcertoSelecionada)}</dd></div>
                 <div><dt>Situação atual</dt><dd>{DESLIGAMENTO_ESTADO_LABELS[desligamentoOperacionalSelecionado.estado] || desligamentoOperacionalSelecionado.estado}</dd></div>
               </dl>
+            )}
+
+            {desligamentoOperacionalSelecionado && (
+              <section className="funcionario-modal-section funcionario-conta-acerto" aria-labelledby="conta-acerto-title">
+                <div className="funcionario-modal-section-toggle funcionario-modal-section-static">
+                  <span>
+                    <strong id="conta-acerto-title">Conta do acerto</strong>
+                    <small>Conta de pagamento vinculada exclusivamente a este desligamento.</small>
+                  </span>
+                  <b>{contaAcertoVinculada ? (contaAcertoVinculada.ativo ? 'Vinculada' : 'Arquivada') : 'Vazio'}</b>
+                </div>
+
+                {loadingDesligamentos ? (
+                  <p className="funcionarios-note">Carregando contas de pagamento...</p>
+                ) : (
+                  <div className="funcionario-conta-acerto-conteudo">
+                    <div className="funcionario-conta-acerto-atual">
+                      <span>Conta selecionada</span>
+                      <strong>{contaAcertoVinculada?.nome || 'Nenhuma conta definida'}</strong>
+                      {contaAcertoVinculada && !contaAcertoVinculada.ativo && <small>Conta arquivada — vínculo histórico preservado.</small>}
+                    </div>
+
+                    {desligamentoAbertoSelecionado ? (
+                      <>
+                        <div className="funcionario-conta-acerto-linha">
+                          <label>
+                            Selecionar conta ativa
+                            <select
+                              className="funcionarios-input"
+                              value={formularioContaAcerto.contaPagamentoId}
+                              onChange={(event) => setFormularioContaAcerto((atual) => ({ ...atual, contaPagamentoId: event.target.value }))}
+                            >
+                              <option value="">Nenhuma conta definida</option>
+                              {contaAcertoVinculada && !contaAcertoVinculada.ativo && (
+                                <option value={contaAcertoVinculada.id} disabled>{contaAcertoVinculada.nome} (arquivada)</option>
+                              )}
+                              {contasPagamentoAtivas.map((conta) => <option key={conta.id} value={conta.id}>{conta.nome}</option>)}
+                            </select>
+                          </label>
+                          <button
+                            className="funcionarios-btn funcionarios-btn-primary"
+                            type="button"
+                            disabled={salvandoDesligamento || formularioContaAcerto.contaPagamentoId === (desligamentoAbertoSelecionado.conta_pagamento_id || '')}
+                            onClick={salvarContaPagamentoAcerto}
+                          >
+                            Salvar conta
+                          </button>
+                        </div>
+                        <div className="funcionario-conta-acerto-linha">
+                          <label>
+                            Cadastrar conta de pagamento
+                            <input
+                              className="funcionarios-input"
+                              value={formularioContaAcerto.novaContaNome}
+                              onChange={(event) => setFormularioContaAcerto((atual) => ({ ...atual, novaContaNome: event.target.value }))}
+                              placeholder="Ex.: Conta operacional"
+                              maxLength={120}
+                            />
+                          </label>
+                          <button className="funcionarios-btn funcionarios-btn-secondary" type="button" disabled={salvandoDesligamento || formularioContaAcerto.novaContaNome.trim().length < 3} onClick={cadastrarContaPagamentoAcerto}>Cadastrar</button>
+                        </div>
+                        {contaAcertoVinculada?.ativo && (
+                          <button className="funcionarios-inline-action" type="button" disabled={salvandoDesligamento} onClick={() => arquivarContaPagamentoAcerto(contaAcertoVinculada)}>Arquivar conta vinculada</button>
+                        )}
+                        {contasPagamentoAtivas.length === 0 && !contaAcertoVinculada && <div className="funcionario-exames-empty">Nenhuma conta de pagamento cadastrada.</div>}
+                      </>
+                    ) : (
+                      <p className="funcionarios-note">Este desligamento não permite mais alteração da conta.</p>
+                    )}
+                  </div>
+                )}
+              </section>
             )}
 
             {desligamentoAbertoSelecionado && (
@@ -1647,6 +1789,7 @@ export default function FuncionariosPage({
                       <div><strong>{item.efeito_revertido ? 'Conclusão revertida' : (DESLIGAMENTO_ESTADO_LABELS[item.estado] || item.estado)}</strong><small>Iniciado em {formatarDataCurta(item.aberto_em)}</small></div>
                     <span>Último dia trabalhado: {formatarDataCurta(item.data_efetiva)}</span>
                     <span>Data prevista do acerto: {formatarDataAcerto(item.data_acerto_efetiva || item.data_acerto)}</span>
+                    <span>Conta do acerto: {contasPagamentoPorId.get(item.conta_pagamento_id)?.nome || 'Não definida'}</span>
                     <span>Motivo: {item.motivo}</span>
                     {item.estado === 'CANCELADO' && <span>Cancelamento: {item.motivo_cancelamento}</span>}
                     {item.estado === 'CONCLUIDO' && <span>Concluído em: {formatarDataCurta(item.concluido_em)}</span>}

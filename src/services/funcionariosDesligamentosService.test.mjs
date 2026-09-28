@@ -160,6 +160,23 @@ test('conta do acerto usa somente RPCs controladas para criar, arquivar e vincul
   assert.equal(chamadas[2].parametros.p_ativo, false)
 })
 
+test('nome da conta do acerto aceita de 2 a 120 caracteres', async () => {
+  const { supabase, chamadas } = criarSupabase()
+  const nomesValidos = ['BB', 'AB', 'X'.repeat(120)]
+
+  for (const nome of nomesValidos) {
+    await criarContaPagamentoDesligamento({ supabase, empresaId: EMPRESA_ID, nome })
+  }
+
+  assert.deepEqual(chamadas.map((chamada) => chamada.parametros.p_nome), nomesValidos)
+  assert.throws(() => criarContaPagamentoDesligamento({
+    supabase, empresaId: EMPRESA_ID, nome: 'A'
+  }), /2 a 120 caracteres/i)
+  assert.throws(() => criarContaPagamentoDesligamento({
+    supabase, empresaId: EMPRESA_ID, nome: 'X'.repeat(121)
+  }), /2 a 120 caracteres/i)
+})
+
 test('vínculo aceita estado vazio explícito sem usar nome da conta', async () => {
   const { supabase, chamadas } = criarSupabase()
   await vincularContaPagamentoDesligamento({

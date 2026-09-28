@@ -78,6 +78,14 @@ function motivoObrigatorio(valor, mensagem = 'Informe o motivo do desligamento.'
   return motivo
 }
 
+function nomeContaPagamentoObrigatorio(valor) {
+  const nome = texto(valor)
+  if (nome.length < 2 || nome.length > 120) {
+    throw new Error('Informe o nome da conta de pagamento com 2 a 120 caracteres.')
+  }
+  return nome
+}
+
 export function listarDesligamentosFuncionario({ supabase, empresaId, funcionarioId = null }) {
   assertEmpresaId(empresaId)
   let query = selecionarPorEmpresa(supabase, TABELA, empresaId, SELECT_WORKFLOW)
@@ -106,7 +114,7 @@ export function criarContaPagamentoDesligamento({ supabase, empresaId, nome, cor
   assertEmpresaId(empresaId)
   return supabase.rpc('criar_conta_pagamento_desligamento_controlado', {
     p_empresa_id: empresaId,
-    p_nome: motivoObrigatorio(nome, 'Informe o nome da conta de pagamento.'),
+    p_nome: nomeContaPagamentoObrigatorio(nome),
     p_correlation_id: texto(correlationId)
   })
 }

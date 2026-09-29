@@ -3,15 +3,50 @@ import assert from 'node:assert/strict'
 
 import {
   alterarAdmissaoFuncionarioControlada,
+  arquivarFuncionario,
   atualizarFuncionario,
   criarFuncionario,
   readmitirPessoaControlada,
+  reativarFuncionario,
   retificarTransferenciaFilialControlada,
   transferirFuncionarioFilialControlada
 } from './funcionariosService.js'
 
 const EMPRESA_ID = '11111111-1111-4111-8111-111111111111'
 const FUNCIONARIO_ID = '22222222-2222-4222-8222-222222222222'
+const CORRELATION_ID = '77777777-7777-4777-8777-777777777777'
+
+for (const [nome, executar, arquivado] of [
+  ['arquivamento', arquivarFuncionario, true],
+  ['reativação', reativarFuncionario, false]
+]) {
+  test(`${nome} de funcionário usa RPC transacional auditada`, async () => {
+    const chamadas = []
+    const supabase = {
+      async rpc(rpc, parametros) {
+        chamadas.push({ rpc, parametros })
+        return { data: { id: FUNCIONARIO_ID, arquivado }, error: null }
+      }
+    }
+
+    await executar({
+      supabase,
+      empresaId: EMPRESA_ID,
+      funcionarioId: FUNCIONARIO_ID,
+      correlationId: CORRELATION_ID
+    })
+
+    assert.deepEqual(chamadas, [{
+      rpc: 'df_definir_arquivamento_funcionario_controlado',
+      parametros: {
+        p_empresa_id: EMPRESA_ID,
+        p_funcionario_id: FUNCIONARIO_ID,
+        p_arquivado: arquivado,
+        p_correlation_id: CORRELATION_ID
+      }
+    }])
+  })
+}
 
 test('update genérico rejeita data_admissao antes de consultar o banco', async () => {
   let consultouBanco = false

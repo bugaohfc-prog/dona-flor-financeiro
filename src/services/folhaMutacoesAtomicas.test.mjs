@@ -38,19 +38,29 @@ function criarSupabase() {
   }
 }
 
+const CAMPOS_DERIVADOS_PROIBIDOS_NA_CRIACAO = [
+  'empresa_id',
+  'conferido',
+  'conferido_em',
+  'arquivado',
+  'arquivado_em',
+  'created_at',
+  'updated_at'
+]
+
 const cenarios = [
   ['criar competência', criarCompetenciaFolha, 'df_mutar_competencia_folha_controlado', 'criar', {
     empresaId: EMPRESA_ID, dados: { competencia: '2026-09' }
-  }],
+  }, { competencia: '2026-09', status: 'aberta' }],
   ['atualizar competência', atualizarCompetenciaFolha, 'df_mutar_competencia_folha_controlado', 'atualizar', {
     empresaId: EMPRESA_ID, id: COMPETENCIA_ID, dados: { status: 'em_conferencia' }
-  }],
+  }, { status: 'em_conferencia' }],
   ['arquivar competência', arquivarCompetenciaFolha, 'df_mutar_competencia_folha_controlado', 'arquivar', {
     empresaId: EMPRESA_ID, id: COMPETENCIA_ID
-  }],
+  }, {}],
   ['reativar competência', reativarCompetenciaFolha, 'df_mutar_competencia_folha_controlado', 'reativar', {
     empresaId: EMPRESA_ID, id: COMPETENCIA_ID
-  }],
+  }, {}],
   ['criar lançamento', criarLancamentoFolha, 'df_mutar_lancamento_folha_controlado', 'criar', {
     empresaId: EMPRESA_ID,
     dados: {
@@ -62,18 +72,32 @@ const cenarios = [
       descricao: 'Poupança',
       valor: 10
     }
+  }, {
+    competencia_id: COMPETENCIA_ID,
+    funcionario_id: FUNCIONARIO_ID,
+    filial_id: FILIAL_ID,
+    natureza: 'desconto',
+    categoria: 'outro_desconto',
+    descricao: 'Poupança',
+    data_referencia: null,
+    quantidade: null,
+    percentual: null,
+    valor: 10,
+    observacao_administrativa: null,
+    origem_lancamento: null,
+    origem_id: null
   }],
   ['atualizar lançamento', atualizarLancamentoFolha, 'df_mutar_lancamento_folha_controlado', 'atualizar', {
     empresaId: EMPRESA_ID,
     id: LANCAMENTO_ID,
     dados: { natureza: 'desconto', categoria: 'outro_desconto', descricao: 'Poupança', valor: 20 }
-  }],
+  }, { natureza: 'desconto', categoria: 'outro_desconto', descricao: 'Poupança', valor: 20 }],
   ['arquivar lançamento', arquivarLancamentoFolha, 'df_mutar_lancamento_folha_controlado', 'arquivar', {
     empresaId: EMPRESA_ID, id: LANCAMENTO_ID
-  }],
+  }, {}],
   ['reativar lançamento', reativarLancamentoFolha, 'df_mutar_lancamento_folha_controlado', 'reativar', {
     empresaId: EMPRESA_ID, id: LANCAMENTO_ID
-  }],
+  }, {}],
   ['criar item', criarItemLancamentoFolha, 'df_mutar_item_folha_controlado', 'criar', {
     empresaId: EMPRESA_ID,
     dados: {
@@ -85,22 +109,46 @@ const cenarios = [
       descricao: 'Compra',
       valor: 10
     }
+  }, {
+    categoria: 'compras_vales',
+    descricao: 'Compra',
+    data_referencia: null,
+    quantidade: null,
+    percentual: null,
+    valor_base: null,
+    valor: 10,
+    observacao_administrativa: null,
+    origem_item: null,
+    competencia_id: COMPETENCIA_ID,
+    lancamento_id: LANCAMENTO_ID,
+    funcionario_id: FUNCIONARIO_ID,
+    filial_id: FILIAL_ID
   }],
   ['atualizar item', atualizarItemLancamentoFolha, 'df_mutar_item_folha_controlado', 'atualizar', {
     empresaId: EMPRESA_ID,
     id: ITEM_ID,
     dados: { categoria: 'compras_vales', descricao: 'Compra', valor: 20 }
+  }, {
+    categoria: 'compras_vales',
+    descricao: 'Compra',
+    data_referencia: null,
+    quantidade: null,
+    percentual: null,
+    valor_base: null,
+    valor: 20,
+    observacao_administrativa: null,
+    origem_item: null
   }],
   ['arquivar item', arquivarItemLancamentoFolha, 'df_mutar_item_folha_controlado', 'arquivar', {
     empresaId: EMPRESA_ID, id: ITEM_ID
-  }],
+  }, {}],
   ['reativar item', reativarItemLancamentoFolha, 'df_mutar_item_folha_controlado', 'reativar', {
     empresaId: EMPRESA_ID, id: ITEM_ID
-  }]
+  }, {}]
 ]
 
-for (const [nome, executar, rpc, operacao, parametros] of cenarios) {
-  test(`${nome} usa somente a RPC transacional e preserva correlation_id`, async () => {
+for (const [nome, executar, rpc, operacao, parametros, dadosEsperados] of cenarios) {
+  test(`${nome} respeita integralmente o contrato da RPC transacional`, async () => {
     const { supabase, chamadas } = criarSupabase()
     await executar({ supabase, ...parametros, correlationId: CORRELATION_ID })
     assert.equal(chamadas.length, 1)
@@ -108,6 +156,14 @@ for (const [nome, executar, rpc, operacao, parametros] of cenarios) {
     assert.equal(chamadas[0].parametros.p_operacao, operacao)
     assert.equal(chamadas[0].parametros.p_empresa_id, EMPRESA_ID)
     assert.equal(chamadas[0].parametros.p_correlation_id, CORRELATION_ID)
+    assert.equal(chamadas[0].parametros.p_entidade_id, operacao === 'criar' ? null : parametros.id)
+    assert.deepEqual(chamadas[0].parametros.p_dados, dadosEsperados)
+
+    if (operacao === 'criar') {
+      for (const campo of CAMPOS_DERIVADOS_PROIBIDOS_NA_CRIACAO) {
+        assert.equal(Object.hasOwn(chamadas[0].parametros.p_dados, campo), false)
+      }
+    }
   })
 }
 

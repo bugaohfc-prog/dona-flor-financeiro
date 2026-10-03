@@ -785,13 +785,7 @@ export async function listarCompetenciasFolhaAgenda({ supabase, empresaId }) {
 
 export async function criarCompetenciaFolha({ supabase, empresaId, dados, correlationId }) {
   const empresa = validarEmpresaId(empresaId)
-
-  const payload = {
-    ...montarPayloadCompetenciaCriacao(dados),
-    empresa_id: empresa,
-    arquivado: false,
-    arquivado_em: null
-  }
+  const payload = montarPayloadCompetenciaCriacao(dados)
 
   return supabase.rpc('df_mutar_competencia_folha_controlado', {
     p_empresa_id: empresa,
@@ -896,15 +890,7 @@ export async function listarItensLancamentosFolha({
 
 export async function criarLancamentoFolha({ supabase, empresaId, dados, correlationId }) {
   const empresa = validarEmpresaId(empresaId)
-
-  const payload = {
-    ...montarPayloadLancamentoCriacao(dados),
-    empresa_id: empresa,
-    conferido: false,
-    conferido_em: null,
-    arquivado: false,
-    arquivado_em: null
-  }
+  const payload = montarPayloadLancamentoCriacao(dados)
 
   return supabase.rpc('df_mutar_lancamento_folha_controlado', {
     p_empresa_id: empresa,
@@ -917,15 +903,7 @@ export async function criarLancamentoFolha({ supabase, empresaId, dados, correla
 
 export async function criarItemLancamentoFolha({ supabase, empresaId, dados, correlationId }) {
   const empresa = validarEmpresaId(empresaId)
-
-  const payload = {
-    ...montarPayloadItemDetalhadoCriacao(dados),
-    empresa_id: empresa,
-    conferido: false,
-    conferido_em: null,
-    arquivado: false,
-    arquivado_em: null
-  }
+  const payload = montarPayloadItemDetalhadoCriacao(dados)
 
   return supabase.rpc('df_mutar_item_folha_controlado', {
     p_empresa_id: empresa,

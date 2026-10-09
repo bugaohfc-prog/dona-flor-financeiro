@@ -1551,7 +1551,7 @@ export default function FuncionariosPage({
                               maxLength={120}
                             />
                           </label>
-                          <button className="funcionarios-btn funcionarios-btn-secondary" type="button" disabled={salvandoDesligamento || formularioContaAcerto.novaContaNome.trim().length < 3} onClick={cadastrarContaPagamentoAcerto}>Cadastrar</button>
+                          <button className="funcionarios-btn funcionarios-btn-secondary" type="button" disabled={salvandoDesligamento || formularioContaAcerto.novaContaNome.trim().length < 2} onClick={cadastrarContaPagamentoAcerto}>Cadastrar</button>
                         </div>
                         {contaAcertoVinculada?.ativo && (
                           <button className="funcionarios-inline-action" type="button" disabled={salvandoDesligamento} onClick={() => arquivarContaPagamentoAcerto(contaAcertoVinculada)}>Arquivar conta vinculada</button>

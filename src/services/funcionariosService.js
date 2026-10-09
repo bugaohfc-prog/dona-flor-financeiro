@@ -1,5 +1,6 @@
-import { atualizarPorEmpresa, selecionarPorEmpresa } from './supabaseQueryService.js'
+import { selecionarPorEmpresa } from './supabaseQueryService.js'
 import { assertEmpresaId } from './tenantService.js'
+import { gerarCorrelationId } from '../utils/correlationId.js'
 
 const TABELA_FUNCIONARIOS = 'df_funcionarios'
 const TABELA_TRANSFERENCIAS = 'df_funcionarios_transferencias_filiais_efetivas'
@@ -348,26 +349,26 @@ export async function readmitirPessoaControlada({
   }
 }
 
-export async function arquivarFuncionario({ supabase, empresaId, funcionarioId }) {
+export async function arquivarFuncionario({ supabase, empresaId, funcionarioId, correlationId }) {
   assertEmpresaId(empresaId)
   const id = validarFuncionarioId(funcionarioId)
 
-  return atualizarPorEmpresa(supabase, TABELA_FUNCIONARIOS, id, empresaId, {
-    arquivado: true,
-    arquivado_em: new Date().toISOString()
+  return supabase.rpc('df_definir_arquivamento_funcionario_controlado', {
+    p_empresa_id: empresaId,
+    p_funcionario_id: id,
+    p_arquivado: true,
+    p_correlation_id: correlationId || gerarCorrelationId()
   })
-    .select(FUNCIONARIO_LIST_SELECT)
-    .single()
 }
 
-export async function reativarFuncionario({ supabase, empresaId, funcionarioId }) {
+export async function reativarFuncionario({ supabase, empresaId, funcionarioId, correlationId }) {
   assertEmpresaId(empresaId)
   const id = validarFuncionarioId(funcionarioId)
 
-  return atualizarPorEmpresa(supabase, TABELA_FUNCIONARIOS, id, empresaId, {
-    arquivado: false,
-    arquivado_em: null
+  return supabase.rpc('df_definir_arquivamento_funcionario_controlado', {
+    p_empresa_id: empresaId,
+    p_funcionario_id: id,
+    p_arquivado: false,
+    p_correlation_id: correlationId || gerarCorrelationId()
   })
-    .select(FUNCIONARIO_LIST_SELECT)
-    .single()
 }

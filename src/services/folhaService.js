@@ -1,9 +1,8 @@
 import {
-  atualizarPorEmpresa,
-  inserirComEmpresa,
   selecionarPorEmpresa
-} from './supabaseQueryService'
-import { assertEmpresaId } from './tenantService'
+} from './supabaseQueryService.js'
+import { assertEmpresaId } from './tenantService.js'
+import { gerarCorrelationId } from '../utils/correlationId.js'
 
 const TABELA_FOLHA_COMPETENCIAS = 'df_folha_competencias'
 const TABELA_FOLHA_LANCAMENTOS = 'df_folha_lancamentos'
@@ -784,52 +783,57 @@ export async function listarCompetenciasFolhaAgenda({ supabase, empresaId }) {
     .order('criado_em', { ascending: false })
 }
 
-export async function criarCompetenciaFolha({ supabase, empresaId, dados }) {
+export async function criarCompetenciaFolha({ supabase, empresaId, dados, correlationId }) {
   const empresa = validarEmpresaId(empresaId)
+  const payload = montarPayloadCompetenciaCriacao(dados)
 
-  const payload = {
-    ...montarPayloadCompetenciaCriacao(dados),
-    empresa_id: empresa,
-    arquivado: false,
-    arquivado_em: null
-  }
-
-  return inserirComEmpresa(supabase, TABELA_FOLHA_COMPETENCIAS, payload, { select: COMPETENCIA_SELECT })
-    .single()
+  return supabase.rpc('df_mutar_competencia_folha_controlado', {
+    p_empresa_id: empresa,
+    p_operacao: 'criar',
+    p_entidade_id: null,
+    p_dados: payload,
+    p_correlation_id: correlationId || gerarCorrelationId()
+  })
 }
 
-export async function atualizarCompetenciaFolha({ supabase, empresaId, id, dados }) {
+export async function atualizarCompetenciaFolha({ supabase, empresaId, id, dados, correlationId }) {
   const empresa = validarEmpresaId(empresaId)
   const competenciaId = validarCompetenciaId(id)
   const payload = montarPayloadCompetenciaAtualizacao(dados)
 
-  return atualizarPorEmpresa(supabase, TABELA_FOLHA_COMPETENCIAS, competenciaId, empresa, payload)
-    .select(COMPETENCIA_SELECT)
-    .single()
+  return supabase.rpc('df_mutar_competencia_folha_controlado', {
+    p_empresa_id: empresa,
+    p_operacao: 'atualizar',
+    p_entidade_id: competenciaId,
+    p_dados: payload,
+    p_correlation_id: correlationId || gerarCorrelationId()
+  })
 }
 
-export async function arquivarCompetenciaFolha({ supabase, empresaId, id }) {
+export async function arquivarCompetenciaFolha({ supabase, empresaId, id, correlationId }) {
   const empresa = validarEmpresaId(empresaId)
   const competenciaId = validarCompetenciaId(id)
 
-  return atualizarPorEmpresa(supabase, TABELA_FOLHA_COMPETENCIAS, competenciaId, empresa, {
-    arquivado: true,
-    arquivado_em: new Date().toISOString()
+  return supabase.rpc('df_mutar_competencia_folha_controlado', {
+    p_empresa_id: empresa,
+    p_operacao: 'arquivar',
+    p_entidade_id: competenciaId,
+    p_dados: {},
+    p_correlation_id: correlationId || gerarCorrelationId()
   })
-    .select(COMPETENCIA_SELECT)
-    .single()
 }
 
-export async function reativarCompetenciaFolha({ supabase, empresaId, id }) {
+export async function reativarCompetenciaFolha({ supabase, empresaId, id, correlationId }) {
   const empresa = validarEmpresaId(empresaId)
   const competenciaId = validarCompetenciaId(id)
 
-  return atualizarPorEmpresa(supabase, TABELA_FOLHA_COMPETENCIAS, competenciaId, empresa, {
-    arquivado: false,
-    arquivado_em: null
+  return supabase.rpc('df_mutar_competencia_folha_controlado', {
+    p_empresa_id: empresa,
+    p_operacao: 'reativar',
+    p_entidade_id: competenciaId,
+    p_dados: {},
+    p_correlation_id: correlationId || gerarCorrelationId()
   })
-    .select(COMPETENCIA_SELECT)
-    .single()
 }
 
 export async function listarLancamentosFolha({
@@ -884,104 +888,110 @@ export async function listarItensLancamentosFolha({
   return query
 }
 
-export async function criarLancamentoFolha({ supabase, empresaId, dados }) {
+export async function criarLancamentoFolha({ supabase, empresaId, dados, correlationId }) {
   const empresa = validarEmpresaId(empresaId)
+  const payload = montarPayloadLancamentoCriacao(dados)
 
-  const payload = {
-    ...montarPayloadLancamentoCriacao(dados),
-    empresa_id: empresa,
-    conferido: false,
-    conferido_em: null,
-    arquivado: false,
-    arquivado_em: null
-  }
-
-  return inserirComEmpresa(supabase, TABELA_FOLHA_LANCAMENTOS, payload, { select: LANCAMENTO_SELECT })
-    .single()
+  return supabase.rpc('df_mutar_lancamento_folha_controlado', {
+    p_empresa_id: empresa,
+    p_operacao: 'criar',
+    p_entidade_id: null,
+    p_dados: payload,
+    p_correlation_id: correlationId || gerarCorrelationId()
+  })
 }
 
-export async function criarItemLancamentoFolha({ supabase, empresaId, dados }) {
+export async function criarItemLancamentoFolha({ supabase, empresaId, dados, correlationId }) {
   const empresa = validarEmpresaId(empresaId)
+  const payload = montarPayloadItemDetalhadoCriacao(dados)
 
-  const payload = {
-    ...montarPayloadItemDetalhadoCriacao(dados),
-    empresa_id: empresa,
-    conferido: false,
-    conferido_em: null,
-    arquivado: false,
-    arquivado_em: null
-  }
-
-  return inserirComEmpresa(supabase, TABELA_FOLHA_LANCAMENTO_ITENS, payload, { select: LANCAMENTO_ITEM_SELECT })
-    .single()
+  return supabase.rpc('df_mutar_item_folha_controlado', {
+    p_empresa_id: empresa,
+    p_operacao: 'criar',
+    p_entidade_id: null,
+    p_dados: payload,
+    p_correlation_id: correlationId || gerarCorrelationId()
+  })
 }
 
-export async function atualizarItemLancamentoFolha({ supabase, empresaId, id, dados }) {
+export async function atualizarItemLancamentoFolha({ supabase, empresaId, id, dados, correlationId }) {
   const empresa = validarEmpresaId(empresaId)
   const itemId = validarLancamentoId(id)
   const payload = montarPayloadItemDetalhadoAtualizacao(dados)
 
-  return atualizarPorEmpresa(supabase, TABELA_FOLHA_LANCAMENTO_ITENS, itemId, empresa, payload)
-    .select(LANCAMENTO_ITEM_SELECT)
-    .single()
+  return supabase.rpc('df_mutar_item_folha_controlado', {
+    p_empresa_id: empresa,
+    p_operacao: 'atualizar',
+    p_entidade_id: itemId,
+    p_dados: payload,
+    p_correlation_id: correlationId || gerarCorrelationId()
+  })
 }
 
-export async function arquivarItemLancamentoFolha({ supabase, empresaId, id }) {
+export async function arquivarItemLancamentoFolha({ supabase, empresaId, id, correlationId }) {
   const empresa = validarEmpresaId(empresaId)
   const itemId = validarLancamentoId(id)
 
-  return atualizarPorEmpresa(supabase, TABELA_FOLHA_LANCAMENTO_ITENS, itemId, empresa, {
-    arquivado: true,
-    arquivado_em: new Date().toISOString()
+  return supabase.rpc('df_mutar_item_folha_controlado', {
+    p_empresa_id: empresa,
+    p_operacao: 'arquivar',
+    p_entidade_id: itemId,
+    p_dados: {},
+    p_correlation_id: correlationId || gerarCorrelationId()
   })
-    .select(LANCAMENTO_ITEM_SELECT)
-    .single()
 }
 
-export async function reativarItemLancamentoFolha({ supabase, empresaId, id }) {
+export async function reativarItemLancamentoFolha({ supabase, empresaId, id, correlationId }) {
   const empresa = validarEmpresaId(empresaId)
   const itemId = validarLancamentoId(id)
 
-  return atualizarPorEmpresa(supabase, TABELA_FOLHA_LANCAMENTO_ITENS, itemId, empresa, {
-    arquivado: false,
-    arquivado_em: null
+  return supabase.rpc('df_mutar_item_folha_controlado', {
+    p_empresa_id: empresa,
+    p_operacao: 'reativar',
+    p_entidade_id: itemId,
+    p_dados: {},
+    p_correlation_id: correlationId || gerarCorrelationId()
   })
-    .select(LANCAMENTO_ITEM_SELECT)
-    .single()
 }
 
-export async function atualizarLancamentoFolha({ supabase, empresaId, id, dados }) {
+export async function atualizarLancamentoFolha({ supabase, empresaId, id, dados, correlationId }) {
   const empresa = validarEmpresaId(empresaId)
   const lancamentoId = validarLancamentoId(id)
   const payload = montarPayloadLancamentoAtualizacao(dados)
 
-  return atualizarPorEmpresa(supabase, TABELA_FOLHA_LANCAMENTOS, lancamentoId, empresa, payload)
-    .select(LANCAMENTO_SELECT)
-    .single()
+  return supabase.rpc('df_mutar_lancamento_folha_controlado', {
+    p_empresa_id: empresa,
+    p_operacao: 'atualizar',
+    p_entidade_id: lancamentoId,
+    p_dados: payload,
+    p_correlation_id: correlationId || gerarCorrelationId()
+  })
 }
 
-export async function arquivarLancamentoFolha({ supabase, empresaId, id }) {
+export async function arquivarLancamentoFolha({ supabase, empresaId, id, correlationId }) {
   const empresa = validarEmpresaId(empresaId)
   const lancamentoId = validarLancamentoId(id)
 
-  return atualizarPorEmpresa(supabase, TABELA_FOLHA_LANCAMENTOS, lancamentoId, empresa, {
-    arquivado: true,
-    arquivado_em: new Date().toISOString()
+  return supabase.rpc('df_mutar_lancamento_folha_controlado', {
+    p_empresa_id: empresa,
+    p_operacao: 'arquivar',
+    p_entidade_id: lancamentoId,
+    p_dados: {},
+    p_correlation_id: correlationId || gerarCorrelationId()
   })
-    .select(LANCAMENTO_SELECT)
-    .single()
 }
 
-export async function reativarLancamentoFolha({ supabase, empresaId, id }) {
+export async function reativarLancamentoFolha({ supabase, empresaId, id, correlationId }) {
   const empresa = validarEmpresaId(empresaId)
   const lancamentoId = validarLancamentoId(id)
 
-  return atualizarPorEmpresa(supabase, TABELA_FOLHA_LANCAMENTOS, lancamentoId, empresa, {
-    arquivado: false,
-    arquivado_em: null
+  return supabase.rpc('df_mutar_lancamento_folha_controlado', {
+    p_empresa_id: empresa,
+    p_operacao: 'reativar',
+    p_entidade_id: lancamentoId,
+    p_dados: {},
+    p_correlation_id: correlationId || gerarCorrelationId()
   })
-    .select(LANCAMENTO_SELECT)
-    .single()
 }
 
 export async function retificarOcorrenciaFolha({ supabase, dados = {} }) {

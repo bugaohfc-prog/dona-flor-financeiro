@@ -8,12 +8,11 @@ Princípio central:
 
 > O problema mais difícil não é cadastrar os dados; é fazer o sistema conduzir a operação.
 
-Uma funcionalidade não está pronta apenas porque grava dados corretamente.
-Ela precisa ajudar o usuário a entender o que aconteceu, o que precisa fazer, o que acontece depois e o que não pode ser esquecido.
+Uma funcionalidade não está pronta apenas porque persiste, recarrega e passa nos testes. Ela também deve ajudar o usuário a entender o que aconteceu, o que precisa fazer, o que acontece depois e o que não pode ser esquecido.
 
 ---
 
-## 1. Prioridades do projeto
+## 1. Missão e prioridades
 
 Priorizar, nesta ordem:
 
@@ -22,35 +21,31 @@ Priorizar, nesta ordem:
 3. fonte de verdade;
 4. regras de negócio;
 5. clareza para o usuário;
-6. causa técnica comprovada;
+6. causa comprovada;
 7. alteração mínima;
 8. validação proporcional ao risco;
 9. economia de tempo e créditos.
 
-Nunca sacrificar integridade operacional apenas para concluir um lote mais rápido.
+Nunca sacrificar integridade operacional para concluir um lote mais rápido.
+
+Ausência de evidência nunca significa PASS. O que não puder ser comprovado deve ser classificado como NOT PROVEN.
 
 ---
 
 ## 2. Problema antes da solução
 
-Quando surgir uma solicitação, erro ou ideia:
+Antes de alterar:
 
 1. identificar o problema real;
 2. separar problema da solução sugerida;
 3. verificar o comportamento atual;
 4. localizar a causa;
-5. avaliar efeitos colaterais;
-6. verificar integração com os demais módulos;
-7. somente então definir a alteração.
+5. avaliar efeitos colaterais e integrações;
+6. somente então definir a mudança.
 
-Não implementar automaticamente uma solução apenas porque foi sugerida.
+Não implementar automaticamente uma sugestão. Se houver alternativa mais simples, segura ou coerente, explicar e propor. Aguardar decisão quando isso mudar o escopo funcional.
 
-Se existir alternativa mais simples, segura ou coerente:
-- explicar;
-- propor;
-- aguardar decisão quando a mudança alterar o escopo funcional.
-
-Em análises de produto, podem ser usadas classificações como:
+Em análise de produto, usar quando útil:
 
 - MANTER;
 - AJUSTAR;
@@ -63,208 +58,146 @@ Em análises de produto, podem ser usadas classificações como:
 ## 3. Escopo e minimalidade
 
 - Trabalhar somente no escopo autorizado.
-- Fazer a menor alteração capaz de resolver a causa real.
-- Não ampliar um lote sem necessidade comprovada.
-- Não misturar problemas independentes.
-- Não criar abstração, tela, serviço, tabela, engine ou infraestrutura sem uso real.
-- Reutilizar estruturas existentes quando forem adequadas.
-- Preservar funcionalidades já aprovadas.
-- Não reconstruir módulos funcionais sem necessidade comprovada.
+- Fazer a menor alteração capaz de resolver a causa.
+- Não ampliar lotes nem misturar problemas independentes.
+- Não criar abstração, tela, serviço, tabela ou infraestrutura sem uso real.
+- Reutilizar estruturas adequadas e preservar contratos aprovados.
+- Não reconstruir módulo funcional sem necessidade comprovada.
 
-Ausência de evidência nunca significa PASS.
+Se a solução exigir mudança fora do escopo: parar, demonstrar a necessidade, explicar impacto e aguardar autorização.
 
-Tudo que não puder ser comprovado deve ser classificado como:
-
-NOT PROVEN.
+Achados laterais devem ser registrados e separados, não corrigidos por conveniência.
 
 ---
 
-## 4. Fonte de verdade
+## 4. Fonte de verdade e integridade
 
 Cada conceito de negócio deve possuir uma fonte canônica.
 
-Não criar uma segunda fonte de verdade apenas para facilitar:
+Não criar segunda fonte de verdade para facilitar Dashboard, Agenda, Central Operacional, alertas, relatórios ou integrações.
 
-- Dashboard;
-- Agenda;
-- Central Operacional;
-- alertas;
-- relatórios;
-- obrigações;
-- integrações.
+Camadas derivadas podem referenciar a origem, acompanhar responsabilidade, registrar prazo e próxima ação e guardar histórico. Não devem duplicar valores ou estados pertencentes à fonte.
 
-Camadas operacionais podem:
+Dados derivados devem ser recalculáveis ou possuir vínculo e versionamento claros.
 
-- referenciar a fonte;
-- acompanhar responsabilidade;
-- registrar prazo;
-- guardar histórico;
-- controlar próxima ação.
+Antes de alterar um conceito, identificar:
 
-Não devem duplicar valores de negócio que pertencem à origem.
+- fonte canônica;
+- consumidores e contratos;
+- efeitos sobre histórico;
+- efeitos sobre segurança e auditoria.
 
-Exemplos:
-
-- conta financeira continua sendo fonte do valor financeiro;
-- funcionário continua sendo fonte do vínculo;
-- Folha continua sendo fonte dos lançamentos;
-- processo de desligamento continua sendo fonte do desligamento.
-
-Dados derivados devem ser recalculáveis ou possuir vínculo/versionamento claro.
+Uma mudança na origem deve produzir consequência previsível nos consumidores.
 
 ---
 
-## 5. Redução de dependência da memória humana
+## 5. Condução operacional
 
-Quando o sistema já possui informação suficiente para determinar:
-
-- uma obrigação;
-- um risco;
-- uma próxima ação;
-- um prazo;
-- uma dependência;
-- uma consequência;
-
-não transferir essa responsabilidade ao usuário por meio de cadastro manual redundante.
-
-Evitar fluxos do tipo:
-
-evento já registrado
-→ usuário precisa lembrar
-→ usuário cria manualmente uma tarefa sobre o mesmo evento.
+Quando o sistema já sabe que existe obrigação, risco, prazo, dependência ou próxima ação, não exigir cadastro manual redundante para lembrar o usuário.
 
 Preferir:
 
-evento
-→ sistema identifica a obrigação
-→ sistema acompanha
-→ usuário age quando necessário.
+evento registrado
+→ obrigação identificada
+→ acompanhamento
+→ ação do usuário quando necessária.
 
-Automação deve reduzir esquecimento, não esconder decisões importantes.
+Para processo operacional relevante, definir quando aplicável:
+
+- início e criação automática;
+- responsável, prazo e terceiro aguardado;
+- consequência da inação e forma de reaparecimento;
+- bloqueio e evidência de resolução;
+- integração, mudança posterior e próxima ação.
+
+Se essas respostas forem necessárias e estiverem indefinidas, o processo não está operacionalmente pronto.
 
 ---
 
 ## 6. Git
 
-Trabalhar somente em branch explicitamente definida.
+Trabalhar somente na branch explicitamente definida. Nunca fazer push direto na main.
 
-Nunca fazer push direto na main.
-
-Um lote correlato deve produzir um histórico claro.
-
-Promoções devem usar:
-
-- PR;
-- checks;
-- merge normal.
+Promoções devem usar Pull Request, checks e merge normal.
 
 Nunca usar sem autorização explícita:
 
-- git clean;
-- reset destrutivo;
-- reset --hard;
+- `git clean`;
+- reset destrutivo ou `reset --hard`;
 - amend;
 - rebase;
 - force push;
 - cherry-pick;
-- git add .;
-- git add -A.
+- `git add .`;
+- `git add -A`.
 
 Sempre:
 
-- preservar stash;
-- preservar arquivos não rastreados;
+- preservar stash e arquivos não rastreados;
 - adicionar somente arquivos do lote;
-- registrar SHA relevante nos checkpoints.
+- registrar SHA nos checkpoints;
+- manter histórico claro por lote correlato.
+
+Não incluir arquivos alheios ao escopo em commit.
 
 ---
 
 ## 7. /DEBUG antes de corrigir
 
-Quando houver:
-
-- erro;
-- inconsistência;
-- regressão;
-- comportamento inesperado;
-- divergência entre ambientes;
-- suspeita de problema;
-
-usar /DEBUG antes de alterar.
+Usar /DEBUG diante de erro, inconsistência, regressão, comportamento inesperado ou divergência entre ambientes.
 
 Fluxo:
 
-1. reproduzir;
-2. identificar causa;
-3. reunir evidência;
-4. localizar arquivos diretamente envolvidos;
+1. reproduzir com segurança;
+2. reunir evidência;
+3. identificar a causa;
+4. localizar somente arquivos e objetos envolvidos;
 5. separar causa de sintoma;
 6. determinar impacto;
 7. somente depois corrigir.
 
-Não alterar código baseado apenas em hipótese.
+Não alterar baseado em hipótese. Se a causa não estiver comprovada, continuar em /DEBUG e declarar o que permanece NOT PROVEN.
 
-Se a causa não estiver comprovada:
-continuar em /DEBUG.
-
-Evitar varredura ampla do repositório quando o escopo já estiver conhecido.
+Não provocar mutação perigosa apenas para reproduzir falha. Evitar varredura ampla quando o escopo já for conhecido.
 
 ---
 
 ## 8. Implementação e refactor
 
-Depois da causa ou necessidade estar comprovada:
+Depois de comprovada a necessidade:
 
 - fazer mudança pequena e correlata;
-- resolver causa, não apenas sintoma;
+- corrigir a causa, não apenas o sintoma;
 - preservar contratos válidos;
-- reutilizar estruturas adequadas;
+- reutilizar estruturas existentes;
 - evitar abstrações prematuras;
-- evitar infraestrutura genérica para problema específico.
+- não misturar refactor estético com alteração funcional.
 
-Se a solução exigir mudança estrutural fora do escopo:
+Antes de editar, identificar arquivos, contratos, fonte de verdade, risco e critérios de aceite.
 
-1. parar;
-2. explicar;
-3. demonstrar necessidade;
-4. aguardar autorização.
-
-Não transformar uma correção pequena em reestruturação ampla.
+Não transformar correção pequena em reestruturação ampla. Mudança estrutural fora do escopo exige nova autorização.
 
 ---
 
 ## 9. Checkpoint e rollback
 
-Antes de operação de risco registrar:
+Antes de migration, mutação relevante, mudança de permissão/configuração, merge, deploy ou promoção, registrar:
 
-- branch;
-- SHA;
+- branch e SHA;
 - git status;
 - ambiente;
 - estado funcional conhecido.
 
-Operações de risco incluem:
-
-- migration;
-- alteração estrutural de banco;
-- mutação relevante;
-- alteração de permissões;
-- mudança de configuração;
-- merge;
-- deploy;
-- promoção.
-
-Sempre que aplicável, definir previamente rollback reversível.
+Quando aplicável, definir rollback reversível antes da operação.
 
 Se houver quebra:
 
 1. parar novas alterações;
-2. identificar impacto;
-3. verificar mutações ocorridas;
-4. restaurar estado estável por método não destrutivo;
-5. comprovar restauração;
-6. registrar causa;
-7. somente então continuar.
+2. identificar impacto e mutações ocorridas;
+3. restaurar estado estável por método não destrutivo;
+4. comprovar a restauração;
+5. registrar a causa;
+6. somente então continuar.
 
 Nunca empilhar correções sobre estado quebrado.
 
@@ -272,681 +205,336 @@ Nunca empilhar correções sobre estado quebrado.
 
 ## 10. Segurança e ambientes
 
-Produção só pode ser alterada com autorização explícita do usuário para aquele lote.
+Produção só pode ser alterada com autorização explícita para o lote atual.
+
+Antes de qualquer escrita, confirmar ambiente, project ref ou destino equivalente, intenção autorizada e escopo.
 
 Não alterar sem autorização:
 
-- Supabase;
-- migrations;
-- Edge Functions;
-- variáveis;
-- dados;
-- permissões;
-- configuração;
+- Supabase, dados ou permissões;
+- migrations e Edge Functions;
+- variáveis e configuração;
 - deploy de produção.
-
-Antes de qualquer escrita:
-
-- confirmar ambiente;
-- confirmar project ref;
-- confirmar intenção do lote.
 
 Mudança funcional ou de banco deve ser validada primeiro em staging, salvo autorização excepcional explícita.
 
-Nunca:
-
-- solicitar senha;
-- registrar segredo;
-- exibir segredo;
-- usar segredo em log;
-- usar mock como prova final de funcionalidade conectada.
+Nunca solicitar, registrar ou exibir segredos; incluir segredo em log; usar mock como prova final conectada; ou confundir autenticação com autorização de escrita.
 
 ---
 
-## 11. Banco de dados
+## 11. Banco, RLS e autoridade
 
-Antes de criar:
-
-- tabela;
-- coluna;
-- índice;
-- constraint;
-- RPC;
-- trigger;
-- policy;
-- migration;
-
-verificar se a estrutura existente já resolve o problema.
+Antes de criar ou alterar tabela, coluna, índice, constraint, RPC, trigger, policy, grant ou migration, verificar se a estrutura existente já resolve o problema.
 
 Preservar:
 
 - tenant;
-- RLS;
-- histórico;
-- auditoria;
-- integridade referencial.
+- RLS e FORCE RLS quando aplicável;
+- histórico e auditoria;
+- integridade referencial;
+- menor privilégio.
 
 Não:
 
 - afrouxar RLS para facilitar teste;
-- remover proteção existente sem causa;
+- remover proteção sem causa;
 - fazer DELETE físico quando o domínio usa arquivamento lógico;
 - usar SQL manual como atalho para fluxo oficial;
-- duplicar estado de negócio em estruturas paralelas;
+- duplicar estado de negócio;
 - criar migration não autorizada.
 
-Migration necessária mas não autorizada:
-PARAR e pedir autorização.
+Migration necessária mas não autorizada: PARAR e pedir autorização.
+
+Regra crítica não pode depender apenas do frontend. O backend deve impedir mutação sem permissão, estado inválido, duplicidade proibida, conclusão incompatível e resolução sem evidência obrigatória.
 
 ---
 
-## 12. Regras críticas devem ser autoritativas
+## 12. Idempotência e automação
 
-Regra crítica de negócio não pode depender exclusivamente da interface.
+Operações repetíveis e automações devem ser idempotentes quando aplicável.
 
-Frontend pode:
+A mesma origem e regra não podem gerar equivalentes por reload, retry, job repetido, clique repetido, concorrência ou reconexão.
 
-- orientar;
-- explicar;
-- bloquear botão;
-- mostrar consequência.
-
-Mas a operação autoritativa deve impedir estado inválido também no backend.
-
-Exemplos genéricos:
-
-- conclusão de processo com condição crítica pendente;
-- alteração incompatível de status;
-- mutação sem permissão;
-- duplicidade proibida;
-- resolução sem evidência obrigatória.
-
-Nenhum caminho alternativo deve conseguir contornar uma trava crítica apenas porque não passou pela tela principal.
-
----
-
-## 13. Idempotência e duplicidade
-
-Automações e operações repetíveis devem ser idempotentes quando aplicável.
-
-A mesma origem/regra não pode criar múltiplos registros equivalentes por:
-
-- reload;
-- retry;
-- job repetido;
-- clique repetido;
-- concorrência;
-- reconexão.
-
-Sempre que o domínio exigir unicidade lógica:
+Quando houver unicidade lógica:
 
 - identificar a chave funcional;
-- proteger contra duplicidade no nível adequado;
+- proteger no nível adequado;
 - testar repetição;
 - preservar auditoria.
 
-Não depender apenas de “o frontend não chamar duas vezes”.
+Não depender somente de o frontend chamar uma vez.
+
+Automação deve ser previsível, auditável, baseada em fonte confiável e reversível quando aplicável. Não pode concluir processo crítico silenciosamente, ocultar erro ou transformar hipótese em fato.
+
+Alertas são canais, não fontes de verdade. Falha do canal não pode apagar a obrigação.
 
 ---
 
-## 14. Automação
+## 13. Responsabilidade, estados e próxima ação
 
-Automação deve ser:
+Processo acompanhado deve saber, quando aplicável:
 
-- previsível;
-- auditável;
-- idempotente;
-- reversível quando aplicável;
-- baseada em fonte confiável.
+- responsável interno;
+- ação necessária;
+- prazo;
+- terceiro aguardado;
+- próxima ação e revisão.
 
-Automação não deve:
+“Aguardando terceiro” não significa “sem responsável”. Não inventar responsável sem autoridade; ausência de modelo suficiente é gap.
 
-- esconder erro;
-- concluir processo crítico silenciosamente;
-- criar duplicidade;
-- transformar hipótese em fato;
-- alterar histórico sem rastreabilidade.
+Status deve ter consequência real. Para cada estado, definir o que muda, o que é permitido ou bloqueado, quem age e qual é a próxima ação.
 
-Alertas e notificações são canais.
-
-Não são a fonte de verdade da obrigação.
-
-Falha de e-mail, push ou outro canal não pode apagar a pendência operacional.
-
----
-
-## 15. Responsabilidade operacional
-
-Em processos que exigem acompanhamento, o sistema deve saber quando aplicável:
-
-- quem é responsável;
-- o que precisa acontecer;
-- até quando;
-- quem está sendo aguardado;
-- qual é a próxima ação;
-- quando revisar novamente.
-
-“Aguardando terceiro” não significa “sem responsável”.
-
-Se existir dependência externa, deve existir responsabilidade interna pelo acompanhamento.
-
-Não inventar responsáveis quando a estrutura atual não os define.
-
-Se o modelo existente não suportar responsabilidade suficiente:
-classificar como gap e propor solução mínima.
-
----
-
-## 16. Estados e status
-
-Status devem representar consequência real.
-
-Evitar criar estados apenas para organização visual.
-
-Para cada estado perguntar:
-
-- o que muda?
-- o que fica permitido?
-- o que fica bloqueado?
-- qual é a próxima ação?
-- existe prazo?
-- existe responsável?
-
-Não misturar desnecessariamente:
+Não misturar:
 
 - estado de negócio;
-- prioridade;
-- severidade;
+- prioridade ou severidade;
 - urgência;
-- snooze;
+- adiamento;
 - vencimento.
 
-Adiar uma atenção não significa alterar o estado real da obrigação.
+Adiar atenção não altera estado real nem prazo original.
 
 ---
 
-## 17. UX e linguagem
+## 14. UX, linguagem e usuário novo
 
-O usuário não deve precisar conhecer:
+A interface deve falar a linguagem da operação. O usuário não deve precisar conhecer tabela, RPC, constraint, arquitetura ou estado interno.
 
-- tabela;
-- RPC;
-- constraint;
-- arquitetura;
-- nome interno de status;
-- organização técnica do sistema.
-
-A interface deve falar a linguagem da operação.
-
-Uma tela ou cartão importante deve permitir compreender:
+Tela ou cartão importante deve explicar:
 
 1. o que aconteceu;
 2. por que importa;
-3. o que precisa ser feito;
+3. o que fazer;
 4. onde agir;
 5. o que acontece depois.
 
-A ação principal deve ser evidente.
+A ação principal deve ser evidente e levar diretamente à resolução quando possível.
 
-Evitar exigir sequência desnecessária do tipo:
+Para nova feature, processo ou mudança relevante de UX, verificar se pessoa alheia ao desenvolvimento entende a situação, identifica criticidade, localiza a ação, executa a tarefa e compreende o resultado.
 
-alerta
-→ módulo
-→ lista
-→ registro
-→ aba
-→ seção
-→ ação.
-
-Quando possível:
-levar diretamente ao ponto de resolução.
+Não exigir esse teste para correção técnica sem impacto de UX.
 
 ---
 
-## 18. Teste do usuário novo
+## 15. Teste das 72 horas
 
-Para nova feature, novo processo ou mudança relevante de UX, avaliar:
+Para processo crítico, avaliar se após 72 horas sem acesso o responsável consegue identificar:
 
-Uma pessoa que não participou do desenvolvimento consegue:
-
-- entender o que está acontecendo?
-- identificar criticidade?
-- saber o que precisa fazer?
-- localizar a ação correta?
-- entender o que acontecerá depois?
-
-Se o usuário precisar conhecer a arquitetura interna para concluir uma tarefa comum, o fluxo precisa ser revisto.
-
-Não exigir este teste para correções técnicas sem impacto de UX.
-
----
-
-## 19. Teste das 72 horas
-
-Para processos operacionais críticos, avaliar:
-
-Se o responsável ficar 72 horas sem acessar o DNA Gestão, ao retornar consegue identificar:
-
-- o que aconteceu;
-- o que venceu;
-- o que se tornou crítico;
-- o que está aguardando terceiro;
+- o que aconteceu e mudou;
+- o que venceu ou se tornou crítico;
+- o que aguarda terceiro;
 - o que foi bloqueado;
-- o que mudou;
-- qual é a próxima ação?
+- qual é a próxima ação.
 
-Um risco não pode ficar invisível apenas porque o usuário não abriu um módulo específico.
+Risco não pode ficar invisível porque um módulo não foi aberto.
 
-Esse teste é critério de produto, não obrigação de criar alerta externo em toda funcionalidade.
+Esse é critério de produto, não obrigação de alerta externo em toda feature.
 
----
-
-## 20. Próxima ação
-
-Processos importantes devem, quando aplicável, deixar clara a próxima ação.
-
-Evitar estados finais vagos como:
-
-- em andamento;
-- pendente;
-- aberto;
-
-sem contexto adicional.
-
-Se um processo está parado, deve ser possível determinar:
-
-- por quê;
-- quem precisa agir;
-- quando agir;
-- o que libera a próxima etapa.
+Quando falhar, identificar se falta persistência, responsabilidade, prazo, integração, reaparecimento ou ação direta.
 
 ---
 
-## 21. Evidência e resolução
+## 16. Evidência, conclusão e reabertura
 
-“Concluído” ou “Resolvido” deve ter significado proporcional ao risco.
+“Concluído” e “Resolvido” devem ter significado proporcional ao risco.
 
-A evidência pode ser:
+Evidência pode ser decisão, data, usuário, vínculo estável, documento, referência externa, retorno de integração ou outro dado estruturado.
 
-- decisão registrada;
-- data;
-- usuário;
-- vínculo financeiro;
-- documento;
-- referência;
-- retorno externo;
-- outro dado estruturado.
+Nem toda ação exige upload. Não burocratizar processo simples; quanto maior o risco da conclusão incorreta, melhor deve ser a evidência.
 
-Nem toda ação exige upload.
+Não resolver acompanhamento sem resolver ou classificar sua fonte.
 
-Não burocratizar processos simples.
+Quando informação relevante mudar após conferência ou conclusão intermediária, avaliar se deve:
 
-Quanto maior o risco da conclusão incorreta, maior deve ser a qualidade da evidência exigida.
-
-Não resolver uma obrigação operacional sem resolver ou classificar corretamente sua fonte.
-
----
-
-## 22. Mudança posterior e reabertura
-
-Quando uma informação relevante muda depois de uma conferência ou conclusão intermediária, avaliar se o processo deve:
-
-- ser marcado como desatualizado;
+- marcar o processo como desatualizado;
 - gerar nova obrigação;
 - reabrir etapa;
 - exigir nova conferência.
 
-Não depender da memória do usuário para perceber mudança relevante.
-
-Não reabrir processo por edição irrelevante.
-
-Preservar histórico das decisões anteriores.
+Não reabrir por mudança irrelevante. Preservar decisões e evidências anteriores.
 
 ---
 
-## 23. Dados históricos e cutover
+## 17. Histórico e cutover
 
-Ao introduzir nova automação, regra ou motor operacional:
-
-não assumir que todo histórico existente deve ser convertido automaticamente.
+Ao introduzir regra, automação ou camada operacional, não assumir que todo histórico deve ser convertido automaticamente.
 
 Antes de backfill:
 
-1. identificar dados históricos;
-2. avaliar qualidade;
-3. avaliar risco de falsos alertas;
-4. definir estratégia de cutover;
-5. separar histórico de eventos novos.
+1. identificar e avaliar os dados históricos;
+2. medir risco de falsos positivos;
+3. definir estratégia de cutover;
+4. separar histórico de eventos novos;
+5. prever revisão humana quando necessária.
 
-Quando necessário, usar revisão humana para transformar histórico em obrigação ativa.
+Não criar centenas de pendências apenas porque é tecnicamente possível.
 
-Não criar centenas de pendências automaticamente apenas porque tecnicamente é possível.
+Camada operacional deve referenciar a origem, sem duplicar valores. Estado de acompanhamento não substitui o estado real.
 
----
-
-## 24. Passivo, histórico e operação corrente
-
-Não misturar dívida histórica conhecida com obrigação corrente apenas porque ambas estão vencidas.
-
-Quando houver conceito de passivo acompanhado:
-
-- a fonte financeira continua sendo a conta original;
-- não duplicar saldo;
-- não criar segunda dívida;
-- acompanhamento deve referenciar a origem;
-- risco histórico não deve esconder nova urgência;
-- nova urgência não deve apagar passivo antigo.
-
-Estados operacionais de acompanhamento não substituem o estado financeiro real.
+Histórico concluído deve permanecer legível após mudanças de catálogo, configuração ou relacionamento.
 
 ---
 
-## 25. Recorrências e expectativas
+## 18. Arquitetura de interface
 
-Recorrência representa expectativa periódica, não autorização para criar duplicidade.
+Mobile, tablet e desktop devem preservar regras, dados relevantes, permissões e resultados funcionais.
 
-Quando existir uma cobrança real que possivelmente corresponde à ocorrência prevista:
+Layout e DOM podem variar quando isso melhora a experiência sem alterar comportamento.
 
-- comparar;
-- identificar possível correspondência;
-- permitir conciliação;
-- evitar obrigação financeira duplicada.
-
-Não assumir que mesmo fornecedor significa mesma obrigação.
-
-Não assumir que valor diferente significa obrigação diferente.
-
-Analisar contexto.
-
----
-
-## 26. Arquitetura de interface
-
-Mobile, tablet e desktop devem preservar:
-
-- mesmas regras de negócio;
-- mesmos dados relevantes;
-- mesmas permissões;
-- mesmos resultados funcionais.
-
-Layout pode variar conforme viewport.
-
-DOM idêntico não é obrigatório quando uma estrutura diferente melhora a experiência sem alterar regra ou comportamento.
-
-Preferir componentes compartilhados quando fizer sentido.
-
-Não duplicar regra de negócio por breakpoint.
+Preferir componentes compartilhados quando fizer sentido. Não duplicar regra de negócio por breakpoint nem acoplar componente compartilhado a detalhes internos de página.
 
 CSS:
 
-- compartilhado deve usar classes próprias;
-- domínio deve permanecer escopado;
-- evitar !important;
+- usar classes próprias em componentes compartilhados;
+- manter estilos de domínio escopados;
+- evitar `!important`;
 - evitar posicionamento absoluto estrutural;
 - evitar seletores globais frágeis;
-- evitar inline style para layout estático quando CSS resolver melhor.
+- evitar inline style para layout estático quando CSS for adequado.
 
 ---
 
-## 27. Organização dos lotes
+## 19. Organização dos lotes
 
-Correções:
-agrupar pela causa técnica.
+Agrupar correções pela causa técnica e features pela capacidade operacional, fonte de verdade e validação compartilhada.
 
-Features/processos:
-agrupar por capacidade operacional coerente e fonte de verdade.
+Não misturar demandas independentes nem fragmentar o mesmo problema artificialmente por tela ou botão.
 
-Não misturar demandas independentes apenas para reduzir número de lotes.
+Antes de iniciar, definir:
 
-Antes de editar:
+- objetivo único e escopo;
+- dependências;
+- arquivos e contratos;
+- critérios de aceite;
+- validação necessária.
 
-- identificar arquivos;
-- identificar contratos;
-- identificar fonte de verdade;
-- identificar impacto;
-- identificar critérios de aceite.
-
-Não transformar um lote em “aproveitar e corrigir”.
-
-Achado fora do escopo:
-registrar e separar.
+Não transformar lote em “aproveitar e corrigir”. Achado fora do escopo deve seguir separado.
 
 ---
 
-## 28. Economia de validação
+## 20. Validação e entrega
 
-Regra:
-
-não repetir checkpoint já aprovado sem novo diff capaz de afetá-lo.
+Validação deve ser proporcional ao risco e ao diff.
 
 Durante o lote:
 
 - testes focados;
-- git diff --check.
+- `git diff --check`.
 
-No fechamento de alteração funcional relevante:
+No fechamento de alteração funcional relevante, quando aplicável:
 
 - suíte completa;
 - build;
-- viewports realmente afetados;
-- E2E quando necessário.
+- viewports afetados;
+- E2E real.
 
-Se não houve novo diff:
+Não repetir checkpoint aprovado sem novo diff capaz de afetá-lo. Sem novo diff, não repetir automaticamente suíte, build, staging, smoke ou viewports.
 
-não repetir automaticamente:
+Antes de declarar pronto, comprovar quando aplicável:
 
-- suíte;
-- build;
-- staging;
-- smoke;
-- viewports.
+1. dados e serviços reais;
+2. loading, erro e estado vazio;
+3. ação ponta a ponta;
+4. persistência após reload;
+5. tenant e segurança;
+6. ausência de regressão;
+7. viewports afetados;
+8. atendimento ao pedido original.
 
-Se houver novo diff:
-revalidar somente o impacto possível.
+Processo operacional relevante também exige próxima ação, responsável, prazo, consequência da inação, trava, evidência, integração e comportamento após mudança quando aplicável.
 
-Validação deve ser proporcional ao risco.
-
----
-
-## 29. Critério de entrega funcional
-
-Antes de declarar funcionalidade pronta, comprovar quando aplicável:
-
-1. dados/serviços reais;
-2. loading;
-3. erro;
-4. estado vazio;
-5. ação ponta a ponta;
-6. persistência após reload;
-7. tenant e segurança;
-8. ausência de regressão relevante;
-9. comportamento nos viewports afetados.
-
-Se item necessário não puder ser comprovado:
-NOT PROVEN.
+Item necessário não comprovado permanece NOT PROVEN.
 
 ---
 
-## 30. Critério de entrega operacional
+## 21. Staging, produção e promoção
 
-Para processo operacional relevante, responder quando aplicável:
+Validar mudança funcional em staging antes da promoção.
 
-1. O que inicia o processo?
-2. O que o sistema cria automaticamente?
-3. Qual é a próxima ação?
-4. Quem é responsável?
-5. Existe prazo?
-6. Existe terceiro sendo aguardado?
-7. O que acontece se ninguém agir?
-8. Como o risco reaparece?
-9. O que fica bloqueado?
-10. Qual evidência comprova resolução?
-11. Para qual módulo ou processo o resultado segue?
-12. O que acontece se a informação mudar depois?
-13. O usuário precisa lembrar manualmente de algo que o sistema já poderia saber?
+Fixture deve ser necessária, segura, identificável, isolada, encerrada logicamente e sem dado ativo desnecessário ao final. Registrar mutações relevantes do E2E.
 
-Se essas respostas forem necessárias ao processo e não estiverem definidas:
-a funcionalidade não está operacionalmente pronta.
+Produção não é ambiente de experimentação. Smoke deve ser mínimo e preferencialmente read-only.
 
----
+Não repetir em produção mutação já comprovada em staging apenas para obter outro PASS.
 
-## 31. Staging
+DML real de teste em produção exige necessidade comprovada, autorização explícita, escopo controlado e encerramento definido.
 
-Mudanças funcionais devem ser validadas em staging antes da promoção.
-
-Fixture somente quando necessária.
-
-Fixtures:
-
-- seguras;
-- identificáveis;
-- isoladas;
-- encerradas por arquivamento lógico quando aplicável;
-- sem dados ativos desnecessários ao final.
-
-Não criar fixture se prova equivalente puder ser feita sem mutação.
-
-Registrar mutações relevantes realizadas durante E2E.
-
----
-
-## 32. Produção
-
-Smoke de produção deve ser mínimo.
-
-Preferir read-only.
-
-Não repetir mutações funcionais já provadas em staging apenas para obter novo PASS em produção.
-
-DML real de teste em produção exige:
-
-- necessidade comprovada;
-- autorização explícita;
-- escopo controlado;
-- rollback ou encerramento definido.
-
-Produção não é ambiente de experimentação.
-
----
-
-## 33. Promoção
-
-Quando staging já estiver aprovado e não houver novo diff, usar três gates.
+Sem novo diff após aprovação de staging, promover em três gates:
 
 ### Gate 1 — Git
 
-- git fetch;
+- fazer fetch;
 - verificar drift;
 - analisar somente impacto relevante.
 
-Sem impacto:
-não repetir staging.
+Sem impacto, não repetir staging.
 
 ### Gate 2 — PR
 
-- abrir PR;
 - conferir escopo;
 - aguardar checks;
-- merge normal.
+- usar merge normal.
 
-Não usar:
-
-- squash;
-- rebase;
-- push direto na main.
+Não usar squash, rebase ou push direto na main.
 
 ### Gate 3 — Produção
 
-- confirmar SHA;
-- confirmar ambiente;
+- confirmar SHA e ambiente;
 - aplicar somente migrations autorizadas;
-- confirmar deployment correto;
-- confirmar READY;
-- confirmar HTTP;
-- confirmar backend;
-- smoke mínimo.
+- confirmar deployment, READY, HTTP e backend;
+- executar smoke mínimo.
 
 Não ampliar escopo durante promoção.
 
 ---
 
-## 34. Regressões durante promoção
+## 22. Regressões e regras externas
 
-Se surgir erro:
+Se surgir erro durante validação ou promoção:
 
 1. parar;
 2. entrar em /DEBUG;
 3. identificar origem;
-4. separar migration, deploy, contrato, auth, dados ou drift;
+4. separar código, migration, deploy, contrato, autenticação, dados ou drift;
 5. corrigir somente após causa comprovada.
 
-Não repetir todo o ciclo automaticamente.
+Não repetir todo o ciclo automaticamente. Se a main avançar, analisar apenas o novo diff e seu impacto.
 
-Se main avançou:
-analisar apenas o novo diff e seu impacto.
+Em conflito, resolver pela intenção funcional. Nunca escolher `ours` ou `theirs` para arquivo inteiro sem análise.
 
-Em conflito:
-resolver pela intenção funcional.
+Não inventar prazo ou obrigação legal, interpretação jurídica, requisito fiscal ou trabalhista.
 
-Nunca escolher ours/theirs para arquivo inteiro sem análise.
+Regra externa crítica exige fonte oficial ou decisão de negócio validada. Separar prazo legal de margem operacional interna.
 
----
-
-## 35. Regras legais e externas
-
-Não inventar:
-
-- prazo legal;
-- obrigação legal;
-- interpretação jurídica;
-- requisito fiscal;
-- requisito trabalhista.
-
-Quando regra externa for crítica:
-
-- usar fonte oficial ou decisão de negócio validada;
-- registrar origem/configuração quando aplicável;
-- separar prazo legal de margem operacional interna.
-
-Dúvida:
-NOT PROVEN.
-
-Não transformar hipótese jurídica em constraint de banco.
+Dúvida permanece NOT PROVEN e não deve virar constraint de banco.
 
 ---
 
-## 36. Relatório final
+## 23. Relatório final
 
-Relatório deve ser curto e decisório.
+Relatório deve ser curto, factual e decisório.
 
 Informar somente quando aplicável:
 
-- branch;
-- SHA inicial/final;
-- arquivos alterados;
-- causa ou necessidade comprovada;
-- alteração realizada;
+- branch e SHA inicial/final;
+- arquivos e alteração;
+- causa ou necessidade;
 - migrations;
-- testes;
-- build;
-- E2E;
-- ambiente;
-- mutações;
-- PASS / FAIL / NOT PROVEN;
+- testes, build e E2E;
+- ambiente e mutações;
+- PASS, FAIL e NOT PROVEN;
 - pendências reais;
-- preservação de stash/untracked.
+- preservação de stash e untracked.
 
-Não repetir toda a história do projeto.
+Não repetir toda a história do projeto nem declarar pronto o que foi implementado, mas não comprovado.
 
 ---
 
-## 37. Regra final
+## 24. Regra final
 
-O DNA Gestão não deve apenas registrar o que aconteceu.
+O DNA Gestão não deve apenas registrar o que aconteceu. Deve ajudar a conduzir o que precisa acontecer.
 
-Ele deve ajudar a conduzir o que precisa acontecer.
-
-Antes de entregar qualquer processo importante, perguntar:
+Antes de entregar processo importante, perguntar:
 
 > Uma pessoa comum consegue entender o que precisa fazer agora, e o sistema perceberá se isso não for feito?
 
@@ -955,7 +543,7 @@ Se a resposta for não, revisar o desenho antes de ampliar o código.
 Diagnosticar uma vez.
 Resolver a causa.
 Preservar a fonte de verdade.
-Automatizar somente o que é confiável.
+Automatizar somente o confiável.
 Validar proporcionalmente.
 Não esconder risco.
 Não depender da memória humana quando o sistema já possui informação suficiente.

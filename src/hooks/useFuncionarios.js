@@ -14,26 +14,6 @@ import {
   transferirFuncionarioFilialControlada as transferirFuncionarioFilialControladaService
 } from '../services/funcionariosService'
 import { mensagemSeguraErro } from '../utils/session'
-import { registrarEventoAuditoriaSeguro } from '../services/auditoriaService'
-
-async function auditarResultadoFuncionario(supabase, resultado, empresaId, acao, funcionarioId, dados = {}) {
-  if (resultado?.error || !empresaId || !funcionarioId) return resultado
-  await registrarEventoAuditoriaSeguro(supabase, {
-    empresa_id: empresaId,
-    acao,
-    entidade_tipo: 'df_funcionarios',
-    entidade_id: funcionarioId,
-    modulo: 'rh',
-    origem: 'app',
-    severidade: 'alta',
-    status: 'sucesso',
-    dados_antes: null,
-    dados_depois: dados,
-    metadados: { funcionario_id: funcionarioId }
-  }, 'operação de funcionário')
-  return resultado
-}
-
 function normalizarId(valor) {
   return String(valor || '').trim()
 }
@@ -255,7 +235,7 @@ export function useFuncionarios(opcoes = {}) {
       supabase,
       empresaId: empresa,
       funcionarioId
-    }).then((resultado) => auditarResultadoFuncionario(supabase, resultado, empresa, 'rh.funcionario.arquivado', funcionarioId, { arquivado: true })))
+    }))
   }, [executarComEmpresaAtiva, supabase])
 
   const reativarFuncionario = useCallback(async (funcionarioId) => {
@@ -263,7 +243,7 @@ export function useFuncionarios(opcoes = {}) {
       supabase,
       empresaId: empresa,
       funcionarioId
-    }).then((resultado) => auditarResultadoFuncionario(supabase, resultado, empresa, 'rh.funcionario.reativado', funcionarioId, { arquivado: false })))
+    }))
   }, [executarComEmpresaAtiva, supabase])
 
   return {

@@ -120,11 +120,11 @@ export async function listarAuditoriaObrigacao({ empresaId, obrigacaoId }) {
   const empresa = assertEmpresaId(texto(empresaId))
   const { data, error } = await supabase
     .from('df_auditoria_eventos')
-    .select('id, acao, motivo, dados_antes, dados_depois, metadados, correlation_id, created_at, user_id')
+    .select('id, acao, motivo, dados_antes, dados_depois, metadados, correlation_id, criado_em, user_id')
     .eq('empresa_id', empresa)
     .eq('entidade_tipo', 'obrigacao_operacional')
     .eq('entidade_id', idObrigatorio(obrigacaoId, 'Obrigação não identificada.'))
-    .order('created_at', { ascending: false })
+    .order('criado_em', { ascending: false })
 
   if (error) throw error
   return data || []

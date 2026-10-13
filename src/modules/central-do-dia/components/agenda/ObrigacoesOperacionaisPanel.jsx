@@ -154,7 +154,7 @@ export default function ObrigacoesOperacionaisPanel({ empresaId, filtroInicial =
                   <div className="obrigacao-operacional-historico">
                     <strong>Histórico</strong>
                     {historicos[item.id].length === 0 ? <p>Nenhum evento encontrado.</p> : (
-                      <ul>{historicos[item.id].map((evento) => <li key={evento.id}>{evento.acao} · {new Date(evento.created_at).toLocaleString('pt-BR')}</li>)}</ul>
+                      <ul>{historicos[item.id].map((evento) => <li key={evento.id}>{evento.acao} · {new Date(evento.criado_em).toLocaleString('pt-BR')}</li>)}</ul>
                     )}
                   </div>
                 )}

@@ -38,7 +38,9 @@ test('RPCs controlam reatribuicao, acompanhamento e resolucao com auditoria', as
 test('frontend usa somente SELECT e RPCs controladas para obrigacoes', async () => {
   const fonte = await readFile(serviceUrl, 'utf8')
   assert.match(fonte, /\.from\('df_obrigacoes_operacionais'\)[\s\S]*\.select/i)
+  assert.match(fonte, /\.from\('df_usuarios_empresas'\)[\s\S]*\.select/i)
   assert.doesNotMatch(fonte, /\.from\('df_obrigacoes_operacionais'\)[\s\S]*\.(insert|update|delete)\(/i)
+  assert.doesNotMatch(fonte, /\.from\('df_usuarios_empresas'\)[\s\S]*\.(insert|update|delete)\(/i)
   assert.match(fonte, /reatribuir_obrigacao_operacional_controlado/)
   assert.match(fonte, /atualizar_acompanhamento_obrigacao_controlado/)
   assert.match(fonte, /resolver_obrigacao_operacional_controlado/)

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../../lib/supabase.js'
-import { listarUsuariosEmpresa } from '../../../services/usuariosService.js'
 import {
   atualizarAcompanhamentoObrigacao,
   listarAuditoriaObrigacao,
   listarObrigacoesOperacionais,
+  listarResponsaveisObrigacoesOperacionais,
   reatribuirObrigacaoOperacional,
   resolverObrigacaoOperacional
 } from '../../../services/obrigacoesOperacionaisService.js'
@@ -36,7 +36,7 @@ export function useObrigacoesOperacionais({ empresaId, filtro = 'acao', carregar
       const [{ data: auth }, lista, listaUsuarios] = await Promise.all([
         supabase.auth.getUser(),
         listarObrigacoesOperacionais({ empresaId }),
-        carregarUsuarios ? listarUsuariosEmpresa(empresaId) : Promise.resolve([])
+        carregarUsuarios ? listarResponsaveisObrigacoesOperacionais({ empresaId }) : Promise.resolve([])
       ])
       setObrigacoes(lista)
       setUsuarios(listaUsuarios)

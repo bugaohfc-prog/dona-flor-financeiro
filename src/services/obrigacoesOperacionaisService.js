@@ -44,6 +44,18 @@ export async function listarObrigacoesOperacionais({ empresaId }) {
   return data || []
 }
 
+export async function listarResponsaveisObrigacoesOperacionais({ empresaId }) {
+  const empresa = assertEmpresaId(texto(empresaId))
+  const { data, error } = await supabase
+    .from('df_usuarios_empresas')
+    .select('id, empresa_id, user_id, usuario_id, nome, email, perfil, acesso_todas_filiais')
+    .eq('empresa_id', empresa)
+    .order('nome', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
 export async function reatribuirObrigacaoOperacional({ empresaId, obrigacaoId, responsavelId, correlationId: cid }) {
   const empresa = assertEmpresaId(texto(empresaId))
   const { data, error } = await supabase.rpc('reatribuir_obrigacao_operacional_controlado', {

@@ -4,7 +4,7 @@ const menuSections = [
     titulo: 'Área de trabalho',
     items: [
       { tela: 'dashboard', icon: 'AT', label: 'Área de trabalho', desc: 'Visão principal da empresa' },
-      { tela: 'agenda', icon: 'AG', label: 'Agenda', desc: 'Compromissos e prazos' },
+      { tela: 'agenda', icon: 'CO', label: 'Central Operacional', desc: 'Obrigações, compromissos e prazos' },
       { tela: 'notas', icon: 'NT', label: 'Notas', desc: 'Pendências e lembretes' }
     ]
   },

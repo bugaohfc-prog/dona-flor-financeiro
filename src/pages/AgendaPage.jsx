@@ -11,6 +11,7 @@ export default function AgendaPage({
   atualizarContas,
   atualizarNotas,
   navegarPara,
+  contextoNavegacao,
   navegarParaOrigemAgenda,
   podeEditarFinanceiro,
   abrirEdicaoConta,
@@ -31,6 +32,7 @@ export default function AgendaPage({
       atualizarContas={atualizarContas}
       atualizarNotas={atualizarNotas}
       navegarPara={navegarPara}
+      contextoNavegacao={contextoNavegacao}
       navegarParaOrigemAgenda={navegarParaOrigemAgenda}
       podeEditarFinanceiro={podeEditarFinanceiro}
       abrirEdicaoConta={abrirEdicaoConta}

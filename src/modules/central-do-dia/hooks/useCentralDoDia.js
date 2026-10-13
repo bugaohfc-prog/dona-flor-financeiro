@@ -5,6 +5,7 @@ import { montarBaseOperacional } from '../domain/centralDoDiaRules.js'
 import { deveCarregarAtividadeCentral, selecionarCentralLegada, selecionarResumoDashboard } from '../domain/centralDoDiaSelectors.js'
 import { listarAtividadeRecenteCentral } from '../services/centralDoDiaService.js'
 import { executarAtualizacaoCentral } from '../services/centralDoDiaRefresh.js'
+import { useObrigacoesOperacionais } from './useObrigacoesOperacionais.js'
 export function useCentralDoDia({
   empresaId,
   filialId,
@@ -19,6 +20,7 @@ export function useCentralDoDia({
   onAtualizarNotas,
   onAtualizarPessoas
 } = {}) {
+  const obrigacoes = useObrigacoesOperacionais({ empresaId, carregarUsuarios: true })
   const [atividade, setAtividade] = useState([])
   const [carregandoAtividade, setCarregandoAtividade] = useState(false)
   const [erroAtividade, setErroAtividade] = useState(null)
@@ -89,7 +91,7 @@ export function useCentralDoDia({
     setAtualizando(true)
 
     try {
-      const tarefas = [onAtualizarContas, onAtualizarNotas, onAtualizarPessoas]
+      const tarefas = [onAtualizarContas, onAtualizarNotas, onAtualizarPessoas, obrigacoes.carregar]
       if (deveCarregarAtividadeCentral({ empresaId, podeAcessarAuditoria, modoCompacto })) {
         tarefas.push(() => carregarAtividade({ silencioso: true }))
       }
@@ -98,7 +100,7 @@ export function useCentralDoDia({
       atualizandoRef.current = false
       if (montadoRef.current) setAtualizando(false)
     }
-  }, [empresaId, onAtualizarContas, onAtualizarNotas, onAtualizarPessoas, podeAcessarAuditoria, modoCompacto, carregarAtividade])
+  }, [empresaId, onAtualizarContas, onAtualizarNotas, onAtualizarPessoas, podeAcessarAuditoria, modoCompacto, carregarAtividade, obrigacoes.carregar])
 
   const base = useMemo(() => montarBaseOperacional({
     contas,
@@ -116,6 +118,9 @@ export function useCentralDoDia({
   return {
     ...central,
     resumoDashboard,
+    resumoObrigacoes: obrigacoes.resumo,
+    carregandoObrigacoes: obrigacoes.carregando,
+    erroObrigacoes: obrigacoes.erro,
     carregandoAtividade,
     erroAtividade,
     erroPessoas: erroPessoas || null,

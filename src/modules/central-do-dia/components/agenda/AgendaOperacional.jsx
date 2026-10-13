@@ -4,6 +4,7 @@ import PageHero from '../../../../components/shared/PageHero.jsx'
 import { useAgendaOperacional } from '../../hooks/useAgendaOperacional.js'
 import { criarDestinoContextualEventoPessoas } from '../../domain/centralDoDiaPeopleRules.js'
 import AgendaOperacionalSection from './AgendaOperacionalSection.jsx'
+import ObrigacoesOperacionaisPanel from './ObrigacoesOperacionaisPanel.jsx'
 import './AgendaOperacional.css'
 const FILTROS_ORIGEM = [
   { id: 'todos', rotulo: 'Todos' },
@@ -44,6 +45,7 @@ export default function AgendaOperacional({
   atualizarContas,
   atualizarNotas,
   navegarPara,
+  contextoNavegacao,
   navegarParaOrigemAgenda,
   podeEditarFinanceiro = false,
   abrirEdicaoConta,
@@ -116,6 +118,17 @@ export default function AgendaOperacional({
     return contasPorId.get(String(item.referenciaOrigem.id)) || null
   }
 
+  function abrirDesligamento(item) {
+    navegarPara('funcionarios', {
+      contexto: {
+        tipo: 'acerto_desligamento',
+        funcionarioId: item?.funcionario?.id || item?.desligamento?.funcionario_id,
+        desligamentoId: item?.desligamento_id,
+        telaRetorno: 'agenda'
+      }
+    })
+  }
+
   async function confirmarPagamento(payload) {
     if (!contaEmBaixa?.id || typeof marcarComoPago !== 'function') return false
     return marcarComoPago(contaEmBaixa.id, payload)
@@ -145,7 +158,7 @@ export default function AgendaOperacional({
   if (!empresaId) {
     return (
       <main className="agenda-operacional-page">
-        <PageHero kicker="Operação" title="Agenda operacional" description="Acompanhe compromissos por dia e aja apenas no que exige atenção." actions={acoesCabecalho} />
+        <PageHero kicker="Operação" title="Central Operacional" description="Acompanhe obrigações persistidas e compromissos calculados." actions={acoesCabecalho} />
         <section className="agenda-operacional-estado" role="status">
           <h2>Selecione uma empresa</h2>
           <p>A Agenda será carregada quando houver uma empresa ativa.</p>
@@ -158,11 +171,22 @@ export default function AgendaOperacional({
     <main className="agenda-operacional-page">
       <PageHero
         kicker="Operação"
-        title="Agenda operacional"
-        description="Acompanhe compromissos por dia e aja apenas no que exige atenção."
+        title="Central Operacional"
+        description="Acompanhe obrigações persistidas e os compromissos calculados da operação."
         actions={acoesCabecalho}
         actionsClassName="agenda-operacional-acoes-cabecalho"
       />
+
+      <ObrigacoesOperacionaisPanel
+        empresaId={empresaId}
+        filtroInicial={contextoNavegacao?.filtroObrigacoes || 'acao'}
+        onAbrirDesligamento={abrirDesligamento}
+      />
+
+      <div className="agenda-operacional-calculada">
+        <h2>Agenda calculada</h2>
+        <p>Prazos e compromissos derivados dos dados atuais.</p>
+      </div>
 
       <section className="agenda-operacional-filtros" aria-label="Filtrar Agenda por origem">
         {filtrosVisiveis.map((filtro) => (

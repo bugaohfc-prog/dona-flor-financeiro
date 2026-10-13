@@ -239,11 +239,14 @@ export default function DashboardHome({
       <ResumoOperacionalDashboard
         empresaId={empresaId}
         carregando={loading || (fontePessoas.carregando && !fontePessoas.carregado)}
-        erroParcial={dadosCentral.erroPessoas}
+        erroParcial={{
+          ...(dadosCentral.erroPessoas || {}),
+          ...(dadosCentral.erroObrigacoes ? { obrigacoes: dadosCentral.erroObrigacoes } : {})
+        }}
         formatarValor={formatarValor}
         dados={dadosCentral}
         onAtualizar={atualizarDashboard}
-        onAbrirAgenda={() => navegarPara('agenda')}
+        onAbrirAgenda={(filtroObrigacoes) => navegarPara('agenda', { contexto: { filtroObrigacoes } })}
         onAbrirOrigem={abrirOrigemResumo}
       />
 

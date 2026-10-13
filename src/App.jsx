@@ -4651,6 +4651,7 @@ export default function App() {
           abrirEdicaoConta={abrirEdicaoConta}
           marcarComoPago={marcarComoPago}
           navegarPara={navegarPara}
+          contextoNavegacao={contextoNavegacao}
           navegarParaOrigemAgenda={navegarParaOrigemAgenda}
         />
     )

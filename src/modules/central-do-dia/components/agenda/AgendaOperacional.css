@@ -39,6 +39,15 @@
   gap: 7px;
 }
 
+.agenda-operacional-calculada h2,
+.agenda-operacional-calculada p {
+  margin: 0;
+}
+
+.agenda-operacional-calculada p {
+  color: var(--df-color-muted);
+}
+
 .agenda-operacional-filtro {
   min-height: var(--df-space-control);
   border: 1px solid var(--df-color-border);

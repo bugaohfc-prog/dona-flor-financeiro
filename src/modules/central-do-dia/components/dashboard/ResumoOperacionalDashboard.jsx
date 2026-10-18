@@ -13,7 +13,8 @@ const ROTULOS_FONTES_PESSOAS = Object.freeze({
   ciclosFerias: 'ciclos de férias',
   periodosFerias: 'períodos de férias',
   exames: 'exames periódicos',
-  folha: 'Folha'
+  folha: 'Folha',
+  obrigacoes: 'obrigações operacionais'
 })
 
 export function ResumoOperacionalDashboard({
@@ -28,6 +29,7 @@ export function ResumoOperacionalDashboard({
 }) {
   const resumo = dados?.resumoDashboard || { contadores: {}, prioridades: [], possuiDados: false }
   const prioridades = resumo.prioridades || []
+  const resumoObrigacoes = dados?.resumoObrigacoes || { minhas: 0, aguardando: 0, semResponsavel: 0 }
   const fontesIndisponiveis = erroParcial && typeof erroParcial === 'object'
     ? Object.keys(erroParcial).filter((fonte) => erroParcial[fonte]).map((fonte) => ROTULOS_FONTES_PESSOAS[fonte] || fonte)
     : []
@@ -44,8 +46,8 @@ export function ResumoOperacionalDashboard({
           <button type="button" className="dashboard-home-action dashboard-home-action-secondary resumo-operacional-dashboard-acao-atualizar" onClick={onAtualizar} disabled={!empresaId || dados?.atualizando}>
             {dados?.atualizando ? 'Atualizando…' : 'Atualizar painel'}
           </button>
-          <button type="button" className="dashboard-home-action dashboard-home-action-primary resumo-operacional-dashboard-acao-agenda" onClick={onAbrirAgenda}>
-            Abrir Agenda
+          <button type="button" className="dashboard-home-action dashboard-home-action-primary resumo-operacional-dashboard-acao-agenda" onClick={() => onAbrirAgenda?.('acao')}>
+            Abrir Central
           </button>
         </div>
       </header>
@@ -60,6 +62,21 @@ export function ResumoOperacionalDashboard({
 
       {empresaId && !carregando && (
         <>
+          <div className="resumo-operacional-dashboard-contadores" aria-label="Contadores de obrigações operacionais">
+            <button type="button" className="resumo-operacional-dashboard-contador" onClick={() => onAbrirAgenda?.('minhas')}>
+              <span>Precisa de mim</span>
+              <strong>{Number(resumoObrigacoes.minhas) || 0}</strong>
+            </button>
+            <button type="button" className="resumo-operacional-dashboard-contador" onClick={() => onAbrirAgenda?.('espera')}>
+              <span>Aguardando terceiros</span>
+              <strong>{Number(resumoObrigacoes.aguardando) || 0}</strong>
+            </button>
+            <button type="button" className="resumo-operacional-dashboard-contador" onClick={() => onAbrirAgenda?.('sem_responsavel')}>
+              <span>Sem responsável</span>
+              <strong>{Number(resumoObrigacoes.semResponsavel) || 0}</strong>
+            </button>
+          </div>
+
           <div className="resumo-operacional-dashboard-contadores" aria-label="Contadores operacionais">
             {CONTADORES.map(([chave, rotulo]) => (
               <div className="resumo-operacional-dashboard-contador" key={chave}>

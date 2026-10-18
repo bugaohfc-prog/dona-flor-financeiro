@@ -158,10 +158,10 @@ export default function AgendaOperacional({
   if (!empresaId) {
     return (
       <main className="agenda-operacional-page">
-        <PageHero kicker="Operação" title="Central Operacional" description="Acompanhe obrigações persistidas e compromissos calculados." actions={acoesCabecalho} />
+        <PageHero kicker="Operação" title="Central Operacional" description="Veja o que precisa de atenção e acompanhe cada pendência até a resolução." actions={acoesCabecalho} />
         <section className="agenda-operacional-estado" role="status">
           <h2>Selecione uma empresa</h2>
-          <p>A Agenda será carregada quando houver uma empresa ativa.</p>
+          <p>A Central será carregada quando houver uma empresa ativa.</p>
         </section>
       </main>
     )
@@ -172,7 +172,7 @@ export default function AgendaOperacional({
       <PageHero
         kicker="Operação"
         title="Central Operacional"
-        description="Acompanhe obrigações persistidas e os compromissos calculados da operação."
+        description="Veja o que precisa de atenção e acompanhe cada pendência até a resolução."
         actions={acoesCabecalho}
         actionsClassName="agenda-operacional-acoes-cabecalho"
       />
@@ -184,8 +184,8 @@ export default function AgendaOperacional({
       />
 
       <div className="agenda-operacional-calculada">
-        <h2>Agenda calculada</h2>
-        <p>Prazos e compromissos derivados dos dados atuais.</p>
+        <h2>Próximos compromissos</h2>
+        <p>Prazos organizados com base nas informações já registradas.</p>
       </div>
 
       <section className="agenda-operacional-filtros" aria-label="Filtrar Agenda por origem">

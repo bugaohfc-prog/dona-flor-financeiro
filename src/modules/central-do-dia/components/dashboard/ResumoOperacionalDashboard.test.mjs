@@ -19,3 +19,9 @@ test('mantem os demais dados do resumo operacional renderizados', () => {
   assert.match(componente, /CONTADORES\.map/)
   assert.match(componente, /prioridades\.map/)
 })
+
+test('explica que a acao da Home leva ao acompanhamento na Central', () => {
+  assert.match(componente, /Veja o que precisa de atenção e acompanhe cada pendência na Central\./)
+  assert.match(componente, /onClick=\{\(\) => onAbrirAgenda\?\.\('acao'\)\}/)
+  assert.match(componente, /Ver na Central/)
+})

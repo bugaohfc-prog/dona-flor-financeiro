@@ -40,14 +40,14 @@ export function ResumoOperacionalDashboard({
         <div>
           <span className="resumo-operacional-dashboard-kicker">Prioridades da operação</span>
           <h2 id="resumo-operacional-dashboard-titulo">Resumo operacional</h2>
-          <p>Uma visão rápida do que merece atenção.</p>
+          <p>Veja o que precisa de atenção e acompanhe cada pendência na Central.</p>
         </div>
         <div className="resumo-operacional-dashboard-acoes">
           <button type="button" className="dashboard-home-action dashboard-home-action-secondary resumo-operacional-dashboard-acao-atualizar" onClick={onAtualizar} disabled={!empresaId || dados?.atualizando}>
             {dados?.atualizando ? 'Atualizando…' : 'Atualizar painel'}
           </button>
           <button type="button" className="dashboard-home-action dashboard-home-action-primary resumo-operacional-dashboard-acao-agenda" onClick={() => onAbrirAgenda?.('acao')}>
-            Abrir Central
+            Ver na Central
           </button>
         </div>
       </header>

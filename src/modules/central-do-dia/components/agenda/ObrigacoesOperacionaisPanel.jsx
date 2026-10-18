@@ -56,9 +56,9 @@ export default function ObrigacoesOperacionaisPanel({ empresaId, filtroInicial =
     <section className="obrigacoes-operacionais" aria-labelledby="obrigacoes-operacionais-titulo">
       <header className="obrigacoes-operacionais-cabecalho">
         <div>
-          <span>Trabalho persistido</span>
-          <h2 id="obrigacoes-operacionais-titulo">Obrigações operacionais</h2>
-          <p>Acompanhe responsabilidades que precisam sobreviver ao reload.</p>
+          <span>Acompanhamento</span>
+          <h2 id="obrigacoes-operacionais-titulo">Pendências para acompanhar</h2>
+          <p>Veja o que precisa ser feito, quem é o responsável e acompanhe até a resolução.</p>
         </div>
         <button type="button" className="outline" onClick={fonte.carregar} disabled={fonte.carregando}>Atualizar</button>
       </header>
@@ -75,7 +75,11 @@ export default function ObrigacoesOperacionaisPanel({ empresaId, filtroInicial =
       {fonte.carregando ? (
         <p className="obrigacoes-operacionais-estado" role="status">Carregando obrigações…</p>
       ) : fonte.filtradas.length === 0 ? (
-        <p className="obrigacoes-operacionais-estado">Nenhuma obrigação neste filtro.</p>
+        <div className="obrigacoes-operacionais-estado" role="status">
+          <strong>Tudo certo por aqui.</strong>
+          <p>Quando o sistema identificar algo que precisa de acompanhamento, vai aparecer nesta Central.</p>
+          <p>Você poderá ver quem é o responsável, o que precisa ser feito e acompanhar até a resolução.</p>
+        </div>
       ) : (
         <div className="obrigacoes-operacionais-lista">
           {fonte.filtradas.map((item) => {

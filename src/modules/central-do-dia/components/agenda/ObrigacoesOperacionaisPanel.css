@@ -147,6 +147,10 @@
   color: var(--df-color-muted);
 }
 
+.obrigacoes-operacionais-estado p {
+  margin: 4px 0 0;
+}
+
 @media (max-width: 767px) {
   .obrigacoes-operacionais-lista,
   .obrigacao-operacional-campos {

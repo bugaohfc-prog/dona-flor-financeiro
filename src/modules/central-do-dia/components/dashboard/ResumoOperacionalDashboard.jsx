@@ -54,7 +54,7 @@ export function ResumoOperacionalDashboard({
 
       {!empresaId && <p className="resumo-operacional-dashboard-estado" role="status">Selecione uma empresa para visualizar o resumo.</p>}
       {empresaId && carregando && <p className="resumo-operacional-dashboard-estado" role="status">Carregando resumo operacional…</p>}
-      {empresaId && !carregando && erroParcial && (
+      {empresaId && !carregando && fontesIndisponiveis.length > 0 && (
         <p className="resumo-operacional-dashboard-alerta" role="alert">
           Parte das informações está indisponível{fontesIndisponiveis.length ? ` (${fontesIndisponiveis.join(', ')})` : ''}. Os demais dados continuam visíveis.
         </p>
